@@ -9,6 +9,7 @@ var socketServer = require('../lib/socket-server');
 var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
 var freeformServer = require('../question-servers/freeform');
+var cache = require('../lib/cache');
 
 config.startServer = false;
 config.serverPort = 3007;
@@ -67,6 +68,12 @@ module.exports = {
                 });
             },
             function(callback) {
+                cache.init(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
                 serverJobs.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -109,6 +116,12 @@ module.exports = {
                 cron.stop(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
+                });
+            },
+            function(callback) {
+                cache.reset(function(err) {
+                  if (ERR(err, callback)) return;
+                  callback(null);
                 });
             },
             function(callback) {

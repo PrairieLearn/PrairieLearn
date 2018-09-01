@@ -103,7 +103,6 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
         logPageView(req, res, (err) => {

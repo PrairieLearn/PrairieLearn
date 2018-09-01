@@ -44,17 +44,28 @@ select_config AS (
         ) AS configs
     FROM
         config AS c
+),
+select_question_render_cache_stats AS (
+    SELECT
+        jsonb_build_object(
+            'question_cache_hit_rate', AVG(pvl.panel_render_cache_hit_count / pvl.panel_render_count),
+            'panel_cache_hit_rate', (CAST(SUM(pvl.panel_render_cache_hit_count) AS FLOAT) / SUM(pvl.panel_render_count))
+        ) AS question_render_cache_stats
+    FROM
+        page_view_logs AS pvl
 )
 SELECT
     administrator_users,
     courses,
     networks,
-    configs
+    configs,
+    question_render_cache_stats
 FROM
     select_administrator_users,
     select_courses,
     select_networks,
-    select_config;
+    select_config,
+    select_question_render_cache_stats;
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;

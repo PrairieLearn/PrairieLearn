@@ -5,11 +5,14 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
+const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
+const cache = require('../lib/cache');
+const courseUtil = require('../lib/courseUtil');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -726,6 +729,14 @@ module.exports = {
         });
     },
 
+    _getCacheKey: function(course, data, callback) {
+        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
+            if (ERR(err, callback)) return;
+            const dataHash = hash('sha1').update(JSON.stringify(data)).digest('base64');
+            callback(null, `${commitHash}-${dataHash}`);
+        });
+    },
+
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
         // broken variant kills all rendering
         if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
@@ -740,6 +751,7 @@ module.exports = {
                 submission = null;
             }
         }
+
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
@@ -769,10 +781,63 @@ module.exports = {
             data.options.question_path = context.question_dir;
             data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
 
-            module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-                if (ERR(err, callback)) return;
-                callback(null, courseIssues, html, renderedElementNames);
-            });
+            // This function will render the panel and then cache the results
+            // if cacheKey is not null
+            const doRender = (cacheKey) => {
+                module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
+                    if (ERR(err, callback)) return;
+                    if (cacheKey) {
+                        cache.set(cacheKey, {
+                            courseIssues,
+                            html,
+                            renderedElementNames,
+                        });
+                    }
+                    const cacheHit = false; // Cache miss
+                    callback(null, courseIssues, html, renderedElementNames, cacheHit);
+                });
+            };
+
+            // This function will check the cache for the specified cache key
+            // and either return the cached render for a cache hit, or render
+            // the panel for a cache miss
+            const getFromCacheOrRender = (cacheKey) => {
+                cache.get(cacheKey, (err, cachedData) => {
+                    // We don't actually want to fail if the cache has an error; we'll
+                    // just render the panel as normal
+                    ERR(err, (e) => logger.error(e));
+                    if (!err && cachedData !== null) {
+                        const {
+                            courseIssues,
+                            html,
+                            renderedElementNames,
+                        } = cachedData;
+
+                        const cacheHit = true;
+                        callback(null, courseIssues, html, renderedElementNames, cacheHit);
+                    } else {
+                        doRender(cacheKey);
+                    }
+                });
+            };
+
+            if (locals.devMode) {
+                // In dev mode, we should skip caching so that we'll immediately
+                // pick up new changes from disk
+                doRender(null);
+            } else {
+                module.exports._getCacheKey(course, data, (err, cacheKey) => {
+                    // If for some reason we failed to get a cache key, don't
+                    // actually fail the request, just skip the cache entirely
+                    // and render as usual
+                    ERR(err, e => logger.error(e));
+                    if (err || !cacheKey) {
+                        doRender(null);
+                    } else {
+                        getFromCacheOrRender(cacheKey);
+                    }
+                });
+            }
         });
     },
 
@@ -786,14 +851,17 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         const pc = new codeCaller.PythonCaller();
+        let panelCount = 0, cacheHitCount = 0;
         async.series([
             // FIXME: suppprt 'header'
             (callback) => {
                 if (!renderSelection.question) return callback(null);
-                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                     if (ERR(err, callback)) return;
                     courseIssues.push(...ret_courseIssues);
                     htmls.questionHtml = html;
+                    panelCount++;
+                    if (cacheHit) cacheHitCount++;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
@@ -801,9 +869,11 @@ module.exports = {
             (callback) => {
                 if (!renderSelection.submissions) return callback(null);
                 async.mapSeries(submissions, (submission, callback) => {
-                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                         if (ERR(err, callback)) return;
                         courseIssues.push(...ret_courseIssues);
+                        panelCount++;
+                        if (cacheHit) cacheHitCount++;
                         allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                         callback(null, html);
                     });
@@ -815,13 +885,22 @@ module.exports = {
             },
             (callback) => {
                 if (!renderSelection.answer) return callback(null);
-                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                     if (ERR(err, callback)) return;
                     courseIssues.push(...ret_courseIssues);
                     htmls.answerHtml = html;
+                    panelCount++;
+                    if (cacheHit) cacheHitCount++;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
+            },
+            (callback) => {
+                // The logPageView middleware knows to write this to the DB
+                // when we log the page view - sorry for mutable object hell
+                locals.panel_render_count = panelCount;
+                locals.panel_render_cache_hit_count = cacheHitCount;
+                callback(null);
             },
             (callback) => {
                 module.exports.getContext(question, course, (err, context) => {

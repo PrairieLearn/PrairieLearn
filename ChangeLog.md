@@ -97,6 +97,8 @@
 
   * Add configurable `homeUrl` to support container deployments (Matt West).
 
+  * Add caching of rendered question panels (Nathan Walters).
+
   * Fix migration 111 to allow re-running (Matt West).
 
   * Fix docs to provide workaround for `mcrypt` install error on OSX (Tim Bretl).

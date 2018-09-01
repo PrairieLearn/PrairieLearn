@@ -28,6 +28,7 @@ const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
+const cache = require('./lib/cache');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -516,6 +517,12 @@ if (config.startServer) {
         },
         (callback) => {
             redis.init((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            cache.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

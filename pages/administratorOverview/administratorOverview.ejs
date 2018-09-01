@@ -5,6 +5,29 @@
     <script src="/javascripts/lodash.min.js"></script>
     <script src="/javascripts/d3.min.js"></script>
     <script src="/localscripts/histmini.js"></script>
+    <script src="/node_modules/chart.js/dist/Chart.min.js"></script>
+    <style>
+    canvas {
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .chart-container {
+      width: 100%;
+    }
+    .chart-container:not(:last-child) {
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        width: 50%;
+      }
+      .chart-container:not(:last-child) {
+        margin-bottom: 0;
+      }
+    }
+    </style>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
@@ -209,6 +232,101 @@
             the JSON configuration file in the repository during the
             sync.
           </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Question render cache ------------------------------------------------------->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Question render cache
+        </div>
+        <div class="card-body">
+          <div class="h4 mb-0">Cache hit rates</div>
+          <div class="small text-muted">For last 24 hours</div>
+          <div class="charts mt-2">
+            <div class="chart-container d-inline-flex flex-column align-items-center">
+              <canvas id="question-cache-hit-rate-chart"></canvas>
+              <span class="mt-2">Average hit rate per question<span>
+            </div><div class="chart-container d-inline-flex flex-column align-items-center">
+              <canvas id="panel-cache-hit-rate-chart"></canvas>
+              <span class="mt-2">Total panel hit rate</span>
+            </div>
+          </div>
+          <hr>
+          <p>
+            Each panel rendered for a question is cached by default.
+            This button will invalidate all entries in the cache.
+            This should only be used if you know what you're doing and you suspect it's necessary.
+          </p>
+          <form name="invalidate-question-cache-form" method="POST">
+            <input type="hidden" name="__action" value="invalidate_question_cache">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button id="invalidate-render-cache" type="button" class="btn btn-danger">Invalidate question render cache</button>
+            <div id="confirm-invalidate-cache-container" class="confirm-invalidate-cache" style="display: none;">
+              <button id="confirm-invalidate-render-cache" type="submit" class="btn btn-danger">Confirm invalidate cache</button>
+              <button id="cancel-invalidate-render-cache" type="button" class="btn btn-secondary">Cancel</button>
+            </div>
+          </form>
+          <script>
+          $(function() {
+            var invalidateButton = $('#invalidate-render-cache');
+            var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');
+            var cancelInvalidateButton = $('#cancel-invalidate-render-cache');
+            invalidateButton.click(function() {
+              confirmInvalidateContainer.show();
+              invalidateButton.hide();
+            });
+            cancelInvalidateButton.click(function() {
+              invalidateButton.show();
+              confirmInvalidateContainer.hide();
+            });
+            var questionCacheHitRate = <%= question_render_cache_stats.question_cache_hit_rate %>;
+            var panelCacheHitRate = <%= question_render_cache_stats.panel_cache_hit_rate %>;
+            // This draws the percentage in the middle of the pie
+            Chart.pluginService.register({
+              beforeDraw: function(chart) {
+                console.log(chart);
+                var width = chart.chart.width,
+                height = chart.chart.height,
+                ctx = chart.chart.ctx;
+                ctx.restore();
+                var fontSize = (height / 160).toFixed(2);
+                ctx.font = fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+                var text = Number(chart.config.data.datasets[0].data[0]).toFixed(2) + '%'
+                textX = Math.round((width - ctx.measureText(text).width) / 2),
+                textY = height / 2;
+                ctx.fillText(text, textX, textY);
+                ctx.save();
+              }
+            });
+            function buildChart(ctx, hitRate) {
+              var roundedHitRate = Math.round(hitRate * 10000) / 100;
+              return new Chart(ctx, {
+                type: 'pie',
+                data: {
+                  datasets: [{
+                    data: [roundedHitRate, 100 - roundedHitRate],
+                    backgroundColor: ['green', 'red'],
+                  }],
+                  labels: ['Cache hit %', 'Cache miss %'],
+                },
+                options: {
+                  legend: {
+                    display: false,
+                  },
+                  cutoutPercentage: 70,
+                }
+              });
+            };
+            buildChart($("#question-cache-hit-rate-chart"), questionCacheHitRate);
+            buildChart($("#panel-cache-hit-rate-chart"), panelCacheHitRate);
+          });
+          </script>
         </div>
       </div>
 
