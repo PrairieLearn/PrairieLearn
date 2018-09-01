@@ -53,6 +53,8 @@
 
   * Fix docs for `clientServerFiles` template variables (Rahul Rameshbabu).
 
+  * Fix bug with rendering when the render cache is disabled (Nathan Walters).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
