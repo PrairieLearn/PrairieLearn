@@ -13,6 +13,8 @@
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
 
+  * Add Control-C hint on server startup (Dave Mussulman).
+
   * Add improved login screen (Nathan Walters).
 
   * Add `pl-matrix-component-input` element (Mariana Silva).
