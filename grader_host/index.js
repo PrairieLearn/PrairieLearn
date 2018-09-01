@@ -434,11 +434,10 @@ function runJob(info, callback) {
                         results.succeeded = false;
                         results.message = 'Could not read grading results.';
                     } else {
-                        if (Buffer.byteLength(data) > 100 * 1024) {
-                            // Cap output at 100 KiB
+                        if (Buffer.byteLength(data) > 1024 * 1024) {
+                            // Cap output at 1MB
                             results.succeeded = false;
-                            results.message = 'The grading results were larger than 100 KiB. ' +
-                            'Try removing print statements from your code to reduce the output size. ' +
+                            results.message = 'The grading results were larger than 1MB. ' +
                             'If the problem persists, please contact course staff or a proctor.';
                             return callback(null);
                         }
