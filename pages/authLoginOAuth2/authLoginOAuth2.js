@@ -8,6 +8,7 @@ const config = require('../../lib/config');
 const {google} = require('googleapis');
 
 router.get('/', function(req, res, next) {
+    if (!config.hasOauth) return next(new Error('Google login is not enabled'));
     let url;
     try {
         const oauth2Client = new google.auth.OAuth2(
