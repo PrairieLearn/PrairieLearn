@@ -63,6 +63,8 @@
 
   * Change assessment password protection method (Dave Mussulman).
 
+  * Change "0 rows" error to be more descriptive (Dave Mussulman).
+
   * Change Exam authentication options to always include Google and Azure (Matt West).
 
 * __3.0.0__ - 2018-05-23
