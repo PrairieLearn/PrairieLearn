@@ -49,6 +49,8 @@
 
   * Fix error message when an authentication method is not enabled (Matt West).
 
+  * Fix "Logout" button with Azure authentication (Matt West).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
