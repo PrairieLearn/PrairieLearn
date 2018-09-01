@@ -109,7 +109,8 @@ if (config.hasAzure) {
     passport.use(new OIDCStrategy(azureConfig, function(iss, sub, profile, accessToken, refreshToken, done) {return done(null, profile);}));
 }
 
-app.use(bodyParser.json({limit: 200 * 1024}));
+// Limit to 1MB of JSON
+app.use(bodyParser.json({limit: 1024 * 1024}));
 app.use(bodyParser.urlencoded({extended: false, limit: 200 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
