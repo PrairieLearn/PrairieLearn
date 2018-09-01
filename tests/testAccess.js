@@ -226,14 +226,14 @@ describe('Access control', function() {
     };
 
     describe('7. GET to assessment URL', function() {
-        it('as student should return 500', function(callback) {
-            getAssessment(cookiesStudent(), 500, callback);
+        it('as student should return 403', function(callback) {
+            getAssessment(cookiesStudent(), 403, callback);
         });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            getAssessment(cookiesStudentExamBeforeAssessment(), 500, callback);
+        it('as student in Exam mode before time period should return 403', function(callback) {
+            getAssessment(cookiesStudentExamBeforeAssessment(), 403, callback);
         });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            getAssessment(cookiesStudentExamAfterAssessment(), 500, callback);
+        it('as student in Exam mode after time period should return 403', function(callback) {
+            getAssessment(cookiesStudentExamAfterAssessment(), 403, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
             getAssessment(cookiesStudentExam(), 200, callback);
@@ -271,18 +271,18 @@ describe('Access control', function() {
     };
 
     describe('8. POST to assessment URL', function() {
-        it('as student should return 500', function(callback) {
-            postAssessment(cookiesStudent(), true, 500, callback);
+        it('as student should return 403', function(callback) {
+            postAssessment(cookiesStudent(), true, 403, callback);
         });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            postAssessment(cookiesStudentExamBeforeAssessment(), true, 500, callback);
+        it('as student in Exam mode before time period should return 403', function(callback) {
+            postAssessment(cookiesStudentExamBeforeAssessment(), true, 403, callback);
         });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            postAssessment(cookiesStudentExamAfterAssessment(), true, 500, callback);
+        it('as student in Exam mode after time period should return 403', function(callback) {
+            postAssessment(cookiesStudentExamAfterAssessment(), true, 403, callback);
         });
 /*
-        it('as student in Exam mode without password should return 500', function(callback) {
-            postAssessment(cookiesStudentExam(), false, 500, callback);
+        it('as student in Exam mode without password should return 403', function(callback) {
+            postAssessment(cookiesStudentExam(), false, 403, callback);
         });
 */
         it('as student in Exam mode should load successfully', function(callback) {
@@ -306,14 +306,14 @@ describe('Access control', function() {
     };
 
     describe('9. GET to assessment_instance URL', function() {
-        it('as student should return 500', function(callback) {
-            getAssessmentInstance(cookiesStudent(), 500, callback);
+        it('as student should return 403', function(callback) {
+            getAssessmentInstance(cookiesStudent(), 403, callback);
         });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 500, callback);
+        it('as student in Exam mode before time period should return 403', function(callback) {
+            getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403, callback);
         });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterAssessment(), 500, callback);
+        it('as student in Exam mode after time period should return 403', function(callback) {
+            getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
@@ -357,14 +357,14 @@ describe('Access control', function() {
     };
 
     describe('11. GET to instance_question URL', function() {
-        it('as student should return 500', function(callback) {
-            getInstanceQuestion(cookiesStudent(), 500, callback);
+        it('as student should return 403', function(callback) {
+            getInstanceQuestion(cookiesStudent(), 403, callback);
         });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 500, callback);
+        it('as student in Exam mode before time period should return 403', function(callback) {
+            getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403, callback);
         });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            getInstanceQuestion(cookiesStudentExamAfterAssessment(), 500, callback);
+        it('as student in Exam mode after time period should return 403', function(callback) {
+            getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
             getInstanceQuestion(cookiesStudentExam(), 200, callback);
@@ -421,14 +421,14 @@ describe('Access control', function() {
     };
 
     describe('12. POST to instance_question URL', function() {
-        it('as student should return 500', function(callback) {
-            postInstanceQuestion(cookiesStudent(), 500, callback);
+        it('as student should return 403', function(callback) {
+            postInstanceQuestion(cookiesStudent(), 403, callback);
         });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 500, callback);
+        it('as student in Exam mode before time period should return 403', function(callback) {
+            postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403, callback);
         });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            postInstanceQuestion(cookiesStudentExamAfterAssessment(), 500, callback);
+        it('as student in Exam mode after time period should return 403', function(callback) {
+            postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
             postInstanceQuestion(cookiesStudentExam(), 200, callback);
@@ -445,7 +445,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -458,13 +458,13 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -479,10 +479,10 @@ describe('Access control', function() {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -520,7 +520,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -532,7 +532,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -545,13 +545,13 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -566,10 +566,10 @@ describe('Access control', function() {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 

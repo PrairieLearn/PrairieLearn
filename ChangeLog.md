@@ -13,6 +13,8 @@
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
 
+  * Add Control-C hint on server startup (Dave Mussulman).
+
   * Add improved login screen (Nathan Walters).
 
   * Add `pl-matrix-component-input` element (Mariana Silva).
@@ -45,9 +47,9 @@
 
   * Fix "Logout" button with Google authentication (Matt West).
 
-  * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
+  * Fix error message when an authentication method is not enabled (Matt West).
 
-  * Change `pl-code` to display code from a source file (Mariana Silva).
+  * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
@@ -62,6 +64,10 @@
   * Change element attributes to use hyphens instead of underscores (Nathan Walters).
 
   * Change assessment password protection method (Dave Mussulman).
+
+  * Change "0 rows" error to be more descriptive (Dave Mussulman).
+
+  * Change Exam authentication options to always include Google and Azure (Matt West).
 
 * __3.0.0__ - 2018-05-23
 

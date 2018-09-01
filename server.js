@@ -575,7 +575,7 @@ if (config.startServer) {
             logger.error('Exiting...');
             process.exit(1);
         } else {
-            logger.info('PrairieLearn server ready');
+            logger.info('PrairieLearn server ready, press Control-C to quit');
             if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
