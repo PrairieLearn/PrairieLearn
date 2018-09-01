@@ -51,8 +51,9 @@
 
   * Fix "Logout" button with Azure authentication (Matt West).
 
-  * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
   * Fix docs for `clientServerFiles` template variables (Rahul Rameshbabu).
+
+  * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
@@ -73,6 +74,8 @@
   * Change Exam authentication options to always include Google and Azure (Matt West).
 
   * Change maximum JSON POST size to 1MB (Nathan Walters).
+
+  * Change to prohibit extra `allowAccess` properties (Geoffrey Challen).
 
 * __3.0.0__ - 2018-05-23
 
