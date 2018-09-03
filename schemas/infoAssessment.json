@@ -151,6 +151,10 @@
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
                 },
+                "maxPoints": {
+                    "description": "The maximum number of points that can be earned for answering questions in this zone.",
+                    "type": "number"
+                },
                 "numberChoose": {
                     "description": "Number of questions to choose from this zone.",
                     "type": "integer",
