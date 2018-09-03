@@ -79,6 +79,8 @@
 
   * Change to prohibit extra `allowAccess` properties (Geoffrey Challen).
 
+  * Change maximum JSON POST size to 1MB or local grader (Nathan Walters).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
