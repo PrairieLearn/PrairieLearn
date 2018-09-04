@@ -22,7 +22,7 @@ DECLARE
 BEGIN
     -- #########################################################################
     -- determine the assessment type
-    
+
     SELECT a.type
     INTO assessment_type
     FROM
@@ -34,28 +34,37 @@ BEGIN
         RAISE EXCEPTION 'No assessment_instance found with id: %', assessment_instance_id;
     END IF;
 
+    IF NOT ((assessment_type = 'Exam') OR (assessment_type = 'Homework')) THEN
+        RAISE EXCEPTION 'Unknown assessment_type: %', assessment_type;
+    END IF;
+
     -- #########################################################################
     -- compute the total points
 
-    IF assessment_type = 'Exam' THEN
-        -- for Exams, include all assessment_questions, even deleted ones
-        SELECT sum(iq.points), sum(iq.points_in_grading)
-        INTO    total_points,   total_points_in_grading
-        FROM instance_questions AS iq
-        WHERE iq.assessment_instance_id = assessment_instances_points.assessment_instance_id;
-    ELSIF assessment_type = 'Homework' THEN
-        -- for Homeworks, drop deleted questions
-        SELECT sum(iq.points), sum(iq.points_in_grading)
-        INTO    total_points,   total_points_in_grading
-        FROM
-            instance_questions AS iq
-            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        WHERE
-            iq.assessment_instance_id = assessment_instances_points.assessment_instance_id
-            AND aq.deleted_at IS NULL;
-    ELSE
-        RAISE EXCEPTION 'Unknown assessment_type: %', assessment_type;
-    END IF;
+    WITH points_by_zone AS (
+            SELECT
+                LEAST(sum(iq.points), z.max_points) AS points,
+                LEAST(sum(iq.points_in_grading), z.max_points) AS points_in_grading
+            FROM
+                instance_questions AS iq
+                JOIN assessment_questions as aq ON (aq.id = iq.assessment_question_id)
+                JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+                JOIN zones AS z ON (z.id = ag.zone_id)
+            WHERE
+                iq.assessment_instance_id = assessment_instances_points.assessment_instance_id
+                -- drop deleted questions unless assessment type is Exam
+                AND ((aq.deleted_at IS NULL) OR (assessment_type = 'Exam'))
+            GROUP BY
+                z.id
+        )
+    SELECT
+        sum(points_by_zone.points),
+        sum(points_by_zone.points_in_grading)
+    INTO
+        total_points,
+        total_points_in_grading
+    FROM
+        points_by_zone;
 
     SELECT ai.max_points INTO max_points
     FROM assessment_instances AS ai
@@ -102,7 +111,7 @@ BEGIN
     ELSIF (credit > 100) AND (max_possible_points = max_points) THEN
         max_possible_score_perc := credit;
     END IF;
-    
+
     IF NOT allow_decrease THEN
         -- no matter what, don't decrease the achieveable score_perc below new score_perc
         max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
