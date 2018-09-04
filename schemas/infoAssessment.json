@@ -160,6 +160,11 @@
                     "type": "integer",
                     "minimum": 0
                 },
+                "numberGrade": {
+                    "description": "Number of questions to grade from this zone.",
+                    "type": "integer",
+                    "minimum": 0
+                },
                 "questions": {
                     "description": "Array of questions in the zone.",
                     "type": "array",
