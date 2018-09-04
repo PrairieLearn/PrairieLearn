@@ -1,5 +1,8 @@
 DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean);
 DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean,boolean);
+DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
+DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_points(bigint,integer,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_grade(
@@ -19,10 +22,20 @@ DECLARE
     new_assessment_instance assessment_instances%ROWTYPE;
     log_update boolean;
     use_credit integer;
+    points DOUBLE PRECISION;
+    points_in_grading DOUBLE PRECISION;
+    score_perc DOUBLE PRECISION;
+    score_perc_in_grading DOUBLE PRECISION;
+    total_points DOUBLE PRECISION;
+    total_points_in_grading DOUBLE PRECISION;
+    max_points DOUBLE PRECISION;
+    current_score_perc DOUBLE PRECISION;
+    max_possible_points DOUBLE PRECISION;
+    max_possible_score_perc DOUBLE PRECISION;
 BEGIN
-    SELECT points, points_in_grading, score_perc, score_perc_in_grading
+    SELECT ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
     INTO old_values
-    FROM assessment_instances
+    FROM assessment_instances AS ai
     WHERE id = assessment_instance_id;
 
     IF credit IS NOT NULL THEN
@@ -42,9 +55,79 @@ BEGIN
         use_credit := coalesce(use_credit, 0);
     END IF;
 
-    SELECT *
-    INTO new_values
-    FROM assessment_instances_points(assessment_instance_id, use_credit, allow_decrease);
+
+
+
+
+    -- #########################################################################
+    -- compute the total points
+
+    SELECT
+        sum(points_by_zone.points)
+    INTO
+        total_points
+    FROM
+        zones_points(assessment_instance_id) AS points_by_zone;
+
+    SELECT ai.max_points INTO max_points
+    FROM assessment_instances AS ai
+    WHERE ai.id = assessment_instance_id;
+
+    SELECT ai.score_perc INTO current_score_perc
+    FROM assessment_instances AS ai
+    WHERE ai.id = assessment_instance_id;
+
+    -- #########################################################################
+    -- awarded points and score_perc
+
+    -- compute the score in points, maxing out at max_points
+    points := least(total_points, max_points);
+
+    -- compute the score as a percentage, applying credit bonus/limits
+    score_perc := points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
+    IF use_credit < 100 THEN
+        score_perc := least(score_perc, use_credit);
+    ELSIF (use_credit > 100) AND (points = max_points) THEN
+        score_perc := use_credit;
+    END IF;
+
+    IF NOT allow_decrease THEN
+        -- no matter what, don't decrease the score_perc
+        score_perc := greatest(score_perc, current_score_perc);
+    END IF;
+
+    -- #########################################################################
+    -- in_grading versions of points and score_perc
+    -- computed by finding max_possible points and score_perc
+    -- and then subtracting off the new values of each quantity
+
+    -- repeat calculation for points_in_grading
+    max_possible_points := least(points + total_points_in_grading, max_points);
+    total_points_in_grading := max_possible_points - points;
+
+    -- compute max achieveable score_perc if all grading points are awarded
+    max_possible_score_perc := max_possible_points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
+    IF use_credit < 100 THEN
+        max_possible_score_perc := least(max_possible_score_perc, use_credit);
+    ELSIF (use_credit > 100) AND (max_possible_points = max_points) THEN
+        max_possible_score_perc := use_credit;
+    END IF;
+
+    IF NOT allow_decrease THEN
+        -- no matter what, don't decrease the achieveable score_perc below new score_perc
+        max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
+    END IF;
+
+    -- compute score_perc_in_grading
+    score_perc_in_grading := max_possible_score_perc - score_perc;
+
+
+
+    SELECT points, points_in_grading, score_perc, score_perc_in_grading
+    INTO new_values;
+
 
     UPDATE assessment_instances AS ai
     SET
