@@ -32,6 +32,7 @@ DECLARE
     current_score_perc DOUBLE PRECISION;
     max_possible_points DOUBLE PRECISION;
     max_possible_score_perc DOUBLE PRECISION;
+    used_for_grade BIGINT[];
 BEGIN
     SELECT ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
     INTO old_values
@@ -56,18 +57,24 @@ BEGIN
     END IF;
 
 
+    -- #########################################################################
+    -- get points by zone
 
+    WITH
+        t_points_by_zone AS (SELECT * FROM zones_points(assessment_instance_id)),
+        t_used_for_grade AS (SELECT unnest(qids) AS qids FROM t_points_by_zone),
+        v_used_for_grade AS (SELECT array_agg(qids) AS qids FROM t_used_for_grade),
+        v_total_points AS (SELECT (sum(points) AS total_points FROM t_points_by_zone)
+    SELECT
+        v_total_points.total_points, v_used_for_grade.qids
+    INTO
+        assessment_instance_grade.total_points, assessment_instance_grade.used_for_grade
+    FROM
+        v_total_points, v_used_for_grade;
 
 
     -- #########################################################################
     -- compute the total points
-
-    SELECT
-        sum(points_by_zone.points)
-    INTO
-        total_points
-    FROM
-        zones_points(assessment_instance_id) AS points_by_zone;
 
     SELECT ai.max_points INTO max_points
     FROM assessment_instances AS ai
@@ -123,11 +130,21 @@ BEGIN
     -- compute score_perc_in_grading
     score_perc_in_grading := max_possible_score_perc - score_perc;
 
-
-
+    -- pack everything into new_values
     SELECT points, points_in_grading, score_perc, score_perc_in_grading
     INTO new_values;
 
+    -- #########################################################################
+    -- Update instance_questions (which questions were used for grading)
+
+    UPDATE instance_questions AS iq
+    SET
+        used_for_grade = EXISTS (SELECT 1 FROM points_by_zone WHERE iq.id = ANY(qids) LIMIT 1)
+    WHERE
+        iq.assessment_instance_id = assessment_instances_grade.assessment_instance_id;
+
+    -- #########################################################################
+    -- Update assessment_instances (points and scores)
 
     UPDATE assessment_instances AS ai
     SET
@@ -138,6 +155,9 @@ BEGIN
     WHERE ai.id = assessment_instance_id
     RETURNING ai.*
     INTO new_assessment_instance;
+
+    -- #########################################################################
+    -- Update log
 
     log_update := TRUE;
     updated := TRUE;
