@@ -32,7 +32,7 @@ DECLARE
     current_score_perc DOUBLE PRECISION;
     max_possible_points DOUBLE PRECISION;
     max_possible_score_perc DOUBLE PRECISION;
-    used_for_grade BIGINT[];
+    instance_questions_used_for_grade BIGINT[];
 BEGIN
     SELECT ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
     INTO old_values
@@ -64,11 +64,11 @@ BEGIN
         t_points_by_zone AS (SELECT * FROM zones_points(assessment_instance_id)),
         t_used_for_grade AS (SELECT unnest(qids) AS qids FROM t_points_by_zone),
         v_used_for_grade AS (SELECT array_agg(qids) AS qids FROM t_used_for_grade),
-        v_total_points AS (SELECT (sum(points) AS total_points FROM t_points_by_zone)
+        v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone)
     SELECT
         v_total_points.total_points, v_used_for_grade.qids
     INTO
-        assessment_instance_grade.total_points, assessment_instance_grade.used_for_grade
+        total_points, instance_questions_used_for_grade
     FROM
         v_total_points, v_used_for_grade;
 
@@ -139,7 +139,7 @@ BEGIN
 
     UPDATE instance_questions AS iq
     SET
-        used_for_grade = EXISTS (SELECT 1 FROM points_by_zone WHERE iq.id = ANY(qids) LIMIT 1)
+        used_for_grade = (iq.id = ANY(instance_questions_used_for_grade))
     WHERE
         iq.assessment_instance_id = assessment_instances_grade.assessment_instance_id;
 
