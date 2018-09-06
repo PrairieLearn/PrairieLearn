@@ -42,7 +42,7 @@ allowed_languages = [
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no-highlight', 'source-file-name']
+    optional_attribs = ['language', 'no-highlight', 'source-file-name', 'prevent-select']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
@@ -62,6 +62,7 @@ def render(element_html, element_index, data):
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
 
     if source_file_name is not None:
         base_path = data['options']['question_path']
@@ -95,6 +96,7 @@ def render(element_html, element_index, data):
         'language': language,
         'no_highlight': no_highlight,
         'code': code,
+        'prevent_select': prevent_select,
     }
 
     with open('pl-code.mustache', 'r', encoding='utf-8') as f:
