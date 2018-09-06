@@ -92,11 +92,11 @@ BEGIN
     new_assessment_instance_max_points := assessment_max_points;
     IF new_assessment_instance_max_points IS NULL THEN
         SELECT
-            sum(zmp.points)
+            sum(zmp.max_points)
         INTO
             new_assessment_instance_max_points
         FROM
-            zones_max_points(assessment_instance_id) AS zmp;
+            assessment_instances_points(assessment_instance_id) AS zmp;
     END IF;
 
     -- update max_points if necessary and log it

@@ -2,7 +2,6 @@ DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean
 DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean,boolean);
 DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
 DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
-DROP FUNCTION IF EXISTS assessment_instances_points(bigint,integer,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_grade(
@@ -61,7 +60,7 @@ BEGIN
     -- get points by zone
 
     WITH
-        t_points_by_zone AS (SELECT * FROM zones_points(assessment_instance_id)),
+        t_points_by_zone AS (SELECT * FROM assessment_instances_points(assessment_instance_id)),
         t_used_for_grade AS (SELECT unnest(qids) AS qids FROM t_points_by_zone),
         v_used_for_grade AS (SELECT array_agg(qids) AS qids FROM t_used_for_grade),
         v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone)
