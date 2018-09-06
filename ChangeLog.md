@@ -28,6 +28,9 @@
   * Add `prevent-select` attribute to `pl-code` element (Nathan Walters).
 
   * Add personal access token management (Nathan Walters).
+  * Add `maxPoints` option to zones (Tim Bretl).
+
+  * Add `numberGrade` option to zones (Tim Bretl).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
