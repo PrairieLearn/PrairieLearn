@@ -28,8 +28,8 @@
             ]
         },
         {
-            "title": "Questions to test numberGrade",
-            "numberGrade": 2,
+            "title": "Questions to test bestQuestions",
+            "bestQuestions": 2,
             "questions": [{
                     "id": "partialCredit1",
                     "points": [10, 5, 1]

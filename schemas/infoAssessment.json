@@ -152,7 +152,7 @@
                     "type": "string"
                 },
                 "maxPoints": {
-                    "description": "The maximum number of points that can be earned for answering questions in this zone.",
+                    "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
                     "type": "number"
                 },
                 "numberChoose": {
@@ -160,8 +160,8 @@
                     "type": "integer",
                     "minimum": 0
                 },
-                "numberGrade": {
-                    "description": "Number of questions to grade from this zone.",
+                "bestQuestions": {
+                    "description": "Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.",
                     "type": "integer",
                     "minimum": 0
                 },

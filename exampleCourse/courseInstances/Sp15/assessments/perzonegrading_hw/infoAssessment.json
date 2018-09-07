@@ -18,7 +18,7 @@
     ],
     "zones": [{
             "title": "Questions to test maxPoints",
-            "maxPoints": 5,
+            "maxPoints": 7,
             "questions": [{
                     "id": "partialCredit6_no_partial",
                     "points": 4,
@@ -27,8 +27,8 @@
             ]
         },
         {
-            "title": "Questions to test numberGrade",
-            "numberGrade": 2,
+            "title": "Questions to test bestQuestions",
+            "bestQuestions": 1,
             "questions": [{
                     "id": "partialCredit1",
                     "points": 5,
