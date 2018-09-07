@@ -19,7 +19,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -33,8 +33,10 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    label = pl.get_string_attrib(element, 'label', None)
     variables_string = pl.get_string_attrib(element, 'variables', None)
     variables = get_variables_list(variables_string)
+    display = pl.get_string_attrib(element, 'display', 'inline')
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -54,6 +56,7 @@ def render(element_html, element_index, data):
         html_params = {
             'question': True,
             'name': name,
+            'label': label,
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
@@ -74,6 +77,12 @@ def render(element_html, element_index, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
+        if display == 'inline':
+            html_params['inline'] = True
+        elif display == 'block':
+            html_params['block'] = True
+        else:
+            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
@@ -83,6 +92,7 @@ def render(element_html, element_index, data):
         parse_error = data['format_errors'].get(name, None)
         html_params = {
             'submission': True,
+            'label': label,
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
@@ -109,6 +119,13 @@ def render(element_html, element_index, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
+        if display == 'inline':
+            html_params['inline'] = True
+        elif display == 'block':
+            html_params['block'] = True
+        else:
+            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
+
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -117,7 +134,11 @@ def render(element_html, element_index, data):
         if a_tru is not None:
             if isinstance(a_tru, str):
                 a_tru = phs.convert_string_to_sympy(a_tru, variables)
-            html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
+            html_params = {
+                'answer': True,
+                'label': label,
+                'a_tru': sympy.latex(a_tru)
+            }
             with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:

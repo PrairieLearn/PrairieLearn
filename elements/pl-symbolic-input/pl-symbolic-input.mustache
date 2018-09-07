@@ -8,8 +8,13 @@
     });
 </script>
 
-<span class="form-inline d-inline-block">
+{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
     <span id="pl-symbolic-input-{{uuid}}" class="input-group pl-symbolic-input">
+        {{#label}}
+        <span class="input-group-prepend">
+            <span class="input-group-text">{{label}}</span>
+        </span>
+        {{/label}}
         <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
         <span class="input-group-append">
             <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
@@ -20,12 +25,12 @@
             </a>
         </span>
     </span>
-</span>
+{{#inline}}</span>{{/inline}}
 {{/question}}
 
 
 {{#submission}}
-<span class="d-inline-block">
+{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#parse_error}}
 <script>
     $(function(){
@@ -47,7 +52,7 @@ ${{a_sub}}$
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/parse_error}}
-</span>
+{{#inline}}</span>{{/inline}}
 {{/submission}}
 
 {{#answer}}
