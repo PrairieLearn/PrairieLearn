@@ -7,14 +7,14 @@ import math
 import chevron
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html,  data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
@@ -180,7 +180,7 @@ def render(element_html,  data):
     return html
 
 
-def parse(element_html,  data):
+def parse(element_html, data):
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -210,7 +210,7 @@ def parse(element_html,  data):
     data['submitted_answers']['_pl_matrix_input_format'][name] = info['format_type']
 
 
-def grade(element_html,  data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -267,7 +267,7 @@ def grade(element_html,  data):
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
 
 
-def test(element_html,  data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)

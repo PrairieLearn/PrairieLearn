@@ -4,12 +4,12 @@ import numpy as np
 import chevron
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=['digits'])
 
 
-def render(element_html,  data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, 'digits', 2)
 

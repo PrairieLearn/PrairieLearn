@@ -9,7 +9,7 @@ import pyquaternion
 import math
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
         'answer_name',          # key for 'submitted_answers' and 'true_answers'
@@ -116,7 +116,7 @@ def get_objects(element, data):
     return obj_list
 
 
-def render(element_html,  data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answer-name')
 
@@ -302,7 +302,7 @@ def render(element_html,  data):
     return html
 
 
-def parse(element_html,  data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answer-name')
 
@@ -326,7 +326,7 @@ def parse(element_html,  data):
     data['submitted_answers'][name] = a_sub
 
 
-def grade(element_html,  data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answer-name')
 

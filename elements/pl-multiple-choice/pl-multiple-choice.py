@@ -4,7 +4,7 @@ import random
 import math
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
@@ -69,7 +69,7 @@ def prepare(element_html,  data):
     data['correct_answers'][name] = correct_answer
 
 
-def render(element_html,  data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -150,7 +150,7 @@ def render(element_html,  data):
     return html
 
 
-def parse(element_html,  data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -166,7 +166,7 @@ def parse(element_html,  data):
         return
 
 
-def grade(element_html,  data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
@@ -181,7 +181,7 @@ def grade(element_html,  data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-def test(element_html,  data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)

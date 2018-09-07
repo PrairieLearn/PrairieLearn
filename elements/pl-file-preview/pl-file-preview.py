@@ -4,14 +4,14 @@ import chevron
 import base64
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html,  data):
+def render(element_html, data):
     if data['panel'] != 'submission':
         return ''
 

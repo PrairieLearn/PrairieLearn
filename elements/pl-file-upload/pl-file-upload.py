@@ -27,7 +27,7 @@ def add_format_error(data, error_string):
     data['format_errors']['_files'].append(error_string)
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-names']
     optional_attribs = []
@@ -39,7 +39,7 @@ def prepare(element_html,  data):
     data['params']['_required_file_names'].extend(file_names)
 
 
-def render(element_html,  data):
+def render(element_html, data):
     if data['panel'] != 'question':
         return ''
 
@@ -67,7 +67,7 @@ def render(element_html,  data):
     return html
 
 
-def parse(element_html,  data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     raw_file_names = pl.get_string_attrib(element, 'file-names', '')
     required_file_names = get_file_names_as_array(raw_file_names)

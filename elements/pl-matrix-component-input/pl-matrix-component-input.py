@@ -7,14 +7,14 @@ import chevron
 import random
 
 
-def prepare(element_html,  data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html,  data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, 'answers-name')
@@ -196,7 +196,7 @@ def render(element_html,  data):
     return html
 
 
-def parse(element_html,  data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -248,7 +248,7 @@ def parse(element_html,  data):
         data['submitted_answers'][name] = pl.to_json(A)
 
 
-def grade(element_html,  data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
@@ -320,7 +320,7 @@ def grade(element_html,  data):
         data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}
 
 
-def test(element_html,  data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
