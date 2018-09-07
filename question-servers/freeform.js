@@ -163,7 +163,8 @@ module.exports = {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-            const pythonArgs = [elementHtml, index, data];
+            // FIXME
+            const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
@@ -194,7 +195,8 @@ module.exports = {
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            const pythonArgs = [elementHtml, index, data];
+            // FIXME
+            const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
