@@ -158,12 +158,11 @@ module.exports = {
         return path.join(element.directory, element.controller);
     },
 
-    elementFunction: async function(pc, fcn, elementName, elementHtml, index, data, context) {
+    elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-            // FIXME
             const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
@@ -181,7 +180,7 @@ module.exports = {
         });
     },
 
-    legacyElementFunction: function(pc, fcn, elementName, $, element, index, data, context, callback) {
+    legacyElementFunction: function(pc, fcn, elementName, $, element, data, context, callback) {
         let resolvedElement;
         try {
             resolvedElement = module.exports.resolveElement(elementName, context);
@@ -195,7 +194,6 @@ module.exports = {
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            // FIXME
             const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
@@ -211,8 +209,8 @@ module.exports = {
                 callback(null, ret, consoleLog);
             });
         } else {
-            // JS module
-            const jsArgs = [$, element, index, data];
+            // JS module (FIXME: delete this block of code in future)
+            const jsArgs = [$, element, null, data];
             controller[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
@@ -362,7 +360,6 @@ module.exports = {
         const renderedElementNames = [];
         const courseIssues = [];
         let fileData = Buffer.from('');
-        let index = 0;
         const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]);
 
         const visitNode = async (node) => {
@@ -379,7 +376,7 @@ module.exports = {
                 });
                 let ret_val, consoleLog;
                 try {
-                    [ret_val, consoleLog] = await module.exports.elementFunction(pc, phase, elementName, serializedNode, index, data, context);
+                    [ret_val, consoleLog] = await module.exports.elementFunction(pc, phase, elementName, serializedNode, data, context);
                 } catch (e) {
                     const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): ${e.toString()}`);
                     courseIssue.data = e.data;
@@ -426,7 +423,6 @@ module.exports = {
                         throw courseIssue;
                     }
                 }
-                index++;
             }
             const newChildren = [];
             for (let i = 0; i < (node.childNodes || []).length; i++) {
@@ -459,7 +455,6 @@ module.exports = {
         let fileData = Buffer.from('');
         const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]).values();
 
-        let index = 0;
         async.eachSeries(questionElements, (elementName, callback) => {
             async.eachSeries($(elementName).toArray(), (element, callback) => {
                 if (phase === 'render' && !_.includes(renderedElementNames, element)) {
@@ -468,7 +463,7 @@ module.exports = {
 
                 const elementFile = module.exports.getElementController(elementName, context);
 
-                module.exports.legacyElementFunction(pc, phase, elementName, $, element, index, data, context, (err, ret_val, consoleLog) => {
+                module.exports.legacyElementFunction(pc, phase, elementName, $, element, data, context, (err, ret_val, consoleLog) => {
                     if (err) {
                         const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
                         courseIssue.data = err.data;
@@ -521,7 +516,6 @@ module.exports = {
                         }
                     }
 
-                    index++;
                     callback(null);
                 });
             }, (err) => {
