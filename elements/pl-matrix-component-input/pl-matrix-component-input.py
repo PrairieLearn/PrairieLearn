@@ -182,7 +182,6 @@ def render(element_html, element_index, data):
                 'answer': True,
                 'label': label,
                 'latex_data': latex_data,
-                'element_index': element_index,
                 'uuid': pl.get_uuid()
             }
 
