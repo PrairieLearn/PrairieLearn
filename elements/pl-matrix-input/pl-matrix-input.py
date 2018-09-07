@@ -162,7 +162,6 @@ def render(element_html, element_index, data):
                 'label': label,
                 'matlab_data': matlab_data,
                 'python_data': python_data,
-                'element_index': element_index,
                 'uuid': pl.get_uuid()
             }
 
