@@ -39,7 +39,7 @@ allowed_languages = [
 ]
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html,  data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = ['language', 'no-highlight', 'source-file-name']
@@ -56,7 +56,7 @@ def prepare(element_html, element_index, data):
             raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
 
 
-def render(element_html, element_index, data):
+def render(element_html,  data):
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, 'language', None)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)

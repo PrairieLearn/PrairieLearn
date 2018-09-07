@@ -4,12 +4,12 @@ import chevron
 import os
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html,  data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory'])
 
 
-def render(element_html, element_index, data):
+def render(element_html,  data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
