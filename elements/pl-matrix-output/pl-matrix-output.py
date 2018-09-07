@@ -53,7 +53,6 @@ def render(element_html, element_index, data):
         'default_is_matlab': True,
         'matlab_data': matlab_data,
         'python_data': python_data,
-        'element_index': element_index,
         'uuid': pl.get_uuid()
     }
 
