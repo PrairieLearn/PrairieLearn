@@ -44,7 +44,7 @@ BEGIN
                 row_number() OVER (PARTITION BY z.id ORDER BY iq.points DESC) AS points_rank,
                 aq.max_points,
                 row_number() OVER (PARTITION BY z.id ORDER BY aq.max_points DESC) AS max_points_rank,
-                z.number_grade,
+                z.best_questions,
                 z.max_points AS zone_max_points
             FROM
                 instance_questions AS iq
@@ -67,7 +67,7 @@ BEGIN
             FROM
                 all_questions AS allq
             WHERE
-                ((allq.points_rank <= allq.number_grade) OR (allq.number_grade IS NULL))
+                ((allq.points_rank <= allq.best_questions) OR (allq.best_questions IS NULL))
         ), max_points_questions AS (
             SELECT
                 allq.qid,
@@ -77,7 +77,7 @@ BEGIN
             FROM
                 all_questions AS allq
             WHERE
-                ((allq.max_points_rank <= allq.number_grade) OR (allq.number_grade IS NULL))
+                ((allq.max_points_rank <= allq.best_questions) OR (allq.best_questions IS NULL))
         ), points_zones AS (
             SELECT
                 ptsq.zid,

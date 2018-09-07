@@ -19,8 +19,8 @@ SELECT
     aq.init_points,
     z.max_points AS zone_max_points,
     (z.max_points IS NOT NULL) AS zone_has_max_points,
-    z.number_grade AS zone_number_grade,
-    (z.number_grade IS NOT NULL) AS zone_has_number_grade
+    z.best_questions AS zone_best_questions,
+    (z.best_questions IS NOT NULL) AS zone_has_best_questions
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

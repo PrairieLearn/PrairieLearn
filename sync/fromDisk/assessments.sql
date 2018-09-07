@@ -127,14 +127,14 @@ WHERE
     AND number > $last_number;
 
 -- BLOCK insert_zone
-INSERT INTO zones ( assessment_id,  number,  title,  max_points, number_choose, number_grade)
-VALUES            ($assessment_id, $number, $title, $max_points, $number_choose, $number_grade)
+INSERT INTO zones ( assessment_id,  number,  title,  max_points, number_choose, best_questions)
+VALUES            ($assessment_id, $number, $title, $max_points, $number_choose, $best_questions)
 ON CONFLICT (number, assessment_id) DO UPDATE
 SET
     title = EXCLUDED.title,
     max_points = EXCLUDED.max_points,
     number_choose = EXCLUDED.number_choose,
-    number_grade = EXCLUDED.number_grade
+    best_questions = EXCLUDED.best_questions
 RETURNING id;
 
 -- BLOCK delete_excess_zones

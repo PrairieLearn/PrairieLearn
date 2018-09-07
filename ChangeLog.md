@@ -30,7 +30,7 @@
   * Add personal access token management (Nathan Walters).
   * Add `maxPoints` option to zones (Tim Bretl).
 
-  * Add `numberGrade` option to zones (Tim Bretl).
+  * Add `bestQuestions` option to zones (Tim Bretl).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 

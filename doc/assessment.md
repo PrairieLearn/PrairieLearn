@@ -86,7 +86,7 @@ An assessment is broken down in to a list of zones, like this:
 
 * If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
 
-* If a zone has `numberGrade`, then, of the questions in this zone, only `numberGrade` with the highest number of awarded points will count toward the total points.
+* If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
 
 ## Assessment and question instances and resetting assessments
 

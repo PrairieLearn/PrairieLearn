@@ -140,11 +140,11 @@
                   data-html="true"
                   data-content="Of the points that you are awarded for answering these questions, at most <%= instance_question.zone_max_points %> will count toward your total points."><i class="far fa-question-circle" aria-hidden="true"></i></a></span>
               <% } %>
-              <% if (instance_question.zone_has_number_grade) { %>
-               <span class="badge badge-secondary align-top">best <%= instance_question.zone_number_grade %> questions<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
+              <% if (instance_question.zone_has_best_questions) { %>
+               <span class="badge badge-secondary align-top">best <%= instance_question.zone_best_questions %> questions<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
                   data-toggle="popover" data-trigger="focus" data-container="body"
                   data-html="true"
-                  data-content="Of these questions, only the <%= instance_question.zone_number_grade %> with the highest number of awarded points will count toward your total points."><i class="far fa-question-circle" aria-hidden="true"></i></a></span>
+                  data-content="Of these questions, only the <%= instance_question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><i class="far fa-question-circle" aria-hidden="true"></i></a></span>
               <% } %>
             </th>
           </tr>
