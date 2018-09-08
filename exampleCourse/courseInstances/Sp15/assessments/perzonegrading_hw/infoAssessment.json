@@ -20,7 +20,7 @@
             "title": "Questions to test maxPoints",
             "maxPoints": 7,
             "questions": [{
-                    "id": "partialCredit6_no_partial",
+                    "id": "partialCredit4_v2",
                     "points": 4,
                     "maxPoints": 8
                 }

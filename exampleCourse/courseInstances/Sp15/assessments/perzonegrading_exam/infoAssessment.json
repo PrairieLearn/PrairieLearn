@@ -22,7 +22,7 @@
             "title": "Questions to test maxPoints",
             "maxPoints": 5,
             "questions": [{
-                    "id": "partialCredit6_no_partial",
+                    "id": "partialCredit1",
                     "points": [10, 5, 1]
                 }
             ]
@@ -32,15 +32,15 @@
             "bestQuestions": 2,
             "maxPoints": 15,
             "questions": [{
-                    "id": "partialCredit1",
+                    "id": "partialCredit2",
                     "points": [10, 5, 1]
                 },
                 {
-                    "id": "partialCredit2",
+                    "id": "partialCredit3",
                     "points": [15, 10, 5, 1]
                 },
                 {
-                    "id": "partialCredit3",
+                    "id": "partialCredit4_v2",
                     "points": [20, 15, 10, 5, 1]
                 }
             ]

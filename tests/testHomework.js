@@ -14,7 +14,6 @@ var helperQuestion = require('./helperQuestion');
 
 const locals = {};
 
-// sorted alphabetically by qid
 const questionsArray = [
     {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
     {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
