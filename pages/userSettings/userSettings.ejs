@@ -7,18 +7,46 @@
     <%- include('../partials/navbar', {navPage: 'user_settings'}); %>
     <div id="content" class="container">
       <h1 class="mb-4">Settings</h1>
-      <h3>Personal Access Tokens</h3>
-      <p>You can generate tokens in order to access the PrairieLearn API.</p>
-      <ul class="list-group">
-        <li class="list-group-item d-flex align-items-center">
-          <span class="mr-3">My access token</span>
-          <button type="button" class="btn btn-outline-danger ml-auto">Delete</button>
-        </li>
-        <li class="list-group-item d-flex align-items-center">
-          <span class="mr-3">My other access token</span>
-          <button type="button" class="btn btn-outline-danger ml-auto">Delete</button>
-        </li>
-      </ul>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Personal Access Tokens
+          <button id="generateTokenButton"
+            type="button" class="btn btn-light btn-sm ml-auto"
+            data-toggle="popover" data-container="body"
+            data-html="true" data-placement="auto" title="Generate new token"
+            data-content="<%= include('generateTokenForm', {id: 'generateTokenButton'}) %>"
+            data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Generate new token</span>
+          </a>
+        </div>
+        <div class="card-body">
+          <p class="mb-0">You can generate tokens in order to access the PrairieLearn API.</p>
+          <% if (newAccessToken !== undefined) { %>
+            <div class="alert alert-primary mt-3" role="alert">
+              New access token created! Be sure to copy it now, as you won't be able to see it later.
+            </div>
+            <div class="alert alert-success mb-0" role="alert">
+              <%= newAccessToken %>
+            </div>
+          <% } %>
+        </div>
+        <ul class="list-group list-group-flush">
+          <% if (accessTokens.length === 0) { %>
+          <li class="list-group-item">
+            <span class="text-muted">You don't currently have any access tokens</span>
+          </li>
+          <% } else { %>
+          <% accessTokens.forEach(function (accessToken) { %>
+          <li class="list-group-item d-flex align-items-center">
+            <span class="mr-3"><%= accessToken.name %></span>
+            <span><%= accessToken.token %></span>
+            <button type="button" class="btn btn-outline-danger ml-auto">Delete</button>
+          </li>
+          <% })}; %>
+        </ul>
+      </div>
     </div>
   </body>
 </html>
