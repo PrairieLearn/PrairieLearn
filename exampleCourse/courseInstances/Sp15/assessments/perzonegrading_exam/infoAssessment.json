@@ -28,8 +28,9 @@
             ]
         },
         {
-            "title": "Questions to test bestQuestions",
+            "title": "Questions to test maxPoints and bestQuestions together",
             "bestQuestions": 2,
+            "maxPoints": 15,
             "questions": [{
                     "id": "partialCredit1",
                     "points": [10, 5, 1]
