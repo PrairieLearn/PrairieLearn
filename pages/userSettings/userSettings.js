@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const async = require('async');
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
@@ -10,12 +11,6 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// Poor man's flash messages: we'll maintain a mapping from hashes to tokens
-// between the POST that creates the token and the GET that renders it.
-// Immediately after rendering it on the GET request, we'll delete it from
-// this dict.
-const hashTokenMap = {};
-
 router.post('/', (req, res, next) => {
     if (req.body.__action === 'token_generate') {
         const name = req.body.token_name;
@@ -25,12 +20,13 @@ router.post('/', (req, res, next) => {
         const params = {
             user_id: res.locals.authn_user.user_id,
             name,
+            // The token will only be persisted until the next page render
+            // After that, we'll remove it from the database
+            token,
             token_hash: tokenHash,
         };
         sqldb.queryOneRow(sql.insert_access_token, params, (err) => {
             if (ERR(err, next)) return;
-            // If this was successful, persist the token temporarily
-            hashTokenMap[tokenHash] = token;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action === 'token_delete') {
@@ -56,17 +52,21 @@ router.get('/', (req, res, next) => {
 
         // If the raw tokens are present for any of these hashes, include them
         // in this response and then delete them from memory
-        let newAccessToken;
+        const newAccessTokens = [];
         result.rows.forEach((row) => {
-            if (row.token_hash in hashTokenMap) {
-                newAccessToken = hashTokenMap[row.token_hash];
-                // delete hashTokenMap[row.token_hash];
+            if (row.token) {
+                newAccessTokens.push(row.token);
             }
         });
 
         res.locals.accessTokens = result.rows;
-        res.locals.newAccessToken = newAccessToken;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.locals.newAccessTokens = newAccessTokens;
+
+        // Now that we've rendered these tokens, remove any tokens from the DB
+        sqldb.query(sql.clear_tokens_for_user, params, (err) => {
+            if (ERR(err, next)) return;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 
