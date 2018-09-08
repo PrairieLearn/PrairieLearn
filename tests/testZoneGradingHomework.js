@@ -204,8 +204,6 @@ describe('Zone grading homework assessment', function() {
         });
     };
 
-    startAssessment();
-
     zoneGradingTests.forEach(function(zoneGradingTest, iZoneGradingTest) {
 
         describe(`zone grading test #${iZoneGradingTest+1}`, function() {

@@ -24,4 +24,4 @@ FROM
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     JOIN questions AS q ON (q.id = aq.question_id)
 ORDER BY
-    aq.number;
+    q.qid;
