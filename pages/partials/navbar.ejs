@@ -55,7 +55,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
             <%= displayedName %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="#">Settings</a>
+            <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
             <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>

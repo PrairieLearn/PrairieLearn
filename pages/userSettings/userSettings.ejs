@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'user_settings'}); %>
+    <div id="content" class="container">
+      <h1 class="mb-4">Settings</h1>
+      <h3>Personal Access Tokens</h3>
+      <p>You can generate tokens in order to access the PrairieLearn API.</p>
+      <ul class="list-group">
+        <li class="list-group-item d-flex align-items-center">
+          <span class="mr-3">My access token</span>
+          <button type="button" class="btn btn-outline-danger ml-auto">Delete</button>
+        </li>
+        <li class="list-group-item d-flex align-items-center">
+          <span class="mr-3">My other access token</span>
+          <button type="button" class="btn btn-outline-danger ml-auto">Delete</button>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
