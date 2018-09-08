@@ -1,17 +1,23 @@
 -- BLOCK select_access_tokens
 SELECT
-    a.id,
-    a.name,
-    a.token_hash,
-    format_date_full_compact(a.created_at, config_select('display_timezone')) AS created_at
+    id,
+    name,
+    token_hash,
+    format_date_full_compact(created_at, config_select('display_timezone')) AS created_at
 FROM
-    access_tokens as a
+    access_tokens
 WHERE
-    a.user_id = $user_id
-ORDER BY a.created_at DESC;
+    user_id = $user_id
+ORDER BY created_at DESC;
 
 -- BLOCK insert_access_token
-INSERT INTO access_tokens AS a
+INSERT INTO access_tokens
     (name, user_id, token_hash)
 VALUES
     ($name, $user_id, $token_hash);
+
+-- BLOCK delete_access_token
+DELETE FROM access_tokens
+WHERE
+    user_id = $user_id
+    AND id = $id;

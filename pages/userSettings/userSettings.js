@@ -17,7 +17,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const hashTokenMap = {};
 
 router.post('/', (req, res, next) => {
-    if (req.body.__action === 'generate_token') {
+    if (req.body.__action === 'token_generate') {
         const name = req.body.token_name;
         const token = uuidv4();
         const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
@@ -33,6 +33,17 @@ router.post('/', (req, res, next) => {
             hashTokenMap[tokenHash] = token;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.__action === 'token_delete') {
+        const params = {
+            user_id: res.locals.authn_user.user_id,
+            id: req.body.token_id,
+        };
+        sqldb.query(sql.delete_access_token, params, (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else {
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 
