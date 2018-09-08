@@ -25,6 +25,8 @@
 
   * Add docs and two optional attributes, `display` and `label`, to `pl-symbolic-input` (Tim Bretl).
 
+  * Add personal access token management (Nathan Walters).
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
