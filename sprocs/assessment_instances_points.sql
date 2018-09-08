@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS assessment_instances_points(bigint,integer,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_points(bigint);
 DROP FUNCTION IF EXISTS zones_points(BIGINT);
 DROP FUNCTION IF EXISTS zones_max_points(BIGINT);
 
@@ -8,9 +9,9 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS TABLE (
         zid BIGINT,
         points DOUBLE PRECISION,
-        qids BIGINT[],
+        iq_ids BIGINT[],
         max_points DOUBLE PRECISION,
-        max_qids BIGINT[]
+        max_iq_ids BIGINT[]
     ) AS $$
 DECLARE
     assessment_type enum_assessment_type;
@@ -38,7 +39,7 @@ BEGIN
     RETURN QUERY
         WITH all_questions AS (
             SELECT
-                iq.id AS qid,
+                iq.id AS iq_id,
                 z.id AS zid,
                 iq.points,
                 row_number() OVER (PARTITION BY z.id ORDER BY iq.points DESC) AS points_rank,
@@ -60,7 +61,7 @@ BEGIN
                 AND ((aq.deleted_at IS NULL) OR (assessment_type = 'Exam'))
         ), points_questions AS (
             SELECT
-                allq.qid,
+                allq.iq_id,
                 allq.zid,
                 allq.points,
                 allq.zone_max_points
@@ -70,7 +71,7 @@ BEGIN
                 ((allq.points_rank <= allq.best_questions) OR (allq.best_questions IS NULL))
         ), max_points_questions AS (
             SELECT
-                allq.qid,
+                allq.iq_id,
                 allq.zid,
                 allq.max_points,
                 allq.zone_max_points
@@ -82,7 +83,7 @@ BEGIN
             SELECT
                 ptsq.zid,
                 LEAST(sum(ptsq.points), ptsq.zone_max_points) AS points,
-                array_agg(ptsq.qid) AS qids
+                array_agg(ptsq.iq_id) AS iq_ids
             FROM
                 points_questions AS ptsq
             GROUP BY
@@ -92,7 +93,7 @@ BEGIN
             SELECT
                 ptsq.zid,
                 LEAST(sum(ptsq.max_points), ptsq.zone_max_points) AS max_points,
-                array_agg(ptsq.qid) AS max_qids
+                array_agg(ptsq.iq_id) AS max_iq_ids
             FROM
                 max_points_questions AS ptsq
             GROUP BY
@@ -102,9 +103,9 @@ BEGIN
         SELECT
             pz.zid,
             pz.points,
-            pz.qids,
+            pz.iq_ids,
             mpz.max_points,
-            mpz.max_qids
+            mpz.max_iq_ids
         FROM
             points_zones AS pz
             INNER JOIN max_points_zones AS mpz USING (zid);

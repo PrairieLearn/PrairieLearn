@@ -61,11 +61,11 @@ BEGIN
 
     WITH
         t_points_by_zone AS (SELECT * FROM assessment_instances_points(assessment_instance_id)),
-        t_used_for_grade AS (SELECT unnest(qids) AS qids FROM t_points_by_zone),
-        v_used_for_grade AS (SELECT array_agg(qids) AS qids FROM t_used_for_grade),
+        t_used_for_grade AS (SELECT unnest(iq_ids) AS iq_ids FROM t_points_by_zone),
+        v_used_for_grade AS (SELECT array_agg(iq_ids) AS iq_ids FROM t_used_for_grade),
         v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone)
     SELECT
-        v_total_points.total_points, v_used_for_grade.qids
+        v_total_points.total_points, v_used_for_grade.iq_ids
     INTO
         total_points, instance_questions_used_for_grade
     FROM
