@@ -45,7 +45,7 @@ const zoneGradingTests = [
         {qid: 'partialCredit1',     action: 'grade',    score: 100, sub_points: 10, sub_total_points: 3},
         {qid: 'partialCredit1',     action: 'grade',    score: 100, sub_points: 10, sub_total_points: 10},
         {qid: 'partialCredit2',     action: 'grade',    score: 100, sub_points: 15, sub_total_points: 0},
-    ]
+    ],
 ];
 
 describe('Zone grading homework assessment', function() {

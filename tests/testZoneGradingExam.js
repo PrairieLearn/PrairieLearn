@@ -1,13 +1,5 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
-
-var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -42,7 +34,7 @@ const zoneGradingTests = [
         {qid: 'partialCredit4_v2',  action: 'grade',    score: 0, sub_points: 0, sub_total_points: 0},
         {qid: 'partialCredit4_v2',  action: 'grade',    score: 100, sub_points: 5, sub_total_points: 5},
         {qid: 'partialCredit3',     action: 'grade',    score: 100, sub_points: 10, sub_total_points: 4},
-    ]
+    ],
 ];
 
 describe('Zone grading exam assessment', function() {
@@ -50,8 +42,6 @@ describe('Zone grading exam assessment', function() {
 
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
-
-    var elemList;
 
     zoneGradingTests.forEach(function(zoneGradingTest, iZoneGradingTest) {
 
