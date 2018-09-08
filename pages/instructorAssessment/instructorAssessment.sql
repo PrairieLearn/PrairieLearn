@@ -51,7 +51,11 @@ SELECT
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
     coalesce(ic.open_issue_count, 0) AS open_issue_count,
-    question_scores.question_score AS avg_question_score_perc
+    question_scores.question_score AS avg_question_score_perc,
+    z.max_points AS zone_max_points,
+    (z.max_points IS NOT NULL) AS zone_has_max_points,
+    z.best_questions AS zone_best_questions,
+    (z.best_questions IS NOT NULL) AS zone_has_best_questions
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

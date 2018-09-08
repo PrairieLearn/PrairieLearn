@@ -100,7 +100,15 @@
             <% instance_questions.forEach(function(instance_question, i_instance_question) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th colspan="4"><%= instance_question.zone_title %></th>
+                <th colspan="4">
+                  <%= instance_question.zone_title %>
+                  <% if (instance_question.zone_has_max_points) { %>
+                      (maximum <%= instance_question.zone_max_points %> points)
+                  <% } %>
+                  <% if (instance_question.zone_has_best_questions) { %>
+                      (best <%= instance_question.zone_best_questions %> questions)
+                  <% } %>
+                </th>
             </tr>
             <% } %>
             <tr>
