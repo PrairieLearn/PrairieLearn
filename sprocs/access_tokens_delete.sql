@@ -15,7 +15,7 @@ BEGIN
         a.* INTO old_row;
 
     INSERT INTO audit_logs
-        (user_id, table_name,
+        (authn_user_id, table_name,
         row_id,      action,  old_state)
     VALUES
         (user_id, 'access_tokens',
