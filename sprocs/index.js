@@ -140,6 +140,8 @@ module.exports = {
             'assessment_questions_calculate_stats.sql',
             'instance_questions_calculate_stats.sql',
             'issues_select_with_filter.sql',
+            'access_tokens_insert.sql',
+            'access_tokens_delete.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

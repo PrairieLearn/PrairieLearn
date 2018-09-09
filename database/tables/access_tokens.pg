@@ -1,6 +1,7 @@
 columns
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('access_tokens_id_seq'::regclass)
+    last_used_at: timestamp with time zone
     name: text not null
     token: text
     token_hash: text not null

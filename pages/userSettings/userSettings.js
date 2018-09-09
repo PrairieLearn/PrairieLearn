@@ -16,24 +16,24 @@ router.post('/', (req, res, next) => {
         const token = uuidv4();
         const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-        const params = {
-            user_id: res.locals.authn_user.user_id,
+        const params = [
+            res.locals.authn_user.user_id,
             name,
             // The token will only be persisted until the next page render
             // After that, we'll remove it from the database
             token,
-            token_hash: tokenHash,
-        };
-        sqldb.queryOneRow(sql.insert_access_token, params, (err) => {
+            tokenHash,
+        ];
+        sqldb.call('access_tokens_insert', params, (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action === 'token_delete') {
-        const params = {
-            user_id: res.locals.authn_user.user_id,
-            id: req.body.token_id,
-        };
-        sqldb.query(sql.delete_access_token, params, (err) => {
+        const params = [
+            req.body.token_id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('access_tokens_delete', params, (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
