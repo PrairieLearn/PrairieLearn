@@ -23,6 +23,8 @@
 
   * Add partial credit option to `pl-checkbox` element (Mariana Silva).
 
+  * Add docs and two optional attributes, `display` and `label`, to `pl-symbolic-input` (Tim Bretl).
+  
   * Add `prevent-select` attribute to `pl-code` element (Nathan Walters).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).

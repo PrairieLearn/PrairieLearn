@@ -122,6 +122,21 @@ Attribute | Type | Default | Description
 `remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 
+## `pl-symbolic-input` element
+
+```html
+<pl-sumbolic-input answers-name="ans"></pl-symbolic-input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
+`display` | "block" or "inline" | "inline" | How to display the input field.
+`variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
+
 ## `pl-matrix-input` element
 
 ```html
