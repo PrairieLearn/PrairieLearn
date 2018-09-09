@@ -4,7 +4,8 @@ SELECT
     name,
     token,
     token_hash,
-    format_date_full_compact(created_at, config_select('display_timezone')) AS created_at
+    format_date_full_compact(created_at, config_select('display_timezone')) AS created_at,
+    format_date_full_compact(last_used_at, config_select('display_timezone')) AS last_used_at
 FROM
     access_tokens
 WHERE
