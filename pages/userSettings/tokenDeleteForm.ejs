@@ -1,0 +1,10 @@
+<form name="token-delete-form" method="POST">
+  <input type="hidden" name="__action" value="token_delete">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="token_id" value="<%= token_id %>">
+  <p>Once you delete this token, any applications using it will no longer be able to access the API. You cannot undo this action.</p>
+  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
+    Cancel
+  </button>
+  <button type="submit" class="btn btn-danger">Delete token</button>
+</form>
