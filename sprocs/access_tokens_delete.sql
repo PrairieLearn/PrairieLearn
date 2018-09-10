@@ -15,10 +15,10 @@ BEGIN
         a.* INTO old_row;
 
     INSERT INTO audit_logs
-        (authn_user_id, table_name,
-        row_id,      action,  old_state)
+        (authn_user_id, user_id, table_name,
+        row_id,     action,   old_state)
     VALUES
-        (user_id, 'access_tokens',
+        (user_id,       user_id, 'access_tokens',
         old_row.id, 'delete', to_jsonb(old_row) - 'token');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
