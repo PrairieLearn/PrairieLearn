@@ -24,7 +24,7 @@
   * Add partial credit option to `pl-checkbox` element (Mariana Silva).
 
   * Add docs and two optional attributes, `display` and `label`, to `pl-symbolic-input` (Tim Bretl).
-  
+
   * Add `prevent-select` attribute to `pl-code` element (Nathan Walters).
 
   * Add personal access token management (Nathan Walters).
@@ -60,6 +60,8 @@
   * Fix docs for `clientServerFiles` template variables (Rahul Rameshbabu).
 
   * Fix bug with rendering when the render cache is disabled (Nathan Walters).
+
+  * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
