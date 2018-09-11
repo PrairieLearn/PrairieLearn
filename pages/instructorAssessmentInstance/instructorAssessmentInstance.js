@@ -125,8 +125,6 @@ router.post('/', (req, res, next) => {
     } else if (req.body.__action == 'edit_question_score_perc') {
         const params = [
             req.body.instance_question_id,
-        let params = [
-            res.locals.assessment_instance.id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
         ];
