@@ -141,8 +141,6 @@ module.exports = {
             'issues_select_with_filter.sql',
             'access_tokens_insert.sql',
             'access_tokens_delete.sql',
-            'zones_points.sql',
-            'zones_max_points.sql',
             'assessment_instances_points.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

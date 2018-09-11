@@ -28,6 +28,7 @@
   * Add `prevent-select` attribute to `pl-code` element (Nathan Walters).
 
   * Add personal access token management (Nathan Walters).
+
   * Add `maxPoints` option to zones (Tim Bretl).
 
   * Add `bestQuestions` option to zones (Tim Bretl).
@@ -65,7 +66,7 @@
   * Fix bug with rendering when the render cache is disabled (Nathan Walters).
 
   * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
-  
+
   * Fig bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
