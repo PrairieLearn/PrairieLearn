@@ -117,10 +117,18 @@ class CheckVariables(ast.NodeVisitor):
         self.variables = variables
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
-            if node.id not in self.variables:
-                node = get_parent_with_location(node)
-                raise HasInvalidVariableError(node.col_offset, node.id)
+            if not is_name_of_function(node):
+                if node.id not in self.variables:
+                    node = get_parent_with_location(node)
+                    raise HasInvalidVariableError(node.col_offset, node.id)
         self.generic_visit(node)
+
+def is_name_of_function(node):
+    # The node is the name of a function if all of the following are true:
+    # 1) it has type ast.Name
+    # 2) its parent has type ast.Call
+    # 3) it is not in the list of parent's args
+    return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)
 
 def get_parent_with_location(node):
     if hasattr(node, 'col_offset'):
@@ -153,17 +161,7 @@ def evaluate(expr, locals_for_eval={}):
     CheckFunctions(locals_for_eval['functions']).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    #
-    #   It is tricky to distinguish between ast.Name nodes that actually contain
-    #   the names of variables and those that contain other things (e.g., the
-    #   names of functions). To avoid having to think about this, we checked
-    #   the names of functions first, and are now checking *both* the names
-    #   of functions *and* the names of variables. We know that, at this point,
-    #   any names not in the whitelist will be names of invalid variables only.
-    #
-    #   This implementation could certainly be improved.
-    #
-    CheckVariables({**locals_for_eval['functions'], **locals_for_eval['variables']}).visit(root)
+    CheckVariables(locals_for_eval['variables']).visit(root)
 
     # Disallow AST nodes that are not in whitelist
     #

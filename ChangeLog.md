@@ -62,6 +62,8 @@
   * Fix bug with rendering when the render cache is disabled (Nathan Walters).
 
   * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
+  
+  * Fig bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
