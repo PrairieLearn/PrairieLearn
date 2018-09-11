@@ -234,7 +234,7 @@ def parse(element_html, data):
     # Make sure we can parse the string again, with the same set of variables
     try:
         # Convert safely to sympy
-        a_sub_doubleparsed = phs.convert_string_to_sympy(a_sub_string, variables)
+        phs.convert_string_to_sympy(a_sub_string, variables)
 
         # Finally, store the result
         data['submitted_answers'][name] = a_sub_string
