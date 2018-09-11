@@ -5,7 +5,7 @@ import math
 import chevron
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
@@ -87,7 +87,7 @@ def prepare(element_html, element_index, data):
     data['correct_answers'][name] = correct_answer_list
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
@@ -290,7 +290,7 @@ def render(element_html, element_index, data):
     return html
 
 
-def parse(element_html, element_index, data):
+def parse(element_html, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -324,7 +324,7 @@ def parse(element_html, element_index, data):
             return
 
 
-def grade(element_html, element_index, data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
@@ -357,7 +357,7 @@ def grade(element_html, element_index, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-def test(element_html, element_index, data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)

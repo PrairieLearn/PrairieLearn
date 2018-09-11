@@ -16,7 +16,7 @@ def get_variables_list(variables_string):
         return []
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display']
@@ -30,7 +30,7 @@ def prepare(element_html, element_index, data):
         data['correct-answers'][name] = correct_answer
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
@@ -150,7 +150,7 @@ def render(element_html, element_index, data):
     return html
 
 
-def parse(element_html, element_index, data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
@@ -222,7 +222,7 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
 
 
-def grade(element_html, element_index, data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -256,7 +256,7 @@ def grade(element_html, element_index, data):
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
 
 
-def test(element_html, element_index, data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)

@@ -16,7 +16,7 @@
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
 import sys, os, json, importlib, copy, base64, io, matplotlib
-
+from inspect import signature
 
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
@@ -69,8 +69,16 @@ with open(3, 'w', encoding='utf-8') as outf:
 
         # check whether we have the desired fcn in the module
         if hasattr(mod, fcn):
-            # call the desired function in the loaded module
+            # get the desired function in the loaded module
             method = getattr(mod, fcn)
+
+            # check if the desired function is a legacy element function - if
+            # so, we add an argument for element_index
+            arg_names = list(signature(method).parameters.keys())
+            if len(arg_names) == 3 and arg_names[0] == 'element_html' and arg_names[1] == 'element_index' and arg_names[2] == 'data':
+                args.insert(1, None)
+
+            # call the desired function in the loaded module
             val = method(*args)
 
             if fcn=="file":
