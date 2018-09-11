@@ -38,6 +38,10 @@
             container: 'body',
             template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
+
+        $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, '#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]']);
+        });
     });
 </script>
 <span id="pl-symbolic-input-submission-{{uuid}}">

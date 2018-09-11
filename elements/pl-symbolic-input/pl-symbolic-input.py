@@ -162,6 +162,7 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    # Parse the submitted answer and put the result in a string
     try:
         # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
         # for exponentiation. In python, only the latter can be used.
@@ -171,54 +172,75 @@ def parse(element_html, data):
         a_sub = a_sub.strip()
 
         # Convert safely to sympy
-        a_sub = phs.convert_string_to_sympy(a_sub, variables)
+        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables)
 
         # Store result as a string.
-        data['submitted_answers'][name] = str(a_sub)
+        a_sub_string = str(a_sub_parsed)
     except phs.HasFloatError as err:
         s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasComplexError as err:
         s = 'Your answer contains the complex number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasInvalidExpressionError as err:
         s = 'Your answer has an invalid expression. '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasInvalidFunctionError as err:
         s = 'Your answer calls an invalid function "' + err.text + '". '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasInvalidVariableError as err:
         s = 'Your answer refers to an invalid variable "' + err.text + '". '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasParseError as err:
         s = 'Your answer has a syntax error. '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasEscapeError as err:
         s = 'Your answer must not contain the character "\\". '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except phs.HasCommentError as err:
         s = 'Your answer must not contain the character "#". '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
+        return
     except Exception as err:
         data['format_errors'][name] = 'Invalid format.'
+        data['submitted_answers'][name] = None
+        return
+
+    # Make sure we can parse the string again, with the same set of variables
+    try:
+        # Convert safely to sympy
+        a_sub_doubleparsed = phs.convert_string_to_sympy(a_sub_string, variables)
+
+        # Finally, store the result
+        data['submitted_answers'][name] = a_sub_string
+    except Exception as err:
+        s = 'Your answer was simplified to this, which contains an invalid expression: $${:s}$$'.format(sympy.latex(a_sub_parsed))
+        data['format_errors'][name] = s
         data['submitted_answers'][name] = None
 
 
