@@ -60,6 +60,9 @@ def worker_loop():
             cwd = inp['cwd']
             paths = inp['paths']
 
+            # "restart" is a special fake function name that causes
+            # the forked worker to exit, returning control to the
+            # zygote parent process
             if file == None and fcn == 'restart':
                 json_outp = try_dumps({"present": True, "val": "success"}, allow_nan=False)
                 outf.write(json_outp)
