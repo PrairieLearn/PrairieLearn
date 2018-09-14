@@ -19,7 +19,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -28,6 +28,10 @@ def prepare(element_html, data):
         if name in data['correct-answers']:
             raise Exception('duplicate correct-answers variable name: %s' % name)
         data['correct-answers'][name] = correct_answer
+
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
+    if not (imaginary_unit == 'i' or imaginary_unit == 'j'):
+        raise Exception('imaginary-unit-for-display must be either i or j')
 
 
 def render(element_html, data):
@@ -38,6 +42,7 @@ def render(element_html, data):
     variables = get_variables_list(variables_string)
     display = pl.get_string_attrib(element, 'display', 'inline')
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -111,6 +116,7 @@ def render(element_html, data):
                 a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
             else:
                 a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+            a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params['a_sub'] = sympy.latex(a_sub)
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -149,6 +155,7 @@ def render(element_html, data):
                 a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
             else:
                 a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+            a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params = {
                 'answer': True,
                 'label': label,
@@ -170,6 +177,7 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -192,7 +200,8 @@ def parse(element_html, data):
 
         # If complex numbers are not allowed, raise error if expression has the imaginary unit
         if (not allow_complex) and (a_sub_parsed.has(sympy.I)):
-            s = 'Your answer was simplified to this, which contains a complex number (denoted $i$): $${:s}$$'.format(sympy.latex(a_sub_parsed))
+            a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+            s = 'Your answer was simplified to this, which contains a complex number (denoted ${:s}$): $${:s}$$'.format(imaginary_unit, sympy.latex(a_sub_parsed))
             data['format_errors'][name] = s
             data['submitted_answers'][name] = None
             return
