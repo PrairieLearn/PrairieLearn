@@ -209,6 +209,8 @@ def parse(element_html, data):
     except phs.HasComplexError as err:
         s = 'Your answer contains the complex number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
+        if allow_complex:
+            s += 'To include a complex number in your expression, write it as the product of an integer with the imaginary unit <code>i</code> or <code>j</code>. '
         s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
