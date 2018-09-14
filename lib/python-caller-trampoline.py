@@ -24,12 +24,6 @@ saved_path = copy.copy(sys.path)
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
 import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
 
-# do a pre-evaluation
-with open('../elements/pl_matrix_input/pl_matrix_input.py') as inf:
-    contents = inf.read()
-    mod = {}
-    exec(contents, mod)
-
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
