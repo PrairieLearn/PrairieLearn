@@ -83,16 +83,14 @@ module.exports = {
                 });
             },
             function(callback) {
-<<<<<<< HEAD
+                debug('before(): initialize cache');
                 cache.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
-=======
                 debug('before(): initialize server jobs');
->>>>>>> fork persistent python processes
                 serverJobs.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
