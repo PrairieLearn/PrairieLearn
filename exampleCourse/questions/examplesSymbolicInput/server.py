@@ -7,3 +7,4 @@ def generate(data):
     z = m * (sympy.cos(a) + sympy.I * sympy.sin(a))
     data['correct_answers']['x'] = pl.to_json(x)
     data['correct_answers']['z'] = pl.to_json(z)
+    data['correct_answers']['I'] = 'V / R'
