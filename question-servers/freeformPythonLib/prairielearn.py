@@ -4,6 +4,8 @@ import numpy as np
 import uuid
 import sympy
 from python_helper_sympy import convert_string_to_sympy
+from python_helper_sympy import sympy_to_json
+from python_helper_sympy import json_to_sympy
 import re
 
 
@@ -36,8 +38,7 @@ def to_json(v):
         elif np.iscomplexobj(v):
             return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}, '_dtype': str(v.dtype)}
     elif isinstance(v, sympy.Expr):
-        s = [str(a) for a in v.free_symbols]
-        return {'_type': 'sympy', '_value': str(v), '_variables': s}
+        return sympy_to_json(v)
     elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -97,10 +98,7 @@ def from_json(v):
                 else:
                     raise Exception('variable of type complex_ndarray should have value with real and imaginary pair')
             elif v['_type'] == 'sympy':
-                if ('_value' in v) and ('_variables' in v):
-                    return convert_string_to_sympy(v['_value'], v['_variables'])
-                else:
-                    raise Exception('variable of type sympy should have value and variables')
+                return json_to_sympy(v)
             elif v['_type'] == 'sympy_matrix':
                 if ('_value' in v) and ('_variables' in v) and ('_shape' in v):
                     value = v['_value']

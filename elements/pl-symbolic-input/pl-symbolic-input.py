@@ -19,7 +19,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -37,6 +37,7 @@ def render(element_html, data):
     variables_string = pl.get_string_attrib(element, 'variables', None)
     variables = get_variables_list(variables_string)
     display = pl.get_string_attrib(element, 'display', 'inline')
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -45,7 +46,13 @@ def render(element_html, data):
         operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
         constants = ', '.join(['pi'])
 
-        info_params = {'format': True, 'variables': variables_string, 'operators': operators, 'constants': constants}
+        info_params = {
+            'format': True,
+            'variables': variables_string,
+            'operators': operators,
+            'constants': constants,
+            'allow_complex': allow_complex,
+        }
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
@@ -60,7 +67,8 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
-            'uuid': pl.get_uuid()
+            'uuid': pl.get_uuid(),
+            'allow_complex': allow_complex,
         }
 
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -98,7 +106,11 @@ def render(element_html, data):
         }
         if parse_error is None:
             a_sub = data['submitted_answers'][name]
-            a_sub = phs.convert_string_to_sympy(a_sub, variables)
+            if isinstance(a_sub, str):
+                # this is for backward-compatibility
+                a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+            else:
+                a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
             html_params['a_sub'] = sympy.latex(a_sub)
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -130,10 +142,13 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'answer':
-        a_tru = pl.from_json(data['correct_answers'].get(name, None))
+        a_tru = data['correct_answers'].get(name, None)
         if a_tru is not None:
             if isinstance(a_tru, str):
-                a_tru = phs.convert_string_to_sympy(a_tru, variables)
+                # this is so instructors can specify the true answer simply as a string
+                a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+            else:
+                a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
             html_params = {
                 'answer': True,
                 'label': label,
@@ -154,6 +169,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -172,10 +188,17 @@ def parse(element_html, data):
         a_sub = a_sub.strip()
 
         # Convert safely to sympy
-        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables)
+        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
 
-        # Store result as a string.
-        a_sub_string = str(a_sub_parsed)
+        # If complex numbers are not allowed, raise error if expression has the imaginary unit
+        if (not allow_complex) and (a_sub_parsed.has(sympy.I)):
+            s = 'Your answer was simplified to this, which contains a complex number (denoted $i$): $${:s}$$'.format(sympy.latex(a_sub_parsed))
+            data['format_errors'][name] = s
+            data['submitted_answers'][name] = None
+            return
+
+        # Store result as json.
+        a_sub_json = phs.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
     except phs.HasFloatError as err:
         s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
@@ -231,13 +254,13 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
-    # Make sure we can parse the string again, with the same set of variables
+    # Make sure we can parse the json again
     try:
         # Convert safely to sympy
-        phs.convert_string_to_sympy(a_sub_string, variables)
+        phs.json_to_sympy(a_sub_json, allow_complex=allow_complex)
 
         # Finally, store the result
-        data['submitted_answers'][name] = a_sub_string
+        data['submitted_answers'][name] = a_sub_json
     except Exception as err:
         s = 'Your answer was simplified to this, which contains an invalid expression: $${:s}$$'.format(sympy.latex(a_sub_parsed))
         data['format_errors'][name] = s
@@ -247,13 +270,13 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-
-    # Get weight
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = pl.from_json(data['correct_answers'].get(name, None))
+    a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
         return
 
@@ -263,11 +286,19 @@ def grade(element_html, data):
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         return
 
-    # Parse both correct and submitted answer (will throw an error on fail).
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
+    # Parse true answer
     if isinstance(a_tru, str):
-        a_tru = phs.convert_string_to_sympy(a_tru, variables)
-    a_sub = phs.convert_string_to_sympy(a_sub, variables)
+        # this is so instructors can specify the true answer simply as a string
+        a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+    else:
+        a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+
+    # Parse submitted answer
+    if isinstance(a_sub, str):
+        # this is for backward-compatibility
+        a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+    else:
+        a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
 
     # Check equality
     correct = a_tru.equals(a_sub)

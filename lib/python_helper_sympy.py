@@ -2,6 +2,36 @@ import sympy
 import ast
 import sys
 
+# Create a new instance of this class to access the member dictionaries. This
+# is to avoid accidentally modifying these dictionaries.
+class _Constants:
+    def __init__(self):
+        self.helpers = {
+            '_Integer': sympy.Integer,
+        }
+        self.variables = {
+            'pi': sympy.pi,
+        }
+        self.hidden_variables = {
+            '_Exp1': sympy.E,
+        }
+        self.complex_variables = {
+            'i': sympy.I,
+            'j': sympy.I,
+        }
+        self.hidden_complex_variables = {
+            '_ImaginaryUnit': sympy.I,
+        }
+        self.functions = {
+            # These are shown to the student
+            'cos': sympy.cos,
+            'sin': sympy.sin,
+            'tan': sympy.tan,
+            'exp': sympy.exp,
+            'log': sympy.log,
+            'sqrt': sympy.sqrt,
+        }
+
 # Safe evaluation of user input to convert from string to sympy expression.
 #
 # Adapted from:
@@ -187,10 +217,22 @@ def evaluate(expr, locals_for_eval={}):
         locals = {**locals, **locals_for_eval[key]}
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
-def convert_string_to_sympy(a, variables):
+def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
+    const = _Constants()
+
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
-    locals_for_eval = {'functions': {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt}, 'variables': {'pi': sympy.pi}, 'helpers': {'_Integer': sympy.Integer}}
+    locals_for_eval = {
+        'functions': const.functions,
+        'variables': const.variables,
+        'helpers': const.helpers,
+    }
+    if allow_hidden:
+        locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_variables}
+    if allow_complex:
+        locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables}
+        if allow_hidden:
+            locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_complex_variables}
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
@@ -204,3 +246,37 @@ def point_to_error(s, ind, w = 5):
     w_left = ind - max(0, ind-w)
     w_right = min(ind+w, len(s)) - ind
     return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
+
+def sympy_to_json(a, allow_complex=True):
+    const = _Constants()
+
+    # Get list of variables in the sympy expression
+    variables = [str(v) for v in a.free_symbols]
+
+    # Check that variables do not conflict with reserved names
+    reserved = {**const.helpers, **const.variables, **const.hidden_variables, **const.functions}
+    if allow_complex:
+        reserved = {**reserved, **const.complex_variables, **const.hidden_complex_variables}
+    for k in reserved.keys():
+        for v in variables:
+            if k == v:
+                raise ValueError('sympy expression has a variable with a reserved name: {:s}'.format(k))
+
+    # Apply substitutions for hidden variables
+    a = a.subs([(const.hidden_variables[key], key) for key in const.hidden_variables.keys()])
+    if allow_complex:
+        a = a.subs([(const.hidden_complex_variables[key], key) for key in const.hidden_complex_variables.keys()])
+
+    return {'_type': 'sympy', '_value': str(a), '_variables': variables}
+
+def json_to_sympy(a, allow_complex=True):
+    if not '_type' in a:
+        raise ValueError('json must have key _type for conversion to sympy')
+    if a['_type'] != 'sympy':
+        raise ValueError('json must have _type == "sympy" for conversion to sympy')
+    if not '_value' in a:
+        raise ValueError('json must have key _value for conversion to sympy')
+    if not '_variables' in a:
+        a['_variables'] = None
+
+    return convert_string_to_sympy(a['_value'], a['_variables'], allow_hidden=True, allow_complex=allow_complex)
