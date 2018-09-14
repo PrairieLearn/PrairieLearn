@@ -136,6 +136,18 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
+`allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
+
+Correct answers are best created as `sympy` expressions and converted to json using:
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+    sympy.var('x y')
+    data['correct_answer']['ans'] = pl.to_json(x + y + 1)
+```
+Do not use `i` or `j` in the correct answer if `allow-complex="true"`. Avoid using `e`, as `exp(x)` will be rendered as `e^x` (for example).
 
 ## `pl-matrix-input` element
 
