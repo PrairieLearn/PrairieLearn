@@ -150,7 +150,7 @@ def generate(data):
 ```
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
-Do not use `i` or `j` in the correct answer if `allow-complex="true"`. Do not use any other reserved name for an instructor-defined variable (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between defined variables and reserved names.
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
 
 
 ## `pl-matrix-input` element
