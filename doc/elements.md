@@ -137,6 +137,7 @@ Attribute | Type | Default | Description
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
 `allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
+`imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 
 Correct answers are best created as `sympy` expressions and converted to json using:
 ```python
@@ -147,7 +148,10 @@ def generate(data):
     sympy.var('x y')
     data['correct_answer']['ans'] = pl.to_json(x + y + 1)
 ```
-Do not use `i` or `j` in the correct answer if `allow-complex="true"`. Avoid using `e`, as `exp(x)` will be rendered as `e^x` (for example).
+It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+
+Do not use `i` or `j` in the correct answer if `allow-complex="true"`. Do not use any other reserved name for an instructor-defined variable (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between defined variables and reserved names.
+
 
 ## `pl-matrix-input` element
 
