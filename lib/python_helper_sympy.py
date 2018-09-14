@@ -11,6 +11,7 @@ class _Constants:
         }
         self.variables = {
             'pi': sympy.pi,
+            'e': sympy.E,
         }
         self.hidden_variables = {
             '_Exp1': sympy.E,

@@ -49,7 +49,7 @@ def render(element_html, data):
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
-        constants = ', '.join(['pi'])
+        constants = ', '.join(['pi, e'])
 
         info_params = {
             'format': True,
