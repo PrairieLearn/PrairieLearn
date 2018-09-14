@@ -1,0 +1,23 @@
+<div class="card my-2">
+    <div class="card-header">
+        An example in which complex numbers are not allowed
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="x" variables="a, b, y" label="$x=$"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which complex numbers are allowed
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Write an expression for the complex number $z$ whose argument is $a$ (in radians) and whose modulus is $m$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="z" variables="a, m" allow-complex="true" label="$z=$"></pl-symbolic-input>
+    </div>
+</div>
