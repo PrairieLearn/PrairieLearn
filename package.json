@@ -84,7 +84,7 @@
         "start": "node server.js",
         "start-nodemon": "nodemon server.js",
         "test": "nyc --reporter=lcov mocha --exit tests/index.js",
-        "lint-js": "eslint --ext js \"**/*.js\"",
+        "lint-js": "./node_modules/.bin/eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"
     }
 }
