@@ -1,5 +1,5 @@
-const _ = require('lodash');
 const ERR = require('async-stacktrace');
+const async = require('async');
 const AWS = require('aws-sdk');
 
 const config = require('../lib/config');
@@ -16,11 +16,12 @@ module.exports.run = function(callback) {
     sqldb.call('server_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
         if (result.rowCount == 0) return callback(null); // nothing to report
-        const params = {
-            Namespace: 'PrairieLearn',
-            MetricData: [],
-        };
-        _.forEach(result.rows, (row) => {
+        const cloudwatch = new AWS.CloudWatch();
+        async.each(result.rows, (row, callback) => {
+            const params = {
+                Namespace: 'PrairieLearn',
+                MetricData: [],
+            };
             const dimensions = [
                 {Name: 'Server Group', Value: config.groupName},
                 {Name: 'Job Type', Value: row.job_type},
@@ -59,10 +60,11 @@ module.exports.run = function(callback) {
                     Value: row.load_perc,
                 },
             ]);
-        });
-
-        const cloudwatch = new AWS.CloudWatch();
-        cloudwatch.putMetricData(params, function(err, _data) {
+            cloudwatch.putMetricData(params, function(err, _data) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        }, (err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });
