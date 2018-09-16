@@ -40,6 +40,10 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
 matplotlib.use('PDF')
 
 def worker_loop():
+    # re-seed the PRNGs so we don't just copy our parent's fixed seed
+    random.seed()
+    numpy.random.seed()
+
     # file descriptor 3 is for output data
     with open(3, 'w', encoding='utf-8') as outf:
 
