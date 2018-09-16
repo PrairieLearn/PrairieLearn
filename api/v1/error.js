@@ -1,8 +1,10 @@
 const logger = require('../../lib/logger');
+const status = require('http-status');
 
 module.exports = (err, req, res, _next) => {
     logger.info('API Error', err);
-    res.status(500).send({
-        message: 'Internal Server Error',
+    const statusCode = err.status || 500;
+    res.status(statusCode).send({
+        message: status[statusCode],
     });
 };

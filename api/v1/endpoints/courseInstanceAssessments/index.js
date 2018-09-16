@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const path = require('path');
 const express = require('express');
 const router = express.Router({
     mergeParams: true,
@@ -7,7 +8,7 @@ const router = express.Router({
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
 router.get('/', (req, res, next) => {
     const params = {
@@ -22,7 +23,7 @@ router.get('/', (req, res, next) => {
     });
 });
 
-router.get('/:assessment_id', (req, res, next) => {
+const getAssessment = (req, res, next, callback) => {
     const params = {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
@@ -36,8 +37,28 @@ router.get('/:assessment_id', (req, res, next) => {
                 message: 'Not Found',
             });
         } else {
-            res.status(200).send(result.rows[0]);
+            callback(null, result.rows[0]);
         }
+    });
+};
+
+router.get('/:assessment_id', (req, res, next) => {
+    getAssessment(req, res, next, (assessment) => {
+        res.status(200).send(assessment);
+    });
+});
+
+router.get('/:assessment_id/assessment_instances', (req, res, next) => {
+    // Select the assessment first to make sure we can access it
+    getAssessment(req, res, next, () => {
+        const params = {
+            assessment_id: req.params.assessment_id,
+            assessment_instance_id: null,
+        };
+        sqldb.query(sql.select_assessment_instances, params, (err, result) => {
+            if (ERR(err, next)) return;
+            res.status(200).send(result.rows);
+        });
     });
 });
 
