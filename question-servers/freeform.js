@@ -698,6 +698,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
@@ -730,6 +731,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
@@ -1031,6 +1033,7 @@ module.exports = {
                     });
                 },
             ], (err) => {
+                // don't immediately error here; we have to return the pythonCaller
                 workers.returnPythonCaller(pc, (pcErr) => {
                     if (ERR(pcErr, callback)) return;
                     if (ERR(err, callback)) return;
@@ -1058,6 +1061,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
@@ -1089,6 +1093,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
@@ -1133,6 +1138,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
@@ -1178,6 +1184,7 @@ module.exports = {
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
+                    // don't immediately error here; we have to return the pythonCaller
                     workers.returnPythonCaller(pc, (pcErr) => {
                         if (ERR(pcErr, callback)) return;
                         if (ERR(err, callback)) return;
