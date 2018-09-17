@@ -71,6 +71,8 @@
 
   * Fix bug in `pl-symbolic-input` to handle the sympy constants I and E properly (Tim Bretl).
 
+  * Fix markup in `pl-multiple-choice` and `pl-checkbox` elements (Nathan Walters).
+
   * Fix slow v3 questions by using persistent forking python processes (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).

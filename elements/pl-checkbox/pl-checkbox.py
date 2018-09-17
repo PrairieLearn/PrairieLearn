@@ -118,13 +118,14 @@ def render(element_html, data):
 
         answerset = ''
         for answer in display_answers:
-            item = '  <label class="form-check-label">\n' \
-                + '    <input type="checkbox" class="form-check-input"' \
+            item = '<input type="checkbox" class="form-check-input"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (answer['key'] in submitted_keys) else '') \
+                + f' id="{name}-{answer["key"]}"' \
                 + ' />\n' \
-                + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n'
+                + f'<label class="form-check-label" for="{name}-{answer["key"]}">\n' \
+                + '(' + answer['key'] + ') ' + answer['html'].strip() + '\n'
             if score is not None and show_answer_feedback:
                 if answer['key'] in submitted_keys:
                     if answer['key'] in correct_keys:
