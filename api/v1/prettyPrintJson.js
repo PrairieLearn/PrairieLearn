@@ -6,4 +6,4 @@ module.exports = (req, res, next) => {
         res.send(JSON.stringify(body, null, 2));
     };
     next();
-}
+};
