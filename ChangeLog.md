@@ -24,11 +24,13 @@
   * Add partial credit option to `pl-checkbox` element (Mariana Silva).
 
   * Add docs and two optional attributes, `display` and `label`, to `pl-symbolic-input` (Tim Bretl).
-  
+
   * Add `prevent-select` attribute to `pl-code` element (Nathan Walters).
 
   * Add personal access token management (Nathan Walters).
 
+  * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
+  
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
@@ -63,6 +65,16 @@
 
   * Fix bug with rendering when the render cache is disabled (Nathan Walters).
 
+  * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
+
+  * Fig bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
+
+  * Fix bug in `pl-symbolic-input` to handle submissions that simplify to invalid expressions (Tim Bretl).
+
+  * Fix bug in `pl-symbolic-input` to handle the sympy constants I and E properly (Tim Bretl).
+
+  * Fix slow v3 questions by using persistent forking python processes (Matt West).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
@@ -88,6 +100,8 @@
   * Change to prohibit extra `allowAccess` properties (Geoffrey Challen).
 
   * Change maximum JSON POST size to 1MB or local grader (Nathan Walters).
+
+  * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
 * __3.0.0__ - 2018-05-23
 

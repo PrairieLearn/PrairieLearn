@@ -4,7 +4,7 @@ import chevron
 import os
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['script-name']
     optional_attribs = ['param-names', 'width', 'height']
@@ -12,7 +12,7 @@ def prepare(element_html, element_index, data):
     return data
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     script_name = pl.get_string_attrib(element, 'script-name', None)
 

@@ -2,12 +2,12 @@ import random
 import chevron
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     data['params']['random_number'] = random.random()
     return data
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     html_params = {
         'number': data['params']['random_number']
     }
