@@ -9,7 +9,20 @@ submissions.
 PrairieLearn uses personal access tokens for the API. To generate a personal
 access token, click on your name in the nav bar and click "Settings". Under
 the section entitled "Personal Access Tokens", you can generate tokens for
-yourself. These tokens give you all the permissions that your normal user account has.
+yourself. These tokens give you all the permissions that your normal user
+account has.
+
+You can provide your token via the `Private-Token` header:
+
+```sh
+curl -H "Private-Token: TOKEN" https://prairielearn.engr.illinois.edu/pl/api/v1
+```
+
+You can also provide the token via a `private_token` query parameter:
+
+```sh
+curl https://prairielearn.engr.illinois.edu/pl/api/v1?private_token=TOKEN
+```
 
 ## Endpoints
 
