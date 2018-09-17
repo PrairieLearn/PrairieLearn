@@ -37,7 +37,7 @@ const getAssessment = (req, res, next, callback) => {
                 message: 'Not Found',
             });
         } else {
-            callback(null, result.rows[0]);
+            callback(result.rows[0]);
         }
     });
 };
@@ -52,6 +52,7 @@ router.get('/:assessment_id/assessment_instances', (req, res, next) => {
     // Select the assessment first to make sure we can access it
     getAssessment(req, res, next, () => {
         const params = {
+            course_instance_id: req.params.course_instance_id,
             assessment_id: req.params.assessment_id,
             assessment_instance_id: null,
         };

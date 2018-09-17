@@ -39,15 +39,15 @@ ORDER BY
 
 -- BLOCK select_assessment_instances
 SELECT
+    ai.id::int,
     jsonb_build_object(
         'id', u.user_id::int,
         'uid', u.uid,
         'role', coalesce(e.role, 'None'::enum_role)
     ) AS user,
     (aset.name || ' ' || a.number) AS assessment_label,
-    ai.id::int,
-    ai.points,
     ai.max_points,
+    ai.points,
     ai.score_perc,
     ai.number,
     ai.open,
@@ -69,6 +69,57 @@ FROM
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
-    a.id = $assessment_id
+    ci.id = $course_instance_id
+    AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
+    AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
 ORDER BY
     e.role DESC, u.uid, u.user_id, ai.number, ai.id;
+
+-- BLOCK select_submissions
+SELECT
+    u.uid,
+    u.name,
+    e.role,
+    (aset.name || ' ' || a.number) AS assessment_label,
+    ai.number AS assessment_instance_number,
+    q.qid,
+    iq.number AS instance_question_number,
+    iq.points,
+    iq.score_perc,
+    aq.max_points,
+    v.number AS variant_number,
+    v.variant_seed,
+    v.params,
+    v.true_answer,
+    v.options,
+    s.date,
+    format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
+    s.submitted_answer,
+    s.override_score,
+    s.credit,
+    s.mode,
+    format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
+    format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
+    s.score,
+    CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
+    s.feedback,
+    (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
+    (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+    JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN variants AS v ON (v.instance_question_id = iq.id)
+    JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+    ci.id = $course_instance_id
+    AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
+    AND ($submission_id::bigint IS NULL OR s.id = $submission_id)
+ORDER BY
+    uid, assessment_instance_number, qid, instance_question_number, variant_number, date;

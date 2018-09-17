@@ -13,6 +13,7 @@ router.use('/course_instances/:course_instance_id', [
 // ROUTES
 router.use('/course_instances/:course_instance_id/assessments', require('./endpoints/courseInstanceAssessments'));
 router.use('/course_instances/:course_instance_id/assessment_instances', require('./endpoints/courseInstanceAssessmentInstances'));
+router.use('/course_instances/:course_instance_id/submissions', require('./endpoints/courseInstanceSubmissions'));
 
 // If no earlier routes matched, 404 the route
 router.use(require('./notFound'));
