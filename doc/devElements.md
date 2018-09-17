@@ -55,7 +55,7 @@ And an `info.json` with the following contents:
 All element functions have the signature:
 
 ```python
-def fcn(element_html, element_index, data)
+def fcn(element_html, data)
 ```
 
 The arguments are:
@@ -63,7 +63,6 @@ The arguments are:
 Argument | Type | Description
 --- | --- | ---
 `element_html` | string | The template HTML for the element.
-`element_index` | integer | The number of the element in the template.
 `data` | dict | Mutable data for the question, which can be modified and returned.
 
 The `data` dictionary has the following possible keys (not all keys will be present in all element functions):

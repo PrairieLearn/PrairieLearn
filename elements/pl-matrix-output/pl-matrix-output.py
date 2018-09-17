@@ -4,12 +4,12 @@ import numpy as np
 import chevron
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=['digits'])
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, 'digits', 2)
 
@@ -53,7 +53,6 @@ def render(element_html, element_index, data):
         'default_is_matlab': True,
         'matlab_data': matlab_data,
         'python_data': python_data,
-        'element_index': element_index,
         'uuid': pl.get_uuid()
     }
 
