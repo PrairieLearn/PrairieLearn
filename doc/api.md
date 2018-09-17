@@ -1,0 +1,61 @@
+# API
+
+PrairieLearn contains a limited read-only API for use by instructors that
+allows programmatic access to assessments, assessment instances, and
+submissions.
+
+## API Authentication
+
+PrairieLearn uses personal access tokens for the API. To generate a personal
+access token, click on your name in the nav bar and click "Settings". Under
+the section entitled "Personal Access Tokens", you can generate tokens for
+yourself. These tokens give you all the permissions that your normal user account has.
+
+## Endpoints
+
+All API endpoints are located at `/pl/api/v1/`. If you're running on
+production PraririeLearn, that means the API is at
+https://prairielearn.engr.illinois.edu/pl/api/v1. If you're running it locally
+at port 3000, the API is accessible via http://localhost:3000/pl/api/v1/.
+
+### Assessments
+
+View all assessments for a particular course:
+
+```
+GET /course_instances/:course_instance_id/assessments
+```
+
+View a particular assessment:
+
+```
+GET /course_instances/:course_instance_id/assessments/:assessment_instance_id
+```
+
+View all assessment instances for a particular assessment:
+
+```
+GET /course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances
+```
+
+### Assessment instances
+
+View a particular assessment instance:
+
+```
+GET /course_instances/:course_instance_id/assessment_instances/:assessment_instance_id
+```
+
+View all submissions for a particular assessment instance:
+
+```
+GET /course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions
+```
+
+### Submissions
+
+View a particular submission:
+
+```
+GET /course_instances/:course_instance_id/submissions/:submission_id
+```
