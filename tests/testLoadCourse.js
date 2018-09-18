@@ -58,10 +58,10 @@ describe('courseDB.loadFullCourse() on brokenCourse', function() {
             'type': 'v3',
         };
         fs.writeFile(assessmentFilename, JSON.stringify(assessmentJson), function(err) {
-            if (err) return err;
+            if (ERR(err, callback)) return;
 
             fs.writeFile(questionFilename, JSON.stringify(questionJson), function(err) {
-                if (err) return err;
+                if (ERR(err, callback)) return;
                 callback(null);
             });
         });
@@ -70,10 +70,10 @@ describe('courseDB.loadFullCourse() on brokenCourse', function() {
     after('removing test files', function(callback) {
         //console.log('Removing test files');
         fs.unlink(assessmentFilename, function(err) {
-            if (err) return err;
+            if (ERR(err, callback)) return;
 
             fs.unlink(questionFilename, function(err) {
-                if (err) return err;
+                if (ERR(err, callback)) return;
                 callback(null);
             });
         });
