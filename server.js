@@ -545,9 +545,9 @@ if (config.startServer) {
         function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
-            load.initEstimator('python', 1);
+            load.initEstimator('python', 1, false);
             load.initEstimator('python_worker_active', 1);
-            load.initEstimator('python_worker_idle', 1);
+            load.initEstimator('python_worker_idle', 1, false);
             load.initEstimator('python_callback_waiting', 1);
             callback(null);
         },
