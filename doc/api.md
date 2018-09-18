@@ -72,3 +72,50 @@ View a particular submission:
 ```
 GET /course_instances/:course_instance_id/submissions/:submission_id
 ```
+
+### Gradebook
+
+This endpoint includes all of the data available in the course gradebook,
+including some additional information like points, start dates, durations,
+and the time of the last submission.
+
+```
+GET /course_instances/:course_instance_id/gradebook
+```
+
+The respone will look like the following:
+
+```
+[
+  {
+    "uid": "dev@illinois.edu",
+    "name": "Dev User",
+    "role": "Instructor",
+    "assessments": [
+      {
+        "label": "HW1",
+        "score_perc": 7.69230769230769,
+        "max_points": 104,
+        "points": 8,
+        "start_date": "2018-09-17T21:57:17.394633+00:00",
+        "duration_secs": 106.677605,
+        "last_submission_date": "2018-09-18T16:54:21.159511+00:00",
+        "assessment_instance_id": 1
+      },
+      {
+        "label": "HW2",
+        "score_perc": null,
+        "max_points": null,
+        "points": null,
+        "start_date": null,
+        "duration_secs": null,
+        "last_submission_date": null,
+        "assessment_instance_id": null
+      }
+    ]
+  }
+]
+```
+
+Note how all the fields in HW2 are null: this indicates that a student has not
+yet started the given assessment.
