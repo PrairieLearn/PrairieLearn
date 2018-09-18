@@ -77,6 +77,8 @@
 
   * Fix spurious `warnOldJobs` log entries (Matt West).
 
+  * Fix label on `pl-string-input` help popover (Matt West).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
