@@ -46,7 +46,7 @@
               <strong><%= token.name %></strong>
               <span class="text-muted">Created at <%= token.created_at %></span>
               <span class="text-muted">
-                <% if (token.created_at === null) { %>
+                <% if (token.created_at !== null) { %>
                 Last used at <%= token.last_used_at %>
                 <% } else { %>
                 Never used

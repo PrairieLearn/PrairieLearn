@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const crypto = require('crypto');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-
+const logger = require('../lib/logger');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -38,7 +38,17 @@ module.exports = (req, res, next) => {
             // Nice, we got a user
             res.locals.authn_user = result.rows[0].user;
             res.locals.is_administrator = result.rows[0].is_administrator;
+
+            // Let's note that this token was used, but don't wait for this
+            // to continue handling the request
             next();
+
+            const lastUsedParams = {
+                token_id: result.rows[0].token_id,
+            };
+            sqldb.query(sql.update_token_last_used, lastUsedParams, (err) => {
+                if (ERR(err, (e) => logger.error(e)));
+            });
         }
     });
 };
