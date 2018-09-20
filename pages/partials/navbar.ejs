@@ -43,7 +43,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     if (typeof authn_user == 'undefined') {
         displayedName = '(No user)';
     } else if (is_administrator) {
-        displayedName = authn_user.name + '(Administrator)';
+        displayedName = authn_user.name + ' (Administrator)';
     } else {
         displayedName = authn_user.name;
     }
