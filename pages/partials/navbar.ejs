@@ -34,7 +34,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     } else {
         displayedName = authz_data.user.uid;
     }
-    displayedName += '(' + authz_data.role;
+    displayedName += ' (' + authz_data.role;
 	if (authz_data.mode != 'Public') {
         displayedName += ', ' + authz_data.mode;
     }
