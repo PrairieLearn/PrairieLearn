@@ -29,6 +29,10 @@
 
   * Add personal access token management (Nathan Walters).
 
+  * Add `maxPoints` option to zones (Tim Bretl).
+
+  * Add `bestQuestions` option to zones (Tim Bretl).
+
   * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
 
   * Add warm up for Python worker processes (Matt West).

@@ -214,6 +214,8 @@ module.exports = {
                 number: i + 1,
                 title: dbZone.title,
                 number_choose: dbZone.numberChoose,
+                max_points: dbZone.maxPoints,
+                best_questions: dbZone.bestQuestions,
             };
             sqldb.queryOneRow(sql.insert_zone, params, function(err, result) {
                 if (ERR(err, callback)) return;
