@@ -87,6 +87,8 @@
 
   * Fix spurious `warnOldJobs` log entries (Matt West).
 
+  * Fix label on `pl-string-input` help popover (Matt West).
+
   * Fix restart of Python `codeCallers` with no active child (Matt West).
 
   * Fix exampleCourse exam1 to include formula sheet example per docs (Dave Mussulman).
