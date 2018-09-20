@@ -39,7 +39,7 @@
 
   * Add better handling of client sockets on externally graded questions (Nathan Walters).
 
-  * Add postgresql permissions for root in Docker for development (Dave Mussulman).
+  * Add postgresql permissions for root in Docker for development (Dave Mussulman)..
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
