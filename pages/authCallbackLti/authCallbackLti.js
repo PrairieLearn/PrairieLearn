@@ -75,13 +75,26 @@ router.post('/', function(req, res, next) {
         //console.log(parameters);
         //console.log(ltiresult);
 
-        var authUid = parameters.user_id + '@' + parameters.context_id;
+        if (!parameters.user_id) {
+            return next(error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.'));
+        }
+
+        /* Conflicts with other UIDs, potentially
+           Also means we have no way to store the email coming from the consumer
         if (parameters.lis_person_contact_email_primary) {
             authUid = parameters.lis_person_contact_email_primary;
         } else if (parameters.lis_person_sourcedid) {
             authUid = parameters.lis_person_sourcedid;
         }
-        var authName = parameters.lis_person_name_full || '';
+        */
+        var authUid = parameters.user_id + '@' + parameters.context_id;
+
+        var fallbackName = 'LTI user';
+        if (parameters.context_title) {
+            fallbackName = `${parameters.context_title} user`;
+            // e.g. UIUC Degree Sandbox user
+        }
+        var authName = parameters.lis_person_name_full || fallbackName;
 
         var params = [
         authUid,
@@ -174,9 +187,7 @@ router.post('/', function(req, res, next) {
 module.exports = router;
 
 /*
-TODO: expire out the cached nonce, use redis?
-
-permissions for not being able to add other courses via LTI?
+TODO: use redis for the cached nonce, expiration?
 
 NOTES:
 

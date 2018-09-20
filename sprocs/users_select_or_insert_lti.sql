@@ -41,7 +41,7 @@ BEGIN
 
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users
-        SET name = users_select_or_insert.name
+        SET name = users_select_or_insert_lti.name
         WHERE users.user_id = u.user_id
         RETURNING * INTO new_u;
 
