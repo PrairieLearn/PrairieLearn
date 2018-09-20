@@ -34,6 +34,7 @@
   * Add warm up for Python worker processes (Matt West).
 
   * Add better handling of client sockets on externally graded questions (Nathan Walters).
+  * Add postgresql permissions for root in Docker for development (Dave Mussulman).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
@@ -108,6 +109,8 @@
   * Change to prohibit extra `allowAccess` properties (Geoffrey Challen).
 
   * Change maximum JSON POST size to 1MB or local grader (Nathan Walters).
+
+  * Change required package versions for security (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
