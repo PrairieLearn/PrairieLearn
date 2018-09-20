@@ -15,6 +15,9 @@ BEGIN
     WHERE
         gj.id = grading_job_id;
 
+    IF job.grading_request_canceled_at IS NOT NULL THEN
+        RETURN 'canceled';
+    END IF;
     IF job.graded_at IS NOT NULL THEN
         RETURN 'graded';
     END IF;
