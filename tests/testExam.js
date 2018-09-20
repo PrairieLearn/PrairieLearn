@@ -1,6 +1,8 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var assert = require('chai').assert;
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -622,17 +624,21 @@ describe('Exam assessment', function() {
         describe(`partial credit test #${iPartialCreditTest+1}`, function() {
             describe('server', function() {
                 it('should shut down', function(callback) {
+                    debug('partial credit test: server shutting down');
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
                     helperServer.after.call(that, function(err) {
+                        debug('partial credit test: server shutdown complete');
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
                 });
                 it('should start up', function(callback) {
+                    debug('partial credit test: server starting up');
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
                     helperServer.before.call(that, function(err) {
+                        debug('partial credit test: server startup complete');
                         if (ERR(err, callback)) return;
                         callback(null);
                     });

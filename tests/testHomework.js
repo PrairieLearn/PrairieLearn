@@ -25,11 +25,12 @@ const questionsArray = [
     {qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 13},
     {qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12},
     {qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 8},
+    {qid: 'brokenGrading', type: 'Freeform', maxPoints: 4},
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 104;
+const assessmentMaxPoints = 108;
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
