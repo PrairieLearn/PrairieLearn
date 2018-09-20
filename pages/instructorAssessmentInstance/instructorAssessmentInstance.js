@@ -91,7 +91,7 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
@@ -104,7 +104,7 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
@@ -117,7 +117,7 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('instance_questions_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
@@ -130,7 +130,7 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('instance_questions_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
