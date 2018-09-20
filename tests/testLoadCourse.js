@@ -38,7 +38,6 @@ describe('courseDB.loadFullCourse() on brokenCourse', function() {
     var questionFilename = `${courseDir}/questions/basicV3/info.json`;
 
     beforeEach('write correct infoAssessment and question', function(callback) {
-        //console.log('Resetting brokenCourse files');
         var assessmentJson = {
             'uuid': 'bee70f4d-4220-47f1-b4ed-59c88ce08657',
             'type': 'Exam',
@@ -68,7 +67,6 @@ describe('courseDB.loadFullCourse() on brokenCourse', function() {
     });
 
     after('removing test files', function(callback) {
-        //console.log('Removing test files');
         fs.unlink(assessmentFilename, function(err) {
             if (ERR(err, callback)) return;
 
