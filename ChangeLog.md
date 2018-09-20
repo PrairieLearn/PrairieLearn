@@ -31,6 +31,10 @@
 
   * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
 
+  * Add warm up for Python worker processes (Matt West).
+
+  * Add better handling of client sockets on externally graded questions (Nathan Walters).
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -78,6 +82,8 @@
   * Fix spurious `warnOldJobs` log entries (Matt West).
 
   * Fix label on `pl-string-input` help popover (Matt West).
+
+  * Fix restart of Python `codeCallers` with no active child (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
