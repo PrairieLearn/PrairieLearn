@@ -106,6 +106,7 @@ module.exports = {
                     callback(null);
                 });
             },
+/*
             function(callback) {
                 debug('after(): dropping database');
                 client.query('DROP DATABASE IF EXISTS ' + postgresqlDatabase + ';', function(err) {
@@ -113,6 +114,7 @@ module.exports = {
                     callback(null);
                 });
             },
+*/
             function(callback) {
                 debug('after(): ending client');
                 client.end();
