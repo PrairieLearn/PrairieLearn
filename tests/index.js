@@ -4,6 +4,7 @@ logger.transports.console.level = 'warn';
 const config = require('../lib/config');
 config.workersCount = 2; // explicitly use 2 workers to test parallelism
 
+/*
 require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
@@ -16,3 +17,5 @@ require('./testExam');
 require('./testAccess');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
+*/
+require('./testSprocs');
