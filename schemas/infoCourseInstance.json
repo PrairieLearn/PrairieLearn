@@ -27,7 +27,7 @@
         "allowIssueReporting": {
             "description": "Whether to allow students to report issues for assessment questions (can be overridden per-assessment)",
             "type": "boolean",
-            "default": false
+            "default": true
         },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",

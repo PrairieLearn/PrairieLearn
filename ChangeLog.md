@@ -121,6 +121,8 @@
 
   * Change required package versions for security (Dave Mussulman).
 
+  * Change `allowIssueReporting` to default to `true` (Matt West).
+
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
 * __3.0.0__ - 2018-05-23

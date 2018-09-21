@@ -34,7 +34,7 @@
         "allowIssueReporting": {
             "description": "Whether to allow students to report issues for assessment questions",
             "type": "boolean",
-            "default": false
+            "default": true
         },
         "multipleInstance": {
             "description": "Whether to allow students to create additional instances of the assessment",
