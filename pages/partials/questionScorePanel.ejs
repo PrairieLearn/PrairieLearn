@@ -44,14 +44,14 @@
           itself. Do not use this form if you just don't know how to
           answer the question.
         </p>
-        <div class="form-group">
-          <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
-        </div>
         <% if (authz_data.mode == 'Exam') { %>
         <p class="small">
           Ask a proctor if you think there is a problem with your computer.
         </p>
         <% } %>
+        <div class="form-group">
+          <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
+        </div>
         <input type="hidden" name="__variant_id" value="<%= variant.id %>">
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
         <div class="form-group text-right">
