@@ -14,7 +14,6 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "title": "Coordinates and Vectors",
     "set": "Quiz",
     "number": "2",
-    "allowIssueReporting": true,
     "allowAccess": [],
     "zones": []
 }
@@ -108,9 +107,9 @@ By default Exam assessments will auto-close after six hours of inactivity by the
 
 ## Issue reporting
 
-To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file. This option defaults to whatever is set for the course instance, or false if nothing is set.
+To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": false` property in the `infoAssessment.json` file. This option defaults to whatever is set for the course instance, or true if nothing is set.
 
-When issue reporting is allowed, students see a button labeled "Report an issue with this question" and they can submit a short text form.
+When issue reporting is allowed, students see a button labeled "Report an error in this question" and they can submit a short text form.
 
 ![Report an issue button](assessment-report1.png) ![Describe the issue](assessment-report2.png)
 

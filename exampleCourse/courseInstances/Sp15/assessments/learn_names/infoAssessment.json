@@ -4,7 +4,6 @@
     "title": "Homework to help instructors learn names",
     "set": "Homework",
     "number": "5",
-    "allowIssueReporting": true,
     "allowAccess": [
         {
             "role": "Instructor",
