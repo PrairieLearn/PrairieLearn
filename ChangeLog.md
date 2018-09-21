@@ -93,6 +93,8 @@
 
   * Fix exampleCourse exam1 to include formula sheet example per docs (Dave Mussulman).
 
+  * Fix docs for `allowIssueReporting` (Matt West).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
