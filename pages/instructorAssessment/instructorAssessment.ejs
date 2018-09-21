@@ -953,6 +953,96 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
+      <div class="modal fade" id="uploadQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadQuestionScores">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="uploadQuestionScoresModalLabel">Upload new question scores</h4>
+            </div>
+            <div class="modal-body">
+              <p>
+                Upload a CSV file like this:
+              </p>
+              <pre>
+                uid,qid,score_perc
+                student1@school.edu,addTwoNumbers,34.5
+                student1@school.edu,matrixMultiply,100
+                student7@school.edu,addTwoNumbers,78.92
+              </pre>
+              <p>
+                The example above will change the scores for
+                `student1@school.edu` on two questions (to 34.5% and
+                100%), and for `student7@school.edu` on one question.
+              </p>
+            </div>
+            <div class="modal-footer">
+              <form name="delete-form" method="POST">
+                <div class="custom-file">
+                  <input type="file" class="custom-file-input" id="customFile">
+                  <label class="custom-file-label" for="customFile">Choose CSV file</label>
+                </div>
+                <input type="hidden" name="__action" value="upload_question_scores">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Upload</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Uploads
+        </div>
+
+        <div class="card-body">
+          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadQuestionScoresModal">
+            Upload new question scores
+          </button>
+        </div>
+        
+        <% if (upload_job_sequences && upload_job_sequences.length > 0) { %>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% upload_job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <% } else { %>
+
+        <div class="card-body">
+          No previous uploads.
+        </div>
+
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Regrading history

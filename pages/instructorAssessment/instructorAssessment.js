@@ -125,6 +125,21 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query select_upload_job_sequences');
+            res.locals.upload_job_sequences = [];
+            callback(null);
+            /*
+            var params = {
+                assessment_id: res.locals.assessment.id,
+            };
+            sqldb.query(sql.select_upload_job_sequences, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.upload_job_sequences = result.rows;
+                callback(null);
+            });
+            */
+        },
+        function(callback) {
             debug('query select_regrading_job_sequences');
             var params = {
                 assessment_id: res.locals.assessment.id,
