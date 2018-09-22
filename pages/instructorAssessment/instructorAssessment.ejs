@@ -963,30 +963,71 @@
               <p>
                 Upload a CSV file like this:
               </p>
-              <pre>
-                uid,qid,score_perc
-                student1@school.edu,addTwoNumbers,34.5
-                student1@school.edu,matrixMultiply,100
-                student7@school.edu,addTwoNumbers,78.92
-              </pre>
+              <pre class="ml-4">uid,instance,qid,score_perc
+mwest@illinois.edu,1,addTwoNumbers,34.5
+zilles@illinois.edu,1,matrixMultiply,100
+zilles@illinois.edu,1,addTwoNumbers,78.92</pre>
               <p>
                 The example above will change the scores for
-                `student1@school.edu` on two questions (to 34.5% and
-                100%), and for `student7@school.edu` on one
-                question. The total points for the assessments will be
-                automatically recalculated.
+                <tt>mwest@illinois.edu</tt> on one question
+                (<tt>addTwoNumbers</tt> to 34.5%), and
+                for <tt>zilles@illinois.edu</tt> on two
+                questions. Only questions explictly listed will have
+                their scores changed. The <tt>instance</tt> column
+                indicates which assessment instance to modify, which
+                should be <tt>1</tt> if there is only a single
+                instance per student. The total scores for the
+                assessments will be automatically recalculated.
               </p>
             </div>
             <div class="modal-footer">
-              <form name="delete-form" method="POST">
+              <form name="upload-question-scores-form" method="POST">
                 <div class="custom-file">
-                  <input type="file" class="custom-file-input" id="customFile">
-                  <label class="custom-file-label" for="customFile">Choose CSV file</label>
+                  <input type="file" class="custom-file-input" id="uploadQuestionScoresFileInput">
+                  <label class="custom-file-label" for="uploadQuestionScoresFileInput">Choose CSV file</label>
                 </div>
                 <input type="hidden" name="__action" value="upload_question_scores">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger">Upload</button>
+                <button type="submit" class="btn btn-primary">Upload</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="uploadAssessmentInstanceScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentInstanceScores">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="uploadAssessmentInstanceScoresModalLabel">Upload new total scores</h4>
+            </div>
+            <div class="modal-body">
+              <p>
+                Upload a CSV file like this:
+              </p>
+              <pre class="ml-4">uid,instance,score_perc
+mwest@illinois.edu,1,63.5
+zilles@illinois.edu,1,100</pre>
+              <p>
+                The example above will change the total assessment
+                scores for <tt>mwest@illinois.edu</tt> to 63.5% and for
+                <tt>zilles@illinois.edu</tt> to
+                100%. The <tt>instance</tt> column indicates which
+                assessment instance to modify, which should
+                be <tt>1</tt> if there is only a single instance per
+                student.
+            </div>
+            <div class="modal-footer">
+              <form name="upload-assessment-instance-scores-form" method="POST">
+                <div class="custom-file">
+                  <input type="file" class="custom-file-input" id="uploadAssessmentInstanceScoresFileInput">
+                  <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput">Choose CSV file</label>
+                </div>
+                <input type="hidden" name="__action" value="upload_assessment_instance_scores">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload</button>
               </form>
             </div>
           </div>
@@ -1001,6 +1042,9 @@
         <div class="card-body">
           <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadQuestionScoresModal">
             Upload new question scores
+          </button>
+          <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadAssessmentInstanceScoresModal">
+            Upload new total scores
           </button>
         </div>
         
@@ -1031,12 +1075,6 @@
               <% }); %>
             </tbody>
           </table>
-        </div>
-
-        <% } else { %>
-
-        <div class="card-body">
-          No previous uploads.
         </div>
 
         <% }%>
