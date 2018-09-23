@@ -127,6 +127,9 @@
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
+  * Change `pl-string-input` to include an attribute for the placeholder (Mariana Silva).
+
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
