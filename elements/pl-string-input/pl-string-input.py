@@ -9,11 +9,12 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'placeholder-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
     correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
+    placeholder = pl.get_string_attrib(element, 'placeholder-text', None)
 
     if correct_answer is not None:
         if name in data['correct_answers']:
@@ -29,6 +30,7 @@ def render(element_html, data):
     display = pl.get_string_attrib(element, 'display', 'inline')
     remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
+    placeholder = pl.get_string_attrib(element, 'placeholder-text', None)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -40,8 +42,6 @@ def render(element_html, data):
             template = f.read()
             info = chevron.render(template, info_params).strip()
             info_params.pop('format', None)
-            info_params['shortformat'] = True
-            shortinfo = chevron.render(template, info_params).strip()
 
         html_params = {
             'question': True,
@@ -52,7 +52,7 @@ def render(element_html, data):
             'remove-spaces': remove_spaces,
             'editable': editable,
             'info': info,
-            'shortinfo': shortinfo,
+            'shortinfo': placeholder,
             'uuid': pl.get_uuid()
         }
 
