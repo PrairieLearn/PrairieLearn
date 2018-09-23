@@ -611,6 +611,16 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
     });
 };
 
+const uploadQuestionScores = function(req, res.locals, callback) {
+    const job_sequence_id = -1;
+    callback(null, job_sequence_id);
+};
+
+const uploadAssessmentInstanceScores = function(req, res.locals, callback) {
+    const job_sequence_id = -1;
+    callback(null, job_sequence_id);
+};
+
 var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
     var params = {assessment_id};
     sqldb.queryOneRow(sql.select_regrade_assessment_info, params, function(err, result) {
@@ -754,6 +764,16 @@ router.post('/', function(req, res, next) {
         sqldb.call('assessment_instances_delete_all', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'upload_question_scores') {
+        uploadQuestionScores(req, res.locals, function(err, job_sequence_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.__action == 'upload_assessment_instance_scores') {
+        uploadAssessmentInstanceScores(req, res.locals, function(err, job_sequence_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'regrade') {
         regradeAssessmentInstance(req.body.assessment_instance_id, res.locals, function(err, job_sequence_id) {
