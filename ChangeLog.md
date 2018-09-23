@@ -129,6 +129,7 @@
 
   * Change `pl-string-input` to include an attribute for the placeholder (Mariana Silva).
 
+  * Change question pages to always include the answer if in instructor, dev, or administrator mode (James Balamuta).
 
 * __3.0.0__ - 2018-05-23
 
