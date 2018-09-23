@@ -15,7 +15,7 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{placeholder}}" />
         <span class="input-group-append">
             {{#suffix}}<span class="input-group-text">{{suffix}}</span>{{/suffix}}
             <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="String" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
