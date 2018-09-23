@@ -14,7 +14,6 @@ def prepare(element_html, data):
 
     name = pl.get_string_attrib(element, 'answers-name')
     correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
-    placeholder = pl.get_string_attrib(element, 'placeholder-text', None)
 
     if correct_answer is not None:
         if name in data['correct_answers']:
