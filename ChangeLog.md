@@ -95,6 +95,8 @@
 
   * Fix docs for `allowIssueReporting` (Matt West).
 
+  * Fix `pl-matrix-component-input` element to adjust height (Mariana Silva).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).

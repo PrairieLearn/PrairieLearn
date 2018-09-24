@@ -3,20 +3,27 @@
     max-width: 100%;
 }
 
-.close-left {
+[id^=pl-matrix-component-input] .close-left {
   border-left: 3px solid black;
   border-top: 3px solid black;
   border-bottom: 3px solid black;
   width: 8px;
 }
-.right, .bottom-and-right, .top-and-right, .close-right {
+[id^=pl-matrix-component-input] .right,
+[id^=pl-matrix-component-input] .bottom-and-right,
+[id^=pl-matrix-component-input] .top-and-right,
+[id^=pl-matrix-component-input] .close-right {
   border-right: 3px solid black;
   border-top: 3px solid black;
   border-bottom: 3px solid black;
   width: 8px;
 }
 
-.allborder {
+[id^=pl-matrix-component-input] .allborder {
   border: thin solid #D8D8D8;
   min-width: 60px
+}
+
+[id^=pl-matrix-component-input] .form-control {
+  height: auto;
 }
