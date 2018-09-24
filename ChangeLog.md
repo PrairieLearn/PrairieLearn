@@ -129,6 +129,8 @@
 
   * Change `pl-string-input` to include an attribute for the placeholder (Mariana Silva).
 
+  * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
+
 
 * __3.0.0__ - 2018-05-23
 
