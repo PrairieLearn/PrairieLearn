@@ -1,10 +1,10 @@
 var logger = require('../lib/logger');
 logger.transports.console.level = 'warn';
 
+const helperDb = require('./helperDb');
 const config = require('../lib/config');
 config.workersCount = 2; // explicitly use 2 workers to test parallelism
 
-/*
 require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
@@ -17,5 +17,7 @@ require('./testExam');
 require('./testAccess');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
-*/
 require('./testSprocs');
+
+// Root level hook
+after('drop the template database', helperDb.dropTemplate);
