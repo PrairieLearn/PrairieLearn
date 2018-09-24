@@ -5,6 +5,10 @@ const helperDb = require('./helperDb');
 const config = require('../lib/config');
 config.workersCount = 2; // explicitly use 2 workers to test parallelism
 
+// Root level hooks
+before('drop the template database, just in case', helperDb.dropTemplate);
+after('drop the template database', helperDb.dropTemplate);
+
 require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
@@ -18,6 +22,3 @@ require('./testAccess');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
 require('./testSprocs');
-
-// Root level hook
-after('drop the template database', helperDb.dropTemplate);

@@ -13,8 +13,8 @@ var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://postgres@localhost/postgres';
 
-var createFullDatabase = function(dbName, dropFirst=true, mochaThis, callback) {
-    debug(`createFullDatabase(${dbName}, ${dropFirst})`);
+var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
+    debug(`createFullDatabase(${dbName})`);
     // long timeout because DROP DATABASE might take a long time to error
     // if other processes have an open connection to that database
     mochaThis.timeout(20000);
@@ -96,8 +96,8 @@ var createFullDatabase = function(dbName, dropFirst=true, mochaThis, callback) {
     });
 };
 
-var createFromTemplate = function(dbName, dbTemplateName, dropFirst=true, mochaThis, callback) {
-    debug(`createFromTemplate(${dbName}, ${dbTemplateName}, ${dropFirst})`);
+var createFromTemplate = function(dbName, dbTemplateName, dropFirst, mochaThis, callback) {
+    debug(`createFromTemplate(${dbName}, ${dbTemplateName})`);
     // long timeout because DROP DATABASE might take a long time to error
     // if other processes have an open connection to that database
     mochaThis.timeout(20000);
@@ -143,7 +143,6 @@ var createFromTemplate = function(dbName, dbTemplateName, dropFirst=true, mochaT
 
 var establishSql = function(dbName, callback) {
     debug(`establishSql(${dbName})`);
-
     debug('establishSql(): initializing sqldb');
     var pgConfig = {
         user: postgresqlUser,
@@ -239,34 +238,41 @@ var databaseExists = function(dbName, callback) {
     });
 };
 
-
-module.exports = {
-
-    before: function(callback) {
-        debug(`before()`);
-        var that = this;
-        databaseExists('pltest_template', function(err, result) {
-            if (ERR(err, callback)) return;
-            if (result) {
-                createFromTemplate('pltest', 'pltest_template', true, that, function(err) {
+var setupDatabases = function(mochaThis, callback) {
+    debug(`setupDatabases()`);
+    databaseExists('pltest_template', (err, result) => {
+        if (ERR(err, callback));
+        if (result) {
+            createFromTemplate('pltest', 'pltest_template', true, mochaThis, function(err) {
+                if (ERR(err, callback)) return;
+                establishSql('pltest', function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        } else {
+            createFullDatabase('pltest_template', true, mochaThis, function(err) {
+                if (ERR(err, callback)) return;
+                createFromTemplate('pltest', 'pltest_template', true, mochaThis, function(err) {
                     if (ERR(err, callback)) return;
                     establishSql('pltest', function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
                 });
-            } else {
-                createFullDatabase('pltest_template', true, that, function(err) {
-                    if (ERR(err, callback)) return;
-                    createFromTemplate('pltest', 'pltest_template', true, that, function(err) {
-                        if (ERR(err, callback)) return;
-                        establishSql('pltest', function(err) {
-                            if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    });
-                });
-            }
+            });
+        }
+    });
+};
+
+module.exports = {
+
+    before: function(callback) {
+        debug(`before()`);
+        var that = this;
+        setupDatabases(that, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
         });
     },
 
@@ -277,22 +283,12 @@ module.exports = {
     beforeOnlyCreate: function(callback) {
         debug(`beforeOnlyCreate()`);
         var that = this;
-        databaseExists('pltest_template', function(err, result) {
+        setupDatabases(that, (err) => {
             if (ERR(err, callback)) return;
-            if (result) {
-                createFromTemplate('pltest', 'pltest_template', true, that, function(err) {
-                    if (ERR(err, callback)) return;
-                        callback(null);
-                });
-            } else {
-                createFullDatabase('pltest_template', true, that, function(err) {
-                    if (ERR(err, callback)) return;
-                    createFromTemplate('pltest', 'pltest_template', true, that, function(err) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                });
-            }
+            closeSql((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 
