@@ -18,9 +18,9 @@ describe('SPROC Stored Procedure Function Unit Testing', function() {
     describe('check_assessment_access', function() {
 
         it('setup sample environment', function(callback) {
-            setupCourse((err) => {
+            sqldb.query(sql.setup_pspl_link, {}, (err, result) => {
                 if (ERR(err, callback)) return;
-                callback(null);
+                callback();
             });
         });
 
@@ -99,11 +99,3 @@ describe('SPROC Stored Procedure Function Unit Testing', function() {
 
     });
 });
-
-var setupCourse = function(callback) {
-
-    sqldb.query(sql.setup_pspl_link, {}, (err, result) => {
-        if (ERR(err, callback)) return;
-        callback();
-    });
-};
