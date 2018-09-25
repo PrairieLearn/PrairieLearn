@@ -37,77 +37,33 @@ setup_assessments AS (
         (10, '423e8913-0608-4c85-9b2e-bca9c81f52d3', 'someExam', 'Some Exam', 1),
         (11, 'a0b4cd67-931d-4173-b722-23d3f3a359a5', 'someExam', 'Some Exam', 1),
         (12, '91fac0da-e943-4775-83ff-aef9487a1c9f', 'someExam', 'Some Exam', 1),
+        (13, '794666e4-bbf9-47c1-9613-6bf2057dbd1c', 'someExam', 'Some Exam', 1),
         (20, '71b1cf06-6494-4491-bc05-cba7f93dacfd', 'someExam', 'Some Exam', 2),
         (21, '5fe78f9c-bfeb-4065-a9f3-20ec0c00140f', 'someExam', 'Some Exam', 2),
         (22, 'd803d2df-000c-4949-b25b-d7781c31d726', 'someExam', 'Some Exam', 2),
+        (23, '0727036e-43a2-467c-a0ee-b1df8ffe7096', 'someExam', 'Some Exam', 2),
         (30, '3538dfb4-c0e4-4be6-80e1-a7f294904fc7', 'someExam', 'Some Exam', 3),
         (31, '2cf82007-d760-4f29-8755-42e7089c5352', 'someExam', 'Some Exam', 3),
         (32, '5f2e00b7-6ec4-4422-a8c4-dce04f6b6b05', 'someExam', 'Some Exam', 3),
         (40, '24fc184d-656b-44e5-979a-33e4d41abebd', 'someExam', 'Some Exam', 4),
         (41, '6a4eba13-930d-4e1b-99db-0a5b4205cf83', 'someExam', 'Some Exam', 4),
-        (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4)
+        (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4),
+        (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4)
 ),
 setup_assessment_access_rule AS (
-    INSERT INTO assessment_access_rules (id, assessment_id, mode, start_date, end_date, credit, exam_id) VALUES
-        (1, 10, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (2, 11, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 1),
-        (3, 12, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
-        (4, 20, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (5, 21, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 2),
-        (6, 22, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
-        (7, 40, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (8, 41, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 4),
-        (9, 42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5)
-)
-SELECT true;
-
-
--- BLOCK setup_pspl_linkOLD
-WITH
-setup_users AS (
-    INSERT INTO users (user_id, uid) VALUES
-        (1000, 'student@school.edu'),
-        (1010, 'ta@school.edu'),
-        (1020, 'instructor@school.edu')
-),
-setup_ps_courses AS (
-    INSERT INTO courses (course_id, pl_course_id, rubric) VALUES
-        (21, 1, 'previous semester'),
-        (22, 1, 'main'),
-        (23, null, 'proficiency'),
-        (24, null, 'other course'),
-        (25, null, 'never linked course')
-),
-setup_exams AS (
-    INSERT INTO exams (exam_id, course_id, exam_string) VALUES
-        (1, 22, 'Main 1'),
-        (2, 23, 'Prof 1'),
-        (3, 24, 'Other course 1'),
-        (4, 25, 'Linked exam')
-),
-setup_pl_course AS (
-    INSERT INTO pl_courses (id) VALUES (1), (2), (3)
-),
-setup_ci AS (
-    INSERT INTO course_instances (id, uuid, course_id) VALUES
-        (10, 'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d', 1), -- main
-        (11, '5756a615-cdc4-48e6-9836-79fb708a2f55', 1),  -- proficiency
-        (12, '335c2f78-f8d3-4a14-99da-53af231b0428', 2), -- other course
-        (13, '2256b06e-c00a-4596-a3b2-510f159d36d5', 3) -- never linked course
-),
-setup_assessments AS (
-    INSERT INTO assessments (id, uuid, tid, title, course_instance_id) VALUES
-        (200, '423e8913-0608-4c85-9b2e-bca9c81f52d3', 'Exam1tid', 'Exam 1', 10),
-        (201, '71b1cf06-6494-4491-bc05-cba7f93dacfd', 'OtherExam1', 'Exam 1', 12),
-        (202, '3538dfb4-c0e4-4be6-80e1-a7f294904fc7', 'Profexam', 'Proficiency Exam', 11),
-        (203, '24fc184d-656b-44e5-979a-33e4d41abebd', 'Neverlinked', 'Exam Linked Not Course', 13)
-),
-setup_assessment_access_rule AS (
-    INSERT INTO assessment_access_rules (id, assessment_id, mode, start_date, end_date, credit, exam_id) VALUES
-        (300, 200, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (301, 201, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (302, 202, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 2),
-        (303, 203, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 4)
+    INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_id) VALUES
+        (10, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (11, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 1),
+        (12, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (13, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (20, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (21, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 2),
+        (22, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (23, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (40, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (41, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 4),
+        (42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null)
 )
 SELECT true;
 
@@ -115,5 +71,12 @@ SELECT true;
 UPDATE courses SET pl_course_id=$pl_course_id WHERE course_id=$course_id;
 
 -- BLOCK insert_ps_reservation
-INSERT INTO reservations (exam_id, user_id, access_start, access_end) VALUES
-    ($exam_id, 1000, '2010-07-01 00:00:00-00', '2010-07-31 23:59:59-00');
+WITH
+remove_reservations AS (
+    DELETE FROM reservations
+),
+insert_new_reservation AS (
+    INSERT INTO reservations (exam_id, user_id, access_start, access_end) VALUES
+        ($exam_id, 1000, '2010-07-01 00:00:00-00', '2010-07-31 23:59:59-00')
+)
+SELECT true;
