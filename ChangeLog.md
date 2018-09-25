@@ -97,6 +97,8 @@
 
   * Fix `pl-matrix-component-input` element to adjust height (Mariana Silva).
 
+  * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
