@@ -1,4 +1,25 @@
--- BLOCK setup_caa_tests
+-- BLOCK setup_caa_generic_tests
+WITH
+setup_course AS (
+    INSERT INTO pl_courses (id) VALUES (1)
+),
+setup_ci AS (
+    INSERT INTO course_instances (id, uuid, course_id) VALUES
+        (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1)
+),
+setup_assessments AS (
+    INSERT INTO assessments (id, uuid, tid, title, course_instance_id) VALUES
+        (1, '490f481a-8a3e-4689-ad9c-110c19191570', 'tid', 'title', 1)
+),
+setup_aars AS (
+    INSERT INTO assessment_access_rules (id, assessment_id, mode, role, uids, start_date, end_date) VALUES
+        (10, 1, null, null, null, null, null),
+        (11, 1, 'Exam', null, null, null, null),
+        (12, 1, null, 'Instructor', null, null, null)
+)
+SELECT true;
+
+-- BLOCK setup_caa_scheduler_tests
 WITH
 setup_users AS (
     INSERT INTO users (user_id, uid) VALUES

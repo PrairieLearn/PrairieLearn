@@ -116,13 +116,13 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
 
 describe('Stored Procedure Function Unit Testing', function() {
 
-    before('set up testing server', helperDb.before);
-    after('tear down testing database', helperDb.after);
+    describe('check_assessment_access_rule generic tests', () => {
 
-    describe('check_assessment_access', function() {
+        before('set up testing server', helperDb.before);
+        after('tear down testing database', helperDb.after);
 
         before('setup sample environment', function(callback) {
-            sqldb.query(sql.setup_caa_tests, {}, (err, result) => {
+            sqldb.query(sql.setup_caa_generic_tests, {}, (err, result) => {
                 if (ERR(err, callback)) return;
                 callback();
             });
@@ -134,6 +134,56 @@ describe('Stored Procedure Function Unit Testing', function() {
         uid null or in list
         start_date, end_date
         ***/
+
+        it('pass for role Instructor', function(callback) {
+            var params = [
+                10,
+                'Exam',
+                'Instructor',
+                1020,
+                'instructor@school.edu',
+                '2010-07-07 06:06:06-00',
+                'US/Central',
+            ];
+
+            sqldb.call(`check_assessment_access`, params, (err, result) => {
+                if (ERR(err, result)) return;
+                assert.strictEqual(result.rows[0].authorized, true);
+                callback();
+            });
+        });
+
+        it('fail for role NULL', function(callback) {
+            var params = [
+                10,
+                'Exam',
+                null,
+                1020,
+                'instructor@school.edu',
+                '2010-07-07 06:06:06-00',
+                'US/Central',
+            ];
+
+            sqldb.call(`check_assessment_access`, params, (err, result) => {
+                if (ERR(err, result)) return;
+                assert.strictEqual(result.rows[0].authorized, false);
+                callback();
+            });
+        });
+
+    });
+
+    describe('check_assessment_access scheduler tests', function() {
+
+        before('set up testing server', helperDb.before);
+        after('tear down testing database', helperDb.after);
+
+        before('setup sample environment', function(callback) {
+            sqldb.query(sql.setup_caa_scheduler_tests, {}, (err, result) => {
+                if (ERR(err, callback)) return;
+                callback();
+            });
+        });
 
         describe('PL course not linked anywhere', () => {
             describe('Unlinked exam', () => {
@@ -152,7 +202,7 @@ describe('Stored Procedure Function Unit Testing', function() {
                 caa_reservation_tests(20, 2, 23, false, true);
             });
             describe('Linked exam', () => {
-                caa_reservation_tests(21, 2, 23, false, false);
+                caa_reservation_tests(21, 2, 23, false, true);
             });
             describe('Linked exam in different PS course', () => {
                 caa_reservation_tests(22, 5, 23, false, false);
@@ -164,7 +214,7 @@ describe('Stored Procedure Function Unit Testing', function() {
                 caa_reservation_tests(40, 4, 43, false, true);
             });
             describe('Linked exam', () => {
-                caa_reservation_tests(41, 4, 43, false, false);
+                caa_reservation_tests(41, 4, 43, false, true);
             });
             describe('Linked exam in different PS course', () => {
                 caa_reservation_tests(42, 5, 43, false, false);
