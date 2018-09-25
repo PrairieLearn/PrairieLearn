@@ -63,82 +63,64 @@ BEGIN
         EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
         EXIT schedule_access WHEN NOT use_date_check;
 
-        -- is there a corresponding PrairieSchedule course?
-        SELECT ps_c.course_id
-        INTO ps_course_id
-        FROM
-            assessments AS a
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-            JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
-            JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
-        WHERE
-            a.id = assessment_access_rule.assessment_id;
-        EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
+        IF assessment_access_rule.exam_id IS NOT NULL THEN
 
-        -- do we actually want to enforce PrairieSchedule linking?
-        SELECT ci.ps_linked INTO ps_linked
-        FROM
-            assessments AS a
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        WHERE
-            a.id = assessment_access_rule.assessment_id;
-        EXIT schedule_access WHEN NOT ps_linked; -- don't want linking, skip this check
+            SELECT r.*
+            INTO reservation
+            FROM
+                reservations AS r
+            WHERE
+                r.exam_id = assessment_access_rule.exam_id
+                AND r.user_id = check_assessment_access_rule.user_id
+                AND r.delete_date IS NULL
+                AND date BETWEEN r.access_start AND r.access_end
+            ORDER BY r.access_end DESC -- choose the longest-lasting if >1
+            LIMIT 1;
 
-        -- is there a current checked-in reservation?
-        SELECT r.*
-        INTO reservation
-        FROM
-            reservations AS r
-            JOIN exams AS e USING (exam_id)
-        WHERE
-            e.course_id = ps_course_id
-            AND r.user_id = check_assessment_access_rule.user_id
-            AND r.delete_date IS NULL
-            AND date BETWEEN r.access_start AND r.access_end
-        ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
-        LIMIT 1;
+            IF NOT FOUND THEN
+                authorized := FALSE;
+                EXIT schedule_access;
+            END IF;
 
-        IF NOT FOUND THEN
-            -- no reservation, so block access
-            authorized := FALSE;
-            EXIT schedule_access;
+        ELSE -- no rule.exam_id defined, so search the long way
+
+            -- is there a corresponding PrairieSchedule course?
+            -- that we actually want to enforce? (course_instance.ps_linked=true)
+            SELECT ps_c.course_id
+            INTO ps_course_id
+            FROM
+                assessments AS a
+                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+                JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
+            WHERE
+                ci.ps_linked IS TRUE AND
+                a.id = assessment_access_rule.assessment_id;
+            EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
+
+            -- is there a current checked-in reservation?
+            SELECT r.*
+            INTO reservation
+            FROM
+                assessments AS a
+                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                JOIN courses AS ps_c ON (ps_c.pl_course_id = ci.course_id)
+                JOIN exams AS e ON (e.course_id = ps_c.course_id)
+                JOIN reservations AS r USING (exam_id)
+            WHERE
+                a.id = assessment_access_rule.assessment_id
+                AND r.user_id = check_assessment_access_rule.user_id
+                AND r.delete_date IS NULL
+                AND date BETWEEN r.access_start AND r.access_end
+            ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
+            LIMIT 1;
+
+            IF NOT FOUND THEN
+                -- no reservation, so block access
+                authorized := FALSE;
+                EXIT schedule_access;
+            END IF;
         END IF;
     END schedule_access;
-
-    -- ############################################################
-    -- check access with a specific PrairieSchedule exam
-
-    << schedule_exam >>
-    DECLARE
-        reservation reservations;
-    BEGIN
-        -- this block is only for exam_id checking
-        EXIT schedule_exam WHEN assessment_access_rule.exam_id IS NULL;
-
-        -- require Exam mode
-        IF mode IS DISTINCT FROM 'Exam' THEN
-            authorized := FALSE;
-            EXIT schedule_exam;
-        END IF;
-
-        -- is there a current checked-in reservation?
-        SELECT r.*
-        INTO reservation
-        FROM
-            reservations AS r
-        WHERE
-            r.exam_id = assessment_access_rule.exam_id
-            AND r.user_id = check_assessment_access_rule.user_id
-            AND r.delete_date IS NULL
-            AND date BETWEEN r.access_start AND r.access_end
-        ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
-        LIMIT 1;
-
-        IF NOT FOUND THEN
-            -- no reservation, so block access
-            authorized := FALSE;
-            EXIT schedule_exam;
-        END IF;
-    END schedule_exam;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
