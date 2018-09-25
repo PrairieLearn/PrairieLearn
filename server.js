@@ -239,12 +239,43 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
     require('./pages/instructorAssessments/instructorAssessments'),
 ]);
+
+// single assessment
+
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', require('./middlewares/selectAndAuthzAssessment'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
-    require('./middlewares/selectAndAuthzAssessment'),
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
+    require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
+    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessmentStatistics', [
+    require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questionStatistics', [
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
+]);
+/*
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads', [
+    require('./pages/instructorAssessment/downloads/downloads'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
+    require('./pages/instructorAssessment/uploads/uploads'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading', [
+    require('./pages/instructorAssessment/regrading/regrading'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
+    require('./pages/instructorAssessment/instances/instances'),
+]);
+*/
+
+
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/shared/floatFormatters'),
