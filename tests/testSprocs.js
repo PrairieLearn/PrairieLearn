@@ -10,6 +10,101 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperDb = require('./helperDb');
 
 
+var caa_reservation_tests = function(assessment_id, exam_id, expectWideOpen=false) {
+
+    var expectedWord = 'fail';
+    var expectedBool = false;
+
+    // Handle the special case without any linking
+    if (expectWideOpen) {
+        expectedWord = 'pass';
+        expectedBool = true;
+    }
+
+    it('pass for instructor inside start_date/end_date', function(callback) {
+        var params = [
+            assessment_id,
+            'Exam',
+            'Instructor',
+            1002,
+            'instructor@school.edu',
+            '2010-06-06 06:06:06-00',
+            'US/Central',
+        ];
+
+        sqldb.call(`check_assessment_access`, params, (err, result) => {
+            if (ERR(err, result)) return;
+            assert.strictEqual(result.rows[0].authorized, true);
+            callback();
+        });
+    });
+
+    it(expectedWord + ' for student inside start_date/end_date, no reservation', function(callback) {
+        var params = [
+            assessment_id,
+            'Exam',
+            'Student',
+            1002,
+            'instructor@school.edu',
+            '2010-07-07 06:06:06-00',
+            'US/Central',
+        ];
+
+        sqldb.call(`check_assessment_access`, params, (err, result) => {
+            if (ERR(err, result)) return;
+            assert.strictEqual(result.rows[0].authorized, expectedBool);
+            callback();
+        });
+    });
+
+    it('create reservation for student', function(callback) {
+        sqldb.query(sql.insert_ps_reservation, {exam_id}, (err, result) => {
+            if (ERR(err,callback)) return;
+            callback();
+        });
+    });
+
+
+    it('pass for student inside start_date/end_date, checked in reservation, inside access_start/end', function(callback) {
+        var params = [
+            assessment_id,
+            'Exam',
+            'Student',
+            1000,
+            'student@school.edu',
+            '2010-07-07 06:06:06-00',
+            'US/Central',
+        ];
+
+        sqldb.call(`check_assessment_access`, params, (err, result) => {
+            if (ERR(err, result)) return;
+            assert.strictEqual(result.rows[0].authorized, true);
+            callback();
+        });
+    });
+
+    it(expectedWord + ' for student inside start_date/end_date, checked in reservation, after access_start/end', function(callback) {
+        var params = [
+            assessment_id,
+            'Exam',
+            'Student',
+            1000,
+            'student@school.edu',
+            '2010-08-07 06:06:06-00',
+            'US/Central',
+        ];
+
+        sqldb.call(`check_assessment_access`, params, (err, result) => {
+            if (ERR(err, result)) return;
+            assert.strictEqual(result.rows[0].authorized, expectedBool);
+            callback();
+        });
+    });
+};
+
+
+
+
 describe('SPROC Stored Procedure Function Unit Testing', function() {
 
     before('set up testing server', helperDb.before);
@@ -18,83 +113,50 @@ describe('SPROC Stored Procedure Function Unit Testing', function() {
     describe('check_assessment_access', function() {
 
         before('setup sample environment', function(callback) {
-            sqldb.query(sql.setup_pspl_link, {}, (err, result) => {
+            sqldb.query(sql.setup_caa_tests, {}, (err, result) => {
                 if (ERR(err, callback)) return;
                 callback();
             });
         });
 
-        it('pass for instructor inside start_date/end_date', function(callback) {
-            var params = [
-                201,
-                'Exam',
-                'Instructor',
-                102,
-                'instructor@school.edu',
-                '2010-06-06 06:06:06-00',
-                'US/Central',
-            ];
 
-            sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+        describe('PL course not linked anywhere', () => {
+            describe('unlinked exam', () => {
+                caa_reservation_tests(10, 1, true);
+            });
+            describe('linked exam', () => {
+                caa_reservation_tests(11, 1);
+            });
+            describe('linked exam in different PS course', () => {
+                caa_reservation_tests(12, 5);
             });
         });
 
-        it('pass for instructor outside start_date/end_date', function(callback) {
-            var params = [
-                201,
-                'Exam',
-                'Instructor',
-                102,
-                'instructor@school.edu',
-                '2020-06-06 06:06:06-00',
-                'US/Central',
-            ];
-
-            sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+        describe('PL course linked to 1 PS course', () => {
+            describe('unlinked exam', () => {
+                caa_reservation_tests(20, 2);
+            });
+            describe('linked exam', () => {
+                caa_reservation_tests(21, 2);
+            });
+            describe('linked exam in different PS course', () => {
+                caa_reservation_tests(22, 5);
             });
         });
 
-        it('pass for student inside start_date/end_date, no PL/PS linkage', function(callback) {
-            var params = [
-                201,
-                'Exam',
-                'Student',
-                102,
-                'instructor@school.edu',
-                '2010-06-06 06:06:06-00',
-                'US/Central',
-            ];
-
-            sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+        describe('PL course linked to >1 PS course', () => {
+            describe('unlinked exam', () => {
+                caa_reservation_tests(40, 4);
+            });
+            describe('linked exam', () => {
+                caa_reservation_tests(41, 4);
+            });
+            describe('linked exam in different PS course', () => {
+                caa_reservation_tests(42, 5);
             });
         });
 
-        it('fail for student outside start_date/end_date, no PL/PS linkage', function(callback) {
-            var params = [
-                201,
-                'Exam',
-                'Student',
-                102,
-                'instructor@school.edu',
-                '2020-06-06 06:06:06-00',
-                'US/Central',
-            ];
-
-            sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback();
-            });
-        });
+/*
 
         describe('link PL course to 1 PS course', () => {
 
@@ -105,174 +167,42 @@ describe('SPROC Stored Procedure Function Unit Testing', function() {
                 });
             });
 
-            it('pass for instructor inside start_date/end_date', function(callback) {
-                var params = [
-                    201,
-                    'Exam',
-                    'Instructor',
-                    102,
-                    'instructor@school.edu',
-                    '2010-06-06 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, true);
-                    callback();
-                });
-            });
-
-            it('fail for student inside start_date/end_date, no reservation', function(callback) {
-                var params = [
-                    201,
-                    'Exam',
-                    'Student',
-                    102,
-                    'instructor@school.edu',
-                    '2010-07-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, false);
-                    callback();
-                });
-            });
-
-            it('create reservation for student', function(callback) {
-                sqldb.query(sql.insert_ps_reservation, {exam_id: 3}, (err, result) => {
-                    if (ERR(err,callback)) return;
-                    callback();
-                });
-            });
-
-            it('pass for student inside start_date/end_date, checked in reservation, inside access_start/end', function(callback) {
-                var params = [
-                    201,
-                    'Exam',
-                    'Student',
-                    100,
-                    'student@school.edu',
-                    '2010-07-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, true);
-                    callback();
-                });
-            });
-
-            it('fail for student inside start_date/end_date, checked in reservation, after access_start/end', function(callback) {
-                var params = [
-                    201,
-                    'Exam',
-                    'Student',
-                    100,
-                    'student@school.edu',
-                    '2010-08-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, false);
-                    callback();
-                });
-            });
+            caa_reservation_tests(201, 3);
         });
         describe('link PL course to >1 PS course', () => {
-
-            it('pass for instructor inside start_date/end_date', function(callback) {
-                var params = [
-                    200,
-                    'Exam',
-                    'Instructor',
-                    102,
-                    'instructor@school.edu',
-                    '2010-06-06 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, true);
-                    callback();
-                });
-            });
-
-            it('fail for student inside start_date/end_date, no reservation', function(callback) {
-                var params = [
-                    200,
-                    'Exam',
-                    'Student',
-                    102,
-                    'instructor@school.edu',
-                    '2010-07-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, false);
-                    callback();
-                });
-            });
-
-            it('create reservation for student', function(callback) {
-                sqldb.query(sql.insert_ps_reservation, {exam_id: 1}, (err, result) => {
-                    if (ERR(err,callback)) return;
-                    callback();
-                });
-            });
-
-
-            it('pass for student inside start_date/end_date, checked in reservation, inside access_start/end', function(callback) {
-                var params = [
-                    200,
-                    'Exam',
-                    'Student',
-                    100,
-                    'student@school.edu',
-                    '2010-07-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, true);
-                    callback();
-                });
-            });
-
-            it('fail for student inside start_date/end_date, checked in reservation, after access_start/end', function(callback) {
-                var params = [
-                    200,
-                    'Exam',
-                    'Student',
-                    100,
-                    'student@school.edu',
-                    '2010-08-07 06:06:06-00',
-                    'US/Central',
-                ];
-
-                sqldb.call(`check_assessment_access`, params, (err, result) => {
-                    if (ERR(err, result)) return;
-                    assert.strictEqual(result.rows[0].authorized, false);
-                    callback();
-                });
-            });
+            caa_reservation_tests(200, 1);
         });
 
-        describe('link PL assessment to PS exam, linked PL course', function() {
-            it('needs work');
-        });
-        describe('link PL assessment to PS exam, not linked PL course', function() {
-            it('needs work');
+        describe('link PL assessment to PS exam, PL course not linked anywhere', function() {
+            caa_reservation_tests(203, 4);
         });
 
+        describe('link PL assessment to PS exam, PL course not linked to this PS course but to others', function() {
+            caa_reservation_tests(202, 2);
+        });
+
+        describe('link PL assessment to PS exam, PL course linked to this PS course', function() {
+            caa_reservation_tests(202, 2);
+        });
+*/
     });
 });
+
+
+var foo = `
+
+PL course not linked anywhere
+PL course linked to 1 PS course
+PL course linked to 2 PS courses
+
+
+previous semesters linked
+proficiency PS and course PS
+
+exam link with no PL link
+exam link with PL link for this PS course
+exam link with PL link for other PS courses but not this one
+
+
+
+`;
