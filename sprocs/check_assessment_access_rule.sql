@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
         IN role enum_role,
-        IN user_id bigint,  -- not used?
+        IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
@@ -59,12 +59,19 @@ BEGIN
         ps_course_id bigint;
         reservation reservations;
     BEGIN
-        -- only needed for Exams when we care about the date
-        EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
+        -- reservation checking implies we are given a date to check
         EXIT schedule_access WHEN NOT use_date_check;
 
+        -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_id IS NOT NULL THEN
 
+            -- require exam mode
+            IF mode IS DISTINCT FROM 'Exam' THEN
+                authorized := FALSE;
+                EXIT schedule_access;
+            END IF;
+
+            -- is there a checked-in reservation?
             SELECT r.*
             INTO reservation
             FROM
@@ -78,11 +85,15 @@ BEGIN
             LIMIT 1;
 
             IF NOT FOUND THEN
+                -- no reservation so block access
                 authorized := FALSE;
                 EXIT schedule_access;
             END IF;
 
         ELSE -- no rule.exam_id defined, so search the long way
+
+            -- only needed for exams
+            EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
 
             -- is there a corresponding PrairieSchedule course?
             -- that we actually want to enforce? (course_instance.ps_linked=true)
