@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var pg = require('pg');
 var path = require('path');
+var fs = require('fs');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
@@ -10,8 +11,16 @@ var sprocs = require('../sprocs');
 
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';
+var postgresqlDatabaseTemplate = 'pltest_template';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://postgres@localhost/postgres';
+
+/* If this file exists, the databases won't be dropped after testing.
+ * (They will be overwritten when you start a new test.)
+ * Exists to help development when you want to inspect the databases
+ * afterwards and you don't need to edit this file.
+ */
+var keepFile = 'tests/keepdb';
 
 var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
     debug(`createFullDatabase(${dbName})`);
@@ -169,8 +178,13 @@ var closeSql = function(callback) {
     });
 };
 
-var dropDatabase = function(dbName, mochaThis, callback) {
+var dropDatabase = function(dbName, mochaThis, callback, forceDrop=false) {
     debug(`dropDatabase(${dbName})`);
+    if (fs.existsSync(keepFile) && !forceDrop) {
+        // eslint-disable-next-line no-console
+        console.log(`${keepFile} file exists, not dropping database ${dbName}`);
+        return callback(null);
+    }
     // long timeout because DROP DATABASE might take a long time to error
     // if other processes have an open connection to that database
     mochaThis.timeout(20000);
@@ -240,22 +254,22 @@ var databaseExists = function(dbName, callback) {
 
 var setupDatabases = function(mochaThis, callback) {
     debug(`setupDatabases()`);
-    databaseExists('pltest_template', (err, result) => {
+    databaseExists(postgresqlDatabaseTemplate, (err, result) => {
         if (ERR(err, callback));
         if (result) {
-            createFromTemplate('pltest', 'pltest_template', true, mochaThis, function(err) {
+            createFromTemplate(postgresqlDatabase, postgresqlDatabaseTemplate, true, mochaThis, function(err) {
                 if (ERR(err, callback)) return;
-                establishSql('pltest', function(err) {
+                establishSql(postgresqlDatabase, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             });
         } else {
-            createFullDatabase('pltest_template', true, mochaThis, function(err) {
+            createFullDatabase(postgresqlDatabaseTemplate, true, mochaThis, function(err) {
                 if (ERR(err, callback)) return;
-                createFromTemplate('pltest', 'pltest_template', true, mochaThis, function(err) {
+                createFromTemplate(postgresqlDatabase, postgresqlDatabaseTemplate, true, mochaThis, function(err) {
                     if (ERR(err, callback)) return;
-                    establishSql('pltest', function(err) {
+                    establishSql(postgresqlDatabase, function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
@@ -297,7 +311,7 @@ module.exports = {
         var that = this;
         closeSql(function(err) {
             if (ERR(err, callback)) return;
-            dropDatabase('pltest', that, function(err) {
+            dropDatabase(postgresqlDatabase, that, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -309,10 +323,10 @@ module.exports = {
         var that = this;
         closeSql(function(err) {
             if (ERR(err, callback)) return;
-            dropDatabase('pltest_template', that, function(err) {
+            dropDatabase(postgresqlDatabaseTemplate, that, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
-            });
+            }, true); // add flag to always drop the template regardless of keepFile
         });
     },
 };
