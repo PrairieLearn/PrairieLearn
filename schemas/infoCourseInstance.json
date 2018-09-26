@@ -24,11 +24,6 @@
             "type": "string",
             "default": "America/Chicago"
         },
-        "allowIssueReporting": {
-            "description": "Whether to allow students to report issues for assessment questions (can be overridden per-assessment)",
-            "type": "boolean",
-            "default": true
-        },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
             "type": "object",

@@ -170,6 +170,9 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+  * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
+
+  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
