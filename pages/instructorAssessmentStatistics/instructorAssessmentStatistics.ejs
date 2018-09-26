@@ -18,7 +18,7 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment'}); %>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'assessmentStatistics'}); %>
     <div id="content" class="container">
 
       <!-- ###################################################################### -->
@@ -61,7 +61,7 @@
         </div>
         <div class="card-footer">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
         </div>
 
@@ -112,7 +112,7 @@
         </div>
         <div class="card-footer">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
         </div>
 
@@ -200,7 +200,7 @@
 
         <div class="card-footer">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
             <br/>
             Each day shows a histogram of the scores on this assessment for that day. The widths are scaled relative to the maximum value across all bins and days. The thick black horizontal lines are the mean score for each day.
           </small>

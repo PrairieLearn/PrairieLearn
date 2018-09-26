@@ -1,7 +1,8 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const debug = require('debug')('prairielearn:instructorAssessment/questions');
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');

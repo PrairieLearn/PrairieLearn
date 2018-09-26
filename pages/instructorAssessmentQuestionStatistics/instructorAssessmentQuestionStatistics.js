@@ -4,7 +4,8 @@ const async = require('async');
 const csvStringify = require('csv').stringify;
 const express = require('express');
 const router = express.Router();
-const debug = require('debug')('prairielearn:instructorAssessment');
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 
 const error = require('@prairielearn/prairielib/error');
@@ -130,7 +131,7 @@ router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'refresh_stats') {
         var params = [
-            req.locals.assessment.id,
+            res.locals.assessment.id,
         ];
         sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function(err) {
           if (ERR(err, next)) return;

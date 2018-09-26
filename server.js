@@ -252,18 +252,18 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessmentStatistics', [
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics', [
     require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questionStatistics', [
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics', [
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
 ]);
-/*
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads', [
-    require('./pages/instructorAssessment/downloads/downloads'),
+    require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
 ]);
+/*
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
     require('./pages/instructorAssessment/uploads/uploads'),
 ]);

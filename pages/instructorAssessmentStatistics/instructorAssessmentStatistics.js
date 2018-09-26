@@ -3,7 +3,8 @@ const async = require('async');
 const express = require('express');
 const router = express.Router();
 const csvStringify = require('csv').stringify;
-const debug = require('debug')('prairielearn:instructorAssessment');
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');

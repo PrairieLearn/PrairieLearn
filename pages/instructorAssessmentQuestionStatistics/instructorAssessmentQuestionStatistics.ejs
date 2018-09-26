@@ -18,7 +18,7 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment'}); %>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'questionStatistics'}); %>
     <div id="content" class="container">
 
       <!-- ###################################################################### -->
@@ -133,7 +133,7 @@
         </div>
         <div class="card-footer">
           <p>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
           <small>
             <ul>
@@ -352,7 +352,7 @@
         </div>
         <div class="card-footer">
           <p>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
           <small>
             <ul>
