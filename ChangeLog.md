@@ -120,6 +120,7 @@
   * Fix unexpected token error in administrator overview page (Tim Bretl).
 
   * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
+  * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
@@ -160,6 +161,7 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+  * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
 * __3.0.0__ - 2018-05-23
 
