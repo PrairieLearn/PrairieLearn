@@ -98,6 +98,7 @@
   * Fix `pl-matrix-component-input` element to adjust height (Mariana Silva).
 
   * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
+  * Fix `tools/dump_filter.sh` to drop `pg_stat_statements` for PostgreSQL 10 (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
