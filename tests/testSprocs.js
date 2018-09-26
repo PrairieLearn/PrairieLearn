@@ -1,9 +1,6 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var assert = require('chai').assert;
-var async = require('async');
 
-var config = require('../lib/config');
 var sqldb = require('@prairielearn/prairielib').sqldb;
 var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -42,7 +39,7 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
     describe(`with checked-in reservation for student for exam ${exam_id}`, () => {
 
         before(`create checked-in reservation for student for exam ${exam_id}`, function(callback) {
-            sqldb.query(sql.insert_ps_reservation, {exam_id}, (err, result) => {
+            sqldb.query(sql.insert_ps_reservation, {exam_id}, (err, _result) => {
                 if (ERR(err,callback)) return;
                 callback();
             });
@@ -122,7 +119,7 @@ describe('Stored Procedure Function Unit Testing', function() {
         after('tear down testing database', helperDb.after);
 
         before('setup sample environment', function(callback) {
-            sqldb.query(sql.setup_caa_generic_tests, {}, (err, result) => {
+            sqldb.query(sql.setup_caa_generic_tests, {}, (err, _result) => {
                 if (ERR(err, callback)) return;
                 callback();
             });
@@ -262,7 +259,7 @@ describe('Stored Procedure Function Unit Testing', function() {
         after('tear down testing database', helperDb.after);
 
         before('setup sample environment', function(callback) {
-            sqldb.query(sql.setup_caa_scheduler_tests, {}, (err, result) => {
+            sqldb.query(sql.setup_caa_scheduler_tests, {}, (err, _result) => {
                 if (ERR(err, callback)) return;
                 callback();
             });
