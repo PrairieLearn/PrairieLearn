@@ -19,18 +19,8 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var sanitizeName = function(name) {
-    return name.replace(/[^a-zA-Z0-9]/g, '_');
-};
-
-var filenames = function(locals) {
-    var prefix = sanitizeName(locals.course.short_name)
-        + '_'
-        + sanitizeName(locals.course_instance.short_name)
-        + '_'
-        + sanitizeName(locals.assessment_set.abbreviation)
-        + sanitizeName(locals.assessment.number)
-        + '_';
+const filenames = function(locals) {
+    const prefix = assessment.filenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
     return {
         scoreStatsCsvFilename:          prefix + 'score_stats.csv',
         durationStatsCsvFilename:       prefix + 'duration_stats.csv',
