@@ -13,11 +13,18 @@ setup_assessments AS (
 ),
 setup_aars AS (
     INSERT INTO assessment_access_rules (id, assessment_id, mode, role, uids, start_date, end_date) VALUES
-        (10, 1, null, null, null, null, null),
-        (11, 1, 'Exam', null, null, null, null),
-        (12, 1, null, 'Instructor', null, null, null)
+        (1, 1, 'Exam', 'TA', '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00')
 )
 SELECT true;
+
+-- BLOCK caar_test
+SELECT
+    f.*
+FROM
+    assessment_access_rules AS aar,
+    check_assessment_access_rule(aar, $mode, $role, $user_id, $uid, $date, $use_date_check) AS f
+WHERE
+    aar.id=$aar_id;
 
 -- BLOCK setup_caa_scheduler_tests
 WITH
@@ -87,9 +94,6 @@ setup_assessment_access_rule AS (
         (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null)
 )
 SELECT true;
-
--- BLOCK insert_ps_course_link
-UPDATE courses SET pl_course_id=$pl_course_id WHERE course_id=$course_id;
 
 -- BLOCK insert_ps_reservation
 WITH
