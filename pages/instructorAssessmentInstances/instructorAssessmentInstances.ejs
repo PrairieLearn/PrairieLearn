@@ -12,9 +12,9 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment'}); %>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'instances'}); %>
     <div id="content" class="container">
-
+      
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -93,17 +93,7 @@
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
             </a>
-            <a class="btn btn-sm btn-light" role="button" tabindex="0"
-               data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
-              <i class="fa fa-sync" aria-hidden="true"></i> Regrade all assessment instances
-            </a>
           </div>
-        </div>
-        <div class="card-body">
-          <small>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>.
-            Click on a column header to sort. Shift-click on a second header to sub-sort.
-          </small>
         </div>
 
         <div class="table-responsive">
@@ -252,11 +242,6 @@
               });
           });
         </script>
-        <div class="card-footer">
-          <small>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
-          </small>
-        </div>
       </div>
 
     </div>

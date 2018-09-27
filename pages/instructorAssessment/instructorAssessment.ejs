@@ -9,15 +9,15 @@
 
       <h1><%= assessment_set.name %> <%= assessment.number %></h1>
 
-      <ul>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions/">Questions</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access/">Access control</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/">Assessment statistics</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics/">Question statistics</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/">Downloads</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads/">Uploads</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading/">Regrading</a></li>
-        <li><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/">Student assessments</a></li>
+      <ul class="list-group">
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions/">Questions</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access/">Access control</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/">Assessment statistics</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics/">Question statistics</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/">Downloads</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads/">Uploads</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading/">Regrading</a></li>
+        <li class="list-group-item list-group-item-action"><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/">Student assessments</a></li>
       </ul>
 
     </div>
