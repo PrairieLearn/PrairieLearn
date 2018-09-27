@@ -24,20 +24,49 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
+      <div class="modal fade" id="refreshAssessmentQuestionStatsModal" tabindex="-1"
+           role="dialog" aria-labelledby="refreshStatsAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title"
+                  id="refreshAssessmentQuestionStatsModalLabel">Refresh statistics</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to refresh all statistics
+              for <strong><%= assessment_set.name %>
+                    <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="refresh-stats-form" method="POST">
+                <input type="hidden" name="__action" value="refresh_stats">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination
+          <div class="ml-auto">
+            <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
+            </a>
+          </div>
         </div>
 
         <% if (assessment_stat.number > 0) { %>
         <div class="card-body">
-          <p>
-            <a class="btn btn-xs btn-secondary" role="button"
-               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
-            </a>
-            Last calculated: <%= stats_last_updated %>
-          </p>
           <div id="difficultyDiscriminationScatter" class="scatter"></div>
           <script>
             $(function() {
@@ -149,32 +178,6 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-
-      <div class="modal fade" id="refreshAssessmentQuestionStatsModal" tabindex="-1"
-           role="dialog" aria-labelledby="refreshStatsAssessmentInstances">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h4 class="modal-title"
-                  id="refreshAssessmentQuestionStatsModalLabel">Refresh statistics</h4>
-            </div>
-            <div class="modal-body">
-              Are you sure you want to refresh all statistics
-              for <strong><%= assessment_set.name %>
-                    <%= assessment.number %></strong>? This cannot be
-              undone.
-            </div>
-            <div class="modal-footer">
-              <form name="refresh-stats-form" method="POST">
-                <input type="hidden" name="__action" value="refresh_stats">
-                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger">Submit</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -376,6 +379,9 @@
 
         </div>
       </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
 
     </div>
   </body>
