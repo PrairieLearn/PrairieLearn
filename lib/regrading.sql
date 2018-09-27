@@ -28,3 +28,18 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
 WHERE
     a.id = $assessment_id;
+
+-- BLOCK select_regrade_assessment_instances
+SELECT
+    ai.id AS assessment_instance_id,
+    assessment_instance_label(ai, a, aset),
+    u.uid AS user_uid
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, u.user_id, ai.number;
