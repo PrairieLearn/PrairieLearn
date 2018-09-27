@@ -46,3 +46,12 @@ GROUP BY
     ai_by_user_and_date.date
 ORDER BY
     ai_by_user_and_date.date;
+
+-- BLOCK user_scores
+SELECT
+    ai.score_perc,
+    EXTRACT(EPOCH FROM ai.duration) AS duration_secs
+FROM
+    assessment_instances AS ai
+WHERE
+    ai.assessment_id = $assessment_id;

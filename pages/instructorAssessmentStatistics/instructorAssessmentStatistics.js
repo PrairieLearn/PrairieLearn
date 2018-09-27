@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const _ = require('lodash');
 const async = require('async');
 const express = require('express');
 const router = express.Router();
@@ -48,6 +49,15 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_score_histogram_by_date = result.rows;
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('query user_scores');
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.user_scores, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.user_scores = result.rows;
                 callback(null);
             });
         },
