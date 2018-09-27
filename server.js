@@ -267,9 +267,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
     require('./pages/instructorAssessment/uploads/uploads'),
 ]);
+*/
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading', [
-    require('./pages/instructorAssessment/regrading/regrading'),
+    require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
 ]);
+/*
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
     require('./pages/instructorAssessment/instances/instances'),
 ]);
