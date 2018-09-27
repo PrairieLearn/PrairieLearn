@@ -75,7 +75,7 @@
 
   * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
 
-  * Fig bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
+  * Fix bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
 
   * Fix bug in `pl-symbolic-input` to handle submissions that simplify to invalid expressions (Tim Bretl).
 
@@ -98,6 +98,8 @@
   * Fix `pl-matrix-component-input` element to adjust height (Mariana Silva).
 
   * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
+
+  * Fix slow assessment instance deletes (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
