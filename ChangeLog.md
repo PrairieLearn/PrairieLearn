@@ -137,6 +137,7 @@
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
+  * Change default blocked event-loop warning threshold up to 200 ms (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
