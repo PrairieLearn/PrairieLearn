@@ -35,12 +35,8 @@ WITH results AS (
         open = true,
         date_limit = NULL,
         auto_close = FALSE
-    FROM
-        assessments AS a
     WHERE
         ai.id = $assessment_instance_id
-        AND a.id = ai.assessment_id
-        AND a.id = $assessment_id
     RETURNING
         ai.open,
         ai.id AS assessment_instance_id
