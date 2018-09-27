@@ -1,20 +1,11 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const async = require('async');
-const csvStringify = require('csv').stringify;
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const archiver = require('archiver');
 
 const error = require('@prairielearn/prairielib/error');
-const logger = require('../../lib/logger');
-const config = require('../../lib/config');
-const serverJobs = require('../../lib/server-jobs');
 const regrading = require('../../lib/regrading');
-const csvMaker = require('../../lib/csv-maker');
-const { paginateQuery } = require('../../lib/paginate');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');

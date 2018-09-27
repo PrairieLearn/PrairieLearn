@@ -6,7 +6,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const archiver = require('archiver');
 
 const error = require('@prairielearn/prairielib/error');
 const assessment = require('../../lib/assessment');

@@ -1,14 +1,11 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const async = require('async');
-const csvStringify = require('csv').stringify;
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 
-const error = require('@prairielearn/prairielib/error');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const assessment = require('../../lib/assessment');
@@ -38,7 +35,7 @@ const setFilenames = function(locals) {
     locals.allFilesZipFilename = prefix + 'all_files.zip';
 };
 
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res, _next) {
     debug('GET /');
     setFilenames(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

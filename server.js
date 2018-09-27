@@ -12,7 +12,7 @@ const https = require('https');
 const blocked = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
-const multer  = require('multer')
+const multer  = require('multer');
 const argv = require('yargs-parser') (process.argv.slice(2));
 
 const logger = require('./lib/logger');
@@ -32,7 +32,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 
-const upload = multer({storage: multer.memoryStorage()})
+const upload = multer({storage: multer.memoryStorage()});
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
