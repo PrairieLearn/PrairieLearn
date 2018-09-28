@@ -18,8 +18,9 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment'}); %>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'uploads'}); %>
     <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'uploads'}); %>
 
       <div class="modal fade" id="uploadQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadQuestionScores">
         <div class="modal-dialog" role="document">
