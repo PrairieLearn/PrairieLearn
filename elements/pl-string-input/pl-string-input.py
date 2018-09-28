@@ -145,7 +145,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     # Get allow-blank option
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)

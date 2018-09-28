@@ -137,6 +137,8 @@
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
+  * Change `pl-string-input` making removal of leading and trailing spaces the default option (Mariana Silva).
+
 
 * __3.0.0__ - 2018-05-23
 
