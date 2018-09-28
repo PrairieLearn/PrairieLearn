@@ -1,19 +1,6 @@
-<pl-question-panel>
-  <p> 1) For the following python code snippet, enter below the resulting string:</p>
-
-<pl-code language="python">
-a = "{{params.stringname}}"*{{params.a}}
-</pl-code>
-
-</pl-question-panel>
-
-<p>
-<pl-string-input answers-name="ans1" label="a = ">
-</pl-string-input>
-</p>
 
 <pl-question-panel>
-<p> 2) For the following python code snippet, what is d = b + c?</p>
+<p> 1) For the following python code snippet, what is b + c?</p>
 <pl-code language="python">
   b = "{{params.b}}"
   c = "{{params.c}}"
@@ -26,7 +13,7 @@ a = "{{params.stringname}}"*{{params.a}}
 </p>
 
 <pl-question-panel>
-<p>3) Enter the string below, however include trailing and leading blanks.
+<p>2) Enter the string below, however include trailing and leading blanks.
 By default, the attribute <code>remove-leading-trailing</code> is set to <code>true</code>.
 </p>
 <pl-code language="python">
@@ -40,7 +27,7 @@ By default, the attribute <code>remove-leading-trailing</code> is set to <code>t
 </p>
 
 <pl-question-panel>
-<p> 4) Enter the string below, however include blank spaces between some of the numbers.
+<p> 3) Enter the string below, however include blank spaces between some of the numbers.
 When using the attribute <code>remove-spaces="true"</code>, the answer will
 still be evaluated as correct. This example also uses the attribute
 <code>placeholder="string"</code>,
@@ -55,6 +42,21 @@ to add a placeholder indicating the expected input is of type "string".</p>
 </pl-string-input>
 </p>
 
+<pl-question-panel>
+  <p> 4) For the following python code snippet, enter below the result value for a.
+    Here we set <code>remove-leading-trailing="false"</code>. 
+  </p>
+
+<pl-code language="python">
+a = "{{params.stringname}}"*{{params.a}}
+</pl-code>
+
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans1" remove-leading-trailing="false" label="a = ">
+</pl-string-input>
+</p>
 
 <pl-question-panel>
 <p> 5) The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
