@@ -27,7 +27,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', 'inline')
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', True)
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
     placeholder = pl.get_string_attrib(element, 'placeholder', None)
 
@@ -167,7 +167,7 @@ def grade(element_html, data):
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
 
     # Get remove-leading-trailing option
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', True)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)

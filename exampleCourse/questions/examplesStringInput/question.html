@@ -27,15 +27,15 @@ a = "{{params.stringname}}"*{{params.a}}
 
 <pl-question-panel>
 <p>3) Enter the string below, however include trailing and leading blanks.
- When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
- still be evaluated as correct. </p>
+By default, the attribute <code>remove-leading-trailing</code> is set to <code>true</code>.
+</p>
 <pl-code language="python">
 "{{params.d}}"
 </pl-code>
 </pl-question-panel>
 
 <p>
-<pl-string-input answers-name="ans3" remove-leading-trailing="true">
+<pl-string-input answers-name="ans3">
 </pl-string-input>
 </p>
 
