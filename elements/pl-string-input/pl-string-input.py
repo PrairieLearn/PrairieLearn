@@ -27,16 +27,21 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', 'inline')
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', True)
-    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
+    remove_leading_trailing = pl.get_boolean_attrib(element, 'remove-leading-trailing', True)
+    remove_spaces = pl.get_boolean_attrib(element, 'remove-spaces', False)
     placeholder = pl.get_string_attrib(element, 'placeholder', None)
 
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
+        if remove_leading_trailing:
+            trailing_hint = 'Leading and trailing spaces will be removed from your answer.'
+        else:
+            trailing_hint = 'Leading and trailing spaces will be allowed (included as part of your answer).'
+
         # Get info strings
-        info_params = {'format': True}
+        info_params = {'format': True, 'add_hint_message': trailing_hint}
         with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             template = f.read()
             info = chevron.render(template, info_params).strip()
@@ -164,10 +169,10 @@ def grade(element_html, data):
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     # Get remove-spaces option
-    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
+    remove_spaces = pl.get_boolean_attrib(element, 'remove-spaces', False)
 
     # Get remove-leading-trailing option
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', True)
+    remove_leading_trailing = pl.get_boolean_attrib(element, 'remove-leading-trailing', True)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
