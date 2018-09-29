@@ -28,10 +28,10 @@
             </div>
             <div class="modal-body">
               <%- include('csvHelpQuestionScores'); %>
-              <form name="upload-question-scores-form" method="POST">
+              <form name="upload-question-scores-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
-                    <input type="file" class="custom-file-input" id="uploadQuestionScoresFileInput">
+                    <input type="file" name="file" class="custom-file-input" id="uploadQuestionScoresFileInput">
                     <label class="custom-file-label" for="uploadQuestionScoresFileInput">Choose CSV file</label>
                   </div>
                 </div>
@@ -57,10 +57,10 @@
             </div>
             <div class="modal-body">
               <%- include('csvHelpAssessmentScores'); %>
-              <form name="upload-assessment-instance-scores-form" method="POST">
+              <form name="upload-assessment-instance-scores-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
-                    <input type="file" class="custom-file-input" id="uploadAssessmentInstanceScoresFileInput">
+                    <input type="file" name="file" class="custom-file-input" id="uploadAssessmentInstanceScoresFileInput">
                     <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput">Choose CSV file</label>
                   </div>
                 </div>

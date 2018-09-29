@@ -12,8 +12,8 @@ const https = require('https');
 const blocked = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
-const multer  = require('multer');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const multer  = require('multer');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -31,8 +31,6 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
-
-const upload = multer({storage: multer.memoryStorage()});
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -113,6 +111,12 @@ if (config.hasAzure) {
     };
     passport.use(new OIDCStrategy(azureConfig, function(iss, sub, profile, accessToken, refreshToken, done) {return done(null, profile);}));
 }
+
+// special parsing of file upload paths -- this is inelegant having it
+// separate from the route handlers but it seems to be necessary
+// Special handling of file-upload routes so that we can parse multipart/form-data
+const upload = multer({storage: multer.memoryStorage()});
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));

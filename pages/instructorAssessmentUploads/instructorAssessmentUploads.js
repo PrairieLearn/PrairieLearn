@@ -23,12 +23,22 @@ router.get('/', function(req, res, next) {
     });
 });
 
-const uploadQuestionScores = function(req, locals, callback) {
+const uploadQuestionScores = function(assessment_id, csvFile, authn_user_id, callback) {
+    if (csvFile == null) {
+        return callback(new Error('No CSV file uploaded'));
+    }
     const job_sequence_id = -1;
+    console.log('csvFile', csvFile);
+    const csvData = csvFile.buffer.toString();
+    console.log('csvData', csvData);
+    process.exit(0);
     callback(null, job_sequence_id);
 };
 
-const uploadAssessmentInstanceScores = function(req, locals, callback) {
+const uploadAssessmentInstanceScores = function(assessment_id, csvFile, authn_user_id, callback) {
+    if (req.file == null) {
+        return callback(new Error('No CSV file uploaded'));
+    }
     const job_sequence_id = -1;
     callback(null, job_sequence_id);
 };
@@ -36,12 +46,12 @@ const uploadAssessmentInstanceScores = function(req, locals, callback) {
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'upload_question_scores') {
-        uploadQuestionScores(req, res.locals, function(err, job_sequence_id) {
+        uploadQuestionScores(res.locals.assessment.id, req.file, res.locals.authn_user.id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'upload_assessment_instance_scores') {
-        uploadAssessmentInstanceScores(req, res.locals, function(err, job_sequence_id) {
+        uploadAssessmentInstanceScores(res.locals.assessment.id, req.file, res.locals.authn_user.id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
