@@ -4,6 +4,7 @@ const router = express.Router();
 const debug = require('debug')('prairielearn:instructorAssessment');
 
 const error = require('@prairielearn/prairielib/error');
+const scoreUpload = require('../../lib/score-upload');
 const serverJobs = require('../../lib/server-jobs');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -23,35 +24,15 @@ router.get('/', function(req, res, next) {
     });
 });
 
-const uploadQuestionScores = function(assessment_id, csvFile, authn_user_id, callback) {
-    if (csvFile == null) {
-        return callback(new Error('No CSV file uploaded'));
-    }
-    const job_sequence_id = -1;
-    console.log('csvFile', csvFile);
-    const csvData = csvFile.buffer.toString();
-    console.log('csvData', csvData);
-    process.exit(0);
-    callback(null, job_sequence_id);
-};
-
-const uploadAssessmentInstanceScores = function(assessment_id, csvFile, authn_user_id, callback) {
-    if (req.file == null) {
-        return callback(new Error('No CSV file uploaded'));
-    }
-    const job_sequence_id = -1;
-    callback(null, job_sequence_id);
-};
-
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'upload_question_scores') {
-        uploadQuestionScores(res.locals.assessment.id, req.file, res.locals.authn_user.id, function(err, job_sequence_id) {
+        scoreUpload.uploadQuestionScores(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'upload_assessment_instance_scores') {
-        uploadAssessmentInstanceScores(res.locals.assessment.id, req.file, res.locals.authn_user.id, function(err, job_sequence_id) {
+        scoreUpload.uploadAssessmentInstanceScores(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });

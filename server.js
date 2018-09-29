@@ -115,7 +115,14 @@ if (config.hasAzure) {
 // special parsing of file upload paths -- this is inelegant having it
 // separate from the route handlers but it seems to be necessary
 // Special handling of file-upload routes so that we can parse multipart/form-data
-const upload = multer({storage: multer.memoryStorage()});
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fieldSize: 1e7, // max in bytes
+        fileSize: 1e7, // max in bytes
+        parts: 100, // max number of fields + files
+    },
+});
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
 
 // Limit to 1MB of JSON
