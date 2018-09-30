@@ -19,24 +19,24 @@
     <div id="content" class="container">
       <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'uploads'}); %>
 
-      <div class="modal fade" id="uploadQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadQuestionScores">
+      <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="uploadQuestionScoresModalLabel">Upload new question scores</h4>
+              <h4 class="modal-title" id="uploadInstanceQuestionScoresModalLabel">Upload new question scores</h4>
             </div>
             <div class="modal-body">
-              <%- include('csvHelpQuestionScores'); %>
-              <form name="upload-question-scores-form" method="POST" enctype="multipart/form-data">
+              <%- include('csvHelpInstanceQuestionScores'); %>
+              <form name="upload-instance-question-scores-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
-                    <input type="file" name="file" class="custom-file-input" id="uploadQuestionScoresFileInput">
-                    <label class="custom-file-label" for="uploadQuestionScoresFileInput">Choose CSV file</label>
+                    <input type="file" name="file" class="custom-file-input" id="uploadInstanceQuestionScoresFileInput">
+                    <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput">Choose CSV file</label>
                   </div>
                 </div>
                 <div class="d-flex justify-content-end">
                   <div class="form-group mb-0">
-                    <input type="hidden" name="__action" value="upload_question_scores">
+                    <input type="hidden" name="__action" value="upload_instance_question_scores">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Upload</button>
@@ -55,7 +55,7 @@
               <h4 class="modal-title" id="uploadAssessmentInstanceScoresModalLabel">Upload new total scores</h4>
             </div>
             <div class="modal-body">
-              <%- include('csvHelpAssessmentScores'); %>
+              <%- include('csvHelpAssessmentInstanceScores'); %>
               <form name="upload-assessment-instance-scores-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
@@ -86,17 +86,17 @@
           <table class="table">
             <tr>
               <td style="width: 1%">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadQuestionScoresModal">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadInstanceQuestionScoresModal">
                   <i class="fas fa-upload"></i> Upload new question scores
                 </button>
               </td>
               <td>
                 <p>
                   Upload a CSV file to set per-question scores for individual students.
-                  <a data-toggle="collapse" href="#uploadQuestionScoresHelp">Show details...</a>
+                  <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">Show details...</a>
                 </p>
-                <div class="collapse" id="uploadQuestionScoresHelp">
-                  <%- include('csvHelpQuestionScores'); %>
+                <div class="collapse" id="uploadInstanceQuestionScoresHelp">
+                  <%- include('csvHelpInstanceQuestionScores'); %>
                 </div>
               </td>
             </tr>
@@ -112,7 +112,7 @@
                   <a data-toggle="collapse" href="#uploadAssessmentScoresHelp">Show details...</a>
                 </p>
                 <div class="collapse" id="uploadAssessmentScoresHelp">
-                  <%- include('csvHelpAssessmentScores'); %>
+                  <%- include('csvHelpAssessmentInstanceScores'); %>
                 </div>
               </td>
             </tr>

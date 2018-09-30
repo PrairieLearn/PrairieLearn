@@ -11,6 +11,37 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 let page, elemList;
 
 module.exports = {
+
+    waitForJobSequence(locals) {
+        describe('The job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    locals.job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    var params = {job_sequence_id: locals.job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        locals.job_sequence_status = result.rows[0].status;
+                        if (locals.job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(locals.job_sequence_status, 'Success');
+            });
+        });
+    },
+
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
@@ -387,33 +418,7 @@ module.exports = {
                 });
             });
         });
-        describe('The regrading job sequence', function() {
-            it('should have an id', function(callback) {
-                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-                    if (ERR(err, callback)) return;
-                    locals.job_sequence_id = result.rows[0].id;
-                    callback(null);
-                });
-            });
-            it('should complete', function(callback) {
-                var checkComplete = function() {
-                    var params = {job_sequence_id: locals.job_sequence_id};
-                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-                        if (ERR(err, callback)) return;
-                        locals.job_sequence_status = result.rows[0].status;
-                        if (locals.job_sequence_status == 'Running') {
-                            setTimeout(checkComplete, 10);
-                        } else {
-                            callback(null);
-                        }
-                    });
-                };
-                setTimeout(checkComplete, 10);
-            });
-            it('should be successful', function() {
-                assert.equal(locals.job_sequence_status, 'Success');
-            });
-        });
+        module.exports.waitForJobSequence(locals);
     },
 
     uploadInstanceQuestionScores(locals, csvData) {
@@ -435,7 +440,7 @@ module.exports = {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = locals.$('form[name="upload-question-scores-form"] input[name="__csrf_token"]');
+                elemList = locals.$('form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
@@ -466,33 +471,60 @@ module.exports = {
                 });
             });
         });
-        describe('The upload job sequence', function() {
-            it('should have an id', function(callback) {
-                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-                    if (ERR(err, callback)) return;
-                    locals.job_sequence_id = result.rows[0].id;
+        module.exports.waitForJobSequence(locals);
+    },
+
+    uploadAssessmentInstanceScores(locals, csvData) {
+        describe('GET to instructorAssessmentUploads URL', function() {
+            it('should succeed', function(callback) {
+                locals.instructorAssessmentUploadsUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/uploads';
+                request({url: locals.instructorAssessmentUploadsUrl}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    page = body;
                     callback(null);
                 });
             });
-            it('should complete', function(callback) {
-                var checkComplete = function() {
-                    var params = {job_sequence_id: locals.job_sequence_id};
-                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-                        if (ERR(err, callback)) return;
-                        locals.job_sequence_status = result.rows[0].status;
-                        if (locals.job_sequence_status == 'Running') {
-                            setTimeout(checkComplete, 10);
-                        } else {
-                            callback(null);
-                        }
-                    });
-                };
-                setTimeout(checkComplete, 10);
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
             });
-            it('should be successful', function() {
-                assert.equal(locals.job_sequence_status, 'Success');
+            it('should have a CSRF token', function() {
+                elemList = locals.$('form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]');
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
         });
+        describe('POST to instructorAssessmentUploads URL for upload', function() {
+            it('should succeed', function(callback) {
+                var formData = {
+                    __action: 'upload_assessment_instance_scores',
+                    __csrf_token: locals.__csrf_token,
+                    file: {
+                        value: csvData,
+                        options: {
+                            filename: 'data.csv',
+                            contentType: 'text/csv',
+                        },
+                    },
+                };
+                request.post({url: locals.instructorAssessmentUploadsUrl, formData: formData, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        module.exports.waitForJobSequence(locals);
     },
 
     autoTestQuestion(locals, qid) {
