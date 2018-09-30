@@ -342,10 +342,10 @@ module.exports = {
     },
 
     regradeAssessment(locals) {
-        describe('GET to instructorAssessment URL', function() {
+        describe('GET to instructorAssessmentRegrading URL', function() {
             it('should succeed', function(callback) {
-                locals.instructorAssessmentUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/';
-                request({url: locals.instructorAssessmentUrl}, function (error, response, body) {
+                locals.instructorAssessmentRegradingUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/regrading';
+                request({url: locals.instructorAssessmentRegradingUrl}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -374,7 +374,7 @@ module.exports = {
                     assessment_id: locals.assessment_id,
                     __csrf_token: locals.__csrf_token,
                 };
-                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                request.post({url: locals.instructorAssessmentRegradingUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
