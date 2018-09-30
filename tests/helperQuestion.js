@@ -450,7 +450,7 @@ module.exports = {
         describe('POST to instructorAssessmentUploads URL for upload', function() {
             it('should succeed', function(callback) {
                 var formData = {
-                    __action: 'upload_question_scores',
+                    __action: 'upload_instance_question_scores',
                     __csrf_token: locals.__csrf_token,
                     file: {
                         value: csvData,
