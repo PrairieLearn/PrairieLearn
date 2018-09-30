@@ -5,7 +5,6 @@ const debug = require('debug')('prairielearn:instructorAssessment');
 
 const error = require('@prairielearn/prairielib/error');
 const scoreUpload = require('../../lib/score-upload');
-const serverJobs = require('../../lib/server-jobs');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -27,7 +26,7 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'upload_question_scores') {
-        scoreUpload.uploadQuestionScores(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
+        scoreUpload.uploadInstanceQuestionScores(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
