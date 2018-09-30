@@ -41,6 +41,8 @@
 
   * Add postgresql permissions for root in Docker for development (Dave Mussulman).
 
+  * Add CSV scores upload for questions or assessments (Matt West).
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -137,6 +139,7 @@
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
+  * Change instructor assessment page into multiple sub-pages (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
