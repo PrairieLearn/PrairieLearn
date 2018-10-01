@@ -143,9 +143,10 @@ describe('Instructor assessment editing', function() {
         });
     });
 
-    describe('5. GET to instructor assessment URL', function() {
+    describe('5. GET to instructor assessment instances URL', function() {
         it('should load successfully', function(callback) {
-            request(locals.instructorAssessmentUrl, function (error, response, body) {
+            locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances';
+            request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }

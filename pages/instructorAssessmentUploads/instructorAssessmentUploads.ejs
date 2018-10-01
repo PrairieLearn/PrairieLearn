@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+
+      // make the file inputs display the file name
+      $(document).on('change', '.custom-file-input', function () {
+          let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+          $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'uploads'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'uploads'}); %>
+
+      <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="uploadInstanceQuestionScoresModalLabel">Upload new question scores</h4>
+            </div>
+            <div class="modal-body">
+              <%- include('csvHelpInstanceQuestionScores'); %>
+              <form name="upload-instance-question-scores-form" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                  <div class="custom-file">
+                    <input type="file" name="file" class="custom-file-input" id="uploadInstanceQuestionScoresFileInput">
+                    <label class="custom-file-label" for="uploadInstanceQuestionScoresFileInput">Choose CSV file</label>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                  <div class="form-group mb-0">
+                    <input type="hidden" name="__action" value="upload_instance_question_scores">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="uploadAssessmentInstanceScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentInstanceScores">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="uploadAssessmentInstanceScoresModalLabel">Upload new total scores</h4>
+            </div>
+            <div class="modal-body">
+              <%- include('csvHelpAssessmentInstanceScores'); %>
+              <form name="upload-assessment-instance-scores-form" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                  <div class="custom-file">
+                    <input type="file" name="file" class="custom-file-input" id="uploadAssessmentInstanceScoresFileInput">
+                    <label class="custom-file-label" for="uploadAssessmentInstanceScoresFileInput">Choose CSV file</label>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                  <div class="form-group mb-0">
+                    <input type="hidden" name="__action" value="upload_assessment_instance_scores">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Uploads
+        </div>
+
+        <div class="table-responsive pb-0">
+          <table class="table">
+            <tr>
+              <td style="width: 1%">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadInstanceQuestionScoresModal">
+                  <i class="fas fa-upload"></i> Upload new question scores
+                </button>
+              </td>
+              <td>
+                <p>
+                  Upload a CSV file to set per-question scores for individual students.
+                  <a data-toggle="collapse" href="#uploadInstanceQuestionScoresHelp">Show details...</a>
+                </p>
+                <div class="collapse" id="uploadInstanceQuestionScoresHelp">
+                  <%- include('csvHelpInstanceQuestionScores'); %>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="width: 1%">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadAssessmentInstanceScoresModal">
+                  <i class="fas fa-upload"></i> Upload new total scores
+                </button>
+              </td>
+              <td>
+                <p>
+                  Upload a CSV file to set the total assessment score for individual students.
+                  <a data-toggle="collapse" href="#uploadAssessmentScoresHelp">Show details...</a>
+                </p>
+                <div class="collapse" id="uploadAssessmentScoresHelp">
+                  <%- include('csvHelpAssessmentInstanceScores'); %>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (upload_job_sequences && upload_job_sequences.length > 0) { %>
+
+              <% upload_job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+              
+              <% } else { %>
+              <tr>
+                <td colspan="6">No previous uploads.</td>
+              </tr>
+              <% }%>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histogram.js"></script>
+    <script src="/localscripts/scatter.js"></script>
+    <script src="/localscripts/parallel_histograms.js"></script>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'assessmentStatistics'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'assessmentStatistics'}); %>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics
+        </div>
+        <% if (assessment_stat.number > 0) { %>
+        <div class="card-body">
+          <div id="scoreHist" class="scoreHistogram"></div>
+          <script>
+            $(function() {
+                var data = [<%= assessment_stat.score_hist %>];
+                var xgrid = _.range(0, 110, 10);
+                var options = {
+                    ymin: 0,
+                    xlabel: 'score / %',
+                    ylabel: 'number of students',
+                };
+                histogram("#scoreHist", data, xgrid, options);
+            });
+          </script>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <tbody>
+              <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
+              <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
+              <tr><td>Standard deviation</td><td><%= Math.round(assessment_stat.std) %>%</td></tr>
+              <tr><td>Median score</td><td><%= Math.round(assessment_stat.median) %>%</td></tr>
+              <tr><td>Minimum score</td><td><%= Math.round(assessment_stat.min) %>%</td></tr>
+              <tr><td>Maximum score</td><td><%= Math.round(assessment_stat.max) %>%</td></tr>
+              <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= Math.round(assessment_stat.n_zero_perc) %>% of class)</td></tr>
+              <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="card-body">
+          No student data.
+        </div>
+
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration statistics
+        </div>
+
+        <% if (assessment_stat.number > 0) { %>
+        <div class="card-body">
+          <div id="durationHist" class="histogram"></div>
+          <script>
+            $(function() {
+                var data = [<%= duration_stat.hist %>];
+                var xgrid = [<%= duration_stat.threshold_seconds %>];
+                var options = {
+                    ymin: 0,
+                    xlabel: 'duration',
+                    ylabel: 'number of students',
+                    xTickLabels: [<% duration_stat.threshold_labels.forEach(function(label) { %>'<%= label %>',<% }); %>],
+                };
+                histogram("#durationHist", data, xgrid, options);
+            });
+          </script>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <tbody>
+              <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
+              <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
+              <tr><td>Minimum duration</td><td><%= duration_stat.min %></td></tr>
+              <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="card-body">
+          No student data.
+        </div>
+
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration versus score
+        </div>
+
+        <% if (assessment_stat.number > 0) { %>
+        <div class="card-body">
+          <div id="durationScoreScatter" class="scatter"></div>
+          <script>
+            $(function() {
+                var xdata = [<% user_scores.forEach(function(user) { %><%= user.duration_secs %>,<% }); %>];
+                var ydata = [<% user_scores.forEach(function(user) { %><%= user.score_perc %>,<% }); %>];
+                var options = {
+                    xgrid: [<%= duration_stat.threshold_seconds %>],
+                    ygrid: _.range(0, 110, 10),
+                    xlabel: 'duration',
+                    ylabel: 'score / %',
+                    xTickLabels: [<% duration_stat.threshold_labels.forEach(function(label) { %>'<%= label %>',<% }); %>],
+                };
+                scatter("#durationScoreScatter", xdata, ydata, options);
+            });
+          </script>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Each point is one student assessment. Points beyond the plot range are plotted on the edge.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="card-body">
+          No student data.
+        </div>
+
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics by date
+        </div>
+
+        <% if (assessment_stat.number > 0) { %>
+        <div class="card-body">
+          <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
+          <script>
+            $(function() {
+                var data = [<% assessment_score_histogram_by_date.forEach(function(day) {
+                  %>{label: '<%= day.date_formatted %>',
+                     mean: '<%= day.mean_score_perc %>',
+                     histogram: "<%= day.histogram %>".split(",")},<% }); %>];
+
+                var options = {
+                    ygrid: _.range(0, 110, 10),
+                    xgrid: [<%= assessment_score_histogram_by_date.length %>],
+                    xlabel: 'start date',
+                    ylabel: 'score / %',
+                    yTickLabels: _.range(100, -10, -10),
+                    width: data.length * 200
+                };
+                parallel_histograms("#scoreHistsByDateDiv", data, options);
+            });
+          </script>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
+            <br/>
+            Each day shows a histogram of the scores on this assessment for that day. The widths are scaled relative to the maximum value across all bins and days. The thick black horizontal lines are the mean scores for each day.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="card-body">
+          No student data.
+        </div>
+
+        <% }%>
+      </div>
+
+    </div>
+  </body>
+</html>

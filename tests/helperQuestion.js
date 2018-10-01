@@ -1,16 +1,47 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const assert = require('chai').assert;
+const request = require('request');
+const cheerio = require('cheerio');
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var page, elemList;
+let page, elemList;
 
 module.exports = {
+
+    waitForJobSequence(locals) {
+        describe('The job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    locals.job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    var params = {job_sequence_id: locals.job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        locals.job_sequence_status = result.rows[0].status;
+                        if (locals.job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(locals.job_sequence_status, 'Success');
+            });
+        });
+    },
+
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
@@ -286,6 +317,7 @@ module.exports = {
     checkQuestionScore(locals) {
         describe('check question score', function() {
             it('should have the submission', function(callback) {
+                if (!_.has(locals.expectedResult, 'submission_score')) return callback(null); // skip check
                 var params = {
                     instance_question_id: locals.question.id,
                 };
@@ -296,9 +328,11 @@ module.exports = {
                 });
             });
             it('should be graded with expected score', function() {
+                if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
                 assert.equal(locals.submission.score, locals.expectedResult.submission_score);
             });
             it('should be graded with expected correctness', function() {
+                if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
                 assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
             });
             it('should still have the instance_question', function(callback) {
@@ -342,10 +376,10 @@ module.exports = {
     },
 
     regradeAssessment(locals) {
-        describe('GET to instructorAssessment URL', function() {
+        describe('GET to instructorAssessmentRegrading URL', function() {
             it('should succeed', function(callback) {
-                locals.instructorAssessmentUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/';
-                request({url: locals.instructorAssessmentUrl}, function (error, response, body) {
+                locals.instructorAssessmentRegradingUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/regrading';
+                request({url: locals.instructorAssessmentRegradingUrl}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -367,14 +401,13 @@ module.exports = {
                 assert.isString(locals.__csrf_token);
             });
         });
-        describe('POST to instructorAssessment URL for regrading', function() {
+        describe('POST to instructorAssessmentRegrading URL for regrading', function() {
             it('should succeed', function(callback) {
                 var form = {
                     __action: 'regrade_all',
-                    assessment_id: locals.assessment_id,
                     __csrf_token: locals.__csrf_token,
                 };
-                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                request.post({url: locals.instructorAssessmentRegradingUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -385,33 +418,113 @@ module.exports = {
                 });
             });
         });
-        describe('The regrading job sequence', function() {
-            it('should have an id', function(callback) {
-                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
-                    if (ERR(err, callback)) return;
-                    locals.job_sequence_id = result.rows[0].id;
+        module.exports.waitForJobSequence(locals);
+    },
+
+    uploadInstanceQuestionScores(locals, csvData) {
+        describe('GET to instructorAssessmentUploads URL', function() {
+            it('should succeed', function(callback) {
+                locals.instructorAssessmentUploadsUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/uploads';
+                request({url: locals.instructorAssessmentUploadsUrl}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    page = body;
                     callback(null);
                 });
             });
-            it('should complete', function(callback) {
-                var checkComplete = function() {
-                    var params = {job_sequence_id: locals.job_sequence_id};
-                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
-                        if (ERR(err, callback)) return;
-                        locals.job_sequence_status = result.rows[0].status;
-                        if (locals.job_sequence_status == 'Running') {
-                            setTimeout(checkComplete, 10);
-                        } else {
-                            callback(null);
-                        }
-                    });
-                };
-                setTimeout(checkComplete, 10);
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
             });
-            it('should be successful', function() {
-                assert.equal(locals.job_sequence_status, 'Success');
+            it('should have a CSRF token', function() {
+                elemList = locals.$('form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]');
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
         });
+        describe('POST to instructorAssessmentUploads URL for upload', function() {
+            it('should succeed', function(callback) {
+                var formData = {
+                    __action: 'upload_instance_question_scores',
+                    __csrf_token: locals.__csrf_token,
+                    file: {
+                        value: csvData,
+                        options: {
+                            filename: 'data.csv',
+                            contentType: 'text/csv',
+                        },
+                    },
+                };
+                request.post({url: locals.instructorAssessmentUploadsUrl, formData: formData, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        module.exports.waitForJobSequence(locals);
+    },
+
+    uploadAssessmentInstanceScores(locals, csvData) {
+        describe('GET to instructorAssessmentUploads URL', function() {
+            it('should succeed', function(callback) {
+                locals.instructorAssessmentUploadsUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/uploads';
+                request({url: locals.instructorAssessmentUploadsUrl}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
+            });
+            it('should have a CSRF token', function() {
+                elemList = locals.$('form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]');
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
+            });
+        });
+        describe('POST to instructorAssessmentUploads URL for upload', function() {
+            it('should succeed', function(callback) {
+                var formData = {
+                    __action: 'upload_assessment_instance_scores',
+                    __csrf_token: locals.__csrf_token,
+                    file: {
+                        value: csvData,
+                        options: {
+                            filename: 'data.csv',
+                            contentType: 'text/csv',
+                        },
+                    },
+                };
+                request.post({url: locals.instructorAssessmentUploadsUrl, formData: formData, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        module.exports.waitForJobSequence(locals);
     },
 
     autoTestQuestion(locals, qid) {
