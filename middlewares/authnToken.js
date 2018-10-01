@@ -6,12 +6,6 @@ const logger = require('../lib/logger');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const respondWithUnauthorized = (res) => {
-    res.send(401, {
-        message: 'You must authenticate to use this API',
-    });
-};
-
 module.exports = (req, res, next) => {
     let token;
     if (req.query.private_token !== undefined) {
@@ -21,8 +15,10 @@ module.exports = (req, res, next) => {
         // Token was provided in a header
         token = req.header('Private-Token');
     } else {
-        // No authorization token sent
-        respondWithUnauthorized(res);
+        // No authentication token present
+        res.send(401, {
+            message: 'An authentication token must be provided',
+        });
         return;
     }
 
@@ -33,7 +29,10 @@ module.exports = (req, res, next) => {
     sqldb.queryZeroOrOneRow(sql.select_user_from_token_hash, params, (err, result) => {
         if (ERR(err, next)) return;
         if (result.rows.length === 0) {
-            respondWithUnauthorized(res);
+            // Invalid token received
+            res.send(401, {
+                message: 'The provided authentication token was invalid',
+            });
         } else {
             // Nice, we got a user
             res.locals.authn_user = result.rows[0].user;
