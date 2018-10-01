@@ -43,6 +43,8 @@
 
   * Add CSV scores upload for questions or assessments (Matt West).
 
+  * Add Pillow to the `centos7-python` container (Dave Mussulman).
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -101,7 +103,11 @@
 
   * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
 
+  * Fix `tools/dump_filter.sh` to drop `pg_stat_statements` for PostgreSQL 10 (Matt West).
+
   * Fix slow assessment instance deletes (Matt West).
+
+  * Fix `triangularDistributedLoad` in `PrairieDraw.js` (Mariana Silva).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
@@ -140,6 +146,8 @@
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
   * Change instructor assessment page into multiple sub-pages (Matt West).
+
+  * Change log level of external grading jobs to reduce syslog volume (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
