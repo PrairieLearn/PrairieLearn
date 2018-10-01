@@ -619,6 +619,190 @@ describe('Exam assessment', function() {
         });
     });
 
+    describe('25. instance question score_perc uploads', function() {
+        let csvData = 'uid,instance,qid,score_perc\ndev@illinois.edu,1,addNumbers,40\ndev@illinois.edu,1,addVectors,50\n';
+        helperQuestion.uploadInstanceQuestionScores(locals, csvData);
+        describe('check the instance question score upload succeeded', function() {
+            describe('setting up the expected question addNumbers results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addNumbers;
+                    locals.expectedResult = {
+                        instance_question_points: 2,
+                        instance_question_score_perc: 2/5 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question addVectors results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addVectors;
+                    locals.expectedResult = {
+                        instance_question_points: 5.5,
+                        instance_question_score_perc: 5.5/11 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question fossilFuelsRadio results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.fossilFuelsRadio;
+                    locals.expectedResult = {
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0/17 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals.expectedResult = {
+                        assessment_instance_points: 7.5,
+                        assessment_instance_score_perc: 7.5/assessmentMaxPoints * 100,
+                    };
+                });
+            });
+            helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    describe('26. instance question points uploads', function() {
+        let csvData = 'uid,instance,qid,points\ndev@illinois.edu,1,addNumbers,4.7\ndev@illinois.edu,1,addVectors,1.2\n';
+        helperQuestion.uploadInstanceQuestionScores(locals, csvData);
+        describe('check the instance question score upload succeeded', function() {
+            describe('setting up the expected question addNumbers results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addNumbers;
+                    locals.expectedResult = {
+                        instance_question_points: 4.7,
+                        instance_question_score_perc: 4.7/5 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question addVectors results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addVectors;
+                    locals.expectedResult = {
+                        instance_question_points: 1.2,
+                        instance_question_score_perc: 1.2/11 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question fossilFuelsRadio results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.fossilFuelsRadio;
+                    locals.expectedResult = {
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0/17 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals.expectedResult = {
+                        assessment_instance_points: 5.9,
+                        assessment_instance_score_perc: 5.9/assessmentMaxPoints * 100,
+                    };
+                });
+            });
+            helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    describe('27. assessment instance score_perc uploads', function() {
+        let csvData = 'uid,instance,score_perc\ndev@illinois.edu,1,43.7\n';
+        helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
+        describe('check the assessment instance score upload succeeded', function() {
+            describe('setting up the expected question addNumbers results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addNumbers;
+                    locals.expectedResult = {
+                        instance_question_points: 4.7,
+                        instance_question_score_perc: 4.7/5 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question addVectors results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addVectors;
+                    locals.expectedResult = {
+                        instance_question_points: 1.2,
+                        instance_question_score_perc: 1.2/11 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question fossilFuelsRadio results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.fossilFuelsRadio;
+                    locals.expectedResult = {
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0/17 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals.expectedResult = {
+                        assessment_instance_points: 43.7 / 100 * assessmentMaxPoints,
+                        assessment_instance_score_perc: 43.7,
+                    };
+                });
+            });
+            helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    describe('28. assessment instance points uploads', function() {
+        let csvData = 'uid,instance,points\ndev@illinois.edu,1,29.6\n';
+        helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
+        describe('check the assessment instance score upload succeeded', function() {
+            describe('setting up the expected question addNumbers results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addNumbers;
+                    locals.expectedResult = {
+                        instance_question_points: 4.7,
+                        instance_question_score_perc: 4.7/5 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question addVectors results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.addVectors;
+                    locals.expectedResult = {
+                        instance_question_points: 1.2,
+                        instance_question_score_perc: 1.2/11 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected question fossilFuelsRadio results', function() {
+                it('should succeed', function() {
+                    locals.question = questions.fossilFuelsRadio;
+                    locals.expectedResult = {
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0/17 * 100,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionScore(locals);
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals.expectedResult = {
+                        assessment_instance_points: 29.6,
+                        assessment_instance_score_perc: 29.6 / assessmentMaxPoints * 100,
+                    };
+                });
+            });
+            helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
     partialCreditTests.forEach(function(partialCreditTest, iPartialCreditTest) {
 
         describe(`partial credit test #${iPartialCreditTest+1}`, function() {

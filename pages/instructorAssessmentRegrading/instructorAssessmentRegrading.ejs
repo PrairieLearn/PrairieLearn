@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'regrading'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'regrading'}); %>
+
+      <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="regradeAllAssessmentInstancesModalLabel">Regrade all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to regrade all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="regrade-all-form" method="POST">
+                <input type="hidden" name="__action" value="regrade_all">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Regrade all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Regrading
+        </div>
+
+        <div class="card-body">
+          <p>
+            <a class="btn btn-primary" role="button" tabindex="0"
+               data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
+              <i class="fa fa-sync" aria-hidden="true"></i> Regrade all assessment instances
+            </a>
+          </p>
+          <p class="small">
+            To regrade assessment instances for specific students, use
+            the "Action" dropdown on the assessment instances page.
+          </p>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (regrading_job_sequences && regrading_job_sequences.length > 0) { %>
+
+              <% regrading_job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+
+              <% } else { %>
+              <tr>
+                <td colspan="6">No previous regradings.</td>
+              </tr>
+              <% }%>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+  </body>
+</html>

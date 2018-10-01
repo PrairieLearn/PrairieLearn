@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'instances'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'instances'}); %>
+      
+      <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="deleteAssessmentInstanceModalLabel">Delete assessment instance</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete assessment
+              instance <span class="modal-number"></span>
+              of <strong><%= assessment_set.name
+              %> <%= assessment.number %></strong>
+              for <strong><span class="modal-name"></span></strong>
+              (<span class="modal-uid"></span>) with a score
+              of <span class="modal-score-perc"></span>%?
+            </div>
+            <div class="modal-footer">
+              <form name="delete-form" method="POST">
+                <input type="hidden" name="__action" value="delete">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var uid = button.data('uid'); // Extract info from data-* attributes
+            var name = button.data('name');
+            var number = button.data('number');
+            var score_perc = button.data('score-perc');
+            var assessment_instance_id = button.data('assessment-instance-id');
+            var modal = $(this);
+            modal.find('.modal-uid').text(uid);
+            modal.find('.modal-name').text(name);
+            modal.find('.modal-number').text(number);
+            modal.find('.modal-score-perc').text(score_perc);
+            modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
+        });
+      </script>
+
+      <div class="modal fade" id="deleteAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="deleteAllAssessmentInstancesModalLabel">Delete all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="delete-all-form" method="POST">
+                <input type="hidden" name="__action" value="delete_all">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
+          <div class="ml-auto">
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+               data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
+              <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
+            </a>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table id="usersTable" class="table table-sm table-hover tablesorter">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Name</th>
+                <th class="text-center">Role</th>
+                <th class="text-center">Instance</th>
+                <th class="text-center">Score</th>
+                <th class="text-center">Duration</th>
+                <th class="text-center">Remaining</th>
+                <th class="text-center"></th>
+                <th class="text-center"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% user_scores.forEach(function(row, iRow) { %>
+              <tr>
+                <td><%= row.uid %></td>
+                <td><%= row.name %></td>
+                <td class="text-center"><%= row.role %></td>
+                <td class="text-center"><%= row.number %></td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+                <td class="text-center"><%= row.time_remaining %></td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
+                    <div id="row<%= iRow %>PopoverOpen"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm open"
+                         data-content="
+                                       <p><small>
+                                           This will disable auto-closing. The assessment will need to be manually closed.
+                                       </small></p>
+                                       <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
+                                       </form>
+                                       ">
+                    </div>
+                    <div id="row<%= iRow %>PopoverClose"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm close"
+                         data-content="
+                                       <form name=&quot;close-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
+                                       </form>
+                                       ">
+                    </div>
+                    <div id="row<%= iRow %>PopoverRegrade"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm regrade"
+                         data-content="
+                                       <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
+                                       </form>
+                                       ">
+                    </div>
+
+                    <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item"
+                         href="#"
+                         data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
+                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
+                         data-number="<%= row.number %>"
+                         data-score-perc="<%= Math.floor(row.score_perc) %>"
+                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
+                         >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
+                        <i class="fa fa-sync" aria-hidden="true"></i> Regrade
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
+                        <i class="far fa-circle" aria-hidden="true"></i> Re-open
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                        <i class="fa fa-ban" aria-hidden="true"></i> Close
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <script>
+          $(function(){
+              $("#usersTable").tablesorter({
+                  theme: "bootstrap",
+                  widthFixed: true,
+                  headerTemplate: '{content} {icon}',
+                  widgets: ["uitheme"],
+                  headers: {
+                      7: {sorter: false},
+                      8: {sorter: false},
+                  },
+              });
+          });
+        </script>
+      </div>
+
+    </div>
+  </body>
+</html>
