@@ -42,7 +42,7 @@ GET /course_instances/:course_instance_id/assessments
 View a particular assessment:
 
 ```
-GET /course_instances/:course_instance_id/assessments/:assessment_instance_id
+GET /course_instances/:course_instance_id/assessments/:assessment_id
 ```
 
 View all assessment instances for a particular assessment:
