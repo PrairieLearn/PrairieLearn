@@ -142,6 +142,7 @@
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
+  * Change log level of external grading jobs to reduce syslog logging (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
