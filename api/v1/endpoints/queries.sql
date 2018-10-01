@@ -13,12 +13,12 @@ WITH issue_count AS (
     GROUP BY a.id
 )
 SELECT
-    a.id::int,
+    a.id,
     a.tid,
     a.type,
     a.number as assessment_number,
     a.title,
-    a.assessment_set_id::int,
+    a.assessment_set_id,
     aset.abbreviation AS assessment_set_abbreviation,
     aset.name AS assessment_set_name,
     aset.heading AS assessment_set_heading,
@@ -39,10 +39,11 @@ ORDER BY
 
 -- BLOCK select_assessment_instances
 SELECT
-    ai.id::int,
+    ai.id,
     jsonb_build_object(
-        'id', u.user_id::int,
+        'id', u.user_id,
         'uid', u.uid,
+        'name', u.name,
         'role', coalesce(e.role, 'None'::enum_role)
     ) AS user,
     (aset.name || ' ' || a.number) AS assessment_label,
@@ -77,16 +78,20 @@ ORDER BY
 
 -- BLOCK select_submissions
 SELECT
-    u.uid,
-    u.name,
-    e.role,
+    s.id,
+    jsonb_build_object(
+        'id', u.user_id,
+        'uid', u.uid,
+        'name', u.name,
+        'role', coalesce(e.role, 'None'::enum_role)
+    ) AS user,
     (aset.name || ' ' || a.number) AS assessment_label,
     ai.number AS assessment_instance_number,
     q.qid,
     iq.number AS instance_question_number,
+    aq.max_points,
     iq.points,
     iq.score_perc,
-    aq.max_points,
     v.number AS variant_number,
     v.variant_seed,
     v.params,
@@ -101,7 +106,7 @@ SELECT
     format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
     format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
     s.score,
-    CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
+    s.correct,
     s.feedback,
     (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
     (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
