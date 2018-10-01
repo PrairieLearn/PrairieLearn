@@ -34,18 +34,28 @@
   <% if (assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-      Report an issue with this question
+      Report an error in this question
     </button>
     <div class="collapse" id="issueCollapse">
       <hr />
       <form method="POST">
+        <p class="small">
+          This form is only for reporting errors in the question
+          itself. Do not use this form if you just don't know how to
+          answer the question.
+        </p>
+        <% if (/*authz_data.mode == 'Exam'*/ false) { %>
+        <p class="small">
+          Ask a proctor if you think there is a problem with your computer.
+        </p>
+        <% } %>
         <div class="form-group">
-          <textarea class="form-control" rows="5" name="description" placeholder="Describe the issue"></textarea>
+          <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
         </div>
         <input type="hidden" name="__variant_id" value="<%= variant.id %>">
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
         <div class="form-group text-right">
-          <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue
+          <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report error
         </div>
       </form>
     </div>

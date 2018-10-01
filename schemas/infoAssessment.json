@@ -34,7 +34,7 @@
         "allowIssueReporting": {
             "description": "Whether to allow students to report issues for assessment questions",
             "type": "boolean",
-            "default": false
+            "default": true
         },
         "multipleInstance": {
             "description": "Whether to allow students to create additional instances of the assessment",
@@ -151,11 +151,19 @@
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
                 },
+                "maxPoints": {
+                    "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
+                    "type": "number"
+                },
                 "numberChoose": {
                     "description": "Number of questions to choose from this zone.",
                     "type": "integer",
-                    "minimum": 0,
-                    "default": 1
+                    "minimum": 0
+                },
+                "bestQuestions": {
+                    "description": "Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.",
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "questions": {
                     "description": "Array of questions in the zone.",

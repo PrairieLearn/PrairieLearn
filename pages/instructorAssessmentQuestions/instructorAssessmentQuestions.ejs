@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histmini.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'questions'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'questions'}); %>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Questions
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th></th>
+                <th>QID</th>
+                <th>Topic</th>
+                <th>Tags</th>
+                <th>Points</th>
+                <th width="100">Mean score</th>
+                <th width="100">Question score</th>
+                <th>Num. Submissions Histogram</th>
+                <th>Other Assessments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% questions.forEach(function(question, i) { %>
+              <% if (question.start_new_zone) { %>
+              <tr>
+                <th colspan="9">
+                  Zone <%= question.zone_number %>. <%= question.zone_title %>
+                  <% if (question.zone_number_choose == null) { %>
+                  (Choose all questions)
+                  <% } else if (question.zone_number_choose == 1) { %>
+                  (Choose 1 question)
+                  <% } else { %>
+                  (Choose <%= question.zone_number_choose %> questions)
+                  <% } %>
+                  <% if (question.zone_has_max_points) { %>
+                      (maximum <%= question.zone_max_points %> points)
+                  <% } %>
+                  <% if (question.zone_has_best_questions) { %>
+                      (best <%= question.zone_best_questions %> questions)
+                  <% } %>
+                </th>
+              </tr>
+              <% } %>
+              <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
+              <tr>
+                <td colspan="9">
+                  <%= question.alternative_group_number %>.
+                  <% if (question.alternative_group_number_choose == null) { %>
+                  Choose all questions from:
+                  <% } else if (question.alternative_group_number_choose == 1) { %>
+                  Choose 1 question from:
+                  <% } else { %>
+                  Choose <%= question.alternative_group_number_choose %> questions from:
+                  <% } %>
+                </td>
+              </tr>
+              <% } %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">
+                    <% if (question.alternative_group_size == 1) { %>
+                    <%= question.alternative_group_number %>.
+                    <% } else { %>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
+                    <% } %>
+                    <%= question.title %>
+                    <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
+                  </a>
+                </td>
+                <td><%= question.qid %></td>
+                <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+                <td><%- include('../partials/tags', {tags: question.tags}); %></td>
+                <td>
+                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
+                </td>
+                <td>
+                  <% if (question.mean_question_score) { %>
+                    <%= question.mean_question_score.toFixed(3) %>
+                  <% } %>
+                </td>
+                <td>
+                    <% if (question.avg_question_score_perc) { %>
+                    <%= question.avg_question_score_perc.toFixed(3) %> %
+                    <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (question.number_submissions_hist) { %>
+                    <div id="attemptsHist<%= i %>" class="miniHist">
+
+                    </div>
+                  <% } %>
+                </td>
+                <script>
+                  $(function() {
+                    var data = [<%= question.number_submissions_hist %>];
+                    var options = {
+                      width: 60,
+                      height: 20,
+                    };
+                    histmini("#attemptsHist<%= i %>", data, options);
+                  });
+                </script>
+                <td>
+                  <% if (question.other_assessments) { %>
+                  <% question.other_assessments.forEach(function(assessment) { %>
+                  <%- include('../partials/assessment', {assessment: assessment}); %>
+                  <% }); %>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -29,6 +29,7 @@ columns
     some_submission: boolean
     status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
     submission_score_array: double precision[]
+    used_for_grade: boolean
     variants_points_list: double precision[] not null default ARRAY[]::double precision[]
 
 indexes

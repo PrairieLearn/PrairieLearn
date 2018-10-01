@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'downloads'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'downloads'}); %>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Downloads
+        </div>
+
+        <% if (assessment.multiple_instance) { %>
+        <div class="card-body">
+          <p>
+            <small>
+              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><code>_all</code></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><code>_all</code></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
+            </small>
+          </p>
+        </div>
+        <% } // assessment.multiple_instance %>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Data file</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each student. Scores range
+                  from 0 to 100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= scoresAllCsvFilename %>"><%= scoresAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each assessment
+                  instance. Scores range from 0 to 100 (or higher if
+                  bonus credit was given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= scoresByUsernameCsvFilename %>"><%= scoresByUsernameCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each student, formatted by
+                  username for upload into LMS gradebooks. Scores range
+                  from 0 to 100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= scoresByUsernameAllCsvFilename %>"><%= scoresByUsernameAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each assessment instance,
+                  formatted by username for upload into LMS
+                  gradebooks. Scores range from 0 to 100 (or higher if
+                  bonus credit was given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= pointsCsvFilename %>"><%= pointsCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each student. Points range
+                  from 0 to the maximum for this assessment.
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= pointsAllCsvFilename %>"><%= pointsAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each assessment instance. Points
+                  range from 0 to the maximum for this assessment.
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= pointsByUsernameCsvFilename %>"><%= pointsByUsernameCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each student, formatted by username
+                  for upload into LMS gradebooks. Points range from 0 to
+                  100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= pointsByUsernameAllCsvFilename %>"><%= pointsByUsernameAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each assessment instance, formatted
+                  by username for upload into LMS gradebooks. Points
+                  range from 0 to 100 (or higher if bonus credit was
+                  given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
+                </td>
+                <td>
+                  Detailed data for each student. Includes points,
+                  maximum points, percentage score, duration, and other
+                  information.
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= instancesAllCsvFilename %>"><%= instancesAllCsvFilename %></a>
+                </td>
+                <td>
+                  Detailed data for each assessment instance. Includes
+                  points, maximum points, percentage score, duration,
+                  and other information.
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= instanceQuestionsCsvFilename %>"><%= instanceQuestionsCsvFilename %></a>
+                </td>
+                <td>
+                  All questions for all students for all assessment
+                  instances. Shows the score for each question as well
+                  as the best submission score and the number of
+                  attempts at the question.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  All submitted answers for all students for all
+                  assessment instances. Not all submitted answers will
+                  have been used to compute the final score, as some may
+                  have been superceded by subsequent attempts.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= finalSubmissionsCsvFilename %>"><%= finalSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  Final submitted answers for each question for all
+                  students for all assessment instances.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= bestSubmissionsCsvFilename %>"><%= bestSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  Best submitted answers for each question for all
+                  students for all assessment instances.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= allFilesZipFilename %>"><%= allFilesZipFilename %></a>
+                </td>
+                <td>
+                  All submitted files for all students for all
+                  assessment instances. Only data
+                  from <code>File</code>-type questions will be included in
+                  the zip. Not all submitted files will have been used
+                  to compute the final score, as some may have been
+                  superceded by subsequent attempts.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= finalFilesZipFilename %>"><%= finalFilesZipFilename %></a>
+                </td>
+                <td>
+                  Final submitted files for each question for all
+                  students for all assessment instances. Only data
+                  from <code>File</code>-type questions will be included in
+                  the zip.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= bestFilesZipFilename %>"><%= bestFilesZipFilename %></a>
+                </td>
+                <td>
+                  Best submitted files for each question for all
+                  students for all assessment instances. Only data
+                  from <tt>File</tt>-type questions will be included in
+                  the zip.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

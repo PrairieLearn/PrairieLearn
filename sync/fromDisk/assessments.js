@@ -52,8 +52,8 @@ module.exports = {
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Syncing ' + tid);
-                    // issue reporting defaults to false, then to the courseInstance setting, then to the assessment setting
-                    var allow_issue_reporting = false;
+                    // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
+                    var allow_issue_reporting = true;
                     if (_.has(courseInstance, 'allowIssueReporting')) allow_issue_reporting = !!courseInstance.allowIssueReporting;
                     if (_.has(dbAssessment, 'allowIssueReporting')) allow_issue_reporting = !!dbAssessment.allowIssueReporting;
                     var params = {
@@ -214,6 +214,8 @@ module.exports = {
                 number: i + 1,
                 title: dbZone.title,
                 number_choose: dbZone.numberChoose,
+                max_points: dbZone.maxPoints,
+                best_questions: dbZone.bestQuestions,
             };
             sqldb.queryOneRow(sql.insert_zone, params, function(err, result) {
                 if (ERR(err, callback)) return;

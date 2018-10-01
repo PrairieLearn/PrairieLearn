@@ -14,7 +14,9 @@ columns
 indexes
     current_pages_pkey: PRIMARY KEY (id) USING btree (id)
     current_pages_user_id_key: UNIQUE (user_id) USING btree (user_id)
+    current_pages_assessment_instance_id_idx: USING btree (assessment_instance_id)
     current_pages_date_idx: USING btree (date)
+    current_pages_variant_id_idx: USING btree (variant_id)
 
 foreign-key constraints
     current_pages_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
