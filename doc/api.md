@@ -83,7 +83,7 @@ and the time of the last submission.
 GET /course_instances/:course_instance_id/gradebook
 ```
 
-The respone will look like the following:
+The response will look like the following:
 
 ```
 [
