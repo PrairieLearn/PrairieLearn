@@ -1,26 +1,25 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
-var _ = require('lodash');
-var oauthSignature = require('oauth-signature');
-var cacheBase = require('cache-base');
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
+const _ = require('lodash');
+const oauthSignature = require('oauth-signature');
+const debug = require('debug')('prairielearn:authCallbackLti');
 
-var sqldb = require('@prairielearn/prairielib').sqlDb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
-var error = require('@prairielearn/prairielib').error;
-var csrf = require('../../lib/csrf');
-var config = require('../../lib/config');
-
+const sqldb = require('@prairielearn/prairielib').sqlDb;
+const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+const sql = sqlLoader.loadSqlEquiv(__filename);
+const error = require('@prairielearn/prairielib').error;
+const csrf = require('../../lib/csrf');
+const config = require('../../lib/config');
+const cache = require('../../lib/cache');
 
 var timeTolerance = 3000; // seconds
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
-var nonceCache = new cacheBase();
+var nonceCache;
 var redirUrl;
 
 router.post('/', function(req, res, next) {
 
-    //console.log(req.body);
+    debug(req.body);
 
     var parameters = _.clone(req.body);
     var signature = req.body.oauth_signature;
@@ -61,12 +60,17 @@ router.post('/', function(req, res, next) {
 
         // Check nonce hasn't been used by that consumer_key in that timeframe
         // https://oauth.net/core/1.0/#nonce
-        var nonceKey = parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
-        if (nonceCache.get(nonceKey)) {
-            return next(error.make(500, 'Invalid nonce reuse'));
-        } else {
-            nonceCache.set(nonceKey, true);
-        }
+        var nonceReused = false;
+        var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
+        cache.get(nonceKey, (err, val) => {
+            if (ERR(err, next)) return;
+            if (val) {
+                nonceReused = true;
+            } else {
+                cache.set(nonceKey, true, timeTolerance*1000);
+            }
+        });
+        if (nonceReused) return next(error.make(500, 'Invalid nonce reuse'));
 
         //
         // OAuth validation succeeded, next look up and store user authn data
@@ -187,8 +191,6 @@ router.post('/', function(req, res, next) {
 module.exports = router;
 
 /*
-TODO: use redis for the cached nonce, expiration?
-
 NOTES:
 
 Coursera doesn't support the launch_presentation_return_url feature so we show errors internally.
