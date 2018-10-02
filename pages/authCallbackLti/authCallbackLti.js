@@ -14,7 +14,6 @@ const config = require('../../lib/config');
 const cache = require('../../lib/cache');
 
 var timeTolerance = 3000; // seconds
-var nonceCache;
 var redirUrl;
 
 router.post('/', function(req, res, next) {
