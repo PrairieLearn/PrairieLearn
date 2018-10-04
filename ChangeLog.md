@@ -44,6 +44,7 @@
   * Add CSV scores upload for questions or assessments (Matt West).
 
   * Add Pillow to the `centos7-python` container (Dave Mussulman).
+
   * Add more question and assessment JSON validity checking on load (Dave Mussulman).
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
