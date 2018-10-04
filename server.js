@@ -139,6 +139,7 @@ if ('localRootFilesDir' in config) {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+app.use('/instructorFileEditorClient.js', express.static(path.join(__dirname, 'pages/instructorFileEditor/instructorFileEditorClient.js')));
 
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
@@ -328,6 +329,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
 app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
     require('./middlewares/authzCourseInstanceHasCourseView'),
     require('./pages/courseOverview/courseOverview'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/edit', [
+    require('./middlewares/authzCourseInstanceHasCourseView'),
+    require('./pages/instructorFileEditor/instructorFileEditor')),
 ]);
 
 // clientFiles
