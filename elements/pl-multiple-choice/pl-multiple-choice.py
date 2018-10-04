@@ -86,12 +86,13 @@ def render(element_html, data):
 
         html = ''
         for answer in answers:
-            item = '  <label class="form-check-label">\n' \
-                + '    <input class="form-check-input" type="radio"' \
+            item = '<input class="form-check-input" type="radio"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (submitted_key == answer['key']) else '') \
+                + f' id="{name}-{answer["key"]}"' \
                 + ' />\n' \
+                + f'<label class="form-check-label" for="{name}-{answer["key"]}">\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'] + '\n'
             if score is not None:
                 if submitted_key == answer['key']:
@@ -99,7 +100,7 @@ def render(element_html, data):
                         item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     else:
                         item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-            item += '  </label>\n'
+            item += '</label>\n'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             html += item
         if inline:

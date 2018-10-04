@@ -14,7 +14,6 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "title": "Coordinates and Vectors",
     "set": "Quiz",
     "number": "2",
-    "allowIssueReporting": true,
     "allowAccess": [],
     "zones": []
 }
@@ -84,6 +83,10 @@ An assessment is broken down in to a list of zones, like this:
 
 * An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
+* If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
+
+* If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
+
 ## Assessment and question instances and resetting assessments
 
 PrairieLearn distinguishes between *assessments* and *assessment instances*. A *assessment* is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
@@ -104,9 +107,9 @@ By default Exam assessments will auto-close after six hours of inactivity by the
 
 ## Issue reporting
 
-To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file. This option defaults to whatever is set for the course instance, or false if nothing is set.
+To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file, or set it to `false` to disallow reporting. This option defaults to whatever is set for the course instance, or `true` if nothing is set.
 
-When issue reporting is allowed, students see a button labeled "Report an issue with this question" and they can submit a short text form.
+When issue reporting is allowed, students see a button labeled "Report an error in this question" and they can submit a short text form.
 
 ![Report an issue button](assessment-report1.png) ![Describe the issue](assessment-report2.png)
 

@@ -60,7 +60,6 @@ module.exports = {
             'assessments_format.sql',
             'assessments_format_for_question.sql',
             'tags_for_question.sql',
-            'assessment_instances_points.sql',
             'random_unique.sql',
             'question_order.sql',
             'exam_question_status.sql',
@@ -142,6 +141,7 @@ module.exports = {
             'issues_select_with_filter.sql',
             'access_tokens_insert.sql',
             'access_tokens_delete.sql',
+            'assessment_instances_points.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

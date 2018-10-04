@@ -66,7 +66,21 @@
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
-              <th colspan="3"><%= question.zone_title %></th>
+              <th colspan="4">
+                <%= question.zone_title %>
+                <% if (question.zone_has_max_points) { %>
+                    &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                       data-toggle="popover" data-trigger="focus" data-container="body"
+                       data-html="true"
+                       data-content="Of the points that you are awarded for answering these questions, at most <%= question.zone_max_points %> will count toward your total points."><span class="badge badge-secondary align-top">maximum <%= question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                <% } %>
+                <% if (question.zone_has_best_questions) { %>
+                    &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                       data-toggle="popover" data-trigger="focus" data-container="body"
+                       data-html="true"
+                       data-content="Of these questions, only the <%= question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><span class="badge badge-secondary align-top">best <%= question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                <% } %>
+              </th>
             </tr>
             <% } %>
             <tr>

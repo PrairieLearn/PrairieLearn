@@ -4,7 +4,6 @@
     "title": "Exam for automatic test suite",
     "set": "Exam",
     "number": "1",
-    "allowIssueReporting": true,
     "allowAccess": [
         {
             "mode": "Public",
@@ -30,5 +29,6 @@
                 {"id": "partialCredit3",          "points": [13, 13, 8, 0.5, 0.1]}
               ]
         }
-    ]
+    ],
+    "text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
 }

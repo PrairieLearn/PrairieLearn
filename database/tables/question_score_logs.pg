@@ -10,6 +10,7 @@ columns
 
 indexes
     question_score_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    question_score_logs_grading_job_id_idx: USING btree (grading_job_id)
     question_score_logs_instance_question_id_idx: USING btree (instance_question_id)
 
 foreign-key constraints

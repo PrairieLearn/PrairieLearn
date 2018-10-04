@@ -49,6 +49,13 @@ set -x -e
 dropdb ${TMP_DB} || true # don't stop on error
 createdb --template=${TEMPLATE_DB} ${TMP_DB}
 
+# drop pg_stat_statements
+
+psql --dbname=${TMP_DB} --file=- <<EOF
+drop extension pg_stat_statements;
+\gexec
+EOF
+
 # drop all unnecessary tables
 
 psql --dbname=${TMP_DB} --file=- <<EOF

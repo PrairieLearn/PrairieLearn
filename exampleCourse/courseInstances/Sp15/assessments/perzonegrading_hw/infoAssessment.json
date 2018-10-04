@@ -1,0 +1,50 @@
+{
+    "uuid": "2c5be1cc-8a8b-4fca-9bc6-c909a1f1b860",
+    "type": "Homework",
+    "title": "Homework to test per-zone grading",
+    "set": "Homework",
+    "number": "6",
+    "allowAccess": [{
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59"
+        }
+    ],
+    "zones": [{
+            "title": "Questions to test maxPoints",
+            "maxPoints": 7,
+            "questions": [{
+                    "id": "partialCredit4_v2",
+                    "points": 4,
+                    "maxPoints": 8
+                }
+            ]
+        },
+        {
+            "title": "Questions to test bestQuestions",
+            "bestQuestions": 1,
+            "questions": [{
+                    "id": "partialCredit1",
+                    "points": 5,
+                    "maxPoints": 30
+                },
+                {
+                    "id": "partialCredit2",
+                    "points": 5,
+                    "maxPoints": 40
+                },
+                {
+                    "id": "partialCredit3",
+                    "points": 5,
+                    "maxPoints": 50
+                }
+            ]
+        }
+    ]
+}

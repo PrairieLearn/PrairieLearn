@@ -4,7 +4,6 @@
     "title": "Exam for Safe Exam Browser 2",
     "set": "Exam",
     "number": "4",
-    "allowIssueReporting": true,
     "allowAccess": [
         {
             "mode": "Public",

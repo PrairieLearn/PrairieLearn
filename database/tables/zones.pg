@@ -1,6 +1,8 @@
 columns
     assessment_id: bigint not null
+    best_questions: integer
     id: bigint not null default nextval('zones_id_seq'::regclass)
+    max_points: double precision
     number: integer
     number_choose: integer
     title: text

@@ -121,6 +121,7 @@ Attribute | Type | Default | Description
 `remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
 `remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 ## `pl-symbolic-input` element
 
@@ -136,6 +137,22 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
+`allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
+`imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+
+Correct answers are best created as `sympy` expressions and converted to json using:
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+    sympy.var('x y')
+    data['correct_answer']['ans'] = pl.to_json(x + y + 1)
+```
+It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
+
+Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+
 
 ## `pl-matrix-input` element
 

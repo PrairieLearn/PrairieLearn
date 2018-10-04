@@ -1,6 +1,8 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
 var pg = require('pg');
+var path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var migrations = require('../migrations');
@@ -13,12 +15,14 @@ var initConString = 'postgres://postgres@localhost/postgres';
 
 module.exports = {
     before: function(callback) {
+        debug('before()');
         // long timeout because DROP DATABASE might take a long time to error
         // if other processes have an open connection to that database
         this.timeout(20000);
         var client;
         async.series([
             function(callback) {
+                debug('before(): connecting client');
                 client = new pg.Client(initConString);
                 client.connect(function(err) {
                     if (ERR(err, callback)) return;
@@ -26,22 +30,26 @@ module.exports = {
                 });
             },
             function(callback) {
+                debug('before(): dropping database');
                 client.query('DROP DATABASE IF EXISTS ' + postgresqlDatabase + ';', function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                debug('before(): creating database');
                 client.query('CREATE DATABASE ' + postgresqlDatabase + ';', function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                debug('before(): ending client');
                 client.end();
                 callback(null);
             },
             function(callback) {
+                debug('before(): initializing sqldb');
                 var pgConfig = {
                     user: postgresqlUser,
                     database: postgresqlDatabase,
@@ -58,34 +66,40 @@ module.exports = {
                 });
             },
             function(callback) {
+                debug('before(): running migrations');
                 migrations.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                debug('before(): initializing sprocs');
                 sprocs.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
         ], function(err) {
+            debug('before(): complete');
             if (ERR(err, callback)) return;
             callback(null);
         });
     },
 
     after: function(callback) {
+        debug('after()');
         this.timeout(20000);
         var client;
         async.series([
             function(callback) {
+                debug('after(): closing sqldb');
                 sqldb.close(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                debug('after(): connecting client');
                 client = new pg.Client(initConString);
                 client.connect(function(err) {
                     if (ERR(err, callback)) return;
@@ -93,16 +107,19 @@ module.exports = {
                 });
             },
             function(callback) {
+                debug('after(): dropping database');
                 client.query('DROP DATABASE IF EXISTS ' + postgresqlDatabase + ';', function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                debug('after(): ending client');
                 client.end();
                 callback(null);
             },
         ], function(err) {
+            debug('after(): complete');
             if (ERR(err, callback)) return;
             callback(null);
         });

@@ -13,6 +13,7 @@ const blocked = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const multer  = require('multer');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -29,6 +30,7 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
+const workers = require('./lib/workers');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -109,6 +111,19 @@ if (config.hasAzure) {
     };
     passport.use(new OIDCStrategy(azureConfig, function(iss, sub, profile, accessToken, refreshToken, done) {return done(null, profile);}));
 }
+
+// special parsing of file upload paths -- this is inelegant having it
+// separate from the route handlers but it seems to be necessary
+// Special handling of file-upload routes so that we can parse multipart/form-data
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fieldSize: 1e7, // max in bytes
+        fileSize: 1e7, // max in bytes
+        parts: 100, // max number of fields + files
+    },
+});
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -235,12 +250,43 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
     require('./pages/instructorAssessments/instructorAssessments'),
 ]);
+
+// single assessment
+
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+]);
+app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/questions`);
+});
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
+    require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
+    require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics', [
+    require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics', [
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
-    require('./pages/instructorAssessment/instructorAssessment'),
+    require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads', [
+    require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
+    require('./pages/instructorAssessmentUploads/instructorAssessmentUploads'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading', [
+    require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
+    require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
+]);
+
+
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/shared/floatFormatters'),
@@ -544,7 +590,14 @@ if (config.startServer) {
         function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
-            load.initEstimator('python', 1);
+            load.initEstimator('python', 1, false);
+            load.initEstimator('python_worker_active', 1);
+            load.initEstimator('python_worker_idle', 1, false);
+            load.initEstimator('python_callback_waiting', 1);
+            callback(null);
+        },
+        function(callback) {
+            workers.init();
             callback(null);
         },
         function(callback) {

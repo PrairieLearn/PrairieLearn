@@ -24,7 +24,21 @@
       <% } %>
 
       <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-      <li class="nav-item <% if (navPage == "assessment")     { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %>"><%= assessment_label %></a></li>
+      <li class="nav-item dropdown <% if (navPage == "assessment") { %>active<% } %>">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <%= assessment_label %>
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "assessmentStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questionStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics"><i class="fas fa-table"></i> Question statistics</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "downloads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads"><i class="fas fa-download"></i> Downloads</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "uploads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads"><i class="fas fa-upload"></i> Uploads</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "regrading") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading"><i class="fa fa-sync"></i> Regrading</a>
+          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Student assessments</a>
+        </div>
+      </li>
       <% } %>
 
     </ul>

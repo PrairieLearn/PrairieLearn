@@ -29,6 +29,22 @@
 
   * Add personal access token management (Nathan Walters).
 
+  * Add `maxPoints` option to zones (Tim Bretl).
+
+  * Add `bestQuestions` option to zones (Tim Bretl).
+
+  * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
+
+  * Add warm up for Python worker processes (Matt West).
+
+  * Add better handling of client sockets on externally graded questions (Nathan Walters).
+
+  * Add postgresql permissions for root in Docker for development (Dave Mussulman).
+
+  * Add CSV scores upload for questions or assessments (Matt West).
+
+  * Add Pillow to the `centos7-python` container (Dave Mussulman).
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -63,9 +79,35 @@
 
   * Fix outdated pycryptdome version (to 3.6.6) (Matt West).
 
-  * Fig bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
+  * Fix bug in `pl-symbolic-input` to handle submission of function names without arguments (Tim Bretl).
 
   * Fix bug in `pl-symbolic-input` to handle submissions that simplify to invalid expressions (Tim Bretl).
+
+  * Fix bug in `pl-symbolic-input` to handle the sympy constants I and E properly (Tim Bretl).
+
+  * Fix markup in `pl-multiple-choice` and `pl-checkbox` elements (Nathan Walters).
+
+  * Fix slow v3 questions by using persistent forking python processes (Matt West).
+
+  * Fix spurious `warnOldJobs` log entries (Matt West).
+
+  * Fix label on `pl-string-input` help popover (Matt West).
+
+  * Fix restart of Python `codeCallers` with no active child (Matt West).
+
+  * Fix exampleCourse exam1 to include formula sheet example per docs (Dave Mussulman).
+
+  * Fix docs for `allowIssueReporting` (Matt West).
+
+  * Fix `pl-matrix-component-input` element to adjust height (Mariana Silva).
+
+  * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
+
+  * Fix `tools/dump_filter.sh` to drop `pg_stat_statements` for PostgreSQL 10 (Matt West).
+
+  * Fix slow assessment instance deletes (Matt West).
+
+  * Fix `triangularDistributedLoad` in `PrairieDraw.js` (Mariana Silva).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
@@ -93,7 +135,19 @@
 
   * Change maximum JSON POST size to 1MB or local grader (Nathan Walters).
 
+  * Change required package versions for security (Dave Mussulman).
+
+  * Change `allowIssueReporting` to default to `true` (Matt West).
+
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
+
+  * Change `pl-string-input` to include an attribute for the placeholder (Mariana Silva).
+
+  * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
+
+  * Change instructor assessment page into multiple sub-pages (Matt West).
+
+  * Change log level of external grading jobs to reduce syslog volume (Matt West).
 
 * __3.0.0__ - 2018-05-23
 

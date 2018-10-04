@@ -2,14 +2,14 @@
 {{#question}}
 <script>
     $(function() {
-        $('#pl-matrix-components-input-{{uuid}} [data-toggle="popover"]').popover({
+        $('#pl-matrix-component-input-{{uuid}} [data-toggle="popover"]').popover({
             container: 'body',
-            template: '<div class="popover pl-matrix-components-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            template: '<div class="popover pl-matrix-component-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
     });
 </script>
 <span class="form-inline d-inline-block ml-2">
-    <div id="pl-matrix-components-input-{{uuid}}" class="input-group">
+    <div id="pl-matrix-component-input-{{uuid}}" class="input-group">
         <span class="input-group-prepend">
             {{#label}}<label class="input-group-text" id="basic-addon2">{{label}}</label>{{/label}}
         </span>
