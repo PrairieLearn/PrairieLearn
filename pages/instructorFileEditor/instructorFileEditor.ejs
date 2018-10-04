@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script src="/javascripts/ace/ace.js"></script>
+    <script src="/instructorFileEditorClient.js"></script>
+    <style>
+        [id^=file-editor] .editor {
+            height: 1000px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        $(function() {
+            $('[data-toggle="popover"]').popover()
+        });
+    </script>
+    <!-- FIXME: correct navPage -->
+    <%- include('../partials/navbar', {navPage: 'editor'}); %>
+    <div id="content" class="container">
+        <script>
+            $(function() {
+            new window.InstructorFileEditor("<%= editorData.uuid %>", {
+                contents: "<%- editorData.contents %>",
+                aceMode: "ace/mode/json",
+            });
+        });
+        </script>
+        <div id="file-editor-<%= editorData.uuid %>">
+            <input type="hidden" name="hidden-input-<%= editorData.uuid %>">
+            <div class="card">
+                <!-- FIXME: maybe only the file name, not the full path? -->
+                <div class="card-header">
+                    <%= course.path %>/<%= editorData.file %> : <%= editorData.hash %>
+                </div>
+                <div class="editor"></div>
+                <div class="card-footer d-flex">
+                    <div class="ml-auto">
+                        <a class="btn btn-outline-secondary btn-sm restore-original" role="button" tabindex="-1">Restore original file</a>
+                        <div class="restore-original-confirm-container" style="display: none;">
+                            <a class="btn btn-success btn-sm restore-original-confirm" role="button" tabindex="-1">Confirm restore original</a>
+                            <a class="btn btn-secondary btn-sm restore-original-cancel" role="button" tabindex="-1">Cancel</a>
+                        </div>
+                    </div>
+
+
+                    <form name="confirm-form" method="POST">
+                        <input type="hidden" name="__action" value="save_and_sync">
+                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                        <input type="hidden" name="__hash" value="<%= editorData.hash %>">
+                        <input type="hidden" name="__file" value="<%= editorData.file %>">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                            Save and sync
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- <script>
+            $(function() {
+                // create editor
+                var editor = ace.edit("editor");
+
+                // set options
+                editor.setTheme("ace/theme/chrome");
+                editor.session.setMode("ace/mode/json");
+
+                // set contents
+                // editor.setValue("text");
+                editor.gotoLine(1, 0);
+                editor.focus();
+            });
+        </script>
+
+
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">JSON</div>
+
+          <div class="card-body">
+            <div id="editor"></div>
+          </div>
+        </div> -->
+
+
+
+    </div>
+</body>
+
+</html>
+
+
+
+
+<!-- <div class="card mb-4">
+  <div class="card-header bg-primary text-white">JSON</div>
+
+  <div class="card-body">
+    <div id="editor"></div>
+  </div>
+</div> -->
+
+<!-- <script>
+  // create editor
+  var editor = ace.edit("editor");
+
+  // set options
+  editor.setTheme("ace/theme/chrome");
+  editor.session.setMode("ace/mode/json");
+
+  // set contents
+  // editor.setValue("text");
+  editor.gotoLine(1, 0);
+  editor.focus();
+</script> -->
