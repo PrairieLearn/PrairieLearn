@@ -66,6 +66,10 @@ router.get('/', function(req, res, next) {
                         'hash': hash,
                     };
 
+                    // FIXME: add these...
+                    // job_sequence_id: req.params.job_sequence_id,
+                    // course_id: res.locals.course ? res.locals.course.id : null,
+
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
             });
@@ -284,7 +288,7 @@ router.post('/', function(req, res, next) {
                     namedLocks.releaseLock(lock, (lockErr) => {
                         if (ERR(lockErr, next)) return;
                         if (ERR(err, next)) return;
-                        
+
                         console.log('released lock');
                         console.log('old: ' + oldHash);
                         console.log('new: ' + newHash);
