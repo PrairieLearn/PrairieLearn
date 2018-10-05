@@ -27,3 +27,7 @@
 [id^=pl-matrix-component-input] .form-control {
   height: auto;
 }
+
+[id^=pl-matrix-component-input] .scrollbar {
+  overflow-x:auto;
+}
