@@ -137,6 +137,10 @@
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
 
+  * Change instructor assessment page into multiple sub-pages (Matt West).
+
+  * Change log level of external grading jobs to reduce syslog volume (Matt West).
+
   * Change `pl-string-input` making removal of leading and trailing spaces the default option (Mariana Silva).
 
 
