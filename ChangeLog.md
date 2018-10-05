@@ -317,6 +317,7 @@
   * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
+
   * Change `pl-string-input` making removal of leading and trailing spaces the default option (Mariana Silva).
 
 
