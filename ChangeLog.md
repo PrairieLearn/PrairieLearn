@@ -111,6 +111,8 @@
 
   * Fix `triangularDistributedLoad` in `PrairieDraw.js` (Mariana Silva).
 
+  * Fix unexpected token error in administrator overview page (Tim Bretl).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
