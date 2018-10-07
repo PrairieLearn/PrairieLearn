@@ -228,7 +228,7 @@ def parse(element_html, data):
                 data['format_errors'][each_entry_name] = '(Invalid blank entry)'
                 invalid_format = True
             else:
-                a_sub_parsed = pl.string_to_number(a_sub)
+                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
                 if a_sub_parsed is None:
                     data['submitted_answers'][each_entry_name] = None
                     data['format_errors'][each_entry_name] = '(Invalid format)'
