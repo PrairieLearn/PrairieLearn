@@ -1,0 +1,8 @@
+{
+    "uuid": "c303daac-33f3-4db4-87f7-168d2937d3ae",
+    "name": "BROKE 101",
+    "title": "Broken course configs",
+    "topics": [
+        {"name": "basic", "color": "blue3", "description": "Basic topic"}
+    ]
+}
