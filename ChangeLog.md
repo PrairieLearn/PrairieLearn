@@ -47,6 +47,8 @@
 
   * Add more question and assessment JSON validity checking on load (Dave Mussulman).
 
+  * Add scroll bar in `pl-matrix-component-input` (Mariana Silva)
+
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -110,6 +112,8 @@
   * Fix slow assessment instance deletes (Matt West).
 
   * Fix `triangularDistributedLoad` in `PrairieDraw.js` (Mariana Silva).
+
+  * Fix unexpected token error in administrator overview page (Tim Bretl).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
