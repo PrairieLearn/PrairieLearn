@@ -85,102 +85,89 @@ router.get('/', function(req, res, next) {
       result in duplicate names / overwrites)
     **/
 
-    res.locals.editorData = {
+    let fileEdit = {
         uuid: uuidv4(),
+        userID: res.locals.user.user_id,
+        courseID: res.locals.course.id,
+        coursePath: res.locals.course.path,
+        dirName: path.dirname(req.query.file),
+        fileName: path.basename(req.query.file),
     };
-    const full_path_to_file = path.join(res.locals.course.path, req.query.file);
-    debug("Full path to original file: " + full_path_to_file);
     async.series([
         (callback) => {
-            debug("Check if original file exists");
-            // FIXME: don't do this (https://nodejs.org/api/fs.html#fs_fs_stat_path_options_callback) - instead, handle error on fs.readFile
-            fs.stat(full_path_to_file, (err, stat) => {
+            debug('Read original file');
+            fs.readFile(path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName), 'utf8', (err, contents) => {
                 if (ERR(err, callback)) return;
-                res.locals.editorData.dirName = path.dirname(req.query.file);
-                debug(`Directory name is ${res.locals.editorData.dirName}`);
-                res.locals.editorData.fileName = path.basename(req.query.file);
-                debug(`File name is ${res.locals.editorData.fileName}`);
+                fileEdit.origContents = b64EncodeUnicode(contents);
                 callback(null);
             });
         },
         (callback) => {
-            debug("Read original file");
-            fs.readFile(full_path_to_file, 'utf8', (err, data) => {
-                if (ERR(err, callback)) return;
-                res.locals.editorData.originalContents = b64EncodeUnicode(data);
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug("Get commit hash of original file");
+            debug('Get commit hash of original file');
             const execOptions = {
-                cwd: res.locals.course.path,
+                cwd: fileEdit.coursePath,
                 env: process.env,
             };
-            exec('git rev-parse HEAD:' + path.join(res.locals.editorData.dirName, res.locals.editorData.fileName), execOptions, (err, stdout) => {
+            exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
                 if (ERR(err, callback)) return;
-                res.locals.editorData.originalHash = stdout.trim();
+                fileEdit.origHash = stdout.trim();
                 callback(null);
             });
         },
         (callback) => {
-            debug("Query database for file edit");
+            debug('Query database for file edit');
             sqldb.query(sql.select_file_edit, {
-                user_id: res.locals.user.user_id,
-                course_id: res.locals.course.id,
-                dir_name: res.locals.editorData.dirName,
-                file_name: res.locals.editorData.fileName,
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
             }, (err, result) => {
                 if (ERR(err, callback)) return;
                 if (result.rows.length > 0) {
-                    debug("Found file edit with id: " + String(result.rows[0].id));
-                    if (result.rows[0].commit_hash == res.locals.editorData.originalHash) {
-                        res.locals.editorData.editID = result.rows[0].id;
-                        res.locals.editorData.editHash = result.rows[0].commit_hash;
+                    debug(`Found file edit with id ${result.rows[0].id}`);
+                    if (result.rows[0].commit_hash == fileEdit.origHash) {
+                        fileEdit.editID = result.rows[0].id;
+                        debug('Read contents of file edit')
+                        readEdit(fileEdit, (err) => {
+                            if (ERR(err, callback)) return;
+                            debug('... in here ...')
+                            callback(null);
+                        });
                     } else {
-                        debug("Original and edit commit_hash are different");
-                        // FIXME: const dir = getDevFileEditsDirectory(res.locals.user.user_id, res.locals.course.id, result.rows[0].id);
-
-                        // FIXME: delete edit...
+                        debug('Delete file edit (outdated commit hash)');
+                        deleteEdit(fileEdit, (err) => {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
                     }
+                } else {
+                    callback(null);
                 }
-                callback(null);
             });
         },
         (callback) => {
-            if (!('editID' in res.locals.editorData)) {
-                debug("Create new edit");
+            if (!('editID' in fileEdit)) {
+                debug('Create file edit');
                 async.series([
                     (callback) => {
                         const params = {
-                            user_id: res.locals.user.user_id,
-                            course_id: res.locals.course.id,
-                            dir_name: res.locals.editorData.dirName,
-                            file_name: res.locals.editorData.fileName,
-                            commit_hash: res.locals.editorData.originalHash
+                            user_id: fileEdit.userID,
+                            course_id: fileEdit.courseID,
+                            dir_name: fileEdit.dirName,
+                            file_name: fileEdit.fileName,
+                            commit_hash: fileEdit.origHash
                         };
                         sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
                             if (ERR(err, callback)) return;
-                            res.locals.editorData.editID = result.rows[0].id;
-                            res.locals.editorData.editHash = result.rows[0].commit_hash;
-                            debug("Created file edit in database with id " + String(res.locals.editorData.editID));
+                            fileEdit.editID = result.rows[0].id;
+                            debug(`Created file edit in database with id ${res.locals.editorData.editID}`);
                             callback(null);
                         });
                     },
                     (callback) => {
-                        debug("Ensure file edit directory exists");
-                        fs.mkdirs(getDevDirName(), (err) => {
+                        debug('Write file edit');
+                        writeEdit(fileEdit, fileEdit.origContents, (err) => {
                             if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    },
-                    (callback) => {
-                        const dirName = getDevDirName();
-                        const fileName = getDevFileName(res.locals.user.user_id, res.locals.course.id, res.locals.editorData.editID, res.locals.editorData.fileName);
-                        const contents = b64DecodeUnicode(res.locals.editorData.originalContents);
-                        fs.writeFile(path.join(dirName, fileName), contents, 'utf8', (err) => {
-                            if (ERR(err, callback)) return;
-                            debug(`Created file edit on local disk with name ${fileName}`);
                             callback(null);
                         });
                     }
@@ -189,25 +176,15 @@ router.get('/', function(req, res, next) {
                     callback(null);
                 });
             }
-        },
-        (callback) => {
-
-
-
-
-            // if there is an active file edit:
-            //  - if commit hash differs from what was found above, then (1) make edit inactive, (2) set contents from original, (3) set flag to tell user what happened
-            //  - else, set contents from edit
-            // else:
-            //  - add edit to database
-            //  - add edit to S3/local
-
-            res.locals.editorData.hash = res.locals.editorData.originalHash;
-            res.locals.editorData.contents = res.locals.editorData.originalContents;
             callback(null);
         }
     ], (err) => {
         if (ERR(err, next)) return;
+
+        // FIXME: flags - (1) if file edit was found and deleted, (2) if file edit was found and used, (3) if no file edit was found
+        res.locals.fileEdit = fileEdit;
+
+
         debug("Render");
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
@@ -560,7 +537,49 @@ router.post('/', function(req, res, next) {
     // }
 });
 
+function readEdit(fileEdit, callback) {
+    const dirName = getDevDirName();
+    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
+    fs.readFile(path.join(dirName, fileName), 'utf8', (err, contents) => {
+        if (ERR(err, callback)) return;
+        fileEdit.editContents = b64EncodeUnicode(contents);
+        callback(null);
+    });
+}
 
+function deleteEdit(fileEdit, callback) {
+    const dirName = getDevDirName();
+    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
+    fs.unlink(path.join(dirName, fileName), (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function writeEdit(fileEdit, contents, callback) {
+    const dirName = getDevDirName();
+    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
+    async.series([
+        (callback) => {
+            debug("Ensure file edit directory exists");
+            fs.mkdirs(dirName, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            fs.writeFile(path.join(dirName, fileName), b64DecodeUnicode(contents), 'utf8', (err) => {
+                if (ERR(err, callback)) return;
+                debug(`Created file edit on local disk with name ${fileName}`);
+                fileEdit.editContents = contents;
+                callback(null);
+            });
+        }
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
 
 
 /**

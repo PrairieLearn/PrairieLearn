@@ -23,26 +23,26 @@
             $('[data-toggle="popover"]').popover()
         });
     </script>
-    
+
     <!-- FIXME: correct navPage -->
     <%- include('../partials/navbar', {navPage: 'editor'}); %>
     <div id="content" class="container">
         <script>
             $(function() {
-            new window.InstructorFileEditor("<%= editorData.uuid %>", {
-                contents: "<%- editorData.contents %>",
+            new window.InstructorFileEditor("<%= fileEdit.uuid %>", {
+                contents: "<%- fileEdit.editContents %>",
                 aceMode: "ace/mode/json",
             });
         });
         </script>
-        <div id="file-editor-<%= editorData.uuid %>">
-            <input type="hidden" name="hidden-input-<%= editorData.uuid %>">
+        <div id="file-editor-<%= fileEdit.uuid %>">
+            <input type="hidden" name="hidden-input-<%= fileEdit.uuid %>">
             <div class="card">
                 <!-- FIXME: maybe only the file name, not the full path? -->
                 <div class="card-header">
-                    <%= course.path %>/
-                    <%= editorData.file %> :
-                    <%= editorData.hash %>
+                    <%= fileEdit.dirName %>/
+                    <%= fileEdit.fileName %> :
+                    <%= fileEdit.origHash %>
                 </div>
                 <div class="editor"></div>
                 <div class="card-footer d-flex">
@@ -58,8 +58,8 @@
                     <form name="confirm-form" method="POST">
                         <input type="hidden" name="__action" value="save_and_sync">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <input type="hidden" name="__hash" value="<%= editorData.hash %>">
-                        <input type="hidden" name="__file" value="<%= editorData.file %>">
+                        <input type="hidden" name="__hash" value="<%= fileEdit.origHash %>">
+                        <input type="hidden" name="__file" value="<%= fileEdit.fileName %>">
                         <button type="submit" class="btn btn-sm btn-outline-primary">
                             <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
                             Save and sync
