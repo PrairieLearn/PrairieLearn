@@ -3,6 +3,10 @@
     max-width: 100%;
 }
 
+.pl-matrix-component-span-fullwidth {
+    max-width: calc(100% - 15px)
+}
+
 [id^=pl-matrix-component-input] .close-left {
   border-left: 3px solid black;
   border-top: 3px solid black;
@@ -26,8 +30,6 @@
 
 [id^=pl-matrix-component-input] .form-control {
   height: auto;
-}
-
-[id^=pl-matrix-component-input] .scrollbar {
-  overflow-x:auto;
+  overflow-x: auto;
+  overflow-y: auto;
 }
