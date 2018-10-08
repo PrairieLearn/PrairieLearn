@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
