@@ -15,7 +15,6 @@ course_assessments AS (
 ),
 lti_credentials AS (
     SELECT
-    --jsonb_agg(lti_credentials) as lti_credentials
     jsonb_agg(jsonb_build_object(
         'id', lc.id,
         'course_instance_id', lc.course_instance_id,
@@ -28,11 +27,9 @@ lti_credentials AS (
     FROM lti_credentials AS lc
     JOIN course_instances AS ci ON(ci.id = lc.course_instance_id)
     WHERE course_instance_id = $course_instance_id
-
 ),
 lti_links AS (
     SELECT
---        jsonb_agg(lti_links ORDER BY created_at) AS lti_links
     jsonb_agg(jsonb_build_object(
         'id', ll.id,
         'resource_link_title', ll.resource_link_title,

@@ -1,5 +1,10 @@
 -- BLOCK lookup_credential
-SELECT * FROM lti_credentials WHERE consumer_key = $consumer_key AND deleted_at IS NULL;
+SELECT
+    *
+FROM lti_credentials
+WHERE
+    consumer_key = $consumer_key
+    AND deleted_at IS NULL;
 
 -- BLOCK enroll
 INSERT INTO enrollments AS e

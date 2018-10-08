@@ -9,5 +9,4 @@ CREATE TABLE lti_outcomes (
 
 CREATE INDEX IF NOT EXISTS lti_outcomes_assessment_id ON lti_outcomes(assessment_id);
 ALTER TABLE lti_outcomes
-    ADD CONSTRAINT lti_outcomes_user_assessment UNIQUE (user_id, assessment_id);
-    
+    ADD CONSTRAINT lti_outcomes_user_id_assessment_id_key UNIQUE (user_id, assessment_id);

@@ -75,20 +75,16 @@ router.post('/', function(req, res, next) {
         // OAuth validation succeeded, next look up and store user authn data
         //
 
-        //console.log(parameters);
-        //console.log(ltiresult);
+        debug('lti parameters' + parameters);
+        debug('lti sql query ' + ltiresult);
 
         if (!parameters.user_id) {
             return next(error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.'));
         }
 
-        /* Conflicts with other UIDs, potentially
-           Also means we have no way to store the email coming from the consumer
-        if (parameters.lis_person_contact_email_primary) {
-            authUid = parameters.lis_person_contact_email_primary;
-        } else if (parameters.lis_person_sourcedid) {
-            authUid = parameters.lis_person_sourcedid;
-        }
+        /* Create unique UID from LTI parameters.
+           Not using an email address (parameters.lis_person_contact_email_primary)
+           so that LTI doesn't conflict with other UIDs.
         */
         var authUid = parameters.user_id + '@' + parameters.context_id;
 
@@ -100,11 +96,11 @@ router.post('/', function(req, res, next) {
         var authName = parameters.lis_person_name_full || fallbackName;
 
         var params = [
-        authUid,
-        authName,
-        ltiresult.course_instance_id,
-        parameters.user_id,
-        parameters.context_id,
+            authUid,
+            authName,
+            ltiresult.course_instance_id,
+            parameters.user_id,
+            parameters.context_id,
         ];
 
         sqldb.call('users_select_or_insert_lti', params, (err, result) => {
@@ -112,15 +108,6 @@ router.post('/', function(req, res, next) {
             var tokenData = {
                 user_id: result.rows[0].user_id,
                 provider: 'lti',
-                /*
-                lti_launch_presentation_return_url: parameters.launch_presentation_return_url,
-                resource_link_id: parameters.resource_link_id,
-                resource_link_title: parameters.resource_link_title,
-                resource_link_description: parameters.resource_link_description,
-                context_id: parameters.context_id,
-                context_label: parameters.context_label,
-                context_title: parameters.context_title,
-                */
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
@@ -175,9 +162,6 @@ router.post('/', function(req, res, next) {
                         } else {
                             // Show an error that the assignment is unavailable
                             return next(error.make(400, 'Assignment not available yet'));
-
-                            // Default them into the course instance
-                            //redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
                         }
                         res.redirect(redirUrl);
                     }
