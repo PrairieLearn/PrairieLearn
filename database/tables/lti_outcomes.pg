@@ -8,7 +8,7 @@ columns
 
 indexes
     lti_outcomes_pkey: PRIMARY KEY (id) USING btree (id)
-    lti_outcomes_user_assessment: UNIQUE (user_id, assessment_id) USING btree (user_id, assessment_id)
+    lti_outcomes_user_id_assessment_id_key: UNIQUE (user_id, assessment_id) USING btree (user_id, assessment_id)
     lti_outcomes_assessment_id: USING btree (assessment_id)
 
 foreign-key constraints

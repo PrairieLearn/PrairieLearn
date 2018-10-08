@@ -11,7 +11,7 @@ columns
 
 indexes
     lti_links_pkey: PRIMARY KEY (id) USING btree (id)
-    course_instance_context_link: UNIQUE (course_instance_id, context_id, resource_link_id) USING btree (course_instance_id, context_id, resource_link_id)
+    course_instance_context_id_resource_link_id_key: UNIQUE (course_instance_id, context_id, resource_link_id) USING btree (course_instance_id, context_id, resource_link_id)
     lti_links_resource_link_id_idx: USING btree (resource_link_id)
 
 foreign-key constraints
