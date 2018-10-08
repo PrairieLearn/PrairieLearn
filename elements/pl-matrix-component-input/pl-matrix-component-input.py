@@ -228,7 +228,7 @@ def parse(element_html, data):
                 data['format_errors'][each_entry_name] = '(Invalid blank entry)'
                 invalid_format = True
             else:
-                a_sub_parsed = pl.string_to_number(a_sub)
+                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
                 if a_sub_parsed is None:
                     data['submitted_answers'][each_entry_name] = None
                     data['format_errors'][each_entry_name] = '(Invalid format)'
@@ -385,8 +385,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
 
         display_array = '<table>'
         display_array += '<tr>'
-        display_array += '<td class="close-left" rowspan="0"></td>'
-        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -398,8 +398,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
             display_array += escape(raw_submitted_answer)
             display_array += ' </td> '
-        display_array += '<td style="width:4px" rowspan="0"></td>'
-        display_array += '<td class="close-right" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
         for i in range(1, m):
             display_array += ' <tr>'
@@ -438,8 +438,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         # Add the prefix
         if label is not None:
             display_array += '<td rowspan="0">' + label + '&nbsp;</td>'
-        display_array += '<td class="close-left" rowspan="0"></td>'
-        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -454,8 +454,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 display_array += feedback_message
             display_array += '</td> '
         # Add the suffix
-        display_array += '<td style="width:4px" rowspan="0"></td>'
-        display_array += '<td class="close-right" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         if score_message is not None:
             display_array += '<td rowspan="0">&nbsp;' + score_message + '</td>'
         display_array += '</tr>'
@@ -481,8 +481,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array = '<table>'
         display_array += '<tr>'
         # Add first row
-        display_array += '<td class="close-left" rowspan="0"></td>'
-        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
@@ -493,8 +493,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 display_array += '  value= "'
                 display_array += escape(raw_submitted_answer)
             display_array += '" /> </td>'
-        display_array += '<td style="width:4px" rowspan="0"></td>'
-        display_array += '<td class="close-right" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add other rows
         for i in range(1, m):
             display_array += ' <tr>'

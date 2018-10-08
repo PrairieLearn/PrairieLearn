@@ -48,7 +48,7 @@
     </pl-matrix-component-input>
 </div>
 
-<div>
+<div class="mb-2">
     <h5>
     3.
     </h5>
@@ -61,5 +61,18 @@
     </pl-question-panel>
 
     <pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}" allow-partial-credit="true" allow-feedback="false">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2">
+    <h5>
+        4.
+    </h5>
+    <pl-question-panel>
+        <p>
+            This is a very long vector, it should be able to scroll.
+        </p>
+    </pl-question-panel>
+     <pl-matrix-component-input answers-name="out4" label="${\bf x} = $" comparison="relabs" atol="0" rtol="1e-6" allow-partial-credit="true">
     </pl-matrix-component-input>
 </div>
