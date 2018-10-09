@@ -130,13 +130,34 @@ router.get('/', function(req, res, next) {
                         debug('Read contents of file edit')
                         readEdit(fileEdit, (err) => {
                             if (ERR(err, callback)) return;
-                            debug('... in here ...')
+                            fileEdit.didReadEdit = true;
                             callback(null);
                         });
                     } else {
                         debug('Delete file edit (outdated commit hash)');
-                        deleteEdit(fileEdit, (err) => {
+                        async.series([
+                            (callback) => {
+                                debug('Delete file edit from database');
+                                sqldb.query(sql.delete_file_edit, {
+                                    user_id: fileEdit.userID,
+                                    course_id: fileEdit.courseID,
+                                    id: fileEdit.editID,
+                                    file_name: fileEdit.fileName,
+                                }, (err) => {
+                                    if (ERR(err, callback)) return;
+                                    callback(null);
+                                });
+                            },
+                            (callback) => {
+                                debug('Delete file edit from disk');
+                                deleteEdit(fileEdit, (err) => {
+                                    if (ERR(err, callback)) return;
+                                    callback(null);
+                                });
+                            }
+                        ], (err) => {
                             if (ERR(err, callback)) return;
+                            fileEdit.didDeleteEdit = true;
                             callback(null);
                         });
                     }
@@ -160,7 +181,7 @@ router.get('/', function(req, res, next) {
                         sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
                             if (ERR(err, callback)) return;
                             fileEdit.editID = result.rows[0].id;
-                            debug(`Created file edit in database with id ${res.locals.editorData.editID}`);
+                            debug(`Created file edit in database with id ${fileEdit.editID}`);
                             callback(null);
                         });
                     },
@@ -173,59 +194,19 @@ router.get('/', function(req, res, next) {
                     }
                 ], (err) => {
                     if (ERR(err, callback)) return;
+                    fileEdit.didWriteEdit = true;
                     callback(null);
                 });
+            } else {
+                callback(null);
             }
-            callback(null);
         }
     ], (err) => {
         if (ERR(err, next)) return;
-
-        // FIXME: flags - (1) if file edit was found and deleted, (2) if file edit was found and used, (3) if no file edit was found
         res.locals.fileEdit = fileEdit;
-
-
         debug("Render");
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
-
-
-
-
-
-    // fs.stat(file_path, function(err, stat) {
-    //     if (err == null) {
-    //
-    //         // Read file before getting hash so we are conservative later when
-    //         // deciding whether or not this file has been changed.
-    //
-    //         getData(file_path, function(err, data) {
-    //             if (ERR(err, next)) return;
-    //
-    //             getCommitHash(res.locals.course.path, req.query.file, (err, hash) => {
-    //                 if (ERR(err, next)) return;
-    //
-    //                 res.locals.editorData = {
-    //                     'uuid': uuidv4(),
-    //                     'file': req.query.file,
-    //                     'contents': b64EncodeUnicode(data),
-    //                     'hash': hash,
-    //                 };
-    //
-    //                 // FIXME: add these...
-    //                 // job_sequence_id: req.params.job_sequence_id,
-    //                 // course_id: res.locals.course ? res.locals.course.id : null,
-    //
-    //                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    //             });
-    //         });
-    //     } else {
-    //         return next(error.make(400, 'file ' + req.query.file + ' does not exist', {
-    //             locals: res.locals,
-    //             body: req.body
-    //         }));
-    //     }
-    // });
 });
 
 const getCommitHash = function(course_path, file_path, callback) {
@@ -391,150 +372,207 @@ const saveAndSync = function() {
 
 
 router.post('/', function(req, res, next) {
+    debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
-    if (req.body.__action == 'save_and_sync') {
 
-        // FIXME: server jobs, logger
+    let fileEdit = {
+        userID: req.body.file_edit_user_id,
+        courseID: req.body.file_edit_course_id,
+        editID: req.body.file_edit_id,
+        dirName: req.body.file_edit_dir_name,
+        fileName: req.body.file_edit_file_name,
+    };
 
-        console.log(req.body);
-
-        // Get file name
-        const fileName = req.body.__file;
-
-        // Get old hash
-        const oldHash = req.body.__hash;
-
-        console.log(fileName);
-        console.log(oldHash);
-
-        // Get commit lock
-        const lockName = 'coursedir:' + res.locals.course.path;
-        // logger.verbose(`Trying lock ${lockName}`);
-        namedLocks.tryLock(lockName, (err, lock) => {
-            // FIXME: should "next" really appear where "callback" was?
+    if (req.body.__action == 'save_draft') {
+        debug('Save draft: overwrite file edit');
+        writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
             if (ERR(err, next)) return;
-            if (lock == null) {
-                // logger.verbose(`Did not acquire lock ${lockName}`);
-                // callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-                return next(error.make(400, `Another user is already syncing or modifying the course: ${res.locals.course.path}`, {
-                    locals: res.locals,
-                    body: req.body
-                }));
-            } else {
-                // logger.verbose(`Acquired lock ${lockName}`);
-                console.log('acquired lock');
-                console.log('trying to get new hash:');
-                console.log(' path: ' + res.locals.course.path)
-                console.log(' file: ' + fileName)
-
-                // Get new hash
-                getCommitHash(res.locals.course.path, fileName, (err, newHash) => {
-                    namedLocks.releaseLock(lock, (lockErr) => {
-                        if (ERR(lockErr, next)) return;
-                        if (ERR(err, next)) return;
-
-                        console.log('released lock');
-                        console.log('old: ' + oldHash);
-                        console.log('new: ' + newHash);
-                        console.log('new == old: ' + String(oldHash == newHash));
-                        // logger.verbose(`Released lock ${lockName}`);
-                        // callback(null);
-
-                        res.redirect(req.originalUrl);
-                    });
-                    // if (ERR(err, next)) return;
-
-
-
-                    // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                });
-
-
-                // this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
-                //     namedLocks.releaseLock(lock, (lockErr) => {
-                //         if (ERR(lockErr, callback)) return;
-                //         if (ERR(err, callback)) return;
-                //         logger.verbose(`Released lock ${lockName}`);
-                //         callback(null);
-                //     });
-                // });
-            }
+            res.redirect(req.originalUrl);
         });
-
-
-
-
-        // const jobOptions = {
-        //     course_id: res.locals.course.id,
-        //     user_id: res.locals.user.user_id,
-        //     authn_user_id: res.locals.authz_data.authn_user.user_id,
-        //     type: 'save_and_sync',
-        //     description: 'FIXME: Replace this text with a description of what is being done',
-        //     job_sequence_id: job_sequence_id,
-        //     on_success: syncStage3,
-        // };
-        // serverJobs.createJob(jobOptions, function(err, job) {
-        //     if (err) {
-        //         logger.error('Error in createJob()', err);
-        //         serverJobs.failJobSequence(job_sequence_id);
-        //         return;
-        //     }
-        //     syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
-        //         if (err) {
-        //             job.fail(err);
-        //         } else {
-        //             job.succeed();
-        //         }
-        //     });
-        // });
-
-
+    } else if (req.body.__action == 'revert_to_draft') {
+        debug('Revert to draft: reload page to discard changes');
+        res.redirect(req.originalUrl);
+    } else if (req.body.__action == 'revert_to_original') {
+        debug('Revert to original: delete file edit');
+        async.series([
+            (callback) => {
+                debug('Delete file edit from database');
+                sqldb.query(sql.delete_file_edit, {
+                    user_id: fileEdit.userID,
+                    course_id: fileEdit.courseID,
+                    id: fileEdit.editID,
+                    file_name: fileEdit.fileName,
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug('Delete file edit from disk');
+                deleteEdit(fileEdit, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }
+        ], (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'save_and_sync') {
+        debug('Save and sync...');
+        // FIXME...
+        res.redirect(req.originalUrl);
     } else {
-        return next(error.make(400, 'unknown __action', {
-            locals: res.locals,
-            body: req.body
-        }));
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
     }
 
-
-
-
-    // if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
-    // if (req.body.__action == 'course_permissions_insert_by_user_uid') {
-    //     let params = [
-    //         res.locals.course.id,
-    //         req.body.uid,
-    //         req.body.course_role,
-    //         res.locals.authz_data.authn_user.user_id,
-    //     ];
-    //     sqldb.call('course_permissions_insert_by_user_uid', params, function(err, _result) {
+    //
+    //
+    //
+    //
+    // if (req.body.__action == 'save_and_sync') {
+    //
+    //     // FIXME: server jobs, logger
+    //
+    //     console.log(req.body);
+    //
+    //     // Get file name
+    //     const fileName = req.body.__file;
+    //
+    //     // Get old hash
+    //     const oldHash = req.body.__hash;
+    //
+    //     console.log(fileName);
+    //     console.log(oldHash);
+    //
+    //     // Get commit lock
+    //     const lockName = 'coursedir:' + res.locals.course.path;
+    //     // logger.verbose(`Trying lock ${lockName}`);
+    //     namedLocks.tryLock(lockName, (err, lock) => {
+    //         // FIXME: should "next" really appear where "callback" was?
     //         if (ERR(err, next)) return;
-    //         res.redirect(req.originalUrl);
+    //         if (lock == null) {
+    //             // logger.verbose(`Did not acquire lock ${lockName}`);
+    //             // callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
+    //             return next(error.make(400, `Another user is already syncing or modifying the course: ${res.locals.course.path}`, {
+    //                 locals: res.locals,
+    //                 body: req.body
+    //             }));
+    //         } else {
+    //             // logger.verbose(`Acquired lock ${lockName}`);
+    //             console.log('acquired lock');
+    //             console.log('trying to get new hash:');
+    //             console.log(' path: ' + res.locals.course.path)
+    //             console.log(' file: ' + fileName)
+    //
+    //             // Get new hash
+    //             getCommitHash(res.locals.course.path, fileName, (err, newHash) => {
+    //                 namedLocks.releaseLock(lock, (lockErr) => {
+    //                     if (ERR(lockErr, next)) return;
+    //                     if (ERR(err, next)) return;
+    //
+    //                     console.log('released lock');
+    //                     console.log('old: ' + oldHash);
+    //                     console.log('new: ' + newHash);
+    //                     console.log('new == old: ' + String(oldHash == newHash));
+    //                     // logger.verbose(`Released lock ${lockName}`);
+    //                     // callback(null);
+    //
+    //                     res.redirect(req.originalUrl);
+    //                 });
+    //                 // if (ERR(err, next)) return;
+    //
+    //
+    //
+    //                 // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    //             });
+    //
+    //
+    //             // this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+    //             //     namedLocks.releaseLock(lock, (lockErr) => {
+    //             //         if (ERR(lockErr, callback)) return;
+    //             //         if (ERR(err, callback)) return;
+    //             //         logger.verbose(`Released lock ${lockName}`);
+    //             //         callback(null);
+    //             //     });
+    //             // });
+    //         }
     //     });
-    // } else if (req.body.__action == 'course_permissions_update_role') {
-    //     let params = [
-    //         res.locals.course.id,
-    //         req.body.user_id,
-    //         req.body.course_role,
-    //         res.locals.authz_data.authn_user.user_id,
-    //     ];
-    //     sqldb.call('course_permissions_update_role', params, function(err, _result) {
-    //         if (ERR(err, next)) return;
-    //         res.redirect(req.originalUrl);
-    //     });
-    // } else if (req.body.__action == 'course_permissions_delete') {
-    //     var params = [
-    //         res.locals.course.id,
-    //         req.body.user_id,
-    //         res.locals.authz_data.authn_user.user_id,
-    //     ];
-    //     sqldb.call('course_permissions_delete', params, function(err, _result) {
-    //         if (ERR(err, next)) return;
-    //         res.redirect(req.originalUrl);
-    //     });
+    //
+    //
+    //
+    //
+    //     // const jobOptions = {
+    //     //     course_id: res.locals.course.id,
+    //     //     user_id: res.locals.user.user_id,
+    //     //     authn_user_id: res.locals.authz_data.authn_user.user_id,
+    //     //     type: 'save_and_sync',
+    //     //     description: 'FIXME: Replace this text with a description of what is being done',
+    //     //     job_sequence_id: job_sequence_id,
+    //     //     on_success: syncStage3,
+    //     // };
+    //     // serverJobs.createJob(jobOptions, function(err, job) {
+    //     //     if (err) {
+    //     //         logger.error('Error in createJob()', err);
+    //     //         serverJobs.failJobSequence(job_sequence_id);
+    //     //         return;
+    //     //     }
+    //     //     syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
+    //     //         if (err) {
+    //     //             job.fail(err);
+    //     //         } else {
+    //     //             job.succeed();
+    //     //         }
+    //     //     });
+    //     // });
+    //
+    //
     // } else {
-    //     return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+    //     return next(error.make(400, 'unknown __action', {
+    //         locals: res.locals,
+    //         body: req.body
+    //     }));
     // }
+    //
+    //
+    //
+    //
+    // // if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
+    // // if (req.body.__action == 'course_permissions_insert_by_user_uid') {
+    // //     let params = [
+    // //         res.locals.course.id,
+    // //         req.body.uid,
+    // //         req.body.course_role,
+    // //         res.locals.authz_data.authn_user.user_id,
+    // //     ];
+    // //     sqldb.call('course_permissions_insert_by_user_uid', params, function(err, _result) {
+    // //         if (ERR(err, next)) return;
+    // //         res.redirect(req.originalUrl);
+    // //     });
+    // // } else if (req.body.__action == 'course_permissions_update_role') {
+    // //     let params = [
+    // //         res.locals.course.id,
+    // //         req.body.user_id,
+    // //         req.body.course_role,
+    // //         res.locals.authz_data.authn_user.user_id,
+    // //     ];
+    // //     sqldb.call('course_permissions_update_role', params, function(err, _result) {
+    // //         if (ERR(err, next)) return;
+    // //         res.redirect(req.originalUrl);
+    // //     });
+    // // } else if (req.body.__action == 'course_permissions_delete') {
+    // //     var params = [
+    // //         res.locals.course.id,
+    // //         req.body.user_id,
+    // //         res.locals.authz_data.authn_user.user_id,
+    // //     ];
+    // //     sqldb.call('course_permissions_delete', params, function(err, _result) {
+    // //         if (ERR(err, next)) return;
+    // //         res.redirect(req.originalUrl);
+    // //     });
+    // // } else {
+    // //     return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+    // // }
 });
 
 function readEdit(fileEdit, callback) {

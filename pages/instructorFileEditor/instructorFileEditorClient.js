@@ -7,12 +7,9 @@ window.InstructorFileEditor = function(uuid, options) {
         throw new Error('Instructor file editor element ' + elementId + ' was not found!');
     }
 
-    this.inputElement = this.element.find('hidden-input-' + uuid);
+    console.log(this.element);
+    this.inputElement = this.element.find('input[name=file_edit_contents]');
     this.editorElement = this.element.find('.editor');
-    this.restoreOriginalButton = this.element.find('.restore-original');
-    this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
-    this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
-    this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
     this.editor = ace.edit(this.editorElement.get(0));
     this.editor.setTheme('ace/theme/chrome');
     this.editor.getSession().setUseWrapMode(true);
@@ -36,29 +33,6 @@ window.InstructorFileEditor = function(uuid, options) {
         contents = this.b64DecodeUnicode(options.contents);
     }
     this.setEditorContents(contents);
-
-    this.initRestoreOriginalButton();
-};
-
-window.InstructorFileEditor.prototype.initRestoreOriginalButton = function() {
-    var that = this;
-    this.restoreOriginalButton.click(function() {
-        that.restoreOriginalButton.hide();
-        that.restoreOriginalConfirmContainer.show();
-    });
-
-    this.restoreOriginalConfirm.click(function() {
-        that.restoreOriginalConfirmContainer.hide();
-        that.restoreOriginalButton.show();
-
-        // FIXME: do page reload... maybe by "POST"?
-        // that.setEditorContents(that.b64DecodeUnicode(that.originalContents));
-    });
-
-    this.restoreOriginalCancel.click(function() {
-        that.restoreOriginalConfirmContainer.hide();
-        that.restoreOriginalButton.show();
-    });
 };
 
 window.InstructorFileEditor.prototype.setEditorContents = function(contents) {

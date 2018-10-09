@@ -28,3 +28,12 @@ FROM
     max_over_file_edits_with_same_course_and_user
 RETURNING
     file_edits.id;
+
+-- BLOCK delete_file_edit
+DELETE FROM
+    file_edits AS fe
+WHERE
+    fe.user_id = $user_id
+    AND fe.course_id = $course_id
+    AND fe.id = $id
+    AND fe.file_name = $file_name;
