@@ -3,7 +3,6 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 const async = require('async');
-
 var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -11,9 +10,8 @@ var fs = require('fs-extra');
 const os = require('os');
 var path = require('path');
 const uuidv4 = require('uuid/v4');
-// const serverJobs = require('../../lib/server-jobs');
 const debug = require('debug')('prairielearn:instructorFileEditor');
-
+const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 
 const {
@@ -46,44 +44,6 @@ router.get('/', function(req, res, next) {
             body: req.body
         }));
     }
-
-    // async.waterfall([
-    //     function(callback) {
-    //         callback(null, 'one', 'two');
-    //     },
-    //     function(arg1, arg2, callback) {
-    //         // arg1 now equals 'one' and arg2 now equals 'two'
-    //         callback(null, 'three');
-    //     },
-    //     function(arg1, callback) {
-    //         // arg1 now equals 'three'
-    //         callback(null, 'done');
-    //     }
-    // ], function(err, result) {
-    //     // result now equals 'done'
-    // });
-
-    // async.series([
-    //         function(callback) {
-    //             // do some stuff ...
-    //             callback(null, 'one');
-    //         },
-    //         function(callback) {
-    //             // do some more stuff ...
-    //             callback(null, 'two');
-    //         }
-    //     ],
-    //     // optional callback
-    //     function(err, results) {
-    //         // results is now equal to ['one', 'two']
-    //     }
-    // );
-
-    /**
-    TODO:
-    - consider naming with uuid? (I'm concerned about orphaned files, which may
-      result in duplicate names / overwrites)
-    **/
 
     let fileEdit = {
         uuid: uuidv4(),
@@ -225,147 +185,6 @@ const getCommitHash = function(course_path, file_path, callback) {
     });
 };
 
-const saveAndSync = function() {
-
-};
-
-
-
-// const saveAndSync = function(locals, callback) {
-//     const options = {
-//         course_id: locals.course.id,
-//         user_id: locals.user.user_id,
-//         authn_user_id: locals.authz_data.authn_user.user_id,
-//         type: 'save_and_sync',
-//         description: 'Pull from remote git repository',
-//     };
-//     serverJobs.createJobSequence(options, function(err, job_sequence_id) {
-//         if (ERR(err, callback)) return;
-//         callback(null, job_sequence_id);
-//
-//         const gitEnv = process.env;
-//         if (config.gitSshCommand != null) {
-//             gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-//         }
-//
-//         // We've now triggered the callback to our caller, but we
-//         // continue executing below to launch the jobs themselves.
-//
-//         // First define the jobs.
-//         //
-//         // After either cloning or pulling from Git, we'll need to load and
-//         // store the current commit hash in the database
-//         const updateCommitHash = () => {
-//             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-//                 ERR(err, (e) => logger.error(e));
-//                 syncStage2();
-//             });
-//         };
-//
-//         // We will start with either 1A or 1B below.
-//
-//         const syncStage1A = function() {
-//             const jobOptions = {
-//                 course_id: locals.course.id,
-//                 user_id: locals.user.user_id,
-//                 authn_user_id: locals.authz_data.authn_user.user_id,
-//                 job_sequence_id: job_sequence_id,
-//                 type: 'clone_from_git',
-//                 description: 'Clone from remote git repository',
-//                 command: 'git',
-//                 arguments: ['clone', locals.course.repository, locals.course.path],
-//                 env: gitEnv,
-//                 on_success: updateCommitHash,
-//             };
-//             serverJobs.spawnJob(jobOptions);
-//         };
-//
-//         const syncStage1B = function() {
-//             const jobOptions = {
-//                 course_id: locals.course.id,
-//                 user_id: locals.user.user_id,
-//                 authn_user_id: locals.authz_data.authn_user.user_id,
-//                 job_sequence_id: job_sequence_id,
-//                 type: 'pull_from_git',
-//                 description: 'Pull from remote git repository',
-//                 command: 'git',
-//                 arguments: ['pull', '--force'],
-//                 working_directory: locals.course.path,
-//                 env: gitEnv,
-//                 on_success: updateCommitHash,
-//             };
-//             serverJobs.spawnJob(jobOptions);
-//         };
-//
-//         const syncStage2 = function() {
-//             const jobOptions = {
-//                 course_id: locals.course.id,
-//                 user_id: locals.user.user_id,
-//                 authn_user_id: locals.authz_data.authn_user.user_id,
-//                 type: 'sync_from_disk',
-//                 description: 'Sync git repository to database',
-//                 job_sequence_id: job_sequence_id,
-//                 on_success: syncStage3,
-//             };
-//             serverJobs.createJob(jobOptions, function(err, job) {
-//                 if (err) {
-//                     logger.error('Error in createJob()', err);
-//                     serverJobs.failJobSequence(job_sequence_id);
-//                     return;
-//                 }
-//                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
-//                     if (err) {
-//                         job.fail(err);
-//                     } else {
-//                         job.succeed();
-//                     }
-//                 });
-//             });
-//         };
-//
-//         const syncStage3 = function() {
-//             const jobOptions = {
-//                 course_id: locals.course.id,
-//                 user_id: locals.user.user_id,
-//                 authn_user_id: locals.authz_data.authn_user.user_id,
-//                 type: 'reload_question_servers',
-//                 description: 'Reload question server.js code',
-//                 job_sequence_id: job_sequence_id,
-//                 last_in_sequence: true,
-//             };
-//             serverJobs.createJob(jobOptions, function(err, job) {
-//                 if (err) {
-//                     logger.error('Error in createJob()', err);
-//                     serverJobs.failJobSequence(job_sequence_id);
-//                     return;
-//                 }
-//                 const coursePath = locals.course.path;
-//                 requireFrontend.undefQuestionServers(coursePath, job, function(err) {
-//                     if (err) {
-//                         job.fail(err);
-//                     } else {
-//                         job.succeed();
-//                     }
-//                 });
-//             });
-//         };
-//
-//         // Start the first job.
-//         fs.access(locals.course.path, function(err) {
-//             if (err) {
-//                 // path does not exist, start with 'git clone'
-//                 syncStage1A();
-//             } else {
-//                 // path exists, start with 'git pull'
-//                 syncStage1B();
-//             }
-//         });
-//     });
-// };
-
-
-
-
 
 
 
@@ -419,17 +238,38 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'save_and_sync') {
-        debug('Save and sync...');
-        // FIXME...
-        res.redirect(req.originalUrl);
+        debug('Save and sync');
+        async.waterfall([
+            (callback) => {
+                debug('Save and sync: overwrite file edit');
+                writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                saveAndSync(res.locals, (err, job_sequence_id) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, job_sequence_id);
+                });
+            }
+        ], (err, job_sequence_id) => {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+
+        // FIXME: args (pass fileEdit)
+        // FIXME: implement saveAndSync
+
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
     }
 
+
+    // get commit lock
     //
-    //
-    //
-    //
+
+
     // if (req.body.__action == 'save_and_sync') {
     //
     //     // FIXME: server jobs, logger
@@ -646,6 +486,42 @@ function getDevDirName() {
 
 function getDevFileName(userID, courseID, editID, fileName) {
     return `edit_${userID}_${courseID}_${editID}_${fileName}`;
+}
+
+const saveAndSync = function(locals, callback) {
+    const options = {
+        course_id: locals.course.id,
+        user_id: locals.user.user_id,
+        authn_user_id: locals.authz_data.authn_user.user_id,
+        type: 'push_to_remote_git_repository',
+        description: 'Push to remote git repository',
+    };
+    serverJobs.createJobSequence(options, (err, job_sequence_id) => {
+        if (ERR(err, callback)) return;
+        callback(null, job_sequence_id);
+
+        // We've now triggered the callback to our caller, but we
+        // continue executing below to launch the jobs themselves.
+
+        const jobOptions = {
+            course_id: options.course_id,
+            user_id: options.user_id,
+            authn_user_id: options.authn_user_id,
+            type: 'push_to_remote_git_repository',
+            description: 'Push to remote...',
+            job_sequence_id: job_sequence_id,
+            last_in_sequence: true,
+        };
+        serverJobs.createJob(jobOptions, (err, job) => {
+            if (err) {
+                logger.error('Error in createJob()', err);
+                serverJobs.failJobSequence(job_sequence_id);
+                return;
+            }
+            job.verbose('Doing the first thing...');
+            job.succeed();
+        });
+    });
 }
 
 
