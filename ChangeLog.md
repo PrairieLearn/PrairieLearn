@@ -158,6 +158,8 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+  
+  * Change default blocked event-loop warning threshold up to 200 ms (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
