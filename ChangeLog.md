@@ -3,6 +3,10 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
+
+  * Add course instance admin subpages (Dave Mussulman).
+
   * Fix load-reporting close during unit tests (Matt West).
 
 * __3.1.0__ - 2018-10-08
@@ -16,7 +20,6 @@
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
-  * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
 
   * Add Control-C hint on server startup (Dave Mussulman).
 
