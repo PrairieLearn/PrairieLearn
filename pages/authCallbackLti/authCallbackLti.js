@@ -82,11 +82,11 @@ router.post('/', function(req, res, next) {
             return next(error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.'));
         }
 
-        /* Create unique UID from LTI parameters.
+        /* Create unique UID from LTI parameters and CI id
            Not using an email address (parameters.lis_person_contact_email_primary)
            so that LTI doesn't conflict with other UIDs.
         */
-        var authUid = parameters.user_id + '@' + parameters.context_id;
+        var authUid = parameters.user_id + '@' + parameters.context_id + "::ciid=" + ltiresult.course_instance_id;
 
         var fallbackName = 'LTI user';
         if (parameters.context_title) {

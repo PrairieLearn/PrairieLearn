@@ -18,7 +18,7 @@ INSERT INTO enrollments AS e
         u.user_id = $user_id
         AND check_course_instance_access($course_instance_id, $role, u.uid, $req_date)
 )
-ON CONFLICT ON CONSTRAINT enrollments_user_id_course_instance_id_key
+ON CONFLICT (user_id, course_instance_id)
 DO UPDATE SET role = $role
 RETURNING e.id;
 
@@ -36,6 +36,6 @@ RETURNING *
 INSERT INTO lti_outcomes
     (user_id, assessment_id, lis_result_sourcedid, lis_outcome_service_url, lti_credential_id) VALUES
     ($user_id, $assessment_id, $lis_result_sourcedid, $lis_outcome_service_url, $lti_credential_id)
-ON CONFLICT ON CONSTRAINT lti_outcomes_user_assessment
+ON CONFLICT (user_id, assessment_id)
 DO UPDATE SET lis_result_sourcedid=$lis_result_sourcedid, lis_outcome_service_url=$lis_outcome_service_url
 ;

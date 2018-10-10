@@ -12,14 +12,12 @@ DECLARE
     u users%rowtype;
     new_u users%rowtype;
 BEGIN
-    -- try and get an existing user with CI id, lti user_id and context_id as key
+    -- try and get an existing user with uid
     SELECT *
     INTO u
     FROM users
     WHERE
-        users.lti_course_instance_id = users_select_or_insert_lti.lti_course_instance_id
-        AND users.lti_user_id = users_select_or_insert_lti.lti_user_id
-        AND users.lti_context_id = users_select_or_insert_lti.lti_context_id
+        users.uid = users_select_or_insert_lti.uid
     ;
 
     -- if we don't have the user already, make it

@@ -95,7 +95,7 @@
                             <% if (tc.deleted) { %>
                             <%= tc.deleted %>
                         <% } else { %>
-                            <a tabindex="0" class="btn btn-danger" role="button"
+                            <a tabindex="0" class="btn btn-sm btn-danger" role="button"
                                 data-toggle="popover" data-trigger="focus" data-container="body"
                                 data-html="true" data-placement="auto" title="Confirm delete"
                                 data-content="
@@ -118,7 +118,7 @@
                             <form method="post">
                                 <input type="hidden" name="__action" value="lti_new_cred">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                <input type="submit" class="btn btn-success" value="Create new">
+                                <input type="submit" class="btn btn-success" value="Create new LTI credential">
                             </form>
                         </td>
                     </tr>
