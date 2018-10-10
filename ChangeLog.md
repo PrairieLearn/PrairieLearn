@@ -119,6 +119,8 @@
 
   * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
 
+  * Fix load-reporting close during unit tests (Matt West).
+
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
