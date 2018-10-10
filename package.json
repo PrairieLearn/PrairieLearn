@@ -70,6 +70,7 @@
         "supports-color": "^5.4.0",
         "tar": "^4.4.4",
         "three": "^0.92.0",
+        "tmp": "0.0.33",
         "uuid": "^3.2.1",
         "winston": "^2.4.2",
         "yargs": "^11.0.0",
@@ -83,8 +84,7 @@
         "jsdoc": "^3.5.5",
         "mocha": "^5.2.0",
         "nyc": "^11.8.0",
-        "request": "^2.87.0",
-        "tmp": "0.0.33"
+        "request": "^2.87.0"
     },
     "scripts": {
         "start": "node server.js",
