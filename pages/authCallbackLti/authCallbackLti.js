@@ -158,7 +158,7 @@ router.post('/', function(req, res, next) {
                         // No linked assessment
 
                         if (role != 'Student') {
-                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/admin`;
+                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/admin/lti`;
                         } else {
                             // Show an error that the assignment is unavailable
                             return next(error.make(400, 'Assignment not available yet'));

@@ -19,12 +19,7 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         _.assign(res.locals, result.rows[0]);
 
-        sqldb.query(sql.course_instance_access_rules, params, function(err, result) {
-            if (ERR(err, next)) return;
-
-            res.locals.access_rules = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 

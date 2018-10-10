@@ -306,9 +306,17 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./middlewares/authzCourseInstanceHasCourseView'));
-app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
-app.use('/pl/course_instance/:course_instance_id/instructor/admin', require('./pages/instructorAdmin/instructorAdmin'));
+
+// admin pages
+app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/admin)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/access`);
+});
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/access', [
+    require('./pages/instructorAdminAccess/instructorAdminAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
+    require('./pages/instructorAdminLti/instructorAdminLti'),
+]);
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
