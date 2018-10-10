@@ -11,6 +11,7 @@ const os = require('os');
 var path = require('path');
 const uuidv4 = require('uuid/v4');
 const debug = require('debug')('prairielearn:instructorFileEditor');
+const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 
@@ -204,6 +205,7 @@ router.post('/', function(req, res, next) {
 
     if (req.body.__action == 'save_draft') {
         debug('Save draft: overwrite file edit');
+        // FIXME: need to verify that file edit is still in the db before writing to disk?
         writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
@@ -248,7 +250,7 @@ router.post('/', function(req, res, next) {
                 });
             },
             (callback) => {
-                saveAndSync(res.locals, (err, job_sequence_id) => {
+                saveAndSync(res.locals, fileEdit, (err, job_sequence_id) => {
                     if (ERR(err, callback)) return;
                     callback(null, job_sequence_id);
                 });
@@ -287,19 +289,19 @@ router.post('/', function(req, res, next) {
     //
     //     // Get commit lock
     //     const lockName = 'coursedir:' + res.locals.course.path;
-    //     // logger.verbose(`Trying lock ${lockName}`);
+    //     // job.verbose(`Trying lock ${lockName}`);
     //     namedLocks.tryLock(lockName, (err, lock) => {
     //         // FIXME: should "next" really appear where "callback" was?
     //         if (ERR(err, next)) return;
     //         if (lock == null) {
-    //             // logger.verbose(`Did not acquire lock ${lockName}`);
+    //             // job.verbose(`Did not acquire lock ${lockName}`);
     //             // callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
     //             return next(error.make(400, `Another user is already syncing or modifying the course: ${res.locals.course.path}`, {
     //                 locals: res.locals,
     //                 body: req.body
     //             }));
     //         } else {
-    //             // logger.verbose(`Acquired lock ${lockName}`);
+    //             // job.verbose(`Acquired lock ${lockName}`);
     //             console.log('acquired lock');
     //             console.log('trying to get new hash:');
     //             console.log(' path: ' + res.locals.course.path)
@@ -315,7 +317,7 @@ router.post('/', function(req, res, next) {
     //                     console.log('old: ' + oldHash);
     //                     console.log('new: ' + newHash);
     //                     console.log('new == old: ' + String(oldHash == newHash));
-    //                     // logger.verbose(`Released lock ${lockName}`);
+    //                     // job.verbose(`Released lock ${lockName}`);
     //                     // callback(null);
     //
     //                     res.redirect(req.originalUrl);
@@ -332,7 +334,7 @@ router.post('/', function(req, res, next) {
     //             //     namedLocks.releaseLock(lock, (lockErr) => {
     //             //         if (ERR(lockErr, callback)) return;
     //             //         if (ERR(err, callback)) return;
-    //             //         logger.verbose(`Released lock ${lockName}`);
+    //             //         job.verbose(`Released lock ${lockName}`);
     //             //         callback(null);
     //             //     });
     //             // });
@@ -488,7 +490,7 @@ function getDevFileName(userID, courseID, editID, fileName) {
     return `edit_${userID}_${courseID}_${editID}_${fileName}`;
 }
 
-const saveAndSync = function(locals, callback) {
+const saveAndSync = function(locals, fileEdit, callback) {
     const options = {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
@@ -503,6 +505,18 @@ const saveAndSync = function(locals, callback) {
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
+        // get course lock
+        // check hash (abort if different)
+        // write file
+        // git commit
+        // git push (on conflict, roll back and abort)
+        // unlock
+
+        // sync (use syncFromDisk code)
+
+
+
+
         const jobOptions = {
             course_id: options.course_id,
             user_id: options.user_id,
@@ -512,19 +526,112 @@ const saveAndSync = function(locals, callback) {
             job_sequence_id: job_sequence_id,
             last_in_sequence: true,
         };
-        serverJobs.createJob(jobOptions, (err, job) => {
+        serverJobs.createJob(jobOptions, function(err, job) {
             if (err) {
                 logger.error('Error in createJob()', err);
                 serverJobs.failJobSequence(job_sequence_id);
                 return;
             }
-            job.verbose('Doing the first thing...');
-            job.succeed();
+            pushToRemoteGitRepository(locals.course.path, fileEdit, job, function(err) {
+                if (err) {
+                    job.fail(err);
+                } else {
+                    job.succeed();
+                }
+            });
         });
+
+
+    //     serverJobs.createJob(jobOptions, (err, job) => {
+    //
+    //         if (err) {
+    //             logger.error('Error in createJob()', err);
+    //             serverJobs.failJobSequence(job_sequence_id);
+    //             return;
+    //         }
+    //
+    //         const lockName = 'coursedir:' + locals.course.path;
+    //
+    //         async.series([
+    //             (callback) => {
+    //                 job.verbose(`Trying lock ${lockName}`);
+    //                 namedLocks.tryLock(lockName, (err, lock) => {
+    //                     if (ERR(err, callback)) {
+    //                         callback(err);
+    //                     } else if (lock == null) {
+    //                         job.verbose(`Did not acquire lock ${lockName}`);
+    //                         callback(new Error(`Another user is already syncing or modifying the course: ${locals.course.path}`));
+    //                     }
+    //                 });
+    //             }
+    //         ], (err) => {
+    //
+    //         });
+    //
+    //
+    //         namedLocks.tryLock(lockName, (err, lock) => {
+    //             if (err) {
+    //                 job.fail(err);
+    //             } else if (lock == null) {
+    //                 job.verbose(`Did not acquire lock ${lockName}`);
+    //                 job.fail(new Error(`Another user is already syncing or modifying the course: ${locals.course.path}`));
+    //             } else {
+    //                 job.verbose(`Acquired lock ${lockName}`);
+    //                 namedLocks.releaseLock(lock, (lockErr) => {
+    //                     if (lockErr) {
+    //                         job.fail(lockErr);
+    //                     } else {
+    //                         job.verbose(`Released lock ${lockName}`);
+    //                         job.succeed();
+    //                     }
+    //                 });
+    //                 // this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+    //                 //     namedLocks.releaseLock(lock, (lockErr) => {
+    //                 //         if (ERR(lockErr, callback)) return;
+    //                 //         if (ERR(err, callback)) return;
+    //                 //         job.verbose(`Released lock ${lockName}`);
+    //                 //         callback(null);
+    //                 //     });
+    //                 // });
+    //             }
+    //         });
+    //     });
     });
 }
 
+const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
+    const lockName = 'coursedir:' + courseDir;
+    job.verbose(`Trying lock ${lockName}`);
+    namedLocks.tryLock(lockName, (err, lock) => {
+        if (ERR(err, callback)) return;
+        if (lock == null) {
+            job.verbose(`Did not acquire lock ${lockName}`);
+            callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
+        } else {
+            job.verbose(`Acquired lock ${lockName}`);
+            pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, (err) => {
+                namedLocks.releaseLock(lock, (lockErr) => {
+                    if (ERR(lockErr, callback)) return;
+                    if (ERR(err, callback)) return;
+                    job.verbose(`Released lock ${lockName}`);
+                    callback(null);
+                });
+            });
+        }
+    });
+};
 
+const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, callback) {
+
+    // check hash (abort if different)
+    // write file
+    // git commit
+    // git push (on conflict, roll back and abort)
+
+
+
+    callback(null);
+}
 
 
 module.exports = router;
