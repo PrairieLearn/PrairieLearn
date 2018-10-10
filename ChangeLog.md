@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Fix load-reporting close during unit tests (Matt West).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
@@ -118,8 +120,6 @@
   * Fix unexpected token error in administrator overview page (Tim Bretl).
 
   * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
-
-  * Fix load-reporting close during unit tests (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
