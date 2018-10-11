@@ -244,28 +244,13 @@ router.post('/', function(req, res, next) {
         debug('Revert to draft: reload page to discard changes');
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'revert_to_original') {
-        debug('Revert to original: delete file edit');
-        async.series([
-            (callback) => {
-                debug('Delete file edit from database');
-                sqldb.query(sql.delete_file_edit, {
-                    user_id: fileEdit.userID,
-                    course_id: fileEdit.courseID,
-                    id: fileEdit.editID,
-                    file_name: fileEdit.fileName,
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-            (callback) => {
-                debug('Delete file edit from disk');
-                deleteEdit(fileEdit, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }
-        ], (err) => {
+        debug('Revert to original: soft-delete file edit from database');
+        sqldb.query(sql.soft_delete_file_edit, {
+            user_id: fileEdit.userID,
+            course_id: fileEdit.courseID,
+            dir_name: fileEdit.dirName,
+            file_name: fileEdit.fileName,
+        }, (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
