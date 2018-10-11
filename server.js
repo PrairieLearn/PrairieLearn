@@ -317,6 +317,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/admin/access', [
 app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
     require('./pages/instructorAdminLti/instructorAdminLti'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
+    require('./middlewares/authzCourseInstanceHasCourseView'),
+    require('./pages/courseOverview/courseOverview'),
+]);
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));

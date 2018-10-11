@@ -23,9 +23,9 @@
               <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/admin/access"><i class="far fa-calendar-alt"></i> Access</a>
               <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti") { %>active<% } %>" href="<%= urlPrefix %>/admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
               <% if (authz_data.has_course_permission_view) { %>
-                  <a class="dropdown-item" href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-                    <i class="fab fa-fort-awesome"></i> Course
-                  </a>
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course">
+                  <i class="fab fa-fort-awesome"></i> Course
+                </a>
               <% } %>
           </div>
       </li>

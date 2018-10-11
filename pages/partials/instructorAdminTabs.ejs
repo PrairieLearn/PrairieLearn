@@ -7,9 +7,7 @@
   </li>
   <% if (authz_data.has_course_permission_view) { %>
       <li class="nav-item">
-        <a class="nav-link" href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-            <i class="fab fa-fort-awesome"></i> Course
-        </a>
+        <a class="nav-link <% if (navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course"><i class="fab fa-fort-awesome"></i> Course</a>
       </li>
   <% } %>
 </ul>
