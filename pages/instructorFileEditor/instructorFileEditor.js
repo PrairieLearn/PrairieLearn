@@ -201,17 +201,42 @@ router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
 
     let fileEdit = {
+        editID: req.body.file_edit_id,
         userID: req.body.file_edit_user_id,
         courseID: req.body.file_edit_course_id,
-        editID: req.body.file_edit_id,
         dirName: req.body.file_edit_dir_name,
         fileName: req.body.file_edit_file_name,
     };
 
     if (req.body.__action == 'save_draft') {
-        debug('Save draft: overwrite file edit');
-        // FIXME: need to verify that file edit is still in the db before writing to disk?
-        writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
+        async.series([
+            (callback) => {
+                debug('Query database for file edit');
+                sqldb.query(sql.select_file_edit, {
+                    user_id: fileEdit.userID,
+                    course_id: fileEdit.courseID,
+                    dir_name: fileEdit.dirName,
+                    file_name: fileEdit.fileName,
+                }, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    if (result.rows.length > 0) {
+                        debug(`Found file edit with id ${result.rows[0].id}`);
+                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                        callback(null);
+                    } else {
+                        debug('Failed to find file edit in db');
+                        callback(new Error('Failed to find draft in database'));
+                    }
+                });
+            },
+            (callback) => {
+                debug('Save draft: overwrite file edit');
+                writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }
+        ], (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -426,7 +451,7 @@ function readEdit(fileEdit, callback) {
     const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
     fs.readFile(fullPath, 'utf8', (err, contents) => {
         if (ERR(err, callback)) return;
-        debug(`Got contents from: ${fullPath}`)
+        debug(`Got contents from ${fullPath}`)
         fileEdit.editContents = b64EncodeUnicode(contents);
         callback(null);
     });
@@ -435,17 +460,23 @@ function readEdit(fileEdit, callback) {
 function writeEdit(fileEdit, contents, callback) {
     async.series([
         (callback) => {
-            tmp.dir((err, path) => {
-                if (ERR(err, callback)) return;
-                debug(`Created temporary directory at ${path}`);
-                fileEdit.localTmpDir = path;
+            if (fileEdit.hasOwnProperty('localTmpDir')) {
+                debug(`Found existing temporary directory at ${fileEdit.localTmpDir}`);
                 callback(null);
-            });
+            } else {
+                tmp.dir((err, path) => {
+                    if (ERR(err, callback)) return;
+                    debug(`Created temporary directory at ${path}`);
+                    fileEdit.localTmpDir = path;
+                    callback(null);
+                });
+            }
         },
         (callback) => {
-            fs.writeFile(path.join(fileEdit.localTmpDir, fileEdit.fileName), b64DecodeUnicode(contents), 'utf8', (err) => {
+            const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+            fs.writeFile(fullPath, b64DecodeUnicode(contents), 'utf8', (err) => {
                 if (ERR(err, callback)) return;
-                debug(`Created file edit in temporary directory with name ${fileEdit.fileName}`);
+                debug(`Wrote file edit to ${fullPath}`);
                 fileEdit.editContents = contents;
                 callback(null);
             });
