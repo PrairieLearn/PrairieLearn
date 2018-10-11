@@ -209,34 +209,7 @@ router.post('/', function(req, res, next) {
     };
 
     if (req.body.__action == 'save_draft') {
-        async.series([
-            (callback) => {
-                debug('Query database for file edit');
-                sqldb.query(sql.select_file_edit, {
-                    user_id: fileEdit.userID,
-                    course_id: fileEdit.courseID,
-                    dir_name: fileEdit.dirName,
-                    file_name: fileEdit.fileName,
-                }, (err, result) => {
-                    if (ERR(err, callback)) return;
-                    if (result.rows.length > 0) {
-                        debug(`Found file edit with id ${result.rows[0].id}`);
-                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                        callback(null);
-                    } else {
-                        debug('Failed to find file edit in db');
-                        callback(new Error('Failed to find draft in database'));
-                    }
-                });
-            },
-            (callback) => {
-                debug('Save draft: overwrite file edit');
-                writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }
-        ], (err) => {
+        rewriteEdit(fileEdit, req.body.file_edit_contents, err => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -259,7 +232,7 @@ router.post('/', function(req, res, next) {
         async.waterfall([
             (callback) => {
                 debug('Save and sync: overwrite file edit');
-                writeEdit(fileEdit, req.body.file_edit_contents, (err) => {
+                rewriteEdit(fileEdit, req.body.file_edit_contents, err => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -431,6 +404,41 @@ router.post('/', function(req, res, next) {
     // //     return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     // // }
 });
+
+function rewriteEdit(fileEdit, contents, callback) {
+    async.series([
+        (callback) => {
+            debug('Query database for file edit');
+            sqldb.query(sql.select_file_edit, {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+            }, (err, result) => {
+                if (ERR(err, callback)) return;
+                if (result.rows.length > 0) {
+                    debug(`Found file edit with id ${result.rows[0].id}`);
+                    fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                    callback(null);
+                } else {
+                    debug('Failed to find file edit in db');
+                    callback(new Error('Failed to find draft in database'));
+                }
+            });
+        },
+        (callback) => {
+            debug('Save draft: overwrite file edit');
+            writeEdit(fileEdit, contents, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        }
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
 
 function readEdit(fileEdit, callback) {
     const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
