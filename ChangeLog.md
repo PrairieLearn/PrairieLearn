@@ -5,6 +5,8 @@
 
   * Fix load-reporting close during unit tests (Matt West).
 
+  * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
@@ -120,7 +122,6 @@
   * Fix unexpected token error in administrator overview page (Tim Bretl).
 
   * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
-  * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
