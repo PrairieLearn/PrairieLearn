@@ -14,6 +14,7 @@ const debug = require('debug')('prairielearn:instructorFileEditor');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
+const tmp = require('tmp');
 
 const {
     exec
@@ -87,36 +88,38 @@ router.get('/', function(req, res, next) {
                 if (result.rows.length > 0) {
                     debug(`Found file edit with id ${result.rows[0].id}`);
                     if (result.rows[0].commit_hash == fileEdit.origHash) {
-                        fileEdit.editID = result.rows[0].id;
+                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
                         debug('Read contents of file edit')
                         readEdit(fileEdit, (err) => {
-                            if (ERR(err, callback)) return;
-                            fileEdit.didReadEdit = true;
-                            callback(null);
+                            if (err) {
+                                if  (err.code == 'ENOENT') {
+                                    debug('Delete file edit from db (missing local file)');
+                                    sqldb.query(sql.soft_delete_file_edit, {
+                                        user_id: fileEdit.userID,
+                                        course_id: fileEdit.courseID,
+                                        dir_name: fileEdit.dirName,
+                                        file_name: fileEdit.fileName,
+                                    }, (err) => {
+                                        if (ERR(err, callback)) return;
+                                        callback(null);
+                                    });
+                                } else {
+                                    return callback(err);
+                                }
+                            } else {
+                                fileEdit.editID = result.rows[0].id;
+                                fileEdit.didReadEdit = true;
+                                callback(null);
+                            }
                         });
                     } else {
-                        debug('Delete file edit (outdated commit hash)');
-                        async.series([
-                            (callback) => {
-                                debug('Delete file edit from database');
-                                sqldb.query(sql.delete_file_edit, {
-                                    user_id: fileEdit.userID,
-                                    course_id: fileEdit.courseID,
-                                    id: fileEdit.editID,
-                                    file_name: fileEdit.fileName,
-                                }, (err) => {
-                                    if (ERR(err, callback)) return;
-                                    callback(null);
-                                });
-                            },
-                            (callback) => {
-                                debug('Delete file edit from disk');
-                                deleteEdit(fileEdit, (err) => {
-                                    if (ERR(err, callback)) return;
-                                    callback(null);
-                                });
-                            }
-                        ], (err) => {
+                        debug('Delete file edit from db (outdated commit hash)');
+                        sqldb.query(sql.soft_delete_file_edit, {
+                            user_id: fileEdit.userID,
+                            course_id: fileEdit.courseID,
+                            dir_name: fileEdit.dirName,
+                            file_name: fileEdit.fileName,
+                        }, (err) => {
                             if (ERR(err, callback)) return;
                             fileEdit.didDeleteEdit = true;
                             callback(null);
@@ -132,24 +135,26 @@ router.get('/', function(req, res, next) {
                 debug('Create file edit');
                 async.series([
                     (callback) => {
+                        debug('Write file edit');
+                        writeEdit(fileEdit, fileEdit.origContents, (err) => {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
+                    },
+                    (callback) => {
                         const params = {
                             user_id: fileEdit.userID,
                             course_id: fileEdit.courseID,
                             dir_name: fileEdit.dirName,
                             file_name: fileEdit.fileName,
-                            commit_hash: fileEdit.origHash
+                            commit_hash: fileEdit.origHash,
+                            local_tmp_dir: fileEdit.localTmpDir,
                         };
+                        debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`)
                         sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
                             if (ERR(err, callback)) return;
                             fileEdit.editID = result.rows[0].id;
                             debug(`Created file edit in database with id ${fileEdit.editID}`);
-                            callback(null);
-                        });
-                    },
-                    (callback) => {
-                        debug('Write file edit');
-                        writeEdit(fileEdit, fileEdit.origContents, (err) => {
-                            if (ERR(err, callback)) return;
                             callback(null);
                         });
                     }
@@ -418,39 +423,29 @@ router.post('/', function(req, res, next) {
 });
 
 function readEdit(fileEdit, callback) {
-    const dirName = getDevDirName();
-    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
-    fs.readFile(path.join(dirName, fileName), 'utf8', (err, contents) => {
+    const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+    fs.readFile(fullPath, 'utf8', (err, contents) => {
         if (ERR(err, callback)) return;
+        debug(`Got contents from: ${fullPath}`)
         fileEdit.editContents = b64EncodeUnicode(contents);
         callback(null);
     });
 }
 
-function deleteEdit(fileEdit, callback) {
-    const dirName = getDevDirName();
-    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
-    fs.unlink(path.join(dirName, fileName), (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
 function writeEdit(fileEdit, contents, callback) {
-    const dirName = getDevDirName();
-    const fileName = getDevFileName(fileEdit.userID, fileEdit.courseID, fileEdit.editID, fileEdit.fileName);
     async.series([
         (callback) => {
-            debug("Ensure file edit directory exists");
-            fs.mkdirs(dirName, (err) => {
+            tmp.dir((err, path) => {
                 if (ERR(err, callback)) return;
+                debug(`Created temporary directory at ${path}`);
+                fileEdit.localTmpDir = path;
                 callback(null);
             });
         },
         (callback) => {
-            fs.writeFile(path.join(dirName, fileName), b64DecodeUnicode(contents), 'utf8', (err) => {
+            fs.writeFile(path.join(fileEdit.localTmpDir, fileEdit.fileName), b64DecodeUnicode(contents), 'utf8', (err) => {
                 if (ERR(err, callback)) return;
-                debug(`Created file edit on local disk with name ${fileName}`);
+                debug(`Created file edit in temporary directory with name ${fileEdit.fileName}`);
                 fileEdit.editContents = contents;
                 callback(null);
             });
@@ -459,35 +454,6 @@ function writeEdit(fileEdit, contents, callback) {
         if (ERR(err, callback)) return;
         callback(null);
     });
-}
-
-
-/**
- * Returns the path to the directory where the file edits should be written to
- * while running in development (local) mode.
- *
- * If we're running natively, this return $HOME/.pl_file_edits/edit_<editID>.
- * If we're running in Docker, this return /file_edits/edit_<editID>.
- *
- * On Windows, we use $USERPROFILE instead of $HOME.
- */
-function getDevDirName() {
-    if (process.env.HOST_JOBS_DIR) {
-        // We're probably running in Docker
-        return '/file_edits';
-    } else {
-        // We're probably running natively
-        if (process.env.FILE_EDITS_DIR) {
-            // The user wants to use a custom edits dir
-            return process.env.FILE_EDITS_DIR;
-        } else {
-            return path.resolve(path.join(os.homedir(), '.pl_file_edits'));
-        }
-    }
-}
-
-function getDevFileName(userID, courseID, editID, fileName) {
-    return `edit_${userID}_${courseID}_${editID}_${fileName}`;
 }
 
 const saveAndSync = function(locals, fileEdit, callback) {
