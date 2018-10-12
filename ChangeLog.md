@@ -6,6 +6,8 @@
   * Add networkx Python library to plbase (Nathan Bowman).
 
   * Fix load-reporting close during unit tests (Matt West).
+  
+  * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
 * __3.1.0__ - 2018-10-08
 
@@ -121,7 +123,7 @@
 
   * Fix unexpected token error in administrator overview page (Tim Bretl).
 
-  * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
+  * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
