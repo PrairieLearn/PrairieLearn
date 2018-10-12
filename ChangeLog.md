@@ -3,6 +3,10 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Fix load-reporting close during unit tests (Matt West).
+
+* __3.1.0__ - 2018-10-08
+
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
@@ -40,6 +44,14 @@
   * Add better handling of client sockets on externally graded questions (Nathan Walters).
 
   * Add postgresql permissions for root in Docker for development (Dave Mussulman).
+
+  * Add CSV scores upload for questions or assessments (Matt West).
+
+  * Add Pillow to the `centos7-python` container (Dave Mussulman).
+
+  * Add more question and assessment JSON validity checking on load (Dave Mussulman).
+
+  * Add scroll bar in `pl-matrix-component-input` (Mariana Silva)
 
   * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
@@ -99,7 +111,15 @@
 
   * Fix real-time external grading results in exam mode by disabling exam-specific message in the question score panel (Nathan Walters).
 
+  * Fix `tools/dump_filter.sh` to drop `pg_stat_statements` for PostgreSQL 10 (Matt West).
+
   * Fix slow assessment instance deletes (Matt West).
+
+  * Fix `triangularDistributedLoad` in `PrairieDraw.js` (Mariana Silva).
+
+  * Fix unexpected token error in administrator overview page (Tim Bretl).
+
+  * Fix `pl-matrix-component-input` rendering bug on Safari (Nicolas Nytko)
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
 
@@ -139,6 +159,9 @@
 
   * Change `pl-string-input` making removal of leading and trailing spaces the default option (Mariana Silva).
 
+  * Change instructor assessment page into multiple sub-pages (Matt West).
+
+  * Change log level of external grading jobs to reduce syslog volume (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
