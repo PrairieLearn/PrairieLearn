@@ -128,6 +128,7 @@ To point an LMS to use PrairieLearn LTI, you must first create a private LTI cre
 To create or manage LTI credentials for a course instance, instructors can visit the __Admin / LTI__ page in the course instance.
 
 An LTI credential consists of 3 parts:
+
 - Launch URL - _the URL to configure the LMS to link into PrairieLearn_
 - Consumer key - _a unique identifier for the LMS context_
 - Shared secret - _a password for the consumer key_
@@ -148,7 +149,7 @@ A course can use the same LTI credential to create multiple links to PrairieLear
 
 ### Score reporting back to the LMS (LTI outcomes)
 
-If the LTI link inside the LMS was configured to connect to the LMS gradebook then PrairieLearn scores will also be shown and updated in the LMS. This requires the student to have followed the link from the LMS into PrairieLearn when working on the assessment. LTI does not give PrairieLearn a way to update a score in the LMS gradebook for anything other than a linked assignment. i.e. PrairieLearn can't push other scores into the LMS; the request must originate from the LMS.)
+If the LTI link inside the LMS was configured to connect to the LMS gradebook then PrairieLearn scores will also be shown and updated in the LMS. This requires the student to have followed the link from the LMS into PrairieLearn when working on the assessment. LTI does not give PrairieLearn a way to update a score in the LMS gradebook for anything other than a linked assignment. i.e. PrairieLearn can't push other scores into the LMS; the request must originate from the LMS.
 
 Scores are still shown to students and instructors in the normal places in PrairieLearn. The LTI outcomes functionality adds an additional reporting back to the originating LMS.
 
