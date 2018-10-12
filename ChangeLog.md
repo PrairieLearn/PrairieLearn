@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add networkx Python library to plbase (Nathan Bowman).
+
   * Fix load-reporting close during unit tests (Matt West).
 
 * __3.1.0__ - 2018-10-08
