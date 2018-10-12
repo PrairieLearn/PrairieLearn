@@ -123,7 +123,7 @@ router.post('/', function(req, res, next) {
                 role,
             };
 
-            sqldb.queryOneRow(sql.enroll, params, function(err, result) {
+            sqldb.queryZeroOrOneRow(sql.enroll, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
