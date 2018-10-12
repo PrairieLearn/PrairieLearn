@@ -27,7 +27,6 @@
 /v1/backend/config.json.*
 /config.json
 /aws-config.json
-/tests/keepdb
 
 # Swap files
 **/*.swp

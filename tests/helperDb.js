@@ -2,8 +2,8 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var pg = require('pg');
 var path = require('path');
-var fs = require('fs');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const _ = require('lodash');
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var migrations = require('../migrations');
@@ -14,13 +14,6 @@ var postgresqlDatabase = 'pltest';
 var postgresqlDatabaseTemplate = 'pltest_template';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://postgres@localhost/postgres';
-
-/* If this file exists, the databases won't be dropped after testing.
- * (They will be overwritten when you start a new test.)
- * Exists to help development when you want to inspect the databases
- * afterwards and you don't need to edit this file.
- */
-var keepFile = 'tests/keepdb';
 
 var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
     debug(`createFullDatabase(${dbName})`);
@@ -180,9 +173,9 @@ var closeSql = function(callback) {
 
 var dropDatabase = function(dbName, mochaThis, callback, forceDrop=false) {
     debug(`dropDatabase(${dbName})`);
-    if (fs.existsSync(keepFile) && !forceDrop) {
+    if (_.has(process.env, 'PL_KEEP_TEST_DB') && !forceDrop) {
         // eslint-disable-next-line no-console
-        console.log(`${keepFile} file exists, not dropping database ${dbName}`);
+        console.log(`PL_KEEP_TEST_DB enviroment variable set, not dropping database ${dbName}`);
         return callback(null);
     }
     // long timeout because DROP DATABASE might take a long time to error
@@ -326,7 +319,7 @@ module.exports = {
             dropDatabase(postgresqlDatabaseTemplate, that, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
-            }, true); // add flag to always drop the template regardless of keepFile
+            }, true); // add flag to always drop the template regardless of PL_KEEP_TEST_DB env
         });
     },
 };
