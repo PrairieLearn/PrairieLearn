@@ -2,3 +2,8 @@
     width: 400px;
     max-width: 100%;
 }
+
+.pl-string-input-submitted {
+    white-space: pre;
+    background-color: #e8e8e8;
+}
