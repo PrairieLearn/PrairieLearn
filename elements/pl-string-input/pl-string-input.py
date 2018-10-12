@@ -36,12 +36,18 @@ def render(element_html, data):
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         if remove_leading_trailing:
-            trailing_hint = 'Leading and trailing spaces will be removed from your answer.'
+            if remove_spaces:
+                space_hint = 'Leading, trailing spaces and whitespaces between text will be removed from your answer.'
+            else:
+                space_hint = 'Leading and trailing spaces will be removed from your answer.'
         else:
-            trailing_hint = 'Leading and trailing spaces will be allowed (included as part of your answer).'
+            if remove_spaces:
+                space_hint = 'Whitespaces between text will be removed but leading and trailing spaces will be left as part of your answer.'
+            else:
+                space_hint = 'Leading and trailing spaces will be left as part of your answer.'
 
         # Get info strings
-        info_params = {'format': True, 'add_hint_message': trailing_hint}
+        info_params = {'format': True, 'add_hint_space': space_hint}
         with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             template = f.read()
             info = chevron.render(template, info_params).strip()
