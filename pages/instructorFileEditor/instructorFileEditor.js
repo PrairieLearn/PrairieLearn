@@ -15,12 +15,19 @@ const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 const tmp = require('tmp');
+const syncFromDisk = require('../../sync/syncFromDisk');
+const courseUtil = require('../../lib/courseUtil');
+const requireFrontend = require('../../lib/require-frontend');
 
 const {
     exec
 } = require('child_process');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
+
+
+// FIXME: restore primary key, get rid of the max id thing, etc.
+
 
 function b64EncodeUnicode(str) {
     // (1) use encodeURIComponent to get percent-encoded UTF-8
@@ -66,13 +73,8 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             debug('Get commit hash of original file');
-            const execOptions = {
-                cwd: fileEdit.coursePath,
-                env: process.env,
-            };
-            exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
+            getCommitHash(fileEdit, (err) => {
                 if (ERR(err, callback)) return;
-                fileEdit.origHash = stdout.trim();
                 callback(null);
             });
         },
@@ -175,25 +177,17 @@ router.get('/', function(req, res, next) {
     });
 });
 
-const getCommitHash = function(course_path, file_path, callback) {
+const getCommitHash = function(fileEdit, callback) {
     const execOptions = {
-        cwd: course_path,
+        cwd: fileEdit.coursePath,
         env: process.env,
     };
-
-    exec('git rev-parse HEAD:' + file_path, execOptions, (err, stdout) => {
-        if (err) {
-            callback(new Error(`Could not get git status; exited with code ${err.code}`));
-        } else {
-            // stdout buffer
-            callback(null, stdout.trim());
-        }
+    exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
+        if (ERR(err, callback)) return;
+        fileEdit.origHash = stdout.trim();
+        callback(null);
     });
 };
-
-
-
-
 
 
 router.post('/', function(req, res, next) {
@@ -206,6 +200,8 @@ router.post('/', function(req, res, next) {
         courseID: req.body.file_edit_course_id,
         dirName: req.body.file_edit_dir_name,
         fileName: req.body.file_edit_file_name,
+        coursePath: res.locals.course.path,
+        uid: res.locals.user.uid,
     };
 
     if (req.body.__action == 'save_draft') {
@@ -419,6 +415,7 @@ function rewriteEdit(fileEdit, contents, callback) {
                 if (result.rows.length > 0) {
                     debug(`Found file edit with id ${result.rows[0].id}`);
                     fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                    fileEdit.editHash = result.rows[0].commit_hash;
                     callback(null);
                 } else {
                     debug('Failed to find file edit in db');
@@ -485,7 +482,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        type: 'push_to_remote_git_repository',
+        type: 'save_and_sync',
         description: 'Push to remote git repository',
     };
     serverJobs.createJobSequence(options, (err, job_sequence_id) => {
@@ -495,6 +492,8 @@ const saveAndSync = function(locals, fileEdit, callback) {
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
+        // (before arriving at this function, we did the same as "save draft")
+
         // get course lock
         // check hash (abort if different)
         // write file
@@ -502,34 +501,98 @@ const saveAndSync = function(locals, fileEdit, callback) {
         // git push (on conflict, roll back and abort)
         // unlock
 
-        // sync (use syncFromDisk code)
+        // soft-delete file edit from db
+
+        // sync (use syncFromDisk code) - on error, tell user to sync manually?
 
 
-
-
-        const jobOptions = {
-            course_id: options.course_id,
-            user_id: options.user_id,
-            authn_user_id: options.authn_user_id,
-            type: 'push_to_remote_git_repository',
-            description: 'Push to remote...',
-            job_sequence_id: job_sequence_id,
-            last_in_sequence: true,
-        };
-        serverJobs.createJob(jobOptions, function(err, job) {
-            if (err) {
-                logger.error('Error in createJob()', err);
-                serverJobs.failJobSequence(job_sequence_id);
-                return;
-            }
-            pushToRemoteGitRepository(locals.course.path, fileEdit, job, function(err) {
+        const _pushToRemote = function() {
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'push_to_remote',
+                description: 'Push',
+                job_sequence_id: job_sequence_id,
+                on_success: _updateCommitHash,
+            };
+            serverJobs.createJob(jobOptions, function(err, job) {
                 if (err) {
-                    job.fail(err);
-                } else {
-                    job.succeed();
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
                 }
+                pushToRemoteGitRepository(locals.course.path, fileEdit, job, function(err) {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.succeed();
+                    }
+                });
             });
-        });
+        };
+
+        const _updateCommitHash = () => {
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+                ERR(err, (e) => logger.error(e));
+                _syncFromDisk();
+            });
+        };
+
+        const _syncFromDisk = function() {
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'sync_from_disk',
+                description: 'Sync git repository to database',
+                job_sequence_id: job_sequence_id,
+                on_success: _reloadQuestionServers,
+            };
+            serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        const _reloadQuestionServers = function() {
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'reload_question_servers',
+                description: 'Reload question server.js code',
+                job_sequence_id: job_sequence_id,
+                last_in_sequence: true,
+            };
+            serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+                const coursePath = locals.course.path;
+                requireFrontend.undefQuestionServers(coursePath, job, function(err) {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        _pushToRemote();
 
 
     //     serverJobs.createJob(jobOptions, (err, job) => {
@@ -589,6 +652,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
     });
 }
 
+
 const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
     const lockName = 'coursedir:' + courseDir;
     job.verbose(`Trying lock ${lockName}`);
@@ -599,29 +663,128 @@ const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
             callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
         } else {
             job.verbose(`Acquired lock ${lockName}`);
-            pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, (err) => {
-                namedLocks.releaseLock(lock, (lockErr) => {
-                    if (ERR(lockErr, callback)) return;
-                    if (ERR(err, callback)) return;
-                    job.verbose(`Released lock ${lockName}`);
-                    callback(null);
-                });
+            async.series([
+                (callback) => {
+                    pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, (err) => {
+                        namedLocks.releaseLock(lock, (lockErr) => {
+                            if (ERR(lockErr, callback)) return;
+                            if (ERR(err, callback)) return;
+                            job.verbose(`Released lock ${lockName}`);
+                            callback(null);
+                        });
+                    });
+                },
+                (callback) => {
+                    job.verbose('Delete saved draft');
+                    sqldb.query(sql.soft_delete_file_edit, {
+                        user_id: fileEdit.userID,
+                        course_id: fileEdit.courseID,
+                        dir_name: fileEdit.dirName,
+                        file_name: fileEdit.fileName,
+                    }, (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }
+            ], (err) => {
+                if (ERR(err, callback)) return;
+                callback(null)
             });
         }
     });
 };
 
 const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, callback) {
-
-    // check hash (abort if different)
-    // write file
-    // git commit
-    // git push (on conflict, roll back and abort)
-
-
-
-    callback(null);
+    async.series([
+        (callback) => {
+            job.verbose('Get commit hash of original file');
+            getCommitHash(fileEdit, (err) => {
+                if (ERR(err, callback)) return;
+                job.verbose('Check that commit hash has not changed');
+                if (fileEdit.editHash == fileEdit.origHash) {
+                    callback(null);
+                } else {
+                    callback(new Error(`Outdated commit hash (file in repo is ahead of file on which draft is based)`));
+                }
+            });
+        },
+        (callback) => {
+            job.verbose('Write file to disk');
+            const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+            fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
+                if (ERR(err, callback)) return;
+                debug(`Wrote file to ${fullPath}`);
+                callback(null);
+            });
+        },
+        (callback) => {
+            // Do this just in case...
+            job.verbose('Unstage all other changes');
+            const execOptions = {
+                cwd: fileEdit.coursePath,
+                env: process.env,
+            };
+            exec(`git reset`, execOptions, (err, stdout) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            job.verbose('Add');
+            const execOptions = {
+                cwd: fileEdit.coursePath,
+                env: process.env,
+            };
+            exec(`git add ${path.join(fileEdit.dirName, fileEdit.fileName)}`, execOptions, (err, stdout) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            job.verbose('Commit');
+            const execOptions = {
+                cwd: fileEdit.coursePath,
+                env: process.env,
+            };
+            exec(`git diff-index --quiet HEAD || git commit -m "in-browser change to ${fileEdit.fileName} by ${fileEdit.uid}"`, execOptions, (err, stdout) => {
+                if (ERR(err, callback)) {
+                    debug(err);
+                    debug(stdout);
+                    return;
+                }
+                callback(null);
+            });
+        },
+        (callback) => {
+            job.verbose('Push');
+            const execOptions = {
+                cwd: fileEdit.coursePath,
+                env: process.env,
+            };
+            exec(`git push`, execOptions, (err, stdout) => {
+                if (err) {
+                    debug('Error on git push - roll back the commit and abort');
+                    const execOptions = {
+                        cwd: fileEdit.coursePath,
+                        env: process.env,
+                    };
+                    exec(`git reset --hard HEAD~1`, execOptions, (resetErr, stdout) => {
+                        if (ERR(resetErr, callback)) return;
+                        ERR(err, callback);
+                        return;
+                    });
+                } else {
+                    callback(null);
+                }
+            });
+        }
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
 }
+
+
 
 
 module.exports = router;

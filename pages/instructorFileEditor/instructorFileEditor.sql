@@ -13,24 +13,10 @@ WHERE
     AND fe.deleted_at IS NULL;
 
 -- BLOCK insert_file_edit
-WITH max_over_file_edits AS (
-    SELECT
-        coalesce(max(fe.id) + 1, 1) AS new_id
-    FROM
-        file_edits AS fe
-    WHERE
-        fe.user_id = $user_id
-        AND fe.course_id = $course_id
-        AND fe.dir_name = $dir_name
-        AND fe.file_name = $file_name
-        AND fe.deleted_at IS NULL
-)
 INSERT INTO file_edits
-    (id, user_id, course_id, dir_name, file_name, commit_hash, local_tmp_dir)
+    (user_id, course_id, dir_name, file_name, commit_hash, local_tmp_dir)
 SELECT
-    new_id, $user_id, $course_id, $dir_name, $file_name, $commit_hash, $local_tmp_dir
-FROM
-    max_over_file_edits
+    $user_id, $course_id, $dir_name, $file_name, $commit_hash, $local_tmp_dir
 RETURNING
     file_edits.id;
 
