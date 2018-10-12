@@ -22,7 +22,15 @@
       <!-- Course information ---------------------------------------------------------->
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Course information</div>
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            Course information
+            <a id="editJSONButton"
+               tabindex="0" class="btn btn-light btn-sm ml-auto" role="button"
+               href="<%= urlPrefix %>/edit?file=infoCourse.json"
+               <!-- FIXME: add icon? -->
+               <span class="d-none d-sm-inline">Edit JSON</span>
+            </a>
+        </div>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover">
@@ -259,19 +267,6 @@
           </table>
         </div>
       </div>
-
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Temporary link to editor - FIXME: move to a better place -------------------->
-
-      <a class="btn" href="<%= urlPrefix %>/edit?file=infoCourse.json">Edit</a>
-
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-
     </div>
   </body>
 </html>

@@ -25,10 +25,6 @@ const {
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-
-// FIXME: restore primary key, get rid of the max id thing, etc.
-
-
 function b64EncodeUnicode(str) {
     // (1) use encodeURIComponent to get percent-encoded UTF-8
     // (2) convert percent encodings to raw bytes
@@ -250,155 +246,6 @@ router.post('/', function(req, res, next) {
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
     }
-
-
-    // get commit lock
-    //
-
-
-    // if (req.body.__action == 'save_and_sync') {
-    //
-    //     // FIXME: server jobs, logger
-    //
-    //     console.log(req.body);
-    //
-    //     // Get file name
-    //     const fileName = req.body.__file;
-    //
-    //     // Get old hash
-    //     const oldHash = req.body.__hash;
-    //
-    //     console.log(fileName);
-    //     console.log(oldHash);
-    //
-    //     // Get commit lock
-    //     const lockName = 'coursedir:' + res.locals.course.path;
-    //     // job.verbose(`Trying lock ${lockName}`);
-    //     namedLocks.tryLock(lockName, (err, lock) => {
-    //         // FIXME: should "next" really appear where "callback" was?
-    //         if (ERR(err, next)) return;
-    //         if (lock == null) {
-    //             // job.verbose(`Did not acquire lock ${lockName}`);
-    //             // callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-    //             return next(error.make(400, `Another user is already syncing or modifying the course: ${res.locals.course.path}`, {
-    //                 locals: res.locals,
-    //                 body: req.body
-    //             }));
-    //         } else {
-    //             // job.verbose(`Acquired lock ${lockName}`);
-    //             console.log('acquired lock');
-    //             console.log('trying to get new hash:');
-    //             console.log(' path: ' + res.locals.course.path)
-    //             console.log(' file: ' + fileName)
-    //
-    //             // Get new hash
-    //             getCommitHash(res.locals.course.path, fileName, (err, newHash) => {
-    //                 namedLocks.releaseLock(lock, (lockErr) => {
-    //                     if (ERR(lockErr, next)) return;
-    //                     if (ERR(err, next)) return;
-    //
-    //                     console.log('released lock');
-    //                     console.log('old: ' + oldHash);
-    //                     console.log('new: ' + newHash);
-    //                     console.log('new == old: ' + String(oldHash == newHash));
-    //                     // job.verbose(`Released lock ${lockName}`);
-    //                     // callback(null);
-    //
-    //                     res.redirect(req.originalUrl);
-    //                 });
-    //                 // if (ERR(err, next)) return;
-    //
-    //
-    //
-    //                 // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    //             });
-    //
-    //
-    //             // this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
-    //             //     namedLocks.releaseLock(lock, (lockErr) => {
-    //             //         if (ERR(lockErr, callback)) return;
-    //             //         if (ERR(err, callback)) return;
-    //             //         job.verbose(`Released lock ${lockName}`);
-    //             //         callback(null);
-    //             //     });
-    //             // });
-    //         }
-    //     });
-    //
-    //
-    //
-    //
-    //     // const jobOptions = {
-    //     //     course_id: res.locals.course.id,
-    //     //     user_id: res.locals.user.user_id,
-    //     //     authn_user_id: res.locals.authz_data.authn_user.user_id,
-    //     //     type: 'save_and_sync',
-    //     //     description: 'FIXME: Replace this text with a description of what is being done',
-    //     //     job_sequence_id: job_sequence_id,
-    //     //     on_success: syncStage3,
-    //     // };
-    //     // serverJobs.createJob(jobOptions, function(err, job) {
-    //     //     if (err) {
-    //     //         logger.error('Error in createJob()', err);
-    //     //         serverJobs.failJobSequence(job_sequence_id);
-    //     //         return;
-    //     //     }
-    //     //     syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
-    //     //         if (err) {
-    //     //             job.fail(err);
-    //     //         } else {
-    //     //             job.succeed();
-    //     //         }
-    //     //     });
-    //     // });
-    //
-    //
-    // } else {
-    //     return next(error.make(400, 'unknown __action', {
-    //         locals: res.locals,
-    //         body: req.body
-    //     }));
-    // }
-    //
-    //
-    //
-    //
-    // // if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
-    // // if (req.body.__action == 'course_permissions_insert_by_user_uid') {
-    // //     let params = [
-    // //         res.locals.course.id,
-    // //         req.body.uid,
-    // //         req.body.course_role,
-    // //         res.locals.authz_data.authn_user.user_id,
-    // //     ];
-    // //     sqldb.call('course_permissions_insert_by_user_uid', params, function(err, _result) {
-    // //         if (ERR(err, next)) return;
-    // //         res.redirect(req.originalUrl);
-    // //     });
-    // // } else if (req.body.__action == 'course_permissions_update_role') {
-    // //     let params = [
-    // //         res.locals.course.id,
-    // //         req.body.user_id,
-    // //         req.body.course_role,
-    // //         res.locals.authz_data.authn_user.user_id,
-    // //     ];
-    // //     sqldb.call('course_permissions_update_role', params, function(err, _result) {
-    // //         if (ERR(err, next)) return;
-    // //         res.redirect(req.originalUrl);
-    // //     });
-    // // } else if (req.body.__action == 'course_permissions_delete') {
-    // //     var params = [
-    // //         res.locals.course.id,
-    // //         req.body.user_id,
-    // //         res.locals.authz_data.authn_user.user_id,
-    // //     ];
-    // //     sqldb.call('course_permissions_delete', params, function(err, _result) {
-    // //         if (ERR(err, next)) return;
-    // //         res.redirect(req.originalUrl);
-    // //     });
-    // // } else {
-    // //     return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
-    // // }
 });
 
 function rewriteEdit(fileEdit, contents, callback) {
@@ -492,20 +339,6 @@ const saveAndSync = function(locals, fileEdit, callback) {
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
-        // (before arriving at this function, we did the same as "save draft")
-
-        // get course lock
-        // check hash (abort if different)
-        // write file
-        // git commit
-        // git push (on conflict, roll back and abort)
-        // unlock
-
-        // soft-delete file edit from db
-
-        // sync (use syncFromDisk code) - on error, tell user to sync manually?
-
-
         const _pushToRemote = function() {
             const jobOptions = {
                 course_id: options.course_id,
@@ -593,62 +426,6 @@ const saveAndSync = function(locals, fileEdit, callback) {
         };
 
         _pushToRemote();
-
-
-    //     serverJobs.createJob(jobOptions, (err, job) => {
-    //
-    //         if (err) {
-    //             logger.error('Error in createJob()', err);
-    //             serverJobs.failJobSequence(job_sequence_id);
-    //             return;
-    //         }
-    //
-    //         const lockName = 'coursedir:' + locals.course.path;
-    //
-    //         async.series([
-    //             (callback) => {
-    //                 job.verbose(`Trying lock ${lockName}`);
-    //                 namedLocks.tryLock(lockName, (err, lock) => {
-    //                     if (ERR(err, callback)) {
-    //                         callback(err);
-    //                     } else if (lock == null) {
-    //                         job.verbose(`Did not acquire lock ${lockName}`);
-    //                         callback(new Error(`Another user is already syncing or modifying the course: ${locals.course.path}`));
-    //                     }
-    //                 });
-    //             }
-    //         ], (err) => {
-    //
-    //         });
-    //
-    //
-    //         namedLocks.tryLock(lockName, (err, lock) => {
-    //             if (err) {
-    //                 job.fail(err);
-    //             } else if (lock == null) {
-    //                 job.verbose(`Did not acquire lock ${lockName}`);
-    //                 job.fail(new Error(`Another user is already syncing or modifying the course: ${locals.course.path}`));
-    //             } else {
-    //                 job.verbose(`Acquired lock ${lockName}`);
-    //                 namedLocks.releaseLock(lock, (lockErr) => {
-    //                     if (lockErr) {
-    //                         job.fail(lockErr);
-    //                     } else {
-    //                         job.verbose(`Released lock ${lockName}`);
-    //                         job.succeed();
-    //                     }
-    //                 });
-    //                 // this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
-    //                 //     namedLocks.releaseLock(lock, (lockErr) => {
-    //                 //         if (ERR(lockErr, callback)) return;
-    //                 //         if (ERR(err, callback)) return;
-    //                 //         job.verbose(`Released lock ${lockName}`);
-    //                 //         callback(null);
-    //                 //     });
-    //                 // });
-    //             }
-    //         });
-    //     });
     });
 }
 
@@ -783,8 +560,5 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
         callback(null);
     });
 }
-
-
-
 
 module.exports = router;
