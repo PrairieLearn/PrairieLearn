@@ -7,7 +7,6 @@ window.InstructorFileEditor = function(uuid, options) {
         throw new Error('Instructor file editor element ' + elementId + ' was not found!');
     }
 
-    console.log(this.element);
     this.inputElement = this.element.find('input[name=file_edit_contents]');
     this.editorElement = this.element.find('.editor');
     this.editor = ace.edit(this.editorElement.get(0));

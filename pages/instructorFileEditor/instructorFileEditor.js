@@ -7,7 +7,6 @@ var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var fs = require('fs-extra');
-const os = require('os');
 var path = require('path');
 const uuidv4 = require('uuid/v4');
 const debug = require('debug')('prairielearn:instructorFileEditor');
@@ -20,7 +19,7 @@ const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 
 const {
-    exec
+    exec,
 } = require('child_process');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -46,7 +45,7 @@ router.get('/', function(req, res, next) {
     if (_.isEmpty(req.query)) {
         return next(error.make(400, 'no file in query', {
             locals: res.locals,
-            body: req.body
+            body: req.body,
         }));
     }
 
@@ -87,7 +86,7 @@ router.get('/', function(req, res, next) {
                     debug(`Found file edit with id ${result.rows[0].id}`);
                     if (result.rows[0].commit_hash == fileEdit.origHash) {
                         fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                        debug('Read contents of file edit')
+                        debug('Read contents of file edit');
                         readEdit(fileEdit, (err) => {
                             if (err) {
                                 if  (err.code == 'ENOENT') {
@@ -148,14 +147,14 @@ router.get('/', function(req, res, next) {
                             commit_hash: fileEdit.origHash,
                             local_tmp_dir: fileEdit.localTmpDir,
                         };
-                        debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`)
+                        debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`);
                         sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
                             if (ERR(err, callback)) return;
                             fileEdit.editID = result.rows[0].id;
                             debug(`Created file edit in database with id ${fileEdit.editID}`);
                             callback(null);
                         });
-                    }
+                    },
                 ], (err) => {
                     if (ERR(err, callback)) return;
                     fileEdit.didWriteEdit = true;
@@ -164,11 +163,11 @@ router.get('/', function(req, res, next) {
             } else {
                 callback(null);
             }
-        }
+        },
     ], (err) => {
         if (ERR(err, next)) return;
         res.locals.fileEdit = fileEdit;
-        debug("Render");
+        debug('Render');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
@@ -234,7 +233,7 @@ router.post('/', function(req, res, next) {
                     if (ERR(err, callback)) return;
                     callback(null, job_sequence_id);
                 });
-            }
+            },
         ], (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
@@ -276,7 +275,7 @@ function rewriteEdit(fileEdit, contents, callback) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -288,7 +287,7 @@ function readEdit(fileEdit, callback) {
     const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
     fs.readFile(fullPath, 'utf8', (err, contents) => {
         if (ERR(err, callback)) return;
-        debug(`Got contents from ${fullPath}`)
+        debug(`Got contents from ${fullPath}`);
         fileEdit.editContents = b64EncodeUnicode(contents);
         callback(null);
     });
@@ -317,7 +316,7 @@ function writeEdit(fileEdit, contents, callback) {
                 fileEdit.editContents = contents;
                 callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -427,7 +426,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
 
         _pushToRemote();
     });
-}
+};
 
 
 const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
@@ -462,10 +461,10 @@ const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
-                }
+                },
             ], (err) => {
                 if (ERR(err, callback)) return;
-                callback(null)
+                callback(null);
             });
         }
     });
@@ -501,7 +500,7 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
                 cwd: fileEdit.coursePath,
                 env: process.env,
             };
-            exec(`git reset`, execOptions, (err, stdout) => {
+            exec(`git reset`, execOptions, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -512,7 +511,7 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
                 cwd: fileEdit.coursePath,
                 env: process.env,
             };
-            exec(`git add ${path.join(fileEdit.dirName, fileEdit.fileName)}`, execOptions, (err, stdout) => {
+            exec(`git add ${path.join(fileEdit.dirName, fileEdit.fileName)}`, execOptions, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -538,14 +537,14 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
                 cwd: fileEdit.coursePath,
                 env: process.env,
             };
-            exec(`git push`, execOptions, (err, stdout) => {
+            exec(`git push`, execOptions, (err) => {
                 if (err) {
                     debug('Error on git push - roll back the commit and abort');
                     const execOptions = {
                         cwd: fileEdit.coursePath,
                         env: process.env,
                     };
-                    exec(`git reset --hard HEAD~1`, execOptions, (resetErr, stdout) => {
+                    exec(`git reset --hard HEAD~1`, execOptions, (resetErr) => {
                         if (ERR(resetErr, callback)) return;
                         ERR(err, callback);
                         return;
@@ -554,11 +553,11 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
                     callback(null);
                 }
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
-}
+};
 
 module.exports = router;
