@@ -3,10 +3,14 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
+
+  * Add course instance admin subpages (Dave Mussulman).
+
   * Add networkx Python library to plbase (Nathan Bowman).
 
   * Fix load-reporting close during unit tests (Matt West).
-  
+
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
   * Fix STDERR data logging on Python start (Matt West).

@@ -7,8 +7,14 @@
     <script src="/localscripts/histmini.js"></script>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
-    <div id="content" class="container">
+    <% if (navbarType == 'instructor') { %>
+      <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'course'}); %>
+      <div id="content" class="container">
+      <%- include('../partials/instructorAdminTabs', {navSubPage: 'course'}); %>
+    <% } else { %>
+      <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
+      <div id="content" class="container">
+    <% } %>
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->

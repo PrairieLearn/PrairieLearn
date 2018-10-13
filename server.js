@@ -164,6 +164,7 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
 app.use('/pl/login', require('./pages/authLogin/authLogin'));
 // disable SEB until we can fix the mcrypt issues
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
@@ -305,8 +306,21 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./middlewares/authzCourseInstanceHasCourseView'));
-app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
+
+// admin pages
+app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/admin)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/access`);
+});
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/access', [
+    require('./pages/instructorAdminAccess/instructorAdminAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
+    require('./pages/instructorAdminLti/instructorAdminLti'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
+    require('./middlewares/authzCourseInstanceHasCourseView'),
+    require('./pages/courseOverview/courseOverview'),
+]);
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));

@@ -1,0 +1,19 @@
+columns
+    assessment_id: bigint
+    context_id: text
+    course_instance_id: bigint
+    created_at: timestamp with time zone default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('lti_links_id_seq'::regclass)
+    resource_link_description: text
+    resource_link_id: text
+    resource_link_title: text
+
+indexes
+    lti_links_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_context_id_resource_link_id_key: UNIQUE (course_instance_id, context_id, resource_link_id) USING btree (course_instance_id, context_id, resource_link_id)
+    lti_links_resource_link_id_idx: USING btree (resource_link_id)
+
+foreign-key constraints
+    lti_links_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_links_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
