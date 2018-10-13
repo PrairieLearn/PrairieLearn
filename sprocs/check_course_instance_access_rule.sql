@@ -53,7 +53,7 @@ BEGIN
 
             -- check if LTI user, check their course instance matches
             IF user_result.provider != 'lti'
-               OR user_result.lti_course_instance_id != check_course_instance_access_rule.course_instance_id THEN
+               OR user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
                     available := FALSE;
             END IF;
         END IF;
