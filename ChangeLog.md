@@ -5,6 +5,8 @@
 
   * Fix load-reporting close during unit tests (Matt West).
 
+  * Fix STDERR data logging on Python start (Matt West).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
