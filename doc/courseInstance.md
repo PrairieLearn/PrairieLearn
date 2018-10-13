@@ -139,6 +139,8 @@ PrairieLearn logins via LTI are unique to their LMS course. For example, if an I
 
 Access roles inside the LMS (Instructor, TA, student) will be mapped to roles inside PrairieLearn. (Example: Instructors in the LMS will be given course instance instructor level access in PrairieLearn independent of the `infoCourseInstance.json`  `userRoles` described above.
 
+It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl.md) for more details.
+
 ### LTI linking into an assessment
 
 LTI supports the concept of "deep linking", such that an assignment link inside the originating LMS can be followed directly into a specific assessment in PrairieLearn. For score reporting back to the LMS, PrairieLearn requires this linking. If a student follows an LTI link from the LMS that has not been configured yet in PrairieLearn, they will receive an error message.
