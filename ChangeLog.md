@@ -9,6 +9,8 @@
   
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
+  * Fix STDERR data logging on Python start (Matt West).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
