@@ -17,6 +17,8 @@
 
   * Fix HTML on LTI configuration page (Matt West).
 
+  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
