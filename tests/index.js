@@ -21,4 +21,4 @@ require('./testExam');
 require('./testAccess');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
-require('./testSprocs');
+require('./testSproc-check_assessment_access');

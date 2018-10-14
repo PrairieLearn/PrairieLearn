@@ -40,8 +40,8 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
 
         before(`create checked-in reservation for student for exam ${exam_id}`, function(callback) {
             sqldb.query(sql.insert_ps_reservation, {exam_id}, (err, _result) => {
-                if (ERR(err,callback)) return;
-                callback();
+                if (ERR(err, callback)) return;
+                callback(null);
             });
         });
 
@@ -60,7 +60,7 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             sqldb.call(`check_assessment_access`, params, (err, result) => {
                 if (ERR(err, result)) return;
                 assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+                callback(null);
             });
         });
 
@@ -76,9 +76,9 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             ];
 
             sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, expectedBool);
-                callback();
+                callback(null);
             });
         });
 
@@ -103,15 +103,15 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             ];
 
             sqldb.call(`check_assessment_access`, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, otherExams.bool);
-                callback();
+                callback(null);
             });
         });
     });
 };
 
-describe('Stored Procedure Function Unit Testing', function() {
+describe('sproc check_assessment_access* tests', function() {
 
     describe('check_assessment_access_rule generic tests', () => {
 
@@ -121,7 +121,7 @@ describe('Stored Procedure Function Unit Testing', function() {
         before('setup sample environment', function(callback) {
             sqldb.query(sql.setup_caa_generic_tests, {}, (err, _result) => {
                 if (ERR(err, callback)) return;
-                callback();
+                callback(null);
             });
         });
 
@@ -139,7 +139,7 @@ describe('Stored Procedure Function Unit Testing', function() {
             sqldb.query(sql.caar_test, params, (err, result) => {
                 if (ERR(err, result)) return;
                 assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+                callback(null);
             });
         });
 
@@ -155,9 +155,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, true);
-                callback();
+                callback(null);
             });
         });
 
@@ -173,9 +173,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, false);
-                callback();
+                callback(null);
             });
         });
 
@@ -191,9 +191,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, false);
-                callback();
+                callback(null);
             });
         });
 
@@ -209,9 +209,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, false);
-                callback();
+                callback(null);
             });
         });
 
@@ -227,9 +227,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, false);
-                callback();
+                callback(null);
             });
         });
 
@@ -245,9 +245,9 @@ describe('Stored Procedure Function Unit Testing', function() {
             };
 
             sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
+                if (ERR(err, callback)) return;
                 assert.strictEqual(result.rows[0].authorized, false);
-                callback();
+                callback(null);
             });
         });
 
@@ -261,7 +261,7 @@ describe('Stored Procedure Function Unit Testing', function() {
         before('setup sample environment', function(callback) {
             sqldb.query(sql.setup_caa_scheduler_tests, {}, (err, _result) => {
                 if (ERR(err, callback)) return;
-                callback();
+                callback(null);
             });
         });
 
