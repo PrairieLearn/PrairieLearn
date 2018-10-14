@@ -39,12 +39,6 @@ View all assessments for a particular course:
 GET /course_instances/:course_instance_id/assessments
 ```
 
-View a particular assessment:
-
-```
-GET /course_instances/:course_instance_id/assessments/:assessment_id
-```
-
 View all assessment instances for a particular assessment:
 
 ```
@@ -53,24 +47,10 @@ GET /course_instances/:course_instance_id/assessments/:assessment_id/assessment_
 
 ### Assessment instances
 
-View a particular assessment instance:
-
-```
-GET /course_instances/:course_instance_id/assessment_instances/:assessment_instance_id
-```
-
 View all submissions for a particular assessment instance:
 
 ```
 GET /course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions
-```
-
-### Submissions
-
-View a particular submission:
-
-```
-GET /course_instances/:course_instance_id/submissions/:submission_id
 ```
 
 ### Gradebook
