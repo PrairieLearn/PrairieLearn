@@ -1,10 +1,7 @@
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
@@ -24,6 +21,7 @@ const questionsArray = [
 
 const questions = _.keyBy(questionsArray, 'qid');
 
+const assessmentPoints = 5;
 const assessmentMaxPoints = 74;
 
 describe('API', function() {
@@ -32,7 +30,7 @@ describe('API', function() {
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
 
-    let elemList;
+    let elemList, page;
 
     helperAssessment.startExam(locals, questionsArray);
 
@@ -45,10 +43,10 @@ describe('API', function() {
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
-                    instance_question_points: 5,
-                    instance_question_score_perc: 5/5 * 100,
-                    assessment_instance_points: 5,
-                    assessment_instance_score_perc: 5/assessmentMaxPoints * 100,
+                    instance_question_points: assessmentPoints,
+                    instance_question_score_perc: assessmentPoints/5 * 100,
+                    assessment_instance_points: assessmentPoints,
+                    assessment_instance_score_perc: assessmentPoints/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -73,7 +71,6 @@ describe('API', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -113,14 +110,18 @@ describe('API', function() {
             elemList = locals.data$('form input[name="token_name"]');
             assert.lengthOf(elemList, 1);
         });
-    });
+        it('should not contain a new token', function() {
+            elemList = locals.$('.new-access-token');
+            assert.lengthOf(elemList, 0);
+        });
+   });
 
     describe('4. POST to generate token', function() {
         it('should load successfully', function(callback) {
             const form = {
                 __action: locals.__action,
                 __csrf_token: locals.__csrf_token,
-                token_name: 'test'
+                token_name: 'test',
             };
             request.post({url: locals.settingsUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (error) {
@@ -140,10 +141,177 @@ describe('API', function() {
         it('should contain a new token', function() {
             elemList = locals.$('.new-access-token');
             assert.lengthOf(elemList, 1);
-            const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-            assert.equal(totalPoints, 7);
+            locals.api_token = elemList.text().trim();
+        });
+        it('the new token should have the correct format', function() {
+            assert.ok(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token));
         });
     });
 
+    describe('5. GET to API for assessments', function() {
+        it('should fail without token', function(callback) {
+            locals.apiUrl = locals.baseUrl + '/api/v1';
+            locals.apiCourseInstanceUrl = locals.apiUrl + '/course_instances/1';
+            locals.apiAssessmentsUrl = locals.apiCourseInstanceUrl + '/assessments';
+            request(locals.apiAssessmentsUrl, function (error, response, _body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 401) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            });
+        });
+        it('should fail with an incorrect token', function(callback) {
+            const options = {
+                url: locals.apiAssessmentsUrl,
+                headers: {
+                    'Private-Token': '12345678-1234-1234-1234-1234567890ab',
+                },
+            };
+            request(options, function (error, response, _body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 401) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            });
+        });
+        it('should load successfully with the correct token', function(callback) {
+            const options = {
+                url: locals.apiAssessmentsUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should contain E1', function() {
+            const objectList = _.filter(locals.json, o => o.tid == 'exam1');
+            assert.lengthOf(objectList, 1);
+            locals.assessment_id = objectList[0].id;
+            assert.equal(objectList[0].label, 'E1');
+        });
+    });
 
+    describe('6. GET to API for Exam 1 assessment instances', function() {
+        it('should load successfully', function(callback) {
+            locals.apiAssessmentInstancesUrl = locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_instances`;
+            const options = {
+                url: locals.apiAssessmentInstancesUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have one assessment instance', function() {
+            assert.lengthOf(locals.json, 1);
+            locals.assessment_instance_id = locals.json[0].id;
+        });
+        it('should belong to the dev user', function() {
+            assert.equal(locals.json[0].user.uid, 'dev@illinois.edu');
+        });
+        it('should have the correct points', function() {
+            assert.equal(locals.json[0].points, assessmentPoints);
+            assert.equal(locals.json[0].max_points, assessmentMaxPoints);
+        });
+    });
+
+    describe('7. GET to API for Exam 1 submissions', function() {
+        it('should load successfully', function(callback) {
+            locals.apiSubmissionsUrl = locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/submissions`;
+            const options = {
+                url: locals.apiSubmissionsUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have one submission', function() {
+            assert.lengthOf(locals.json, 1);
+        });
+        it('should have the correct points', function() {
+            assert.equal(locals.json[0].points, assessmentPoints);
+        });
+    });
+
+    describe('8. GET to API for the gradebook', function() {
+        it('should load successfully', function(callback) {
+            locals.apiGradebookUrl = locals.apiCourseInstanceUrl + `/gradebook`;
+            const options = {
+                url: locals.apiGradebookUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have one entry for the dev user', function() {
+            const objectList = _.filter(locals.json, o => o.uid == 'dev@illinois.edu');
+            assert.lengthOf(objectList, 1);
+            locals.devObject = objectList[0];
+        });
+        it('should contain Exam 1', function() {
+            const objectList = _.filter(locals.devObject.assessments, o => o.label == 'E1');
+            assert.lengthOf(objectList, 1);
+            locals.gradebookEntry = objectList[0];
+        });
+        it('should have the correct points', function() {
+            assert.equal(locals.gradebookEntry.points, assessmentPoints);
+            assert.equal(locals.gradebookEntry.max_points, assessmentMaxPoints);
+        });
+    });
 });
