@@ -16,7 +16,7 @@ module.exports = (req, res, next) => {
         token = req.header('Private-Token');
     } else {
         // No authentication token present
-        res.send(401, {
+        res.status(401).send({
             message: 'An authentication token must be provided',
         });
         return;
@@ -30,7 +30,7 @@ module.exports = (req, res, next) => {
         if (ERR(err, next)) return;
         if (result.rows.length === 0) {
             // Invalid token received
-            res.send(401, {
+            res.status(401).send({
                 message: 'The provided authentication token was invalid',
             });
         } else {
