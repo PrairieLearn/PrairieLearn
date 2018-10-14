@@ -19,6 +19,8 @@
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
+  * Fix LTI configuration flow configuration (Matt West).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).

@@ -26,21 +26,16 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">LTI configuration</div>
         <div class="card-body">
-          <p>
-            LTI allows other online learning websites to embed
-            PrairieLearn assessments within them. PrairieLearn acts as
-            an LTI Tool Provider. See
+          <p class="mb-0">
+            The LTI (Learning Tools Interoperability) standard allows
+            other online learning websites to embed PrairieLearn
+            assessments within them. PrairieLearn acts as a <em>Tool
+            Provider</em> for LTI. See
             the <a href="https://www.imsglobal.org/basic-overview-how-lti-works">LTI
             overview</a> for more information.
           </p>
-          <% if (config.hasLti) { %>
-          <p class="mb-0">
-            <strong>Launch URL: </strong><code><%= config.ltiRedirectUrl %></code>
-            <i class="far fa-copy" title="Copy to clipboard"
-               onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
-          </p>
-          <% } else { %>
-          <p class="mb-0">
+          <% if (!config.hasLti) { %>
+          <p class="mb-0 mt-3">
             <em>LTI not enabled on this server.</em>
           </p>
           <% } %>
@@ -58,17 +53,12 @@
             Use these credentials with your LMS (Learning Management System) to connect into this course instance.
             A single credential can be shared with multiple links.
           </p>
-          <% if (!lti_credentials) { %>
-          <p class="mb-0 mt-3">
-            <em>No LTI credentials have been created.</em>
-          </p>
-          <% } %>
         </div>
         
-        <% if (lti_credentials) { %>
-        <table class="table table-sm table-hover mb-3">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
+              <th>Launch URL</th>
               <th>Consumer key</th>
               <th>Shared secret</th>
               <th>Created</th>
@@ -76,8 +66,14 @@
             </tr>
           </thead>
           <tbody>
+            <% if (lti_credentials) { %>
             <% lti_credentials.forEach(function(tc) { %>
             <tr>
+              <td>
+                <code><%= config.ltiRedirectUrl %></code>
+                <i class="far fa-copy" title="Copy to clipboard"
+                   onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
+              </td>
               <td>
                 <code><%= tc.consumer_key %></code>
                 <i class="far fa-copy" title="Copy to clipboard"
@@ -108,15 +104,17 @@
               </td>
             </tr>
             <% }); %>
+            <% } else { %>
             <tr>
-              <td colspan="99">
+              <td colspan="5">
+                <em>No LTI credentials have been created.</em>
               </td>
             </tr>
+            <% } %>
           </tbody>
         </table>
-        <% } %>
 
-        <div class="card-body pt-0">
+        <div class="card-body">
           <form method="post">
             <input type="hidden" name="__action" value="lti_new_cred">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -135,19 +133,13 @@
         <div class="card-body">
           <p>
             LTI links connect an assessment from your LMS directly into a PrairieLearn assessment.
-            This is required for PrairieLearn to update scores in your LMS (if configured).
+            This is required for PrairieLearn to update scores in your LMS.
           </p>
           <p class="mb-0">
             To create a link, first create and follow the link in your LMS, then configure it here.
           </p>
-          <% if (!lti_links) { %>
-          <p class="mb-0 mt-3">
-            <em>No LTI links have been created.</em>
-          </p>
-          <% } %>
         </div>
 
-        <% if (lti_links) { %>
         <table class="table table-sm table-hover">
           <thead>
             <tr>
@@ -157,6 +149,7 @@
             </tr>
           </thead>
           <tbody>
+            <% if (lti_links) { %>
             <% lti_links.forEach(function(link) { %>
             <tr>
               <td title="<%= link.resource_link_description %>">
@@ -183,9 +176,15 @@
               <td><%= link.created %></td>
             </tr>
             <% }); %>
+            <% } else { %>
+            <tr>
+              <td colspan="3">
+                <em>No LTI links have been created.</em>
+              </td>
+            </tr>
+            <% } %>
           </tbody>
         </table>
-        <% } %>
       </div>
       <% } %>
 
