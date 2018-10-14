@@ -2,3 +2,9 @@
     width: 400px;
     max-width: 100%;
 }
+
+.pl-number-input-inline-badge {
+    position: relative;
+    top: 9px;
+    height: 17px;
+}
