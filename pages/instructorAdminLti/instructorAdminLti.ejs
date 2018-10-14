@@ -33,19 +33,13 @@
             the <a href="https://www.imsglobal.org/basic-overview-how-lti-works">LTI
             overview</a> for more information.
           </p>
-          <% if (config.hasLti) { %>
-          <p class="mb-0">
-            <strong>Launch URL: </strong><code><%= config.ltiRedirectUrl %></code>
-            <i class="far fa-copy" title="Copy to clipboard"
-               onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
-          </p>
-          <% } else { %>
+          <% if (!config.hasLti) { %>
           <p class="mb-0">
             <em>LTI not enabled on this server.</em>
           </p>
           <% } %>
         </div>
-      </div> 
+      </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
@@ -64,8 +58,13 @@
           </p>
           <% } %>
         </div>
-        
+
         <% if (lti_credentials) { %>
+        <p class="mb-0">
+        <strong>Launch URL: </strong><code><%= config.ltiRedirectUrl %></code>
+        <i class="far fa-copy" title="Copy to clipboard"
+            onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
+        </p>
         <table class="table table-sm table-hover mb-3">
           <thead>
             <tr>
