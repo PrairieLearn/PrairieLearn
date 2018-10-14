@@ -16,6 +16,7 @@
         </span>
         {{/label}}
         <input name="{{name}}" type="text" class="form-control" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        {{#display_append_span}}
         <span class="input-group-append">
             {{#suffix}}<span class="input-group-text">{{suffix}}</span>{{/suffix}}
             {{#shortinfo}}
@@ -27,6 +28,7 @@
             </a>
             {{/shortinfo}}
         </span>
+        {{/display_append_span}}
         {{^shortinfo}}
             {{#correct}}&nbsp;<span class="badge badge-success pl-number-input-inline-badge"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
             {{#partial}}&nbsp;<span class="badge badge-warning pl-number-input-inline-badge"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}

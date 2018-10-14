@@ -73,6 +73,7 @@ def render(element_html, data):
             'info': info,
             'shortinfo': shortinfo,
             'size': pl.get_integer_attrib(element, 'size', 35),
+            'display_append_span': (shortinfo or suffix),
             'uuid': pl.get_uuid()
         }
 
