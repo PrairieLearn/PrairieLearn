@@ -9,6 +9,12 @@
 
   * Add networkx Python library to plbase (Nathan Bowman).
 
+  * Add option to toggle placeholder help text for `pl-number-input` (James Balamuta).
+
+  * Add `size` attribute to `pl-number-input` (Nicolas Nytko)
+
+  * Add demo question showcasing all options for `pl-number-input` (James Balamuta).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
@@ -68,10 +74,6 @@
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
-  
-  * Add option to toggle placeholder help text for `pl_number_input` (James Balamuta).
-
-  * Add demo question showcasing all options for `pl_number_input` (James Balamuta).
 
   * Fix several issues with various elements (Nathan Walters).
 
