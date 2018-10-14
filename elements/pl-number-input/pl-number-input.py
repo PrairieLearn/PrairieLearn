@@ -61,7 +61,7 @@ def render(element_html, data):
             info_params.pop('format', None)
             # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
-            info_params['shortformat'] = not pl.get_boolean_attrib(element, 'hide_help_text', False)
+            info_params['shortformat'] = not pl.get_boolean_attrib(element, 'hide-help-text', False)
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {
