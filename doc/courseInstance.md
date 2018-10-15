@@ -101,18 +101,6 @@ The default timezone for course instances is the timezone of the course. This ca
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
 
-## Issue reporting
-
-A course-instance-wide default setting for issue reporting can be set with:
-
-```json
-{
-    "allowIssueReporting": true
-}
-```
-
-This can be overridden on a per-asssement basis in the [`infoAssessment.json`](assessment.md) file.
-
 ## LTI support
 
 ### LTI Overview

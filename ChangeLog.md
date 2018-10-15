@@ -15,11 +15,19 @@
 
   * Add demo question showcasing all options for `pl-number-input` (James Balamuta).
 
+  * Add read-only API for instructors to access assessment data (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
   * Fix STDERR data logging on Python start (Matt West).
+
+  * Fix HTML on LTI configuration page (Matt West).
+
+  * Fix LTI configuration flow configuration (Matt West).
+
+  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
 * __3.1.0__ - 2018-10-08
 
@@ -167,8 +175,6 @@
 
   * Change `allowIssueReporting` to default to `true` (Matt West).
 
-  * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
-
   * Change `pl-string-input` to include an attribute for the placeholder (Mariana Silva).
 
   * Change element documentation to add placeholder attribute to `pl-string-input` (Mariana Silva).
@@ -176,6 +182,8 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+
+  * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
 * __3.0.0__ - 2018-05-23
 
