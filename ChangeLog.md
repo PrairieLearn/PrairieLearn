@@ -19,9 +19,9 @@
 
   * Fix HTML on LTI configuration page (Matt West).
 
-  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
-
   * Fix LTI configuration flow configuration (Matt West).
+
+  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
 * __3.1.0__ - 2018-10-08
 
