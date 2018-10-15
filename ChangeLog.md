@@ -11,6 +11,8 @@
 
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
+  * Add networkx Python library to centos7-python (Nathan Bowman).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
