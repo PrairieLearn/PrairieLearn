@@ -1,8 +1,8 @@
 {
     "controller": "pl-file-editor.py",
     "dependencies": {
-        "coreScripts": [
-            "ace/ace.js"
+        "nodeModulesScripts": [
+            "ace-builds/src-min-noconflict/ace.js"
         ],
         "elementScripts": [
             "pl-file-editor.js"
