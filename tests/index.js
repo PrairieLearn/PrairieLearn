@@ -14,5 +14,6 @@ require('./testInstructorAssessment');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');
+require('./testApi');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');

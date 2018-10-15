@@ -54,6 +54,8 @@
   * Add `bestQuestions` option to zones (Tim Bretl).
 
   * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
+  
+  * Add read-only API for instructors to access assessment data (Nathan Walters).
 
   * Add warm up for Python worker processes (Matt West).
 
