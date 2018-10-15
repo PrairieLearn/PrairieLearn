@@ -9,6 +9,8 @@
 
   * Add networkx Python library to plbase (Nathan Bowman).
 
+  * Add read-only API for instructors to access assessment data (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
@@ -54,8 +56,6 @@
   * Add `bestQuestions` option to zones (Tim Bretl).
 
   * Add `allow-complex` attribute for `pl-symbolic-input` (Tim Bretl).
-  
-  * Add read-only API for instructors to access assessment data (Nathan Walters).
 
   * Add warm up for Python worker processes (Matt West).
 
