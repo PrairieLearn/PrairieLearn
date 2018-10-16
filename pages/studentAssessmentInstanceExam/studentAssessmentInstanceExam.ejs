@@ -74,11 +74,18 @@
           <div class="col-md-3 col-sm-6">
             <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
           </div>
-          <div class="col-md-6 col-sm-12 text-right">
+          <div class="col-md-6 col-sm-12">
               <% if (assessment_instance.open) { %>
-              Assessment is <strong>open</strong> and you can answer questions
+                  Assessment is <strong>open</strong> and you can answer questions.
+                  <p>
+                  Available credit: <%= authz_result.credit_date_string %>
+                  <%- include('../partials/studentAccessRulesPopover', {
+                    accessRules: authz_result.access_rules,
+                    assessmentSetName: assessment_set.name,
+                    assessmentNumber: assessment.number,
+                  }); %>
               <% } else { %>
-              Assessment is <strong>closed</strong> and you cannot answer questions
+                  Assessment is <strong>closed</strong> and you cannot answer questions.
               <% } %>
           </div>
         </div>
@@ -164,21 +171,26 @@
       </table>
 
       <div class="card-footer">
-        Submit your answer to each question with the <strong>Grade</strong> button on the question page.
-        Look at <strong>Best submission</strong> to confirm that each question has been graded.
-
+        <ul>
+        <li>Submit your answer to each question with the <strong>Grade</strong> or <strong>Save</strong> buttons on the question page.</li>
+        <li>
+          <form name="grade-form" method="POST" class="form-inline">
+              <input type="hidden" name="__action" value="grade">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              If you saved answers, you can grade them all at once:&nbsp;
+              <button type="submit" class="btn btn-primary">Grade all saved answers</button>
+          </form>
+        </li>
+        <li>Look at <strong>Best submission</strong> to confirm that each question has been graded.</li>
         <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-        <hr>
-        <p class="text-right">
-          After you have answered all the questions completely, click here:
-        </p>
-        <p class="text-right">
-          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-        </p>
-        <% } else { %>
-            When you are done, please logout and close your browser; there is no need to do anything else.
-        <% } %>
 
+          <li>After you have answered all the questions completely, click here:
+              <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+          </li>
+        <% } else { %>
+            <li>When you are done, please logout and close your browser; there is no need to do anything else.</li>
+        <% } %>
+        </ul>
       </div>
     </div>
   </div>

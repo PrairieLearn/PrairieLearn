@@ -11,6 +11,10 @@
 
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
+  * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
+
+  * Change "Save & Grade" button text and alignment (Dave Mussulman).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
