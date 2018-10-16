@@ -21,6 +21,8 @@
 
   * Fix LTI configuration flow configuration (Matt West).
 
+  * Fix GitHub links to exampleCourse questions (Dave Mussulman).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
 * __3.1.0__ - 2018-10-08

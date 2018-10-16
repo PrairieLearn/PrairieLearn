@@ -3,7 +3,8 @@
     "name": "XC 101",
     "title": "Example Course",
     "options": {
-        "useNewQuestionRenderer": true
+        "useNewQuestionRenderer": true,
+        "isExampleCourse": true
     },
     "assessmentSets": [],
     "topics": [
