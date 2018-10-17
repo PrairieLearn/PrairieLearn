@@ -11,7 +11,7 @@
 
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
-  * Change Ace editor to use source files from npm (Nathan Walters).
+  * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
 
