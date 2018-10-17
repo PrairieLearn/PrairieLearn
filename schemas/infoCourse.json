@@ -35,11 +35,6 @@
                     "description": "Feature flag to enable the new question renderer.",
                     "type": "boolean",
                     "default": false
-                },
-                "isExampleCourse": {
-                    "description": "Is this an example course?",
-                    "type": "boolean",
-                    "default": false
                 }
             }
         },
