@@ -13,6 +13,8 @@
 
   * Add networkx Python library to centos7-python (Nathan Bowman).
 
+  * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
