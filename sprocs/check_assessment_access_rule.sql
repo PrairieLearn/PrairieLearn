@@ -59,14 +59,11 @@ BEGIN
         ps_course_id bigint;
         reservation reservations;
     BEGIN
-        -- reservation checking implies we are given a date to check
-        EXIT schedule_access WHEN NOT use_date_check;
-
         -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_id IS NOT NULL THEN
 
             -- require exam mode
-            IF mode IS DISTINCT FROM 'Exam' THEN
+            IF check_assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
                 authorized := FALSE;
                 EXIT schedule_access;
             END IF;
@@ -95,7 +92,7 @@ BEGIN
             -- only needed for exams
             EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
 
-            -- is there a corresponding PrairieSchedule course?
+            -- is there a corresponding PrairieSchedule course
             -- that we actually want to enforce? (course_instance.ps_linked=true)
             SELECT ps_c.course_id
             INTO ps_course_id
