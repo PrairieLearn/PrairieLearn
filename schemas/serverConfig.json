@@ -92,6 +92,14 @@
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"
         },
+        "fileEditorUseAws": {
+            "description": "If the file editor should use AWS (production) or not (local dev).",
+            "type": "boolean"
+        },
+        "fileEditorS3Bucket": {
+            "description": "The S3 bucket that file edits should be stored in.",
+            "type": "string"
+        },
         "hasShib": {
             "description": "Enables Shibboleth authentication",
             "type": "boolean"
