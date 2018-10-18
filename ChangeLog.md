@@ -9,6 +9,12 @@
 
   * Add networkx Python library to plbase (Nathan Bowman).
 
+  * Add read-only API for instructors to access assessment data (Nathan Walters).
+
+  * Add networkx Python library to centos7-python (Nathan Bowman).
+
+  * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
@@ -18,6 +24,10 @@
   * Fix STDERR data logging on Python start (Matt West).
 
   * Fix HTML on LTI configuration page (Matt West).
+
+  * Fix LTI configuration flow configuration (Matt West).
+
+  * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
 * __3.1.0__ - 2018-10-08
 

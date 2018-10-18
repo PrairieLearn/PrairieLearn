@@ -54,7 +54,6 @@ module.exports = {
                     logger.debug('Syncing ' + tid);
                     // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
                     var allow_issue_reporting = true;
-                    if (_.has(courseInstance, 'allowIssueReporting')) allow_issue_reporting = !!courseInstance.allowIssueReporting;
                     if (_.has(dbAssessment, 'allowIssueReporting')) allow_issue_reporting = !!dbAssessment.allowIssueReporting;
                     var params = {
                         tid: tid,

@@ -25,7 +25,7 @@
             "default": "America/Chicago"
         },
         "allowIssueReporting": {
-            "description": "Whether to allow students to report issues for assessment questions (can be overridden per-assessment)",
+            "description": "DEPRECATED -- do not use.",
             "type": "boolean",
             "default": true
         },

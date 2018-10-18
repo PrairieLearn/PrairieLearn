@@ -19,6 +19,7 @@ require('./testInstructorAssessment');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');
+require('./testApi');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
 require('./testSproc-check_assessment_access');
