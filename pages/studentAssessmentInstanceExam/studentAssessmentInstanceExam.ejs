@@ -171,25 +171,22 @@
       </table>
 
       <div class="card-footer">
+        <form name="grade-form" method="POST" class="form-inline">
+            <input type="hidden" name="__action" value="grade">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button type="submit" class="btn btn-primary">Grade all saved answers</button>
+            </form>
+        <p>
         <ul>
-        <li>Submit your answer to each question with the <strong>Grade</strong> or <strong>Save</strong> buttons on the question page.</li>
-        <li>
-          <form name="grade-form" method="POST" class="form-inline">
-              <input type="hidden" name="__action" value="grade">
-              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-              If you saved answers, you can grade them all at once:&nbsp;
-              <button type="submit" class="btn btn-primary">Grade all saved answers</button>
-          </form>
-        </li>
-        <li>Look at <strong>Best submission</strong> to confirm that each question has been graded.</li>
-        <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-
-          <li>After you have answered all the questions completely, click here:
-              <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-          </li>
-        <% } else { %>
-            <li>When you are done, please logout and close your browser; there is no need to do anything else.</li>
-        <% } %>
+            <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
+            <li>Look at <strong>Best submission</strong> to confirm that each question has been graded.</li>
+            <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+                <li>After you have answered all the questions completely, click here:
+                    <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                </li>
+            <% } else { %>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else.</li>
+            <% } %>
         </ul>
       </div>
     </div>
