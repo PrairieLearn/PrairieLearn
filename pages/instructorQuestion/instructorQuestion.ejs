@@ -98,7 +98,23 @@
         </div>
       </div>
 
-      <%- include('../partials/question', {question_context: 'instructor'}); %>
+      <div class="row">
+          <div class="col-lg-9 col-sm-12">
+              <%- include('../partials/question', {question_context: 'instructor'}); %>
+          </div>
+
+          <div class="col-lg-3 col-sm-12">
+              <div class="card mb-4">
+                  <div class="card-header bg-secondary">Student view placeholder</div>
+                  <div class="card-body">
+                      <div class="d-flex justify-content-center">
+                          This area is used for assessment and score info.
+                      </div>
+                  </div>
+              </div>
+              <%- include('../partials/instructorInfoPanel'); %>
+          </div>
+      </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
