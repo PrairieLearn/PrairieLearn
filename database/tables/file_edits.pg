@@ -7,7 +7,6 @@ columns
     id: bigint not null default nextval('file_edits_id_seq'::regclass)
     local_tmp_dir: text
     s3_bucket: text
-    s3_root_key: text
     user_id: bigint not null
 
 indexes
