@@ -2,7 +2,8 @@
 SELECT
     fe.id,
     fe.commit_hash,
-    fe.local_tmp_dir
+    fe.local_tmp_dir,
+    fe.s3_bucket
 FROM
     file_edits AS fe
 WHERE
@@ -14,9 +15,9 @@ WHERE
 
 -- BLOCK insert_file_edit
 INSERT INTO file_edits
-    (user_id, course_id, dir_name, file_name, commit_hash, local_tmp_dir)
+    (user_id, course_id, dir_name, file_name, commit_hash, local_tmp_dir, s3_bucket)
 SELECT
-    $user_id, $course_id, $dir_name, $file_name, $commit_hash, $local_tmp_dir
+    $user_id, $course_id, $dir_name, $file_name, $commit_hash, $local_tmp_dir, $s3_bucket
 RETURNING
     file_edits.id;
 

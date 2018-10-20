@@ -7,7 +7,6 @@ CREATE TABLE file_edits (
     commit_hash TEXT NOT NULL,
     local_tmp_dir TEXT,
     s3_bucket TEXT,
-    s3_root_key TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 

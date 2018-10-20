@@ -1,3 +1,9 @@
+// FIXME: refactor...
+//  - read/write/rewrite (need local and aws versions)
+//  - sql (need local and aws versions)
+//  - do a better job of isolating stuff like localTmpDir, local-specific error
+//    handling like checking for ENOENT, etc.
+
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
@@ -17,6 +23,8 @@ const tmp = require('tmp');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
+const config = require('../../lib/config');
+const AWS = require('aws-sdk');
 
 const {
     exec,
@@ -74,90 +82,17 @@ router.get('/', function(req, res, next) {
             });
         },
         (callback) => {
-            debug('Query database for file edit');
-            sqldb.query(sql.select_file_edit, {
-                user_id: fileEdit.userID,
-                course_id: fileEdit.courseID,
-                dir_name: fileEdit.dirName,
-                file_name: fileEdit.fileName,
-            }, (err, result) => {
+            debug('Read file edit, if one exists');
+            readEdit(fileEdit, (err) => {
                 if (ERR(err, callback)) return;
-                if (result.rows.length > 0) {
-                    debug(`Found file edit with id ${result.rows[0].id}`);
-                    if (result.rows[0].commit_hash == fileEdit.origHash) {
-                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                        debug('Read contents of file edit');
-                        readEdit(fileEdit, (err) => {
-                            if (err) {
-                                if  (err.code == 'ENOENT') {
-                                    debug('Delete file edit from db (missing local file)');
-                                    sqldb.query(sql.soft_delete_file_edit, {
-                                        user_id: fileEdit.userID,
-                                        course_id: fileEdit.courseID,
-                                        dir_name: fileEdit.dirName,
-                                        file_name: fileEdit.fileName,
-                                    }, (err) => {
-                                        if (ERR(err, callback)) return;
-                                        callback(null);
-                                    });
-                                } else {
-                                    return callback(err);
-                                }
-                            } else {
-                                fileEdit.editID = result.rows[0].id;
-                                fileEdit.didReadEdit = true;
-                                callback(null);
-                            }
-                        });
-                    } else {
-                        debug('Delete file edit from db (outdated commit hash)');
-                        sqldb.query(sql.soft_delete_file_edit, {
-                            user_id: fileEdit.userID,
-                            course_id: fileEdit.courseID,
-                            dir_name: fileEdit.dirName,
-                            file_name: fileEdit.fileName,
-                        }, (err) => {
-                            if (ERR(err, callback)) return;
-                            fileEdit.didDeleteEdit = true;
-                            callback(null);
-                        });
-                    }
-                } else {
-                    callback(null);
-                }
+                callback(null);
             });
         },
         (callback) => {
             if (!('editID' in fileEdit)) {
                 debug('Create file edit');
-                async.series([
-                    (callback) => {
-                        debug('Write file edit');
-                        writeEdit(fileEdit, fileEdit.origContents, (err) => {
-                            if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    },
-                    (callback) => {
-                        const params = {
-                            user_id: fileEdit.userID,
-                            course_id: fileEdit.courseID,
-                            dir_name: fileEdit.dirName,
-                            file_name: fileEdit.fileName,
-                            commit_hash: fileEdit.origHash,
-                            local_tmp_dir: fileEdit.localTmpDir,
-                        };
-                        debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`);
-                        sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
-                            if (ERR(err, callback)) return;
-                            fileEdit.editID = result.rows[0].id;
-                            debug(`Created file edit in database with id ${fileEdit.editID}`);
-                            callback(null);
-                        });
-                    },
-                ], (err) => {
+                createEdit(fileEdit, fileEdit.origContents, (err) => {
                     if (ERR(err, callback)) return;
-                    fileEdit.didWriteEdit = true;
                     callback(null);
                 });
             } else {
@@ -184,7 +119,6 @@ const getCommitHash = function(fileEdit, callback) {
     });
 };
 
-
 router.post('/', function(req, res, next) {
     debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
@@ -200,7 +134,7 @@ router.post('/', function(req, res, next) {
     };
 
     if (req.body.__action == 'save_draft') {
-        rewriteEdit(fileEdit, req.body.file_edit_contents, err => {
+        updateEdit(fileEdit, req.body.file_edit_contents, err => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -223,7 +157,7 @@ router.post('/', function(req, res, next) {
         async.waterfall([
             (callback) => {
                 debug('Save and sync: overwrite file edit');
-                rewriteEdit(fileEdit, req.body.file_edit_contents, err => {
+                updateEdit(fileEdit, req.body.file_edit_contents, err => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -238,16 +172,16 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-
-        // FIXME: args (pass fileEdit)
-        // FIXME: implement saveAndSync
-
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
     }
 });
 
-function rewriteEdit(fileEdit, contents, callback) {
+function getS3Key(editID, fileName) {
+    return `edit_${editID}/${fileName}`;
+}
+
+function readEdit(fileEdit, callback) {
     async.series([
         (callback) => {
             debug('Query database for file edit');
@@ -260,8 +194,87 @@ function rewriteEdit(fileEdit, contents, callback) {
                 if (ERR(err, callback)) return;
                 if (result.rows.length > 0) {
                     debug(`Found file edit with id ${result.rows[0].id}`);
-                    fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                    if (result.rows[0].commit_hash == fileEdit.origHash) {
+                        debug('Read contents of file edit');
+                        if (config.fileEditorUseAws) {
+                            const params = {
+                                Bucket: config.fileEditorS3Bucket,
+                                Key: getS3Key(result.rows[0].id, fileEdit.fileName),
+                            };
+                            const s3 = new AWS.S3();
+                            s3.getObject(params, (err, data) => {
+                                if (ERR(err, callback)) return;
+                                fileEdit.editContents = b64EncodeUnicode(data.Body);
+                                fileEdit.editID = result.rows[0].id;
+                                fileEdit.didReadEdit = true;
+                                callback(null);
+                            });
+                        } else {
+                            fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                            const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+                            fs.readFile(fullPath, 'utf8', (err, contents) => {
+                                if (ERR(err, callback)) return;
+                                debug(`Got contents from ${fullPath}`);
+                                fileEdit.editContents = b64EncodeUnicode(contents);
+                                fileEdit.editID = result.rows[0].id;
+                                fileEdit.didReadEdit = true;
+                                callback(null);
+                            });
+                        }
+                    } else {
+                        callback(new Error('Outdated commit hash'));
+                    }
+                } else {
+                    callback(null);
+                }
+            });
+        },
+    ], (err) => {
+        if (err) {
+            // If there was an error - for any reason - we soft-delete the
+            // file edit from the database. We do this because our priority
+            // is to make sure the user isn't trapped with a file edit that
+            // they cannot read and also cannot soft-delete. We accept the
+            // risk (for now) that the user may lose their saved changes.
+            debug('Soft-delete file edit from db (error when trying to read file edit)');
+            sqldb.query(sql.soft_delete_file_edit, {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+            }, (deleteErr) => {
+                if (ERR(deleteErr, callback)) return;
+                fileEdit.didDeleteEdit = true;
+                if (ERR(err, callback)) return;
+                // Should never get to this line (we know err is non-null)
+                callback(null);
+            });
+        } else {
+            callback(null);
+        }
+    });
+}
+
+function updateEdit(fileEdit, contents, callback) {
+    async.series([
+        (callback) => {
+            debug('Query database for file edit');
+            sqldb.query(sql.select_file_edit, {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+            }, (err, result) => {
+                if (ERR(err, callback)) return;
+                if (result.rows.length > 0) {
+                    debug(`Found file edit with id ${result.rows[0].id}`);
+                    fileEdit.editID = result.rows[0].id;
                     fileEdit.editHash = result.rows[0].commit_hash;
+                    if (config.fileEditorUseAws) {
+                        fileEdit.s3_bucket = result.rows[0].s3_bucket;
+                    } else {
+                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                    }
                     callback(null);
                 } else {
                     debug('Failed to find file edit in db');
@@ -282,22 +295,11 @@ function rewriteEdit(fileEdit, contents, callback) {
     });
 }
 
-
-function readEdit(fileEdit, callback) {
-    const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-    fs.readFile(fullPath, 'utf8', (err, contents) => {
-        if (ERR(err, callback)) return;
-        debug(`Got contents from ${fullPath}`);
-        fileEdit.editContents = b64EncodeUnicode(contents);
-        callback(null);
-    });
-}
-
-function writeEdit(fileEdit, contents, callback) {
+function createEdit(fileEdit, contents, callback) {
     async.series([
         (callback) => {
-            if (fileEdit.hasOwnProperty('localTmpDir')) {
-                debug(`Found existing temporary directory at ${fileEdit.localTmpDir}`);
+            if (config.fileEditorUseAws) {
+                fileEdit.s3_bucket = config.fileEditorS3Bucket;
                 callback(null);
             } else {
                 tmp.dir((err, path) => {
@@ -309,11 +311,27 @@ function writeEdit(fileEdit, contents, callback) {
             }
         },
         (callback) => {
-            const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-            fs.writeFile(fullPath, b64DecodeUnicode(contents), 'utf8', (err) => {
+            const params = {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+                commit_hash: fileEdit.origHash,
+                local_tmp_dir: fileEdit.localTmpDir || null,
+                s3_bucket: fileEdit.s3_bucket || null,
+            };
+            debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`);
+            sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                debug(`Wrote file edit to ${fullPath}`);
-                fileEdit.editContents = contents;
+                fileEdit.editID = result.rows[0].id;
+                debug(`Created file edit in database with id ${fileEdit.editID}`);
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug('Write contents to file edit');
+            writeEdit(fileEdit, contents, (err) => {
+                if (ERR(err, callback)) return;
                 callback(null);
             });
         },
@@ -321,6 +339,33 @@ function writeEdit(fileEdit, contents, callback) {
         if (ERR(err, callback)) return;
         callback(null);
     });
+}
+
+function writeEdit(fileEdit, contents, callback) {
+    if (config.fileEditorUseAws) {
+        const params = {
+            Bucket: fileEdit.s3_bucket,
+            Key: getS3Key(fileEdit.editID, fileEdit.fileName),
+            Body: b64DecodeUnicode(contents),
+        };
+        const s3 = new AWS.S3();
+        s3.putObject(params, (err) => {
+            if (ERR(err, callback)) return;
+            debug(`Wrote file edit to bucket ${params.Bucket} at key ${params.Key} on S3`);
+            fileEdit.editContents = contents;
+            fileEdit.didWriteEdit = true;
+            callback(null);
+        });
+    } else {
+        const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+        fs.writeFile(fullPath, b64DecodeUnicode(contents), 'utf8', (err) => {
+            if (ERR(err, callback)) return;
+            debug(`Wrote file edit to ${fullPath}`);
+            fileEdit.editContents = contents;
+            fileEdit.didWriteEdit = true;
+            callback(null);
+        });
+    }
 }
 
 const saveAndSync = function(locals, fileEdit, callback) {
