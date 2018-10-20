@@ -49,7 +49,12 @@ function b64DecodeUnicode(str) {
     }).join(''));
 }
 
-router.get('/', function(req, res, next) {
+router.get('/instructorFileEditorClient.js', (req, res, next) => {
+    debug('Responding to request for /instructorFileEditorClient.js');
+    res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
+});
+
+router.get('/', (req, res, next) => {
     if (_.isEmpty(req.query)) {
         return next(error.make(400, 'no file in query', {
             locals: res.locals,
