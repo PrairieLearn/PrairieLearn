@@ -334,7 +334,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/admin/edit', [
     require('./middlewares/authzCourseInstanceHasCourseView'),
-    require('./pages/instructorFileEditor/instructorFileEditor')),
+    require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
 // clientFiles
