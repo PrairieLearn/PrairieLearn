@@ -26,7 +26,11 @@
             Course information
             <a id="editJSONButton"
                tabindex="0" class="btn btn-light btn-sm ml-auto" role="button"
-               href="<%= urlPrefix %>/edit?file=infoCourse.json"
+               <% if (locals.course_instance) { %>
+                   href="<%= urlPrefix %>/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"
+               <% } else { %>
+                   href="<%= urlPrefix %>/edit?file=infoCourse.json"
+               <% } %>
                <!-- FIXME: add icon? -->
                <span class="d-none d-sm-inline">Edit JSON</span>
             </a>
