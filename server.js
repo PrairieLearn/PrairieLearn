@@ -32,7 +32,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 
-const aws = require('./lib/aws.js')
+const aws = require('./lib/aws.js');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
