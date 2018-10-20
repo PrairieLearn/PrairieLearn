@@ -18,6 +18,7 @@ const multer  = require('multer');
 const logger = require('./lib/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
+const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const assessment = require('./lib/assessment');
@@ -32,7 +33,6 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 
-const aws = require('./lib/aws.js');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
