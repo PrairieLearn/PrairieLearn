@@ -49,7 +49,7 @@ function b64DecodeUnicode(str) {
     }).join(''));
 }
 
-router.get('/instructorFileEditorClient.js', (req, res, next) => {
+router.get('/instructorFileEditorClient.js', (req, res) => {
     debug('Responding to request for /instructorFileEditorClient.js');
     res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
 });
