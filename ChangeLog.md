@@ -17,6 +17,8 @@
 
   * Fix load-reporting close during unit tests (Matt West).
 
+  * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
+
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
   * Fix STDERR data logging on Python start (Matt West).
@@ -184,6 +186,7 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+  * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
