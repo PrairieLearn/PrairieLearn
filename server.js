@@ -261,6 +261,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
     require('./pages/instructorAssessments/instructorAssessments'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/edit', require('./pages/instructorFileEditor/instructorFileEditor'));
 
 // single assessment
 
@@ -330,10 +331,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
 app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
     require('./middlewares/authzCourseInstanceHasCourseView'),
     require('./pages/courseOverview/courseOverview'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/admin/edit', [
-    require('./middlewares/authzCourseInstanceHasCourseView'),
-    require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
 // clientFiles
