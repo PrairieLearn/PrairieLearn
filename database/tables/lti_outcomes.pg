@@ -1,0 +1,17 @@
+columns
+    assessment_id: bigint
+    id: bigint not null default nextval('lti_outcomes_id_seq'::regclass)
+    lis_outcome_service_url: text
+    lis_result_sourcedid: text
+    lti_credential_id: bigint
+    user_id: bigint
+
+indexes
+    lti_outcomes_pkey: PRIMARY KEY (id) USING btree (id)
+    lti_outcomes_user_id_assessment_id_key: UNIQUE (user_id, assessment_id) USING btree (user_id, assessment_id)
+    lti_outcomes_assessment_id: USING btree (assessment_id)
+
+foreign-key constraints
+    lti_outcomes_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_outcomes_lti_credential_id_fkey: FOREIGN KEY (lti_credential_id) REFERENCES lti_credentials(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_outcomes_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

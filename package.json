@@ -5,6 +5,7 @@
     "private": true,
     "dependencies": {
         "@prairielearn/prairielib": "^1.5.1",
+        "ace-builds": "^1.4.1",
         "adm-zip": "^0.4.11",
         "archiver": "^2.1.1",
         "async": "^2.6.1",
@@ -31,6 +32,7 @@
         "fs-extra": "^6.0.0",
         "googleapis": "^31.0.0",
         "handlebars": "^4.0.11",
+        "http-status": "^1.2.0",
         "is-my-json-valid": "^2.17.2",
         "javascript-natural-sort": "^0.7.1",
         "jju": "^1.3.0",
@@ -45,6 +47,7 @@
         "mustache": "^2.3.0",
         "nodemon": "^1.17.5",
         "numeric": "^1.2.6",
+        "oauth-signature": "^1.5.0",
         "on-finished": "^2.3.0",
         "parse5": "^5.0.0",
         "passport": "^0.4.0",
@@ -86,8 +89,15 @@
     "scripts": {
         "start": "node server.js",
         "start-nodemon": "nodemon server.js",
-        "test": "nyc --reporter=lcov mocha --exit tests/index.js",
+        "test": "nyc --reporter=lcov mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"
+    },
+    "nyc": {
+        "exclude": [
+            "node_modules",
+            "public",
+            "tests"
+        ]
     }
 }

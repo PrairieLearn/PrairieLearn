@@ -1,0 +1,13 @@
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "lti") { %>active<% } %>" href="<%= urlPrefix %>/admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
+  </li>
+  <% if (authz_data.has_course_permission_view) { %>
+      <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course"><i class="fab fa-fort-awesome"></i> Course</a>
+      </li>
+  <% } %>
+</ul>

@@ -15,9 +15,20 @@
       <li class="nav-item <% if (navPage == "issues")      { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
       <li class="nav-item <% if (navPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
 
-      <% if (authz_data.has_course_permission_view) { %>
-      <li class="nav-item <% if (navPage == "courseOverview") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course">Course</a></li>
-      <% } %>
+      <li class="nav-item dropdown <% if (navPage == "admin") { %>active<% } %>">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Admin
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuAdminLink">
+              <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+              <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti") { %>active<% } %>" href="<%= urlPrefix %>/admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
+              <% if (authz_data.has_course_permission_view) { %>
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course">
+                  <i class="fab fa-fort-awesome"></i> Course
+                </a>
+              <% } %>
+          </div>
+      </li>
 
       <% if (!devMode && authz_data.has_course_permission_edit) { %>
       <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
