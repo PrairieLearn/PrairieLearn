@@ -27,7 +27,7 @@ module.exports.run = (callback) => {
             max_final,
         } = result.rows[0];
 
-        let msg = `_External grading stats, past 24 hours:_ *${config.externalGradingSqsQueueName}*\n`;
+        let msg = `_External grading stats, past 24 hours:_ *${config.externalGradingJobsQueueName}*\n`;
         msg +=    `Count: *${count}*\n`;
         msg +=    `Average total duration: *${Number(delta_total).toFixed(2)} s*\n`;
         msg +=    `Individual averages:\n`;
