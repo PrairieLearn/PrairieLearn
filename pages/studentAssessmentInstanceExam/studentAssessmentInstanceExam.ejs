@@ -174,7 +174,11 @@
         <form name="grade-form" method="POST" class="form-inline">
             <input type="hidden" name="__action" value="grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button type="submit" class="btn btn-primary">Grade all saved answers</button>
+            <% if (savedAnswers > 0) { %>
+              <button type="submit" class="btn btn-info">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
+            <% } else { %>
+              <button type="submit" class="btn btn-info disabled" disabled>No saved answers to grade</button>
+            <% } %>
             </form>
         <p>
         <ul>
@@ -185,7 +189,8 @@
                     <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
                 </li>
             <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else.</li>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any ungraded saved answers when you leave, 
+                they will be automatically graded before your final score is computed.</li>
             <% } %>
         </ul>
       </div>

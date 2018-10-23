@@ -11,10 +11,11 @@
 
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
+  * Add networkx Python library to centos7-python (Nathan Bowman).
+
   * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
-  * Add networkx Python library to centos7-python (Nathan Bowman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
 
