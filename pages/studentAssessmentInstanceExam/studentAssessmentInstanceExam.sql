@@ -25,17 +25,3 @@ WHERE
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
-
--- BLOCK tmp_upgrade_iq_status
-UPDATE instance_questions AS iq
-SET
-    status = exam_question_status(iq)::enum_instance_question_status
-WHERE
-    iq.assessment_instance_id = $assessment_instance_id;
-
--- BLOCK tmp_set_upgraded
-UPDATE assessment_instances AS ai
-SET
-    tmp_upgraded_iq_status = TRUE
-WHERE
-    ai.id = $assessment_instance_id;
