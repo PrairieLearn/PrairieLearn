@@ -1,6 +1,7 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
+var _ = require('lodash');
 
 var error = require('@prairielearn/prairielib/error');
 var assessment = require('../../lib/assessment');
@@ -46,6 +47,10 @@ router.get('/', function(req, res, next) {
             res.locals.assessment_text_templated = assessment_text_templated;
 
             res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
+            res.locals.savedAnswers = _.reduce(res.locals.instance_questions, (sum, question) => {
+                if (question.status == 'saved') return sum+1;
+                return sum;
+            }, 0);
 
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });

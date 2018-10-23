@@ -13,6 +13,10 @@
 
   * Add networkx Python library to centos7-python (Nathan Bowman).
 
+  * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
+
+  * Change "Save & Grade" button text and alignment (Dave Mussulman).
+
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
