@@ -183,14 +183,13 @@
         <p>
         <ul>
             <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
-            <li>Look at <strong>Best submission</strong> to confirm that each question has been graded.</li>
+            <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
             <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
                 <li>After you have answered all the questions completely, click here:
                     <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
                 </li>
             <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any ungraded saved answers when you leave, 
-                they will be automatically graded before your final score is computed.</li>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
             <% } %>
         </ul>
       </div>
