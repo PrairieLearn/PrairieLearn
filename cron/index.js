@@ -45,6 +45,11 @@ module.exports = {
                 intervalSec: 'daily',
             },
             {
+                name: 'sendExternalGraderDeadLetters',
+                module: require('./sendExternalGraderDeadLetters'),
+                intervalSec: 'daily',
+            },
+            {
                 name: 'externalGraderLoad',
                 module: require('./externalGraderLoad'),
                 intervalSec: config.cronIntervalExternalGraderLoadSec,
