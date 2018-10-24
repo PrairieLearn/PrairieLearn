@@ -24,7 +24,7 @@ module.exports.run = function(callback) {
 
 function getLoadStats(callback) {
     const params = [
-        config.externalGradingSqsQueueName,
+        config.externalGradingJobsQueueName,
         config.externalGradingLoadAverageIntervalSec,
         config.externalGradingHistoryLoadIntervalSec,
         config.externalGradingCurrentCapacityFactor,
@@ -40,7 +40,7 @@ function getLoadStats(callback) {
 
 function sendStatsToCloudWatch(stats, callback) {
     const cloudwatch = new AWS.CloudWatch();
-    const dimensions = [{Name: 'By Queue', Value: config.externalGradingSqsQueueName}];
+    const dimensions = [{Name: 'By Queue', Value: config.externalGradingJobsQueueName}];
     const params = {
         MetricData: [
             {
