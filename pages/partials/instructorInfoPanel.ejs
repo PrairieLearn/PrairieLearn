@@ -1,37 +1,66 @@
 <% if (authz_data.has_instructor_view) { %>
-<div class="card mb-4">
+<div class="card mb-4 border-warning">
   <div class="card-header bg-warning"><em>Instructor only information</em></div>
-
-  <div class="card-block">
-
+  <div class="card-body">
   <h5 class="card-title">User:</h5>
-    <ul><li><%= user.name %></li><li><%= user.uid %></li></ul>
+  <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1"><%= user.name %></div>
+      <div class="pr-1"><%= user.uid %></div>
+  </div>
 
       <% if (typeof question !== "undefined") { %>
           <h5 class="card-title">Question:</h5>
 
-          <ul>
-          <li>QID: <a href="<%= urlPrefix %>/instructor/question/<%= question.id %>"><%= question.qid %></a></li>
-          <li>Started at:<br><%= variant.formatted_date %></li>
-          <li>Duration:
+          <div class="d-flex flex-wrap">
+              <div class="pr-1">QID:</div>
+              <div><a href="<%= urlPrefix %>/instructor/question/<%= question.id %>"><%= question.qid %></a></div>
+          </div>
+          <div class="d-flex flex-wrap">
+              <div class="pr-1">Title:</div>
+              <div><%= question.title %></div>
+          </div>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Started at: </div>
+          <div><%= variant.formatted_date %></div>
+      </div>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Duration:</div>
+          <div>
             <% if ("hours" in variant.duration) { %><%= variant.duration.hours %>m <% } %>
             <% if ("minutes" in variant.duration) { %><%= variant.duration.minutes %>m <% } %>
             <% if ("seconds" in variant.duration) { %><%= variant.duration.seconds %>s <% } %>
-          </li>
-
-          <li><button onClick="$(this).next().toggle()" class="btn btn-default">Show/Hide True Answer:</button>
-              <code style="display:none"><%= JSON.stringify(variant.true_answer) %></code>
-          </li>
-          </ul>
+          </div>
+      </div>
+      <div class="d-flex flex-wrap pb-2">
+          <div class="pr-1">
+              <a class="card-link" data-toggle="collapse" href="#instructorTrue_answer">Show/Hide answer</a>
+          </div>
+          <div class="collapse" id="instructorTrue_answer">
+                <code><%= JSON.stringify(variant.true_answer); %></code>
+          </div>
+      </div>
       <% } %>
 
       <% if (typeof assessment !== "undefined") { %>
           <h5 class="card-title">Assessment Instance:</h5>
-          <ul>
-          <li>TID: <a href="<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>"><%= assessment.tid %></a></li>
-          <li>Started at:<br><%= assessment_instance.formatted_date %></li>
-          <li>Duration: <%= assessment_instance.duration %></li>
-          </ul>
+          <div class="d-flex flex-wrap">
+              <div class="pr-1">TID:</div>
+              <div><a href="<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>"><%= assessment.tid %></a></div>
+          </div>
+
+          <div class="d-flex flex-wrap">
+              <div class="pr-1">Started at: </div>
+              <div><%= assessment_instance.formatted_date %></div>
+          </div>
+
+          <div class="d-flex flex-wrap">
+              <div class="pr-1">Duration:</div>
+              <div><%= assessment_instance.duration %></div>
+          </div>
+
+          <div class="pb-2">
+              <a href="<%= urlPrefix %>/instructor/assessment_instance/<%= assessment_instance.id %>">View log</a>
+          </div>
       <% } %>
   </div>
 </div>
