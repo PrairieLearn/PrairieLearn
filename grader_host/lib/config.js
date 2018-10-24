@@ -71,29 +71,42 @@ config.loadConfig = function(callback) {
             callback(null);
         },
         (callback) => {
-            if (exportedConfig.queueUrl) {
-                logger.info(`Using queue url from config: ${exportedConfig.queueUrl}`);
-                callback(null);
-            } else {
-                logger.info(`Loading url for queue "${exportedConfig.queueName}"`);
-                const sqs = new AWS.SQS();
-                const params = {
-                    QueueName: exportedConfig.queueName
-                };
-                sqs.getQueueUrl(params, (err, data) => {
-                    if (err) {
-                        logger.error(`Unable to load url for queue "${exportedConfig.queueName}"`);
-                        logger.error(err);
-                        process.exit(1);
-                    }
-                    exportedConfig.queueUrl = data.QueueUrl;
-                    logger.info(`Loaded url for queue "${exportedConfig.queueName}": ${exportedConfig.queueUrl}`);
-                    callback(null);
-                });
-            }
-        }
+            getQueueUrl('jobs', callback);
+        },
+        (callback) => {
+            getQueueUrl('results', callback);
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
 };
+
+/**
+ * Will attempt to load the key [prefix]QueueUrl from config; if that's not
+ * present, will use [prefix]QueueName to look up the queue URL with AWS.
+ */
+function getQueueUrl(prefix, callback) {
+    const queueUrlKey = `${prefix}QueueUrl`;
+    const queueNameKey = `${prefix}QueueName`;
+    if (exportedConfig[queueUrlKey]) {
+        logger.info(`Using queue url from config: ${exportedConfig[queueUrlKey]}`);
+        callback(null);
+    } else {
+        logger.info(`Loading url for queue "${exportedConfig[queueNameKey]}"`);
+        const sqs = new AWS.SQS();
+        const params = {
+            QueueName: exportedConfig[queueNameKey],
+        };
+        sqs.getQueueUrl(params, (err, data) => {
+            if (err) {
+                logger.error(`Unable to load url for queue "${exportedConfig[queueNameKey]}"`);
+                logger.error(err);
+                process.exit(1);
+            }
+            exportedConfig[queueUrlKey] = data.QueueUrl;
+            logger.info(`Loaded url for queue "${exportedConfig[queueNameKey]}": ${exportedConfig[queueUrlKey]}`);
+            callback(null);
+        });
+    }
+}

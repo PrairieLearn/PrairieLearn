@@ -49,12 +49,18 @@ properties:
     envVar: HEALTH_CHECK_INTERVAL
 
   # Queue config
-  queueName:
-    default: 'grading'
-    envVar: QUEUE_NAME
-  queueUrl:
+  jobsQueueName:
+    default: 'grading_jobs_dev'
+    envVar: JOBS_QUEUE_NAME
+  jobsQueueUrl:
     default: null
-    envVar: QUEUE_URL
+    envVar: JOBS_QUEUE_URL
+  resultsQueueName:
+    default: 'grading_results_dev'
+    envVar: RESULTS_QUEUE_NAME
+  resultsQueueUrl:
+    default: null
+    envVar: RESULTS_QUEUE_URL
   defaultTimeout:
     default: 30
     envVar: DEFAULT_TIMEOUT

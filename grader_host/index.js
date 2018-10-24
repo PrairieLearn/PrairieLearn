@@ -6,7 +6,6 @@ const Docker = require('dockerode');
 const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
-const request = require('request');
 const byline = require('byline');
 const { sqldb } = require('@prairielearn/prairielib');
 const sanitizeObject = require('@prairielearn/prairielib').util.sanitizeObject;
@@ -75,7 +74,7 @@ async.series([
         const sqs = new AWS.SQS();
         for (let i = 0; i < config.maxConcurrentJobs; i++) {
           async.forever((next) => {
-              receiveFromQueue(sqs, config.queueUrl, (job, fail, success) => {
+              receiveFromQueue(sqs, config.jobsQueueUrl, (job, fail, success) => {
                   handleJob(job, (err) => {
                       if (ERR(err, fail)) return;
                       success();
@@ -158,16 +157,21 @@ function reportReceived(info, callback) {
             logger,
         }
     } = info;
-    logger.info('Pinging webhook to acknowledge that job was received');
-    const webhookData = {
+    logger.info('Sending job acknowledgement to PrairieLearn');
+
+    const sqs = new AWS.SQS();
+    const messageBody = {
+        jobId: job.jobId,
         event: 'job_received',
-        job_id: job.jobId,
         data: {
-            received_time: receivedTime,
+            receivedTime: receivedTime
         },
-        __csrf_token: job.csrfToken,
     };
-    request.post({method: 'POST', url: job.webhookUrl, json: true, body: webhookData}, function (err, _response, _body) {
+    const params = {
+        QueueUrl: config.resultsQueueUrl,
+        MessageBody: JSON.stringify(messageBody),
+    };
+    sqs.sendMessage(params, (err) => {
         // We don't want to fail the job if this notification fails
         if (ERR(err, (err) => logger.error(err)));
         callback(null);
@@ -321,6 +325,7 @@ function runJob(info, callback) {
     let jobEnableNetworking = enableNetworking || false;
 
     let jobFailed = false;
+    let globalJobTimeoutCleared = false;
     const globalJobTimeoutId = setTimeout(() => {
         jobFailed = true;
         healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
@@ -424,6 +429,7 @@ function runJob(info, callback) {
         (callback) => {
             // We made it throught the Docker danger zone!
             clearTimeout(globalJobTimeoutId);
+            globalJobTimeoutCleared = true;
             logger.info('Reading course results');
             // Now that the job has completed, let's extract the results
             // First up: results.json
@@ -467,6 +473,13 @@ function runJob(info, callback) {
     ], (err) => {
         if (ERR(err, (err) => logger.error(err)));
 
+        // It's possible that we get here with an error prior to the global job timeout exceeding.
+        // If that happens, Docker is still alive, but it just errored. We'll cancel
+        // the timeout here if needed.
+        if (!globalJobTimeoutCleared) {
+            clearTimeout(globalJobTimeoutId);
+        }
+
         // If we somehow eventually get here after exceeding the global tieout,
         // we should avoid calling the callback again
         if (jobFailed) {
@@ -495,8 +508,6 @@ function uploadResults(info, callback) {
                 jobId,
                 s3Bucket,
                 s3RootKey,
-                webhookUrl,
-                csrfToken
             }
         },
         runJob: results
@@ -509,7 +520,7 @@ function uploadResults(info, callback) {
             const params = {
                 Bucket: s3Bucket,
                 Key: `${s3RootKey}/results.json`,
-                Body: new Buffer(JSON.stringify(results, null, '  '), 'binary')
+                Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary')
             };
             s3.putObject(params, (err) => {
                 if (ERR(err, callback)) return;
@@ -517,17 +528,27 @@ function uploadResults(info, callback) {
             });
         },
         (callback) => {
-            if (!webhookUrl) return callback(null);
             // Let's send the results back to PrairieLearn now; the archive will
             // be uploaded later
-            logger.info('Pinging webhook with results');
-            const webhookResults = {
-                data: results,
+            logger.info('Sending results to PrairieLearn with results');
+            const sqs = new AWS.SQS();
+            const messageBody = {
+                jobId,
                 event: 'grading_result',
-                job_id: jobId,
-                __csrf_token: csrfToken,
             };
-            request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, _response, _body) {
+
+            // The SQS max message size is 256KB; if our results payload is
+            // larger than 250KB, we won't send results via this and will
+            // instead rely on PL fetching them via S3.
+            if (JSON.stringify(results).length <= 250 * 1024) {
+                messageBody.data = results;
+            }
+
+            const params = {
+                QueueUrl: config.resultsQueueUrl,
+                MessageBody: JSON.stringify(messageBody),
+            };
+            sqs.sendMessage(params, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
