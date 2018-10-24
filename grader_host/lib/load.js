@@ -57,7 +57,7 @@ module.exports = {
     _reportLoad() {
         var params = {
             instance_id: config.instanceId,
-            queue_name: config.queueName,
+            queue_name: config.jobsQueueName,
             average_jobs: this._getAndResetLoadEstimate(),
             max_jobs: maxJobs,
         };
