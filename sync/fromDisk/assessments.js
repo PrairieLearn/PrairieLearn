@@ -138,23 +138,23 @@ module.exports = {
     },
 
     ensurePSExamIfNeeded: function(dbRule, callback) {
-        if (!_(dbRule).has('examId')) {
+        if (!_(dbRule).has('examUuid')) {
             return callback(null);
         }
 
         if (config.syncExamIdAccessRules) {
             const params = {
-                exam_id: dbRule.examId,
+                exam_uuid: dbRule.examUuid,
             };
-            sqldb.query(sql.select_exams_by_id, params, function(err, result) {
+            sqldb.query(sql.select_exams_by_uuid, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount == 0) return callback(new Error('No such examId: ' + dbRule.examId));
+                if (result.rowCount == 0) return callback(new Error('No such examUuid: ' + dbRule.examUuid));
                 callback(null);
             });
         } else {
             const params = {
-                exam_id: dbRule.examId,
-                exam_string: 'Exam ' + dbRule.examId,
+                exam_uuid: dbRule.examUuid,
+                exam_string: 'Exam ' + dbRule.examUuid,
             };
             sqldb.query(sql.insert_fake_ps_exam_if_needed, params, function(err, _result) {
                 if (ERR(err, callback)) return;
@@ -182,7 +182,7 @@ module.exports = {
                     time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
                     password: _(dbRule).has('password') ? dbRule.password : null,
                     seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
-                    exam_id: _(dbRule).has('examId') ? dbRule.examId : null,
+                    exam_uuid: _(dbRule).has('examUuid') ? dbRule.examUuid : null,
                 };
                 sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                     if (ERR(err, callback)) return;
