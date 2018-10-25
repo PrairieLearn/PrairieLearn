@@ -22,6 +22,7 @@ DECLARE
     new_number integer;
     assessment_instance_id bigint;
     course_id bigint;
+    display_timezone text;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -69,8 +70,8 @@ BEGIN
 
     -- check consistency of question_id and course_instance_id
     IF real_question_id IS NOT NULL AND real_course_instance_id IS NOT NULL THEN
-        SELECT c.id
-        INTO course_id
+        SELECT c.id, COALESCE(ci.display_timezone, c.display_timezone)
+        INTO course_id, display_timezone
         FROM
             pl_courses AS c
             JOIN course_instances AS ci ON (ci.course_id = c.id)
@@ -84,10 +85,12 @@ BEGIN
 
     INSERT INTO variants
         (instance_question_id, question_id,      course_instance_id, user_id,
-        number,     variant_seed, params, true_answer, options, broken, authn_user_id)
+        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
+        date, formatted_date)
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id,
-        new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
+        new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
+        now(), format_date_full_compact(now(), display_timezone))
     RETURNING *
     INTO variant;
 END;
