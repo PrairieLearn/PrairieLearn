@@ -20,6 +20,7 @@ const config = require('./lib/config');
 const load = require('./lib/load');
 const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
+const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -606,8 +607,14 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        function(callback) {
+        (callback) => {
             externalGrader.init(assessment, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            externalGraderResults.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -62,7 +62,6 @@ module.exports = {
             'tags_for_question.sql',
             'random_unique.sql',
             'question_order.sql',
-            'exam_question_status.sql',
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',

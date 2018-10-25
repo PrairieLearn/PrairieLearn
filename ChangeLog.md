@@ -14,10 +14,17 @@
   * Add networkx Python library to centos7-python (Nathan Bowman).
 
   * Add in-browser editing of course JSON files (Tim Bretl).
+  * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
+
+  * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
 
+  * Change external grading to receive results from an SQS queue instead of a webhook (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
+
+  * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
 
   * Fix responsiveness and centering of images displayed with `pl-figure` (James Balamuta, h/t Dave Mussulman).
 
@@ -29,7 +36,11 @@
 
   * Fix GitHub links to exampleCourse questions (Dave Mussulman).
 
+  * Fix exclude file list for code coverage (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
+
+  * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
 * __3.1.0__ - 2018-10-08
 
@@ -184,6 +195,7 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+  * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
