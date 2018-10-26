@@ -9,7 +9,7 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'placeholder']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
@@ -150,8 +150,6 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    # Get allow-blank option
-    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -160,7 +158,7 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
-    if not a_sub and not allow_blank:
+    if not a_sub:
         data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
         data['submitted_answers'][name] = None
     else:
@@ -213,7 +211,6 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -222,11 +219,7 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    if allow_blank:
-        # no invalid answer implemented when allow-blank="true"
-        result = random.choices(['correct', 'incorrect'], [5, 5])[0]
-    else:
-        result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
 
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru
