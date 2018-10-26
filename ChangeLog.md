@@ -17,6 +17,8 @@
 
   * Add dead letter reporting to Slack (Matt West).
 
+  * Add more logging for external grading jobs in production (Matt West).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
