@@ -79,7 +79,7 @@ function loadQueueUrl(sqs, queueName, callback) {
 function getDeadLetterMsg(sqs, queueName, callback) {
     drainQueue(sqs, queueName, (err, messages) => {
         if (ERR(err, callback)) return;
-        let msgDL = `_Dead letter queue, past 24 hours:_ *${queueName}* count: ${messages.length}`;
+        let msgDL = `_Dead letter queue, past 24 hours:_ *${queueName}* count: ${messages.length}\n`;
         for (let message of messages) {
             msgDL += JSON.stringify(message) + '\n';
         }
