@@ -101,7 +101,7 @@ function drainQueue(sqs, queueName, callback) {
             if (!data.Messages) {
                 return callback(null, false); // stop with message collection
             }
-            async.each(messages, (message, callback) => {
+            async.each(data.Messages, (message, callback) => {
                 let parsedMessage;
                 let receiptHandle;
                 try {
