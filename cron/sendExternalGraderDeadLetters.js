@@ -99,13 +99,33 @@ function drainQueue(sqs, queueName, callback) {
         sqs.receiveMessage(params, (err, data) => {
             if (ERR(err, callback)) return;
             if (!data.Messages) {
-                return callback(null, null);
+                return callback(null, false); // stop with message collection
             }
-            messages.push(...data.Messages);
-            callback(null, data.Messages);
+            async.each(messages, (message, callback) => {
+                let parsedMessage;
+                let receiptHandle;
+                try {
+                    parsedMessage = JSON.parse(message.Body);
+                    receiptHandle = message.ReceiptHandle;
+                } catch (e) {
+                    return callback(e);
+                }
+                messages.push(parsedMessage);
+                const deleteParams = {
+                    QueueUrl: QUEUE_URLS[queueName],
+                    ReceiptHandle: receiptHandle,
+                };
+                sqs.deleteMessage(deleteParams, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, true); // keep getting messages if we got some this time
+            });
         });
-    }, (newMessages) => {
-        return !!newMessages; // keep getting messages if we got some last time
+    }, (keepGoing) => {
+        return keepGoing;
     }, (err) => {
         if (ERR(err, callback)) return;
         callback(null, messages);
