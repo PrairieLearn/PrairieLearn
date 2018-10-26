@@ -25,4 +25,3 @@ def generate(data):
     data["correct_answers"]["ans2"] = b+c
     data["correct_answers"]["ans3"] = d
     data["correct_answers"]["ans4"] = d
-    data["correct_answers"]["ans5"] = "blank"
