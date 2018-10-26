@@ -15,6 +15,8 @@
 
   * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
 
+  * Add dead letter reporting to Slack (Matt West).
+
   * Add more logging for external grading jobs in production (Matt West).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
