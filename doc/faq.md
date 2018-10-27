@@ -1,18 +1,10 @@
-
 # FAQ (Frequently Asked Questions)
-
-Topics
-
-- [Assessments](#assessments)
-- [Common Errors](#common-errors)
 
 Have a question or issue that wasn't listed here but you think it should be? 
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/doc/faq.md)** to the FAQ.
 
-## Assessments
-
-### How do I give a student access to homeworks or an exam after the semester is over?
+## How do I give a student access to homeworks or an exam after the semester is over?
 
 You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
 
@@ -54,12 +46,7 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 
 See [Access control](accessControl.md) for more details.
 
-## Common Errors
-
-Within this section of the FAQ, we will go over different errors that may occur
-when using PrairieLearn to write questions, sync information, and more.
-
-### Why is my QID invalid?
+## Why is my QID invalid?
 
 QID stands for the **Q**uestion **Id**entifier given to the folder that contains
 the question information -- e.g. `info.json`, `question.html`, and `server.py` 
@@ -77,7 +64,7 @@ rename the folder or change the name listed in assessments to be the same.
 
 See [Directory Structure](question.md#directory-structure) for more details.
 
-### Why do I have a Syntax Error in my JSON file?
+## Why do I have a Syntax Error in my JSON file?
 
 During the sync process, all `.json` files are validated. If any syntax issues
 arise, then an error message will be triggered. 
@@ -123,7 +110,7 @@ For example, this error would be triggered under:
 
 See [Question Specification](assessment.md#question-specification) for more details.
 
-### Why is the UUID used in multiple questions?
+## Why is the UUID used in multiple questions?
 
 While writing PrairieLearn questions, it is very common to copy an existing
 question and slightly modify for new purposes. Often times, we forget to update
@@ -144,7 +131,7 @@ will create a new variant of the question.
 
 See [UUIDs in JSON files](uuid.md) for more details.
 
-### Why can't I launch PrairieLearn with docker?
+## Why can't I launch PrairieLearn with docker?
 
 When previewing content within a local copy of PrairieLearn, the web version
 is powered by a docker container. At the end of a session, closing out of
