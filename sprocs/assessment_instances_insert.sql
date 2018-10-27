@@ -75,9 +75,7 @@ BEGIN
     IF assessment.type = 'Homework' THEN
         new_instance_question_ids := array[]::bigint[];
     ELSIF assessment.type = 'Exam' THEN
-        SELECT new_instance_question_ids
-        INTO assessment_instances_insert.new_instance_question_ids
-        FROM assessment_instances_update(assessment_instance_id, authn_user_id);
+        PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
     ELSE
         RAISE EXCEPTION 'invalid assessment.type: %', assessment.type;
     END IF;
