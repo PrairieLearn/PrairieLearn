@@ -1,7 +1,18 @@
 
 # FAQ (Frequently Asked Questions)
 
-## How do I give a student access to homeworks or an exam after the semester is over?
+Topics
+
+- [Assessments](#assessments)
+- [Common Errors](#common-errors)
+
+Have a question or issue that wasn't listed here but you think it should be? 
+
+Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/doc/faq.md)** to the FAQ.
+
+## Assessments
+
+### How do I give a student access to homeworks or an exam after the semester is over?
 
 You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
 
@@ -48,13 +59,9 @@ See [Access control](accessControl.md) for more details.
 Within this section of the FAQ, we will go over different errors that may occur
 when using PrairieLearn to write questions, sync information, and more.
 
-Have an error that wasn't listed here but you think it should be? 
-
-Consider [adding the error](https://github.com/PrairieLearn/PrairieLearn/edit/master/doc/faq.md) using GitHub's web editor.
-
 ### Why is my QID invalid?
 
-QID stands for the *Q**uestion **Id**entifier given to the folder that contains
+QID stands for the **Q**uestion **Id**entifier given to the folder that contains
 the question information -- e.g. `info.json`, `question.html`, and `server.py` 
 (optional) -- in `questions/`. QIDs can be invalid if they are spelled incorrectly
 or simply are not present in the directory. On sync, these issues are picked up
@@ -125,11 +132,8 @@ As a result, we'll end up receiving a duplication error when we try to sync
 the question base to the website.
 
 ```bash
-<<<<<<< Local Changes
-Error message: Error: UUID 7a323f4c-cafd-40b2-8576-7db18e3f439b is used in multiple questions: Q1, Q2
-=======
-Error message: Error: UUID 7a323f4c-cafd-40b2-8576-7db18e3f439b is used in multiple questions: question_name_uuid_original, question_name_uuid_duplicate
->>>>>>> External Changes
+Error message: Error: UUID 7a323f4c-cafd-40b2-8576-7db18e3f439b is used in
+multiple questions: question_name_uuid_original, question_name_uuid_duplicate
 ```
 
 Generating a new UUID via <https://www.uuidgenerator.net/> and substituting it 
@@ -142,10 +146,12 @@ See [UUIDs in JSON files](uuid.md) for more details.
 
 ### Why can't I launch PrairieLearn with docker?
 
-When previewing content within a local copy of PrairieLearn, it's important to 
-note that just closing the web browser does not stop PrairieLearn from running.
-Therefore, when relaunching the docker version of PrairieLearn, the 
-existing port my already be taken. For example, we would have:
+When previewing content within a local copy of PrairieLearn, the web version
+is powered by a docker container. At the end of a session, closing out of
+either the web browser or the terminal that launched the docker container
+will **not** stop PrairieLearn from running. Therefore, when relaunching the 
+docker version of PrairieLearn, the existing port my already be taken.
+For example, we would have:
 
 ```bash
 docker: Error response from daemon: driver failed programming external connectivity on endpoint pedantic_mayer (cf92f23baa5c5fffc37c8d83990b2a3597143a2d4d518c9e62e3231d7521ceef): Bind for 0.0.0.0:3000 failed: port is already allocated.
@@ -156,5 +162,6 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart docker 
     - Click the Whale icon in the taskbar and select "Restart".
 - Restart your computer.
-- Stopping the original process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd>.
+- Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then, 
+  close the terminal application.   
 
