@@ -23,11 +23,9 @@
         });
     </script>
 
+    <!-- FIXME: correct navPage? -->
     <%- include('../partials/navbar', {navPage: 'editor'}); %>
     <div class="container-fluid d-flex flex-column flex-fill">
-
-        <!-- FIXME: correct navPage? -->
-
         <script>
             $(function() {
                 new window.InstructorFileEditor("<%= fileEdit.uuid %>", {
