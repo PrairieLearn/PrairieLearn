@@ -1,6 +1,6 @@
 /* eslint-env browser,jquery */
 /* global ace */
-window.InstructorFileEditor = (uuid, options) => {
+window.InstructorFileEditor = function(uuid, options) {
     const elementId = '#file-editor-' + uuid;
     this.element = $(elementId);
     if (!this.element) {
@@ -40,29 +40,29 @@ window.InstructorFileEditor = (uuid, options) => {
     this.setEditorContents(contents);
 };
 
-window.InstructorFileEditor.prototype.setEditorContents = (contents) => {
+window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.setValue(contents);
     this.editor.gotoLine(1, 0);
     this.editor.focus();
     this.syncFileToHiddenInput();
 };
 
-window.InstructorFileEditor.prototype.syncFileToHiddenInput = () => {
+window.InstructorFileEditor.prototype.syncFileToHiddenInput = function() {
     this.inputElement.val(this.b64EncodeUnicode(this.editor.getValue()));
 };
 
-window.InstructorFileEditor.prototype.b64DecodeUnicode = (str) => {
+window.InstructorFileEditor.prototype.b64DecodeUnicode = function(str) {
     // Going backwards: from bytestream, to percent-encoding, to original string.
     return decodeURIComponent(atob(str).split('').map((c) => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 };
 
-window.InstructorFileEditor.prototype.b64EncodeUnicode = (str) => {
+window.InstructorFileEditor.prototype.b64EncodeUnicode = function(str) {
     // first we use encodeURIComponent to get percent-encoded UTF-8,
     // then we convert the percent encodings into raw bytes which
     // can be fed into btoa.
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
         return String.fromCharCode('0x' + p1);
     }));
 };
