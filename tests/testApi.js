@@ -5,24 +5,11 @@ const cheerio = require('cheerio');
 
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
-const helperAssessment = require('./helperAssessment');
+const helperExam = require('./helperExam');
 
 const locals = {};
 
-// sorted alphabetically by qid
-const questionsArray = [
-    {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
-    {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
-    {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
-    {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
-    {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
-    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
-];
-
-const questions = _.keyBy(questionsArray, 'qid');
-
 const assessmentPoints = 5;
-const assessmentMaxPoints = 74;
 
 describe('API', function() {
     this.timeout(60000);
@@ -32,21 +19,21 @@ describe('API', function() {
 
     let elemList, page;
 
-    helperAssessment.startExam(locals, questionsArray);
+    helperExam.startExam(locals);
 
     describe('1. grade correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addNumbers;
+                locals.question = helperExam.questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
                     instance_question_points: assessmentPoints,
                     instance_question_score_perc: assessmentPoints/5 * 100,
                     assessment_instance_points: assessmentPoints,
-                    assessment_instance_score_perc: assessmentPoints/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: assessmentPoints/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -241,7 +228,7 @@ describe('API', function() {
         });
         it('should have the correct points', function() {
             assert.equal(locals.json[0].points, assessmentPoints);
-            assert.equal(locals.json[0].max_points, assessmentMaxPoints);
+            assert.equal(locals.json[0].max_points, helperExam.assessmentMaxPoints);
         });
     });
 
@@ -311,7 +298,7 @@ describe('API', function() {
         });
         it('should have the correct points', function() {
             assert.equal(locals.gradebookEntry.points, assessmentPoints);
-            assert.equal(locals.gradebookEntry.max_points, assessmentMaxPoints);
+            assert.equal(locals.gradebookEntry.max_points, helperExam.assessmentMaxPoints);
         });
     });
 });
