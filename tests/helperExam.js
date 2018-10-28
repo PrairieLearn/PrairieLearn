@@ -13,7 +13,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const questionsArray = [
     {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
     {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
-    {qid: "brokenGeneration", type: 'Freeform', maxPoints: 10},
+    {qid: 'brokenGeneration', type: 'Freeform', maxPoints: 10},
     {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
     {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
     {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
