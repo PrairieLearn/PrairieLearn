@@ -100,6 +100,10 @@
             "description": "The S3 bucket that file edits should be stored in.",
             "type": "string"
         },
+        "awsRegion": {
+            "description": "The region for AWS resources.",
+            "type": "string"
+        },
         "hasShib": {
             "description": "Enables Shibboleth authentication",
             "type": "boolean"
