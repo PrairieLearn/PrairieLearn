@@ -1,7 +1,7 @@
 /* eslint-env browser,jquery */
 /* global ace */
 window.InstructorFileEditor = function(uuid, options) {
-    var elementId = '#file-editor-' + uuid;
+    const elementId = '#file-editor-' + uuid;
     this.element = $(elementId);
     if (!this.element) {
         throw new Error('Instructor file editor element ' + elementId + ' was not found!');
@@ -27,7 +27,7 @@ window.InstructorFileEditor = function(uuid, options) {
         this.editor.setTheme('ace/theme/chrome');
     }
 
-    var contents = '';
+    let contents = '';
     if (options.contents) {
         contents = this.b64DecodeUnicode(options.contents);
     }

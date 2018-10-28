@@ -4,16 +4,16 @@
 //  - do a better job of isolating stuff like localTmpDir, local-specific error
 //    handling like checking for ENOENT, etc.
 
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const express = require('express');
+const router = express.Router();
 const async = require('async');
-var error = require('@prairielearn/prairielib/error');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var fs = require('fs-extra');
-var path = require('path');
+const error = require('@prairielearn/prairielib/error');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const fs = require('fs-extra');
+const path = require('path');
 const uuidv4 = require('uuid/v4');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const logger = require('../../lib/logger');
@@ -30,7 +30,7 @@ const {
     exec,
 } = require('child_process');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function b64EncodeUnicode(str) {
     // (1) use encodeURIComponent to get percent-encoded UTF-8
