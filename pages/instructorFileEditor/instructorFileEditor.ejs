@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="h-100">
 
 <head>
     <%- include('../partials/head'); %>
@@ -11,22 +11,22 @@
     <script src="/javascripts/socket.io.js"></script>
     <style>
         [id^=file-editor] .editor {
-            height: 1000px;
-            width: 100%;
+            min-height: 300px;
         }
     </style>
 </head>
 
-<body>
+<body class="d-flex flex-column flex-fill h-100">
     <script>
         $(function() {
             $('[data-toggle="popover"]').popover()
         });
     </script>
 
-    <!-- FIXME: correct navPage? -->
     <%- include('../partials/navbar', {navPage: 'editor'}); %>
-    <div class="container mb-4">
+    <div class="container-fluid d-flex flex-column flex-fill">
+
+        <!-- FIXME: correct navPage? -->
 
         <script>
             $(function() {
@@ -37,8 +37,8 @@
             });
         </script>
 
-        <div id="file-editor-<%= fileEdit.uuid %>">
-            <form name="editor-form" method="POST">
+        <div id="file-editor-<%= fileEdit.uuid %>" class="d-flex flex-column flex-fill mb-4">
+            <form name="editor-form" method="POST" class="d-flex flex-column flex-fill">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="file_edit_contents">
                 <input type="hidden" name="file_edit_user_id" value="<%= fileEdit.userID %>">
@@ -65,17 +65,17 @@
                 </div>
                 <% } %>
 
-                <div class="card">
-                    <div class="card-header d-flex">
+                <div class="card d-flex flex-column flex-fill">
+                    <div class="card-header">
                         <%= fileEdit.dirName %>/
                         <%= fileEdit.fileName %>
                     </div>
-                    <div class="editor"></div>
-                    <div class="card-footer d-flex">
-                        <button name="__action" value="revert_to_original" class="btn btn-sm btn-outline-primary mx-2">Revert to original</button>
-                        <button name="__action" value="revert_to_draft" class="btn btn-sm btn-outline-primary mx-2">Revert to draft</button>
-                        <button name="__action" value="save_draft" class="btn btn-sm btn-outline-primary mx-2">Save draft</button>
-                        <button name="__action" value="save_and_sync" class="btn btn-sm btn-outline-primary mx-2">Save and sync</button>
+                    <div class="editor flex-fill"></div>
+                    <div class="card-footer">
+                        <button name="__action" value="revert_to_original" class="btn btn-sm btn-outline-primary">Revert to original</button>
+                        <button name="__action" value="revert_to_draft" class="btn btn-sm btn-outline-primary">Revert to draft</button>
+                        <button name="__action" value="save_draft" class="btn btn-sm btn-outline-primary">Save draft</button>
+                        <button name="__action" value="save_and_sync" class="btn btn-sm btn-outline-primary">Save and sync</button>
                         <!-- FIXME: add icons? <i class="fa fa-cloud-download-alt" aria-hidden="true"></i> -->
                     </div>
                 </div>
