@@ -32,23 +32,6 @@ const {
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-function b64EncodeUnicode(str) {
-    // (1) use encodeURIComponent to get percent-encoded UTF-8
-    // (2) convert percent encodings to raw bytes
-    // (3) convert raw bytes to Base64
-    return Buffer.from(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
-        function toSolidBytes(match, p1) {
-            return String.fromCharCode('0x' + p1);
-        })).toString('base64');
-}
-
-function b64DecodeUnicode(str) {
-    // Going backwards: from bytestream, to percent-encoding, to original string.
-    return decodeURIComponent(Buffer.from(str, 'base64').toString().split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-}
-
 router.get('/instructorFileEditorClient.js', (req, res) => {
     debug('Responding to request for /instructorFileEditorClient.js');
     res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
@@ -112,19 +95,7 @@ router.get('/', (req, res, next) => {
     });
 });
 
-const getCommitHash = function(fileEdit, callback) {
-    const execOptions = {
-        cwd: fileEdit.coursePath,
-        env: process.env,
-    };
-    exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
-        if (ERR(err, callback)) return;
-        fileEdit.origHash = stdout.trim();
-        callback(null);
-    });
-};
-
-router.post('/', function(req, res, next) {
+router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
 
@@ -178,9 +149,40 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else {
-        next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body
+        }));
     }
 });
+
+function b64EncodeUnicode(str) {
+    // (1) use encodeURIComponent to get percent-encoded UTF-8
+    // (2) convert percent encodings to raw bytes
+    // (3) convert raw bytes to Base64
+    return Buffer.from(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode('0x' + p1);
+    })).toString('base64');
+}
+
+function b64DecodeUnicode(str) {
+    // Going backwards: from bytestream, to percent-encoding, to original string.
+    return decodeURIComponent(Buffer.from(str, 'base64').toString().split('').map((c) => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+}
+
+function getCommitHash(fileEdit, callback) {
+    const execOptions = {
+        cwd: fileEdit.coursePath,
+        env: process.env,
+    };
+    exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
+        if (ERR(err, callback)) return;
+        fileEdit.origHash = stdout.trim();
+        callback(null);
+    });
+}
 
 function getS3Key(editID, fileName) {
     return `edit_${editID}/${fileName}`;
@@ -326,7 +328,7 @@ function createEdit(fileEdit, contents, callback) {
                 s3_bucket: fileEdit.s3_bucket || null,
             };
             debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`);
-            sqldb.queryOneRow(sql.insert_file_edit, params, function(err, result) {
+            sqldb.queryOneRow(sql.insert_file_edit, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 fileEdit.editID = result.rows[0].id;
                 debug(`Created file edit in database with id ${fileEdit.editID}`);
@@ -373,7 +375,7 @@ function writeEdit(fileEdit, contents, callback) {
     }
 }
 
-const saveAndSync = function(locals, fileEdit, callback) {
+function saveAndSync(locals, fileEdit, callback) {
     const options = {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
@@ -388,7 +390,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
-        const _pushToRemote = function() {
+        const _pushToRemote = () => {
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -398,13 +400,13 @@ const saveAndSync = function(locals, fileEdit, callback) {
                 job_sequence_id: job_sequence_id,
                 on_success: _updateCommitHash,
             };
-            serverJobs.createJob(jobOptions, function(err, job) {
+            serverJobs.createJob(jobOptions, (err, job) => {
                 if (err) {
                     logger.error('Error in createJob()', err);
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
-                pushToRemoteGitRepository(locals.course.path, fileEdit, job, function(err) {
+                pushToRemoteGitRepository(locals.course.path, fileEdit, job, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -421,7 +423,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
             });
         };
 
-        const _syncFromDisk = function() {
+        const _syncFromDisk = () => {
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -431,13 +433,13 @@ const saveAndSync = function(locals, fileEdit, callback) {
                 job_sequence_id: job_sequence_id,
                 on_success: _reloadQuestionServers,
             };
-            serverJobs.createJob(jobOptions, function(err, job) {
+            serverJobs.createJob(jobOptions, (err, job) => {
                 if (err) {
                     logger.error('Error in createJob()', err);
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
-                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -447,7 +449,7 @@ const saveAndSync = function(locals, fileEdit, callback) {
             });
         };
 
-        const _reloadQuestionServers = function() {
+        const _reloadQuestionServers = () => {
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -457,14 +459,14 @@ const saveAndSync = function(locals, fileEdit, callback) {
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
-            serverJobs.createJob(jobOptions, function(err, job) {
+            serverJobs.createJob(jobOptions, (err, job) => {
                 if (err) {
                     logger.error('Error in createJob()', err);
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
                 const coursePath = locals.course.path;
-                requireFrontend.undefQuestionServers(coursePath, job, function(err) {
+                requireFrontend.undefQuestionServers(coursePath, job, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -476,10 +478,10 @@ const saveAndSync = function(locals, fileEdit, callback) {
 
         _pushToRemote();
     });
-};
+}
 
 
-const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
+function pushToRemoteGitRepository(courseDir, fileEdit, job, callback) {
     const lockName = 'coursedir:' + courseDir;
     job.verbose(`Trying lock ${lockName}`);
     namedLocks.tryLock(lockName, (err, lock) => {
@@ -518,9 +520,9 @@ const pushToRemoteGitRepository = function(courseDir, fileEdit, job, callback) {
             });
         }
     });
-};
+}
 
-const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, callback) {
+function pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, callback) {
     async.series([
         (callback) => {
             job.verbose('Get commit hash of original file');
@@ -608,6 +610,6 @@ const pushToRemoteGitRepositoryWithLock = function(courseDir, fileEdit, job, cal
         if (ERR(err, callback)) return;
         callback(null);
     });
-};
+}
 
 module.exports = router;
