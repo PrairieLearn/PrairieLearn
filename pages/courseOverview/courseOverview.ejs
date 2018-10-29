@@ -8,13 +8,11 @@
   </head>
   <body>
     <% if (navbarType == 'instructor') { %>
-      <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'course'}); %>
-      <div id="content" class="container">
-      <%- include('../partials/instructorAdminTabs', {navSubPage: 'course'}); %>
+      <%- include('../partials/navbar', {navPage: 'course_admin'}); %>
     <% } else { %>
       <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
-      <div id="content" class="container">
     <% } %>
+    <div id="content" class="container">
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
@@ -25,13 +23,7 @@
         <div class="card-header bg-primary text-white d-flex align-items-center">
             Course information
             <% if (locals.course.title != 'Example Course') { %>
-                <a id="editJSONButton"
-                   tabindex="0" class="btn btn-light btn-sm ml-auto" role="button"
-                   <% if (locals.course_instance) { %>
-                       href="<%= urlPrefix %>/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"
-                   <% } else { %>
-                       href="<%= urlPrefix %>/edit?file=infoCourse.json"
-                   <% } %> >
+                <a id="editJSONButton" tabindex="0" class="btn btn-light btn-sm ml-auto" role="button" href="<%= urlPrefix %>/edit?file=infoCourse.json">
                    <i class="fa fa-edit" aria-hidden="true"></i>
                    <span class="d-none d-sm-inline">Edit JSON</span>
                 </a>

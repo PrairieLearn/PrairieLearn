@@ -5,7 +5,7 @@
   </head>
   <body>
 
-    <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'access'}); %>
+    <%- include('../partials/navbar', {navPage: 'instance_admin', navSubPage: 'access'}); %>
     <div id="content" class="container">
       <%- include('../partials/instructorAdminTabs', {navSubPage: 'access'}); %>
 
@@ -14,8 +14,14 @@
         <!-- ###################################################################### -->
 
         <div class="card mb-4">
-          <div class="card-header bg-primary text-white">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
             <%= course_instance.long_name %> course instance access rules
+            <% if (locals.course.title != 'Example Course') { %>
+                <a id="editJSONButton" tabindex="0" class="btn btn-light btn-sm ml-auto" role="button" href="<%= urlPrefix %>/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
+                   <i class="fa fa-edit" aria-hidden="true"></i>
+                   <span class="d-none d-sm-inline">Edit JSON</span>
+                </a>
+            <% } %>
           </div>
 
           <div class="table-responsive">

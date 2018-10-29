@@ -319,19 +319,21 @@ app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./p
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 
-// admin pages
-app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/admin)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/access`);
-});
-app.use('/pl/course_instance/:course_instance_id/instructor/admin/access', [
-    require('./pages/instructorAdminAccess/instructorAdminAccess'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/admin/lti', [
-    require('./pages/instructorAdminLti/instructorAdminLti'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
+// course instance - course admin page
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
     require('./middlewares/authzCourseInstanceHasCourseView'),
     require('./pages/courseOverview/courseOverview'),
+]);
+
+// course instance - instance admin pages
+app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/instance_admin)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/access`);
+});
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/access', [
+    require('./pages/instructorAdminAccess/instructorAdminAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
+    require('./pages/instructorAdminLti/instructorAdminLti'),
 ]);
 
 // clientFiles
