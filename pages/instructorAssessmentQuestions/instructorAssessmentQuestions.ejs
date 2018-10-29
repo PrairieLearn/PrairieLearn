@@ -12,8 +12,14 @@
       <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'questions'}); %>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Questions
+          <% if (locals.course.title != 'Example Course') { %>
+            <a id="editJSONButton" tabindex="0" class="btn btn-light btn-sm ml-auto" role="button" href="<%= urlPrefix %>/edit?file=courseInstances/<%= course_instance.short_name %>/assessments/<%= assessment.tid %>/infoAssessment.json">
+               <i class="fa fa-edit" aria-hidden="true"></i>
+               <span class="d-none d-sm-inline">Edit JSON</span>
+            </a>
+          <% } %>
         </div>
 
         <div class="table-responsive">
