@@ -18,7 +18,7 @@ WITH instance_questions_info AS (
 )
 SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
-        to_jsonb(format_date_full_compact(ai.date, ci.display_timezone))) AS assessment_instance,
+        to_jsonb(format_date_full_compact(ai.date, COALESCE(ci.display_timezone, c.display_timezone)))) AS assessment_instance,
     CASE
         WHEN ai.date_limit IS NULL THEN NULL
         ELSE floor(extract(epoch from (date_limit - $req_date::timestamptz)) * 1000)
@@ -55,6 +55,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)

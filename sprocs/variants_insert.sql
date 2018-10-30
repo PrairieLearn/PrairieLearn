@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
     variants_insert(
@@ -12,7 +13,7 @@ CREATE OR REPLACE FUNCTION
         IN course_instance_id bigint,   -- can be NULL for some instructor questions
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
-        OUT variant variants
+        OUT variant jsonb
     )
 AS $$
 DECLARE
@@ -22,7 +23,7 @@ DECLARE
     new_number integer;
     assessment_instance_id bigint;
     course_id bigint;
-    display_timezone text;
+    variant_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -70,8 +71,8 @@ BEGIN
 
     -- check consistency of question_id and course_instance_id
     IF real_question_id IS NOT NULL AND real_course_instance_id IS NOT NULL THEN
-        SELECT c.id, COALESCE(ci.display_timezone, c.display_timezone)
-        INTO course_id, display_timezone
+        SELECT c.id
+        INTO course_id
         FROM
             pl_courses AS c
             JOIN course_instances AS ci ON (ci.course_id = c.id)
@@ -85,13 +86,14 @@ BEGIN
 
     INSERT INTO variants
         (instance_question_id, question_id,      course_instance_id, user_id,
-        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
-        date, formatted_date)
+        number,     variant_seed, params, true_answer, options, broken, authn_user_id)
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id,
-        new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        now(), format_date_full_compact(now(), display_timezone))
-    RETURNING *
+        new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
+    RETURNING id
+    INTO variant_id;
+
+    SELECT variants_select(variant_id)
     INTO variant;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

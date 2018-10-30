@@ -5,7 +5,6 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     first_duration: interval
-    formatted_date: text
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
     num_tries: integer not null default 0
