@@ -51,6 +51,7 @@
   * Add better logging of requests that don't have corresponding responses (Matt West).
 
   * Add student file storage for scratch paper scans (Matt West).
+  * Add documentation on common development errors to FAQ. (James Balamuta).
 
   * Add Mathematica language option to `string_from_numpy()` (Liz Livingston).
 
@@ -166,6 +167,7 @@
   * Fix documentation to be more descriptive for local development with externally graded questions, especially in Windows. (Dave Mussulman, h/t James Balamuta, Mariana Silva, Zhenxi Zhou)
 
   * Fix copy button (Tim Bretl).
+  * Fix python question random to seed from `variant.variant_seed` (Dave Mussulman).
 
   * Fix TravisCI for Greenkeeper PRs (Matt West).
 

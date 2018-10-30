@@ -13,7 +13,10 @@
 
           <div class="d-flex flex-wrap">
               <div class="pr-1">QID:</div>
-              <div><a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>"><%= question.qid %></a></div>
+              <div>
+                  <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
+                      <%= question.qid %></a>
+              </div>
           </div>
           <div class="d-flex flex-wrap">
               <div class="pr-1">Title:</div>
