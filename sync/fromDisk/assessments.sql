@@ -71,20 +71,6 @@ WHERE NOT EXISTS (
         AND a.deleted_at IS NULL
 );
 
--- BLOCK insert_fake_ps_exam_if_needed
-WITH course_result AS (
-    INSERT INTO courses
-        (course_id, rubric)
-    VALUES
-        (1, 'CBTF')
-    ON CONFLICT (course_id) DO NOTHING
-)
-INSERT INTO exams
-    (uuid, course_id, exam_string)
-VALUES
-    ($exam_uuid, 1, $exam_string)
-ON CONFLICT (uuid) DO NOTHING;
-
 -- BLOCK select_exams_by_uuid
 SELECT * FROM exams
 WHERE uuid = $exam_uuid;
