@@ -56,7 +56,7 @@ router.get('/', (req, res, next) => {
     } else if (ext == '.py') {
         fileEdit.aceMode = 'python';
     } else {
-        debug(`Could not find an ace mode to match extension: ${ext}`)
+        debug(`Could not find an ace mode to match extension: ${ext}`);
     }
 
     async.series([
