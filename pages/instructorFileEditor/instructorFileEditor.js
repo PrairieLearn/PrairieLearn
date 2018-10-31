@@ -136,6 +136,7 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'save_and_sync') {
         debug('Save and sync');
+        fileEdit.needToSync = (path.extname(fileEdit.fileName) == '.json');
         async.waterfall([
             (callback) => {
                 debug('Save and sync: overwrite file edit');
@@ -425,7 +426,11 @@ function saveAndSync(locals, fileEdit, callback) {
         const _updateCommitHash = () => {
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
                 ERR(err, (e) => logger.error(e));
-                _syncFromDisk();
+                if (fileEdit.needToSync) {
+                    _syncFromDisk();
+                } else {
+                    _reloadQuestionServers();
+                }
             });
         };
 
