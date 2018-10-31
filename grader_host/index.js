@@ -439,6 +439,7 @@ function runJob(info, callback) {
                         logger.error('Could not read results.json');
                         results.succeeded = false;
                         results.message = 'Could not read grading results.';
+                        callback(null);
                     } else {
                         if (Buffer.byteLength(data) > 1024 * 1024) {
                             // Cap output at 1MB
