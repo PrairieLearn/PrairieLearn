@@ -1,9 +1,3 @@
-// FIXME: refactor...
-//  - read/write/rewrite (need local and aws versions)
-//  - sql (need local and aws versions)
-//  - do a better job of isolating stuff like localTmpDir, local-specific error
-//    handling like checking for ENOENT, etc.
-
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');

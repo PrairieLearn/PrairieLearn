@@ -17,15 +17,10 @@
 </head>
 
 <body class="d-flex flex-column flex-fill h-100">
-    <script>
-        $(function() {
-            $('[data-toggle="popover"]').popover()
-        });
-    </script>
+    <%- include('../partials/navbar'); %>
+    <div class="container d-flex flex-column flex-fill">
+        <%- include('../partials/navtabs'); %>
 
-    <!-- FIXME: correct navPage? -->
-    <%- include('../partials/navbar', {navPage: 'editor'}); %>
-    <div class="container-fluid d-flex flex-column flex-fill">
         <script>
             $(function() {
                 new window.InstructorFileEditor("<%= fileEdit.uuid %>", {
@@ -65,8 +60,7 @@
 
                 <div class="card d-flex flex-column flex-fill">
                     <div class="card-header">
-                        <%= fileEdit.dirName %>/
-                        <%= fileEdit.fileName %>
+                        <%= fileEdit.dirName %>/<%= fileEdit.fileName %>
                     </div>
                     <div class="editor flex-fill"></div>
                     <div class="card-footer">

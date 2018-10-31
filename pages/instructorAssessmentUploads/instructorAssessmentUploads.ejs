@@ -15,9 +15,9 @@
           $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'uploads'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'uploads'}); %>
+      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
         <div class="modal-dialog" role="document">
@@ -144,7 +144,7 @@
                 <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
               <% }); %>
-              
+
               <% } else { %>
               <tr>
                 <td colspan="6">No previous uploads.</td>
