@@ -13,7 +13,6 @@
 
   * Add networkx Python library to centos7-python (Nathan Bowman).
 
-  * Add in-browser editing of course JSON files (Tim Bretl).
   * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
 
   * Add dead letter reporting to Slack (Matt West).
@@ -21,6 +20,8 @@
   * Add more logging for external grading jobs in production (Matt West).
 
   * Add documentation on common development errors to FAQ. (James Balamuta).
+
+  * Add in-browser editing of course files (Tim Bretl).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
