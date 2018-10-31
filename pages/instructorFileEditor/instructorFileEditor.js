@@ -47,6 +47,18 @@ router.get('/', (req, res, next) => {
         dirName: path.dirname(req.query.file),
         fileName: path.basename(req.query.file),
     };
+
+    const ext = path.extname(req.query.file);
+    if (ext == '.json') {
+        fileEdit.aceMode = 'json';
+    } else if (ext == '.html') {
+        fileEdit.aceMode = 'html';
+    } else if (ext == '.py') {
+        fileEdit.aceMode = 'python';
+    } else {
+        debug(`Could not find an ace mode to match extension: ${ext}`)
+    }
+
     async.series([
         (callback) => {
             debug('Read original file');

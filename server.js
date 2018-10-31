@@ -349,6 +349,16 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/edit', [
+    function(req, res, next) {
+        res.locals.navbarType = 'instructor';
+        res.locals.navPage = 'question';
+        res.locals.navSubPage = 'edit';
+        next();
+    },
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorFileEditor/instructorFileEditor'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/shared/assessmentStatDescriptions'),

@@ -25,7 +25,7 @@
             $(function() {
                 new window.InstructorFileEditor("<%= fileEdit.uuid %>", {
                     contents: "<%- fileEdit.editContents %>",
-                    aceMode: "ace/mode/json",
+                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
                 });
             });
         </script>
