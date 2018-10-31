@@ -16,6 +16,12 @@
   * Add in-browser editing of course JSON files (Tim Bretl).
   * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
 
+  * Add dead letter reporting to Slack (Matt West).
+
+  * Add more logging for external grading jobs in production (Matt West).
+
+  * Add documentation on common development errors to FAQ. (James Balamuta).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -37,6 +43,8 @@
   * Fix GitHub links to exampleCourse questions (Dave Mussulman).
 
   * Fix exclude file list for code coverage (Matt West).
+
+  * Fix `dump_filter.sh` to keep `authn_users` in all tables (Matt West).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
