@@ -75,12 +75,16 @@ async.series([
         for (let i = 0; i < config.maxConcurrentJobs; i++) {
           async.forever((next) => {
               receiveFromQueue(sqs, config.jobsQueueUrl, (job, fail, success) => {
+                  globalLogger.info(`received ${job.jobId} from queue`);
                   handleJob(job, (err) => {
+                      globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
                       if (ERR(err, fail)) return;
+                      globalLogger.info(`handleJob(${job.jobId}) succeeded`);
                       success();
                   });
               }, (err) => {
                   if (ERR(err, (err) => globalLogger.error(err)));
+                  globalLogger.info('Completed full request cycle');
                   next();
               });
           });
@@ -123,11 +127,15 @@ function handleJob(job, done) {
         cleanup: ['uploadResults', 'uploadArchive', function(results, callback) {
             logger.info('Removing temporary directories');
             results.initFiles.tempDirCleanup();
+            logger.info('Successfully removed temporary directories');
             callback(null);
         }]
     }, (err) => {
+        logger.info(`Reducing load average, err=${err}`);
         load.endJob();
+        logger.info('Successfully reduced load average');
         if (ERR(err, done)) return;
+        logger.info('Successfully completed handleJob()');
         done(null);
     });
 }
