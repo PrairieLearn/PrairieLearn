@@ -27,7 +27,7 @@ const assessmentMaxPoints = 74;
 describe('API', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     let elemList, page;

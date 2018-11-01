@@ -19,7 +19,7 @@ var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 describe('Access control', function() {
     this.timeout(20000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     /*
