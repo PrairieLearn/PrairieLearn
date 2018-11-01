@@ -60,6 +60,7 @@
         "redis-lru": "^0.5.0",
         "request-promise-native": "^1.0.5",
         "requirejs": "^2.3.5",
+        "rimraf": "^2.6.2",
         "s3-upload-stream": "^1.0.7",
         "search-string": "^3.1.0",
         "serve-favicon": "^2.5.0",
