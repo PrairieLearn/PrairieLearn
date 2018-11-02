@@ -1,17 +1,37 @@
-var ERR = require('async-stacktrace');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const assert = require('chai').assert;
+const request = require('request');
+const cheerio = require('cheerio');
 
-var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const config = require('../lib/config');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var res, page, elemList;
+// sorted alphabetically by qid
+const questionsArray = [
+    {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
+    {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
+    {qid: 'brokenGeneration', type: 'Freeform', maxPoints: 10},
+    {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
+    {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
+    {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
+    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
+];
+
+const questions = _.keyBy(questionsArray, 'qid');
+
+const assessmentMaxPoints = 84; // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
+
+let res, page, elemList;
 
 module.exports = {
-    startExam(locals, questionsArray) {
+    questionsArray,
+    questions,
+    assessmentMaxPoints,
+
+    startExam(locals) {
         describe('startExam-1. the locals object', function() {
             it('should be cleared', function() {
                 for (var prop in locals) {
