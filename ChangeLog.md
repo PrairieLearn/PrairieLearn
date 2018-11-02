@@ -22,6 +22,8 @@
   * Add documentation on common development errors to FAQ. (James Balamuta).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
+
+  * Add R package caching and parallel installation to centos-plbase. (James Balamuta).
   
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
