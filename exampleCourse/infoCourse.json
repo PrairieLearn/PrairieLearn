@@ -30,6 +30,7 @@
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
         {"name": "su18", "color": "gray1", "description": "Question written in Summer 2018"},
+        {"name": "fa18", "color": "gray1", "description": "Question written in Fall 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
         {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
         {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"}

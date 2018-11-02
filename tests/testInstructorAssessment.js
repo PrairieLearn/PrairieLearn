@@ -1,27 +1,13 @@
-var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
-var helperAssessment = require('./helperAssessment');
+var helperExam = require('./helperExam');
 
 const locals = {};
 
-// sorted alphabetically by qid
-const questionsArray = [
-    {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
-    {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
-    {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
-    {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
-    {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
-    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
-];
-
-const questions = _.keyBy(questionsArray, 'qid');
-
-const assessmentMaxPoints = 74;
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
@@ -33,21 +19,21 @@ describe('Instructor assessment editing', function() {
 
     var page, elemList;
 
-    helperAssessment.startExam(locals, questionsArray);
+    helperExam.startExam(locals);
 
     describe('1. grade incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addNumbers;
+                locals.question = helperExam.questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/5 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 0/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -67,14 +53,14 @@ describe('Instructor assessment editing', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addNumbers;
+                locals.question = helperExam.questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 3/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -94,14 +80,14 @@ describe('Instructor assessment editing', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addVectors;
+                locals.question = helperExam.questions.addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 14/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -462,7 +448,7 @@ describe('Instructor assessment editing', function() {
             elemList = locals.$('#total-points');
             assert.lengthOf(elemList, 1);
             const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-            assert.equal(totalPoints, assessmentSetScorePerc / 100 * assessmentMaxPoints);
+            assert.equal(totalPoints, assessmentSetScorePerc / 100 * helperExam.assessmentMaxPoints);
         });
     });
 
