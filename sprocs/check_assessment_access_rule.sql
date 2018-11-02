@@ -60,7 +60,7 @@ BEGIN
         reservation reservations;
     BEGIN
         -- is an exam_id hardcoded into the access rule? Check that first
-        IF assessment_access_rule.exam_id IS NOT NULL THEN
+        IF assessment_access_rule.exam_uuid IS NOT NULL THEN
 
             -- require exam mode
             IF check_assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
@@ -73,8 +73,9 @@ BEGIN
             INTO reservation
             FROM
                 reservations AS r
+                JOIN exams AS e USING(exam_id)
             WHERE
-                r.exam_id = assessment_access_rule.exam_id
+                e.uuid = assessment_access_rule.exam_uuid
                 AND r.user_id = check_assessment_access_rule.user_id
                 AND r.delete_date IS NULL
                 AND date BETWEEN r.access_start AND r.access_end
@@ -87,7 +88,7 @@ BEGIN
                 EXIT schedule_access;
             END IF;
 
-        ELSE -- no rule.exam_id defined, so search the long way
+        ELSE -- no rule.exam_uuid defined, so search the long way
 
             -- only needed for exams
             EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
