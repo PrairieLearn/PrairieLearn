@@ -48,6 +48,8 @@
   * Fix exclude file list for code coverage (Matt West).
 
   * Fix `dump_filter.sh` to keep `authn_users` in all tables (Matt West).
+  
+  * Fix issues link on instructor question page (Nathan Walters).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
