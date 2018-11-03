@@ -6,7 +6,7 @@
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= course.short_name %>
         </a>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink">
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
             <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "info" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/info"><i class="far fa-calendar-alt"></i> Information</a>
             <% if (authz_data.has_course_permission_own) { %>
                 <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
@@ -30,7 +30,7 @@
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <%= course_instance.short_name %>
             </a>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink">
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
                 <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
                 <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
                 <% if (locals.course.title != 'Example Course') { %>
@@ -56,7 +56,7 @@
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <%= assessment_label %>
                 </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questions" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "assessmentStatistics" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
