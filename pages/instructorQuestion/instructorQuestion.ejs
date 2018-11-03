@@ -47,16 +47,16 @@
                 <tr>
                   <th>Files</th>
                   <td>
-                    <a id="editJSONButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/info.json">
+                    <a id="editJsonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/info.json">
                         <i class="fa fa-edit"></i>
                         <span class="d-none d-sm-inline">Edit info.json</span>
                     </a>
                     <% if (question.type == 'Freeform') { %>
-                        <a id="editJSONButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/question.html">
+                        <a id="editHtmlButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/question.html">
                             <i class="fa fa-edit"></i>
                             <span class="d-none d-sm-inline">Edit question.html</span>
                         </a>
-                        <a id="editJSONButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/server.py">
+                        <a id="editPythonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/server.py">
                             <i class="fa fa-edit"></i>
                             <span class="d-none d-sm-inline">Edit server.py</span>
                         </a>
