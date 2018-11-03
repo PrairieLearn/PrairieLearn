@@ -258,7 +258,6 @@ function readEdit(fileEdit, callback) {
                 file_name: fileEdit.fileName,
             }, (deleteErr) => {
                 if (ERR(deleteErr, callback)) return;
-                fileEdit.didDeleteEdit = true;
                 if (ERR(err, callback)) return;
                 // Should never get to this line (we know err is non-null)
                 callback(null);
