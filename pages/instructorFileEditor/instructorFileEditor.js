@@ -22,6 +22,7 @@ const AWS = require('aws-sdk');
 
 const {
     exec,
+    execFile,
 } = require('child_process');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -184,7 +185,7 @@ function getCommitHash(fileEdit, callback) {
         cwd: fileEdit.coursePath,
         env: process.env,
     };
-    exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
+    execFile('git', ['rev-parse', 'HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName)], execOptions, (err, stdout) => {
         if (ERR(err, callback)) return;
         fileEdit.origHash = stdout.trim();
         callback(null);
