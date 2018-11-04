@@ -236,7 +236,7 @@ function readEdit(fileEdit, callback) {
                             });
                         }
                     } else {
-                        callback(new Error('Outdated commit hash'));
+                        callback(new Error('The file you are trying to edit was changed by another user since your last saved draft. Your saved draft has been deleted. Return to the previous page to edit a new draft.'));
                     }
                 } else {
                     callback(null);
