@@ -23,11 +23,17 @@
 
   * Add in-browser editing of course files (Tim Bretl).
 
+  * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
+  
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
 
   * Change external grading to receive results from an SQS queue instead of a webhook (Nathan Walters).
+
+  * Change Exam question generation to first-access time (Matt West).
+
+  * Change assessment access rule examId linking to examUuid (Dave Mussulman).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -46,6 +52,8 @@
   * Fix exclude file list for code coverage (Matt West).
 
   * Fix `dump_filter.sh` to keep `authn_users` in all tables (Matt West).
+  
+  * Fix issues link on instructor question page (Nathan Walters).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 

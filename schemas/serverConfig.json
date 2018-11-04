@@ -52,8 +52,8 @@
             "description": "The group of servers we belong to, used for load reporting and autoscaling.",
             "type": "string"
         },
-        "syncExamIdAccessRules": {
-            "description": "If we should sync examIds to PrairieSchedule exams (default false).",
+        "checkAccessRulesExamUuid": {
+            "description": "On sync, check if assessment access rules examUuid exists in database (default false)",
             "type": "boolean"
         },
         "cronIntervalMS": {
