@@ -2,14 +2,3 @@
     width: 400px;
     max-width: 100%;
 }
-
-.pl-number-input-inline-badge {
-    position: relative;
-    top: 9px;
-    height: 17px;
-}
-
-.pl-number-input-force-radius-border {
-    border-top-right-radius: 0.25em !important;
-    border-bottom-right-radius: 0.25em !important;
-}
