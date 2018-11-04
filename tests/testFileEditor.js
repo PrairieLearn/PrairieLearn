@@ -349,7 +349,7 @@ function deleteCourseFiles(callback) {
     });
 }
 
-function editPost(action, fileEditContents, url, expectedToFindDraft, expectedContents) {
+function editPost(action, fileEditContents, url, expectedToFindDraft, expectedToFindOutdated, expectedContents) {
     describe(`POST to edit url with action ${action}`, function() {
         it('should load successfully', function(callback) {
             let form = {
@@ -379,7 +379,7 @@ function editPost(action, fileEditContents, url, expectedToFindDraft, expectedCo
             locals.$ = cheerio.load(page);
         });
         if (action != 'save_and_sync') {
-            verifyEdit(expectedToFindDraft, expectedContents);
+            verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents);
         }
     });
 }
@@ -417,26 +417,7 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
     });
 }
 
-function editGetShouldFail(url) {
-    describe(`GET to edit url`, function() {
-        it('should not load successfully', function(callback) {
-            locals.preStartTime = Date.now();
-            request(url, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                locals.postStartTime = Date.now();
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status (expected 500): ' + response.statusCode));
-                }
-                page = body;
-                callback(null);
-            });
-        });
-    });
-}
-
-function verifyEdit(expectedToFindDraft, expectedContents) {
+function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents) {
     it('should have a CSRF token', function() {
         elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
@@ -508,9 +489,25 @@ function verifyEdit(expectedToFindDraft, expectedContents) {
             assert.lengthOf(elemList, 0);
         }
     });
+    it(`should have warning about outdated commit hash - ${expectedToFindOutdated}`, function() {
+        elemList = locals.$('div:contains("The file you are trying to edit was changed by another user since your last saved draft.")');
+        if (expectedToFindOutdated) {
+            assert.isAtLeast(elemList.length, 1);
+        } else {
+            assert.lengthOf(elemList, 0);
+        }
+    });
+    if (expectedToFindOutdated) {
+        const buttonNames = ['revert_to_draft', 'save_draft', 'save_and_sync'];
+        buttonNames.forEach((buttonName) => {
+            it(`should have disabled button ${buttonName}`, function() {
+                elemList = locals.$(`button[value="${buttonName}"]:disabled`);
+            });
+        });
+    }
 }
 
-function editGet(url, expectedToFindDraft, expectedContents) {
+function editGet(url, expectedToFindDraft, expectedToFindOutdated, expectedContents) {
     describe(`GET to edit url`, function() {
         it('should load successfully', function(callback) {
             locals.preStartTime = Date.now();
@@ -529,64 +526,64 @@ function editGet(url, expectedToFindDraft, expectedContents) {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        verifyEdit(expectedToFindDraft, expectedContents);
+        verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents);
     });
 }
 
 function doEdits(data) {
     describe(`edit ${data.path}`, function() {
         // get - no saved draft
-        editGet(data.url, false, data.contentsA);
+        editGet(data.url, false, false, data.contentsA);
         // get - saved draft
-        editGet(data.url, true, data.contentsA);
-        // failed get - outdated commit hash
+        editGet(data.url, true, false, data.contentsA);
+        // get with warning and disabled buttons - outdated commit hash
         writeAndCommitFile(data.path, data.contentsB);
-        editGetShouldFail(data.url);
-        // get - no saved draft
-        editGet(data.url, false, data.contentsB);
-        // save draft
-        editPost('save_draft', data.contentsA, data.url, true, data.contentsA);
-        // revert to draft
-        editPost('revert_to_draft', data.contentsA, data.url, true, data.contentsA);
+        editGet(data.url, true, true, data.contentsA);
         // revert to original
-        editPost('revert_to_original', data.contentsA, data.url, false, data.contentsB);
+        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsB);
+        // save draft
+        editPost('save_draft', data.contentsA, data.url, true, false, data.contentsA);
+        // revert to draft
+        editPost('revert_to_draft', data.contentsA, data.url, true, false, data.contentsA);
+        // revert to original
+        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsB);
         // save and sync
         editPost('save_and_sync', data.contentsB, data.url);
         waitForJobSequence(locals, 'Success');
         // verify push
         pullAndVerifyFileInDev(data.path, data.contentsB);
         //  get - no saved draft
-        editGet(data.url, false, data.contentsB);
-        // save draft
-        editPost('save_draft', data.contentsA, data.url, true, data.contentsA);
+        editGet(data.url, false, false, data.contentsB);
+        // // save draft
+        // editPost('save_draft', data.contentsA, data.url, true, false, data.contentsA);
         // failed save and sync - outdated commit hash
         writeAndCommitFile(data.path, data.contentsA);
         editPost('save_and_sync', data.contentsA, data.url);
         waitForJobSequence(locals, 'Error');
         // verify non-push
         pullAndVerifyFileInDev(data.path, data.contentsB);
-        // failed get - outdated commit hash
-        editGetShouldFail(data.url);
-        // get - no saved draft
-        editGet(data.url, false, data.contentsA);
+        // get with warning and disabled buttons - outdated commit hash
+        editGet(data.url, true, true, data.contentsA);
+        // revert to original
+        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsA);
 
         if (data.isJson) {
             // save draft
-            editPost('save_draft', data.contentsX, data.url, true, data.contentsX);
+            editPost('save_draft', data.contentsX, data.url, true, false, data.contentsX);
             // successful push but failed sync - bad json
             editPost('save_and_sync', data.contentsX, data.url);
             waitForJobSequence(locals, 'Error');
             // verify successful push
             pullAndVerifyFileInDev(data.path, data.contentsX);
             // get - no saved draft
-            editGet(data.url, false, data.contentsX);
+            editGet(data.url, false, false, data.contentsX);
             // save and sync
-            editPost('save_and_sync', data.contentsB, data.url, true, data.contentsB);
+            editPost('save_and_sync', data.contentsB, data.url, true, false, data.contentsB);
             waitForJobSequence(locals, 'Success');
             // verify successful push
             pullAndVerifyFileInDev(data.path, data.contentsB);
             // get - no saved draft
-            editGet(data.url, false, data.contentsB);
+            editGet(data.url, false, false, data.contentsB);
         }
     });
 }
