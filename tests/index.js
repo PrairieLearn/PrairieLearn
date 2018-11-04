@@ -12,6 +12,7 @@ after('drop the template database', helperDb.dropTemplate);
 require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
+require('./testFileEditor');
 require('./testGetHomepage');
 require('./testQuestions');
 require('./testInstructorQuestions');

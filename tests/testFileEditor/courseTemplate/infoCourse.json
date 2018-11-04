@@ -1,0 +1,20 @@
+{
+    "uuid": "fd0bc861-b62a-4d24-bf1b-96053b8d3514",
+    "name": "TEST 101",
+    "title": "Test Course",
+    "assessmentSets": [],
+    "topics": [
+        {
+            "name": "Test",
+            "color": "gray3",
+            "description": "Feature examples"
+        }
+    ],
+    "tags": [
+        {
+            "name": "tbretl",
+            "color": "blue1",
+            "description": "Question originally written by tbretl"
+        }
+    ]
+}
