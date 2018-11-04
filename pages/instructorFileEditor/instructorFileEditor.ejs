@@ -41,12 +41,21 @@
                 <input type="hidden" name="file_edit_file_name" value="<%= fileEdit.fileName %>">
 
                 <% if (fileEdit.didReadEdit) { %>
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    Found a saved draft of this file.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        Found a saved draft of this file.
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                <% } %>
+
+                <% if (fileEdit.didFindOutdated) { %>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        The file you are trying to edit was changed by another user since your last saved draft. You must click "Revert to Original" to continue editing. Doing so will discard your saved draft. If you have made any changes that you would like to preserve, you should copy the text of your saved draft before proceeding.
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
                 <% } %>
 
                 <div class="card d-flex flex-column flex-fill">
@@ -56,9 +65,9 @@
                     <div class="editor flex-fill"></div>
                     <div class="card-footer">
                         <button name="__action" value="revert_to_original" class="btn btn-sm btn-outline-primary"><i class="fas fa-trash-alt"></i> Revert to original</button>
-                        <button name="__action" value="revert_to_draft" class="btn btn-sm btn-outline-primary"><i class="fas fa-times-circle"></i> Revert to draft</button>
-                        <button name="__action" value="save_draft" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i> Save draft</button>
-                        <button name="__action" value="save_and_sync" class="btn btn-sm btn-outline-primary"><i class="fas fa-sync"></i> Save and sync</button>
+                        <button name="__action" value="revert_to_draft" class="btn btn-sm btn-outline-primary" <% if (fileEdit.didFindOutdated) { %> disabled <% } %> ><i class="fas fa-times-circle"></i> Revert to draft</button>
+                        <button name="__action" value="save_draft" class="btn btn-sm btn-outline-primary" <% if (fileEdit.didFindOutdated) { %> disabled <% } %> ><i class="fas fa-save"></i> Save draft</button>
+                        <button name="__action" value="save_and_sync" class="btn btn-sm btn-outline-primary" <% if (fileEdit.didFindOutdated) { %> disabled <% } %> ><i class="fas fa-sync"></i> Save and sync</button>
                     </div>
                 </div>
             </form>

@@ -208,37 +208,39 @@ function readEdit(fileEdit, callback) {
             }, (err, result) => {
                 if (ERR(err, callback)) return;
                 if (result.rows.length > 0) {
+
                     debug(`Found file edit with id ${result.rows[0].id}`);
-                    if (result.rows[0].commit_hash == fileEdit.origHash) {
-                        debug('Read contents of file edit');
-                        if (config.fileEditorUseAws) {
-                            const params = {
-                                Bucket: config.fileEditorS3Bucket,
-                                Key: getS3Key(result.rows[0].id, fileEdit.fileName),
-                            };
-                            const s3 = new AWS.S3();
-                            s3.getObject(params, (err, data) => {
-                                if (ERR(err, callback)) return;
-                                fileEdit.editContents = b64EncodeUnicode(data.Body);
-                                fileEdit.editID = result.rows[0].id;
-                                fileEdit.didReadEdit = true;
-                                callback(null);
-                            });
-                        } else {
-                            fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                            const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-                            fs.readFile(fullPath, 'utf8', (err, contents) => {
-                                if (ERR(err, callback)) return;
-                                debug(`Got contents from ${fullPath}`);
-                                fileEdit.editContents = b64EncodeUnicode(contents);
-                                fileEdit.editID = result.rows[0].id;
-                                fileEdit.didReadEdit = true;
-                                callback(null);
-                            });
-                        }
-                    } else {
-                        callback(new Error('The file you are trying to edit was changed by another user since your last saved draft. Your saved draft has been deleted. Return to the previous page to edit a new draft.'));
+                    if (result.rows[0].commit_hash != fileEdit.origHash) {
+                        fileEdit.didFindOutdated = true;
                     }
+
+                    debug('Read contents of file edit');
+                    if (config.fileEditorUseAws) {
+                        const params = {
+                            Bucket: config.fileEditorS3Bucket,
+                            Key: getS3Key(result.rows[0].id, fileEdit.fileName),
+                        };
+                        const s3 = new AWS.S3();
+                        s3.getObject(params, (err, data) => {
+                            if (ERR(err, callback)) return;
+                            fileEdit.editContents = b64EncodeUnicode(data.Body);
+                            fileEdit.editID = result.rows[0].id;
+                            fileEdit.didReadEdit = true;
+                            callback(null);
+                        });
+                    } else {
+                        fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                        const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+                        fs.readFile(fullPath, 'utf8', (err, contents) => {
+                            if (ERR(err, callback)) return;
+                            debug(`Got contents from ${fullPath}`);
+                            fileEdit.editContents = b64EncodeUnicode(contents);
+                            fileEdit.editID = result.rows[0].id;
+                            fileEdit.didReadEdit = true;
+                            callback(null);
+                        });
+                    }
+                    
                 } else {
                     callback(null);
                 }
