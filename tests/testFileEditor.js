@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const request = require('request');
 const assert = require('chai').assert;
 const fs = require('fs');
@@ -13,15 +12,15 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
-const logger = require('./dummyLogger');
 const {
     exec,
 } = require('child_process');
 
 const locals = {};
+let page, elemList;
 
 const baseDir = path.join(__dirname, 'testFileEditor');
-const courseTemplateDir = path.join(baseDir, 'courseTemplate')
+const courseTemplateDir = path.join(baseDir, 'courseTemplate');
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');
@@ -132,7 +131,7 @@ const findEditUrlData = [
         'selector': '#editPythonButton',
         'url': courseInstanceQuestionUrl,
         'expectedEditUrl': courseInstanceQuestionPythonEditUrl,
-    }
+    },
 ];
 
 const verifyEditData = [
@@ -167,7 +166,7 @@ const verifyEditData = [
         'contentsA': jsonToContents(questionJsonA),
         'contentsB': jsonToContents(questionJsonB),
         'contentsX': 'garbage',
-    }
+    },
 ];
 
 describe('test file editor', function() {
@@ -207,22 +206,10 @@ describe('test file editor', function() {
 
     describe('verify edits', function() {
         verifyEditData.forEach((element) => {
-            doEdits(element)
+            doEdits(element);
         });
     });
 });
-
-function getCommitHash(fileEdit, callback) {
-    const execOptions = {
-        cwd: fileEdit.coursePath,
-        env: process.env,
-    };
-    exec('git rev-parse HEAD:' + path.join(fileEdit.dirName, fileEdit.fileName), execOptions, (err, stdout) => {
-        if (ERR(err, callback)) return;
-        fileEdit.origHash = stdout.trim();
-        callback(null);
-    });
-}
 
 function b64EncodeUnicode(str) {
     // (1) use encodeURIComponent to get percent-encoded UTF-8
@@ -380,8 +367,6 @@ function jsonToContents(json) {
 }
 
 function findEditUrl(name, selector, url, expectedEditUrl) {
-    let elemList;
-
     describe(`GET to ${name}`, function() {
         it('should load successfully', function(callback) {
             locals.preStartTime = Date.now();
@@ -393,7 +378,6 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -423,7 +407,6 @@ function editGetShouldFail(url) {
                 if (response.statusCode != 500) {
                     return callback(new Error('bad status (expected 500): ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -517,7 +500,6 @@ function editGet(url, expectedToFindDraft, expectedContents) {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });

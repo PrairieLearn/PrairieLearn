@@ -112,7 +112,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        }
+        };
     },
 
     after: function(callback) {
