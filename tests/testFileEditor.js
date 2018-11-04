@@ -49,6 +49,12 @@ const questionJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, qu
 let questionJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'));
 questionJsonB.title = 'Test question (Renamed)';
 
+const questionHtmlA = fs.readFileSync(path.join(courseTemplateDir, questionHtmlPath), 'utf-8');
+const questionHtmlB = questionHtmlA + '\nAnother line of text.\n\n';
+
+const questionPythonA = fs.readFileSync(path.join(courseTemplateDir, questionPythonPath), 'utf-8');
+const questionPythonB = questionPythonA + '\n# Comment.\n\n';
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseAdminUrl = baseUrl + '/course/1/course_admin';
@@ -165,6 +171,22 @@ const verifyEditData = [
         'path': questionJsonPath,
         'contentsA': jsonToContents(questionJsonA),
         'contentsB': jsonToContents(questionJsonB),
+        'contentsX': 'garbage',
+    },
+    {
+        'isJson': false,
+        'url': courseInstanceQuestionHtmlEditUrl,
+        'path': questionHtmlPath,
+        'contentsA': questionHtmlA,
+        'contentsB': questionHtmlB,
+        'contentsX': 'garbage',
+    },
+    {
+        'isJson': false,
+        'url': courseInstanceQuestionPythonEditUrl,
+        'path': questionPythonPath,
+        'contentsA': questionPythonA,
+        'contentsB': questionPythonB,
         'contentsX': 'garbage',
     },
 ];
