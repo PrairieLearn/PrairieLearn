@@ -21,7 +21,6 @@ const config = require('../../lib/config');
 const AWS = require('aws-sdk');
 
 const {
-    exec,
     execFile,
 } = require('child_process');
 
@@ -240,7 +239,7 @@ function readEdit(fileEdit, callback) {
                             callback(null);
                         });
                     }
-                    
+
                 } else {
                     callback(null);
                 }
@@ -391,21 +390,247 @@ function saveAndSync(locals, fileEdit, callback) {
         authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'save_and_sync',
         description: 'Push to remote git repository',
+        courseDir: locals.course.path,
     };
     serverJobs.createJobSequence(options, (err, job_sequence_id) => {
         if (ERR(err, callback)) return;
         callback(null, job_sequence_id);
 
+        let gitEnv = process.env;
+        if (config.gitSshCommand != null) {
+            gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+        }
+
+        let courseLock;
+
+        let jobSequenceHasFailed = false;
+        let showHelpJob = false;
+        let showHelpMsg = '';
+
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
-        const _pushToRemote = () => {
+        const _lock = () => {
+            debug('create job: lock');
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
                 authn_user_id: options.authn_user_id,
                 type: 'push_to_remote',
-                description: 'Push',
+                description: 'Lock',
+                job_sequence_id: job_sequence_id,
+                on_success: _checkHash,
+            };
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                const lockName = 'coursedir:' + options.courseDir;
+                job.verbose(`Trying lock ${lockName}`);
+                namedLocks.tryLock(lockName, (err, lock) => {
+                    if (err) {
+                        job.fail(err);
+                    } else if (lock == null) {
+                        job.verbose(`Did not acquire lock ${lockName}`);
+                        job.fail(new Error(`Another user is already syncing or modifying the course: ${options.courseDir}`));
+                    } else {
+                        courseLock = lock;
+                        job.verbose(`Acquired lock ${lockName}`);
+                        job.succeed();
+                    }
+                    return;
+                });
+            });
+        };
+
+        const _checkHash = () => {
+            debug('create job: checkHash');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'push_to_remote',
+                description: 'Check commit hash',
+                job_sequence_id: job_sequence_id,
+                on_success: _writeFile,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                job.verbose('Get commit hash of original file');
+                getCommitHash(fileEdit, (err) => {
+                    if (err) {
+                        job.fail(err);
+                    } else if (fileEdit.editHash == fileEdit.origHash) {
+                        job.verbose('The commit hash has not changed since you started editing');
+                        job.succeed();
+                    } else {
+                        job.fail(new Error(`Outdated commit hash. The file in the repo is ahead of the file on which your saved draft is based.`));
+                    }
+                });
+            });
+        };
+
+        const _writeFile = () => {
+            debug('create job: writeFile');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'push_to_remote',
+                description: 'Write saved draft to disk',
+                job_sequence_id: job_sequence_id,
+                on_success: _unstage,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                job.verbose('Trying to write file');
+                const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+                fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        debug(`Wrote file to ${fullPath}`);
+                        job.verbose(`Wrote file to ${fullPath}`);
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        const _unstage = function() {
+            debug('create job: unstage');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'push_to_remote',
+                description: 'Unstage all changes',
+                command: 'git',
+                arguments: ['reset'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _add,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _add = function() {
+            debug('create job: add');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'push_to_remote',
+                description: 'Stage changes to file being edited',
+                command: 'git',
+                arguments: ['add', path.join(fileEdit.dirName, fileEdit.fileName)],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _commit,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _commit = function() {
+            debug('create job: commit');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'push_to_remote',
+                description: 'Commit changes',
+                command: 'git',
+                arguments: ['commit', '-m', `"in-browser change to ${fileEdit.fileName} by ${fileEdit.uid}"`],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _push,
+                on_error: _cleanupAfterCommit,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _push = function() {
+            debug('create job: push');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'push_to_remote',
+                description: 'Push to remote',
+                command: 'git',
+                arguments: ['push'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _unlock,
+                on_error: _cleanupAfterPush,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _unlock = () => {
+            debug('create job: unlock');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'push_to_remote',
+                description: 'Unlock',
+                job_sequence_id: job_sequence_id,
+                on_success: (jobSequenceHasFailed ? _help : _deleteSavedDraft),
+            };
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                namedLocks.releaseLock(courseLock, (err) => {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.verbose(`Released lock`);
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        const _deleteSavedDraft = () => {
+            debug('create job: deleteSavedDraft');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'push_to_remote',
+                description: 'Delete saved draft',
                 job_sequence_id: job_sequence_id,
                 on_success: _updateCommitHash,
             };
@@ -415,10 +640,17 @@ function saveAndSync(locals, fileEdit, callback) {
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
-                pushToRemoteGitRepository(locals.course.path, fileEdit, job, (err) => {
+
+                sqldb.query(sql.soft_delete_file_edit, {
+                    user_id: fileEdit.userID,
+                    course_id: fileEdit.courseID,
+                    dir_name: fileEdit.dirName,
+                    file_name: fileEdit.fileName,
+                }, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
+                        job.verbose('Deleted saved draft');
                         job.succeed();
                     }
                 });
@@ -442,7 +674,7 @@ function saveAndSync(locals, fileEdit, callback) {
                 user_id: options.user_id,
                 authn_user_id: options.authn_user_id,
                 type: 'sync_from_disk',
-                description: 'Sync git repository to database',
+                description: 'Sync course',
                 job_sequence_id: job_sequence_id,
                 on_success: _reloadQuestionServers,
             };
@@ -468,7 +700,7 @@ function saveAndSync(locals, fileEdit, callback) {
                 user_id: options.user_id,
                 authn_user_id: options.authn_user_id,
                 type: 'reload_question_servers',
-                description: 'Reload question server.js code',
+                description: 'Reload server.js code (for v2 questions)',
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
@@ -489,139 +721,89 @@ function saveAndSync(locals, fileEdit, callback) {
             });
         };
 
-        _pushToRemote();
-    });
-}
+        const _cleanupAfterPush = (id) => {
+            debug(`Job id ${id} has failed (this was a git push)`);
+            jobSequenceHasFailed = true;
+            showHelpJob = true;
+            showHelpMsg = 'Failed to push. The most likely cause is that another\n'
+                        + 'user made changes to other course files while you were\n'
+                        + 'editing. To confirm, look for the phrase "Updates were\n'
+                        + 'rejected because the remote contains work that you do not\n'
+                        + 'have locally" in the log above. In this case, you can:\n\n'
+                        + ' (1) Sync the course\n'
+                        + ' (2) Resume editing your draft\n'
+                        + ' (3) Save and sync your draft\n\n'
+                        + 'It is possible that another user made changes to the\n'
+                        + 'file that you were editing, in particular. In this case,\n'
+                        + 'when you resume editing your draft, you will see a\n'
+                        + 'warning that will tell you how to proceed without losing\n'
+                        + 'any of your changes.';
+            debug('create job: roll back commit');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'push_to_remote',
+                description: 'Roll back commit',
+                command: 'git',
+                arguments: ['reset', '--hard', 'HEAD~1'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _unlock,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
 
+        const _cleanupAfterCommit = (id) => {
+            debug(`Job id ${id} has failed (this was a git commit)`);
+            jobSequenceHasFailed = true;
+            showHelpJob = true;
+            showHelpMsg = 'Failed to commit changes. The most likely cause is\n'
+                        + 'that there were no changes to commit. To confirm, look\n'
+                        + 'for the phrase "Your branch is up to date" in the log\n'
+                        + 'above. In this case, you can simply return to the\n'
+                        + 'previous page to start editing.';
+            _unlock();
+        };
 
-function pushToRemoteGitRepository(courseDir, fileEdit, job, callback) {
-    const lockName = 'coursedir:' + courseDir;
-    job.verbose(`Trying lock ${lockName}`);
-    namedLocks.tryLock(lockName, (err, lock) => {
-        if (ERR(err, callback)) return;
-        if (lock == null) {
-            job.verbose(`Did not acquire lock ${lockName}`);
-            callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-        } else {
-            job.verbose(`Acquired lock ${lockName}`);
-            async.series([
-                (callback) => {
-                    pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, (err) => {
-                        namedLocks.releaseLock(lock, (lockErr) => {
-                            if (ERR(lockErr, callback)) return;
-                            if (ERR(err, callback)) return;
-                            job.verbose(`Released lock ${lockName}`);
-                            callback(null);
-                        });
-                    });
-                },
-                (callback) => {
-                    job.verbose('Delete saved draft');
-                    sqldb.query(sql.soft_delete_file_edit, {
-                        user_id: fileEdit.userID,
-                        course_id: fileEdit.courseID,
-                        dir_name: fileEdit.dirName,
-                        file_name: fileEdit.fileName,
-                    }, (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
-            ], (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        }
-    });
-}
+        const _cleanup = (id) => {
+            debug(`Job id ${id} has failed`);
+            jobSequenceHasFailed = true;
+            _unlock();
+        };
 
-function pushToRemoteGitRepositoryWithLock(courseDir, fileEdit, job, callback) {
-    async.series([
-        (callback) => {
-            job.verbose('Get commit hash of original file');
-            getCommitHash(fileEdit, (err) => {
-                if (ERR(err, callback)) return;
-                job.verbose('Check that commit hash has not changed');
-                if (fileEdit.editHash == fileEdit.origHash) {
-                    callback(null);
-                } else {
-                    callback(new Error(`Outdated commit hash (file in repo is ahead of file on which draft is based)`));
-                }
-            });
-        },
-        (callback) => {
-            job.verbose('Write file to disk');
-            const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-            fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
-                if (ERR(err, callback)) return;
-                debug(`Wrote file to ${fullPath}`);
-                callback(null);
-            });
-        },
-        (callback) => {
-            // Do this just in case...
-            job.verbose('Unstage all other changes');
-            const execOptions = {
-                cwd: fileEdit.coursePath,
-                env: process.env,
-            };
-            exec(`git reset`, execOptions, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            job.verbose('Add');
-            const execOptions = {
-                cwd: fileEdit.coursePath,
-                env: process.env,
-            };
-            exec(`git add ${path.join(fileEdit.dirName, fileEdit.fileName)}`, execOptions, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            job.verbose('Commit');
-            const execOptions = {
-                cwd: fileEdit.coursePath,
-                env: process.env,
-            };
-            exec(`git diff-index --quiet HEAD || git commit -m "in-browser change to ${fileEdit.fileName} by ${fileEdit.uid}"`, execOptions, (err, stdout) => {
-                if (ERR(err, callback)) {
-                    debug(err);
-                    debug(stdout);
-                    return;
-                }
-                callback(null);
-            });
-        },
-        (callback) => {
-            job.verbose('Push');
-            const execOptions = {
-                cwd: fileEdit.coursePath,
-                env: process.env,
-            };
-            exec(`git push`, execOptions, (err) => {
-                if (err) {
-                    debug('Error on git push - roll back the commit and abort');
-                    const execOptions = {
-                        cwd: fileEdit.coursePath,
-                        env: process.env,
-                    };
-                    exec(`git reset --hard HEAD~1`, execOptions, (resetErr) => {
-                        if (ERR(resetErr, callback)) return;
-                        ERR(err, callback);
+        const _help = () => {
+            if (showHelpJob) {
+                debug('create job: help');
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'push_to_remote',
+                    description: 'Help',
+                    job_sequence_id: job_sequence_id,
+                    no_job_sequence_update: true,
+                    last_in_sequence: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (err) {
+                        logger.error('Error in createJob()', err);
+                        serverJobs.failJobSequence(job_sequence_id);
                         return;
-                    });
-                } else {
-                    callback(null);
-                }
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
+                    }
+
+                    job.verbose(showHelpMsg);
+                    job.succeed();
+
+                    serverJobs.failJobSequence(job_sequence_id);
+                });
+            } else {
+                serverJobs.failJobSequence(job_sequence_id);
+            }
+        };
+
+        _lock();
     });
 }
 

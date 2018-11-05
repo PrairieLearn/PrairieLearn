@@ -532,40 +532,67 @@ function editGet(url, expectedToFindDraft, expectedToFindOutdated, expectedConte
 
 function doEdits(data) {
     describe(`edit ${data.path}`, function() {
-        // get - no saved draft
+        // (draft, live, dev)
+        // get - no saved draft => (A, A, A)
         editGet(data.url, false, false, data.contentsA);
-        // get - saved draft
+        // get - saved draft => (A, A, A)
         editGet(data.url, true, false, data.contentsA);
-        // get with warning and disabled buttons - outdated commit hash
-        writeAndCommitFile(data.path, data.contentsB);
-        editGet(data.url, true, true, data.contentsA);
-        // revert to original
-        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsB);
-        // save draft
-        editPost('save_draft', data.contentsA, data.url, true, false, data.contentsA);
-        // revert to draft
-        editPost('revert_to_draft', data.contentsA, data.url, true, false, data.contentsA);
-        // revert to original
-        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsB);
-        // save and sync
+        // save and sync => (_, B, A)
         editPost('save_and_sync', data.contentsB, data.url);
         waitForJobSequence(locals, 'Success');
-        // verify push
+        // verify push => (_, B, B)
         pullAndVerifyFileInDev(data.path, data.contentsB);
-        //  get - no saved draft
+        // get - no saved draft => (B, B, B)
         editGet(data.url, false, false, data.contentsB);
-        // // save draft
-        // editPost('save_draft', data.contentsA, data.url, true, false, data.contentsA);
-        // failed save and sync - outdated commit hash
+        // change file on live => (B, A, B)
         writeAndCommitFile(data.path, data.contentsA);
+        // get with warning and disabled buttons - outdated commit hash => (B, A, B)
+        editGet(data.url, true, true, data.contentsB);
+        // revert to original => (_, A, B)
+        editPost('revert_to_original', data.contentsB, data.url, false, false, data.contentsA);
+        // save draft => (B, A, B)
+        editPost('save_draft', data.contentsB, data.url, true, false, data.contentsB);
+        // revert to draft => (B, A, B)
+        editPost('revert_to_draft', data.contentsA, data.url, true, false, data.contentsB);
+        // revert to original => (_, A, B)
+        editPost('revert_to_original', data.contentsB, data.url, false, false, data.contentsA);
+        // failed save and sync (on commit) - no local changes yet => (A, A, B)
         editPost('save_and_sync', data.contentsA, data.url);
         waitForJobSequence(locals, 'Error');
-        // verify non-push
+        // get - saved draft => (A, A, B)
+        editGet(data.url, true, false, data.contentsA);
+        // change file on live => (A, B, B)
+        writeAndCommitFile(data.path, data.contentsB);
+        // failed save and sync - outdated commit hash => (X, B, B)
+        editPost('save_and_sync', data.contentsX, data.url);
+        waitForJobSequence(locals, 'Error');
+        // verify non-push => (X, B, B)
         pullAndVerifyFileInDev(data.path, data.contentsB);
-        // get with warning and disabled buttons - outdated commit hash
-        editGet(data.url, true, true, data.contentsA);
-        // revert to original
-        editPost('revert_to_original', data.contentsA, data.url, false, false, data.contentsA);
+        // get with warning and disabled buttons - outdated commit hash => (X, B, B)
+        editGet(data.url, true, true, data.contentsX);
+        // revert to original => (B, B, B)
+        editPost('revert_to_original', data.contentsX, data.url, false, false, data.contentsB);
+        // save and sync => (_, A, B)
+        editPost('save_and_sync', data.contentsA, data.url);
+        waitForJobSequence(locals, 'Success');
+        // verify push => (_, A, A)
+        pullAndVerifyFileInDev(data.path, data.contentsA);
+        // change file on dev and push => (_, A, A*)
+        writeAndPushFileFromDev('README.md', `New readme to test edit of ${data.path}`);
+        // get - no saved draft => (A, A, A*)
+        editGet(data.url, false, false, data.contentsA);
+        // failed save and sync (on push) - need to Sync remote changes => (B, A, A*)
+        editPost('save_and_sync', data.contentsB, data.url);
+        waitForJobSequence(locals, 'Error');
+        // pull (in production, this would also be a course Sync) => (B, A*, A*)
+        pullInLive();
+        // get - saved draft => (B, A*, A*)
+        editGet(data.url, true, false, data.contentsB);
+        // save and sync => (_, B*, B*)
+        editPost('save_and_sync', data.contentsB, data.url);
+        waitForJobSequence(locals, 'Success');
+        // get - no saved draft => (B, B, B)
+        editGet(data.url, false, false, data.contentsB);
 
         if (data.isJson) {
             // save draft
@@ -633,6 +660,62 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
         });
         it('should match contents', function() {
             assert.strictEqual(fs.readFileSync(path.join(courseDevDir, fileName), 'utf-8'), fileContents);
+        });
+    });
+}
+
+function writeAndPushFileFromDev(fileName, fileContents) {
+    describe(`write ${fileName} in courseDev and push to courseOrigin`, function() {
+        it('should write', function(callback) {
+            fs.writeFile(path.join(courseDevDir, fileName), fileContents, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+        it('should add', function(callback) {
+            const execOptions = {
+                cwd: courseDevDir,
+                env: process.env,
+            };
+            exec(`git add -A`, execOptions, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+        it('should commit', function(callback) {
+            const execOptions = {
+                cwd: courseDevDir,
+                env: process.env,
+            };
+            exec(`git commit -m "commit from writeFile"`, execOptions, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+        it('should push', function(callback) {
+            const execOptions = {
+                cwd: courseDevDir,
+                env: process.env,
+            };
+            exec('git push', execOptions, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+    });
+}
+
+function pullInLive() {
+    describe('pull to live', function() {
+        it('should pull', function(callback) {
+            const execOptions = {
+                cwd: courseLiveDir,
+                env: process.env,
+            };
+            exec('git pull', execOptions, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     });
 }
