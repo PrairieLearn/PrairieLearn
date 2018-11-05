@@ -22,6 +22,8 @@
   * Add documentation on common development errors to FAQ. (James Balamuta).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
+
+  * Add test cases for the InstructorAssessmentDownloads page (Yuchen Pang).
   
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -52,6 +54,8 @@
   * Fix `dump_filter.sh` to keep `authn_users` in all tables (Matt West).
   
   * Fix issues link on instructor question page (Nathan Walters).
+
+  * Fix CSV stringifier which blocks the event loop (Yuchen Pang).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
