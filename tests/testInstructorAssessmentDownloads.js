@@ -86,7 +86,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
         });
@@ -110,7 +110,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['Username'], 'dev');
             assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
         });
@@ -134,7 +134,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
         });
@@ -158,7 +158,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['Username'], 'dev');
             assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
         });
@@ -182,7 +182,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.equal(data[0]['Username', 'dev']);
             assert.equal(data[0]['Assessment'], 'Exam 1');
@@ -210,7 +210,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert(_.every(data, (entry) => entry['UID'] == 'dev@illinois.edu'));
             assert(_.every(data, (entry) => entry['Assessment'] == 'Exam 1'));
             let questions = _.map(data, (entry) => entry['Question']).sort();
@@ -237,7 +237,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.equal(data[0]['Assessment'], 'Exam 1');
             assert.equal(data[0]['Question'], 'addNumbers');
@@ -263,7 +263,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.equal(data[0]['Assessment'], 'Exam 1');
             assert.equal(data[0]['Question'], 'addNumbers');
@@ -291,7 +291,7 @@ describe('Instructor Assessment Downloads', function() {
             });
         });
         it('should contain correct data', function() {
-            data = csvParse(page, {columns: true, cast: true});
+            let data = csvParse(page, {columns: true, cast: true});
             assert.equal(data[0]['UID'], 'dev@illinois.edu');
             assert.equal(data[0]['Assessment'], 'Exam 1');
             assert.equal(data[0]['Question'], 'addNumbers');
