@@ -51,7 +51,9 @@ def render(element_html, data):
         'ace_mode': ace_mode,
         'ace_theme': ace_theme,
         'editor_config_function': editor_config_function,
-        'uuid': uuid
+        # TODO use something better. probably variant ID.
+        'question_id': data['options']['client_files_question_dynamic_url'],
+        'uuid': uuid,
     }
 
     if source_file_name is not None:
