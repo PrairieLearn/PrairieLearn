@@ -34,14 +34,17 @@ window.PLFileEditor = function(uuid, options) {
     var currentContents = options.currentContents || '';
 
     // We may need to restore from local storage
+    // To avoid polluting local storage over long periods of time, we'll
+    // wipe storage on page load if the contents of local storage match
+    // the current contents on the page
+    var wipeLocalStorageAfterLoad = false;
     if (window.localStorage) {
         // We have local storage support!
         var savedData = window.localStorage.getItem(this.localStorageKey);
         if (savedData !== null) {
             // Check if the contents are actually different
             if (savedData === currentContents) {
-                // They're the same; wipe local storage for now
-                window.localStorage.removeItem(this.localStorageKey);
+                wipeLocalStorageAfterLoad = true;
             } else {
                 // Restore contents
                 currentContents = savedData;
@@ -50,6 +53,10 @@ window.PLFileEditor = function(uuid, options) {
     }
 
     this.setEditorContents(this.b64DecodeUnicode(currentContents));
+
+    if (wipeLocalStorageAfterLoad) {
+        window.localStorage.removeItem(this.localStorageKey);
+    }
 
     this.initRestoreOriginalButton();
 };
