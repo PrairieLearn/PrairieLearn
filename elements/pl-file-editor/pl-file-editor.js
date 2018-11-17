@@ -7,6 +7,7 @@ window.PLFileEditor = function(uuid, options) {
         throw new Error('File upload element ' + elementId + ' was not found!');
     }
     this.originalContents = options.originalContents || '';
+    this.localStorageKey = options.questionId + ':' + options.fileName;
 
     this.inputElement = this.element.find('input');
     this.editorElement = this.element.find('.editor');
@@ -30,11 +31,32 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setTheme('ace/theme/chrome');
     }
 
-    var currentContents = '';
-    if (options.currentContents) {
-        currentContents = this.b64DecodeUnicode(options.currentContents);
+    var currentContents = options.currentContents || '';
+
+    // We may need to restore from local storage
+    // To avoid polluting local storage over long periods of time, we'll
+    // wipe storage on page load if the contents of local storage match
+    // the current contents on the page
+    var wipeLocalStorageAfterLoad = false;
+    if (window.localStorage) {
+        // We have local storage support!
+        var savedData = window.localStorage.getItem(this.localStorageKey);
+        if (savedData !== null) {
+            // Check if the contents are actually different
+            if (savedData === currentContents) {
+                wipeLocalStorageAfterLoad = true;
+            } else {
+                // Restore contents
+                currentContents = savedData;
+            }
+        }
     }
-    this.setEditorContents(currentContents);
+
+    this.setEditorContents(this.b64DecodeUnicode(currentContents));
+
+    if (wipeLocalStorageAfterLoad) {
+        window.localStorage.removeItem(this.localStorageKey);
+    }
 
     this.initRestoreOriginalButton();
 };
@@ -66,7 +88,11 @@ window.PLFileEditor.prototype.setEditorContents = function(contents) {
 };
 
 window.PLFileEditor.prototype.syncFileToHiddenInput = function() {
-    this.inputElement.val(this.b64EncodeUnicode(this.editor.getValue()));
+    var value = this.b64EncodeUnicode(this.editor.getValue());
+    this.inputElement.val(value);
+    if (window.localStorage) {
+        window.localStorage.setItem(this.localStorageKey, value);
+    }
 };
 
 window.PLFileEditor.prototype.b64DecodeUnicode = function(str) {
