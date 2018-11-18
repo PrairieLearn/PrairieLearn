@@ -55,6 +55,8 @@
   
   * Fix issues link on instructor question page (Nathan Walters).
 
+  * Fix `users.lti_course_instance_id` foreign key delete action (Matt West).
+
   * Fix CSV stringifier which blocks the event loop (Yuchen Pang).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
