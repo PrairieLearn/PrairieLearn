@@ -61,7 +61,7 @@
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
-  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee).
+  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee). 
 
 * __3.1.0__ - 2018-10-08
 
