@@ -218,7 +218,7 @@
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
 
-  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee).
+  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee). 
 
 * __3.0.0__ - 2018-05-23
 
