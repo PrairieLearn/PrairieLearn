@@ -61,6 +61,8 @@
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
+  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
@@ -217,8 +219,6 @@
   * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
-
-  * Change to Dockerfile for centos-ocaml7 to allow for SMT solving (John Lee). 
 
 * __3.0.0__ - 2018-05-23
 
