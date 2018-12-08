@@ -1,11 +1,13 @@
-# flake8: noqa
 # lol
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../lib')))
 
+# noqa: E402
 import prairielearn as pl
+# noqa: E402
 import unittest
+# noqa: E402
 import lxml.html
 
 
