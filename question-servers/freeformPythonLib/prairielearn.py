@@ -1,4 +1,5 @@
 import lxml.html
+import html
 import to_precision
 import numpy as np
 import uuid
@@ -117,13 +118,13 @@ def from_json(v):
 
 
 def inner_html(element):
-    html = element.text
-    if html is None:
-        html = ''
-    html = str(html)
+    inner = element.text
+    if inner is None:
+        inner = ''
+    inner = html.escape(str(inner))
     for child in element:
-        html += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
-    return html
+        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+    return inner
 
 
 def compat_get(object, attrib, default):
