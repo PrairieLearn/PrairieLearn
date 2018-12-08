@@ -74,6 +74,7 @@ async.series([
         const sqs = new AWS.SQS();
         for (let i = 0; i < config.maxConcurrentJobs; i++) {
           async.forever((next) => {
+              if (!healthCheck.isHealthy()) return;
               receiveFromQueue(sqs, config.jobsQueueUrl, (job, fail, success) => {
                   globalLogger.info(`received ${job.jobId} from queue`);
                   handleJob(job, (err) => {

@@ -41,17 +41,24 @@ module.exports.init = function(callback) {
         });
     };
 
-    setTimeout(doHealthCheck, config.healthCheckInterval);
-
-    const server = http.createServer(handler);
-    server.listen(config.healthCheckPort, (err) => {
+    docker.ping((err) => {
         if (err) {
-            globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
-            callback(err);
-        } else {
-            globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
-            callback(null);
+            globalLogger.error(`Docker ping failed during healthCheck start: ${err}`);
+            return callback(err);
         }
+
+        setTimeout(doHealthCheck, config.healthCheckInterval);
+
+        const server = http.createServer(handler);
+        server.listen(config.healthCheckPort, (err) => {
+            if (err) {
+                globalLogger.error(`Could not start health check server on port ${config.healthCheckPort}`);
+                callback(err);
+            } else {
+                globalLogger.info(`Health check server is listening on port ${config.healthCheckPort}`);
+                callback(null);
+            }
+        });
     });
 };
 
@@ -59,4 +66,8 @@ module.exports.flagUnhealthy = function(reason) {
     globalLogger.error(`A health check failed: ${reason}`);
     healthy = false;
     unhealthyReason = reason;
+};
+
+module.exports.isHealthy = function() {
+    return healthy;
 };
