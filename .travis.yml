@@ -13,15 +13,16 @@ before_install:
   - docker build -t pltest .
 script:
   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then sh ./tools/verify-changelog.sh; fi'
-  - docker run -itd --name=npm_test_container pltest /bin/bash
-  - docker exec -it npm_test_container /PrairieLearn/docker/lint_js.sh
-  - docker exec -it npm_test_container /PrairieLearn/docker/lint_python.sh
-  - docker exec -it npm_test_container /PrairieLearn/docker/npm_test.sh
+  - docker run -itd --name=test_container pltest /bin/bash
+  - docker exec -it test_container /PrairieLearn/docker/lint_js.sh
+  - docker exec -it test_container /PrairieLearn/docker/lint_python.sh
+  - docker exec -it test_container /PrairieLearn/docker/test_js.sh
+  - docker exec -it test_container /PrairieLearn/docker/test_python.sh
 after_success:
-  - > 
+  - >
     docker exec
     -e TRAVIS=$TRAVIS -e TRAVIS_JOB_ID=$TRAVIS_JOB_ID -e TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST -e TRAVIS_BRANCH=$TRAVIS_BRANCH
-    -it npm_test_container
+    -it test_container
     /PrairieLearn/docker/coveralls.sh
 # https://docs.travis-ci.com/user/coveralls/#Using-Coveralls-with-Docker-builds
 # https://github.com/nickmerwin/node-coveralls/blob/b9032a18bd8d7fba7eaa0924a77e810ec4d0935a/lib/getOptions.js#L20
