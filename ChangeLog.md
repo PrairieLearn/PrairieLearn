@@ -35,6 +35,8 @@
 
   * Change assessment access rule examId linking to examUuid (Dave Mussulman).
 
+  * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
