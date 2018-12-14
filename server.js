@@ -495,11 +495,13 @@ module.exports.startServer = function(callback) {
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);
+        server.timeout = 600000; // 10 minutes
         logger.verbose('server listening to HTTPS on port ' + config.serverPort);
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
         server.listen(config.serverPort);
+        server.timeout = 600000; // 10 minutes
         logger.verbose('server listening to HTTP on port ' + config.serverPort);
         callback(null);
     } else {
