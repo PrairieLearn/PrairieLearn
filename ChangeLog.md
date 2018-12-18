@@ -65,6 +65,8 @@
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
+  * Update `highlight.js` from `9.12.01` to `9.13.1` in order to support `plaintext` highlighting (Nathan Walters).
+
 * __3.1.0__ - 2018-10-08
 
   * Add string input element (Mariana Silva).
