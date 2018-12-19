@@ -25,6 +25,8 @@
 
   * Add R package caching and parallel installation to centos-plbase. (James Balamuta).
 
+  * Add course-level questions and issues page (Ray Essick).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -76,10 +78,8 @@
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
-  
-  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
-  * Add course-level questions and issues page (Ray Essick).
+  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
 
