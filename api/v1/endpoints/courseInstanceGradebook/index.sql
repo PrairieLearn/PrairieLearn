@@ -2,7 +2,7 @@
 WITH
 course_assessments AS (
     SELECT
-        a.id,
+        a.id AS assessment_id,
         a.order_by AS assessment_order_by,
         aset.number AS assessment_set_number,
         (aset.abbreviation || a.number) AS label
@@ -79,10 +79,11 @@ scores AS (
     FROM
         course_users AS u
         CROSS JOIN course_assessments AS a
-        LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
+        LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.assessment_id)
         LEFT JOIN last_submissions AS ls ON (ls.assessment_instance_id = s.assessment_instance_id)
 )
 SELECT
+    user_id,
     uid,
     name,
     role,
@@ -95,6 +96,7 @@ SELECT
             'start_date', start_date,
             'duration_secs', duration_secs,
             'last_submission_date', last_submission_date,
+            'assessment_id', assessment_id
             'assessment_instance_id', assessment_instance_id
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)

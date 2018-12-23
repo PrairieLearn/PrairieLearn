@@ -13,7 +13,7 @@ WITH issue_count AS (
     GROUP BY a.id
 )
 SELECT
-    a.id,
+    a.id AS assessment_id,
     a.tid,
     a.type,
     a.number as assessment_number,
@@ -39,9 +39,9 @@ ORDER BY
 
 -- BLOCK select_assessment_instances
 SELECT
-    ai.id,
+    ai.id AS assessment_instance_id,
     jsonb_build_object(
-        'id', u.user_id,
+        'user_id', u.user_id,
         'uid', u.uid,
         'name', u.name,
         'role', coalesce(e.role, 'None'::enum_role)
@@ -78,9 +78,9 @@ ORDER BY
 
 -- BLOCK select_submissions
 SELECT
-    s.id,
+    s.id AS submission_id,
     jsonb_build_object(
-        'id', u.user_id,
+        'user_id', u.user_id,
         'uid', u.uid,
         'name', u.name,
         'role', coalesce(e.role, 'None'::enum_role)
