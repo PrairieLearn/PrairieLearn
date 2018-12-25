@@ -21,14 +21,15 @@ course_scores AS (
         ai.score_perc,
         ai.max_points,
         ai.points,
-        ai.date AS start_date,
+        format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
         EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
         ai.id AS assessment_instance_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
-        a.course_instance_id = $course_instance_id
+        ci.id = $course_instance_id
     ORDER BY
         ai.user_id, a.id, ai.score_perc DESC, ai.id
 ),
@@ -71,28 +72,36 @@ scores AS (
         course_users AS u
         CROSS JOIN course_assessments AS a
         LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.assessment_id)
+),
+object_data AS (
+    SELECT
+        user_id,
+        user_uid,
+        user_name,
+        user_role,
+        ARRAY_AGG(
+            json_build_object(
+                'assessment_id', assessment_id,
+                'assessment_name', assessment_name,
+                'assessment_label', assessment_label,
+                'assessment_set_abbreviation', assessment_set_abbreviation,
+                'assessment_number', assessment_number,
+                'assessment_instance_id', assessment_instance_id,
+                'score_perc', score_perc,
+                'max_points', max_points,
+                'points', points,
+                'start_date', start_date,
+                'duration_seconds', duration_seconds
+            )
+            ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
+        ) AS assessments
+    FROM scores
+    GROUP BY user_id, user_uid, user_name, user_role
 )
 SELECT
-    user_id,
-    user_uid,
-    user_name,
-    user_role,
-    ARRAY_AGG(
-        json_build_object(
-            'assessment_id', assessment_id,
-            'assessment_name', assessment_name,
-            'assessment_label', assessment_label,
-            'assessment_set_abbreviation', assessment_set_abbreviation,
-            'assessment_number', assessment_number,
-            'assessment_instance_id', assessment_instance_id,
-            'score_perc', score_perc,
-            'max_points', max_points,
-            'points', points,
-            'start_date', start_date,
-            'duration_seconds', duration_seconds
-        )
-        ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
-    ) AS assessments
-FROM scores
-GROUP BY user_id, user_uid, user_name, user_role
-ORDER BY user_role DESC, user_uid;
+    coalesce(jsonb_agg(
+        row_to_json(object_data)
+        ORDER BY user_role DESC, user_uid
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
