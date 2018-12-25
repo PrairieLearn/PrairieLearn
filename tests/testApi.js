@@ -189,10 +189,10 @@ describe('API', function() {
             locals.json = JSON.parse(page);
         });
         it('should contain E1', function() {
-            const objectList = _.filter(locals.json, o => o.tid == 'exam1');
+            const objectList = _.filter(locals.json, o => o.assessment_name == 'exam1');
             assert.lengthOf(objectList, 1);
-            locals.assessment_id = objectList[0].id;
-            assert.equal(objectList[0].label, 'E1');
+            locals.assessment_id = objectList[0].assessment_id;
+            assert.equal(objectList[0].assessment_label, 'E1');
         });
     });
 
@@ -221,10 +221,10 @@ describe('API', function() {
         });
         it('should have one assessment instance', function() {
             assert.lengthOf(locals.json, 1);
-            locals.assessment_instance_id = locals.json[0].id;
+            locals.assessment_instance_id = locals.json[0].assessment_instance_id;
         });
         it('should belong to the dev user', function() {
-            assert.equal(locals.json[0].user.uid, 'dev@illinois.edu');
+            assert.equal(locals.json[0].user_uid, 'dev@illinois.edu');
         });
         it('should have the correct points', function() {
             assert.equal(locals.json[0].points, assessmentPoints);
@@ -259,7 +259,7 @@ describe('API', function() {
             assert.lengthOf(locals.json, 1);
         });
         it('should have the correct points', function() {
-            assert.equal(locals.json[0].points, assessmentPoints);
+            assert.equal(locals.json[0].instance_question_points, assessmentPoints);
         });
     });
 
@@ -287,12 +287,12 @@ describe('API', function() {
             locals.json = JSON.parse(page);
         });
         it('should have one entry for the dev user', function() {
-            const objectList = _.filter(locals.json, o => o.uid == 'dev@illinois.edu');
+            const objectList = _.filter(locals.json, o => o.user_uid == 'dev@illinois.edu');
             assert.lengthOf(objectList, 1);
             locals.devObject = objectList[0];
         });
         it('should contain Exam 1', function() {
-            const objectList = _.filter(locals.devObject.assessments, o => o.label == 'E1');
+            const objectList = _.filter(locals.devObject.assessments, o => o.assessment_label == 'E1');
             assert.lengthOf(objectList, 1);
             locals.gradebookEntry = objectList[0];
         });

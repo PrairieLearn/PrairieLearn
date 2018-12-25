@@ -3,7 +3,7 @@ WITH object_data AS (
     SELECT
         a.id AS assessment_id,
         a.tid AS assessment_name,
-        (aset.abbreviation || a.number) as assesment_label,
+        (aset.abbreviation || a.number) as assessment_label,
         a.type,
         a.number AS assessment_number,
         a.order_by AS assessment_order_by,
