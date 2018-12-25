@@ -15,20 +15,20 @@ account has.
 You can provide your token via the `Private-Token` header:
 
 ```sh
-curl -H "Private-Token: TOKEN" https://prairielearn.engr.illinois.edu/pl/api/v1
+curl -H "Private-Token: TOKEN" https://prairielearn.engr.illinois.edu/pl/api/v1/<REST_OF_PATH>
 ```
 
 You can also provide the token via a `private_token` query parameter:
 
 ```sh
-curl https://prairielearn.engr.illinois.edu/pl/api/v1?private_token=TOKEN
+curl https://prairielearn.engr.illinois.edu/pl/api/v1/<REST_OF_PATH>?private_token=TOKEN
 ```
 
 ## Example access script
 
-An example script that will download all API data for a course instance is at `https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py`. You can use it like this:
+An example script that will download all API data for a course instance is at <https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py>. You can use it like this:
 
-```
+```sh
 python api_download.py --token 9a6932a1-e356-4ddc-ad82-4cf30ad896ac --course-instance-id 29832 --output-dir tam212fa18
 ```
 
@@ -41,34 +41,33 @@ production PraririeLearn, that means the API is at
 https://prairielearn.engr.illinois.edu/pl/api/v1. If you're running it locally
 at port 3000, the API is accessible via http://localhost:3000/pl/api/v1/.
 
-### Assessments
+In the endpoint list below, path components starting with a colon like
+`:course_instance_id` should be replaced with the integer IDs.
 
-View all assessments for a particular course:
+* **Gradebook:**
+    - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
+    - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
 
-```
-GET /course_instances/:course_instance_id/assessments
-```
+* **Assessments list:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessments`
+    - All assessments in the course instance.
 
-View all assessment instances for a particular assessment:
+* **Single assessment:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id`
+    - One specific assessment.
 
-```
-GET /course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances
-```
+* **Assessment instances list:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances`
+    - All assessment instances for a given assessment.
 
-### Assessment instances
+* **One assessment instance:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id`
+    - One specific assessment instance.
 
-View all submissions for a particular assessment instance:
+* **Submissions list:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
+    - All submissions for a given assessment instance.
 
-```
-GET /course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions
-```
-
-### Gradebook
-
-This endpoint includes all of the data available in the course gradebook,
-including some additional information like points, start dates, durations,
-and the time of the last submission.
-
-```
-GET /course_instances/:course_instance_id/gradebook
-```
+* **One submission:**
+    - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
+    - One specific submission.
