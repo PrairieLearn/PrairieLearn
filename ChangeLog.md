@@ -69,6 +69,8 @@
 
   * Fix `pl.inner_html(...)` helper function (Nathan Walters).
 
+  * Fix slow gradebook API by removing `last_submission_date` (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).

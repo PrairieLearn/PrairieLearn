@@ -32,20 +32,6 @@ course_scores AS (
     ORDER BY
         ai.user_id, a.id, ai.score_perc DESC, ai.id
 ),
-last_submissions AS (
-    SELECT
-        ai.id AS assessment_instance_id,
-        MAX(s.date) AS last_submission_date
-    FROM
-        submissions AS s
-        JOIN variants AS v ON (v.id = s.variant_id)
-        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE
-        a.course_instance_id = $course_instance_id
-    GROUP BY ai.id
-),
 user_ids AS (
     (SELECT DISTINCT user_id FROM course_scores)
     UNION
@@ -80,13 +66,11 @@ scores AS (
         s.points,
         s.start_date,
         s.duration_seconds,
-        s.assessment_instance_id,
-        ls.last_submission_date
+        s.assessment_instance_id
     FROM
         course_users AS u
         CROSS JOIN course_assessments AS a
         LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.assessment_id)
-        LEFT JOIN last_submissions AS ls ON (ls.assessment_instance_id = s.assessment_instance_id)
 )
 SELECT
     user_id,
@@ -105,8 +89,7 @@ SELECT
             'max_points', max_points,
             'points', points,
             'start_date', start_date,
-            'duration_seconds', duration_seconds,
-            'last_submission_date', last_submission_date
+            'duration_seconds', duration_seconds
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
     ) AS assessments
