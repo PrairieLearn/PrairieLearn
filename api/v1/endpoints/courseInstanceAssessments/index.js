@@ -13,8 +13,6 @@ const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 router.get('/', (req, res, next) => {
     const params = {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessment_id: null,
     };
     sqldb.queryOneRow(sql.select_assessments, params, (err, result) => {
@@ -26,8 +24,6 @@ router.get('/', (req, res, next) => {
 router.get('/:assessment_id', (req, res, next) => {
     const params = {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessment_id: req.params.assessment_id,
     };
     sqldb.queryOneRow(sql.select_assessments, params, (err, result) => {
