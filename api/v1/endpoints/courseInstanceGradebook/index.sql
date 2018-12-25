@@ -3,9 +3,12 @@ WITH
 course_assessments AS (
     SELECT
         a.id AS assessment_id,
+        a.tid AS assessment_name,
         a.order_by AS assessment_order_by,
+        aset.abbreviation AS assessment_set_abbreviation,
+        a.number AS assessment_number,
         aset.number AS assessment_set_number,
-        (aset.abbreviation || a.number) AS label
+        (aset.abbreviation || a.number) AS assessment_label
     FROM assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     WHERE a.deleted_at IS NULL
@@ -19,7 +22,7 @@ course_scores AS (
         ai.max_points,
         ai.points,
         ai.date AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
+        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
         ai.id AS assessment_instance_id
     FROM
         assessment_instances AS ai
@@ -62,18 +65,21 @@ course_users AS (
 scores AS (
     SELECT
         u.user_id,
-        u.uid,
-        u.name,
-        u.role,
-        a.id AS assessment_id,
-        a.label,
+        u.uid AS user_uid,
+        u.name AS user_name,
+        u.role AS user_role,
+        a.assessment_id,
+        a.assessment_name,
+        a.assessment_label,
         a.assessment_order_by,
+        a.assessment_set_abbreviation,
+        a.assessment_number,
         a.assessment_set_number,
         s.score_perc,
         s.max_points,
         s.points,
         s.start_date,
-        s.duration_secs,
+        s.duration_seconds,
         s.assessment_instance_id,
         ls.last_submission_date
     FROM
@@ -84,23 +90,26 @@ scores AS (
 )
 SELECT
     user_id,
-    uid,
-    name,
-    role,
+    user_uid,
+    user_name,
+    user_role,
     ARRAY_AGG(
         json_build_object(
-            'label', label,
+            'assessment_id', assessment_id,
+            'assessment_name', assessment_name,
+            'assessment_label', assessment_label,
+            'assessment_set_abbreviation', assessment_set_abbreviation,
+            'assessment_number', assessment_number,
+            'assessment_instance_id', assessment_instance_id,
             'score_perc', score_perc,
             'max_points', max_points,
             'points', points,
             'start_date', start_date,
-            'duration_secs', duration_secs,
-            'last_submission_date', last_submission_date,
-            'assessment_id', assessment_id
-            'assessment_instance_id', assessment_instance_id
+            'duration_seconds', duration_seconds,
+            'last_submission_date', last_submission_date
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
     ) AS assessments
 FROM scores
-GROUP BY user_id,uid,name,role
-ORDER BY role DESC, uid;
+GROUP BY user_id, user_uid, user_name, user_role
+ORDER BY user_role DESC, user_uid;

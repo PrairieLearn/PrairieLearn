@@ -1,29 +1,16 @@
 -- BLOCK select_assessments
-WITH issue_count AS (
-    SELECT
-        a.id AS assessment_id,
-        count(*) AS open_issue_count
-    FROM
-        assessments AS a
-        JOIN issues AS i ON (i.assessment_id = a.id)
-    WHERE
-        a.course_instance_id = $course_instance_id
-        AND i.course_caused
-        AND i.open
-    GROUP BY a.id
-)
 SELECT
     a.id AS assessment_id,
-    a.tid,
+    a.tid AS assessment_name,
+    (aset.abbreviation || a.number) as assesment_label,
     a.type,
-    a.number as assessment_number,
+    a.number AS assessment_number,
     a.title,
     a.assessment_set_id,
     aset.abbreviation AS assessment_set_abbreviation,
     aset.name AS assessment_set_name,
     aset.heading AS assessment_set_heading,
-    aset.color AS assessment_set_color,
-    (aset.abbreviation || a.number) as label
+    aset.color AS assessment_set_color
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -40,17 +27,19 @@ ORDER BY
 -- BLOCK select_assessment_instances
 SELECT
     ai.id AS assessment_instance_id,
-    jsonb_build_object(
-        'user_id', u.user_id,
-        'uid', u.uid,
-        'name', u.name,
-        'role', coalesce(e.role, 'None'::enum_role)
-    ) AS user,
-    (aset.name || ' ' || a.number) AS assessment_label,
+    a.id AS assessment_id,
+    a.tid AS assessment_name,
+    (aset.abbreviation || a.number) AS assessment_label,
+    aset.abbreviation AS assessment_set_abbreviation,
+    a.number AS assessment_number,
+    u.user_id,
+    u.uid AS user_uid,
+    u.name AS user_name,
+    coalesce(e.role, 'None'::enum_role) AS user_role,
     ai.max_points,
     ai.points,
     ai.score_perc,
-    ai.number,
+    ai.number AS assessment_instance_number,
     ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
@@ -58,9 +47,8 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
-    format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
-    format_interval(ai.duration) AS duration,
-    EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
+    format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
+    EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
 FROM
     assessments AS a
@@ -79,32 +67,35 @@ ORDER BY
 -- BLOCK select_submissions
 SELECT
     s.id AS submission_id,
-    jsonb_build_object(
-        'user_id', u.user_id,
-        'uid', u.uid,
-        'name', u.name,
-        'role', coalesce(e.role, 'None'::enum_role)
-    ) AS user,
-    (aset.name || ' ' || a.number) AS assessment_label,
+    u.user_id,
+    u.uid AS user_uid,
+    u.name AS user_name,
+    coalesce(e.role, 'None'::enum_role) AS user_role,
+    a.id AS assessment_id,
+    a.tid AS assessment_name,
+    (aset.abbreviation || a.number) AS assessment_label,
+    ai.id AS assessment_instance_id,
     ai.number AS assessment_instance_number,
-    q.qid,
+    q.id AS question_id,
+    q.qid AS question_name,
+    iq.id AS instance_question_id,
     iq.number AS instance_question_number,
-    aq.max_points,
-    iq.points,
-    iq.score_perc,
+    aq.max_points AS assessment_question_max_points,
+    iq.points AS instance_question_points,
+    iq.score_perc AS instance_question_score_perc,
+    v.id AS variant_id,
     v.number AS variant_number,
     v.variant_seed,
     v.params,
     v.true_answer,
     v.options,
-    s.date,
-    format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
+    format_date_iso8601(s.date, ci.display_timezone) AS date,
     s.submitted_answer,
     s.override_score,
     s.credit,
     s.mode,
-    format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
-    format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
+    format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at,
+    format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at,
     s.score,
     s.correct,
     s.feedback,

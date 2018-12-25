@@ -41,6 +41,8 @@
 
   * Change API ID names to contain object type (Matt West).
 
+  * Change API object property names for improved consistency (Matt West).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
