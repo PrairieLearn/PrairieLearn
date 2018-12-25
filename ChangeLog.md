@@ -19,11 +19,13 @@
 
   * Add more logging for external grading jobs in production (Matt West).
 
-  * Add documentation on common development errors to FAQ. (James Balamuta).
+  * Add documentation on common development errors to FAQ (James Balamuta).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
 
-  * Add R package caching and parallel installation to centos-plbase. (James Balamuta).
+  * Add R package caching and parallel installation to centos-plbase (James Balamuta).
+
+  * Add example script to download all course instance data from API (Matt West).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
