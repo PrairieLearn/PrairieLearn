@@ -63,6 +63,8 @@
 
   * Fix `pl.inner_html(...)` helper function (Nathan Walters).
 
+  * Fix underscore in `pl-string-input` docs (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
