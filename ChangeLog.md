@@ -37,6 +37,8 @@
 
   * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
 
+  * Change server timeout to 10 minutes (Matt West).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
@@ -63,9 +65,13 @@
 
   * Fix `pl.inner_html(...)` helper function (Nathan Walters).
 
+  * Fix underscore in `pl-string-input` docs (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
+
+  * Update `highlight.js` from `9.12.01` to `9.13.1` in order to support `plaintext` highlighting (Nathan Walters).
 
 * __3.1.0__ - 2018-10-08
 

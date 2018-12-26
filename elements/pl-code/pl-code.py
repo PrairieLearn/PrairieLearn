@@ -28,6 +28,7 @@ allowed_languages = [
     'ocaml',
     'perl',
     'php',
+    'plaintext',
     'python',
     'r',
     'ruby',
