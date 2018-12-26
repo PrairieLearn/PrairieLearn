@@ -11,6 +11,6 @@
         "image": "prairielearn/centos7-python",
         "serverFilesCourse": ["python_autograder/"],
         "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
-        "timeout": 5
+        "timeout": 20
     }
 }

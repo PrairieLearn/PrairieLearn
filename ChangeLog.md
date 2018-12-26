@@ -35,6 +35,8 @@
 
   * Change assessment access rule examId linking to examUuid (Dave Mussulman).
 
+  * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
+
   * Change server timeout to 10 minutes (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
