@@ -28,7 +28,8 @@ router.get('/:assessment_id', (req, res, next) => {
     };
     sqldb.queryOneRow(sql.select_assessments, params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.rows.length === 0) {
+        const data = result.rows[0].item;
+        if (data.length === 0) {
             res.status(404).send({
                 message: 'Not Found',
             });
