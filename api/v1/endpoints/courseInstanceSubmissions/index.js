@@ -16,9 +16,16 @@ router.get('/:submission_id', (req, res, next) => {
         assessment_instance_id: null,
         submission_id: req.params.submission_id,
     };
-    sqldb.query(sql.select_submissions, params, (err, result) => {
+    sqldb.queryOneRow(sql.select_submissions, params, (err, result) => {
         if (ERR(err, next)) return;
-        res.status(200).send(result.rows);
+        const data = result.rows[0].item;
+        if (data.length === 0) {
+            res.status(404).send({
+                message: 'Not Found',
+            });
+        } else {
+            res.status(200).send(data[0]);
+        }
     });
 });
 

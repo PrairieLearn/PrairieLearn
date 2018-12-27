@@ -19,11 +19,13 @@
 
   * Add more logging for external grading jobs in production (Matt West).
 
-  * Add documentation on common development errors to FAQ. (James Balamuta).
+  * Add documentation on common development errors to FAQ (James Balamuta).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
 
-  * Add R package caching and parallel installation to centos-plbase. (James Balamuta).
+  * Add R package caching and parallel installation to centos-plbase (James Balamuta).
+
+  * Add example script to download all course instance data from API (Matt West).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -38,6 +40,10 @@
   * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
 
   * Change server timeout to 10 minutes (Matt West).
+
+  * Change API ID names to contain object type (Matt West).
+
+  * Change API object property names for improved consistency (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -64,6 +70,10 @@
   * Fix missing `event-stream` dependency (Matt West).
 
   * Fix `pl.inner_html(...)` helper function (Nathan Walters).
+
+  * Fix slow gradebook API by removing `last_submission_date` (Matt West).
+
+  * Fix API IDs to be JSON integers (Matt West).
 
   * Fix underscore in `pl-string-input` docs (Matt West).
 
