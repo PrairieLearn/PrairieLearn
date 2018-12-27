@@ -25,7 +25,7 @@ WITH object_data AS (
 )
 SELECT
     coalesce(jsonb_agg(
-        row_to_json(object_data)
+        to_jsonb(object_data)
         ORDER BY assessment_set_number, assessment_order_by, assessment_id
     ), '[]'::jsonb) AS item
 FROM
@@ -72,7 +72,7 @@ WITH object_data AS (
 )
 SELECT
     coalesce(jsonb_agg(
-        row_to_json(object_data)
+        to_jsonb(object_data)
         ORDER BY user_role DESC, user_uid, user_id, assessment_instance_number, assessment_instance_id
     ), '[]'::jsonb) AS item
 FROM
@@ -135,7 +135,7 @@ WITH object_data AS (
 )
 SELECT
     coalesce(jsonb_agg(
-        row_to_json(object_data)
+        to_jsonb(object_data)
         ORDER BY assessment_instance_number, question_name, instance_question_number, variant_number, date, submission_id
     ), '[]'::jsonb) AS item
 FROM

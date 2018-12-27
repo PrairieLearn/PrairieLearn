@@ -80,7 +80,7 @@ object_data AS (
         user_name,
         user_role,
         ARRAY_AGG(
-            json_build_object(
+            jsonb_build_object(
                 'assessment_id', assessment_id,
                 'assessment_name', assessment_name,
                 'assessment_label', assessment_label,
@@ -100,7 +100,7 @@ object_data AS (
 )
 SELECT
     coalesce(jsonb_agg(
-        row_to_json(object_data)
+        to_jsonb(object_data)
         ORDER BY user_role DESC, user_uid
     ), '[]'::jsonb) AS item
 FROM
