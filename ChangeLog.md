@@ -49,6 +49,8 @@
 
   * Change all packages to current versions (Matt West).
 
+  * Change logging format for new `winston` version (Matt West).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
