@@ -14,7 +14,7 @@ indexes
     users_uin_key: UNIQUE (uin) USING btree (uin)
 
 foreign-key constraints
-    users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id)
+    users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     access_tokens: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

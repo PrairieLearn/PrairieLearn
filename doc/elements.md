@@ -107,7 +107,7 @@ Attribute | Type | Default | Description
 ## `pl-string-input` element
 
 ```html
-<pl-string-input answers_name="x"></pl-string-input>
+<pl-string-input answers-name="x"></pl-string-input>
 ```
 
 Attribute | Type | Default | Description

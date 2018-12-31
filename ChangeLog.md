@@ -19,11 +19,14 @@
 
   * Add more logging for external grading jobs in production (Matt West).
 
-  * Add documentation on common development errors to FAQ. (James Balamuta).
+  * Add documentation on common development errors to FAQ (James Balamuta).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
 
   * Add in-browser editing of course files (Tim Bretl).
+  * Add R package caching and parallel installation to centos-plbase (James Balamuta).
+
+  * Add example script to download all course instance data from API (Matt West).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -34,6 +37,14 @@
   * Change Exam question generation to first-access time (Matt West).
 
   * Change assessment access rule examId linking to examUuid (Dave Mussulman).
+
+  * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
+
+  * Change server timeout to 10 minutes (Matt West).
+
+  * Change API ID names to contain object type (Matt West).
+
+  * Change API object property names for improved consistency (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -55,9 +66,23 @@
 
   * Fix issues link on instructor question page (Nathan Walters).
 
+  * Fix `users.lti_course_instance_id` foreign key delete action (Matt West).
+
+  * Fix missing `event-stream` dependency (Matt West).
+
+  * Fix `pl.inner_html(...)` helper function (Nathan Walters).
+
+  * Fix slow gradebook API by removing `last_submission_date` (Matt West).
+
+  * Fix API IDs to be JSON integers (Matt West).
+
+  * Fix underscore in `pl-string-input` docs (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
+
+  * Update `highlight.js` from `9.12.01` to `9.13.1` in order to support `plaintext` highlighting (Nathan Walters).
 
 * __3.1.0__ - 2018-10-08
 
