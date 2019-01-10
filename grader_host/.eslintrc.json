@@ -6,10 +6,7 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaFeatures": {
-          "experimentalObjectRestSpread": true
-
-        }
+        "ecmaVersion": 9
     },
     "rules": {
         "handle-callback-err": "error",
