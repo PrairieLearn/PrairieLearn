@@ -83,7 +83,7 @@
 
   * Fix underscore in `pl-string-input` docs (Matt West).
 
-  * Fix linter error in `pl-symbolic-input` (Matt West).
+  * Fix Python linter errors in (Matt West).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
