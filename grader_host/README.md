@@ -1,5 +1,7 @@
 # PrairieGrader
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/PrairieLearn/PrairieGrader.svg)](https://greenkeeper.io/)
+
 An executor for PrairieLearn external grading jobs.
 
 ## Using PrairieGrader
