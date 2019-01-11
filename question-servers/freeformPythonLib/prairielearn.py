@@ -835,7 +835,7 @@ def matlab_to_numpy(a):
 
 def latex_from_2darray(A, presentation_type='f', digits=2):
 
-    """latex_from_2darray
+    r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
             - a 2D ndarray (float or complex)
