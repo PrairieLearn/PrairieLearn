@@ -4,6 +4,7 @@ services:
 branches:
   only:
   - master
+  - /^greenkeeper\//
   - /^[0-9]+\.[0-9]+$/
   - code-coverage
 notifications:
