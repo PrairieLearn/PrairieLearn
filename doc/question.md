@@ -178,7 +178,7 @@ We then re-parse this tree and again begin looking for more elements to render. 
 </div>
 ```
 
-And then we're done! This is an obviously more correct way to process questions, and it will soon become the default. However, this change required introducing a new HTML parser that behaves differently in the precense of malformed HTML, such as missing closing tags or self-closing PrairieLearn elements. So, we are making this new renderer opt-in for the time being until we can ensure that everyone's questions have been properly updated.
+And then we're done! This is an obviously more correct way to process questions, and it will soon become the default. However, this change required introducing a new HTML parser that behaves differently in the presence of malformed HTML, such as missing closing tags or self-closing PrairieLearn elements. So, we are making this new renderer opt-in for the time being until we can ensure that everyone's questions have been properly updated.
 
 To opt in to the new renderer, add the following to your `infoCourse.json` file:
 
