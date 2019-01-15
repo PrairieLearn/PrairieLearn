@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Fixing GitHub links in mkdocs.yml (Eric Huber).
+
   * Fix typo in documentation (Eric Huber).
 
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
