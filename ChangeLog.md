@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add conf.py for Sphinx/ReadTheDocs documentation path detection (Eric Huber).
+
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
 
   * Add course instance admin subpages (Dave Mussulman).
