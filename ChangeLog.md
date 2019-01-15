@@ -95,6 +95,10 @@
 
   * Fix error message when a tag is missing (Matt West, h/t Mariana Silva).
 
+  * Fix GitHub links in `mkdocs.yml` (Eric Huber).
+
+  * Fix typo in documentation (Eric Huber).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
