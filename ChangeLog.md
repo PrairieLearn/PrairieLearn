@@ -3,8 +3,6 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Fix typo in documentation (Eric Huber).
-
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
 
   * Add course instance admin subpages (Dave Mussulman).
@@ -92,6 +90,10 @@
   * Fix `pl-code` HTML escaping (Nathan Walters).
 
   * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
+
+  * Fix typo in documentation (Eric Huber).
+
+  * Fix error message when a tag is missing (Matt West, h/t Mariana Silva).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
