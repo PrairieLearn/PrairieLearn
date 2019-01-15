@@ -29,6 +29,8 @@
 
   * Add example script to download all course instance data from API (Matt West).
 
+  * Add default tags for semester Sp19 - Fa21 (James Balamuta).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
