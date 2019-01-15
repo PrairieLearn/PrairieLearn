@@ -3,10 +3,6 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Fixing GitHub links in mkdocs.yml (Eric Huber).
-
-  * Fix typo in documentation (Eric Huber).
-
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
 
   * Add course instance admin subpages (Dave Mussulman).
@@ -30,6 +26,8 @@
   * Add R package caching and parallel installation to centos-plbase (James Balamuta).
 
   * Add example script to download all course instance data from API (Matt West).
+
+  * Add default tags for semester Sp19 - Fa21 (James Balamuta).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -92,6 +90,14 @@
   * Fix `pl-code` HTML escaping (Nathan Walters).
 
   * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
+
+  * Fix typo in documentation (Eric Huber).
+
+  * Fix error message when a tag is missing (Matt West, h/t Mariana Silva).
+
+  * Fix GitHub links in `mkdocs.yml` (Eric Huber).
+
+  * Fix typo in documentation (Eric Huber).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
