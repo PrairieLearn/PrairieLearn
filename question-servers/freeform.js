@@ -287,7 +287,15 @@ module.exports = {
             if (ERR(err, callback)) return;
             let $;
             try {
-                const dom = htmlparser2.parseDOM(html, { recognizeSelfClosing: true });
+                const dom = htmlparser2.parseDOM(html, {
+                    // Default options from Cheerio
+                    withDomLvl1: true,
+                    normalizeWhitespace: false,
+                    xmlMode: false,
+                    decodeEntities: true,
+                    // Needed to handle self-closing PL elements
+                    recognizeSelfClosing: true,
+                });
                 $ = cheerio.load(dom);
             } catch (e) {
                 err = e;
