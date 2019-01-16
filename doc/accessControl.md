@@ -40,7 +40,7 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
 `timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
 `password`         |   | ✓ | Password required to start an assessment (only for Exams).          | `"password": "mysecret"`
-`examUuid`         |   | ✓ | Exam scheduler UUID that students must register for.                | `"examId": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
+`examUuid`         |   | ✓ | Exam scheduler UUID that students must register for.                | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -122,13 +122,14 @@ To require that students are taking a particular exam in the Computer-Based Test
 ```
 "allowAccess": [
     {
+        "mode": "Exam",
         "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
         "credit": 100
     }
 ]
 ```
 
-Note that in this case it is not necessary to specify the `mode` or any date ranges. These will be automatically determined by the scheduler app and should not be set in PrairieLearn.
+Note that in this case the `startDate` and `endDate` should *NOT* be specified. These will be automatically determined by the scheduler app and should not be set in PrairieLearn.
 
 ## Course instance example
 
