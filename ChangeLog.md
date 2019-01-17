@@ -91,8 +91,6 @@
 
   * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
 
-  * Fix typo in documentation (Eric Huber).
-
   * Fix error message when a tag is missing (Matt West, h/t Mariana Silva).
 
   * Fix GitHub links in `mkdocs.yml` (Eric Huber).
