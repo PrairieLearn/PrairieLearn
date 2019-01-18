@@ -1,0 +1,17 @@
+<p>Here's a static graph:</p>
+
+<pl-graphviz-render>
+digraph G {
+  A -> B
+  B -> C
+}
+</pl-graphviz-render>
+
+<p>Here's a graph with randomly-generated edge weights:</p>
+
+<pl-graphviz-render>
+digraph G {
+  A -> B [label="  {{ params.weight1 }}"]
+  B -> C [label="  {{ params.weight2 }}"]
+}
+</pl-graphviz-render>

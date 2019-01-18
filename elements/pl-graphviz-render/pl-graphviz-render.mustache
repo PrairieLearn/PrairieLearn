@@ -1,0 +1,19 @@
+<script>
+$(function() {
+  window.GraphvizRender({
+    uuid: "{{uuid}}",
+    workerURL: "{{workerURL}}",
+    data: {{{ data }}},
+    engine: "{{engine}}",
+  })
+})
+</script>
+
+<div id="graphviz-render-{{uuid}}" class="graphviz-render">
+  <!-- pure css loading spinner, nice -->
+  <div class="spinner">
+    <div class="double-bounce1"></div>
+    <div class="double-bounce2"></div>
+  </div>
+  <span class="render-label">Rendering...</span>
+</div>
