@@ -29,6 +29,8 @@
 
   * Add default tags for semester Sp19 - Fa21 (James Balamuta).
 
+  * Add `pl-graphviz-render` element (Nathan Walters).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
