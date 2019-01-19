@@ -5,3 +5,4 @@ pandas==0.22.0
 scipy==1.0.0
 sympy==1.1.1
 Pillow==5.2.0
+pygraphviz==1.5
