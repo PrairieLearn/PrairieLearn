@@ -31,6 +31,8 @@
 
   * Add `pl-graphviz-render` element (Nathan Walters).
 
+  * Add Graphviz Yum package and Python library to centos7-plbase and centos7-python (Nicolas Nytko).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -102,6 +104,8 @@
   * Fix docs for `examUuid` usage (Matt West).
 
   * Fix `htmlparser2` config by copying default options from Cheerio (Nathan Walters).
+
+  * Fix traceback in console log for python errors (Tim Bretl).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
