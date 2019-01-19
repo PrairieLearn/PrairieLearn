@@ -499,7 +499,7 @@ Attribute | Type | Default | Description
 Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
 
 
-## pl-code
+## `pl-code` element
 
 ```html
 <pl-code language="python">
@@ -555,3 +555,19 @@ The `language` can be one of the following values.
 `yaml` | YAML
 
 Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
+
+## `pl-graphviz-render` element
+
+```html
+<pl-graphviz-render>
+digraph G {
+  A -> B
+}
+</pl-graphviz-render>
+```
+
+This element uses [viz.js](https://github.com/mdaines/viz.js/) to render Graphviz DOT notation on the client.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.

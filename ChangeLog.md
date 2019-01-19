@@ -29,6 +29,8 @@
 
   * Add default tags for semester Sp19 - Fa21 (James Balamuta).
 
+  * Add `pl-graphviz-render` element (Nathan Walters).
+
   * Add Graphviz Yum package and Python library to centos7-plbase and centos7-python (Nicolas Nytko).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
