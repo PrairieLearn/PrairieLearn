@@ -103,6 +103,8 @@
 
   * Fix `htmlparser2` config by copying default options from Cheerio (Nathan Walters).
 
+  * Fix traceback in console log for python errors (Tim Bretl).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
