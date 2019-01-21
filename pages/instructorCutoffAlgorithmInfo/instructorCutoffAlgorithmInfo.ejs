@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histmini.js"></script>
+    <script src="/node_modules/chart.js/dist/Chart.min.js"></script>
+    <style>
+    canvas {
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .chart-container {
+      width: 100%;
+    }
+    .chart-container:not(:last-child) {
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        width: 50%;
+      }
+      .chart-container:not(:last-child) {
+        margin-bottom: 0;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'admin'}); %>
+    <div id="content" class="container">
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">What is generated assessment SD reduction?</div>
+        <div class="card-footer">
+          <p>
+            Generated assessment SD reduction is a new feature in PrairieLearn to reduce variation in generated assessments.
+            It works by selecting only some of the randomly generated assessments to give to students, in order to
+            increase fairness and give students assessments of roughly equal difficulty.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>
