@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+
+    <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'sd_reduction'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAdminTabs', {navSubPage: 'sd_reduction'}); %>
+
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
+            <%= course_instance.long_name %> generated assessment SD reduction
+            <a tabindex="0" class="btn btn-light btn-sm ml-auto" data-toggle="modal"
+                data-target="#confirmationModal">
+              <%= generated_assessment_sd_reduction_change_text %>
+            </a>
+          </div>
+          <div class="card-body">
+            Generated assessment SD reduction is currently <%= generated_assessment_sd_reduction_text %> for this course.
+          </div>
+       </div>
+    </div>
+    <div class="modal fade" id="confirmationModal" tabindex="-1"
+         role="dialog" aria-labelledby="refreshStatsAssessmentInstances">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="modalTitle"><%= generated_assessment_sd_reduction_change_text %> generated
+            assessment SD reduction </h4>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to <%= generated_assessment_sd_reduction_change_text_lower %> generated assessment
+            SD reduction?
+          </div>
+          <div class="modal-footer">
+            <form name="refresh-stats-form" method="POST">
+              <input type="hidden" name="__action" value="change_generated_assessment_sd_reduction">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Submit</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    </body>
+    </html>
