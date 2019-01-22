@@ -67,6 +67,7 @@ module.exports = {
                         long_name: courseInstance.longName,
                         number: courseInstance.number,
                         display_timezone: courseInstance.timezone || courseInfo.timezone || 'America/Chicago',
+                        show_generated_assessment_sd_reduction_config: courseInstance.showGeneratedAssessmentSdReductionConfig,
                     };
                     sqldb.query(sql.insert_course_instance, params, function(err, result) {
                         if (ERR(err, callback)) return;

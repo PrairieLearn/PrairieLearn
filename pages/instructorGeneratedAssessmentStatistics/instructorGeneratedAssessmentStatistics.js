@@ -11,7 +11,7 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const num_exams = 1000;
+const num_exams = 10000;
 
 router.get('/', function(req, res, next) {
     debug('GET /');
@@ -26,14 +26,10 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.get_generated_assessments_calculation_status, params, function(err, result) {
                 if (ERR(err, next)) return;
 
-                if (result.rows.length > 0) {
-                    console.log(result.rows);
-                    res.locals.generated_assessments_calculation_status = result.rows[0].calculating;
-                } else {
-                    res.locals.generated_assessments_calculation_status = false;
-                }
+                res.locals.generated_assessments_calculation_status = result.rows[0].generated_assessments_calculation_status;
 
-                console.log(res.locals.generated_assessments_calculation_status);
+                console.log('result: ' + result.rows[0]);
+                console.log('Current generated assessments calculation status: ' + res.locals.generated_assessments_calculation_status);
                 callback(null);
             });
         },
@@ -91,8 +87,7 @@ router.get('/', function(req, res, next) {
                 res.locals.sd_before = data.sd_before;
                 res.locals.sd_after = data.sd_after;
                 res.locals.sd_perc_improvement = data.sd_perc_improvement;
-                res.locals.quintile_stats_after = data.quintile_stats_after;
-                console.log(res.locals.quintile_stats_after);
+                res.locals.quintile_stats = data.quintile_stats;
 
                 callback(null);
             });
@@ -109,7 +104,7 @@ router.post('/', function(req, res, next) {
     if (req.body.__action === 'refresh_generated_assessment_stats') {
         let params = {
             assessment_id: res.locals.assessment.id,
-            status: true,
+            status: 'STARTED',
         };
         sqldb.queryOneRow(sql.set_generated_assessments_calculation_status, params, function(err, _result) {
             if (ERR(err, next)) return;

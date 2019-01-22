@@ -172,6 +172,8 @@ module.exports = {
             'get_quintile_stats_using_saved_assessments.sql',
             'select_balanced_assessment_questions.sql',
             'calculate_quintile_stats.sql',
+            'calculate_predicted_assessment_score_quintiles_flattened.sql',
+            'mark_abandoned_generated_assessments_calculations_failed.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
