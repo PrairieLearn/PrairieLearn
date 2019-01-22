@@ -26,13 +26,6 @@ BEGIN
         accepted_range_lower_bound = means[quintile] - num_sds * sds[quintile];
         accepted_range_upper_bound = means[quintile] + num_sds * sds[quintile];
 
-        RAISE NOTICE 'generated_assessment_question_ids: %', generated_assessment_question_ids;
-        RAISE NOTICE 'Quintile: %', quintile;
-        RAISE NOTICE 'Lower bound: %', accepted_range_lower_bound;
-        RAISE NOTICE 'Upper bound: %', accepted_range_upper_bound;
-        RAISE NOTICE 'Means: %', means;
-        RAISE NOTICE 'Sds: %', sds;
-
         SELECT
             sum(
                 calculate_predicted_question_points(
@@ -53,11 +46,8 @@ BEGIN
 
         predicted_assessment_score = least(1, greatest(0, predicted_assessment_score));
 
-        RAISE NOTICE 'Predicted score: %', predicted_assessment_score;
-
         -- if predicted score is between the lower bound and the upper bound for all quintiles, then we keep it. Otherwise, we throw it.
         IF predicted_assessment_score < accepted_range_lower_bound OR predicted_assessment_score > accepted_range_upper_bound THEN
-            RAISE NOTICE 'DISQUALIFIED';
             num_disqualified = num_disqualified + 1;
         END IF;
     END LOOP;
@@ -67,4 +57,3 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
-
