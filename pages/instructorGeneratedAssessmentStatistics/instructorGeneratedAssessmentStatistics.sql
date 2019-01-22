@@ -53,14 +53,22 @@ WHERE
 -- then make histogram out of data
 
 -- BLOCK generated_assessment_distribution
-WITH quintile_stats AS (
+WITH quintile_stats_before_flattened AS (
     SELECT
-        array_agg(assessment_quintile_statistics.mean_score ORDER BY quintile) AS means,
-        array_agg(assessment_quintile_statistics.score_sd ORDER BY quintile) AS sds
+        assessment_quintile_statistics.quintile,
+        assessment_quintile_statistics.mean_score AS quintile_mean_before,
+        assessment_quintile_statistics.score_sd AS quintile_sd_before
     FROM
         assessment_quintile_statistics
     WHERE
-        assessment_quintile_statistics.assessment_id = $assessment_id
+        assessment_quintile_statistics.assessment_id=$assessment_id
+),
+quintile_stats_before AS (
+    SELECT
+        array_agg(quintile_stats_before_flattened.quintile_mean_before ORDER BY quintile_stats_before_flattened.quintile) AS means,
+        array_agg(quintile_stats_before_flattened.quintile_sd_before ORDER BY quintile_stats_before_flattened.quintile) AS sds
+    FROM
+        quintile_stats_before_flattened
 ),
 relevant_generated_assessments AS (
     SELECT
@@ -74,10 +82,10 @@ relevant_generated_assessments AS (
 generated_assessments_with_cutoff_info AS (
     SELECT
         calculate_predicted_assessment_score(relevant_generated_assessments.generated_aq_ids) AS predicted_score,
-        filter_generated_assessment(relevant_generated_assessments.generated_aq_ids, quintile_stats.means, quintile_stats.sds, 'Exams', $num_sds, 0) AS keep,
+        filter_generated_assessment(relevant_generated_assessments.generated_aq_ids, quintile_stats_before.means, quintile_stats_before.sds, 'Exams', $num_sds, 0) AS keep,
         relevant_generated_assessments.generated_assessment_id
     FROM
-        quintile_stats
+        quintile_stats_before
         CROSS JOIN relevant_generated_assessments
 ),
 num_exams_kept AS (
@@ -139,22 +147,23 @@ quintile_stats_object AS (
     FROM
         predicted_assessment_score_quintiles
 ),
-quintile_stats_after AS (
+quintile_stats AS (
     SELECT
         quintile_stats_object.quintile_means_after[quintiles.quintile] AS quintile_mean_after,
         quintile_stats_object.quintile_sds_after[quintiles.quintile] AS quintile_sd_after,
-        quintile_stats_object.quintile_means_before[quintiles.quintile] AS quintile_mean,
-        quintile_stats_object.quintile_sds_before[quintiles.quintile] AS quintile_sd,
+        quintile_stats_before_flattened.quintile_mean_before,
+        quintile_stats_before_flattened.quintile_sd_before,
         quintiles.quintile
     FROM
         quintile_stats_object
         CROSS JOIN generate_series(1, 5) AS quintiles (quintile)
+        JOIN quintile_stats_before_flattened ON (quintile_stats_before_flattened.quintile = quintiles.quintile)
 ),
-quintile_stats_after_json AS (
+quintile_stats_json AS (
     SELECT
-        json_agg(quintile_stats_after) AS json
+        json_agg(quintile_stats) AS json
     FROM
-        quintile_stats_after
+        quintile_stats
 )
 SELECT
     hist_json.json,
@@ -162,16 +171,14 @@ SELECT
     sd_values.sd_before,
     sd_values.sd_after,
     sd_improvement.sd_perc_improvement,
-    quintile_stats.means,
-    quintile_stats.sds,
-    quintile_stats_after_json.json AS quintile_stats_after
+    quintile_stats_json.json AS quintile_stats
 FROM
     hist_json
     JOIN num_exams_kept ON TRUE
     JOIN sd_values ON TRUE
     JOIN sd_improvement ON TRUE
     JOIN quintile_stats ON TRUE
-    CROSS JOIN quintile_stats_after_json
+    CROSS JOIN quintile_stats_json;
 
 -- BLOCK update_num_sds_value
 UPDATE

@@ -91,8 +91,7 @@ router.get('/', function(req, res, next) {
                 res.locals.sd_before = data.sd_before;
                 res.locals.sd_after = data.sd_after;
                 res.locals.sd_perc_improvement = data.sd_perc_improvement;
-                res.locals.quintile_stats_after = data.quintile_stats_after;
-                console.log(res.locals.quintile_stats_after);
+                res.locals.quintile_stats = data.quintile_stats;
 
                 callback(null);
             });

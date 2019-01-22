@@ -302,7 +302,7 @@
               </thead>
               <tbody>
                 <% [1,2,3,4,5].forEach(function(quintile) { %>
-                    <% const row = quintile_stats_after.filter(row => row.quintile == quintile)[0] %>
+                    <% const row = quintile_stats.filter(row => row.quintile == quintile)[0] %>
                     <tr>
                       <td><%= quintile %></td>
                       <td>
@@ -344,19 +344,19 @@
               </thead>
               <tbody>
               <% [1,2,3,4,5].forEach(function(quintile) { %>
-                <% const row = quintile_stats_after.filter(row => row.quintile == quintile)[0] %>
+                <% const row = quintile_stats.filter(row => row.quintile == quintile)[0] %>
                 <tr>
                   <td><%= quintile %></td>
                   <td>
                     <% if (row) { %>
-                      <%= (parseFloat(row.quintile_mean) * 100).toFixed(2) %> %
+                      <%= (parseFloat(row.quintile_mean_before) * 100).toFixed(2) %> %
                     <% } else { %>
                       --
                     <% } %>
                   </td>
                   <td>
                     <% if (row) { %>
-                      <%= (parseFloat(row.quintile_sd) * 100).toFixed(3) %> %
+                      <%= (parseFloat(row.quintile_sd_before) * 100).toFixed(3) %> %
                     <% } else { %>
                       --
                     <% } %>
