@@ -69,9 +69,11 @@ module.exports = {
                         auto_close: _.has(dbAssessment, 'autoClose') ? dbAssessment.autoClose : true,
                         max_points: dbAssessment.maxPoints,
                         course_instance_id: courseInstance.courseInstanceId,
+                        set_name: dbAssessment.set,
                         course_id: courseInfo.courseId,
                         set_name: dbAssessment.set,
                         text: dbAssessment.text,
+                        generated_assessment_sd_reduction_feature_enabled: dbAssessment.enableGeneratedAssessmentSdReductionFeature,
                         constant_question_value: _.has(dbAssessment, 'constantQuestionValue') ? dbAssessment.constantQuestionValue : false,
                     };
                     sqldb.query(sql.insert_assessment, params, function(err, result) {

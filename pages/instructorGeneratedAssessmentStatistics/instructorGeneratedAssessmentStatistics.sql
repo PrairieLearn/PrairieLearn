@@ -1,35 +1,24 @@
 -- BLOCK get_generated_assessments_calculation_status
 SELECT
-    generated_assessments_calculation_status.calculating
+    a.generated_assessments_calculation_status
 FROM
-    generated_assessments_calculation_status
+    assessments AS a
 WHERE
-    generated_assessments_calculation_status.assessment_id = $assessment_id;
+    a.id = $assessment_id;
 
 -- BLOCK set_generated_assessments_calculation_status
-INSERT INTO
-    generated_assessments_calculation_status (assessment_id, calculating)
-SELECT
-    $assessment_id,
-    $status
-ON CONFLICT (assessment_id)
-    DO UPDATE SET
-      assessment_id=EXCLUDED.assessment_id,
-      calculating=EXCLUDED.calculating;
+UPDATE
+    assessments AS a
+SET
+    generated_assessments_calculation_status=$status
+WHERE
+    a.id = $assessment_id;
 
 -- BLOCK generated_assessment_statistics
 SELECT
     assessment_quintile_statistics.*
 FROM
     assessment_quintile_statistics
-WHERE
-    assessment_quintile_statistics.assessment_id = $assessment_id;
-
--- BLOCK generated_assessment_statistics_after
-SELECT
-    assessment_quintile_statistics.*
-FROM
-    get_quintile_stats_using_saved_assessments($assessment_id) AS quintile_stats
 WHERE
     assessment_quintile_statistics.assessment_id = $assessment_id;
 
@@ -78,6 +67,8 @@ relevant_generated_assessments AS (
         generated_assessments AS ga
     WHERE
         ga.assessment_id = $assessment_id
+    LIMIT
+      1000
 ),
 generated_assessments_with_cutoff_info AS (
     SELECT

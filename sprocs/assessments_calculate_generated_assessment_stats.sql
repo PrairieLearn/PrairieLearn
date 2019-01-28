@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS VOID
 AS $$
 BEGIN
-    -- generate 1000 exams
+    -- generate {num_exams} exams
     -- calculate mean and sd for each quintile
     -- save to db
 
@@ -52,19 +52,10 @@ BEGIN
     UPDATE
         assessments AS a
     SET
-        generated_assessment_stats_last_updated = current_timestamp
+        generated_assessment_stats_last_updated = current_timestamp,
+        generated_assessments_calculation_status = 'NOT_STARTED'
     WHERE
         a.id = assessment_id_var;
-
-    INSERT INTO
-        generated_assessments_calculation_status (assessment_id, calculating)
-    SELECT
-        assessment_id_var,
-        FALSE
-    ON CONFLICT (assessment_id)
-        DO UPDATE SET
-          assessment_id=EXCLUDED.assessment_id,
-          calculating=EXCLUDED.calculating;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
