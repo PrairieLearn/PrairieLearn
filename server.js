@@ -255,9 +255,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/admin/course', [
     require('./middlewares/authzCourseInstanceHasCourseView'),
     require('./pages/courseOverview/courseOverview'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/admin/sdReduction', [
-    require('./pages/instructorAdminSdReduction/instructorAdminSdReduction'),
-]);
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
@@ -505,6 +502,13 @@ if (config.startServer) {
         function(callback) {
             logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            // change status for all abandoned generated assessments calculations from 'STARTED' to 'FAILED'
+            sqldb.call('mark_abandoned_generated_assessments_calculations_failed', [], function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

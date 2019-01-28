@@ -10,9 +10,4 @@
         <a class="nav-link <% if (navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course"><i class="fab fa-fort-awesome"></i> Course</a>
       </li>
   <% } %>
-  <% if (authz_data.has_course_permission_view) { %>
-      <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "sd_reduction") { %>active<% } %>" href="<%= urlPrefix %>/admin/sdReduction"><i class="fas fa-sliders-h"></i> Generated Assessment SD Reduction </a>
-      </li>
-  <% } %>
 </ul>

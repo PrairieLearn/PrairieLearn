@@ -1,0 +1,1 @@
+ALTER TABLE course_instances RENAME COLUMN sd_reduction_status TO show_generated_assessment_sd_reduction_config;
