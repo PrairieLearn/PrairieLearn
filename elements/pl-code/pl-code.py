@@ -1,5 +1,6 @@
 import prairielearn as pl
 import lxml.html
+from html import escape
 import chevron
 import os
 
@@ -76,6 +77,8 @@ def render(element_html, data):
             code += line
         code = code[:-1]
         f.close()
+        # Automatically escape code in file source (important for: html/xml).
+        code = escape(code)
     else:
         # Strip a single leading newline from the code, if present. This
         # avoids having spurious newlines because of HTML like:
