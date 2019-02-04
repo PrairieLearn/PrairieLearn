@@ -33,6 +33,8 @@
 
   * Add Graphviz Yum package and Python library to centos7-plbase and centos7-python (Nicolas Nytko).
 
+  * Add a second example of reading XML code in from a file with `pl-code` (James Balamuta).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -108,6 +110,8 @@
   * Fix traceback in console log for python errors (Tim Bretl).
 
   * Fix render cache stats to limit to last day (Matt West).
+
+  * Fix escape sequence of code specified in the `source-file-name` options of `pl-code` (James Balamuta).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
