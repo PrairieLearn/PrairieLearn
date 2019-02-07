@@ -113,6 +113,8 @@
 
   * Fix escape sequence of code specified in the `source-file-name` options of `pl-code` (James Balamuta).
 
+  * Fix local grader not removing volumes associated with containers (Nathan Walters).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
