@@ -430,7 +430,10 @@ function runJob(info, callback) {
             });
         },
         (container, callback) => {
-            container.remove((err) => {
+            container.remove({
+                // Remove any volumes associated with this container
+                v: true,
+            }, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
