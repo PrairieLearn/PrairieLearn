@@ -207,11 +207,29 @@ We have to do a couple interesting things to run external grading jobs when Prai
 * We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
 * We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
 
-So, the command to run PrairieLearn locally will now look something like this:
+Running PrairieLearn locally with externally graded question support looks something like this:
 
+1. Create an empty directory to use to share job data between containers. This can live anywhere, but
+needs to be created first and referenced in the docker launch command.
+    * i.e. `mkdir $HOME/pl_ag_jobs`
+1. Modify your PL docker run call to look something like:
 ```sh
-docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn -v /home/nathan/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/home/nathan/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
+docker run -it --rm -p 3000:3000 \
+    -v $PWD:/course \                # Map your current directly in as course content
+    -v $HOME/pl_ag_jobs:/jobs \      # Map jobs directory into /jobs
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \ # Mount docker into itself so container can spawn others
+    prairielearn/prairielearn        # PL docker image itself
 ```
+
+Note: The sequence above works on Windows 10 as well as MacOS and Linux docker. Windows users might see problems running grading jobs:
+
+* A `standard_init_linux.go:207: exec user process caused "no such file or directory"` error when
+grading likely means a OS new-line incompatibility with the `entrypoint` script in the externally
+graded question.
+    * One solution for this is to make a `.gitattributes` files in your PL repository with the line
+`*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
+format instead of converting them for Windows (which breaks mapping them back into docker). This mimics the [.gitattributes file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
 #### Running locally (native, not on Docker)
 
