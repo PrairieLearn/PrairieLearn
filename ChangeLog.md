@@ -117,6 +117,8 @@
 
   * Fix Python autograder container build (Matt West).
 
+  * Fix copy button (Tim Bretl).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
