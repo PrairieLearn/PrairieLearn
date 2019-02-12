@@ -115,8 +115,9 @@
 
   * Fix local grader not removing volumes associated with containers (Nathan Walters).
 
-  * Fix copy button (Tim Bretl).
   * Fix Python autograder container build (Matt West).
+
+  * Fix copy button (Tim Bretl).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
