@@ -260,7 +260,7 @@ def parse(element_html, data):
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
         return
-    except Exception as err:
+    except Exception:
         data['format_errors'][name] = 'Invalid format.'
         data['submitted_answers'][name] = None
         return
@@ -272,7 +272,7 @@ def parse(element_html, data):
 
         # Finally, store the result
         data['submitted_answers'][name] = a_sub_json
-    except Exception as err:
+    except Exception:
         s = 'Your answer was simplified to this, which contains an invalid expression: $${:s}$$'.format(sympy.latex(a_sub_parsed))
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None

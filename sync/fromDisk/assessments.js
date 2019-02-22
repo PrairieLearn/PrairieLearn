@@ -137,29 +137,24 @@ module.exports = {
         });
     },
 
-    ensurePSExamIfNeeded: function(dbRule, callback) {
-        if (!_(dbRule).has('examId')) {
+    ensurePSExamIfNeeded: function(dbRule, dbAssessment, callback) {
+        if (!_(dbRule).has('examUuid')) {
             return callback(null);
         }
 
-        if (config.syncExamIdAccessRules) {
+        if (config.checkAccessRulesExamUuid) {
             const params = {
-                exam_id: dbRule.examId,
+                exam_uuid: dbRule.examUuid,
             };
-            sqldb.query(sql.select_exams_by_id, params, function(err, result) {
+            sqldb.query(sql.select_exams_by_uuid, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount == 0) return callback(new Error('No such examId: ' + dbRule.examId));
+                if (result.rowCount == 0) {
+                    return callback(new Error(`Assessment ${dbAssessment.tid} allowAccess: No such examUuid ${dbRule.examUuid} found in database. Double-check the scheduler to ensure you copied the correct thing?`));
+                }
                 callback(null);
             });
         } else {
-            const params = {
-                exam_id: dbRule.examId,
-                exam_string: 'Exam ' + dbRule.examId,
-            };
-            sqldb.query(sql.insert_fake_ps_exam_if_needed, params, function(err, _result) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
+            callback(null);
         }
     },
 
@@ -168,7 +163,7 @@ module.exports = {
         var allowAccess = dbAssessment.allowAccess || [];
         async.forEachOfSeries(allowAccess, function(dbRule, i, callback) {
             logger.debug('Syncing assessment access rule number ' + (i + 1));
-            that.ensurePSExamIfNeeded(dbRule, function(err) {
+            that.ensurePSExamIfNeeded(dbRule, dbAssessment, function(err) {
                 if (ERR(err, callback)) return;
                 var params = {
                     assessment_id: assessmentId,
@@ -182,7 +177,7 @@ module.exports = {
                     time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
                     password: _(dbRule).has('password') ? dbRule.password : null,
                     seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
-                    exam_id: _(dbRule).has('examId') ? dbRule.examId : null,
+                    exam_uuid: _(dbRule).has('examUuid') ? dbRule.examUuid : null,
                 };
                 sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                     if (ERR(err, callback)) return;

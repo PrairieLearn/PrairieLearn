@@ -1,4 +1,5 @@
 import lxml.html
+import html
 import to_precision
 import numpy as np
 import uuid
@@ -117,13 +118,13 @@ def from_json(v):
 
 
 def inner_html(element):
-    html = element.text
-    if html is None:
-        html = ''
-    html = str(html)
+    inner = element.text
+    if inner is None:
+        inner = ''
+    inner = html.escape(str(inner))
     for child in element:
-        html += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
-    return html
+        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+    return inner
 
 
 def compat_get(object, attrib, default):
@@ -834,7 +835,7 @@ def matlab_to_numpy(a):
 
 def latex_from_2darray(A, presentation_type='f', digits=2):
 
-    """latex_from_2darray
+    r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
             - a 2D ndarray (float or complex)

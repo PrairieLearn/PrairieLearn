@@ -31,6 +31,8 @@ RUN yum -y install \
         ImageMagick           `# for PrairieDraw label images` \
         texlive               `# for PrairieDraw label images` \
         git2u \
+        graphviz \
+        graphviz-devel \
     && yum clean all \
     && echo "installing node via nvm" \
         && git clone https://github.com/creationix/nvm.git /nvm \

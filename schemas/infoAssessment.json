@@ -85,9 +85,10 @@
                     "description": "The server mode required for access.",
                     "enum": ["Public", "Exam", "SEB"]
                 },
-                "examId": {
-                    "description": "The scheduler exam ID for which a student must be registered.",
-                    "type": "integer"
+                "examUuid": {
+                    "description": "The scheduler exam UUID for which a student must be registered.",
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                 },
                 "role" : {
                     "description": "The minimum user role required for access.",

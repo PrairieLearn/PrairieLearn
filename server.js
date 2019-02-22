@@ -19,6 +19,7 @@ const logger = require('./lib/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const externalGrader = require('./lib/externalGrader');
+const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -169,6 +170,7 @@ app.use('/pl/login', require('./pages/authLogin/authLogin'));
 // disable SEB until we can fix the mcrypt issues
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
+app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
 
@@ -245,7 +247,6 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 //////////////////////////////////////////////////////////////////////
 // API ///////////////////////////////////////////////////////////////
 
-app.use('/pl/api', require('./middlewares/authnToken'));
 app.use('/pl/api/v1', require('./api/v1'));
 
 //////////////////////////////////////////////////////////////////////
@@ -494,11 +495,13 @@ module.exports.startServer = function(callback) {
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);
+        server.timeout = 600000; // 10 minutes
         logger.verbose('server listening to HTTPS on port ' + config.serverPort);
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
         server.listen(config.serverPort);
+        server.timeout = 600000; // 10 minutes
         logger.verbose('server listening to HTTP on port ' + config.serverPort);
         callback(null);
     } else {
@@ -596,8 +599,14 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        function(callback) {
-            externalGrader.init(assessment, function(err) {
+        (callback) => {
+            externalGrader.init(assessment, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            externalGraderResults.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

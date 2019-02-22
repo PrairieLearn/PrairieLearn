@@ -3,6 +3,8 @@ site_url: https://github.com/PrairieLearn/PrairieLearn
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme: readthedocs
 docs_dir: doc
+# Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
+edit_uri: blob/master/doc/
 
 pages:
 - Main: 'index.md'

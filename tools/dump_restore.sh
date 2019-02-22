@@ -13,4 +13,4 @@ set -x
 
 dropdb ${DBNAME}
 createdb ${DBNAME}
-pg_restore --dbname=${DBNAME} --jobs=4 --no-owner "${INPUT_DUMP}"
+time pg_restore --dbname=${DBNAME} --jobs=4 --no-owner "${INPUT_DUMP}"

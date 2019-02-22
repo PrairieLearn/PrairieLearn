@@ -21,7 +21,47 @@
 
   * Add networkx Python library to centos7-python (Nathan Bowman).
 
+  * Add ability to "Grade all saved answers" on exam assessment overview (Dave Mussulman).
+
+  * Add dead letter reporting to Slack (Matt West).
+
+  * Add more logging for external grading jobs in production (Matt West).
+
+  * Add documentation on common development errors to FAQ (James Balamuta).
+
+  * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
+
+  * Add R package caching and parallel installation to centos-plbase (James Balamuta).
+
+  * Add example script to download all course instance data from API (Matt West).
+
+  * Add default tags for semester Sp19 - Fa21 (James Balamuta).
+
+  * Add Graphviz Yum package and Python library to centos7-plbase and centos7-python (Nicolas Nytko)
+
+  * Change "Save & Grade" button text and alignment (Dave Mussulman).
+
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
+
+  * Change external grading to receive results from an SQS queue instead of a webhook (Nathan Walters).
+
+  * Change Exam question generation to first-access time (Matt West).
+
+  * Change assessment access rule examId linking to examUuid (Dave Mussulman).
+
+  * Change example question `fibonacciEditor` timeout to 20 s (Matt West).
+
+  * Change server timeout to 10 minutes (Matt West).
+
+  * Change API ID names to contain object type (Matt West).
+
+  * Change API object property names for improved consistency (Matt West).
+
+  * Change `highlight.js` from `9.12.01` to `9.13.1` in order to support `plaintext` highlighting (Nathan Walters).
+
+  * Change all packages to current versions (Matt West).
+
+  * Change logging format for new `winston` version (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -38,6 +78,38 @@
   * Fix GitHub links to exampleCourse questions (Dave Mussulman).
 
   * Fix exclude file list for code coverage (Matt West).
+
+  * Fix `dump_filter.sh` to keep `authn_users` in all tables (Matt West).
+
+  * Fix issues link on instructor question page (Nathan Walters).
+
+  * Fix `users.lti_course_instance_id` foreign key delete action (Matt West).
+
+  * Fix missing `event-stream` dependency (Matt West).
+
+  * Fix `pl.inner_html(...)` helper function (Nathan Walters).
+
+  * Fix slow gradebook API by removing `last_submission_date` (Matt West).
+
+  * Fix API IDs to be JSON integers (Matt West).
+
+  * Fix underscore in `pl-string-input` docs (Matt West).
+
+  * Fix Python linter errors in (Matt West).
+
+  * Fix `pl-code` HTML escaping (Nathan Walters).
+
+  * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
+
+  * Fix error message when a tag is missing (Matt West, h/t Mariana Silva).
+
+  * Fix GitHub links in `mkdocs.yml` (Eric Huber).
+
+  * Fix typo in documentation (Eric Huber).
+
+  * Fix docs for `examUuid` usage (Matt West).
+
+  * Fix `htmlparser2` config by copying default options from Cheerio (Nathan Walters).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 

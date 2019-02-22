@@ -13,7 +13,7 @@ BEGIN
     WHERE
         v.instance_question_id = instance_questions_select_variant.instance_question_id
         AND (NOT require_open OR v.open)
-        AND (NOT require_open OR NOT v.broken)
+        AND NOT v.broken
     ORDER BY v.date DESC
     LIMIT 1;
 END;

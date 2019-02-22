@@ -43,12 +43,12 @@ setup_ps_courses AS (
         (5, null, 'course not linked but exams are')
 ),
 setup_exams AS (
-    INSERT INTO exams (exam_id, course_id, exam_string) VALUES
-        (1, 1, 'some exam'),
-        (2, 2, 'some exam'),
-        (3, 3, 'some exam'),
-        (4, 4, 'some exam'),
-        (5, 5, 'some exam')
+    INSERT INTO exams (exam_id, course_id, exam_string, uuid) VALUES
+        (1, 1, 'some exam', '890884f9-aa9d-4fc0-b910-5229794906fb'),
+        (2, 2, 'some exam', 'fa71b9cc-7717-4e84-9a1e-8d55b3d4fadd'),
+        (3, 3, 'some exam', null),
+        (4, 4, 'some exam', 'adf9ce2d-dfca-4a7f-8c6b-1376715fd346'),
+        (5, 5, 'some exam', '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3')
 ),
 setup_pl_course AS (
     INSERT INTO pl_courses (id) VALUES (1), (2), (3)
@@ -79,18 +79,18 @@ setup_assessments AS (
         (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4)
 ),
 setup_assessment_access_rule AS (
-    INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_id) VALUES
+    INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_uuid) VALUES
         (10, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (11, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 1),
-        (12, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (11, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '890884f9-aa9d-4fc0-b910-5229794906fb'),
+        (12, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'),
         (13, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
         (20, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (21, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 2),
-        (22, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (21, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'fa71b9cc-7717-4e84-9a1e-8d55b3d4fadd'),
+        (22, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'),
         (23, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
         (40, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
-        (41, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 4),
-        (42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 5),
+        (41, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'adf9ce2d-dfca-4a7f-8c6b-1376715fd346'),
+        (42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'),
         (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null)
 )
 SELECT true;
