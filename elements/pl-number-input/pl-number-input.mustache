@@ -64,6 +64,7 @@
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#a_tru}}
 {{#correct}}
 <script>
     $(function(){
@@ -80,6 +81,7 @@
   </a>
 </span>
 {{/correct}}
+{{/a_tru}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/parse_error}}
