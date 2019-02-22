@@ -5,6 +5,7 @@
     "private": true,
     "dependencies": {
         "@prairielearn/prairielib": "^1.5.1",
+        "ace-builds": "^1.4.1",
         "adm-zip": "^0.4.11",
         "archiver": "^2.1.1",
         "async": "^2.6.1",
@@ -91,5 +92,12 @@
         "test": "nyc --reporter=lcov mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"
+    },
+    "nyc": {
+        "exclude": [
+            "node_modules",
+            "public",
+            "tests"
+        ]
     }
 }

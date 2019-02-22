@@ -174,13 +174,10 @@ router.get('/', function(req, res, next) {
             if (res.locals.course.repository) {
                 const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
                 if (GHfound) {
-                    if (GHfound[1] == 'PrairieLearn/PrairieLearn') {
-                        // this is exampleCourse, so handle it specially
-                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/exampleCourse/questions/' + res.locals.question.qid;
-                    } else {
-                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
-                    }
+                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
+            } else if (res.locals.course.options.isExampleCourse) {
+                res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);
         },

@@ -128,6 +128,28 @@ def render(element_html, data):
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
 
+        # Add true answer to be able to display it in the submitted answer panel
+        a_tru = pl.from_json(data['correct_answers'].get(name, None))
+        if a_tru is not None:
+
+            # Get comparison parameters
+            comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+            if comparison == 'relabs':
+                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
+                atol = pl.get_float_attrib(element, 'atol', 1e-8)
+                # FIXME: render correctly with respect to rtol and atol
+                a_tru = '{:.12g}'.format(a_tru)
+            elif comparison == 'sigfig':
+                digits = pl.get_integer_attrib(element, 'digits', 2)
+                a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
+            elif comparison == 'decdig':
+                digits = pl.get_integer_attrib(element, 'digits', 2)
+                a_tru = '{:.{ndigits}f}'.format(a_tru, ndigits=digits)
+            else:
+                raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+
+            html_params['a_tru'] = a_tru
+
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         if score is not None:

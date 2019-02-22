@@ -33,43 +33,21 @@ router.post('/', function(req, res, next) {
     });
 });
 
-// FIXME: delete this
-var tmp_upgrade = function(locals, callback) {
-    if (locals.assessment_instance.tmp_upgraded_iq_status) {
-        return callback(null);
-    } else {
-        var params = {assessment_instance_id: locals.assessment_instance.id};
-        sqldb.query(sql.tmp_upgrade_iq_status, params, function(err, _result) {
-            if (ERR(err, callback)) return;
-
-            var params = {assessment_instance_id: locals.assessment_instance.id};
-            sqldb.query(sql.tmp_set_upgraded, params, function(err, _result) {
-                if (ERR(err, callback)) return;
-                return callback(null);
-            });
-        });
-    }
-};
-
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    tmp_upgrade(res.locals, function(err) {
+    var params = {assessment_instance_id: res.locals.assessment_instance.id};
+    sqldb.query(sql.select_instance_questions, params, function(err, result) {
         if (ERR(err, next)) return;
+        res.locals.instance_questions = result.rows;
 
-        var params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqldb.query(sql.select_instance_questions, params, function(err, result) {
+        assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
             if (ERR(err, next)) return;
-            res.locals.instance_questions = result.rows;
+            res.locals.assessment_text_templated = assessment_text_templated;
 
-            assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
-                if (ERR(err, next)) return;
-                res.locals.assessment_text_templated = assessment_text_templated;
+            res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
 
-                res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
-
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });
 });

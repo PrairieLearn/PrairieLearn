@@ -18,7 +18,6 @@ columns
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
     tiid: text
-    tmp_upgraded_iq_status: boolean default false
     user_id: bigint not null
 
 indexes

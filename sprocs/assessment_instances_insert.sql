@@ -18,7 +18,6 @@ DECLARE
     number integer := 1;
     date_limit timestamptz := NULL;
     auto_close boolean := FALSE;
-    tmp_upgraded_iq_status boolean := TRUE; -- FIXME: delete this
 BEGIN
     -- ######################################################################
     -- get the assessment
@@ -56,8 +55,8 @@ BEGIN
     -- do the actual insert
 
     INSERT INTO assessment_instances
-            (auth_user_id, assessment_id, user_id, mode, auto_close, tmp_upgraded_iq_status, date_limit, number)
-    VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, tmp_upgraded_iq_status, date_limit, number)
+            (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
+    VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
     RETURNING id
     INTO assessment_instance_id;
 
