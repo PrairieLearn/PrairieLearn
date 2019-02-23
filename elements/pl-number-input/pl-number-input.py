@@ -183,21 +183,51 @@ def parse(element_html, data):
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
-
-    # Convert to float or complex
-    try:
-        a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
-        if a_sub_parsed is None:
-            raise ValueError('invalid submitted answer (wrong type)')
-        if not np.isfinite(a_sub_parsed):
-            raise ValueError('invalid submitted answer (not finite)')
-        data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
-    except Exception:
-        if allow_complex:
-            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
-        else:
+        # Accept fractional input, then convert it to a float or decimal
+        # (only works for certain integer addition/subtraction problems)
+    elif '/' in a_sub:
+        a_sub = a_sub.strip()
+        a_sub_list = a_sub.split('/')
+        try:
+            a_sub_parsed_numerator = pl.string_to_number(a_sub_list[0])
+            if a_sub_parsed_numerator is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(a_sub_parsed_numerator):
+                raise ValueError('invalid submitted answer (not finite)')
+                return
+        except Exception:
             data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
-        data['submitted_answers'][name] = None
+            data['submitted_answers'][name] = None
+            return
+        try:
+            a_sub_parsed_denominator = pl.string_to_number(a_sub_list[1])
+            if a_sub_parsed_denominator is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(a_sub_parsed_denominator):
+                raise ValueError('invalid submitted answer (not finite)')
+                return
+        except Exception:
+            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+            data['submitted_answers'][name] = None
+            return
+        a_sub_parsed = (a_sub_parsed_numerator / a_sub_parsed_denominator)
+        data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
+        return
+    # Convert to float or complex
+    else:
+        try:
+            a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
+            if a_sub_parsed is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(a_sub_parsed):
+                raise ValueError('invalid submitted answer (not finite)')
+            data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
+        except Exception:
+            if allow_complex:
+                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
+            else:
+                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+                data['submitted_answers'][name] = None
 
 
 def grade(element_html, data):

@@ -59,6 +59,8 @@
 
   * Change logging format for new `winston` version (Matt West).
 
+  * Change `pl-number-input` to accept fractional answers (Henry Guan).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
