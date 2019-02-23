@@ -196,7 +196,7 @@ def parse(element_html, data):
                 raise ValueError('invalid submitted answer (not finite)')
                 return
         except Exception:
-            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number or fraction.'
             data['submitted_answers'][name] = None
             return
         try:
@@ -207,7 +207,7 @@ def parse(element_html, data):
                 raise ValueError('invalid submitted answer (not finite)')
                 return
         except Exception:
-            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number or fraction.'
             data['submitted_answers'][name] = None
             return
         a_sub_parsed = (a_sub_parsed_numerator / a_sub_parsed_denominator)
@@ -224,9 +224,9 @@ def parse(element_html, data):
             data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
         except Exception:
             if allow_complex:
-                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
+                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point, fraction or complex number.'
             else:
-                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+                data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number or fraction.'
                 data['submitted_answers'][name] = None
 
 
