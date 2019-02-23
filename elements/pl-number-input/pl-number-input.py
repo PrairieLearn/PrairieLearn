@@ -27,8 +27,6 @@ def format_true_ans(element, data, name):
         # Get comparison parameters
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
         if comparison == 'relabs':
-            #rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-            #atol = pl.get_float_attrib(element, 'atol', 1e-8)
             # FIXME: render correctly with respect to rtol and atol
             a_tru = '{:.12g}'.format(a_tru)
         elif comparison == 'sigfig':
