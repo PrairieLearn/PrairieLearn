@@ -83,17 +83,6 @@
                      data-score="<%= score.score_perc %>">
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   <a/>
-                  <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
-                     tabindex="0" class="btn btn-xs btn-secondary editTotalScorePercButton" role="button"
-                     data-toggle="popover" data-container="body"
-                     data-html="true" data-placement="auto" title="Change total percentage score"
-                     data-content="<%= include('editTotalScorePercForm',
-                                   {id: 'editTotalScorePercButton' + iRow + '-' + iScore,
-                                   score_perc: score.score_perc,
-                                   assessment_instance_id: score.assessment_instance_id}); %>"
-                     data-trigger="manual" onclick="$(this).popover('show')">
-                    <i class="fa fa-edit" aria-hidden="true"></i>
-                  </a>
                   <% } %>
                   <% } %>
                 </td>
