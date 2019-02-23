@@ -8,6 +8,9 @@ DECLARE
     result DOUBLE PRECISION;
     bound INTEGER;
 BEGIN
+--    RAISE NOTICE 'qs_incremental_submission_score_array_averages: %', qs_incremental_submission_score_array_averages;
+--    RAISE NOTICE 'points_list: %', points_List;
+--    RAISE NOTICE 'max_points: %', max_points;
     IF points_list IS NULL OR max_points IS NULL THEN
         RETURN NULL;
     END IF;

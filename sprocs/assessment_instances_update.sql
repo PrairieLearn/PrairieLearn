@@ -21,7 +21,8 @@ DECLARE
     assessment_max_points double precision;
     old_assessment_instance_max_points double precision;
     new_assessment_instance_max_points double precision;
-    sd_reduction_status BOOLEAN;
+    generated_assessment_sd_reduction_feature_enabled BOOLEAN;
+    num_sds DOUBLE PRECISION;
 BEGIN
     PERFORM assessment_instances_lock(assessment_instance_id);
 
@@ -32,21 +33,23 @@ BEGIN
     SELECT
         c.id,
         ci.id,
-        ci.sd_reduction_status,
         u.user_id,
         a.id,
         a.type,
         a.max_points,
+        a.generated_assessment_sd_reduction_feature_enabled,
+        a.num_sds,
         ai.max_points,
         ai.open
     INTO
         course_id,
         course_instance_id,
-        sd_reduction_status,
         user_id,
         assessment_id,
         assessment_type,
         assessment_max_points,
+        generated_assessment_sd_reduction_feature_enabled,
+        num_sds,
         old_assessment_instance_max_points,
         assessment_instance_open
     FROM
@@ -71,11 +74,11 @@ BEGIN
       question JSONB
     );
 
-    IF sd_reduction_status THEN
-      RAISE notice 'using balanced aqs';
-      INSERT INTO aqs SELECT * FROM select_balanced_assessment_questions(assessment_id, assessment_instance_id);
+    IF generated_assessment_sd_reduction_feature_enabled THEN
+      RAISE notice 'using SD reduction algorithm to select balanced assessment questions';
+      INSERT INTO aqs SELECT * FROM select_balanced_assessment_questions(assessment_id, 20, num_sds, assessment_instance_id);
     ELSE
-      RAISE notice 'using regular aqs';
+      RAISE notice 'using randomly selected assessment questions';
       INSERT INTO aqs SELECT * FROM select_assessment_questions(assessment_id, assessment_instance_id);
     END IF;
 
