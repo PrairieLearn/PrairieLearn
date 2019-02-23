@@ -13,7 +13,7 @@
 
   * Add option to toggle placeholder help text for `pl-number-input` (James Balamuta).
 
-  * Add `size` attribute to `pl-number-input` (Nicolas Nytko)
+  * Add `size` attribute to `pl-number-input` (Nicolas Nytko).
 
   * Add demo question showcasing all options for `pl-number-input` (James Balamuta).
 
