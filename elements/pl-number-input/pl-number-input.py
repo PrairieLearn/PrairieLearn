@@ -20,7 +20,7 @@ def prepare(element_html, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
-def format_true_ans(element, data):
+def format_true_ans(element, data, name):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
         # Get comparison parameters
@@ -148,11 +148,11 @@ def render(element_html, data):
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
 
         # Add true answer to be able to display it in the submitted answer panel
-        a_tru = None
-        if (pl.get_boolean_attribute(element, "correct-answer-feedback", False)):
-            format_true_ans(element, data)
-        if (a_tru is not None):
-            html_params['a_tru'] = a_tru
+        ans_true = None
+        if (pl.get_boolean_attrib(element, "correct-answer-feedback", False)):
+            ans_true = format_true_ans(element, data, name)
+        if (ans_true is not None):
+            html_params['a_tru'] = ans_true
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -171,11 +171,9 @@ def render(element_html, data):
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        a_tru = None
-        if (pl.get_boolean_attribute(element, "correct-answer-feedback", False)):
-            format_true_ans(element, data)
-        if a_tru is not None:
-            html_params = {'answer': True, 'label': label, 'a_tru': a_tru, 'suffix': suffix}
+        ans_true = format_true_ans(element, data, name)
+        if ans_true is not None:
+            html_params = {'answer': True, 'label': label, 'a_tru': ans_true, 'suffix': suffix}
             with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
