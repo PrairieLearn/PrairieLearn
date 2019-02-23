@@ -20,14 +20,15 @@ def prepare(element_html, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
+
 def format_true_ans(element, data, name):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
         # Get comparison parameters
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-            atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            #rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
+            #atol = pl.get_float_attrib(element, 'atol', 1e-8)
             # FIXME: render correctly with respect to rtol and atol
             a_tru = '{:.12g}'.format(a_tru)
         elif comparison == 'sigfig':
@@ -39,6 +40,7 @@ def format_true_ans(element, data, name):
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
     return a_tru
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -149,7 +151,7 @@ def render(element_html, data):
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if (pl.get_boolean_attrib(element, "correct-answer-feedback", False)):
+        if (pl.get_boolean_attrib(element, 'correct-answer-feedback', False)):
             ans_true = format_true_ans(element, data, name)
         if (ans_true is not None):
             html_params['a_tru'] = ans_true
