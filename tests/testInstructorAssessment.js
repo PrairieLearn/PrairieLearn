@@ -468,6 +468,13 @@ describe('Instructor assessment editing', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
+        it('should have CSRF token for testing', function() {
+            elemList = locals.$('input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
         it('should contain a row for the dev user', function() {
             elemList = locals.$('tr td:contains("dev@illinois.edu")');
             assert.lengthOf(elemList, 1);
@@ -480,44 +487,19 @@ describe('Instructor assessment editing', function() {
             locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
         });
-    });
-
-    describe('16. edit-total-score-perc form', function() {
-        it('should exist', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.editTotalScorePercButton');
+        it('should contain button to edit score', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.edit-score');
             assert.lengthOf(elemList, 1);
         });
-        it('should have data-content', function() {
-            assert.isString(elemList[0].attribs['data-content']);
-        });
-        it('data-content should parse', function() {
-            locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
-        });
-        it('data-content should have a CSRF token', function() {
-            elemList = locals.data$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__csrf_token = elemList[0].attribs.value;
-            assert.isString(locals.__csrf_token);
-        });
-        it('data-content should have an __action', function() {
-            elemList = locals.data$('form input[name="__action"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__action = elemList[0].attribs.value;
-            assert.isString(locals.__action);
-            assert.equal(locals.__action, 'edit_total_score_perc');
-        });
-        it('data-content should have the correct assessment_instance_id', function() {
-            elemList = locals.data$('form input[name="assessment_instance_id"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
+        it('should contain the assessment instance id in a data tag', function() {
+            assert.nestedProperty(elemList[0], 'attribs.data-ai-id');
+            const assessment_instance_id = elemList[0].attribs['data-ai-id'];
             assert.equal(assessment_instance_id, 1);
         });
-        it('data-content should have a score_perc input', function() {
-            elemList = locals.data$('form input[name="score_perc"]');
-            assert.lengthOf(elemList, 1);
+        it('should contain the assessment score in a data tag', function() {
+            assert.nestedProperty(elemList[0], 'attribs.data-score');
+            const score = elemList[0].attribs['data-score'];
+            assert.equal(score, '37');
         });
     });
 
