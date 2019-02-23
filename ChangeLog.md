@@ -37,8 +37,6 @@
 
   * Add default tags for semester Sp19 - Fa21 (James Balamuta).
 
-  * Add Graphviz Yum package and Python library to centos7-plbase and centos7-python (Nicolas Nytko)
-
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
