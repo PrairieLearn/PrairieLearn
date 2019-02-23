@@ -1,5 +1,6 @@
 import prairielearn as pl
 import lxml.html
+import chevron
 import random
 import math
 
@@ -69,12 +70,9 @@ def prepare(element_html, data):
     data['correct_answers'][name] = correct_answer
 
 
-def render(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
+def render_inline(element, data):
     name = pl.get_string_attrib(element, 'answers-name')
-
     answers = data['params'].get(name, [])
-    inline = pl.get_boolean_attrib(element, 'inline', False)
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
@@ -103,8 +101,7 @@ def render(element_html, data):
             item += '</label>\n'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             html += item
-        if inline:
-            html = '<span>\n' + html + '</span>\n'
+        html = '<span>\n' + html + '</span>\n'
         if score is not None:
             try:
                 score = float(score)
@@ -145,6 +142,93 @@ def render(element_html, data):
             html = 'ERROR: No true answer'
         else:
             html = '(%s) %s' % (correct_answer['key'], correct_answer['html'])
+    else:
+        raise Exception('Invalid panel type: %s' % data['panel'])
+
+    return html
+
+
+def render(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    inline = pl.get_boolean_attrib(element, 'inline', False)
+    if inline:
+        return render_inline(element, data)
+
+    name = pl.get_string_attrib(element, 'answers-name')
+    answers = data['params'].get(name, [])
+
+    submitted_key = data['submitted_answers'].get(name, None)
+    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
+
+    with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+        template_file = f.read()
+
+    if data['panel'] == 'question':
+        editable = data['editable']
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+
+        html = ''
+        for answer in answers:
+            html_params = {
+                'item': True,
+                'key': answer['key'],
+                'name': name,
+                'label': answer['key'].upper(),
+                'answer': answer['html'],
+                'checked': (submitted_key == answer['key']),
+                'disabled': (not editable)
+            }
+            html += chevron.render(template_file, html_params)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html += chevron.render(template_file, { 'correct_feedback': True })
+                else:
+                    html += chevron.render(template_file, { 'incorrect_feedback': True })
+            except Exception:
+                raise ValueError('invalid score ' + score)
+        html = '<ul class="multiple-choice-group">' + html + '</ul>'
+    elif data['panel'] == 'submission':
+        # FIXME: handle parse errors?
+        if submitted_key is None:
+            html = 'No submitted answer'
+        else:
+            submitted_html = next((a['html'] for a in answers if a['key'] == submitted_key), None)
+            if submitted_html is None:
+                html = 'ERROR: Invalid submitted value selected: %s' % submitted_key  # FIXME: escape submitted_key
+            else:
+                html_params = {
+                    'label': submitted_key.upper(),
+                    'answer': submitted_html,
+                    'answer_display': True
+                }
+                html = chevron.render(template_file, html_params)
+                partial_score = data['partial_scores'].get(name, { 'score': None })
+                score = partial_score.get('score', None)
+                if score is not None:
+                    try:
+                        score = float(score)
+                        if score >= 1:
+                            html += chevron.render(template_file, { 'correct_feedback': True })
+                        else:
+                            html += chevron.render(template_file, { 'incorrect_feedback': True })
+                    except Exception:
+                        raise ValueError('invalid score' + score)
+                html = '<ul class="multiple-choice-group">' + html + '</ul>'
+    elif data['panel'] == 'answer':
+        correct_answer = data['correct_answers'].get(name, None)
+        if correct_answer is None:
+            html = 'ERROR: No true answer'
+        else:
+            html_params = {
+                'label': correct_answer['key'].upper(),
+                'answer': correct_answer['html'],
+                'answer_display': True
+            }
+            html = chevron.render(template_file, html_params)
+            html = '<ul class="multiple-choice-group">' + html + '</ul>'
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 

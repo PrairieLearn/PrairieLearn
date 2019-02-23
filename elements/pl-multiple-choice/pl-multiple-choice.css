@@ -1,0 +1,85 @@
+.multiple-choice-group {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0;
+  margin-bottom: 1rem;
+}
+.multiple-choice-group-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1px solid rgba(0,0,0,.125);
+  margin-bottom: -1px;
+  background-color: #fff;
+}
+.multiple-choice-group-item:first-child {
+  border-top-left-radius: .25rem;
+  border-top-right-radius: .25rem;
+}
+.multiple-choice-group-item:last-child {
+  border-bottom-left-radius: .25rem;
+  border-bottom-right-radius: .25rem;
+  margin-bottom: 0;
+}
+.multiple-choice-group-item.feedback-correct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: #28a745;
+  color: white;
+}
+.multiple-choice-group-item.feedback-incorrect {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: #dc3545;
+  color: white;
+}
+.multiple-choice-answer-label {
+  flex: 0 0 2.5rem;
+  text-align: center;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.multiple-choice-answer-label {
+  background: #e9ecef;
+}
+.multiple-choice-answer {
+  border-left: 1px solid rgba(0,0,0,.125);
+  padding: 0.5rem 0.75rem;
+  flex-grow: 1;
+}
+.multiple-choice-input {
+  opacity: 0;
+  width: 0;
+}
+.multiple-choice-input:checked + label > .multiple-choice-answer-label {
+  background-color: #007bff;
+  color: white;
+}
+.multiple-choice-group-item:first-child .multiple-choice-label > .multiple-choice-answer-label {
+  border-top-left-radius: 0.20rem;
+}
+.multiple-choice-group-item:last-child .multiple-choice-label > .multiple-choice-answer-label {
+  border-bottom-left-radius: 0.20rem;
+}
+.multiple-choice-input:focus:not(:checked) + label > .multiple-choice-answer-label {
+  outline: #007bff auto 3px;
+  z-index: 10;
+}
+.multiple-choice-label {
+  display: flex;
+  margin: 0;
+  flex-grow: 1;
+}
+.multiple-choice-input:not(:disabled) + .multiple-choice-label:hover {
+  background-color: #e9ecef;
+  cursor: pointer;
+}
+.multiple-choice-group-item:first-child .multiple-choice-label {
+  border-top-left-radius: 0.20rem;
+}
+.multiple-choice-group-item:last-child .multiple-choice-label {
+  border-bottom-left-radius: 0.20rem;
+}

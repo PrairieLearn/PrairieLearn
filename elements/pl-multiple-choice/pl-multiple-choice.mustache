@@ -1,0 +1,32 @@
+{{#item}}
+<li class="multiple-choice-group-item">
+  <input type="radio" name="{{name}}" value="{{key}}" id="{{name}}-{{key}}" {{#checked}}checked{{/checked}} {{#disabled}}disabled{{/disabled}} class="multiple-choice-input">
+  <label for="{{name}}-{{key}}" class="multiple-choice-label">
+    <span class="multiple-choice-answer-label">{{label}}</span>
+    <span class="multiple-choice-answer">{{{answer}}}</span>
+  </label>
+</li>
+{{/item}}
+
+{{#answer_display}}
+<li class="multiple-choice-group-item">
+  <div class="multiple-choice-label">
+    <span class="multiple-choice-answer-label">{{label}}</span>
+    <span class="multiple-choice-answer">{{{answer}}}</span>
+  </label>
+</li>
+{{/answer_display}}
+
+{{#correct_feedback}}
+<li class="multiple-choice-group-item feedback-correct">
+  <i class="fa fa-check ml-2 mr-2" aria-hidden="true"></i>
+  100%
+</li>
+{{/correct_feedback}}
+
+{{#incorrect_feedback}}
+<li class="multiple-choice-group-item feedback-incorrect">
+  <i class="fa fa-times ml-2 mr-2" aria-hidden="true"></i>
+  0%
+</li>
+{{/incorrect_feedback}}
