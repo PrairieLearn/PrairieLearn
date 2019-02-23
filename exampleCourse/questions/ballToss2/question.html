@@ -1,3 +1,74 @@
+<style>
+  .multiple-choice-group {
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+    margin-bottom: 1rem;
+  }
+  .multiple-choice-group-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border: 1px solid rgba(0,0,0,.125);
+    margin-bottom: -1px;
+    background-color: #fff;
+  }
+  .multiple-choice-group-item:first-child {
+    border-top-left-radius: .25rem;
+    border-top-right-radius: .25rem;
+  }
+  .multiple-choice-group-item:last-child {
+    border-bottom-left-radius: .25rem;
+    border-bottom-right-radius: .25rem;
+    margin-bottom: 0;
+  }
+  .multiple-choice-answer-label {
+    width: 2.5rem;
+    text-align: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-right: 1px solid rgba(0,0,0,.125);
+  }
+  .multiple-choice-answer-label {
+    background: #e9ecef;
+  }
+  .multiple-choice-answer {
+    padding: 0.5rem 0.75rem;
+    flex-grow: 1;
+  }
+  .multiple-choice-input {
+    display: none;
+  }
+  .multiple-choice-input:checked + label {
+    font-weight: 500;
+  }
+</style>
+<pl-question-panel>
+  <ul class="multiple-choice-group">
+    <li class="multiple-choice-group-item">
+      <input type="radio" name="blah" value="a" id="blah-a" class="multiple-choice-input">
+      <label for="blah-a">
+        <span class="multiple-choice-answer-label">A</span>
+        <span class="multiple-choice-answer">$t = {{params.t_c}}\rm\ s$</span>
+      </label>
+    </li>
+    <li class="multiple-choice-group-item">
+      <input type="radio" name="blah" value="b" id="blah-b" class="multiple-choice-input">
+      <label for="blah-b">
+        <span class="multiple-choice-answer-label">B</span>
+        <span class="multiple-choice-answer">$t = {{params.t_c}}\rm\ s$</span>
+      </label>
+    </li>
+  </ul>
+  <ul class="list-group">
+    <li class="list-group-item d-flex flex-row">
+      <span>A</span>
+      <span class="flex-grow-1">First Answer</span>
+    </li>
+    <li class="list-group-item d-flex flex-row">Second answer</li>
+  </ul>
+</pl-question-panel>
+
 <pl-question-panel>
 <p>
   A ball with mass $m ={{params.m}}\rm\ kg$ is thrown downward from the top of a building with height $h = {{params.h}}\rm\ m$ and initial speed $v_0$ at an angle $\theta$ with respect to the horizontal as shown in the figure. The $x$-component of the initial velocity $v_{x0} = {{params.v0x}}\rm\ m/s$, and the ball hits the ground a distance $d = {{params.d}}\rm\ m$ from the building as shown in the figure.
