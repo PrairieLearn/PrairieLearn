@@ -19,6 +19,7 @@ DECLARE
     sds DOUBLE PRECISION[];
     keep BOOLEAN;
     aq_ids BIGINT[];
+    debug_predicted_score DOUBLE PRECISION[];
 BEGIN
 
     -- Generate assessment
@@ -33,6 +34,9 @@ BEGIN
 
     LOOP
         iteration = 0;
+        IF (num_sds > 5) THEN
+            RAISE EXCEPTION 'num_sds is too damn high';
+        END IF;
         LOOP
             EXIT WHEN iteration = max_iterations;
 
@@ -71,8 +75,19 @@ BEGIN
             INTO
                 aq_ids;
 
-            keep = filter_generated_assessment(aq_ids, means, sds, get_domain(assessment_id_var), num_sds, 0);
+            RAISE NOTICE 'Filtering generated assessment with num-sds=% and iteration=%', num_sds, iteration;
+            RAISE notice 'means: %', means;
+            RAISE notice 'sds: %', sds;
+            ----- debugging -----
+            SELECT
+                array_agg(assessment_scores.predicted_score)
+            FROM
+                calculate_predicted_assessment_score_quintiles_flattened(aq_ids) AS assessment_scores
+            INTO debug_predicted_score;
+            RAISE NOTICE 'Predicted score: %', debug_predicted_score;
+            ----- debugging -----
 
+            keep = filter_generated_assessment(aq_ids, means, sds, get_domain(assessment_id_var), num_sds);
             IF (keep) THEN
                 RAISE NOTICE 'Num-sds value: %', num_sds;
                 RAISE NOTICE 'Iteration num: %', iteration;
