@@ -18,25 +18,25 @@
         <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
           
           <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text {{^shortinfo}}rounded-right{{/shortinfo}}">{{suffix}}</span>{{/suffix}}
-            {{#shortinfo}}
+            {{#suffix}}<span class="input-group-text {{^questionmark}}rounded-right{{/questionmark}}">{{suffix}}</span>{{/suffix}}
+            {{#questionmark}}
               <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
               <i class="fa fa-question-circle" aria-hidden="true"></i>
-            {{/shortinfo}}
-            {{^shortinfo}}
+            {{/questionmark}}
+            {{^questionmark}}
               <span style="display: flex; align-items: center;">
-            {{/shortinfo}}
+            {{/questionmark}}
               
             {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
             {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
             {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
               
-            {{#shortinfo}}
+            {{#questionmark}}
               </a>
-            {{/shortinfo}}
-            {{^shortinfo}}
+            {{/questionmark}}
+            {{^questionmark}}
               </span>
-            {{/shortinfo}}
+            {{/questionmark}}
           </span>
           
     </span>
@@ -78,7 +78,7 @@
     <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
   {{/a_tru}}
   {{#a_tru}}
-    <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Exact correct answer" data-content="The correct answer is <b>exactly</b> equal to <samp>{{a_tru}}</samp>" data-placement="auto" data-trigger="focus" tabindex="0">
+    <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Correct Answer" data-content="The correct answer used for grading is <samp>{{a_tru}}</samp>" data-placement="auto" data-trigger="focus" tabindex="0">
       <i class="fa fa-question-circle" aria-hidden="true"></i>
       &nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
     </a>

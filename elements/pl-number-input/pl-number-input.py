@@ -10,7 +10,7 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'hide-help-text', 'size', 'correct-answer-feedback']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'hide-help-text', 'size', 'correct-answer-feedback', 'placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -80,9 +80,13 @@ def render(element_html, data):
             info_params.pop('format', None)
             # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
-            info_params['shortformat'] = not pl.get_boolean_attrib(element, 'hide-help-text', False)
+            info_params['shortformat'] = pl.get_boolean_attrib(element, 'placeholder', True)
             shortinfo = chevron.render(f, info_params).strip()
 
+        show_question_mark = True
+        if (pl.get_boolean_attrib(element, 'hide-help-text', False)):
+            show_question_mark = None
+            
         html_params = {
             'question': True,
             'name': name,
@@ -91,8 +95,9 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'questionmark': show_question_mark,
             'size': pl.get_integer_attrib(element, 'size', 35),
-            'display_append_span': (shortinfo or suffix),
+            'display_append_span': (show_question_mark or suffix),
             'uuid': pl.get_uuid()
         }
 
