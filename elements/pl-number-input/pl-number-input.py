@@ -86,7 +86,7 @@ def render(element_html, data):
         show_question_mark = True
         if (pl.get_boolean_attrib(element, 'hide-help-text', False)):
             show_question_mark = None
-            
+
         html_params = {
             'question': True,
             'name': name,
