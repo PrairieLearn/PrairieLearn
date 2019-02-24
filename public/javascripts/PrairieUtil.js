@@ -8,11 +8,6 @@
      * @param  {[type]} options  Options for this button.
      */
     PrairieUtil.initCopyButton = function(selector, options) {
-        if (!window.Clipboard) {
-            console.warn('Clipboard.js isn\'t present on this page. Make sure to include it!');
-            return;
-        }
-
         options = options || {};
 
         var successMessage = options.success || 'copied to clipboard!';
