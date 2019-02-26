@@ -89,7 +89,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
 `hide-help-text` | boolean | False | Hide question mark at the end of the input displaying required input parameters.
-`placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
+`show-placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | False | Whether to show the correct answer in the submitted answers panel.
 
