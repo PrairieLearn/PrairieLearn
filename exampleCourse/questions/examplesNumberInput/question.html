@@ -62,10 +62,10 @@
   <div class="card-body">
     <pl-question-panel>
       <p>For some questions, it can be useful for students to see the exact numerical answer when they get the answer correct, particularly for questions that build on each other.
-        This can be enabled by setting the attribute <code>correct-answer-feedback</code> to <code>true</code>.
+        This can be enabled by setting the attribute <code>show-correct-answer</code> to <code>true</code>.
       <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
     </pl-question-panel>
-    <pl-number-input answers_name="c_6" correct-answer-feedback="true" />
+    <pl-number-input answers_name="c_6" show-correct-answer="true" />
   </div>
 </div>
 
@@ -74,10 +74,10 @@
     <pl-question-panel>
       <p>This example shows the use of the attribute <code>size</code> to control the width of the input box. Enter below the coefficients
         for a function $y = a x + b$ that has a slope equal to $2$ and intercepts the $y$-axis at $5$. Here
-        we also use <code>placeholder="false"</code> for both input boxes and <code>hide-help-text="true"</code>
+        we also use <code>show-placeholder="false"</code> for both input boxes and <code>hide-help-text="true"</code>
         for the first input box.</p>
     </pl-question-panel>
-    $f = $<pl-number-input answers_name="c_m" placeholder="false" hide-help-text="true" size="10"></pl-number-input> $ x \, +$
-    <pl-number-input answers_name="c_b" placeholder="false" size="10"></pl-number-input>
+    $f = $<pl-number-input answers_name="c_m" show-placeholder="false" hide-help-text="true" size="10"></pl-number-input> $ x \, +$
+    <pl-number-input answers_name="c_b" show-placeholder="false" size="10"></pl-number-input>
   </div>
 </div>

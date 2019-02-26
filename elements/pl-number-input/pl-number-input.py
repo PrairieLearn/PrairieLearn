@@ -10,7 +10,7 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'hide-help-text', 'size', 'correct-answer-feedback', 'placeholder']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'hide-help-text', 'size', 'show-correct-answer', 'show-placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -80,7 +80,7 @@ def render(element_html, data):
             info_params.pop('format', None)
             # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
-            info_params['shortformat'] = pl.get_boolean_attrib(element, 'placeholder', True)
+            info_params['shortformat'] = pl.get_boolean_attrib(element, 'show-placeholder', True)
             shortinfo = chevron.render(f, info_params).strip()
 
         show_question_mark = True
@@ -154,7 +154,7 @@ def render(element_html, data):
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if (pl.get_boolean_attrib(element, 'correct-answer-feedback', False)):
+        if (pl.get_boolean_attrib(element, 'show-correct-answer', False)):
             ans_true = format_true_ans(element, data, name)
         if (ans_true is not None):
             html_params['a_tru'] = ans_true
