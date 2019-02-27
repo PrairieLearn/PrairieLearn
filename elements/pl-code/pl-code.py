@@ -49,7 +49,7 @@ def parse_highlight_lines(highlight_lines):
     lines = []
     components = highlight_lines.split(',')
     for component in components:
-        compoenent = component.strip()
+        component = component.strip()
         try:
             line = int(component)
             lines.append((line, line))
@@ -117,7 +117,6 @@ def prepare(element_html, data):
         print(parse_highlight_lines(highlight_lines))
         if parse_highlight_lines(highlight_lines) is None:
             raise Exception('Could not parse highlight-lines attribute; check your syntax')
-
 
 
 def render(element_html, data):
