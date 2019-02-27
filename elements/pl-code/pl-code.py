@@ -86,6 +86,9 @@ def highlight_lines_in_code(code, highlight_lines, color):
     result_lines = ''
     for line in code_lines:
         if line_should_be_highlighted(line_number, lines_to_highlight):
+            if len(line.strip()) == 0:
+                # insert line break to prevent collapsing the line
+                line = '<br>'
             result_lines += '<span class="pl-code-highlighted-line" style="background-color: ' + color + ';">' + line + '</span>'
         else:
             result_lines += line + '\n'
