@@ -159,10 +159,6 @@ def render(element_html, data):
         elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
             code = code[1:]
 
-    # code_lines = code.splitlines()
-    # code_lines[0] = '<span style="background-color: #b3d7ff; margin-left: -0.5em; margin-right: -0.5em; padding-right: 0.5em; padding-left: 0.5em; display: block;">' + code_lines[0] + '</span>'
-    # code_lines[1] = '<span style="background-color: #b3d7ff; margin-left: -0.5em; margin-right: -0.5em; padding-right: 0.5em; padding-left: 0.5em; display: block;">' + code_lines[1] + '</span>'
-    # code = '\n'.join(code_lines)
     if highlight_lines is not None:
         code = highlight_lines_in_code(code, highlight_lines, highlight_lines_color)
 
