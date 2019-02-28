@@ -516,6 +516,8 @@ Attribute | Type | Default | Description
 `no-highlight` | boolean | false | Disable highlighting.
 `source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
+`highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
+`highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
 
 The `language` can be one of the following values.
 
