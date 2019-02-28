@@ -114,7 +114,6 @@ def prepare(element_html, data):
 
     highlight_lines = pl.get_string_attrib(element, 'highlight-lines', None)
     if highlight_lines is not None:
-        print(parse_highlight_lines(highlight_lines))
         if parse_highlight_lines(highlight_lines) is None:
             raise Exception('Could not parse highlight-lines attribute; check your syntax')
 
