@@ -10,7 +10,7 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'hide-help-text', 'size', 'show-correct-answer', 'show-placeholder']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -84,7 +84,7 @@ def render(element_html, data):
             shortinfo = chevron.render(f, info_params).strip()
 
         show_question_mark = True
-        if (pl.get_boolean_attrib(element, 'hide-help-text', False)):
+        if not pl.get_boolean_attrib(element, 'show-help-text', True):
             show_question_mark = None
 
         html_params = {
@@ -154,9 +154,9 @@ def render(element_html, data):
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if (pl.get_boolean_attrib(element, 'show-correct-answer', False)):
+        if pl.get_boolean_attrib(element, 'show-correct-answer', False):
             ans_true = format_true_ans(element, data, name)
-        if (ans_true is not None):
+        if ans_true is not None:
             html_params['a_tru'] = ans_true
 
         partial_score = data['partial_scores'].get(name, {'score': None})
