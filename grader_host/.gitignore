@@ -59,3 +59,6 @@ typings/
 
 # AWS config file
 aws-config.json
+
+# VS Code files
+.vscode
