@@ -11,7 +11,7 @@
   <body>
     <script>
       $(function () {
-          $('[data-toggle="popover"]').popover()
+          $('[data-toggle="popover"]').popover({sanitize: false})
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'assessmentStatistics'}); %>
