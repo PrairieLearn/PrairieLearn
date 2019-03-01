@@ -91,7 +91,7 @@ Attribute | Type | Default | Description
 `show-help-text` | boolean | True | Show the question mark at the end of the input displaying required input parameters.
 `show-placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
-`show-correct-answer` | boolean | False | Whether to show the correct answer in the submitted answers panel.
+`show-correct-answer` | boolean | True | Whether to show the correct answer in the submitted answers panel.
 
 ## `pl-integer-input` element
 

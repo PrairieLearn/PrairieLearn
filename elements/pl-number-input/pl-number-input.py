@@ -154,7 +154,7 @@ def render(element_html, data):
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if pl.get_boolean_attrib(element, 'show-correct-answer', False):
+        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
             ans_true = format_true_ans(element, data, name)
         if ans_true is not None:
             html_params['a_tru'] = ans_true
