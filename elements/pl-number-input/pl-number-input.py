@@ -51,6 +51,30 @@ def render(element_html, data):
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
+        html_params = {
+            'question': True,
+            'name': name,
+            'label': label,
+            'suffix': suffix,
+            'editable': editable,
+            'size': pl.get_integer_attrib(element, 'size', 35),
+            'uuid': pl.get_uuid()
+        }
+
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score' + score)
+
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
         if comparison == 'relabs':
@@ -73,7 +97,20 @@ def render(element_html, data):
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+
+        # Update parameters for the info popup
+        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, "show-correct-answer", True)
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
+        info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', True)
+        info_params['show_correct'] = show_correct
+
+        # Find the true answer to be able to display it in the info popup
+        ans_true = None
+        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
+            ans_true = format_true_ans(element, data, name)
+        if ans_true is not None:
+            info_params['a_tru'] = ans_true
+
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
@@ -83,37 +120,19 @@ def render(element_html, data):
             info_params['shortformat'] = pl.get_boolean_attrib(element, 'show-placeholder', True)
             shortinfo = chevron.render(f, info_params).strip()
 
-        show_question_mark = True
-        if not pl.get_boolean_attrib(element, 'show-help-text', True):
-            show_question_mark = None
+        html_params['info'] = info
+        html_params['shortinfo'] = shortinfo
 
-        html_params = {
-            'question': True,
-            'name': name,
-            'label': label,
-            'suffix': suffix,
-            'editable': editable,
-            'info': info,
-            'shortinfo': shortinfo,
-            'questionmark': show_question_mark,
-            'size': pl.get_integer_attrib(element, 'size', 35),
-            'display_append_span': (show_question_mark or suffix),
-            'uuid': pl.get_uuid()
-        }
+        # Determine the title of the popup based on what information is being shown
+        if pl.get_boolean_attrib(element, 'show-help-text', True):
+            html_params['popup_title'] = 'Number'
+        else:
+            html_params['popup_title'] = 'Correct Answer'
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
-        if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError('invalid score' + score)
+        # Enable or disable the popup
+        if pl.get_boolean_attrib(element, 'show-help-text', True) or show_correct:
+            html_params['show_info'] = True
+        html_params['display_append_span'] = 'questionmark' in html_params or suffix
 
         if display == 'inline':
             html_params['inline'] = True
