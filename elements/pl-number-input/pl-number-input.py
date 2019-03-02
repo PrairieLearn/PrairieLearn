@@ -99,7 +99,7 @@ def render(element_html, data):
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
         # Update parameters for the info popup
-        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, "show-correct-answer", True)
+        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, 'show-correct-answer', True)
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
         info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', True)
         info_params['show_correct'] = show_correct
