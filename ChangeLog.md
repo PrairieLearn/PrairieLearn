@@ -129,6 +129,8 @@
 
   * Fix vulnerabilities in node packages (Nathan Walters).
 
+  * Fix regression from #1440 in Bootstrap popovers due to HTML sanitization (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
