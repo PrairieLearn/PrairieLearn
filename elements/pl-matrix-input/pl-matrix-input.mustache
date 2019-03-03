@@ -2,6 +2,7 @@
 <script>
     $(function() {
         $('#pl-matrix-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-matrix-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -30,6 +31,7 @@
 <script>
     $(function() {
         $('#pl-matrix-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-matrix-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });

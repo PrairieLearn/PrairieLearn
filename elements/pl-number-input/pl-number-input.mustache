@@ -2,6 +2,7 @@
 <script>
     $(function(){
         $('#pl-number-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -50,6 +51,7 @@
 <script>
     $(function(){
         $('#pl-number-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -68,6 +70,7 @@
 <script>
     $(function(){
         $('#pl-number-input-correct-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
