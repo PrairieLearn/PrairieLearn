@@ -3,11 +3,19 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add feedback for correct answers in submitted answer panel (Brian Mercer).
+
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
 
   * Add course instance admin subpages (Dave Mussulman).
 
   * Add networkx Python library to plbase (Nathan Bowman).
+
+  * Add option to toggle placeholder help text for `pl-number-input` (James Balamuta and Nicolas Nytko).
+
+  * Add `size` attribute to `pl-number-input` (Nicolas Nytko).
+
+  * Add demo question showcasing all options for `pl-number-input` (James Balamuta and Nicolas Nytko).
 
   * Add read-only API for instructors to access assessment data (Nathan Walters).
 
