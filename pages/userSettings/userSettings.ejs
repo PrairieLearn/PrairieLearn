@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: 'user_settings'}); %>
     <div id="content" class="container">
       <h1 class="mb-4">Settings</h1>

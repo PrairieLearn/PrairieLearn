@@ -7,6 +7,11 @@
     <script src="/localscripts/histmini.js"></script>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <% if (navbarType == 'instructor') { %>
       <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'course'}); %>
       <div id="content" class="container">

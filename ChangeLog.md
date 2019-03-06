@@ -145,6 +145,8 @@
 
   * Fix documentation build on Read the Docs (Matt West).
 
+  * Fix editing popovers to work with the new sanitization defaults (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).

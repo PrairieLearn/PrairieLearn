@@ -11,6 +11,11 @@
     <script src="/localscripts/scatter.js"></script>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
 
