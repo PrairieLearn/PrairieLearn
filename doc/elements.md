@@ -213,19 +213,26 @@ Attributes for `<variable>` (one of these for each variable to display):
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | Name of variable in `data['params']` to display.
+`params-comment` | string | — | Name of variable in `data['params']` to display.
+`params-digits` | integer | — | Number of digits to display after the decimal for the variable.
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
 ```
-A = [1.23; 4.56];
+A = [1.23; 4.56]; % matrix
+```
+
+Here is an example of the Mathematica format:
+```
+A = [1.23; 4.56]; (* matrix *)
 ```
 
 Here is an example of python format:
 ```
 import numpy as np
 
-A = np.array([[1.23], [4.56]])
+A = np.array([[1.23], [4.56]]) # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.

@@ -19,7 +19,7 @@ def render(element_html, data):
     for child in element:
         if child.tag == 'variable':
             # Raise exception of variable does not have a name
-            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['params-comment','params-digits'])
+            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['params-comment', 'params-digits'])
 
             # Get name of variable
             var_name = pl.get_string_attrib(child, 'params-name')
@@ -46,7 +46,6 @@ def render(element_html, data):
             else:
                 var_digits = pl.get_string_attrib(child, 'params-digits')
 
-
             if np.isscalar(var_data):
                 prefix = ''
                 suffix = ''
@@ -61,11 +60,11 @@ def render(element_html, data):
                 suffix = ')'
 
             # Mathematica reserved letters: C D E I K N O
-            mathematica_reserved = ['C','D','E','I','K','N','O']
+            mathematica_reserved = ['C', 'D', 'E', 'I', 'K', 'N', 'O']
             if pl.inner_html(child) in mathematica_reserved:
-                mathematica_suffix = 'm';
+                mathematica_suffix = 'm'
             else:
-                mathematica_suffix = '';
+                mathematica_suffix = ''
 
             # Create string for matlab and python format
             if commentExists == 0:
@@ -73,11 +72,9 @@ def render(element_html, data):
                 mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
             else:
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment +'\n'
+                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment + '\n'
                 mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
-
-
 
     html_params = {
         'default_is_matlab': True,
