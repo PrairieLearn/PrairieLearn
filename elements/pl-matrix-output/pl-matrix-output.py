@@ -19,11 +19,11 @@ def render(element_html, data):
     for child in element:
         if child.tag == 'variable':
             # Raise exception of variable does not have a name
-            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['params-comment'])
+            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['params-comment','params-digits'])
 
             # Get name of variable
             var_name = pl.get_string_attrib(child, 'params-name')
-            
+
             # Get value of variable, raising exception if variable does not exist
             var_data = data['params'].get(var_name, None)
             if var_data is None:
@@ -34,12 +34,19 @@ def render(element_html, data):
             var_data = pl.from_json(var_data)
 
             # Get comment, if it exists
-            if pl.has_attrib(child, 'params-comment') is False: 
+            if pl.has_attrib(child, 'params-comment') is False:
                 commentExists = 0
-            else: 	
+            else:
                 var_comment = pl.get_string_attrib(child, 'params-comment')
                 commentExists = 1
-                
+
+            # Get digit for child, if it exists
+            if pl.has_attrib(child, 'params-digits') is False:
+                var_digits = digits
+            else:
+                var_digits = pl.get_string_attrib(child, 'params-digits')
+
+
             if np.isscalar(var_data):
                 prefix = ''
                 suffix = ''
@@ -52,26 +59,26 @@ def render(element_html, data):
                 # Create prefix/suffix so python string is np.array( ... )
                 prefix = 'np.array('
                 suffix = ')'
-                
+
             # Mathematica reserved letters: C D E I K N O
             mathematica_reserved = ['C','D','E','I','K','N','O']
             if pl.inner_html(child) in mathematica_reserved:
                 mathematica_suffix = 'm';
             else:
                 mathematica_suffix = '';
-                
+
             # Create string for matlab and python format
             if commentExists == 0:
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=digits) + ';\n'
-                mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=digits) + ';\n'
-                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=digits) + suffix + '\n'
+                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
             else:
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=digits) + '; % ' + var_comment +'\n'
-                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=digits) + '; (* ' + var_comment + ' *)\n'
-                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=digits) + suffix + ' # ' + var_comment + '\n'
-            
-			    
-				
+                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment +'\n'
+                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
+                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
+
+
+
     html_params = {
         'default_is_matlab': True,
         'matlab_data': matlab_data,
