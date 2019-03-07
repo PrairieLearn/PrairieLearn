@@ -115,6 +115,12 @@
         </div>
         <% } %>
 
+        <% if (assessment_file_list.length > 0) { %>
+        <% for (let assessment_file of assessment_file_list) { %>
+        <p><%= assessment_file.type %>: <%= assessment_file.display_filename %>
+        <% } %>
+        <% } %>
+
       </div>
 
       <table class="table table-sm table-hover">
