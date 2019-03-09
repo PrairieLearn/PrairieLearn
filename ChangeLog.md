@@ -153,7 +153,7 @@
 
   * Fixed a bug in tools/generate_uuid.py that added a uuid for files in the element subdirectory (Pavitra Shadvani).
 
-  * Also added a verbose flag that can be passed as a command line argument to print all the files that were changed by the script to help in debugging (Pavitra Shadvani).
+  * Added a verbose flag to tools/generate_uuid.py to show all the files changed.(Pavitra Shadvani).
 
 * __3.1.0__ - 2018-10-08
 
