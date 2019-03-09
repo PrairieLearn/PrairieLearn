@@ -9,7 +9,7 @@ CREATE TABLE assessment_files (
     deleted_at timestamptz,
     deleted_by BIGINT REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE,
     display_filename text NOT NULL,
-    storage_filename text NOT NULL,
+    storage_filename text NOT NULL UNIQUE,
     type text NOT NULL
 );
 

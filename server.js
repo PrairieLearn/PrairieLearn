@@ -378,6 +378,12 @@ app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file', [
+    require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./middlewares/logPageView')('studentAssessmentInstance'),
