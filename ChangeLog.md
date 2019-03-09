@@ -45,6 +45,8 @@
 
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
+  * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
+  
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -147,13 +149,11 @@
 
   * Fix editing popovers to work with the new sanitization defaults (Matt West).
 
+  * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
-
-  * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
-
-  * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
 
 * __3.1.0__ - 2018-10-08
 
