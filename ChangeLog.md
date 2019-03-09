@@ -151,9 +151,9 @@
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
-  * Fixed a bug in tools/generate_uuid.py that added a uuid for files in the element subdirectory (Pavitra Shadvani).
+  * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
 
-  * Added a verbose flag to tools/generate_uuid.py to show all the files changed.(Pavitra Shadvani).
+  * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
 
 * __3.1.0__ - 2018-10-08
 

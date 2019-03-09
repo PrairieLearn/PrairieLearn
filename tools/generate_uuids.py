@@ -4,12 +4,12 @@ import sys, os, json, re, uuid, argparse
 
 parser = argparse.ArgumentParser(description="Generate UUIDs for info*.json files that don't already have them.")
 parser.add_argument("directory", help="the directory to search for info*.json files")
-parser.add_argument("-v", "--verbose", action="store_true", help="List all the files for which uuid's were generated")
+parser.add_argument("-v", "--verbose", action="store_true", help="list all the files for which UUIDs were generated")
 parser.add_argument("-n", "--new", action="store_true", help="generate new UUIDs for all files, even if they already have one")
 args = parser.parse_args()
 
-# Added elements in the skip directory because elements should not contain a uuid
-skip_dirs = [".git","elements"]
+
+skip_dirs = [".git", "elements"]
 
 error_list = []
 
@@ -50,7 +50,7 @@ def add_uuid_to_file(filename):
         os.remove(filename) # needed on Windows
         os.rename(tmp_filename, filename)
         if  args.verbose:
-            print("Created a UUID for ",filename)
+            print("Created a UUID for ", filename)
         return 1
     except Exception as error:
         error_list.append(error)
