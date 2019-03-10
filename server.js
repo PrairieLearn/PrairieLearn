@@ -198,9 +198,9 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 // Instructor pages //////////////////////////////////////////////////
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
-=======
 app.use('/pl/cutoff_algorithm_info', [
     require('./pages/instructorCutoffAlgorithmInfo/instructorCutoffAlgorithmInfo'),
 ]);
@@ -214,6 +214,9 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
 
 // single assessment
 
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
+    require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/generated_assessment_statistics', [
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorGeneratedAssessmentStatistics/instructorGeneratedAssessmentStatistics'),
@@ -236,10 +239,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-<<<<<<< HEAD
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./middlewares/authzCourseInstanceHasCourseView'));
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
-=======
 
 // admin pages
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/admin)\/?$/, (req, res, _next) => {
