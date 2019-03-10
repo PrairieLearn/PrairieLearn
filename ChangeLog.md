@@ -355,9 +355,7 @@
 * __2.12.0__ - 2018-05-19
   * Add average rows on instructor question page (Paras Sud)
 
-  * Add predicted scores on instructor assessment page (Paras Sud)
-  
-  * Add exam generator page (Paras Sud)
+  * Add feedback for correct answers in submitted answer panel (Brian Mercer).
 
   * Add new issues page style and flexible filtering (Nathan Walters).
 
