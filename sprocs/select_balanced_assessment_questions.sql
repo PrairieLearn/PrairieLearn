@@ -88,6 +88,9 @@ BEGIN
             ----- debugging -----
 
             keep = filter_generated_assessment(aq_ids, means, sds, get_domain(assessment_id_var), num_sds);
+
+            RAISE notice 'Data: {"means": "%", "sds": "%", "predicted_scores": "%", "keep": "%"}', means, sds, debug_predicted_score, keep;
+
             IF (keep) THEN
                 RAISE NOTICE 'Num-sds value: %', num_sds;
                 RAISE NOTICE 'Iteration num: %', iteration;

@@ -12,16 +12,25 @@ var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://postgres@localhost/postgres';
 
-module.exports = {
-    before: function(callback) {
-        // long timeout because DROP DATABASE might take a long time to error
-        // if other processes have an open connection to that database
-        this.timeout(20000);
-        var client;
-        async.series([
-            function(callback) {
-                client = new pg.Client(initConString);
-                client.connect(function(err) {
+var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
+    debug(`createFullDatabase(${dbName})`);
+    // long timeout because DROP DATABASE might take a long time to error
+    // if other processes have an open connection to that database
+    mochaThis.timeout(30000);
+    var client;
+    async.series([
+        function(callback) {
+            debug('createFullDatabase(): connecting client');
+            client = new pg.Client(initConString);
+            client.connect(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            if (dropFirst) {
+                debug('createFullDatabase(): dropping database');
+                client.query('DROP DATABASE IF EXISTS ' + dbName + ';', function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

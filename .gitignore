@@ -47,3 +47,6 @@ npm-debug.log
 __pycache__/
 *.py[cod]
 *$py.class
+
+# PrairieLearn SD reduction test files
+output/
