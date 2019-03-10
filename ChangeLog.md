@@ -46,7 +46,9 @@
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
   * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
-  
+
+  * Add better logging of requests that don't have corresponding responses (Matt West).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
