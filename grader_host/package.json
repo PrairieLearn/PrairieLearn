@@ -19,23 +19,23 @@
   },
   "homepage": "https://github.com/PrairieLearn/PrairieGrader#readme",
   "dependencies": {
-    "@prairielearn/prairielib": "^1.5.2",
-    "ajv": "^6.6.2",
-    "async": "^2.6.1",
+    "@prairielearn/prairielib": "1.5.2",
+    "ajv": "6.10.0",
+    "async": "2.6.2",
     "async-stacktrace": "0.0.2",
-    "aws-sdk": "^2.382.0",
-    "byline": "^5.0.0",
-    "dockerode": "^2.5.7",
-    "fs-extra": "^7.0.1",
-    "js-yaml": "^3.12.0",
-    "lodash": "^4.17.11",
-    "s3-streamlogger": "^1.4.0",
+    "aws-sdk": "2.418.0",
+    "byline": "5.0.0",
+    "dockerode": "2.5.8",
+    "fs-extra": "7.0.1",
+    "js-yaml": "3.12.2",
+    "lodash": "4.17.11",
+    "s3-streamlogger": "1.5.0",
     "tmp": "0.0.33",
-    "winston": "^3.1.0",
-    "winston-aws-cloudwatch": "^3.0.0"
+    "winston": "3.2.1",
+    "winston-aws-cloudwatch": "3.0.0"
   },
   "devDependencies": {
-    "eslint": "^5.11.1",
-    "jest": "^23.6.0"
+    "eslint": "5.15.1",
+    "jest": "24.3.1"
   }
 }
