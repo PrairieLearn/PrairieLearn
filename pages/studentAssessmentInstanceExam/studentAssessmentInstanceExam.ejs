@@ -117,14 +117,14 @@
         </div>
         <% } %>
 
-        <% if (assessment_file_list.length > 0) { %>
+        <% if (file_list.length > 0) { %>
         <div class="card mb-0 mt-4">
           <ul class="list-group list-group-flush">
-            <% for (let assessment_file of assessment_file_list) { %>
+            <% for (let file of file_list) { %>
             <li class="list-group-item">
-              <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= assessment_file.id %>/<%= assessment_file.display_filename %>">
-                <%- include('../partials/assessmentFileLabel', {type: assessment_file.type}) %>
-                <%= assessment_file.display_filename %>
+              <a target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
+                <%- include('../partials/fileLabel', {type: file.type}) %>
+                <%= file.display_filename %>
               </a>
             </li>
             <% } %>

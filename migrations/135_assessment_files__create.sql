@@ -1,11 +1,11 @@
-CREATE TABLE assessment_files (
+CREATE TABLE files (
     id bigserial PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
-    assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
+    user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
+    assessment_id BIGINT REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_instance_id BIGINT REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
-    reservation_id BIGINT REFERENCES reservations ON DELETE SET NULL ON UPDATE CASCADE,
-    created_at timestamptz NOT NULL,
-    created_by BIGINT NOT NULL REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE,
+    instance_question_id BIGINT REFERENCES instance_questions ON DELETE CASCADE ON UPDATE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT current_timestamp,
+    created_by BIGINT REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at timestamptz,
     deleted_by BIGINT REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE,
     display_filename text NOT NULL,
@@ -13,5 +13,6 @@ CREATE TABLE assessment_files (
     type text NOT NULL
 );
 
-CREATE INDEX assessment_files_assessment_id_user_id_idx ON assessment_files (assessment_id,user_id);
-CREATE INDEX assessment_files_assessment_instance_id_idx ON assessment_files (assessment_instance_id);
+CREATE INDEX files_assessment_id_user_id_idx ON files (assessment_id,user_id);
+CREATE INDEX files_assessment_instance_id_idx ON files (assessment_instance_id);
+CREATE INDEX files_instance_question_id_idx ON files (instance_question_id);
