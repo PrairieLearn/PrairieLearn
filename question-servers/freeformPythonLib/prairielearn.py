@@ -391,8 +391,8 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
                 'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
             }
         result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
-        result = result.replace("[", "{")
-        result = result.replace("]", "}")
+        result = result.replace('[', '{')
+        result = result.replace(']', '}')
         return result
     else:
         raise Exception('language "{:s}" must be either "python","matlab", or "mathematica"'.format(language))
