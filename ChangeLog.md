@@ -45,6 +45,10 @@
 
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
+  * Add Mathematica tab to `pl-matrix-output` (Liz Livingston).
+
+  * Add comment and local digit control for `pl-matrix-output`, optional `params-comment` and `params-digits` (Liz Livingston).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -150,10 +154,6 @@
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
-
-  * Add Mathematica tab to `pl-matrix-output` (Liz Livingston)
-
-  * Add comment and local digit control for `pl-matrix-output`, optional `params-comment` and `params-digits` (Liz Livingston)
 
 * __3.1.0__ - 2018-10-08
 

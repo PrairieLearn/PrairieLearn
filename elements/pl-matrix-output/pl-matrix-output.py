@@ -34,11 +34,8 @@ def render(element_html, data):
             var_data = pl.from_json(var_data)
 
             # Get comment, if it exists
-            if pl.has_attrib(child, 'params-comment') is False:
-                commentExists = 0
-            else:
+            if pl.has_attrib(child, 'params-comment'):
                 var_comment = pl.get_string_attrib(child, 'params-comment')
-                commentExists = 1
 
             # Get digit for child, if it exists
             if pl.has_attrib(child, 'params-digits') is False:
@@ -67,14 +64,14 @@ def render(element_html, data):
                 mathematica_suffix = ''
 
             # Create string for matlab and python format
-            if commentExists == 0:
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
-                mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
-                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
-            else:
+            if pl.has_attrib(child, 'params-comment'):
                 matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment + '\n'
                 mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
+            else:
+                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
 
     html_params = {
         'default_is_matlab': True,
