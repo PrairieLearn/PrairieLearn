@@ -23,13 +23,12 @@ def render(element_html, data):
     active_tab_mathematica = False
     active_tab_python = False
     # If Matlab Display is False, will cycle through to next displayed tab
-    if display_matlab_tab == False:
+    if display_matlab_tab is False:
         active_tab_matlab = False
-        if display_mathematica_tab == True:
+        if display_mathematica_tab is True:
             active_tab_mathematica = True
-        elif display_python_tab == True:
+        elif display_python_tab is True:
             active_tab_python = True
-
 
     matlab_data = ''
     mathematica_data = ''
