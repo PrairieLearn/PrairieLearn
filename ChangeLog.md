@@ -50,8 +50,10 @@
   * Add better logging of requests that don't have corresponding responses (Matt West).
 
   * Add student file storage for scratch paper scans (Matt West).
-  
-  * Add Mathematica tab to `pl-matrix-output` (Liz Livingston).
+
+  * Add Mathematica language option to `string_from_2darray` (Liz Livingston).
+
+  * Add Mathematica tab and optional display attribute to `pl-matrix-output` (Liz Livingston).
 
   * Add comment and local digit control for `pl-matrix-output`, optional `params-comment` and `params-digits` (Liz Livingston).
 
