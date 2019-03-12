@@ -23,7 +23,7 @@
     "ajv": "6.10.0",
     "async": "2.6.2",
     "async-stacktrace": "0.0.2",
-    "aws-sdk": "2.418.0",
+    "aws-sdk": "2.419.0",
     "byline": "5.0.0",
     "dockerode": "2.5.8",
     "fs-extra": "7.0.1",
