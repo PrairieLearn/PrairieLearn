@@ -83,11 +83,11 @@ def render(element_html, data):
             # Create string for matlab and python format
             if pl.has_attrib(child, 'params-comment'):
                 matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment + '\n'
-                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
+                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
             else:
                 matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
-                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
 
     html_params = {

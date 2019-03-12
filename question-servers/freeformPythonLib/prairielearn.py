@@ -341,6 +341,10 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
 
         [ ... ... ; ... ... ]
 
+    If language is 'mathematica' and A is a 2D ndarray, the string looks like this:
+
+        {{ ..., ... }{ ..., ... }}
+
     In either case, if A is not a 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -375,8 +379,23 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
             return numpy_to_matlab_sf(A, ndigits=digits)
         else:
             return numpy_to_matlab(A, ndigits=digits, wtype=presentation_type)
+    elif language == 'mathematica':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        result = result.replace("[", "{")
+        result = result.replace("]", "}")
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python" or "matlab"'.format(language))
+        raise Exception('language "{:s}" must be either "python","matlab", or "mathematica"'.format(language))
 
 
 def string_from_number_sigfig(a, digits=2):
