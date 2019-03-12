@@ -10,10 +10,12 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+const sanitizeStringForUrl = (str) => str.replace(/[^a-zA-Z0-9]/g, '_');
+
 var csvFilename = function(locals) {
-    return locals.course.short_name.replace(/\s+/g, '')
+    return sanitizeStringForUrl(locals.course.short_name)
         + '_'
-        + locals.course_instance.short_name
+        + sanitizeStringForUrl(locals.course_instance.short_name)
         + '_'
         + 'gradebook.csv';
 };
