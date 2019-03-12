@@ -45,6 +45,12 @@
 
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
+  * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
+
+  * Add better logging of requests that don't have corresponding responses (Matt West).
+
+  * Add student file storage for scratch paper scans (Matt West).
+  
   * Add Mathematica tab to `pl-matrix-output` (Liz Livingston).
 
   * Add comment and local digit control for `pl-matrix-output`, optional `params-comment` and `params-digits` (Liz Livingston).
@@ -76,6 +82,8 @@
   * Change instructor gradebook to have more optimized HTML for a smaller response (Nathan Walters).
 
   * Change "timeout" external grader error to sound like the student's code is at fault (Matt West).
+
+  * Change `cheerio` back to `v0.22.0` (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -150,6 +158,8 @@
   * Fix documentation build on Read the Docs (Matt West).
 
   * Fix editing popovers to work with the new sanitization defaults (Matt West).
+
+  * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 

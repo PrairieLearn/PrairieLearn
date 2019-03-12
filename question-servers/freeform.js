@@ -5,7 +5,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
-const htmlparser2 = require('htmlparser2');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -287,16 +286,9 @@ module.exports = {
             if (ERR(err, callback)) return;
             let $;
             try {
-                const dom = htmlparser2.parseDOM(html, {
-                    // Default options from Cheerio
-                    withDomLvl1: true,
-                    normalizeWhitespace: false,
-                    xmlMode: false,
-                    decodeEntities: true,
-                    // Needed to handle self-closing PL elements
+                $ = cheerio.load(html, {
                     recognizeSelfClosing: true,
                 });
-                $ = cheerio.load(dom);
             } catch (e) {
                 err = e;
             }

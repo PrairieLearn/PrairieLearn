@@ -1,4 +1,11 @@
 -- BLOCK select_and_auth
+WITH file_list AS (
+    SELECT coalesce(jsonb_agg(f), '[]'::jsonb) AS list
+    FROM files AS f
+    WHERE
+        f.assessment_instance_id = $assessment_instance_id
+        AND f.deleted_at IS NULL
+)
 SELECT
     to_jsonb(ai) AS assessment_instance,
     CASE
@@ -15,7 +22,8 @@ SELECT
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
-    assessment_label(a, aset) AS assessment_label
+    assessment_label(a, aset) AS assessment_label,
+    fl.list AS file_list
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -24,6 +32,7 @@ FROM
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
+    CROSS JOIN file_list AS fl
 WHERE
     ai.id = $assessment_instance_id
     AND ci.id = $course_instance_id
