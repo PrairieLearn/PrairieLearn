@@ -6,12 +6,30 @@ import chevron
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=[], optional_attribs=['digits'])
+    required_attribs = []
+    optional_attribs = ['digits', 'display-matlab-tab', 'display-mathematica-tab', 'display-python-tab']
+    pl.check_attribs(element, required_attribs, optional_attribs)
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, 'digits', 2)
+    display_matlab_tab = pl.get_boolean_attrib(element, 'display-matlab-tab', True)
+    display_mathematica_tab = pl.get_boolean_attrib(element, 'display-mathematica-tab', False)
+    display_python_tab = pl.get_boolean_attrib(element, 'display-python-tab', True)
+
+    # Default tab is Matlab
+    active_tab_matlab = True
+    active_tab_mathematica = False
+    active_tab_python = False
+    # If Matlab Display is False, will cycle through to next displayed tab
+    if display_matlab_tab == False:
+        active_tab_matlab = False
+        if display_mathematica_tab == True:
+            active_tab_mathematica = True
+        elif display_python_tab == True:
+            active_tab_python = True
+
 
     matlab_data = ''
     mathematica_data = ''
@@ -70,11 +88,16 @@ def render(element_html, data):
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
             else:
                 matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
-                mathematica_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
+                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
 
     html_params = {
-        'default_is_matlab': True,
+        'active_tab_matlab': active_tab_matlab,
+        'active_tab_mathematica': active_tab_mathematica,
+        'active_tab_python': active_tab_python,
+        'display_matlab_tab': display_matlab_tab,
+        'display_mathematica_tab': display_mathematica_tab,
+        'display_python_tab': display_python_tab,
         'matlab_data': matlab_data,
         'mathematica_data': mathematica_data,
         'python_data': python_data,
