@@ -7,23 +7,34 @@ import chevron
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['digits', 'display-matlab-tab', 'display-mathematica-tab', 'display-python-tab']
+    optional_attribs = ['digits', 'default-tab', 'show-matlab', 'show-mathematica', 'show-python']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, 'digits', 2)
-    display_matlab_tab = pl.get_boolean_attrib(element, 'display-matlab-tab', True)
-    display_mathematica_tab = pl.get_boolean_attrib(element, 'display-mathematica-tab', False)
-    display_python_tab = pl.get_boolean_attrib(element, 'display-python-tab', True)
+    display_matlab_tab = pl.get_boolean_attrib(element, 'show-matlab', True)
+    display_mathematica_tab = pl.get_boolean_attrib(element, 'show-mathematica', True)
+    display_python_tab = pl.get_boolean_attrib(element, 'show-python', True)
+    default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
 
-    # Default tab is Matlab
-    active_tab_matlab = True
-    active_tab_mathematica = False
-    active_tab_python = False
+    # Default active tab
+    if default_tab == 'matlab':
+        active_tab_matlab = True
+        active_tab_mathematica = False
+        active_tab_python = False
+    elif default_tab == 'mathematica':
+        active_tab_matlab = False
+        active_tab_mathematica = True
+        active_tab_python = False
+    elif default_tab == 'python':
+        active_tab_matlab = False
+        active_tab_mathematica = False
+        active_tab_python = True
     # If Matlab Display is False, will cycle through to next displayed tab
-    if display_matlab_tab is False:
+    # If Mathematica and Python are displayed, and Python is specificed as the default, this statement is skipped
+    if display_matlab_tab is False and default_tab != 'python':
         active_tab_matlab = False
         if display_mathematica_tab is True:
             active_tab_mathematica = True
@@ -36,7 +47,7 @@ def render(element_html, data):
     for child in element:
         if child.tag == 'variable':
             # Raise exception of variable does not have a name
-            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['params-comment', 'params-digits'])
+            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['comment', 'digits'])
 
             # Get name of variable
             var_name = pl.get_string_attrib(child, 'params-name')
@@ -51,15 +62,22 @@ def render(element_html, data):
             var_data = pl.from_json(var_data)
 
             # Get comment, if it exists
-            if pl.has_attrib(child, 'params-comment'):
-                var_comment = pl.get_string_attrib(child, 'params-comment')
+            var_matlab_comment = ''
+            var_mathematica_comment = ''
+            var_python_comment = ''
+            if pl.has_attrib(child, 'comment'):
+                var_comment = pl.get_string_attrib(child, 'comment')
+                var_matlab_comment = '% {}'.format(var_comment)
+                var_mathematica_comment = '(* {} *)'.format(var_comment)
+                var_python_comment = '# {}'.format(var_comment)
 
             # Get digit for child, if it exists
-            if pl.has_attrib(child, 'params-digits') is False:
+            if pl.has_attrib(child, 'digits') is False:
                 var_digits = digits
             else:
-                var_digits = pl.get_string_attrib(child, 'params-digits')
+                var_digits = pl.get_string_attrib(child, 'digits')
 
+            # Assembling Python array formatting
             if np.isscalar(var_data):
                 prefix = ''
                 suffix = ''
@@ -81,14 +99,14 @@ def render(element_html, data):
                 mathematica_suffix = ''
 
             # Create string for matlab and python format
-            if pl.has_attrib(child, 'params-comment'):
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + '; % ' + var_comment + '\n'
-                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits) + '; (* ' + var_comment + ' *)\n'
-                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + ' # ' + var_comment + '\n'
-            else:
-                matlab_data += pl.inner_html(child) + ' = ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits) + ';\n'
-                mathematica_data += pl.inner_html(child) + mathematica_suffix + ' = ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits) + ';\n'
-                python_data += pl.inner_html(child) + ' = ' + prefix + pl.string_from_2darray(var_data, language='python', digits=var_digits) + suffix + '\n'
+            var_name_disp = pl.inner_html(child)
+            var_matlab_data = pl.string_from_2darray(var_data, language='matlab', digits=var_digits)
+            var_mathematica = pl.string_from_2darray(var_data, language='mathematica', digits=var_digits)
+            var_python_data = pl.string_from_2darray(var_data, language='python', digits=var_digits)
+
+            matlab_data += '{} = {}; {}\n'.format(var_name_disp, var_matlab_data, var_matlab_comment)
+            mathematica_data += '{} {}= {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
+            python_data += '{} = {}{}{} {}\n'.format(var_name_disp, prefix, var_python_data, suffix, var_python_comment)
 
     html_params = {
         'active_tab_matlab': active_tab_matlab,

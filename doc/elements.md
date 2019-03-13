@@ -207,16 +207,20 @@ Attributes for `<pl-matrix-output`:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `digits` | integer | — | Number of digits to display after the decimal.
+`default-tab` | string | 'matlab' | Select the active tab.
+`show-matlab` | boolean | True | Toggles the display of the Matlab tab.
+`show-mathetmatica` | boolean | True | Toggles the display of the Mathematica tab.
+`show-python` | boolean | True | Toggles the display of the Python tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | Name of variable in `data['params']` to display.
-`params-comment` | string | — | Comment to add after the displayed variable.
-`params-digits` | integer | — | Number of digits to display after the decimal for the variable.
+`comment` | string | — | Comment to add after the displayed variable.
+`digits` | integer | — | Number of digits to display after the decimal for the variable.
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
 ```

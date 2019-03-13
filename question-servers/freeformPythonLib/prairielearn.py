@@ -343,7 +343,7 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
 
     If language is 'mathematica' and A is a 2D ndarray, the string looks like this:
 
-        {{ ..., ... }{ ..., ... }}
+        {{ ..., ... },{ ..., ... }}
 
     In either case, if A is not a 2D ndarray, the string is a single number,
     not wrapped in brackets.

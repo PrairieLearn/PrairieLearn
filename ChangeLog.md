@@ -55,7 +55,7 @@
 
   * Add Mathematica tab and optional display attribute to `pl-matrix-output` (Liz Livingston).
 
-  * Add comment and local digit control for `pl-matrix-output`, optional `params-comment` and `params-digits` (Liz Livingston).
+  * Add comment and child digit control for `pl-matrix-output`, optional `comment` and `digits` (Liz Livingston).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
