@@ -5,18 +5,14 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('@prairielearn/prairielib/error');
+const sanitizeName = require('../../lib/sanitize-name');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-const sanitizeStringForUrl = (str) => str.replace(/[^a-zA-Z0-9]/g, '_');
-
 var csvFilename = function(locals) {
-    return sanitizeStringForUrl(locals.course.short_name)
-        + '_'
-        + sanitizeStringForUrl(locals.course_instance.short_name)
-        + '_'
+    return sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course)
         + 'gradebook.csv';
 };
 
