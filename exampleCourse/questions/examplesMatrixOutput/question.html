@@ -37,11 +37,12 @@
   <div class="card my-2">
     <div class="card-body">
       <pl-question-panel>
-        <p>Under this variant, we opt to change the number of displayed digits to <code>0</code> for the entire element, but explicitly specify <code>2</code> digits for <code>c</code> and <code>xC</code>. This uses the optional variable parameter <code>digits</code>.</p>
+        <p>Under this variant, we opt to change the number of displayed digits to <code>0</code> for the entire element, but explicitly specify <code>8</code> digits for the real number <code>d</code> and <code>2</code> digits for <code>c</code> and <code>xC</code> . This uses the optional variable parameter <code>digits</code>.</p>
       </pl-question-panel>
       <pl-matrix-output digits="0">
         <variable params-name="a">a</variable>
         <variable params-name="b">b</variable>
+        <variable params-name="d" digits="8">d</variable>
         <variable params-name="c" digits="2">c</variable>
         <variable params-name="xC" digits="2">xC</variable>
       </pl-matrix-output>
@@ -51,7 +52,7 @@
   <div class="card my-2">
     <div class="card-body">
       <pl-question-panel>
-        <p>Another option is to display a tab for Mathematica. This is very similar to Matlab syntax, but it takes into account Mathematica reserved variables (C, D, E, I, K, N, O) and formats comments correctly. The reserved variables are appended with an <code>'m'</code> in the Mathematica tab only. This uses the optional parameter <code>show-mathematica</code>.</p>
+        <p>The variable in the Mathematica tab are reformatted if they are Mathematica reserved variables (C, D, E, I, K, N, O). The reserved variables are appended with an <code>'m'</code> in the Mathematica tab <strong>only</strong>.</p>
       </pl-question-panel>
       <pl-matrix-output digits="0">
         <variable params-name="x" comment="The Mathematica tab adds an 'm' to the variable name">C</variable>
@@ -68,51 +69,29 @@
   <div class="card my-2">
     <div class="card-body">
       <pl-question-panel>
-        <p>As another example, we remove the the Matlab tab but keep the Mathematica tab. The default active tab will be the first one in the list. this uses the optional parameter <code>show-matlab</code>.</p>
+        <p>The default active tab is Matlab, in this example the default active tab is Python. This is done by setting the optional parameter <code>default-tab="python"</code>.</p>
       </pl-question-panel>
+
+      <pl-matrix-output digits="0" default-tab="python">
+        <variable params-name="x1">x1</variable>
+      </pl-matrix-output>
+
+      <p>All computational languages are displayed by default. These can be turned off using the element attributes <code>show-matlab</code>, <code>show-mathematica</code>, and <code>show-python</code>. In this example, we remove the the Matlab tab. The default active tab will be the first one in the list, in this case: Mathematica.</p>
+
       <pl-matrix-output digits="0" show-matlab="False">
         <variable params-name="x1">x1</variable>
       </pl-matrix-output>
 
-      <p>If the Mathematica tab is not active, the Python tab will be displayed alone.</p>
+      <p>When a tab is not displayed, the default active tab can still be set. In this case, the Mathematica tab is hidden and Python is set as the default active tab.</p>
+
+      <pl-matrix-output digits="8" show-mathematica="False" default-tab="python">
+        <variable params-name="d">d</variable>
+      </pl-matrix-output>
+
+      <p>Any tab can be displayed alone. In this case, the Matlab and Mathematica tabs are hidden and the Python tab is displayed alone.</p>
 
       <pl-matrix-output digits="0" show-matlab="False" show-mathematica="False">
         <variable params-name="x1">x1</variable>
-      </pl-matrix-output>
-    </div>
-  </div>
-
-  <div class="card my-2">
-    <div class="card-body">
-      <pl-question-panel>
-        <p>Lotsa digits.</p>
-      </pl-question-panel>
-      <pl-matrix-output digits="8" show-matlab="False" show-mathematica="True">
-        <variable params-name="d">d</variable>
-      </pl-matrix-output>
-    </div>
-  </div>
-
-  <div class="card my-2">
-    <div class="card-body">
-      <pl-question-panel>
-        <p>Default active tab displays digits.</p>
-      </pl-question-panel>
-      <pl-matrix-output digits="8" default-tab="mathematica">
-        <variable params-name="d">d</variable>
-      </pl-matrix-output>
-
-      <p> And python:</p>
-
-      <pl-matrix-output digits="8" default-tab="python">
-        <variable params-name="d">d</variable>
-      </pl-matrix-output>
-
-
-      <p> And no matlab with python default:</p>
-
-      <pl-matrix-output digits="8" show-matlab="False" default-tab="python">
-        <variable params-name="d">d</variable>
       </pl-matrix-output>
     </div>
   </div>

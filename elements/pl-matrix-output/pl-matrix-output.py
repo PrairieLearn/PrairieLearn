@@ -32,6 +32,7 @@ def render(element_html, data):
         active_tab_matlab = False
         active_tab_mathematica = False
         active_tab_python = True
+
     # If Matlab Display is False, will cycle through to next displayed tab
     # If Mathematica and Python are displayed, and Python is specificed as the default, this statement is skipped
     if display_matlab_tab is False and default_tab != 'python':
@@ -105,7 +106,7 @@ def render(element_html, data):
             var_python_data = pl.string_from_2darray(var_data, language='python', digits=var_digits)
 
             matlab_data += '{} = {}; {}\n'.format(var_name_disp, var_matlab_data, var_matlab_comment)
-            mathematica_data += '{} {}= {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
+            mathematica_data += '{}{}= {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
             python_data += '{} = {}{}{} {}\n'.format(var_name_disp, prefix, var_python_data, suffix, var_python_comment)
 
     html_params = {
