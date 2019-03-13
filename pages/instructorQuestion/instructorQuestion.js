@@ -6,6 +6,7 @@ const csvStringify = require('csv').stringify;
 
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
+const sanitizeName = require('../../lib/sanitize-name');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -15,19 +16,10 @@ const logPageView = require('../../middlewares/logPageView')('instructorQuestion
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const sanitizeName = function(name) {
-    return name.replace(/[^a-zA-Z0-9]/g, '_');
-};
-
 const filenames = function(locals) {
-    const prefix = sanitizeName(locals.course.short_name)
-        + '_'
-        + sanitizeName(locals.course_instance.short_name)
-        + '_'
-        + sanitizeName(locals.question.qid + '')
-        + '_';
+    const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
     return {
-        assessmentStatsCsvFilename:       prefix + 'assessment_stats.csv',
+        questionStatsCsvFilename: prefix + 'stats.csv',
     };
 };
 
@@ -190,7 +182,7 @@ router.get('/', function(req, res, next) {
 router.get('/:filename', function(req, res, next) {
     _.assign(res.locals, filenames(res.locals));
 
-    if (req.params.filename === res.locals.assessmentStatsCsvFilename) {
+    if (req.params.filename === res.locals.questionStatsCsvFilename) {
         sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
