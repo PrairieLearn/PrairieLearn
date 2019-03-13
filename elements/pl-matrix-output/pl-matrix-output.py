@@ -19,29 +19,25 @@ def render(element_html, data):
     display_python_tab = pl.get_boolean_attrib(element, 'show-python', True)
     default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
 
-    # Default active tab
-    if default_tab == 'matlab':
+    # Handles cases when Matlab tab hidden, if python is default tab don't overwite active tab setting
+    if display_matlab_tab is False and default_tab != 'python':
+        if display_mathematica_tab is True:
+            default_tab = 'mathematica'
+        elif display_python_tab is True:
+            default_tab = 'python'
+
+    # Default active tab makes sure display is also active
+    active_tab_matlab = False
+    active_tab_mathematica = False
+    active_tab_python = False
+    if default_tab == 'matlab' and display_matlab_tab is True:
         active_tab_matlab = True
-        active_tab_mathematica = False
-        active_tab_python = False
-    elif default_tab == 'mathematica':
-        active_tab_matlab = False
+    elif default_tab == 'mathematica' and display_mathematica_tab is True:
         active_tab_mathematica = True
-        active_tab_python = False
-    elif default_tab == 'python':
-        active_tab_matlab = False
-        active_tab_mathematica = False
+    elif default_tab == 'python' and display_python_tab is True:
         active_tab_python = True
 
-    # If Matlab Display is False, will cycle through to next displayed tab
-    # If Mathematica and Python are displayed, and Python is specificed as the default, this statement is skipped
-    if display_matlab_tab is False and default_tab != 'python':
-        active_tab_matlab = False
-        if display_mathematica_tab is True:
-            active_tab_mathematica = True
-        elif display_python_tab is True:
-            active_tab_python = True
-
+    # Process parameter data
     matlab_data = ''
     mathematica_data = ''
     python_data = 'import numpy as np\n\n'
@@ -106,7 +102,7 @@ def render(element_html, data):
             var_python_data = pl.string_from_2darray(var_data, language='python', digits=var_digits)
 
             matlab_data += '{} = {}; {}\n'.format(var_name_disp, var_matlab_data, var_matlab_comment)
-            mathematica_data += '{}{}= {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
+            mathematica_data += '{}{} = {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
             python_data += '{} = {}{}{} {}\n'.format(var_name_disp, prefix, var_python_data, suffix, var_python_comment)
 
     html_params = {
