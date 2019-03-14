@@ -47,7 +47,8 @@ const pullAndUpdate = function(locals, callback) {
 
         // First define the jobs.
         //
-        // We will start with either 1A or 1B below.
+        // We will start with either 1A or 1B below to either clone or 
+        // update the content.
 
         const syncStage1A = function() {
             const jobOptions = {
@@ -81,8 +82,25 @@ const pullAndUpdate = function(locals, callback) {
             };
             serverJobs.spawnJob(jobOptions);
         };
-        
+
         const syncStage1B2 = function() {
+            const jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'clean_git_repo',
+                description: 'Clean local files not in remote git repository',
+                command: 'git',
+                arguments: ['clean', '-fdx'],
+                working_directory: locals.course.path,
+                env: gitEnv,
+                on_success: syncStage1B3,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const syncStage1B3 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
