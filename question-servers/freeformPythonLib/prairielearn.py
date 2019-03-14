@@ -311,7 +311,7 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         A_str = '['
         for i in range(0, m):
                 A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
-                if i < m-1:
+                if i < m - 1:
                     A_str += ', '
         A_str += ']'
         return A_str
@@ -461,7 +461,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
                     A_str += _string_from_complex_sigfig(A[i], ndigits)
                 else:
                     A_str += to_precision.to_precision(A[i], ndigits)
-                if i < m-1:
+                if i < m - 1:
                     A_str += ', '
         A_str += ']'
         return A_str
