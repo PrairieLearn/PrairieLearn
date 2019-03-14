@@ -5,7 +5,7 @@ import os
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label', 'force-download'])
 
 
 def render(element_html, data):
