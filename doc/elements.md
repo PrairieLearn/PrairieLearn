@@ -193,16 +193,16 @@ In the answer panel, a `pl-matrix-input` element displays the correct answer, al
 
 In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
 
-## `pl-matrix-output` element
+## `pl-variable-output` element
 
 ```html
-<pl-matrix-output digits="3">
+<pl-variable-output digits="3">
     <variable params-name="A">A</variable>
     <variable params-name="B">B</variable>
-</pl-matrix-output>
+</pl-variable-output>
 ```
 
-Attributes for `<pl-matrix-output`:
+Attributes for `<pl-variable-output`:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---

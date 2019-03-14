@@ -53,9 +53,9 @@
 
   * Add Mathematica language option to `string_from_2darray` (Liz Livingston).
 
-  * Add Mathematica tab and optional display attribute to `pl-matrix-output` (Liz Livingston).
+  * Add Mathematica tab and optional display attribute to `pl-variable-output` (Liz Livingston).
 
-  * Add comment and child digit control for `pl-matrix-output`, optional `comment` and `digits` (Liz Livingston).
+  * Add comment and child digit control for `pl-variable-output`, optional `comment` and `digits` (Liz Livingston).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -86,6 +86,8 @@
   * Change "timeout" external grader error to sound like the student's code is at fault (Matt West).
 
   * Change `cheerio` back to `v0.22.0` (Nathan Walters).
+
+  * Change `pl-matrix-output` to `pl-variable-output` (Liz Livingston).
 
   * Fix load-reporting close during unit tests (Matt West).
 
