@@ -47,15 +47,6 @@ const pullAndUpdate = function(locals, callback) {
 
         // First define the jobs.
         //
-        // After either cloning or pulling from Git, we'll need to load and
-        // store the current commit hash in the database
-        const updateCommitHash = () => {
-            courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
-                syncStage2();
-            });
-        };
-
         // We will start with either 1A or 1B below.
 
         const syncStage1A = function() {
@@ -69,7 +60,7 @@ const pullAndUpdate = function(locals, callback) {
                 command: 'git',
                 arguments: ['clone', locals.course.repository, locals.course.path],
                 env: gitEnv,
-                on_success: updateCommitHash,
+                on_success: syncStage2,
             };
             serverJobs.spawnJob(jobOptions);
         };
@@ -80,18 +71,45 @@ const pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
-                type: 'pull_from_git',
-                description: 'Pull from remote git repository',
+                type: 'fetch_from_git',
+                description: 'Fetch from remote git repository',
                 command: 'git',
-                arguments: ['pull', '--force'],
+                arguments: ['fetch', 'origin', 'master'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: updateCommitHash,
+                on_success: syncStage1B2,
             };
             serverJobs.spawnJob(jobOptions);
         };
+        
+        const syncStage1B2 = function() {
+            const jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'reset_from_git',
+                description: 'Reset state to remote git repository',
+                command: 'git',
+                arguments: ['reset', '--hard', 'origin/master'],
+                working_directory: locals.course.path,
+                env: gitEnv,
+                on_success: syncStage2,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+        
+        // After either cloning or fetching and resetting from Git, we'll need 
+        // to load and store the current commit hash in the database
+        const syncStage2 = () => {
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+                ERR(err, (e) => logger.error(e));
+                syncStage3();
+            });
+        };
 
-        const syncStage2 = function() {
+
+        const syncStage3 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -99,7 +117,7 @@ const pullAndUpdate = function(locals, callback) {
                 type: 'sync_from_disk',
                 description: 'Sync git repository to database',
                 job_sequence_id: job_sequence_id,
-                on_success: syncStage3,
+                on_success: syncStage4,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
                 if (err) {
@@ -117,7 +135,7 @@ const pullAndUpdate = function(locals, callback) {
             });
         };
 
-        const syncStage3 = function() {
+        const syncStage4 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -150,7 +168,7 @@ const pullAndUpdate = function(locals, callback) {
                 // path does not exist, start with 'git clone'
                 syncStage1A();
             } else {
-                // path exists, start with 'git pull'
+                // path exists, start with 'git fetch' and reset to latest with 'git reset'
                 syncStage1B();
             }
         });
