@@ -24,13 +24,16 @@ def render(element_html, data):
     if default_tab not in tab_list:
         raise Exception(f'invalid default-tab: {default_tab}')
 
-    if not show_matlab and default_tab != 'python':
-        if show_mathematica:
-            default_tab = 'mathematica'
-        elif show_python:
-            default_tab = 'python'
+    # Setting the default tab
+    displayed_tab = [show_matlab, show_mathematica, show_python]
+    default_tab_index = tab_list.index(default_tab)
+    if displayed_tab[default_tab_index]:
+        default_tab = tab_list[default_tab_index]
+    else:
+        first_display = displayed_tab.index(True)
+        default_tab = tab_list[first_display]
 
-    # Default active tab makes sure display is also active
+    # Active tab should be the default tab
     active_tab_matlab = False
     active_tab_mathematica = False
     active_tab_python = False
