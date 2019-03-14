@@ -9,9 +9,10 @@ def generate(data):
     d = random.uniform(1,99)
 
     # Assemble Matrix
-    x = [[a,b,a,b]]
+    x = [a,b,a]
     x1 = [[a,b],[a,b]]
-    xC = [[c,a,c]]
+    x2 = [[a,b,a],[a,b,a],[a,b,a]]
+    xC = [c,a,c]
 
     # Release parameters
     data["params"]["a"] = a
@@ -20,6 +21,7 @@ def generate(data):
     data["params"]["d"] = d
     data["params"]["x"] = x
     data["params"]["x1"] = x1
+    data["params"]["x2"] = x2
     data["params"]["xC"] = xC
 
     # Release correct answer

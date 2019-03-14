@@ -305,6 +305,16 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
     if np.isscalar(A):
         A_str = '{:.{indigits}{iwtype}}'.format(A, indigits=ndigits, iwtype=wtype)
         return A_str
+    elif A.ndim == 1:
+        s = A.shape
+        m = s[0]
+        A_str = '['
+        for i in range(0, m):
+                A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
+                if i < m-1:
+                    A_str += ', '
+        A_str += ']'
+        return A_str
     else:
         s = A.shape
         m = s[0]
@@ -361,7 +371,7 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
         else:
             return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
 
-    # if A is a 2D ndarray
+    # if A is a 1D or 2D ndarray
     if language == 'python':
         if presentation_type == 'sigfig':
             formatter = {
@@ -441,6 +451,19 @@ def numpy_to_matlab_sf(A, ndigits=2):
             A_str = _string_from_complex_sigfig(A, ndigits)
         else:
             A_str = to_precision.to_precision(A, ndigits)
+        return A_str
+    elif A.ndim == 1:
+        s = A.shape
+        m = s[0]
+        A_str = '['
+        for i in range(0, m):
+                if np.iscomplexobj(A[i]):
+                    A_str += _string_from_complex_sigfig(A[i], ndigits)
+                else:
+                    A_str += to_precision.to_precision(A[i], ndigits)
+                if i < m-1:
+                    A_str += ', '
+        A_str += ']'
         return A_str
     else:
         s = A.shape

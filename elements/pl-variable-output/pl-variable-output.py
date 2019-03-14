@@ -19,10 +19,11 @@ def render(element_html, data):
     show_python = pl.get_boolean_attrib(element, 'show-python', True)
     default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
 
-    if default_tab not in ['matlab', 'python', 'mathematica']:
+    tab_list = ['matlab', 'mathematica', 'python']
+
+    if default_tab not in tab_list:
         raise Exception(f'invalid default-tab: {default_tab}')
 
-    # Handles cases when Matlab tab hidden, if python is default tab don't overwite active tab setting
     if not show_matlab and default_tab != 'python':
         if show_mathematica:
             default_tab = 'mathematica'
@@ -85,8 +86,8 @@ def render(element_html, data):
                 # Wrap the variable in an ndarray (if it's already one, this does nothing)
                 var_data = np.array(var_data)
                 # Check shape of variable
-                if var_data.ndim != 2:
-                    raise Exception('Value in data["params"] for variable %s in pl-variable-output element must be a scalar or a 2D array' % var_name)
+                if var_data.ndim > 2:
+                    raise Exception('Value in data["params"] for variable %s in pl-variable-output element must be a scalar, a vector, or a 2D array' % var_name)
                 # Create prefix/suffix so python string is np.array( ... )
                 prefix = 'np.array('
                 suffix = ')'
