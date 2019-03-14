@@ -81,6 +81,8 @@
 
   * Change `cheerio` back to `v0.22.0` (Nathan Walters).
 
+  * Change sync procedural steps to use fetch and reset to allow for history changes (James Balamuta).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
