@@ -14,27 +14,30 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, 'digits', 2)
-    display_matlab_tab = pl.get_boolean_attrib(element, 'show-matlab', True)
-    display_mathematica_tab = pl.get_boolean_attrib(element, 'show-mathematica', True)
-    display_python_tab = pl.get_boolean_attrib(element, 'show-python', True)
+    show_matlab = pl.get_boolean_attrib(element, 'show-matlab', True)
+    show_mathematica = pl.get_boolean_attrib(element, 'show-mathematica', True)
+    show_python = pl.get_boolean_attrib(element, 'show-python', True)
     default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
 
+    if default_tab not in ['matlab', 'python', 'mathematica']:
+        raise Exception(f'invalid default-tab: {default_tab}')
+
     # Handles cases when Matlab tab hidden, if python is default tab don't overwite active tab setting
-    if display_matlab_tab is False and default_tab != 'python':
-        if display_mathematica_tab is True:
+    if not show_matlab and default_tab != 'python':
+        if show_mathematica:
             default_tab = 'mathematica'
-        elif display_python_tab is True:
+        elif show_python:
             default_tab = 'python'
 
     # Default active tab makes sure display is also active
     active_tab_matlab = False
     active_tab_mathematica = False
     active_tab_python = False
-    if default_tab == 'matlab' and display_matlab_tab is True:
+    if default_tab == 'matlab' and show_matlab:
         active_tab_matlab = True
-    elif default_tab == 'mathematica' and display_mathematica_tab is True:
+    elif default_tab == 'mathematica' and show_mathematica:
         active_tab_mathematica = True
-    elif default_tab == 'python' and display_python_tab is True:
+    elif default_tab == 'python' and show_python:
         active_tab_python = True
 
     # Process parameter data
@@ -69,7 +72,7 @@ def render(element_html, data):
                 var_python_comment = '# {}'.format(var_comment)
 
             # Get digit for child, if it exists
-            if pl.has_attrib(child, 'digits') is False:
+            if not pl.has_attrib(child, 'digits'):
                 var_digits = digits
             else:
                 var_digits = pl.get_string_attrib(child, 'digits')
@@ -101,17 +104,17 @@ def render(element_html, data):
             var_mathematica = pl.string_from_2darray(var_data, language='mathematica', digits=var_digits)
             var_python_data = pl.string_from_2darray(var_data, language='python', digits=var_digits)
 
-            matlab_data += '{} = {}; {}\n'.format(var_name_disp, var_matlab_data, var_matlab_comment)
-            mathematica_data += '{}{} = {}; {}\n'.format(var_name_disp, mathematica_suffix, var_mathematica, var_mathematica_comment)
-            python_data += '{} = {}{}{} {}\n'.format(var_name_disp, prefix, var_python_data, suffix, var_python_comment)
+            matlab_data += f'{var_name_disp} = {var_matlab_data}; {var_matlab_comment}\n'
+            mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica}; {var_mathematica_comment}\n'
+            python_data += f'{var_name_disp} = {prefix}{var_python_data}{suffix} {var_python_comment}\n'
 
     html_params = {
         'active_tab_matlab': active_tab_matlab,
         'active_tab_mathematica': active_tab_mathematica,
         'active_tab_python': active_tab_python,
-        'display_matlab_tab': display_matlab_tab,
-        'display_mathematica_tab': display_mathematica_tab,
-        'display_python_tab': display_python_tab,
+        'show_matlab': show_matlab,
+        'show_mathematica': show_mathematica,
+        'show_python': show_python,
         'matlab_data': matlab_data,
         'mathematica_data': mathematica_data,
         'python_data': python_data,

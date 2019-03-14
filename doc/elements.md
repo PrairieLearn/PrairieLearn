@@ -209,7 +209,7 @@ Attribute | Type | Default | Description
 `digits` | integer | — | Number of digits to display after the decimal.
 `default-tab` | string | 'matlab' | Select the active tab.
 `show-matlab` | boolean | True | Toggles the display of the Matlab tab.
-`show-mathetmatica` | boolean | True | Toggles the display of the Mathematica tab.
+`show-mathematica` | boolean | True | Toggles the display of the Mathematica tab.
 `show-python` | boolean | True | Toggles the display of the Python tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
