@@ -32,17 +32,12 @@ def render(element_html, data):
     else:
         first_display = displayed_tab.index(True)
         default_tab = tab_list[first_display]
+    default_tab_index = tab_list.index(default_tab)
 
     # Active tab should be the default tab
-    active_tab_matlab = False
-    active_tab_mathematica = False
-    active_tab_python = False
-    if default_tab == 'matlab' and show_matlab:
-        active_tab_matlab = True
-    elif default_tab == 'mathematica' and show_mathematica:
-        active_tab_mathematica = True
-    elif default_tab == 'python' and show_python:
-        active_tab_python = True
+    default_tab_list = [False, False, False]
+    default_tab_list[default_tab_index] = True
+    [active_tab_matlab, active_tab_mathematica, active_tab_python] = default_tab_list
 
     # Process parameter data
     matlab_data = ''
