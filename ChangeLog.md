@@ -51,6 +51,8 @@
 
   * Add student file storage for scratch paper scans (Matt West).
 
+  * Add `force-download` attribute to `pl-file-download` to specify whether to download or view in browser (Shreyas Patil).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
