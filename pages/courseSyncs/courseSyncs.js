@@ -75,7 +75,7 @@ const pullAndUpdate = function(locals, callback) {
                 type: 'fetch_from_git',
                 description: 'Fetch from remote git repository',
                 command: 'git',
-                arguments: ['fetch', 'origin', 'master'],
+                arguments: ['fetch'],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B2,
