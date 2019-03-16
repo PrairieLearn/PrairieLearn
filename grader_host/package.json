@@ -35,7 +35,7 @@
     "winston-aws-cloudwatch": "3.0.0"
   },
   "devDependencies": {
-    "eslint": "5.15.1",
+    "eslint": "5.15.2",
     "jest": "24.3.1"
   }
 }
