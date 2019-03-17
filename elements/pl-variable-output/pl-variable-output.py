@@ -20,16 +20,17 @@ def render(element_html, data):
     default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
 
     tab_list = ['matlab', 'mathematica', 'python']
-
     if default_tab not in tab_list:
         raise Exception(f'invalid default-tab: {default_tab}')
 
     # Setting the default tab
     displayed_tab = [show_matlab, show_mathematica, show_python]
+    if not any(displayed_tab):
+        raise Exception('All tabs have been hidden from display. At least one tab must be shown.')
+
     default_tab_index = tab_list.index(default_tab)
-    if displayed_tab[default_tab_index]:
-        default_tab = tab_list[default_tab_index]
-    else:
+    # If not displayed, make first visible tab the default
+    if not displayed_tab[default_tab_index]:
         first_display = displayed_tab.index(True)
         default_tab = tab_list[first_display]
     default_tab_index = tab_list.index(default_tab)
@@ -45,7 +46,7 @@ def render(element_html, data):
     python_data = 'import numpy as np\n\n'
     for child in element:
         if child.tag == 'variable':
-            # Raise exception of variable does not have a name
+            # Raise exception if variable does not have a name
             pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=['comment', 'digits'])
 
             # Get name of variable
@@ -99,13 +100,13 @@ def render(element_html, data):
 
             # Create string for matlab and python format
             var_name_disp = pl.inner_html(child)
-            var_matlab_data = pl.string_from_2darray(var_data, language='matlab', digits=var_digits)
-            var_mathematica = pl.string_from_2darray(var_data, language='mathematica', digits=var_digits)
-            var_python_data = pl.string_from_2darray(var_data, language='python', digits=var_digits)
+            var_matlab_data = ' ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits)
+            var_mathematica = ' ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits)
+            var_python_data = ' ' + pl.string_from_2darray(var_data, language='python', digits=var_digits)
 
-            matlab_data += f'{var_name_disp} = {var_matlab_data}; {var_matlab_comment}\n'
-            mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica}; {var_mathematica_comment}\n'
-            python_data += f'{var_name_disp} = {prefix}{var_python_data}{suffix} {var_python_comment}\n'
+            matlab_data += f'{var_name_disp} = {var_matlab_data};{var_matlab_comment}\n'
+            mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica};{var_mathematica_comment}\n'
+            python_data += f'{var_name_disp} = {prefix}{var_python_data}{suffix}{var_python_comment}\n'
 
     html_params = {
         'active_tab_matlab': active_tab_matlab,
