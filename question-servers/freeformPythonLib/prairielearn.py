@@ -333,12 +333,13 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         return A_str
 
 
-def string_from_2darray(A, language='python', presentation_type='f', digits=2):
-    """string_from_2darray(A)
+def string_from_numpy(A, language='python', presentation_type='f', digits=2):
+    """string_from_numpy(A)
 
     This function assumes that A is one of these things:
 
         - a number (float or complex)
+        - a 1D ndarray (float or complex)
         - a 2D ndarray (float or complex)
 
     It returns A as a string.
@@ -347,15 +348,27 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
 
         [[ ..., ... ], [ ..., ... ]]
 
+    If A is a 1D ndarray, the string looks like this:
+
+        [ ..., ..., ... ]
+
     If language is 'matlab' and A is a 2D ndarray, the string looks like this:
 
         [ ... ... ; ... ... ]
+
+    If A is a 1D ndarray, the string looks like this:
+
+        [ ..., ..., ... ]
 
     If language is 'mathematica' and A is a 2D ndarray, the string looks like this:
 
         {{ ..., ... },{ ..., ... }}
 
-    In either case, if A is not a 2D ndarray, the string is a single number,
+    If A is a 1D ndarray, the string looks like this:
+
+        { ..., ..., ... }
+
+    In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
     If presentation_type is 'sigfig', each number is formatted using the
@@ -405,7 +418,7 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
         result = result.replace(']', '}')
         return result
     else:
-        raise Exception('language "{:s}" must be either "python","matlab", or "mathematica"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
 
 
 def string_from_number_sigfig(a, digits=2):

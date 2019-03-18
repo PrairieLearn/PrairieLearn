@@ -23,5 +23,3 @@ def generate(data):
     data["params"]["x1"] = x1
     data["params"]["x2"] = x2
     data["params"]["xC"] = xC
-
-    # Release correct answer

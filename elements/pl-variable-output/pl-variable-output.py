@@ -100,9 +100,9 @@ def render(element_html, data):
 
             # Create string for matlab and python format
             var_name_disp = pl.inner_html(child)
-            var_matlab_data = ' ' + pl.string_from_2darray(var_data, language='matlab', digits=var_digits)
-            var_mathematica = ' ' + pl.string_from_2darray(var_data, language='mathematica', digits=var_digits)
-            var_python_data = ' ' + pl.string_from_2darray(var_data, language='python', digits=var_digits)
+            var_matlab_data = ' ' + pl.string_from_numpy(var_data, language='matlab', digits=var_digits)
+            var_mathematica = ' ' + pl.string_from_numpy(var_data, language='mathematica', digits=var_digits)
+            var_python_data = ' ' + pl.string_from_numpy(var_data, language='python', digits=var_digits)
 
             matlab_data += f'{var_name_disp} = {var_matlab_data};{var_matlab_comment}\n'
             mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica};{var_mathematica_comment}\n'
