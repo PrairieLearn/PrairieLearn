@@ -4,7 +4,7 @@ def generate(data):
 
     # Simulate values
     a = random.randint(2, 10)
-    b = random.randint(2, 10)
+    b = a+4
     c = random.randint(20,100)/100
     d = random.uniform(1,99)
 

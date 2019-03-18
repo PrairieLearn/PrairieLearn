@@ -67,9 +67,9 @@ def render(element_html, data):
             var_python_comment = ''
             if pl.has_attrib(child, 'comment'):
                 var_comment = pl.get_string_attrib(child, 'comment')
-                var_matlab_comment = '% {}'.format(var_comment)
-                var_mathematica_comment = '(* {} *)'.format(var_comment)
-                var_python_comment = '# {}'.format(var_comment)
+                var_matlab_comment = f' % {var_comment}'
+                var_mathematica_comment = f' (* {var_comment} *)'
+                var_python_comment = f' # {var_comment}'
 
             # Get digit for child, if it exists
             if not pl.has_attrib(child, 'digits'):
@@ -100,9 +100,9 @@ def render(element_html, data):
 
             # Create string for matlab and python format
             var_name_disp = pl.inner_html(child)
-            var_matlab_data = ' ' + pl.string_from_numpy(var_data, language='matlab', digits=var_digits)
-            var_mathematica = ' ' + pl.string_from_numpy(var_data, language='mathematica', digits=var_digits)
-            var_python_data = ' ' + pl.string_from_numpy(var_data, language='python', digits=var_digits)
+            var_matlab_data = pl.string_from_numpy(var_data, language='matlab', digits=var_digits)
+            var_mathematica = pl.string_from_numpy(var_data, language='mathematica', digits=var_digits)
+            var_python_data = pl.string_from_numpy(var_data, language='python', digits=var_digits)
 
             matlab_data += f'{var_name_disp} = {var_matlab_data};{var_matlab_comment}\n'
             mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica};{var_mathematica_comment}\n'
