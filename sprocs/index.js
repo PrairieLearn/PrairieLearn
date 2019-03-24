@@ -142,6 +142,7 @@ module.exports = {
             'access_tokens_insert.sql',
             'access_tokens_delete.sql',
             'assessment_instances_points.sql',
+            'get_domain.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
