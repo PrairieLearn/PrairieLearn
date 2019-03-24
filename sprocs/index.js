@@ -147,6 +147,12 @@ module.exports = {
             'array_weighted_avg.sql',
             'array_weighted_avg_2d.sql',
             'weighted_avg.sql',
+            'calculate_predicted_question_points.sql',
+            'calculate_predicted_question_points_quintiles.sql',
+            'calculate_predicted_question_score.sql',
+            'calculate_predicted_question_score_quintiles.sql',
+            'calculate_predicted_question_score_quintiles_sd.sql',
+            'calculate_predicted_question_score_sd.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
