@@ -74,6 +74,11 @@ module.exports = {
                 module: require('./calculateAssessmentMode'),
                 intervalSec: 'daily',
             },
+            {
+                name: 'calculateQuestionStats',
+                module: require('./calculateQuestionStats'),
+                intervalSec: 'daily',
+            },
         ];
         logger.verbose('initializing cron', _.map(jobs, j => _.pick(j, ['name', 'intervalSec'])));
 
