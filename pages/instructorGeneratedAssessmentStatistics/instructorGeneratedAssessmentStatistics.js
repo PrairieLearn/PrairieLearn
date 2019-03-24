@@ -12,12 +12,11 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const num_exams = 10000;
+const num_exams_for_tuning = 1000;
 
 router.get('/', function(req, res, next) {
     debug('GET /');
-    var params = {
-        assessment_id: res.locals.assessment.id,
-    };
+    res.locals.num_exams_for_tuning = num_exams_for_tuning;
 
     async.series([
         function(callback) {
@@ -80,14 +79,18 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.generated_assessment_distribution, params, function(err, result) {
                 if (ERR(err, callback)) return;
 
-                const data = result.rows[0];
+                console.log(result);
 
-                res.locals.result = data.json;
-                res.locals.num_exams_kept = data.num_exams_kept;
-                res.locals.sd_before = data.sd_before;
-                res.locals.sd_after = data.sd_after;
-                res.locals.sd_perc_improvement = data.sd_perc_improvement;
-                res.locals.quintile_stats = data.quintile_stats;
+                if (result.rows.length > 0) {
+                    const data = result.rows[0];
+
+                    res.locals.result = data.json;
+                    res.locals.num_exams_kept = data.num_exams_kept;
+                    res.locals.sd_before = data.sd_before;
+                    res.locals.sd_after = data.sd_after;
+                    res.locals.sd_perc_improvement = data.sd_perc_improvement;
+                    res.locals.quintile_stats = data.quintile_stats;
+                }
 
                 callback(null);
             });
@@ -112,10 +115,14 @@ router.post('/', function(req, res, next) {
                 req.body.assessment_id,
                 num_exams,
             ];
-            sqldb.call('assessments_calculate_generated_assessment_stats', params, function(err) {
+            sqldb.getClient(function(err, client) {
                 if (ERR(err, next)) return;
+                client.on('notice', (msg) => console.log('assessments_calculate_generated_assessment_stats: ' + msg));
+                sqldb.callWithClient(client, 'assessments_calculate_generated_assessment_stats', params, function(err) {
+                    if (ERR(err, next)) return;
+                });
+                res.redirect(req.originalUrl);
             });
-            res.redirect(req.originalUrl);
         });
     } else if (req.body.__action === 'update_num_sds_value') {
         let params = {
