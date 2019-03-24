@@ -153,6 +153,13 @@ module.exports = {
             'calculate_predicted_question_score_quintiles.sql',
             'calculate_predicted_question_score_quintiles_sd.sql',
             'calculate_predicted_question_score_sd.sql',
+            'array_add.sql',
+            'array_agg_custom.sql',
+            'array_div.sql',
+            'array_sqrt.sql',
+            'first.sql',
+            'slice.sql,
+            'unnest_2d_to_1d.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
