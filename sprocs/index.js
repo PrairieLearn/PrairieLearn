@@ -162,6 +162,10 @@ module.exports = {
             'unnest_2d_to_1d.sql',
             'filter_generated_assessment.sql',
             'filter_generated_assessments.sql'
+            'calculate_predicted_assessment_score.sql',
+            'calculate_predicted_assessment_score_quintiles.sql',
+            'calculate_predicted_assessment_score_quintiles_as_rows.sql',
+            'calculate_predicted_assessment_score_quintiles_multiple_reps.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
