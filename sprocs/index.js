@@ -160,6 +160,8 @@ module.exports = {
             'first.sql',
             'slice.sql,
             'unnest_2d_to_1d.sql',
+            'filter_generated_assessment.sql',
+            'filter_generated_assessments.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
