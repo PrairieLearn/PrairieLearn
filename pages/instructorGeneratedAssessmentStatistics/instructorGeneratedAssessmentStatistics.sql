@@ -73,7 +73,7 @@ relevant_generated_assessments AS (
 generated_assessments_with_cutoff_info AS (
     SELECT
         calculate_predicted_assessment_score(relevant_generated_assessments.generated_aq_ids) AS predicted_score,
-        filter_generated_assessment(relevant_generated_assessments.generated_aq_ids, quintile_stats_before.means, quintile_stats_before.sds, 'Exams', $num_sds, 0) AS keep,
+        filter_generated_assessment(relevant_generated_assessments.generated_aq_ids, quintile_stats_before.means, quintile_stats_before.sds, 'Exams', $num_sds) AS keep,
         relevant_generated_assessments.generated_assessment_id
     FROM
         quintile_stats_before

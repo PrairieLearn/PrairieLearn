@@ -167,7 +167,7 @@
         </div>
       </div>
 
-      <% if (!generated_assessments_calculation_status) { %>
+      <% if (generated_assessments_calculation_status == 'NOT_STARTED' && result) { %>
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex align-items-center">
               Num SDs cutoff parameter selection
@@ -258,7 +258,7 @@
           <div class="card-body">
               <div class="panel-body">
                   <div class="col-sm-4">
-                      Num exams kept: <%= num_exams_kept %> / <%= num_exams %>
+                      Num. exams kept: <%= num_exams_kept %> / <%= num_exams_for_tuning %>
                   </div>
               </div>
 
