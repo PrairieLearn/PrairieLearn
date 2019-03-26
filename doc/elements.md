@@ -474,17 +474,37 @@ Attribute | Type | Default | description
 
 ## `pl-file-upload` element
 
+Provides a way to accept file uploads as part of an answer. They will be stored
+in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+
+#### Sample Element
+
+![](elements/pl-file-upload.png)
+
 ```html
 <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
 ```
 
-Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+#### Customizations
 
 Attribute | Type | Default | description
 --- | --- | --- | ---
 `answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
+
+
+#### Example implementations
+
+- [`fibonacciUpload`: Receiving a code file submission and **automatically** grading it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
+- [`fibonacciUploadManual`: Receiving a code file submission to **manually** grade.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUploadManual)
+
+#### See also
+
+- [`pl-file-editor` to provide an inbrowser code environment](#pl-file-editor-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-string-input` for receiving a single string value](#pl-string-input-element)
+
 
 ## `pl-threejs` element
 
