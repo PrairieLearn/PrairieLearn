@@ -22,5 +22,9 @@ def generate(data):
     
     # Programming Variant of Supplying a Matrix
     data['correct_answers']['matrixB'] = pl.to_json(np.matrix('1 2; 3 4'))
+    
+    # Threejs
+    data['correct_answers']['robotC'] = [[1, 0, 0], [0, 45, 0]]
+
 
     
