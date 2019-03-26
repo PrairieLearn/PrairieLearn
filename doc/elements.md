@@ -108,8 +108,15 @@ Attribute | Type | Default | Description
 
 ## `pl-checkbox` element
 
+A `pl-checkbox` element displays a subset of the answers in a random order 
+as checkboxes.
+
+#### Sample Element
+
+![](elements/pl-checkbox.png)
+
 ```html
-<pl-checkbox answers-name="vpos" weight="1" inline="true">
+<pl-checkbox answers-name="vpos" weight="1">
   <pl-answer correct="true">A-B</pl-answer>
   <pl-answer correct="true">B-C</pl-answer>
   <pl-answer>               C-D</pl-answer>
@@ -118,6 +125,8 @@ Attribute | Type | Default | Description
   <pl-answer>               F-G</pl-answer>
 </pl-checkbox>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -134,19 +143,29 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
-A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
-
-An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
+Inside the `pl-checkbox` element, each choice must be specified with 
+a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
+#### Details
+
 Two grading methods are available when using `partial-credit="true"`:
 
-* 'EDC' (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+* `'EDC'` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
 
-* 'PC' (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
+* `'PC'` (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
+
+#### Example implementations
+
+- [`examplesCheckbox`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesCheckbox)
+- [`chooseMatrices`: Mathematical expressions embedded in answer options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+
+#### See also
+
+- [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
 
 ## `pl-number-input` element
 
