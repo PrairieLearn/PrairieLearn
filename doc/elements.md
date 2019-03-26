@@ -175,25 +175,6 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
-## `pl-string-input` element
-
-```html
-<pl-string-input answers-name="x"></pl-string-input>
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answers-name` | string | — | Variable name to store data in.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
-`label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
-`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
-`display` | "block" or "inline" | "inline" | How to display the input field.
-`remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
-`remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
-`allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
-
 ## `pl-symbolic-input` element
 
 ```html
@@ -223,6 +204,25 @@ def generate(data):
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
 Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+
+## `pl-string-input` element
+
+```html
+<pl-string-input answers-name="x"></pl-string-input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
+`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`display` | "block" or "inline" | "inline" | How to display the input field.
+`remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
+`remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
+`allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 ## `pl-matrix-input` element
 
@@ -279,20 +279,6 @@ Attribute | Type | Default | Description
 
 In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
 
-## `pl-file-upload` element
-
-```html
-<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
-```
-
-Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
-
-Attribute | Type | Default | description
---- | --- | --- | ---
-`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
-`file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
-
 ## `pl-file-editor` element
 
 ```html
@@ -316,6 +302,19 @@ Attribute | Type | Default | description
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 
+## `pl-file-upload` element
+
+```html
+<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+```
+
+Provides a way to accept file uploads as part of an answer. They will be stored
+in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
+`file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
 ## `pl-threejs` element
 
@@ -464,23 +463,6 @@ def file(data):
 ```
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
-
-## `pl-prairiedraw-figure` element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
 
 ## `pl-file-download` element
 
@@ -634,6 +616,23 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to display score for.
 
 Display the partial score for a specific answer variable.
+
+## `pl-prairiedraw-figure` element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
 
 ## `pl-graphviz-render` element
 
