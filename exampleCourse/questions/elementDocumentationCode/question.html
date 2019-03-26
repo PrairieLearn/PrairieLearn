@@ -30,3 +30,95 @@
     </div>
 </div>
 
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-checkbox</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a multiple selection element.
+          <p> Correct Input: <code>A-B</code>, <code>B-C</code>, and  <code>D-E</code>.</p>
+        </pl-question-panel>
+        
+        <pl-checkbox answers-name="vpos">
+          <pl-answer correct="true">A-B</pl-answer>
+          <pl-answer correct="true">B-C</pl-answer>
+          <pl-answer>               C-D</pl-answer>
+          <pl-answer correct="true">D-E</pl-answer>
+          <pl-answer>               E-F</pl-answer>
+          <pl-answer>               F-G</pl-answer>
+        </pl-checkbox>
+        
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-number-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>numeric</b> values.
+         <p> Correct Input: <code>3.14</code> </p>
+        </pl-question-panel>
+        
+        <pl-number-input answers-name="numericvalue" comparison="sigfig" digits="2"></pl-number-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-integer-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>integer</b> values.
+         <p> Correct Input: <code>42</code> </p>
+        </pl-question-panel>
+        
+        <pl-integer-input answers-name="integervalue"></pl-integer-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-symbolic-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>mathematical expression</b> values.
+         <p> Correct Input: <code>x + y + 1</code> </p>
+        </pl-question-panel>
+        
+        <pl-symbolic-input answers-name="mathexpvalue"></pl-symbolic-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-string-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>string</b> values.
+         <p> Correct Input: <code>"PrairieLearn"</code> </p>
+        </pl-question-panel>
+        
+        <pl-string-input answers-name="stringvalue"></pl-string-input>
+
+    </div>
+</div>
+
