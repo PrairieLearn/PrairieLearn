@@ -250,9 +250,17 @@ Attribute | Type | Default | Description
 
 ## `pl-symbolic-input` element
 
+Fill in the blank field that allows for mathematical symbol input.
+
+#### Sample Element
+
+![](elements/pl-symbolic-input.png)
+
 ```html
 <pl-symbolic-input answers-name="ans"></pl-symbolic-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -265,7 +273,10 @@ Attribute | Type | Default | Description
 `allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 
+#### Details
+
 Correct answers are best created as `sympy` expressions and converted to json using:
+
 ```python
 import prairielearn as pl
 import sympy
@@ -274,9 +285,20 @@ def generate(data):
     sympy.var('x y')
     data['correct_answer']['ans'] = pl.to_json(x + y + 1)
 ```
+
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
 Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
+
+#### Example implementations
+
+- [`examplesSymbolicInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesSymbolicInput)
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
 
 ## `pl-string-input` element
 
