@@ -3,6 +3,9 @@ import prairielearn as pl
 # Required for symbolic input
 import sympy
 
+# Required for matrix input
+import numpy as np
+
 def generate(data):
 
     # Fill in the Blank Inputs
@@ -13,3 +16,7 @@ def generate(data):
     # Symbolic
     sympy.var('x y')
     data['correct_answers']['mathexpvalue'] = pl.to_json(x + y + 1)
+
+    # Matrix Fill in the Blank
+    data['correct_answers']['matrixA'] = pl.to_json(np.matrix('1 2; 3 4'))
+    

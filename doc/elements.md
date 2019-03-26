@@ -337,9 +337,19 @@ Attribute | Type | Default | Description
 
 ## `pl-matrix-component-input` element
 
+A `pl-matrix-component-input` element displays a grid of input fields with 
+the same shape of the variable stored in `answers-name` 
+(only 2D arrays of real numbers can be stored in `answers-name`).
+
+#### Sample Element
+
+![](elements/pl-matrix-component-input.png)
+
 ```html
-<pl-matrix-component-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
+<pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -352,6 +362,21 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
+
+#### Details
+
+The question will only be graded when all matrix components are entered.
+
+#### Example Implementations
+
+- [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
+
+#### See also 
+
+- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
+- [`pl-number-input` for a single numeric input](#pl-number-input)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+
 ## `pl-matrix-input` element
 
 ```html
