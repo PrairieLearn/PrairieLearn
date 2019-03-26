@@ -302,9 +302,15 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 ## `pl-string-input` element
 
+#### Sample Element
+
+![](elements/pl-string-input.png)
+
 ```html
 <pl-string-input answers-name="x"></pl-string-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -318,6 +324,16 @@ Attribute | Type | Default | Description
 `remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
+
+#### Example implementations
+
+- [`examplesStringInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesStringInput)
+
+#### See also
+
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-number-input` for numeric input](#pl-number-input-element)
 
 ## `pl-matrix-component-input` element
 
