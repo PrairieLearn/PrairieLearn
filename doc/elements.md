@@ -169,7 +169,7 @@ Two grading methods are available when using `partial-credit="true"`:
 
 ## `pl-number-input` element
 
-Fill in the blank field that allows for numeric value input within specific
+Fill in the blank field that allows for **numeric** value input within specific
 tolerances.
 
 #### Sample Element
@@ -216,9 +216,17 @@ Attribute | Type | Default | Description
 
 ## `pl-integer-input` element
 
+Fill in the blank field that requires an **integer** input.
+
+#### Sample Element
+
+![](elements/pl-integer-input.png)
+
 ```html
 <pl-integer-input answers-name="x"></pl-integer-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -228,6 +236,17 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
+
+#### Example Implementations
+
+- [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+
 
 ## `pl-symbolic-input` element
 
