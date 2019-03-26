@@ -16,7 +16,7 @@ PrairieLearn presently provides the following templated **input field** elements
   list.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value 
   within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-integer-input`](#pl-number-input-element): Fill in an **integer** value 
+- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value 
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
