@@ -91,7 +91,7 @@ Attribute | Type | Default | Description
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with 
-a `pl-answer` with attributes:
+a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -100,7 +100,7 @@ Attribute | Type | Default | Description
 #### Example Implementations
 
 - [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
-- [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
+- [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
 
 #### See also
 
