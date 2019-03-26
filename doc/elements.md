@@ -1,5 +1,50 @@
+# PrairieLearn Elements for use in `question.html`
 
-# Elements for use in `question.html`
+When writing questions, there exists a core pool of elements that provides 
+common structures associated with assessment items. These elements can be
+split into two distinct groups: **input fields** and **decorative**. Within this
+document, all of PrairieLearn's elements are displayed alongside links to sample
+elements within the example course.
+
+**Input field** elements act as a way to receive a response or input from the
+student. These elements are traditionally referred to as form input fields. 
+PrairieLearn presently provides the following templated **input field** elements:
+
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only 
+  **one option** from a list.
+- [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
+  list.
+- [`pl-number-input`](#pl-number-input-element): Inputing a **numerical** value 
+  within a specific tolerance level.
+- [`pl-matrix-input`](#pl-matrix-input-element): Answers that require a matrix
+  response.
+- [`pl-file-upload`](#pl-file-upload-element): Allows for file input to answer
+  questions.
+- [`pl-file-editor`](#pl-file-editor-element): Provides a way for students to
+  write code inbrowser.
+- [`pl-threejs`](#pl_threejs-element): Enables 3D scene display and problem
+  submission.
+
+**Decorative** elements are meant to improve how the question is displayed to
+students. Elements under this category include ways to specify question markup,
+images, files, and code display. The following **decorative** elements are available:
+
+- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the inputted
+  answers of the student.
+- [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
+  answer to a given question.
+- [`pl-external-grader-results`](#pl-external-grader-results-element):
+  Displays results from the externally graded questions.
+- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
+  for answering a given variable.
+- [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
+  syntax highlighting. 
+- [`pl-figure`](#pl-figure-element): Embed an image file in the question.
+- [`pl-file-download`](#pl-file-download-element): Enable file downloads for
+  data-centric questions.
+- [`pl-matrix-output`](#pl-matrix-output-element): Displays dynamically
+  generated matrices.
 
 ## `pl-multiple-choice` element
 
