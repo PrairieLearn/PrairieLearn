@@ -14,30 +14,29 @@ PrairieLearn presently provides the following templated **input field** elements
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-number-input`](#pl-number-input-element): Inputing a **numerical** value 
-  within a specific tolerance level.
-- [`pl-matrix-input`](#pl-matrix-input-element): Answers that require a matrix
-  response.
-- [`pl-file-upload`](#pl-file-upload-element): Allows for file input to answer
-  questions.
-- [`pl-file-editor`](#pl-file-editor-element): Provides a way for students to
-  write code inbrowser.
-- [`pl-threejs`](#pl_threejs-element): Enables 3D scene display and problem
+- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value 
+  within a specific tolerance level such as 3.14, -1.921, and so on.
+- [`pl-integer-input`](#pl-number-input-element): Fill in an **integer** value 
+  such as -71, 0, 5, 21, and so on.
+- [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
+  such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
+  such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
+  a matrix using grid that has an input area for each element.
+- [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
+  programming language format.
+- [`pl-file-editor`](#pl-file-editor-element): Provide an inbrowser code editor
+  for writing and submitting code.
+- [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
+  to obtain a file with a specific naming scheme.
+- [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem
   submission.
 
 **Decorative** elements are meant to improve how the question is displayed to
 students. Elements under this category include ways to specify question markup,
 images, files, and code display. The following **decorative** elements are available:
 
-- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question
-- [`pl-submission-panel`](#pl-submission-panel-element): Displays the inputted
-  answers of the student.
-- [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
-  answer to a given question.
-- [`pl-external-grader-results`](#pl-external-grader-results-element):
-  Displays results from the externally graded questions.
-- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
-  for answering a given variable.
 - [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
   syntax highlighting. 
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
@@ -45,6 +44,22 @@ images, files, and code display. The following **decorative** elements are avail
   data-centric questions.
 - [`pl-matrix-output`](#pl-matrix-output-element): Displays dynamically
   generated matrices.
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays dynamically
+  generated matrices. 
+- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the inputted
+  answers of the student.
+- [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
+  answer to a given question.
+- [`pl-external-grader-results`](#pl-external-grader-results-element):
+  Displays results from questions that are externally graded.
+- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
+  for answering a given variable.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
+  figure.
+
 
 ## Submission Elements --
 
