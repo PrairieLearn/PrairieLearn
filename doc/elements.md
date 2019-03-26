@@ -434,7 +434,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 ## `pl-file-editor` element
 
-Provides an in-broswer file editor that's compatible with the other file elements
+Provides an in-browser file editor that's compatible with the other file elements
 and external grading system.
 
 #### Sample Element
