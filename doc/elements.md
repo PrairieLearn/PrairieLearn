@@ -65,16 +65,22 @@ images, files, and code display. The following **decorative** elements are avail
 
 ## `pl-multiple-choice` element
 
+A `pl-multiple-choice` element selects **one** correct answer and zero or more 
+incorrect answers and displays them in a random order as radio buttons.
+
+#### Sample Element
+
+![](elements/pl-multiple-choice.png)
+
 ```html
-<pl-multiple-choice answers-name="acc" weight="1" inline="true">
+<pl-multiple-choice answers-name="acc" weight="1">
   <pl-answer correct="false">positive</pl-answer>
   <pl-answer correct="true">negative</pl-answer>
   <pl-answer correct="false">zero</pl-answer>
 </pl-multiple-choice>
 ```
 
-A `pl-multiple-choice` element selects **one** correct answer and zero or more 
-incorrect answers and displays them in a random order as radio buttons.
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -91,8 +97,14 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-See also the [`pl-checkbox`](#pl-checkbox-element) for allowing the
-selection of one or more choices.
+#### Example Implementations
+
+- [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
+- [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
+
+#### See also
+
+- [`pl-checkbox` for allowing **one or more** choices](#pl-checkbox-element)
 
 ## `pl-checkbox` element
 
