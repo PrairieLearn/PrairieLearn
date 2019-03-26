@@ -169,9 +169,18 @@ Two grading methods are available when using `partial-credit="true"`:
 
 ## `pl-number-input` element
 
+Fill in the blank field that allows for numeric value input within specific
+tolerances.
+
+#### Sample Element
+
+![](elements/pl-number-input.png)
+
 ```html
 <pl-number-input answers-name="v_avg" comparison="sigfig" digits="2"></pl-number-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -190,6 +199,20 @@ Attribute | Type | Default | Description
 `show-placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | True | Whether to show the correct answer in the submitted answers panel.
+
+#### Example implementations
+
+- [`examplesNumberInput`: Examples of all customization options for the element](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesNumberInput)
+- [`positionTimeGraph`: Input a numeric value obtained from reading a graph](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
+- [`addNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers)
+- [`addComplexNumbers`: Random generation and input of complex numbers that use imaginary and real components](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addComplexNumbers)
+- [`multiplyTwoNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoNumbers)
+
+#### See also
+
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
 
 ## `pl-integer-input` element
 
