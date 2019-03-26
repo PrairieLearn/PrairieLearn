@@ -23,7 +23,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
-  a matrix using grid that has an input area for each element.
+  a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
   programming language format.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an inbrowser code editor
@@ -310,6 +310,8 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 -----
 
 ## `pl-string-input` element
+
+Fill in the blank field that allows for **string** value input.
 
 #### Sample Element
 
