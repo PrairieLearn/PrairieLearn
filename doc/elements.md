@@ -2,11 +2,11 @@
 
 When writing questions, there exists a core pool of elements that provides 
 common structures associated with assessment items. These elements can be
-split into two distinct groups: **input fields** and **decorative**. Within this
+split into two distinct groups: **submission** and **decorative**. Within this
 document, all of PrairieLearn's elements are displayed alongside links to sample
 elements within the example course.
 
-**Input field** elements act as a way to receive a response or input from the
+**Submission** elements act as a way to receive a response or input from the
 student. These elements are traditionally referred to as form input fields. 
 PrairieLearn presently provides the following templated **input field** elements:
 
@@ -46,6 +46,8 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-matrix-output`](#pl-matrix-output-element): Displays dynamically
   generated matrices.
 
+## Submission Elements --
+
 ## `pl-multiple-choice` element
 
 ```html
@@ -56,6 +58,9 @@ images, files, and code display. The following **decorative** elements are avail
 </pl-multiple-choice>
 ```
 
+A `pl-multiple-choice` element selects **one** correct answer and zero or more 
+incorrect answers and displays them in a random order as radio buttons.
+
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
@@ -64,13 +69,15 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 
-A `pl-multiple-choice` element selects one correct answer and zero or more incorrect answers and displays them in a random order as radio buttons.
-
-An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
+Inside the `pl-multiple-choice` element, each choice must be specified with 
+a `pl-answer` with attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+
+See also the [`pl-checkbox`](#pl-checkbox-element) for allowing the
+selection of one or more choices.
 
 ## `pl-checkbox` element
 
@@ -202,7 +209,6 @@ It is also possible to specify the correct answer simply as a string, e.g., `x +
 
 Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. Do not include any other reserved name in your list of `variables` (`e`, `pi`, `cos`, `sin`, etc.) The element code will check for (and disallow) conflicts between your list of `variables` and reserved names.
 
-
 ## `pl-matrix-input` element
 
 ```html
@@ -238,77 +244,6 @@ In the answer panel, a `pl-matrix-input` element displays the correct answer, al
 
 In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
 
-## `pl-matrix-output` element
-
-```html
-<pl-matrix-output digits="3">
-    <variable params-name="A">A</variable>
-    <variable params-name="B">B</variable>
-</pl-matrix-output>
-```
-
-Attributes for `<pl-matrix-output`:
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`digits` | integer | — | Number of digits to display after the decimal.
-
-Attributes for `<variable>` (one of these for each variable to display):
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`params-name` | string | — | Name of variable in `data['params']` to display.
-
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
-
-Here is an example of MATLAB format:
-```
-A = [1.23; 4.56];
-```
-
-Here is an example of python format:
-```
-import numpy as np
-
-A = np.array([[1.23], [4.56]])
-```
-
-If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
-
-
-## `pl-matrix-latex` element
-
-```html
-<pl-matrix-latex params-name="A"></pl-matrix-latex>
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`params-name` | string | — | Name of variable in `data['params']` to display.
-`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
-`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
-
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
-
-If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
-
-If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
-    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
-
-
-For example, if we want to display the following matrix operations
-```
-x = [A][b] + [c]
-```
-we write
-
-```html
-${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
-<pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
-+ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
-```
-
-
 ## `pl-matrix-component-input` element
 
 ```html
@@ -329,6 +264,161 @@ Attribute | Type | Default | Description
 
 In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
 
+## `pl-file-upload` element
+
+```html
+<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+```
+
+Provides a way to accept file uploads as part of an answer. They will be stored
+in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
+`file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
+
+## `pl-file-editor` element
+
+```html
+<pl-file-editor
+  file-name="fib.py"
+  ace-mode="ace/mode/python"
+  ace-theme="ace/theme/monokai"
+>
+def fib(n):
+    pass
+</pl-file-editor>
+```
+
+Provides an in-broswer file editor that's compatible with the other file elements
+and external grading system.
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`file-name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
+`ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
+`ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
+`source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+
+
+## `pl-threejs` element
+
+```html
+<pl-threejs answer-name="a">
+    <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
+    <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]"></pl-threejs-stl>
+    <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
+</pl-threejs>
+```
+
+This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answer-name` | string | — | Variable name to store data in.
+`body-position` | list | [0, 0, 0] | Initial position of body as `[x, y, z]`.
+`body-orientation` | list | special | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body-pose-format`.
+`camera-position` | list | [5, 2, 2] | Initial position of camera as `[x, y, z]`.
+`body-cantranslate` | boolean | true | If you can translate the body in the UI.
+`body-canrotate` | boolean | true | If you can rotate the body in the UI.
+`camera-canmove` | boolean | true | If you can move the camera (i.e., change the view) in the UI.
+`body-pose-format` | string | rpy | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+`answer-pose-format` | string | rpy | Determines how the answer `data['correct_answer'][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+`text-pose-format` | string | matrix | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.
+`show-pose-in-question` | boolean | true | If the current pose of the body is displayed in the question panel.
+`show-pose-in-correct-answer` | boolean | true | If the current pose of the body is displayed in the correct answer panel.
+`show-pose-in-submitted-answer` | boolean | true | If the current pose of the body is displayed in the submitted answer panel.
+`tol-position` | float | 0.5 | Error in position must be no more than this for the answer to be marked correct.
+`tol-rotation` | float | 5.0 | Error in rotation must be no more than this for the answer to be marked correct.
+`grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
+
+A `pl-threejs-stl` element inside a `pl-threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`file-name` | string | — | Name of `.stl` file.
+`file-directory` | string | clientFilesQuestion | Location of `.stl` file, either `clientFilesCourse` or `clientFilesQuestion`.
+`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
+`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
+`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
+`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
+`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
+`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+
+A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
+`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
+`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
+`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
+`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
+`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+
+Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
+
+
+## Decorative Elements --
+
+## `pl-code` element
+
+```html
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
+```
+
+This element displays a block of code with syntax highlighting.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`language` | string | — | The programming language syntax highlighting to use. See below for options.
+`no-highlight` | boolean | false | Disable highlighting.
+`source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
+`highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
+`highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
+
+The `language` can be one of the following values.
+
+`language` value | Description
+--- | ---
+`armasm` | ARM Assembly
+`bash` | Bash
+`cpp` | C++
+`csharp` | C#
+`css` | CSS
+`excel` | Excel
+`fortran` | Fortran
+`go` | Go
+`haskell` | Haskell
+`html` | HTML,XML
+`ini` | Ini
+`java` | Java
+`javascript` | JavaScript
+`json` | JSON
+`julia` | Julia
+`makefile` | Makefile
+`markdown` | Markdown
+`mathematica` | Mathematica
+`matlab` | Matlab
+`mipsasm` | MIPS Assembly
+`objectivec` | Objective-C
+`ocaml` | OCaml
+`perl` | Perl
+`php` | PHP
+`python` | Python
+`r` | R
+`ruby` | Ruby
+`shell` | Shell Session
+`sql` | SQL
+`tex` | TeX
+`x86asm` | Intel x86 Assembly
+`yaml` | YAML
+
+Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
 
 ## `pl-figure` element
 
@@ -408,51 +498,76 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
-## `pl-file-upload` element
+
+## `pl-matrix-output` element
 
 ```html
-<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+<pl-matrix-output digits="3">
+    <variable params-name="A">A</variable>
+    <variable params-name="B">B</variable>
+</pl-matrix-output>
 ```
 
-Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+Attributes for `<pl-matrix-output`:
 
-Attribute | Type | Default | description
+Attribute | Type | Default | Description
 --- | --- | --- | ---
-`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
-`file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
+`digits` | integer | — | Number of digits to display after the decimal.
 
-## `pl-file-editor` element
+Attributes for `<variable>` (one of these for each variable to display):
 
-```html
-<pl-file-editor
-  file-name="fib.py"
-  ace-mode="ace/mode/python"
-  ace-theme="ace/theme/monokai"
->
-def fib(n):
-    pass
-</pl-file-editor>
-```
-
-Provides an in-broswer file editor that's compatible with the other file elements
-and external grading system.
-
-Attribute | Type | Default | description
+Attribute | Type | Default | Description
 --- | --- | --- | ---
-`file-name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
-`ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
-`ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
-`source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`params-name` | string | — | Name of variable in `data['params']` to display.
 
-## `pl-external-grader-results` element
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
-```html
-<pl-external-grader-results></pl-external-grader-results>
+Here is an example of MATLAB format:
+```
+A = [1.23; 4.56];
 ```
 
-Displays results from externally-graded questions. It expects results to follow
-[the reference schema for external grading results](externalGrading.md#grading-result).
+Here is an example of python format:
+```
+import numpy as np
+
+A = np.array([[1.23], [4.56]])
+```
+
+If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
+
+
+## `pl-matrix-latex` element
+
+```html
+<pl-matrix-latex params-name="A"></pl-matrix-latex>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | Name of variable in `data['params']` to display.
+`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
+`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
+
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+
+If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
+
+If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
+    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+
+
+For example, if we want to display the following matrix operations
+```
+x = [A][b] + [c]
+```
+we write
+
+```html
+${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
+<pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
++ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
+```
 
 ## `pl-question-panel` element
 
@@ -484,6 +599,15 @@ Only display contents when rendering the submission panel.
 
 Only display contents when rendering the answer panel.
 
+## `pl-external-grader-results` element
+
+```html
+<pl-external-grader-results></pl-external-grader-results>
+```
+
+Displays results from externally-graded questions. It expects results to follow
+[the reference schema for external grading results](externalGrading.md#grading-result).
+
 ## `pl-variable-score` element
 
 ```html
@@ -495,121 +619,6 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to display score for.
 
 Display the partial score for a specific answer variable.
-
-## `pl-threejs` element
-
-```html
-<pl-threejs answer-name="a">
-    <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
-    <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]"></pl-threejs-stl>
-    <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
-</pl-threejs>
-```
-
-This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answer-name` | string | — | Variable name to store data in.
-`body-position` | list | [0, 0, 0] | Initial position of body as `[x, y, z]`.
-`body-orientation` | list | special | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body-pose-format`.
-`camera-position` | list | [5, 2, 2] | Initial position of camera as `[x, y, z]`.
-`body-cantranslate` | boolean | true | If you can translate the body in the UI.
-`body-canrotate` | boolean | true | If you can rotate the body in the UI.
-`camera-canmove` | boolean | true | If you can move the camera (i.e., change the view) in the UI.
-`body-pose-format` | string | rpy | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-`answer-pose-format` | string | rpy | Determines how the answer `data['correct_answer'][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-`text-pose-format` | string | matrix | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.
-`show-pose-in-question` | boolean | true | If the current pose of the body is displayed in the question panel.
-`show-pose-in-correct-answer` | boolean | true | If the current pose of the body is displayed in the correct answer panel.
-`show-pose-in-submitted-answer` | boolean | true | If the current pose of the body is displayed in the submitted answer panel.
-`tol-position` | float | 0.5 | Error in position must be no more than this for the answer to be marked correct.
-`tol-rotation` | float | 5.0 | Error in rotation must be no more than this for the answer to be marked correct.
-`grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
-
-A `pl-threejs-stl` element inside a `pl-threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`file-name` | string | — | Name of `.stl` file.
-`file-directory` | string | clientFilesQuestion | Location of `.stl` file, either `clientFilesCourse` or `clientFilesQuestion`.
-`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
-`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
-`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
-`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
-`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
-`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-
-A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
-`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
-`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
-`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
-`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
-`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-
-Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
-
-
-## `pl-code` element
-
-```html
-<pl-code language="python">
-def square(x):
-    return x * x
-</pl-code>
-```
-
-This element displays a block of code with syntax highlighting.
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`language` | string | — | The programming language syntax highlighting to use. See below for options.
-`no-highlight` | boolean | false | Disable highlighting.
-`source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
-`prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
-`highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
-`highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
-
-The `language` can be one of the following values.
-
-`language` value | Description
---- | ---
-`armasm` | ARM Assembly
-`bash` | Bash
-`cpp` | C++
-`csharp` | C#
-`css` | CSS
-`excel` | Excel
-`fortran` | Fortran
-`go` | Go
-`haskell` | Haskell
-`html` | HTML,XML
-`ini` | Ini
-`java` | Java
-`javascript` | JavaScript
-`json` | JSON
-`julia` | Julia
-`makefile` | Makefile
-`markdown` | Markdown
-`mathematica` | Mathematica
-`matlab` | Matlab
-`mipsasm` | MIPS Assembly
-`objectivec` | Objective-C
-`ocaml` | OCaml
-`perl` | Perl
-`php` | PHP
-`python` | Python
-`r` | R
-`ruby` | Ruby
-`shell` | Shell Session
-`sql` | SQL
-`tex` | TeX
-`x86asm` | Intel x86 Assembly
-`yaml` | YAML
-
-Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
 
 ## `pl-graphviz-render` element
 
