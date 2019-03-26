@@ -178,7 +178,7 @@ Attribute | Type | Default | Description
 ## `pl-symbolic-input` element
 
 ```html
-<pl-sumbolic-input answers-name="ans"></pl-symbolic-input>
+<pl-symbolic-input answers-name="ans"></pl-symbolic-input>
 ```
 
 Attribute | Type | Default | Description
