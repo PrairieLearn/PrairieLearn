@@ -379,9 +379,19 @@ The question will only be graded when all matrix components are entered.
 
 ## `pl-matrix-input` element
 
+A `pl-matrix-input` element displays an input field that accepts a matrix
+(i.e., a 2-D array) expressed either in a supported programming language
+format (e.g. MATLAB or Python's numpy).
+
+#### Sample Element
+
+![](elements/pl-matrix-input.png)
+
 ```html
-<pl-matrix-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"></pl-matrix-input>
+<pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -394,14 +404,14 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
 
-In the question panel, a `pl-matrix-input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
+#### Details
 
 Here is an example of valid MATLAB format:
 ```
 [1.23; 4.56]
 ```
 
-Here is an example of valid python format:
+Here is an example of valid Python format:
 ```
 [[1.23], [4.56]]
 ```
@@ -410,7 +420,17 @@ A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]`
 
 In the answer panel, a `pl-matrix-input` element displays the correct answer, allowing the user to switch between matlab and python format.
 
-In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
+In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either MATLAB or Python), or a note that the submitted answer was invalid (with an explanation of why).
+
+#### Example implementations
+
+- [`multiplyTwoComplexMatrices`: Example entry of a matrix that uses complex numbers.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+
+#### See also
+
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
+- [`pl-number-input` for a single numeric input](#pl-number-input)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
 
 ## `pl-file-editor` element
 

@@ -20,3 +20,7 @@ def generate(data):
     # Matrix Fill in the Blank
     data['correct_answers']['matrixA'] = pl.to_json(np.matrix('1 2; 3 4'))
     
+    # Programming Variant of Supplying a Matrix
+    data['correct_answers']['matrixB'] = pl.to_json(np.matrix('1 2; 3 4'))
+
+    

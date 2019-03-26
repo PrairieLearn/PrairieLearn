@@ -142,8 +142,32 @@
          </ul>
         </pl-question-panel>
         
-        <pl-matrix-component-input answers-name="matrixA" comparison="sigfig" digits="3" label="$A=$"> 
+        <pl-matrix-component-input answers-name="matrixA" label="$A=$"> 
         </pl-matrix-component-input>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-matrix-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that provides an input field
+          for supplying the underlying code required to create the matrix.
+         <p> Correct Input: </p>
+         <ul>
+             <li>MATLAB: <code>[1 2; 3 4]</code></li>
+             <li>Python: <code>[[1, 2], [3, 4]]</code></li>
+         </ul>
+        </pl-question-panel>
+        
+        <pl-matrix-input answers-name="matrixB" label="$B=$"> 
+        </pl-matrix-input>
 
     </div>
 </div>
