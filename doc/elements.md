@@ -361,6 +361,7 @@ Attribute | Type | Default | Description
 `format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
 
 A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
+
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
