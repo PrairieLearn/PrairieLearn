@@ -53,6 +53,8 @@
 
   * Add `force-download` attribute to `pl-file-download` to specify whether to download or view in browser (Shreyas Patil).
 
+  * Add to element documentation images of elements (James Balamuta).
+  
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -84,6 +86,8 @@
   * Change `cheerio` back to `v0.22.0` (Nathan Walters).
 
   * Change sync procedural steps to use fetch and reset to allow for history changes (James Balamuta).
+
+  * Change element documentation to have a separation between submission and format elements (James Balamuta).
 
   * Fix load-reporting close during unit tests (Matt West).
 
