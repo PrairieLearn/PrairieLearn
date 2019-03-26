@@ -63,6 +63,8 @@ images, files, and code display. The following **decorative** elements are avail
 
 ## Submission Elements --
 
+-----
+
 ## `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more 
@@ -167,6 +169,8 @@ Two grading methods are available when using `partial-credit="true"`:
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
 
+-----
+
 ## `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
@@ -214,6 +218,8 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
 
+-----
+
 ## `pl-integer-input` element
 
 Fill in the blank field that requires an **integer** input.
@@ -247,6 +253,7 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
 
+-----
 
 ## `pl-symbolic-input` element
 
@@ -300,6 +307,8 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
 
+-----
+
 ## `pl-string-input` element
 
 #### Sample Element
@@ -334,6 +343,8 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-number-input` for numeric input](#pl-number-input-element)
+
+-----
 
 ## `pl-matrix-component-input` element
 
@@ -376,6 +387,8 @@ The question will only be graded when all matrix components are entered.
 - [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+
+-----
 
 ## `pl-matrix-input` element
 
@@ -432,6 +445,8 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-number-input` for a single numeric input](#pl-number-input)
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
 
+-----
+
 ## `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
@@ -472,6 +487,8 @@ Attribute | Type | Default | description
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
+-----
+
 ## `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
@@ -505,6 +522,7 @@ Attribute | Type | Default | description
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
+-----
 
 ## `pl-threejs` element
 
@@ -583,6 +601,8 @@ that if there are many submitted answers, the page will load slowly.
 
 ## Decorative Elements --
 
+-----
+
 ## `pl-code` element
 
 ```html
@@ -642,6 +662,9 @@ The `language` can be one of the following values.
 
 Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
 
+
+-----
+
 ## `pl-figure` element
 
 ```html
@@ -671,6 +694,9 @@ def file(data):
 ```
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
+
+
+----
 
 ## `pl-file-download` element
 
@@ -703,6 +729,7 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
+-----
 
 ## `pl-matrix-output` element
 
@@ -741,6 +768,7 @@ A = np.array([[1.23], [4.56]])
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
 
+-----
 
 ## `pl-matrix-latex` element
 
@@ -774,6 +802,9 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 + <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
 ```
 
+
+-----
+
 ## `pl-question-panel` element
 
 ```html
@@ -783,6 +814,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 ```
 
 Only display contents when rendering the question panel.
+-----
 
 ## `pl-submission-panel` element
 
@@ -793,6 +825,8 @@ Only display contents when rendering the question panel.
 ```
 
 Only display contents when rendering the submission panel.
+-----
+
 
 ## `pl-answer-panel` element
 
@@ -803,6 +837,8 @@ Only display contents when rendering the submission panel.
 ```
 
 Only display contents when rendering the answer panel.
+-----
+
 
 ## `pl-external-grader-results` element
 
@@ -812,6 +848,8 @@ Only display contents when rendering the answer panel.
 
 Displays results from externally-graded questions. It expects results to follow
 [the reference schema for external grading results](externalGrading.md#grading-result).
+-----
+
 
 ## `pl-variable-score` element
 
@@ -824,6 +862,7 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to display score for.
 
 Display the partial score for a specific answer variable.
+-----
 
 ## `pl-prairiedraw-figure` element
 
@@ -841,6 +880,8 @@ Attribute | Type | Default | Description
 The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
 
 See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
+
+-----
 
 ## `pl-graphviz-render` element
 
