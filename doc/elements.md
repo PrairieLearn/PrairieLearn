@@ -434,6 +434,13 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 ## `pl-file-editor` element
 
+Provides an in-broswer file editor that's compatible with the other file elements
+and external grading system.
+
+#### Sample Element
+
+![](elements/pl-file-editor.png)
+
 ```html
 <pl-file-editor
   file-name="fib.py"
@@ -445,8 +452,7 @@ def fib(n):
 </pl-file-editor>
 ```
 
-Provides an in-broswer file editor that's compatible with the other file elements
-and external grading system.
+#### Customizations
 
 Attribute | Type | Default | description
 --- | --- | --- | ---
@@ -454,6 +460,17 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+
+#### Example implementations
+
+- [`fibonacciEditor`: Receive code written in a web browser and automatically grade it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+
+#### See also
+
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
 ## `pl-file-upload` element
 
