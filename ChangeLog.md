@@ -58,6 +58,7 @@
   * Add comment and child digit control for `pl-variable-output`, optional `comment` and `digits` (Liz Livingston).
 
   * Add vector support to `numpy_to_matlab` and `numpy_to_matlab_sf` (Liz Livingston).
+
   * Add `force-download` attribute to `pl-file-download` to specify whether to download or view in browser (Shreyas Patil).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
@@ -91,6 +92,7 @@
   * Change `cheerio` back to `v0.22.0` (Nathan Walters).
 
   * Change `pl-matrix-output` to `pl-variable-output` (Liz Livingston).
+  
   * Change sync procedural steps to use fetch and reset to allow for history changes (James Balamuta).
 
   * Fix load-reporting close during unit tests (Matt West).
