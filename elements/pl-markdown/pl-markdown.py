@@ -22,7 +22,6 @@ class PrairieLearnRenderer(mistune.Renderer):
 
         concat_args = ' '.join(attrs)
         contents = u'<pl-code %s>%s</pl-code>' % (concat_args, mistune.escape(code))
-        print(contents)
         return contents
 
 
