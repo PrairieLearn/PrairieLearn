@@ -8,14 +8,14 @@ const archiver = require('archiver');
 
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
-const assessment = require('../../lib/assessment');
+const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const setFilenames = function(locals) {
-    const prefix = assessment.filenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
+    const prefix = sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
     locals.scoresCsvFilename = prefix + 'scores.csv';
     locals.scoresAllCsvFilename = prefix + 'scores_all.csv';
     locals.scoresByUsernameCsvFilename = prefix + 'scores_by_username.csv';
