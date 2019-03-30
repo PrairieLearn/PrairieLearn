@@ -166,6 +166,10 @@ module.exports = {
             'calculate_predicted_assessment_score_quintiles.sql',
             'calculate_predicted_assessment_score_quintiles_as_rows.sql',
             'calculate_predicted_assessment_score_quintiles_multiple_reps.sql',
+            'assessments_calculate_generated_assessment_stats.sql',
+            'get_generated_aq_ids.sql',
+            'get_generated_aq_ids_multiple_reps.sql',
+            'get_quintile_stats_using_saved_assessments.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

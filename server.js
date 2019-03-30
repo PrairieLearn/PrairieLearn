@@ -254,6 +254,10 @@ app.use('/pl/api/v1', require('./api/v1'));
 //////////////////////////////////////////////////////////////////////
 // Instructor pages //////////////////////////////////////////////////
 
+app.use('/pl/cutoff_algorithm_info', [
+    require('./pages/instructorCutoffAlgorithmInfo/instructorCutoffAlgorithmInfo'),
+]);
+
 app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
     require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
 ]);
@@ -295,7 +299,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
     require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
 ]);
-
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/generated_assessment_statistics', [
+    require('./pages/shared/floatFormatters'),
+    require('./pages/instructorGeneratedAssessmentStatistics/instructorGeneratedAssessmentStatistics'),
+]);
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
@@ -640,6 +647,13 @@ if (config.startServer) {
         function(callback) {
             logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            // change status for all abandoned generated assessments calculations from 'STARTED' to 'FAILED'
+            sqldb.call('mark_abandoned_generated_assessments_calculations_failed', [], function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
