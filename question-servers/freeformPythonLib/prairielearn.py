@@ -420,6 +420,10 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
     else:
         raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
 
+# Deprecated version, keeping for backwards compatibility
+def string_from_2darray(A, language='python', presentation_type='f', digits=2):
+    result = string_from_numpy(A, language, presentation_type, digits)
+    return result
 
 def string_from_number_sigfig(a, digits=2):
     """_string_from_complex_sigfig(a, digits=2)
@@ -497,32 +501,6 @@ def numpy_to_matlab_sf(A, ndigits=2):
                 else:
                     A_str += ' '
         return A_str
-
-
-# This function assumes that A is either a floating-point number or a
-# real-valued numpy array. It returns A as a python-formatted string
-# in which each entry has ndigits significant digits.
-def string_from_2darray_sf(A, ndigits=2):
-    if np.isscalar(A):
-        A_str = to_precision.to_precision(A, ndigits)
-        return A_str
-    else:
-        s = A.shape
-        m = s[0]
-        n = s[1]
-        A_str = ''
-        for i in range(0, m):
-            row = ''
-            for j in range(0, n):
-                row += to_precision.to_precision(A[i, j], ndigits)
-                if j != n - 1:
-                    row += ', '
-            A_str += '[' + row + ']'
-            if i != m - 1:
-                A_str += ', '
-        A_str = '[' + A_str + ']'
-        return A_str
-
 
 def string_partition_first_interval(s, left='[', right=']'):
     # Split at first left delimiter
