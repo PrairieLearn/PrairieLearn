@@ -51,13 +51,13 @@
 
   * Add student file storage for scratch paper scans (Matt West).
 
-  * Add Mathematica language option to `string_from_2darray` (Liz Livingston).
+  * Add Mathematica language option to `string_from_numpy()` (Liz Livingston).
 
   * Add Mathematica tab and optional display attribute to `pl-variable-output` (Liz Livingston).
 
   * Add comment and child digit control for `pl-variable-output`, optional `comment` and `digits` (Liz Livingston).
 
-  * Add vector support to `numpy_to_matlab` and `numpy_to_matlab_sf` (Liz Livingston).
+  * Add vector support to `numpy_to_matlab()` and `numpy_to_matlab_sf()` (Liz Livingston).
 
   * Add `force-download` attribute to `pl-file-download` to specify whether to download or view in browser (Shreyas Patil).
 
@@ -92,7 +92,9 @@
   * Change `cheerio` back to `v0.22.0` (Nathan Walters).
 
   * Change `pl-matrix-output` to `pl-variable-output` (Liz Livingston).
-  
+
+  * Change `string_from_2darray()` to `string_from_numpy()`, retained deprecated version (Liz Livingston).
+
   * Change sync procedural steps to use fetch and reset to allow for history changes (James Balamuta).
 
   * Fix load-reporting close during unit tests (Matt West).
@@ -178,6 +180,8 @@
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
+
+  * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
 
 * __3.1.0__ - 2018-10-08
 
