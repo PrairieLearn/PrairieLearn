@@ -381,11 +381,18 @@ module.exports = {
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
                     renderedElementNames.push(elementName);
                 }
-                // We need to wrap it in another node, since only child nodes
-                // are serialized
-                const serializedNode = parse5.serialize({
-                    childNodes: [node],
-                });
+                const element = module.exports.resolveElement(node.tagName, context);
+                let serializedNode;
+                if (element.receiveRawHtml) {
+                    const { startOffset, endOffset } = node.sourceCodeLocation;
+                    serializedNode = html.substring(startOffset, endOffset + 1);
+                } else {
+                    // We need to wrap it in another node, since only child nodes
+                    // are serialized
+                    serializedNode = parse5.serialize({
+                        childNodes: [node],
+                    });
+                }
                 let ret_val, consoleLog;
                 try {
                     [ret_val, consoleLog] = await module.exports.elementFunction(pc, phase, elementName, serializedNode, data, context);
@@ -454,7 +461,9 @@ module.exports = {
         };
         let questionHtml = '';
         try {
-            const res = await visitNode(parse5.parseFragment(html));
+            const res = await visitNode(parse5.parseFragment(html, {
+                sourceCodeLocationInfo: true,
+            }));
             questionHtml = parse5.serialize(res);
         } catch (e) {
             courseIssues.push(e);

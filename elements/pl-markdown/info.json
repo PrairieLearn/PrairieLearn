@@ -1,0 +1,4 @@
+{
+    "controller": "pl-markdown.py",
+    "receiveRawHtml": true
+}
