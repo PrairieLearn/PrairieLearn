@@ -170,6 +170,7 @@ module.exports = {
             'get_generated_aq_ids.sql',
             'get_generated_aq_ids_multiple_reps.sql',
             'get_quintile_stats_using_saved_assessments.sql',
+            'select_balanced_assessment_questions.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
