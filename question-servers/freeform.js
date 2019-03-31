@@ -277,6 +277,10 @@ module.exports = {
         });
     },
 
+    processMarkdown: function(html) {
+        return html;
+    },
+
     execTemplate: function(htmlFilename, data, callback) {
         fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
             if (ERR(err, callback)) return;
@@ -288,6 +292,7 @@ module.exports = {
                 err = e;
             }
             if (ERR(err, callback)) return;
+            html = module.exports.processMarkdown(html);
             let $;
             try {
                 $ = cheerio.load(html, {
@@ -374,8 +379,13 @@ module.exports = {
         let fileData = Buffer.from('');
         const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]);
 
-        const visitNode = async (node) => {
-            if (node.tagName && questionElements.has(node.tagName)) {
+        const visitNode = async (node, rawPass) => {
+            const shouldProcessTag = node.tagName && questionElements.has(node.tagName);
+            const receiveRawHtml = shouldProcessTag && !!module.exports.resolveElement(node.tagName, context).receiveRawHtml;
+            // We only want to process if a) this is the raw pass and this element should receive raw HTML or b)
+            // this is not the raw pass and this element should not receive raw html.
+            const shouldProcess = shouldProcessTag && (rawPass == receiveRawHtml);
+            if (shouldProcess) {
                 const elementName = node.tagName;
                 const elementFile = module.exports.getElementController(elementName, context);
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
@@ -385,17 +395,21 @@ module.exports = {
                 let serializedNode;
                 if (element.receiveRawHtml) {
                     const { startOffset, endOffset } = node.sourceCodeLocation;
-                    serializedNode = html.substring(startOffset, endOffset + 1);
+                    serializedNode = html.substring(startOffset, endOffset);
                 } else {
                     // We need to wrap it in another node, since only child nodes
                     // are serialized
                     serializedNode = parse5.serialize({
                         childNodes: [node],
                     });
+                    console.log('SERIALIZE');
+                    console.log(serializedNode);
+                    console.log('END SERIALIZE');
                 }
                 let ret_val, consoleLog;
                 try {
                     [ret_val, consoleLog] = await module.exports.elementFunction(pc, phase, elementName, serializedNode, data, context);
+                    console.log(ret_val);
                 } catch (e) {
                     const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): ${e.toString()}`);
                     courseIssue.data = e.data;
@@ -446,7 +460,7 @@ module.exports = {
             }
             const newChildren = [];
             for (let i = 0; i < (node.childNodes || []).length; i++) {
-                const childRes = await visitNode(node.childNodes[i]);
+                const childRes = await visitNode(node.childNodes[i], rawPass);
                 if (childRes) {
                     if (childRes.nodeName === '#document-fragment') {
                         newChildren.push(...childRes.childNodes);
@@ -461,10 +475,14 @@ module.exports = {
         };
         let questionHtml = '';
         try {
-            const res = await visitNode(parse5.parseFragment(html, {
+            const rawPass = await visitNode(parse5.parseFragment(html, {
                 sourceCodeLocationInfo: true,
-            }));
-            questionHtml = parse5.serialize(res);
+            }), true);
+            console.log('RAW PASS');
+            console.log(parse5.serialize(rawPass));
+            console.log('END RAW PASS');
+            const finalPass = await visitNode(rawPass, false);
+            questionHtml = parse5.serialize(finalPass);
         } catch (e) {
             courseIssues.push(e);
         }

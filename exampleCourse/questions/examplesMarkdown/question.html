@@ -1,3 +1,4 @@
+<pl-question-panel>
 <pl-markdown>
 # Hello, world!
 
@@ -15,9 +16,6 @@ class Example {
 
 ```html
 <h1>Hello, world!</h1>
-<pl-markdown>
-  Hey, here's proof that PL handles the <pl-markdown> tag in nested code blocks nicely.
-</pl-markdown>
 ```
 
 You can also highlight specific lines of code with `pl-code`. *Neat, huh?*
@@ -36,3 +34,11 @@ class Example {
 };
 ```
 </pl-markdown>
+</pl-question-panel>
+
+<p>Is markdown cool?</p>
+
+<pl-multiple-choice answers-name="mc">
+  <pl-answer correct="true"><pl-markdown>`std::cout << "yes!" << std::endl;`</pl-markdown></pl-answer>
+  <pl-answer><pl-markdown>`console.log('no')`</pl-markdown></pl-answer>
+</pl-multiple-choice>

@@ -19,21 +19,18 @@ class PrairieLearnRenderer(mistune.Renderer):
             if highlight_lines:
                 attrs.append('highlight-lines="%s"' % highlight_lines)
 
-
         concat_args = ' '.join(attrs)
         contents = u'<pl-code %s>%s</pl-code>' % (concat_args, mistune.escape(code))
         return contents
 
 
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=[], optional_attribs=[])
-
-
 def render(element_html, data):
+    print(element_html)
     # Yeah, I know we're not supposed to parse HTML with Regex, but...
     m = re.search('<pl-markdown[^>]*>(.*)</pl-markdown>', element_html, re.DOTALL)
     contents = m.group(1)
     renderer = PrairieLearnRenderer()
     markdown = mistune.Markdown(renderer=renderer)
-    return markdown(contents)
+    res = markdown(contents)
+    print(res)
+    return(res)
