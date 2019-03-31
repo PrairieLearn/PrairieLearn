@@ -193,39 +193,50 @@ In the answer panel, a `pl-matrix-input` element displays the correct answer, al
 
 In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
 
-## `pl-matrix-output` element
+## `pl-variable-output` element
 
 ```html
-<pl-matrix-output digits="3">
+<pl-variable-output digits="3">
     <variable params-name="A">A</variable>
     <variable params-name="B">B</variable>
-</pl-matrix-output>
+</pl-variable-output>
 ```
 
-Attributes for `<pl-matrix-output`:
+Attributes for `<pl-variable-output`:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `digits` | integer | — | Number of digits to display after the decimal.
+`default-tab` | string | 'matlab' | Select the active tab.
+`show-matlab` | boolean | True | Toggles the display of the Matlab tab.
+`show-mathematica` | boolean | True | Toggles the display of the Mathematica tab.
+`show-python` | boolean | True | Toggles the display of the Python tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | Name of variable in `data['params']` to display.
+`comment` | string | — | Comment to add after the displayed variable.
+`digits` | integer | — | Number of digits to display after the decimal for the variable.
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
 ```
-A = [1.23; 4.56];
+A = [1.23; 4.56]; % matrix
+```
+
+Here is an example of the Mathematica format:
+```
+A = [1.23; 4.56]; (* matrix *)
 ```
 
 Here is an example of python format:
 ```
 import numpy as np
 
-A = np.array([[1.23], [4.56]])
+A = np.array([[1.23], [4.56]]) # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.

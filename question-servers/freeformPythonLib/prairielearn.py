@@ -305,6 +305,16 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
     if np.isscalar(A):
         A_str = '{:.{indigits}{iwtype}}'.format(A, indigits=ndigits, iwtype=wtype)
         return A_str
+    elif A.ndim == 1:
+        s = A.shape
+        m = s[0]
+        A_str = '['
+        for i in range(0, m):
+                A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
+                if i < m - 1:
+                    A_str += ', '
+        A_str += ']'
+        return A_str
     else:
         s = A.shape
         m = s[0]
@@ -323,12 +333,13 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         return A_str
 
 
-def string_from_2darray(A, language='python', presentation_type='f', digits=2):
-    """string_from_2darray(A)
+def string_from_numpy(A, language='python', presentation_type='f', digits=2):
+    """string_from_numpy(A)
 
     This function assumes that A is one of these things:
 
         - a number (float or complex)
+        - a 1D ndarray (float or complex)
         - a 2D ndarray (float or complex)
 
     It returns A as a string.
@@ -337,11 +348,27 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
 
         [[ ..., ... ], [ ..., ... ]]
 
+    If A is a 1D ndarray, the string looks like this:
+
+        [ ..., ..., ... ]
+
     If language is 'matlab' and A is a 2D ndarray, the string looks like this:
 
         [ ... ... ; ... ... ]
 
-    In either case, if A is not a 2D ndarray, the string is a single number,
+    If A is a 1D ndarray, the string looks like this:
+
+        [ ..., ..., ... ]
+
+    If language is 'mathematica' and A is a 2D ndarray, the string looks like this:
+
+        {{ ..., ... },{ ..., ... }}
+
+    If A is a 1D ndarray, the string looks like this:
+
+        { ..., ..., ... }
+
+    In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
     If presentation_type is 'sigfig', each number is formatted using the
@@ -357,7 +384,7 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
         else:
             return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
 
-    # if A is a 2D ndarray
+    # if A is a 1D or 2D ndarray
     if language == 'python':
         if presentation_type == 'sigfig':
             formatter = {
@@ -375,8 +402,29 @@ def string_from_2darray(A, language='python', presentation_type='f', digits=2):
             return numpy_to_matlab_sf(A, ndigits=digits)
         else:
             return numpy_to_matlab(A, ndigits=digits, wtype=presentation_type)
+    elif language == 'mathematica':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        result = result.replace('[', '{')
+        result = result.replace(']', '}')
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python" or "matlab"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
+
+
+# Deprecated version, keeping for backwards compatibility
+def string_from_2darray(A, language='python', presentation_type='f', digits=2):
+    result = string_from_numpy(A, language, presentation_type, digits)
+    return result
 
 
 def string_from_number_sigfig(a, digits=2):
@@ -423,6 +471,19 @@ def numpy_to_matlab_sf(A, ndigits=2):
         else:
             A_str = to_precision.to_precision(A, ndigits)
         return A_str
+    elif A.ndim == 1:
+        s = A.shape
+        m = s[0]
+        A_str = '['
+        for i in range(0, m):
+                if np.iscomplexobj(A[i]):
+                    A_str += _string_from_complex_sigfig(A[i], ndigits)
+                else:
+                    A_str += to_precision.to_precision(A[i], ndigits)
+                if i < m - 1:
+                    A_str += ', '
+        A_str += ']'
+        return A_str
     else:
         s = A.shape
         m = s[0]
@@ -441,31 +502,6 @@ def numpy_to_matlab_sf(A, ndigits=2):
                         A_str += '; '
                 else:
                     A_str += ' '
-        return A_str
-
-
-# This function assumes that A is either a floating-point number or a
-# real-valued numpy array. It returns A as a python-formatted string
-# in which each entry has ndigits significant digits.
-def string_from_2darray_sf(A, ndigits=2):
-    if np.isscalar(A):
-        A_str = to_precision.to_precision(A, ndigits)
-        return A_str
-    else:
-        s = A.shape
-        m = s[0]
-        n = s[1]
-        A_str = ''
-        for i in range(0, m):
-            row = ''
-            for j in range(0, n):
-                row += to_precision.to_precision(A[i, j], ndigits)
-                if j != n - 1:
-                    row += ', '
-            A_str += '[' + row + ']'
-            if i != m - 1:
-                A_str += ', '
-        A_str = '[' + A_str + ']'
         return A_str
 
 
