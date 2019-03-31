@@ -943,8 +943,8 @@ then it will be displayed alongside or answer.
 
 #### See also
 
-- [`pl-submission-panel` for changing how a student's submitted answer is displayed.](#pl-submission-panel-element)
-- [`pl-answer-panel` for displaying the solution once all correct attempts are used or the answer entered is correct.](#pl-answer-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 
 -----
 
@@ -973,7 +973,7 @@ may be correct, incorrect, or invalid.
 
 #### See also
 
-- [`pl-answer-panel` for displaying the solution once all correct attempts are used or the answer entered is correct.](#pl-answer-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 -----
@@ -981,8 +981,8 @@ may be correct, incorrect, or invalid.
 
 ## `pl-answer-panel` element
 
-Provide information after either the correct answer is entered or exceeding
-the number of attempts.
+Provide information regarding the question answer after the is unable to
+receive further answers for grading.
 
 #### Sample Element
 
@@ -994,7 +994,12 @@ the number of attempts.
 
 ### Details
 
-Contents are only displayed when the answer panel is requested.
+Contents are only displayed when the answer panel is requested. 
+Common reasons that trigger the display of this element are:
+
+- The question is fully correct
+- There are no more submission attempts
+- The time limit for the assessment has expired.
 
 #### Example implementations
 
@@ -1002,7 +1007,7 @@ Contents are only displayed when the answer panel is requested.
 
 #### See also
 
-- [`pl-submission-panel` for changing how a student's submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 
