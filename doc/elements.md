@@ -607,6 +607,13 @@ that if there are many submitted answers, the page will load slowly.
 
 ## `pl-code` element
 
+Display an embedded or file-based block of code with syntax highlighting and
+line callouts.
+
+#### Sample Element
+
+![](elements/pl-code.png)
+
 ```html
 <pl-code language="python">
 def square(x):
@@ -614,7 +621,7 @@ def square(x):
 </pl-code>
 ```
 
-This element displays a block of code with syntax highlighting.
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -624,6 +631,8 @@ Attribute | Type | Default | Description
 `prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
 `highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
 `highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
+
+#### Details
 
 The `language` can be one of the following values.
 
@@ -664,6 +673,14 @@ The `language` can be one of the following values.
 
 Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
 
+#### Example implementations
+
+- [`codeHighlight`: Highlight specific lines of the code chunk.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/codeHighlight)
+- [`examplesAddCodeFromFile`: Import code from a source file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesAddCodeFromFile)
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
 
 -----
 
