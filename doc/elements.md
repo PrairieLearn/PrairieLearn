@@ -1026,15 +1026,20 @@ It expects results to follow [the reference schema for external grading results]
 
 ## `pl-variable-score` element
 
+Display the partial score for a specific answer variable.
+
+#### Sample Element
+
 ```html
 <pl-variable-score answers-name="v_avg"></pl-variable-score>
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
 
-Display the partial score for a specific answer variable.
 -----
 
 ## `pl-prairiedraw-figure` element
