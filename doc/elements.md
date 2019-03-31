@@ -939,13 +939,32 @@ then it will be displayed alongside or answer.
 
 ## `pl-submission-panel` element
 
+Customizes how information entered by a user is displayed before grading.
+
+#### Sample Element
+
 ```html
 <pl-submission-panel>
   This is submission-panel text.
 </pl-submission-panel>
 ```
 
-Only display contents when rendering the submission panel.
+### Details
+
+Contents are only shown after the student has submitted an answer. This answer
+may be correct, incorrect, or invalid.
+
+#### Example implementations
+
+- [`addBinary`: Custom formatting for answer input when using a non-PrairieLearn element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
+- [`fibonacciUpload`: Displaying a students code file submitted.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
+- [`fibonacciEditor`: Displaying code written by a student in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+
+#### See also
+
+- [`pl-answer-panel` for displaying the solution once all correct attempts are used or the answer entered is correct.](#pl-answer-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
 -----
 
 
