@@ -856,6 +856,12 @@ and `data['params'][params-name] = pl.to_json(v)`.
 
 ## `pl-matrix-latex` element
 
+Displays a matrix written in latex using mathjax.
+
+#### Customizations
+
+![](elements/pl-matrix-latex.png)
+
 ```html
 <pl-matrix-latex params-name="A"></pl-matrix-latex>
 ```
@@ -866,13 +872,15 @@ Attribute | Type | Default | Description
 `presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
 `digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
 
+
+#### Details
+
 The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
 
 If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
 
 If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
     ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
-
 
 For example, if we want to display the following matrix operations
 ```
@@ -886,6 +894,16 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 + <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
 ```
 
+#### Example implementations
+
+- [`examplesMatrixLatex`: Provides examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMatrixLatex)
+- [`chooseMatrices`: Example of matrices being displayed in a multiple-selection problem.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+
+#### See also
+
+- [`pl-matrix-output` for displaying the matrix in a supported programming language.](#pl-matrix-output)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
+- [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
 
 -----
 
