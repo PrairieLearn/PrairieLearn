@@ -909,13 +909,32 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ## `pl-question-panel` element
 
+Displays the contents of question directions.
+
+#### Sample Element
+
 ```html
 <pl-question-panel>
   This is question-panel text.
 </pl-question-panel>
 ```
 
-Only display contents when rendering the question panel.
+### Details
+
+Contents are only shown during question input portion. When a student
+either makes a submission or receives the correct answer, the information 
+between these tags is hidden. If content exists outside of a question panel, 
+then it will be displayed alongside or answer.
+
+#### Example implementations
+
+- [`addNumbers`: Providing directions for question.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers/)
+
+#### See also
+
+- [`pl-submission-panel` for changing how a student's submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the solution once all correct attempts are used or the answer entered is correct.](#pl-answer-panel-element)
+
 -----
 
 ## `pl-submission-panel` element
