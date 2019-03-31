@@ -42,7 +42,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
-- [`pl-matrix-output`](#pl-matrix-output-element): Displays matrices in 
+- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in 
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
   appropriate LaTeX commands for use in a mathematical expression.
@@ -912,7 +912,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 #### See also
 
-- [`pl-matrix-output` for displaying the matrix in a supported programming language.](#pl-matrix-output-element)
+- [`pl-variable-output` for displaying the matrix in a supported programming language.](#pl-variable-output-element)
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
 
