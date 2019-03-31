@@ -12,10 +12,6 @@
             "description": "The name of the element's controller file.",
             "type": "string"
         },
-        "receiveRawHtml": {
-            "description": "If the element should receive the raw contents of the element HTML",
-            "type": "boolean"
-        },
         "dependencies": {
             "description": "The element's client-side dependencies.",
             "type": "object",
