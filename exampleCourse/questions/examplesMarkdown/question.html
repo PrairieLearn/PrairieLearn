@@ -1,5 +1,5 @@
 <pl-question-panel>
-<pl-markdown>
+<markdown>
 # Hello, world!
 
 **Markdown**? *In your question?* ***It's more likely than you might think!***
@@ -33,12 +33,17 @@ class Example {
     }
 };
 ```
-</pl-markdown>
+</markdown>
 </pl-question-panel>
 
 <p>Is markdown cool?</p>
 
 <pl-multiple-choice answers-name="mc">
-  <pl-answer correct="true"><pl-markdown>`std::cout << "yes!" << std::endl;`</pl-markdown></pl-answer>
-  <pl-answer><pl-markdown>`console.log('no')`</pl-markdown></pl-answer>
+  <pl-answer correct="true"><markdown>`std::cout << "yes!" << std::endl;`</markdown></pl-answer>
+  <pl-answer><markdown>`console.log('no')`</markdown></pl-answer>
+  <pl-answer><markdown>
+```cpp
+std::cout << "Definitely not" << std::endl;
+```
+  </markdown></pl-answer>
 </pl-multiple-choice>
