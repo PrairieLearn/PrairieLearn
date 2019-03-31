@@ -1040,9 +1040,15 @@ Display the partial score for a specific answer variable.
 
 ## `pl-prairiedraw-figure` element
 
+Create and display a prairiedraw image.
+
+#### Sample Element
+
 ```html
 <pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
 ```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -1051,9 +1057,17 @@ Attribute | Type | Default | Description
 `width` | integer | 500 | Width of the drawing element.
 `height` | integer | 300 | Height of the drawing element.
 
+#### Details
+
 The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
 
-See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
+#### Example implementations
+
+- [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https://github.com/PrairieLearn/PrairieLearn/blob/6b15d697c0dfa93b574ef1b8950f6cd3647cb573/exampleCourse/questions/examplesPrairieDrawFigure/)
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
 
 -----
 
