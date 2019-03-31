@@ -981,7 +981,6 @@ the number of attempts.
 </pl-answer-panel>
 ```
 
-Only display contents when rendering the answer panel.
 ### Details
 
 Contents are only displayed when the answer panel is requested.
