@@ -1025,6 +1025,13 @@ See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
 
 ## `pl-graphviz-render` element
 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Graphviz DOT visualizations .
+
+#### Sample Element
+
+![](elements/pl-graphviz-render)
+
 ```html
 <pl-graphviz-render>
 digraph G {
@@ -1033,8 +1040,18 @@ digraph G {
 </pl-graphviz-render>
 ```
 
-This element uses [viz.js](https://github.com/mdaines/viz.js/) to render Graphviz DOT notation on the client.
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
+
+#### Example implementations
+
+- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
+
+#### See also
+
+- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
+- [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
+- [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
