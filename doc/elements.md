@@ -53,13 +53,17 @@ images, files, and code display. The following **decorative** elements are avail
   answer to a given question.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
-- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
-  for answering a given variable.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
 - [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
   figure.
 
+Note: PrairieLearn Elements listed next have been **deprecated**. These elements
+will be removed at a future date.
+
+- [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
+  for a submitted element.
+    - **Deprecated** as submission elements in `v3` all have weighting options.
 
 ## Submission Elements --
 
@@ -1039,25 +1043,6 @@ It expects results to follow [the reference schema for external grading results]
 
 -----
 
-
-## `pl-variable-score` element
-
-Display the partial score for a specific answer variable.
-
-#### Sample Element
-
-```html
-<pl-variable-score answers-name="v_avg"></pl-variable-score>
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answers-name` | string | — | Variable name to display score for.
-
------
-
 ## `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
@@ -1123,3 +1108,24 @@ Attribute | Type | Default | Description
 - [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
+
+
+-----
+
+## Deprecated --
+
+## `pl-variable-score` element
+
+Display the partial score for a specific answer variable.
+
+#### Sample Element
+
+```html
+<pl-variable-score answers-name="v_avg"></pl-variable-score>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to display score for.
