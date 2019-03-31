@@ -970,6 +970,11 @@ may be correct, incorrect, or invalid.
 
 ## `pl-answer-panel` element
 
+Provide information after either the correct answer is entered or exceeding
+the number of attempts.
+
+#### Sample Element
+
 ```html
 <pl-answer-panel>
   This is answer-panel text.
@@ -977,6 +982,20 @@ may be correct, incorrect, or invalid.
 ```
 
 Only display contents when rendering the answer panel.
+### Details
+
+Contents are only displayed when the answer panel is requested.
+
+#### Example implementations
+
+- [`addBinary`: Displaying the correct answer.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
+
+#### See also
+
+- [`pl-submission-panel` for changing how a student's submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+
 -----
 
 
