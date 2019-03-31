@@ -848,7 +848,7 @@ and `data['params'][params-name] = pl.to_json(v)`.
 #### See also
 
 - [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](#pl-matrix-latex-element)
-- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
 
 
@@ -901,8 +901,8 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 #### See also
 
-- [`pl-matrix-output` for displaying the matrix in a supported programming language.](#pl-matrix-output)
-- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
+- [`pl-matrix-output` for displaying the matrix in a supported programming language.](#pl-matrix-output-element)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
 - [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
 
 -----
