@@ -42,13 +42,14 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
-- [`pl-matrix-output`](#pl-matrix-output-element): Displays dynamically
-  generated matrices.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays dynamically
-  generated matrices. 
-- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question
 - [`pl-submission-panel`](#pl-submission-panel-element): Displays the inputted
   answers of the student.
+- [`pl-matrix-output`](#pl-matrix-output-element): Displays matrices in 
+  code form for supported programming languages.
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
+  appropriate LaTeX commands for use in a mathematical expression.
+- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question.
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer 
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
