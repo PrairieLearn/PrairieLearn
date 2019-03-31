@@ -1001,12 +1001,27 @@ Contents are only displayed when the answer panel is requested.
 
 ## `pl-external-grader-results` element
 
+Displays results from externally-graded questions. 
+
+#### Sample Element
+
 ```html
 <pl-external-grader-results></pl-external-grader-results>
 ```
 
-Displays results from externally-graded questions. It expects results to follow
-[the reference schema for external grading results](externalGrading.md#grading-result).
+### Details
+
+It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
+
+### Example Implementations
+
+- [`fibonacciUpload`: Displaying results from grading an uploaded code file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
+- [`fibonacciEditor`: Displaying results from grading code written in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+
+### See also
+
+- [External Grading Reference Schema](externalGrading.md#grading-result)
+
 -----
 
 
