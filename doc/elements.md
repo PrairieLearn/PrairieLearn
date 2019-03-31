@@ -1082,7 +1082,7 @@ Graphviz DOT visualizations .
 
 #### Sample Element
 
-![](elements/pl-graphviz-render)
+![](elements/pl-graphviz-render.png)
 
 ```html
 <pl-graphviz-render>
