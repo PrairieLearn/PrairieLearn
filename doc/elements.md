@@ -26,7 +26,7 @@ PrairieLearn presently provides the following templated **input field** elements
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
   programming language format.
-- [`pl-file-editor`](#pl-file-editor-element): Provide an inbrowser code editor
+- [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
   to obtain a file with a specific naming scheme.
@@ -519,7 +519,7 @@ Attribute | Type | Default | description
 
 #### See also
 
-- [`pl-file-editor` to provide an inbrowser code environment](#pl-file-editor-element)
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
