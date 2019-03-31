@@ -549,6 +549,19 @@ module.exports = {
                 });
             });
             module.exports.getInstanceQuestion(locals);
+            describe('the question variant', function() {
+                it('should produce no issues', function(callback) {
+                    sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) {
+                            callback(new Error(`found ${result.rowCount} issues (expected zero issues):\n`
+                                               + JSON.stringify(result.rows, null, '    ')));
+                            return;
+                        }
+                        callback(null);
+                    });
+                });
+            });
             describe('the test job sequence', function() {
                 it('should start with POST to instructorAssessment URL for test_once', function(callback) {
                     const form = {
