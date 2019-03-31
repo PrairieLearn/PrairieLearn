@@ -165,7 +165,7 @@ module.exports = {
             'calculate_predicted_assessment_score.sql',
             'calculate_predicted_assessment_score_quintiles.sql',
             'calculate_predicted_assessment_score_quintiles_as_rows.sql',
-            'calculate_predicted_assessment_score_quintiles_multiple_reps.sql',
+            'calculate_predicted_assessment_score_quintiles_multiple_assessments.sql',
             'assessments_calculate_generated_assessment_stats.sql',
             'get_generated_aq_ids.sql',
             'get_generated_aq_ids_multiple_reps.sql',

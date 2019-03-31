@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    calculate_predicted_assessment_score_quintiles_multiple_reps(
+    calculate_predicted_assessment_score_quintiles_multiple_assessments(
     IN generated_assessment_question_ids BIGINT[][],
     OUT final_result DOUBLE PRECISION[][]
 )

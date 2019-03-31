@@ -4,7 +4,7 @@ AS $$
 BEGIN
     RETURN QUERY WITH predicted_quintile_scores AS (
         SELECT
-            slice((calculate_predicted_assessment_score_quintiles_multiple_reps(generated_assessment_question_ids)), quintiles.quintile) AS predicted_quintile_scores,
+            slice((calculate_predicted_assessment_score_quintiles_multiple_assessments(generated_assessment_question_ids)), quintiles.quintile) AS predicted_quintile_scores,
             quintiles.quintile
         FROM
             generate_series(1,5) AS quintiles (quintile)
