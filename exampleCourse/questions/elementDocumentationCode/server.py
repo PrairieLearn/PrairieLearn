@@ -25,6 +25,10 @@ def generate(data):
     
     # Threejs
     data['correct_answers']['robotC'] = [[1, 0, 0], [0, 45, 0]]
+    
+    # Output elements
+    data['params']['matrixC'] = pl.to_json(np.matrix('5 6; 7 8'))
+    data['params']['matrixD'] = pl.to_json(np.matrix('-1 4; 3 2'))
 
 
     

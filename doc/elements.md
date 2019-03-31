@@ -791,6 +791,13 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ## `pl-matrix-output` element
 
+Displays a list of variables that are formatted for import into the
+supported programming languages (e.g. MATLAB or Python).
+
+#### Sample Element
+
+![](elements/pl-matrix-output.png)
+
 ```html
 <pl-matrix-output digits="3">
     <variable params-name="A">A</variable>
@@ -798,7 +805,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 </pl-matrix-output>
 ```
 
-Attributes for `<pl-matrix-output`:
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -810,21 +817,40 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | Name of variable in `data['params']` to display.
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+
+### Details
+
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or Python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
-```
+
+```matlab
 A = [1.23; 4.56];
 ```
 
-Here is an example of python format:
-```
+Here is an example of Python format:
+
+```python
 import numpy as np
 
 A = np.array([[1.23], [4.56]])
 ```
 
-If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
+If a variable `v` is a complex object, you should use `import prairielearn as pl`
+and `data['params'][params-name] = pl.to_json(v)`.
+
+
+#### Example implementations
+
+- [`examplesMatrixComponentInput`: Shows code output style for a matrix.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesMatrixComponentInput/)
+- [`multiplyTwoComplexMatrices`: Sample showing how two complex matrices are displayed.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+
+#### See also
+
+- [`pl-matrix-latex` for displaying the matrix using LaTeX commands.](#pl-matrix-latex-element)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
+- [`pl-matrix-input` for input values formatted in a supported programming language.](#pl-matrix-input-element)
+
 
 -----
 
