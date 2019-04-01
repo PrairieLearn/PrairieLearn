@@ -461,9 +461,7 @@ module.exports = {
         };
         let questionHtml = '';
         try {
-            const res = await visitNode(parse5.parseFragment(html, {
-                sourceCodeLocationInfo: true,
-            }));
+            const res = await visitNode(parse5.parseFragment(html));
             questionHtml = parse5.serialize(res);
         } catch (e) {
             courseIssues.push(e);
