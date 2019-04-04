@@ -63,7 +63,7 @@ will be removed at a future date.
 
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
-    - **Deprecated** as submission elements in `v3` all have weighting options.
+    - **Deprecated** as submission elements in `v3` all have score display options.
 
 ## Submission Elements --
 
