@@ -985,7 +985,7 @@ may be correct, incorrect, or invalid.
 
 ## `pl-answer-panel` element
 
-Provide information regarding the question answer after the is unable to
+Provide information regarding the question answer after the student is unable to
 receive further answers for grading.
 
 #### Sample Element
