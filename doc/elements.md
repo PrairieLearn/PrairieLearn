@@ -2,9 +2,9 @@
 
 When writing questions, there exists a core pool of elements that provides 
 common structures associated with assessment items. These elements can be
-split into two distinct groups: **submission** and **decorative**. Within this
-document, all of PrairieLearn's elements are displayed alongside links to sample
-elements within the example course.
+split into three distinct groups: **submission**, **decorative**, and 
+**conditional**. Within this document, all of PrairieLearn's elements are
+displayed alongside links to sample elements within the example course.
 
 **Submission** elements act as a way to receive a response or input from the
 student. These elements are traditionally referred to as form input fields. 
@@ -46,17 +46,23 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a question.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
+  figure.
+  
+**Conditional** elements are meant to improve the feedback and question structure.
+These elements conditionally render their content depending on the question state.
+The following **Conditional** elements are available:
+
+- [`pl-question-panel`](#pl-question-panel-element): Displays the text of a
+  question.
 - [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer 
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
-- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
-  figure.
 
 Note: PrairieLearn Elements listed next have been **deprecated**. These elements
 will be removed at a future date.
@@ -922,6 +928,76 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
+## `pl-prairiedraw-figure` element
+
+Create and display a prairiedraw image.
+
+#### Sample Element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+#### Details
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+#### Example implementations
+
+- [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https://github.com/PrairieLearn/PrairieLearn/blob/6b15d697c0dfa93b574ef1b8950f6cd3647cb573/exampleCourse/questions/examplesPrairieDrawFigure/)
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
+
+-----
+
+## `pl-graphviz-render` element
+
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Graphviz DOT visualizations .
+
+#### Sample Element
+
+![](elements/pl-graphviz-render.png)
+
+```html
+<pl-graphviz-render>
+digraph G {
+  A -> B
+}
+</pl-graphviz-render>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
+
+#### Example implementations
+
+- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
+
+#### See also
+
+- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
+- [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
+- [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
+
+-----
+
+## Conditional Elements
+
 ## `pl-question-panel` element
 
 Displays the contents of question directions.
@@ -1041,76 +1117,7 @@ It expects results to follow [the reference schema for external grading results]
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
 
------
-
-## `pl-prairiedraw-figure` element
-
-Create and display a prairiedraw image.
-
-#### Sample Element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-#### Details
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-#### Example implementations
-
-- [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https://github.com/PrairieLearn/PrairieLearn/blob/6b15d697c0dfa93b574ef1b8950f6cd3647cb573/exampleCourse/questions/examplesPrairieDrawFigure/)
-
-#### See also
-
-- [PrairieDraw graphics documentation](PrairieDraw.md)
-
------
-
-## `pl-graphviz-render` element
-
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
-Graphviz DOT visualizations .
-
-#### Sample Element
-
-![](elements/pl-graphviz-render.png)
-
-```html
-<pl-graphviz-render>
-digraph G {
-  A -> B
-}
-</pl-graphviz-render>
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
-
-#### Example implementations
-
-- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
-
-#### See also
-
-- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
-- [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
-- [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
-
-
------
+----------
 
 ## Deprecated --
 
