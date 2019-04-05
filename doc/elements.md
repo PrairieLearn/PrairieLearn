@@ -71,7 +71,7 @@ will be removed at a future date.
   for a submitted element.
     - **Deprecated** as submission elements in `v3` all have score display options.
 
-## Submission Elements --
+## Submission Elements
 
 -----
 
@@ -611,7 +611,7 @@ that if there are many submitted answers, the page will load slowly.
 
 - [External: `three.js` JavaScript library](https://threejs.org/)
 
-## Decorative Elements --
+## Decorative Elements
 
 -----
 
@@ -1119,7 +1119,7 @@ It expects results to follow [the reference schema for external grading results]
 
 ----------
 
-## Deprecated --
+## Deprecated Elements
 
 ## `pl-variable-score` element
 
