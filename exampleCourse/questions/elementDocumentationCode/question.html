@@ -1,0 +1,356 @@
+<pl-question-panel>
+    <p>
+        Examples below are taken from the documentation page for
+		<a href="http://prairielearn.readthedocs.io/en/latest/elements">
+		  PrairieLearn Elements in <code>question.html</code>
+	    </a>. 
+    </p>
+</pl-question-panel>
+
+<hr />
+
+<h2>Submission Elements</h2>
+
+<hr />
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-multiple-choice</code>
+    </div>
+
+    <div class="card-body">
+        
+    <pl-question-panel>
+      Example of a multiple choice element.
+      <p> Correct Input: <code>negative</code> </p>
+    </pl-question-panel>
+    <pl-multiple-choice answers-name="acc">
+      <pl-answer correct="false">positive</pl-answer>
+      <pl-answer correct="true">negative</pl-answer>
+      <pl-answer correct="false">zero</pl-answer>
+    </pl-multiple-choice>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-checkbox</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a multiple selection element.
+          <p> Correct Input: <code>A-B</code>, <code>B-C</code>, and  <code>D-E</code>.</p>
+        </pl-question-panel>
+        
+        <pl-checkbox answers-name="vpos">
+          <pl-answer correct="true">A-B</pl-answer>
+          <pl-answer correct="true">B-C</pl-answer>
+          <pl-answer>               C-D</pl-answer>
+          <pl-answer correct="true">D-E</pl-answer>
+          <pl-answer>               E-F</pl-answer>
+          <pl-answer>               F-G</pl-answer>
+        </pl-checkbox>
+        
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-number-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>numeric</b> values.
+         <p> Correct Input: <code>3.14</code> </p>
+        </pl-question-panel>
+        
+        <pl-number-input answers-name="numericvalue" comparison="sigfig" digits="2"></pl-number-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-integer-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>integer</b> values.
+         <p> Correct Input: <code>42</code> </p>
+        </pl-question-panel>
+        
+        <pl-integer-input answers-name="integervalue"></pl-integer-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-symbolic-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>mathematical expression</b> values.
+         <p> Correct Input: <code>x + y + 1</code> </p>
+        </pl-question-panel>
+        
+        <pl-symbolic-input answers-name="mathexpvalue"></pl-symbolic-input>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-string-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that accepts <b>string</b> values.
+         <p> Correct Input: <code>PrairieLearn</code> </p>
+        </pl-question-panel>
+        
+        <pl-string-input answers-name="stringvalue"></pl-string-input>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-matrix-component-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that provides input fields for 
+          each entry of a matrix.
+         <p> Correct Input: </p>
+         <ul>
+             <li><code>1</code> in location 1x1</li>
+             <li><code>2</code> in location 1x2</li>
+             <li><code>3</code> in location 2x1</li>
+             <li><code>4</code> in location 2x2</li>
+         </ul>
+        </pl-question-panel>
+        
+        <pl-matrix-component-input answers-name="matrixA" label="$A=$"> 
+        </pl-matrix-component-input>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-matrix-input</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a fill in the blank element that provides an input field
+          for supplying the underlying code required to create the matrix.
+         <p> Correct Input: </p>
+         <ul>
+             <li>MATLAB: <code>[1 2; 3 4]</code></li>
+             <li>Python: <code>[[1, 2], [3, 4]]</code></li>
+         </ul>
+        </pl-question-panel>
+        
+        <pl-matrix-input answers-name="matrixB" label="$B=$"> 
+        </pl-matrix-input>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-file-editor</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of an inbrowser code file editor submission element.
+        </pl-question-panel>
+        
+<pl-file-editor
+  file-name="fib.py"
+  ace-mode="ace/mode/python"
+  ace-theme="ace/theme/monokai"
+>
+# Sample starter code
+def fib(n):
+    pass
+</pl-file-editor>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-file-upload</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of a file submission element.
+         <p>
+              Correct Input: <code>foo.py</code>, <code>bar.c</code>, 
+                             and <code>filename with, comma.txt</code> 
+         </p>
+        </pl-question-panel>
+        
+        <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-threejs</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+          Example of 3D scene with input.
+         <p>
+              Correct Input: <code>[[1, 0, 0], [0, 45, 0]]</code> 
+         </p>
+        </pl-question-panel>
+        
+        <pl-threejs answer_name="robotC">
+            <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
+            <pl-threejs-stl file-name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]"></pl-threejs-stl>
+            <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
+        </pl-threejs>
+    </div>
+</div>
+
+<hr />
+
+<h2>Decorative Elements</h2>
+
+<hr />
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-code</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of embedding code blocks with syntax highlighting.</p>
+        </pl-question-panel>
+        
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-figure</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of displaying an image in a question.</p>
+        </pl-question-panel>
+        
+        <!-- show a figure from an existing file -->
+        <pl-figure file-name="pl-logo.png" directory="clientFilesQuestion"></pl-figure>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-file-download</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of providing a file download option.</p>
+        </pl-question-panel>
+        
+<pl-file-download file-name="data.txt" directory="clientFilesQuestion"></pl-file-download>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-variable-output</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of displaying a matrix.</p>
+        </pl-question-panel>
+        
+<pl-variable-output digits="3">
+    <variable params-name="matrixC">C</variable>
+    <variable params-name="matrixD">D</variable>
+</pl-variable-output>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-matrix-latex</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of displaying a matrix using latex.</p>
+        </pl-question-panel>
+        
+$C = <pl-matrix-latex params-name="matrixC" digits="1"></pl-matrix-latex>$
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-graphviz-render</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Example of a graphviz visualization.</p>
+        </pl-question-panel>
+
+<pl-graphviz-render>
+digraph G {
+  A -> B
+}
+</pl-graphviz-render>
+
+    </div>
+</div>

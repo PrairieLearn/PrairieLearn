@@ -33,13 +33,14 @@
     "zones": [
         {
             "questions": [
-                {"id": "examplesCheckbox",           "points": 2, "maxPoints": 10},
-                {"id": "examplesStringInput",        "points": 2, "maxPoints": 10},
-                {"id": "elementsMatrixLatexDisplay", "points": 2, "maxPoints": 10},
-                {"id": "examplesMatrixInput",        "points": 2, "maxPoints": 10},
-                {"id": "examplesSymbolicInput",      "points": 2, "maxPoints": 10},
-                {"id": "examplesNumberInput",        "points": 2, "maxPoints": 10},
-                {"id": "examplesVariableOutput",     "points": 2, "maxPoints": 10}
+                {"id": "examplesCheckbox",               "points": 2, "maxPoints": 10},
+                {"id": "examplesNumberInput",            "points": 2, "maxPoints": 10},
+                {"id": "examplesSymbolicInput",          "points": 2, "maxPoints": 10},
+                {"id": "examplesStringInput",            "points": 2, "maxPoints": 10},
+                {"id": "examplesMatrixComponentInput",   "points": 2, "maxPoints": 10},
+                {"id": "examplesMatrixLatex",            "points": 2, "maxPoints": 10},
+                {"id": "examplesPrairieDrawFigure",      "points": 2, "maxPoints": 10},
+                {"id": "examplesVariableOutput",         "points": 2, "maxPoints": 10}
             ]
         }
     ]
