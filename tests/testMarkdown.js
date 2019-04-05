@@ -9,6 +9,13 @@ describe('Markdown processing', () => {
         assert.equal(actual, expected);
     });
 
+    it('strips <p> tags if necessary', () => {
+        const question = '<markdown>This is **inline**.</markdown>';
+        const expected = 'This is <strong>inline</strong>.';
+        const actual = markdown.processQuestion(question);
+        assert.equal(actual, expected);
+    });
+
     it ('handles multiple <markdown> tags', () => {
         const question = '<markdown>`nice`</markdown><markdown>`also nice`</markdown>';
         const expected = '<code>nice</code><code>also nice</code>';
