@@ -97,12 +97,77 @@ The `question.html` is a template used to render the question to the student. A 
 <p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 ```
 
-The `question.html` is regular HTML, with two special features:
+The `question.html` is regular HTML, with three special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
+   
+3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
+## Using Markdown in questions
+
+HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
+
+```html
+<markdown>
+# Hello, world!
+
+This is some **Markdown** text.
+</markdown>
+```
+
+That question would be rendered like this:
+
+```html
+<h1>Hello, world!</h1>
+<p>This is some <strong>Markdown</strong> text.</p>
+```
+
+A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem.
+
+### Code blocks
+
+Fenced code blocks (those using triple-backticks <code>```</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
+
+`````html
+<markdown>
+```cpp{1-2,4}
+int i = 1;
+int j = 2;
+int k = 3;
+int m = 4;
+```
+</markdown>
+`````
+
+This will be renderd to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
+
+```html
+<pl-code language="cpp" highlight-lines="1-2,4">
+int i = 1;
+int j = 2;
+int k = 3;
+int m = 4;
+</pl-code>
+```
+
+### Escaping `<markdown>` tags
+
+Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+
+### Inline tags
+
+Markdown can be used anywhere in a question, including inside other PrairieLearn elements. Consider the following example:
+
+```html
+<pl-multipe-choice answers-name="answer">
+  <pl-answer><markdown>**Hello**</markdown></pl-answer>
+  <pl-answer><markdown>`Goodbye`</markdown></pl-answer>
+</pl-multiple-choice>
+```
+
+By default, the answers would be wrapped in `<p></p>` tags. However, that can lead to less-than-ideal formatting when the Markdown content is to be used inline with other elements, since `<p>` is a block-level element. To make this work better for PrairieLearn's use case, we'll strip the `<p>` tags from the beginning and end of the rendered HTML if a) the HTML starts with `<p>`, b) the HTML ends with `</p>`, and c) there's only one `<p>` tag in the HTML.
 
 ## Rendering panels from `question.html`
 
