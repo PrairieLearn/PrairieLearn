@@ -25,3 +25,4 @@ require('./testApi');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
 require('./testSproc-check_assessment_access');
+require('./testSproc-users_select_or_insert');
