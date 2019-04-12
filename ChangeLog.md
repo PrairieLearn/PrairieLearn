@@ -103,6 +103,8 @@
 
   * Change element documentation to have a separation between submission and format elements (James Balamuta).
 
+  * Change instructor question page to hide "Test 100 times" for externally graded questions (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
