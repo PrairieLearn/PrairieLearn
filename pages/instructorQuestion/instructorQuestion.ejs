@@ -68,9 +68,11 @@
                     <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
                       Test once with full details
                     </button>
+                    <% if (question.grading_method !== 'External') { %>
                     <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
                       Test 100 times with only results
                     </button>
+                    <% } %>
                   </form>
                 </td>
               </tr>
