@@ -106,12 +106,16 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
-        const count = 100;
-        const showDetails = false;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
-            if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        });
+        if (res.locals.question.grading_method !== 'External') {
+            const count = 100;
+            const showDetails = false;
+            question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+                if (ERR(err, next)) return;
+                res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+            });
+        } else {
+            next(new Error('Not supported for externally-graded questions'));
+        }
     } else if (req.body.__action == 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
