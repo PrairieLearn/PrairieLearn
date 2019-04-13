@@ -808,11 +808,10 @@ supported programming languages (e.g. MATLAB, Mathematica, or Python).
 
 ![](elements/pl-variable-output.png)
 
-
 ```html
 <pl-variable-output digits="3">
-    <variable params-name="A">A</variable>
-    <variable params-name="B">B</variable>
+    <variable params-name="matrixC">C</variable>
+    <variable params-name="matrixD">D</variable>
 </pl-variable-output>
 ```
 
