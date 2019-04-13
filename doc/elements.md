@@ -842,16 +842,19 @@ Attribute | Type | Default | Description
 This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
+
 ```
 A = [1.23; 4.56]; % matrix
 ```
 
 Here is an example of the Mathematica format:
+
 ```
 A = [1.23; 4.56]; (* matrix *)
 ```
 
 Here is an example of python format:
+
 ```
 import numpy as np
 
@@ -863,6 +866,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 #### Example implementations
 
+- [`examplesVariableOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesVariableOutput/)
 - [`examplesMatrixComponentInput`: Shows code output style for a matrix.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesMatrixComponentInput/)
 - [`multiplyTwoComplexMatrices`: Sample showing how two complex matrices are displayed.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/multiplyTwoComplexMatrices)
 
