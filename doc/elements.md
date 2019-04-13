@@ -4,7 +4,9 @@ When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
 split into three distinct groups: **submission**, **decorative**, and 
 **conditional**. Within this document, all of PrairieLearn's elements are
-displayed alongside links to sample elements within the example course.
+displayed alongside links to sample elements within the example course. To
+build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
+documentation.
 
 **Submission** elements act as a way to receive a response or input from the
 student. These elements are traditionally referred to as form input fields. 
