@@ -255,6 +255,7 @@ Attribute | Type | Default | Description
 
 #### Example Implementations
 
+- [`examplesIntegerInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesIntegerInput)
 - [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
 
 #### See also
@@ -852,7 +853,7 @@ Here is an example of the Mathematica format:
 A = [1.23; 4.56]; (* matrix *)
 ```
 
-Here is an example of python format:
+Here is an example of Python format:
 
 ```
 import numpy as np
