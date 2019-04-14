@@ -42,13 +42,14 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer.
-        	   The weight of this question has also been increased meaning it will contribute more to the overall score than other elements.</p>
+            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer. 
+            In addition, the choices are placed "inline" instead of being displayed
+            within a list. </p>
         	   
             <p> What is the color of the sky? </p>
         </pl-question-panel>
 
-        <pl-multiple-choice answers-name="sky-color2" number-answers="4" weight="3">
+        <pl-multiple-choice answers-name="sky-color2" number-answers="4" inline="true">
           <pl-answer correct="true">Blue</pl-answer>
           <pl-answer>Pink</pl-answer>
           <pl-answer>Purple</pl-answer>
@@ -69,11 +70,12 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices. </p>
+            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices. 
+        	   Moreover, the weight of this question has also been increased meaning it will contribute more to the overall score than other elements.</p>
             <p> What is the color of the sky? </p>
         </pl-question-panel>
 
-        <pl-multiple-choice answers-name="sky-color3" fixed-order="true">
+        <pl-multiple-choice answers-name="sky-color3" fixed-order="true" weight="3">
           <pl-answer correct="true">Blue</pl-answer>
           <pl-answer>Pink</pl-answer>
           <pl-answer>Purple</pl-answer>
