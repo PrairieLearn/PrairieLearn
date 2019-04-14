@@ -5,7 +5,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const async = require('async');
 
-const config = require('../../lib/config');
+const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -26,9 +26,6 @@ router.get('/', function(req, res, next) {
                 if (ERR(err, next)) return;
 
                 res.locals.generated_assessments_calculation_status = result.rows[0].generated_assessments_calculation_status;
-
-                console.log('result: ' + result.rows[0]);
-                console.log('Current generated assessments calculation status: ' + res.locals.generated_assessments_calculation_status);
                 callback(null);
             });
         },
@@ -38,7 +35,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.generated_assessment_statistics, params, function(err, result) {
                 if (ERR(err, next)) return;
                 res.locals.generated_assessment_statistics = result.rows;
-                console.log(res.locals.generated_assessment_statistics);
                 callback(null);
             });
         },
@@ -52,12 +48,12 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
-            debug('get data for predicted results histogram')
+            debug('get data for predicted results histogram');
             const params = {
                 assessment_id: res.locals.assessment.id,
                 num_sds: 1,
                 num_buckets: 30,
-                num_exams: num_exams
+                num_exams: num_exams,
             };
 
             if (res.locals.assessment.num_sds) {
@@ -78,8 +74,6 @@ router.get('/', function(req, res, next) {
 
             sqldb.query(sql.generated_assessment_distribution, params, function(err, result) {
                 if (ERR(err, callback)) return;
-
-                console.log(result);
 
                 if (result.rows.length > 0) {
                     const data = result.rows[0];
@@ -117,7 +111,6 @@ router.post('/', function(req, res, next) {
             ];
             sqldb.getClient(function(err, client) {
                 if (ERR(err, next)) return;
-                client.on('notice', (msg) => console.log('assessments_calculate_generated_assessment_stats: ' + msg));
                 sqldb.callWithClient(client, 'assessments_calculate_generated_assessment_stats', params, function(err) {
                     if (ERR(err, next)) return;
                 });

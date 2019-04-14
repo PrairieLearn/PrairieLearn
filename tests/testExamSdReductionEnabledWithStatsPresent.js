@@ -1,8 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var assert = require('chai').assert;
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 var cheerio = require('cheerio');
 var request = require('request');
 var config = require('../lib/config');
@@ -12,12 +9,11 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
-var helperExam = require('./helperExam');
 
 const locals = {};
-
 const numAlternativeGroups = 2;
+
+let res, page, elemList;
 
 describe('Exam assessment', function() {
     this.timeout(60000);
@@ -74,8 +70,8 @@ describe('Exam assessment', function() {
                     'assessment_id': locals.assessment_id,
                     'quintile': quintile,
                     'mean_score': quintile_means[quintile],
-                    'score_sd': 0.05
-                }
+                    'score_sd': 0.05,
+                };
                 sqldb.query(sql.insert_assessment_quintile_statistics, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -144,7 +140,6 @@ describe('Exam assessment', function() {
             assert.lengthOf(elemList, 1);
         });
         it('should have the correct link for E7', function() {
-            console.log(elemList[0].attribs.href);
             locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
         });
