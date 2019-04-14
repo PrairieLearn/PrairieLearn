@@ -1,0 +1,1 @@
+ALTER TABLE assessments ADD generated_assessment_sd_reduction_feature_enabled BOOLEAN DEFAULT FALSE;

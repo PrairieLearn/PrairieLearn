@@ -3,13 +3,13 @@ INSERT INTO assessments
         (uuid,  tid,  type,  number,  order_by,  title,  config,  multiple_instance,  shuffle_questions,
          max_points,  auto_close, deleted_at, course_instance_id,  text,
          assessment_set_id,
-         constant_question_value, allow_issue_reporting)
+         constant_question_value, allow_issue_reporting, generated_assessment_sd_reduction_feature_enabled)
 (
     SELECT
         $uuid, $tid, $type, $number, $order_by, $title, $config, $multiple_instance, $shuffle_questions,
         $max_points, $auto_close, NULL,      $course_instance_id, $text,
         COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL),
-        $constant_question_value, $allow_issue_reporting
+        $constant_question_value, $allow_issue_reporting, $generated_assessment_sd_reduction_feature_enabled
 )
 ON CONFLICT (uuid) DO UPDATE
 SET
@@ -27,7 +27,8 @@ SET
     text = EXCLUDED.text,
     assessment_set_id = EXCLUDED.assessment_set_id,
     constant_question_value = EXCLUDED.constant_question_value,
-    allow_issue_reporting = EXCLUDED.allow_issue_reporting
+    allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+    generated_assessment_sd_reduction_feature_enabled = EXCLUDED.generated_assessment_sd_reduction_feature_enabled
 WHERE
     assessments.course_instance_id = $course_instance_id
 RETURNING id;

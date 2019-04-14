@@ -1,0 +1,45 @@
+columns
+    average_average_submission_score: double precision
+    average_first_submission_score: double precision
+    average_last_submission_score: double precision
+    average_last_submission_score_quintiles: double precision[]
+    average_max_submission_score: double precision
+    average_number_submissions: double precision
+    average_submission_score_hist: double precision[]
+    average_submission_score_variance: double precision
+    discrimination: double precision
+    domain: enum_statistic_domain
+    first_submission_score_hist: double precision[]
+    first_submission_score_variance: double precision
+    id: bigint not null default nextval('question_statistics_id_seq'::regclass)
+    incremental_submission_points_array_averages: double precision[]
+    incremental_submission_points_array_variances: double precision[]
+    incremental_submission_score_array_averages: double precision[]
+    incremental_submission_score_array_quintile_averages: double precision[]
+    incremental_submission_score_array_variance_quintiles: double precision[]
+    incremental_submission_score_array_variances: double precision[]
+    last_submission_score_hist: double precision[]
+    last_submission_score_variance: double precision
+    last_submission_score_variance_quintiles: double precision[]
+    max_submission_score_hist: double precision[]
+    max_submission_score_variance: double precision
+    mean_question_score: double precision
+    number_submissions_hist: double precision[]
+    number_submissions_hist_with_no_perfect_submission: double precision[]
+    number_submissions_hist_with_perfect_submission: double precision[]
+    number_submissions_variance: double precision
+    question_id: bigint not null
+    question_score_variance: double precision
+    quintile_question_scores: double precision[]
+    some_nonzero_submission_perc: double precision
+    some_perfect_submission_perc: double precision
+    some_submission_perc: double precision
+    submission_score_array_averages: double precision[]
+    submission_score_array_variances: double precision[]
+
+indexes
+    question_statistics_pkey: PRIMARY KEY (id) USING btree (id)
+    question_statistics_question_id_and_domain_idx: USING btree (question_id, domain)
+
+foreign-key constraints
+    question_statistics_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id)

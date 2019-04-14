@@ -39,9 +39,17 @@ line.axis {
     fill: #5bc0de;
 }
 
+.outlineBarColor {
+    color: #5bc0de;
+}
+
 .outlineBar {
     stroke: #fff;
     fill: #5bc0de;
+}
+
+.outlineBarRedColor {
+    color: #FF0000;
 }
 
 .outlineBarRed {

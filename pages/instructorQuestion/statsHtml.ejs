@@ -1,0 +1,135 @@
+<td class="text-center">
+    <%= formatFloat(row.mean_question_score, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.question_score_variance, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.discrimination, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.some_submission_perc, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.some_perfect_submission_perc, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_first_submission_score, 2) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.first_submission_score_variance, 2) %>
+</td>
+<td class="text-center">
+    <% if (row.first_submission_score_hist !== null) { %>
+    <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_last_submission_score, 2) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.last_submission_score_variance, 2) %>
+</td>
+<td class="text-center">
+    <% if (row.last_submission_score_hist !== null) { %>
+    <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_max_submission_score, 2) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.max_submission_score_variance, 2) %>
+</td>
+<td class="text-center">
+    <% if (row.max_submission_score_hist !== null) { %>
+    <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_average_submission_score, 2) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_submission_score_variance, 2) %>
+</td>
+<td class="text-center">
+    <% if (row.average_submission_score_hist !== null) { %>
+    <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <% if (row.submission_score_array_averages !== null) { %>
+    <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <% if (row.incremental_submission_score_array_averages !== null) { %>
+    <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <% if (!is_average_row && row.type !== 'Homework') { %>
+    <% if (row.incremental_submission_points_array_averages !== null) { %>
+    <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
+    <% } %>
+    <% } else { %>
+    N/A
+    <% } %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.average_number_submissions, 2) %>
+</td>
+<td class="text-center">
+    <%= formatFloat(row.number_submissions_variance, 2) %>
+</td>
+<td class="text-center">
+    <% if (row.number_submissions_hist !== null) { %>
+    <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<td class="text-center">
+    <% if (row.quintile_question_scores !== null) { %>
+    <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
+    <% } %>
+</td>
+<script>
+    $(function() {
+        const options = {
+            width: 60,
+            height: 20,
+            ymax: 1,
+        };
+        histmini("#firstSubmissionScoreHist<%= i %>",
+            [<%= row.first_submission_score_hist %>],
+            _.defaults({normalize: true}, options));
+        histmini("#lastSubmissionScoreHist<%= i %>",
+            [<%= row.last_submission_score_hist %>],
+            _.defaults({normalize: true}, options));
+        histmini("#maxSubmissionScoreHist<%= i %>",
+            [<%= row.max_submission_score_hist %>],
+            _.defaults({normalize: true}, options));
+        histmini("#averageSubmissionScoreHist<%= i %>",
+            [<%= row.average_submission_score_hist %>],
+            _.defaults({normalize: true}, options));
+        histmini("#submissionScoreArray<%= i %>",
+            [<%= row.submission_score_array_averages %>],
+            options);
+        histmini("#incrementalSubmissionScoreArray<%= i %>",
+            [<%= row.incremental_submission_score_array_averages %>],
+            options);
+        <% if (!is_average_row) { %>
+          histmini("#incrementalSubmissionPointsArray<%= i %>",
+              [<%= row.incremental_submission_points_array_averages %>],
+              _.defaults({ymax: <%= row.max_points %>}, options));
+        <% } %>
+        histmini("#numberSubmissionsHist<%= i %>",
+            [<%= row.number_submissions_hist %>],
+            _.defaults({normalize: true}, options));
+        histmini("#quintileQuestionScoresHist<%= i %>",
+            [<%= row.quintile_question_scores %>],
+            _.defaults({ymax: 100}, options));
+    });
+</script>

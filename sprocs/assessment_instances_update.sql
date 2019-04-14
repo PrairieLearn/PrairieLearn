@@ -12,6 +12,7 @@ AS $$
 #variable_conflict use_column
 DECLARE
     course_id bigint;
+    course_instance_id bigint;
     user_id bigint;
     assessment_id bigint;
     assessment_type enum_assessment_type;
@@ -20,6 +21,8 @@ DECLARE
     assessment_max_points double precision;
     old_assessment_instance_max_points double precision;
     new_assessment_instance_max_points double precision;
+    generated_assessment_sd_reduction_feature_enabled BOOLEAN;
+    num_sds DOUBLE PRECISION;
 BEGIN
     PERFORM assessment_instances_lock(assessment_instance_id);
 
@@ -28,12 +31,26 @@ BEGIN
 
     -- get basic data about existing objects
     SELECT
-        c.id,      u.user_id, a.id,          a.type,
-        a.max_points,          ai.max_points,
+        c.id,
+        ci.id,
+        u.user_id,
+        a.id,
+        a.type,
+        a.max_points,
+        a.generated_assessment_sd_reduction_feature_enabled,
+        a.num_sds,
+        ai.max_points,
         ai.open
     INTO
-        course_id, user_id,   assessment_id, assessment_type,
-        assessment_max_points, old_assessment_instance_max_points,
+        course_id,
+        course_instance_id,
+        user_id,
+        assessment_id,
+        assessment_type,
+        assessment_max_points,
+        generated_assessment_sd_reduction_feature_enabled,
+        num_sds,
+        old_assessment_instance_max_points,
         assessment_instance_open
     FROM
         assessment_instances AS ai
@@ -50,9 +67,23 @@ BEGIN
 
     IF NOT assessment_instance_open THEN RETURN; END IF; -- silently return without updating
 
+    CREATE TEMP TABLE aqs(
+      assessment_question_id BIGINT,
+      init_points DOUBLE PRECISION,
+      points_list DOUBLE PRECISION[],
+      question JSONB
+    );
+
+    IF generated_assessment_sd_reduction_feature_enabled THEN
+      RAISE notice 'using SD reduction algorithm to select balanced assessment questions';
+      INSERT INTO aqs SELECT * FROM select_balanced_assessment_questions(assessment_id, 20, num_sds, assessment_instance_id);
+    ELSE
+      RAISE notice 'using randomly selected assessment questions';
+      INSERT INTO aqs SELECT * FROM select_assessment_questions(assessment_id, assessment_instance_id);
+    END IF;
+
     -- get new questions if any, insert them, and log it
-    WITH
-    inserted_instance_questions AS (
+    WITH inserted_instance_questions AS (
         INSERT INTO instance_questions AS iq
             (authn_user_id, assessment_instance_id, assessment_question_id, current_value, points_list, points_list_original)
         SELECT
@@ -63,7 +94,7 @@ BEGIN
              aq.points_list,
              aq.points_list
         FROM
-            select_assessment_questions(assessment_id, assessment_instance_id) AS aq
+            aqs AS aq
         ON CONFLICT
             (assessment_question_id, assessment_instance_id) DO NOTHING
         RETURNING
@@ -84,6 +115,8 @@ BEGIN
     SELECT coalesce(array_agg(iq.id), array[]::bigint[])
     INTO new_instance_question_ids
     FROM inserted_instance_questions AS iq;
+
+    DROP TABLE aqs;
 
     -- did we add any instance questions above?
     updated := updated OR (cardinality(new_instance_question_ids) > 0);

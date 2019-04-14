@@ -4,7 +4,7 @@
     $(function() {
       var data = [ <%= question_attempts_histogram %>];
       var negativeData = [ <%= question_attempts_before_giving_up_histogram %>];
-      var xgrid = _.range(1, 11, 1);
+      var xgrid = _.range(0, 10, 1);
       var options = {
         ymin: 0,
         xlabel: 'Num attempts',

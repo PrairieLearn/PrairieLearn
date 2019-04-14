@@ -1,0 +1,13 @@
+columns
+    assessment_id: bigint not null
+    id: bigint not null default nextval('assessment_quintile_statistics_id_seq'::regclass)
+    mean_score: double precision
+    quintile: integer
+    score_sd: double precision
+
+indexes
+    assessment_quintile_statistics_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_quintile_statistics_assessment_id_and_quintile_idx: USING btree (assessment_id, quintile)
+
+foreign-key constraints
+    assessment_quintile_statistics_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id)

@@ -73,6 +73,11 @@
             "description": "Whether to keep the value of a question constant after a student solves it correctly.",
             "type": "boolean",
             "default": false
+        },
+        "enableGeneratedAssessmentSdReductionFeature": {
+            "description": "Enables the generated assessment standard deviation reduction feature.",
+            "type": "boolean",
+            "default": false
         }
     },
     "definitions": {

@@ -37,5 +37,6 @@ referenced by
     current_pages: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     page_view_logs: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_statistics: FOREIGN KEY (question_id) REFERENCES questions(id)
     question_tags: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

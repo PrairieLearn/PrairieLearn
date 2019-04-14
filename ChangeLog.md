@@ -2,6 +2,12 @@
 # ChangeLog
 
 * __next version__ - XXXX-XX-XX
+  
+  * Add rows for question statistics averaged over all assessments on instructor question page (Paras Sud).
+  
+  * Add algorithm for selecting balanced difficulty exams based on question statistics (Paras Sud).
+  
+  * Add num-sds cutoff parameter configuration page (Paras Sud).
 
   * Add feedback for correct answers in submitted answer panel (Brian Mercer).
 

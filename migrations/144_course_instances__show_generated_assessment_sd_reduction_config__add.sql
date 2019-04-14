@@ -1,0 +1,1 @@
+ALTER TABLE course_instances ADD show_generated_assessment_sd_reduction_config BOOLEAN DEFAULT FALSE;

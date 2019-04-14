@@ -1,0 +1,43 @@
+{
+    "uuid": "82981f95-3cab-49b1-976d-ba8181ab47ae",
+    "type": "Exam",
+    "title": "Exam for automatic tests with alternative groups",
+    "set": "Exam",
+    "number": "7",
+    "enableGeneratedAssessmentSdReductionFeature": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "The only zone",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "alternatives": [
+                        {"id": "addNumbers",              "points": [5, 3, 1]},
+                        {"id": "addVectors",              "points": [11, 9]}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "alternatives": [
+                        {"id": "partialCredit1",          "points": [19]},
+                        {"id": "partialCredit2",          "points": [9, 7, 5, 3]}
+                    ]
+                }
+            ]
+        }
+    ],
+    "text": "This assessment contains alternative groups."
+}

@@ -1,14 +1,15 @@
 -- BLOCK insert_course_instance
 INSERT INTO course_instances
-        (course_id,  uuid,  short_name,  long_name,  number,  display_timezone, deleted_at)
-VALUES ($course_id, $uuid, $short_name, $long_name, $number, $display_timezone, NULL)
+        (course_id,  uuid,  short_name,  long_name,  number,  display_timezone, deleted_at, show_generated_assessment_sd_reduction_config)
+VALUES ($course_id, $uuid, $short_name, $long_name, $number, $display_timezone, NULL, $show_generated_assessment_sd_reduction_config)
 ON CONFLICT (uuid) DO UPDATE
 SET
     short_name = EXCLUDED.short_name,
     long_name = EXCLUDED.long_name,
     number = EXCLUDED.number,
     display_timezone = EXCLUDED.display_timezone,
-    deleted_at = EXCLUDED.deleted_at
+    deleted_at = EXCLUDED.deleted_at,
+    show_generated_assessment_sd_reduction_config = EXCLUDED.show_generated_assessment_sd_reduction_config
 WHERE
     course_instances.course_id = $course_id
 RETURNING *;

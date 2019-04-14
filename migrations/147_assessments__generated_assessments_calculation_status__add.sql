@@ -1,0 +1,1 @@
+ALTER TABLE assessments ADD COLUMN generated_assessments_calculation_status enum_calculation_status DEFAULT 'NOT_STARTED';

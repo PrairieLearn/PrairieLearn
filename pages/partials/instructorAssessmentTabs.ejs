@@ -23,4 +23,13 @@
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Students</a>
   </li>
+  <% if (course_instance.show_generated_assessment_sd_reduction_config) { %>
+    <li class="nav-item">
+      <a class="nav-link <% if (navSubPage == "generatedAssessmentStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/generated_assessment_statistics">
+        <i class="fas fa-sliders-h">
+        </i>
+        Generated Assessment SD Reduction Tuning
+      </a>
+    </li>
+  <% } %>
 </ul>

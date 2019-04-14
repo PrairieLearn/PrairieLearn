@@ -39,6 +39,11 @@
                 }
             }
         },
+        "showGeneratedAssessmentSdReductionConfig": {
+            "description": "Adds config screens for the generated assessment standard deviation reduction feature.",
+            "type": "boolean",
+            "default": false
+        },
         "allowAccess": {
             "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
             "type": "array",

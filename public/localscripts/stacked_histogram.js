@@ -14,14 +14,33 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
         rightMargin: 20,
         bottomMargin: 55,
         leftMargin: 70,
+        xAxisScale: null,
+        normalize: false
     });
+
+    function normalize(data) {
+        const total = data.reduce((sum, value) => sum + value);
+        return data.map(val => val / total);
+    }
+
+    if (options.normalize) {
+        data = normalize(data);
+        data2 = normalize(data2);
+    }
 
     var width = 600 - options.leftMargin - options.rightMargin;
     var height = 371 - options.topMargin - options.bottomMargin;
 
     var x = d3.scale.ordinal()
-        .domain(bucketNames)
-        .rangeBands([0, width]);
+            .domain(bucketNames)
+            .rangeBands([0, width]);
+
+    var xAxisScale;
+    if (options.xAxisScale) {
+        xAxisScale = options.xAxisScale.range([0, width]);
+    } else {
+        xAxisScale = x;
+    }
 
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() + _(data2).max() : options.ymax);
@@ -33,7 +52,7 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
     var xAxis = d3.svg.axis()
-        .scale(x)
+        .scale(xAxisScale)
         .tickFormat(xTickFormat)
         .orient("bottom");
 

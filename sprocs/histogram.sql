@@ -14,16 +14,25 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS INTEGER[] AS $$
 DECLARE
     bucket INTEGER;
+    is_min_nan BOOLEAN;
 BEGIN
     -- Init the array with the correct number of 0's so the caller doesn't see NULLs
     IF state IS NULL THEN
         state := array_fill(0, ARRAY[nbuckets]);
     END IF;
+
+    IF val IS NULL THEN
+        RETURN state;
+    END IF;
+
+    IF val = 'NaN' THEN
+        RETURN state;
+    END IF;
     
     -- width_bucket returns values in the range 0 to (nbuckets + 1)
     -- where 0 and (nbuckets + 1) indicate above- and below-range values
+
     bucket := width_bucket(val, min, max, nbuckets);
-    
     IF bucket IS NOT NULL THEN
         -- clip bucket to allowed range
         bucket := GREATEST(1, LEAST(nbuckets, bucket));
