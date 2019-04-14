@@ -113,6 +113,7 @@ Attribute | Type | Default | Description
 
 #### Example Implementations
 
+- [`examplesMultipleChoice`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMultipleChoice)
 - [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
 - [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
 
