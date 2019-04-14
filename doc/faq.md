@@ -46,6 +46,91 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 
 See [Access control](accessControl.md) for more details.
 
+## Why is the exam not closed if it is past the end date?
+
+As a built-in security measure, assessment are automatically closed after 6 hours
+of inactivity by the student. Once an assessment is closed, the student is
+unable to provide new submissions. This is regardless of whether the end date
+specified in an access control is reached. If the examination is a take-home exam,
+then the feature can be disabled by specifying in the `infoAsssement.json`:
+
+```
+"autoClose": false
+```
+
+See [Auto-closing Exam assessments](assessment.md#auto-closing-exam-assessments)
+for more details.
+
+## How can we provide a cheat sheet for CBTF exams?
+
+To make a cheatsheet available to students, place the cheatsheet inside of either:
+
+- `clientFilesCourse` folder
+    - Good if the cheatsheet will be used on other exams.
+    - Located where the `infoCourse.json` file is.
+- `clientFilesAssessment` folder
+    - Useful if the cheatsheet should only be available for that specific assessment.
+    - Located where the `infoAssessment.json` file can be found.
+
+Next, within the `infoAssessment.json` for the exam, add the `text` entry with
+the following:
+
+For cheatsheets in `clientFilesCourse`, use:
+
+```
+"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
+```
+
+Otherwise, for cheatsheets in `clientFilesAssessment`, use:
+
+```
+"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+```
+
+To learn more about where files are stored, please see 
+[clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/). 
+For an implementation, please see 
+[Exam 1](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/infoAssessment.json#L34) 
+in the example course.
+
+## How can I reference material in `serverFilesQuestion` and `clientFilesQuestion` from the `server.py`?
+
+To reference a question in the `clientFilesQuestion` folder from `server.py`,
+use the relative path from the base of the question.
+
+```
+./clientFilesQuestion/<your_file_here>
+```
+
+The same pattern holds for referencing material in a `serverFilesQuestion`.
+
+To learn more about where files are stored, please see 
+[clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/). 
+
+## How can questions be manually graded?
+
+Manually graded questions should be used with care. Note that any question
+that has a manual grade component will disable automatic grading for any
+PrairieLearn elements included in the page. With this being said, the
+manual grading procedure requires:
+
+- Adding to the question's `info.json` file:
+
+```
+"singleVariant": true,
+"gradingMethod": "Manual"
+```
+
+- Download the "best" question files from underneath the assessment's "Downloads" page.
+- Grade the files manually and record the results either as a percentage out of
+  100 or as a pure point total using the appropriate PrairieLearn file format.
+- Upload the grades back into PrairieLearn in the "Uploads" page.
+
+From there, the grades are incorporated into the courses' gradebook and will
+be available for export as part of the total assessment.
+
+For a sample implementation of a manually graded question, please see the [`fibonacciUploadManual` question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacciUploadManual/info.json#L8) in the example course.
+
 ## Why is my QID invalid?
 
 QID stands for the **Q**uestion **Id**entifier given to the folder that contains
