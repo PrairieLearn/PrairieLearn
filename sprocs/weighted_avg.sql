@@ -1,7 +1,7 @@
 DO $$
 BEGIN
-    IF NOT EXISTS (select 1 from pg_type where typname = '_weighted_avg_type') THEN
-        CREATE TYPE _weighted_avg_type AS (
+    IF NOT EXISTS (select 1 from pg_type where typname = 'weighted_avg_type_1') THEN
+        CREATE TYPE weighted_avg_type_1 AS (
           running_sum DOUBLE PRECISION,
           running_count DOUBLE PRECISION
         );
@@ -10,31 +10,31 @@ END$$;
 
 CREATE OR REPLACE FUNCTION
     mul_sum2 (
-        a _weighted_avg_type,
+        a weighted_avg_type_1,
         amount DOUBLE PRECISION,
         weight DOUBLE PRECISION
-    ) RETURNS _weighted_avg_type AS $$
+    ) RETURNS weighted_avg_type_1 AS $$
 BEGIN
     IF amount IS NULL THEN
         RETURN a;
     ELSE
         IF a IS NULL THEN
-            a := (0, 0)::_weighted_avg_type;
+            a := (0, 0)::weighted_avg_type_1;
         END IF;
-        RETURN (((a.running_sum + (amount * weight)), (a.running_count + weight)))::_weighted_avg_type;
+        RETURN (((a.running_sum + (amount * weight)), (a.running_count + weight)))::weighted_avg_type_1;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
     final_sum2 (
-        a _weighted_avg_type
+        running_object weighted_avg_type_1
     ) RETURNS DOUBLE PRECISION as $$
 BEGIN
-    IF a.running_count = 0 THEN
+    IF running_object.running_count = 0 THEN
         RETURN 0::DOUBLE PRECISION;
     ELSE
-        RETURN a.running_sum / a.running_count;
+        RETURN running_object.running_sum / running_object.running_count;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
@@ -43,5 +43,5 @@ DROP AGGREGATE IF EXISTS weighted_avg (DOUBLE PRECISION, DOUBLE PRECISION);
 CREATE AGGREGATE weighted_avg (DOUBLE PRECISION, DOUBLE PRECISION) (
     sfunc = mul_sum2,
     finalfunc = final_sum2,
-    stype = _weighted_avg_type
+    stype = weighted_avg_type_1
 );

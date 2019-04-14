@@ -38,8 +38,8 @@ columns
     submission_score_array_variances: double precision[]
 
 indexes
-    question_statistics_pkey: PRIMARY KEY (id)
-    question_statistics_question_id_and_domain_idx: null
+    question_statistics_pkey: PRIMARY KEY (id) USING btree (id)
+    question_statistics_question_id_and_domain_idx: USING btree (question_id, domain)
 
 foreign-key constraints
     question_statistics_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id)
