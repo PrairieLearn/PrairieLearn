@@ -46,9 +46,9 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 
 See [Access control](accessControl.md) for more details.
 
-## Why is the exam not closed if it is past the end date?
+## Why is the exam closed if it is not past the end date?
 
-As a built-in security measure, assessment are automatically closed after 6 hours
+As a built-in security measure, assessments are automatically closed after 6 hours
 of inactivity by the student. Once an assessment is closed, the student is
 unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,
