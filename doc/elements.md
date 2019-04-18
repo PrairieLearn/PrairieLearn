@@ -4,7 +4,9 @@ When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
 split into three distinct groups: **submission**, **decorative**, and 
 **conditional**. Within this document, all of PrairieLearn's elements are
-displayed alongside links to sample elements within the example course.
+displayed alongside links to sample elements within the example course. To
+build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
+documentation.
 
 **Submission** elements act as a way to receive a response or input from the
 student. These elements are traditionally referred to as form input fields. 
@@ -109,8 +111,9 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-#### Example Implementations
+#### Example implementations
 
+- [`examplesMultipleChoice`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMultipleChoice)
 - [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
 - [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
 
@@ -253,8 +256,9 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
-#### Example Implementations
+#### Example implementations
 
+- [`examplesIntegerInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesIntegerInput)
 - [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
 
 #### See also
@@ -390,7 +394,7 @@ Attribute | Type | Default | Description
 
 The question will only be graded when all matrix components are entered.
 
-#### Example Implementations
+#### Example implementations
 
 - [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
 
@@ -808,11 +812,10 @@ supported programming languages (e.g. MATLAB, Mathematica, or Python).
 
 ![](elements/pl-variable-output.png)
 
-
 ```html
 <pl-variable-output digits="3">
-    <variable params-name="A">A</variable>
-    <variable params-name="B">B</variable>
+    <variable params-name="matrixC">C</variable>
+    <variable params-name="matrixD">D</variable>
 </pl-variable-output>
 ```
 
@@ -842,16 +845,19 @@ Attribute | Type | Default | Description
 This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
 
 Here is an example of MATLAB format:
+
 ```
 A = [1.23; 4.56]; % matrix
 ```
 
 Here is an example of the Mathematica format:
+
 ```
 A = [1.23; 4.56]; (* matrix *)
 ```
 
-Here is an example of python format:
+Here is an example of Python format:
+
 ```
 import numpy as np
 
@@ -863,6 +869,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 #### Example implementations
 
+- [`examplesVariableOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesVariableOutput/)
 - [`examplesMatrixComponentInput`: Shows code output style for a matrix.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesMatrixComponentInput/)
 - [`multiplyTwoComplexMatrices`: Sample showing how two complex matrices are displayed.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/multiplyTwoComplexMatrices)
 
