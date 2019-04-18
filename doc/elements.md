@@ -111,7 +111,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-#### Example Implementations
+#### Example implementations
 
 - [`examplesMultipleChoice`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMultipleChoice)
 - [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
@@ -256,7 +256,7 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
-#### Example Implementations
+#### Example implementations
 
 - [`examplesIntegerInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesIntegerInput)
 - [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
@@ -394,7 +394,7 @@ Attribute | Type | Default | Description
 
 The question will only be graded when all matrix components are entered.
 
-#### Example Implementations
+#### Example implementations
 
 - [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
 
