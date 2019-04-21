@@ -195,6 +195,8 @@
 
   * Fix (or at least attempt to) S3 file uploads for external grading (Nathan Walters).
 
+  * Fix handling of binary files during external grading (Nathan Walters).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
