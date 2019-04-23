@@ -70,6 +70,8 @@
   * Add an example question containing code shown in the element documentation (James Balamuta).
 
   * Add example questions for `pl-multiple-choice` and `pl-integer-input` customizations (James Balamuta).
+  
+  * Add example questions for using _R_ with PrairieLearn (James Balamuta).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
