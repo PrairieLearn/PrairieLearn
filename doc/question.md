@@ -156,19 +156,6 @@ int m = 4;
 
 Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
-### Inline tags
-
-Markdown can be used anywhere in a question, including inside other PrairieLearn elements. Consider the following example:
-
-```html
-<pl-multipe-choice answers-name="answer">
-  <pl-answer><markdown>**Hello**</markdown></pl-answer>
-  <pl-answer><markdown>`Goodbye`</markdown></pl-answer>
-</pl-multiple-choice>
-```
-
-By default, the answers would be wrapped in `<p></p>` tags. However, that can lead to less-than-ideal formatting when the Markdown content is to be used inline with other elements, since `<p>` is a block-level element. To make this work better for PrairieLearn's use case, we'll strip the `<p>` tags from the beginning and end of the rendered HTML if a) the HTML starts with `<p>`, b) the HTML ends with `</p>`, and c) there's only one `<p>` tag in the HTML.
-
 ## Rendering panels from `question.html`
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
