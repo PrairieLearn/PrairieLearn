@@ -1,0 +1,98 @@
+<pl-question-panel>
+  <p>
+    The questions below were designed to showcase the different features of
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element"><code>pl-variable-output</code></a>.
+    The goal of <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element"><code>pl-variable-output</code></a>
+    is to allow users to easily copy parameters (scalar values or 2D matrices) for various computational tools.
+  </p>
+</pl-question-panel>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>Within this question, you can observe the default behavior of the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element"><code>pl-variable-output</code></a> element.
+        In particular, the default matrix output has Matlab, Mathematica, and Python tabs. The default active tab is Matlab, this can be changed using the attribute <code>default-tab</code>.  This element has the ability to display any 2D matrix or scalar value and they are displayed with <code>2</code> digits after the decimal.</p>
+      </pl-question-panel>
+      <pl-variable-output>
+        <variable params-name="a">a</variable>
+        <variable params-name="d">d</variable>
+        <variable params-name="x">x</variable>
+        <variable params-name="x1">x1</variable>
+        <variable params-name="x2">x2</variable>
+      </pl-variable-output>
+    </div>
+  </div>
+
+  <div class="card my-2">
+    <div class="card-body">
+      <pl-question-panel>
+        <p>This example lowers the number of displayed digits to <code>0</code> for the entire element and introduces comments for each variable. This uses the optional element parameter <code>digits</code>.
+      </pl-question-panel>
+      <pl-variable-output digits="0">
+        <variable params-name="x" comment="This is an array">x</variable>
+        <variable params-name="x1" comment="This is a 2D matrix">x1</variable>
+      </pl-variable-output>
+    </div>
+  </div>
+
+  <div class="card my-2">
+    <div class="card-body">
+      <pl-question-panel>
+        <p>Under this variant, we opt to change the number of displayed digits to <code>0</code> for the entire element, but explicitly specify <code>8</code> digits for the real number <code>d</code> and <code>2</code> digits for <code>c</code> and <code>xC</code> . This uses the optional variable parameter <code>digits</code>.</p>
+      </pl-question-panel>
+      <pl-variable-output digits="0">
+        <variable params-name="a">a</variable>
+        <variable params-name="b">b</variable>
+        <variable params-name="d" digits="8">d</variable>
+        <variable params-name="c" digits="2">c</variable>
+        <variable params-name="xC" digits="2">xC</variable>
+      </pl-variable-output>
+    </div>
+  </div>
+
+  <div class="card my-2">
+    <div class="card-body">
+      <pl-question-panel>
+        <p>The variables in the Mathematica tab are reformatted if they are reserved in Mathematica (C, D, E, I, K, N, O). These reserved variables are appended with an <code>'m'</code> in the Mathematica tab <strong>only</strong>.</p>
+      </pl-question-panel>
+      <pl-variable-output digits="0">
+        <variable params-name="x" comment="The Mathematica tab adds an 'm' to the variable name">C</variable>
+        <variable params-name="x1">D</variable>
+        <variable params-name="b">E</variable>
+        <variable params-name="a">I</variable>
+        <variable params-name="b">K</variable>
+        <variable params-name="a">N</variable>
+        <variable params-name="b">O</variable>
+      </pl-variable-output>
+    </div>
+  </div>
+
+  <div class="card my-2">
+    <div class="card-body">
+      <pl-question-panel>
+        <p>The default active tab is Matlab, in this example the default active tab is Python. This is done by setting the optional parameter <code>default-tab="python"</code>.</p>
+      </pl-question-panel>
+
+      <pl-variable-output digits="0" default-tab="python">
+        <variable params-name="x1">x1</variable>
+      </pl-variable-output>
+
+      <p>All computational languages are displayed by default. These can be turned off using the element attributes <code>show-matlab</code>, <code>show-mathematica</code>, and <code>show-python</code>. In this example, we remove the the Matlab tab. The default active tab will be the first one in the list, in this case: Mathematica.</p>
+
+      <pl-variable-output digits="0" show-matlab="False">
+        <variable params-name="x1">x1</variable>
+      </pl-variable-output>
+
+      <p>When a tab is not displayed, the default active tab can still be set. In this case, the Mathematica tab is hidden and Python is set as the default active tab.</p>
+
+      <pl-variable-output digits="8" show-mathematica="False" default-tab="python">
+        <variable params-name="d">d</variable>
+      </pl-variable-output>
+
+      <p>Any tab can be displayed alone. In this case, the Matlab and Mathematica tabs are hidden and the Python tab is displayed alone.</p>
+
+      <pl-variable-output digits="0" show-matlab="False" show-mathematica="False">
+        <variable params-name="x1">x1</variable>
+      </pl-variable-output>
+    </div>
+  </div>

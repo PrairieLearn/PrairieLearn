@@ -2,6 +2,7 @@
 <script>
     $(function(){
         $('#pl-symbolic-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -35,6 +36,7 @@
 <script>
     $(function(){
         $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });

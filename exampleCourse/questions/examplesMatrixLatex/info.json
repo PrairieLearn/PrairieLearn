@@ -3,9 +3,5 @@
     "title": "Display 2D numpy arrays in latex format using pl-matrix-latex",
     "topic": "Test",
     "type": "v3",
-    "tags": [
-		    "mfsilva",
-        "tpl101",
-        "v3"
-    ]
+    "tags": ["mfsilva", "tpl101", "v3"]
 }

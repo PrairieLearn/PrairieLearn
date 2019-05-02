@@ -1,4 +1,4 @@
-var logger = require('../lib/logger');
+const logger = require('../lib/logger');
 
 module.exports = function(req, res, next) {
     if (req.method !== 'OPTIONS') {
@@ -28,6 +28,13 @@ module.exports = function(req, res, next) {
                 instance_question_id: (res.locals && res.locals.instance_question) ? res.locals.instance_question.id : null,
             };
             logger.verbose('response', access);
+            res.locals.response_logged = true;
+        });
+
+        // install a handler that will always be called, so we can
+        // check whether we correctly logged the response
+        res.socket.on('close', () => {
+            if (!res.locals.response_logged) logger.error('response was not logged', {response_id: res.locals.response_id});
         });
     }
     next();

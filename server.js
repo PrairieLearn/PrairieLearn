@@ -150,7 +150,7 @@ app.use(function(req, res, next) {res.locals.config = config; next();});
 app.use(function(req, res, next) {load.startJob('request', res.locals.response_id); next();});
 app.use(function(req, res, next) {
     onFinished(res, function (err, res) {
-        if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
+        if (ERR(err, () => {})) logger.verbose('request on-response-finished error', {err, response_id: res.locals.response_id});
         load.endJob('request', res.locals.response_id);
     });
     next();
@@ -178,7 +178,7 @@ app.use(require('./middlewares/logRequest'));
 app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});
 app.use(function(req, res, next) {
     onFinished(res, function (err, res) {
-        if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
+        if (ERR(err, () => {})) logger.verbose('authed_request on-response-finished error', {err, response_id: res.locals.response_id});
         load.endJob('authed_request', res.locals.response_id);
     });
     next();
@@ -377,6 +377,12 @@ app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
+]);
+app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/file', [
+    require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/logPageView')('studentAssessmentInstanceFile'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),

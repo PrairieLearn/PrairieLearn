@@ -1,0 +1,72 @@
+<pl-question-panel>
+  <p>
+    Questions below were designed to showcase the different features of 
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>. 
+    The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>
+    is to allow users to enter <b>real or complex values</b> to be checked within a specific tolerance.  The correct value of $c$ in all questions below is <samp>{{correct_answers.c_1}}</samp>.
+  </p>
+</pl-question-panel>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>Within this question, you can observe the default behavior of the <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a> element.
+        In particular, the default input field has help text as a placeholder as well as a question button and is set to use <code>"relabs"</code> to check the tolerance, which is a combination of relative (<code>"rtol"</code>) and absolute (<code>"atol"</code>) tolerances.</p>
+      <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+    </pl-question-panel>
+    <pl-number-input answers-name="c_1"></pl-number-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of <code>1e-8</code>) underneath <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a> element. Furthermore, we add a label to the front of the input field to specify what the field should receive. </p>
+      <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+    </pl-question-panel>
+    <pl-number-input answers-name="c_2" label = "$c = $" rtol = "1e-3" atol="1e-10"></pl-number-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>Under this variant, we opt to change the default comparison of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>  from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits (<code>comparison="sigfigs"</code>), which has a default of two digits. In addition, we've opted to add a suffix or a unit classification to the input via <code>suffix="units"</code>. </p>
+      <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+    </pl-question-panel>
+    <pl-number-input answers-name="c_3" label = "$c = $" comparison="sigfig" suffix="units"></pl-number-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>Another option is to set the comparison for <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a> to decimal digits (<code>"decdig"</code>) with a requirement for four digits (<code>digits="4"</code>). Furthermore, we changed the weight of this question to be more impactful vs the previous entries via <code>weight="2"</code>. Lastly, we allow students to enter complex numbers by setting <code>allow-complex="true"</code>. </p>
+      <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+    </pl-question-panel>
+    <pl-number-input answers-name="c_4" label = "$c = $" comparison="decdig" digits="4" weight="2" allow-complex="true" suffix="units"></pl-number-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>As another example, we remove the help popup box found in <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a> by setting <code>show-help-text="false"</code>.</p>
+      <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+    </pl-question-panel>
+    <pl-number-input answers-name="c_5" label = "$c = $" show-help-text="false" suffix="units"></pl-number-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>This example shows the use of the attribute <code>size</code> to control the width of the input box. Enter below the coefficients
+        for a function $y = a x + b$ that has a slope equal to $2$ and intercepts the $y$-axis at $5$. Here
+        we also use <code>show-placeholder="false"</code> for both input boxes and <code>show-help-text="false"</code>
+        for the first input box.</p>
+    </pl-question-panel>
+    $f = $<pl-number-input answers-name="c_m" show-placeholder="false" show-help-text="false" size="10"></pl-number-input> $ x \, +$
+    <pl-number-input answers-name="c_b" show-placeholder="false" size="10"></pl-number-input>
+  </div>
+</div>

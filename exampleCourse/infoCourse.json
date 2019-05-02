@@ -26,6 +26,7 @@
         {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
         {"name": "mfsilva", "color": "orange1", "description": "Question originally written by mfsilva"},
         {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
+        {"name": "eliving2", "color": "gray1", "description": "Question originally written by eliving2"},
         {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},

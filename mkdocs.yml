@@ -15,7 +15,7 @@ pages:
   - 'Course instance configuration': 'courseInstance.md'
   - 'Assessment configuration': 'assessment.md'
   - 'Question configuration': 'question.md'
-  - 'HTML element list': 'elements.md'
+  - 'Elements for Writing Questions': 'elements.md'
   - 'Access control': 'accessControl.md'
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
