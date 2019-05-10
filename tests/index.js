@@ -1,5 +1,7 @@
 var logger = require('../lib/logger');
-logger.transports.console.level = 'warn';
+
+const consoleTransport = logger.transports.find(transport => (transport.name === 'console'));
+consoleTransport.level = 'warn';
 
 const helperDb = require('./helperDb');
 const config = require('../lib/config');

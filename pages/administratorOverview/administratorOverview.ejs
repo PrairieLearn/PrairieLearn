@@ -30,6 +30,11 @@
     </style>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
     <div id="content" class="container">
 
