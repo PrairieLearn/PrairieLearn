@@ -17,7 +17,7 @@ const schema = {
 };
 
 
-describe.only('JSON loading', () => {
+describe('JSON loading', () => {
     describe('readJSON', () => {
         it('reads a JSON file', (done) => {
             jsonLoad.readJSON(testfile('basic.json'), (err, json) => {
