@@ -1,8 +1,21 @@
 const assert = require('chai').assert;
+const sinon = require('sinon');
 const path = require('path');
 const jsonLoad = require('../lib/json-load');
 
 const testfile = filename => path.join(__dirname, 'testJsonLoad', filename);
+
+const schema = {
+    $schema: 'http://json-schema.org/draft-04/schema#',
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+        foo: {
+            type: 'string',
+        },
+    },
+};
+
 
 describe.only('JSON loading', () => {
     describe('readJSON', () => {
@@ -36,17 +49,6 @@ describe.only('JSON loading', () => {
     });
 
     describe('validateJSON', () => {
-        const schema = {
-            $schema: 'http://json-schema.org/draft-04/schema#',
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-                foo: {
-                    type: 'string',
-                },
-            },
-        };
-
         it('validates JSON that matches a schema', (done) => {
             const valid = {
                 'foo': 'bar',
@@ -65,6 +67,48 @@ describe.only('JSON loading', () => {
             jsonLoad.validateJSON(invalid, schema, (err, json) => {
                 assert.isNotNull(err);
                 assert.isUndefined(json);
+                done();
+            });
+        });
+    });
+
+    describe('readJSONSyncOrDie', () => {
+        beforeEach(() => {
+            sinon.stub(process, 'exit');
+        });
+
+        afterEach(() => {
+            process.exit.restore();
+        });
+
+        it('reads JSON that matches a schema', () => {
+            const json = jsonLoad.readJSONSyncOrDie(testfile('forSchemaValid.json'), schema);
+            assert.deepEqual(json, { foo: 'bar' });
+            assert.isFalse(process.exit.called);
+        });
+
+        it('exits if JSON does not match scehma', () => {
+            jsonLoad.readJSONSyncOrDie(testfile('forSchemaInvalid.json'), schema);
+            assert.isTrue(process.exit.calledWith(1));
+        });
+    });
+
+    describe('readInfoJson', () => {
+        it('reads JSON that matches a schema', (done) => {
+            jsonLoad.readInfoJSON(testfile('forSchemaValid.json'), schema, (err, json) => {
+                assert.isNull(err);
+                const expected = {
+                    foo: 'bar',
+                    jsonFilename: testfile('forSchemaValid.json'),
+                };
+                assert.deepEqual(json, expected);
+                done();
+            });
+        });
+
+        it('errors for JSON that does not a schema', (done) => {
+            jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema, (err, json) => {
+                assert.isNotNull(err);
                 done();
             });
         });

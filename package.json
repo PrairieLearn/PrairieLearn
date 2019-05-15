@@ -86,12 +86,14 @@
         "mocha": "^5.2.0",
         "nyc": "^13.3.0",
         "request": "^2.87.0",
+        "sinon": "^7.3.2",
         "tmp": "0.0.33"
     },
     "scripts": {
         "start": "node server.js",
         "start-nodemon": "nodemon server.js",
         "test": "nyc --reporter=lcov mocha tests/index.js",
+        "test-nocoverage": "mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"
     },
