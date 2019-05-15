@@ -60,7 +60,7 @@ This file specifies basic information about the course instance:
 
 * Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
 
-* [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/infoCourseInstance.json)
+* [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/schemas/blob/master/schemas/infoCourseInstance.js)
 
 ## User roles
 
