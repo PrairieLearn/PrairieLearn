@@ -109,6 +109,7 @@ describe.only('JSON loading', () => {
         it('errors for JSON that does not a schema', (done) => {
             jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema, (err, json) => {
                 assert.isNotNull(err);
+                assert.isUndefined(json);
                 done();
             });
         });
