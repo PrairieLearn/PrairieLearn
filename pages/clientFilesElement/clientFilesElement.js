@@ -1,7 +1,6 @@
 const path = require('path');
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
 
 router.get('/*', function(req, res, _next) {
     var filename = req.params[0];
