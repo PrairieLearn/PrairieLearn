@@ -342,6 +342,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/element/:element_id/clientFilesElement', require('./pages/clientFilesElement/clientFilesElement'));
 
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion', [
@@ -427,6 +428,10 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+app.use('/pl/course_instance/:course_instance_id/element/:element_id/clientFilesElement', [
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/clientFilesElement/clientFilesElement'),
 ]);
 
 // generatedFiles

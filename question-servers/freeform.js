@@ -795,6 +795,7 @@ module.exports = {
             data.options.client_files_question_url = locals.clientFilesQuestionUrl;
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+            data.options.elements_url = locals.elementsUrl;
 
             // Put key paths in data.options
             data.options.question_path = context.question_dir;
