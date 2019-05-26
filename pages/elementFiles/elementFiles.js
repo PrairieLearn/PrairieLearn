@@ -9,12 +9,12 @@ const _ = require('lodash');
  */
 
 const EXTENSION_WHITELIST = ['.js', '.css'];
-const CLIENT_FOLDER = 'clientFilesElement/';
+const CLIENT_FOLDER = 'clientFilesElement';
 
 router.get('/*', function(req, res, next) {
     const filename = req.params[0];
     let pathSpl = path.normalize(filename).split('/');
-    const valid = pathSpl[1] == 'clientFilesElement' ||
+    const valid = pathSpl[1] == CLIENT_FOLDER ||
           _.some(EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
     if (!valid) {
         res.status(404);
