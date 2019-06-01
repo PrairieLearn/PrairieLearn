@@ -3,17 +3,12 @@
 # this script relies on having a template copy of the full production
 # database available first -- use the dump_restore.sh script
 
-if [ -z "$1" ]
-then
-   echo "Usage: $0 <output-dump-prefix>"
-   exit
-fi
-
 COURSE_SHORT_NAME="TAM 212"
 COURSE_INSTANCE_SHORT_NAME="Sp18"
+OUTPUT_NAME="tam212sp18"
 
-OUTPUT_DUMP="$1.dump"
-OUTPUT_JSON_DIR="$1.tables"
+OUTPUT_DUMP="${OUTPUT_NAME}.dump"
+OUTPUT_JSON_DIR="${OUTPUT_NAME}.tables"
 
 echo "Dumping ${COURSE_SHORT_NAME} ${COURSE_INSTANCE_SHORT_NAME} into ${OUTPUT_DUMP} and ${OUTPUT_JSON_DIR}"
 
