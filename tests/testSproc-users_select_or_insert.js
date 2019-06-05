@@ -6,7 +6,7 @@ var _ = require('lodash');
 var sqldb = require('@prairielearn/prairielib').sqldb;
 var helperDb = require('./helperDb');
 
-var get_user_params = function(user_id, callback) {
+var get_user_params = (user_id, callback) => {
 
     var search = `select user_id, uid, name, uin, provider FROM users WHERE user_id = $1;`;
     sqldb.queryOneRow(search, [user_id], (err, result) => {
@@ -20,12 +20,12 @@ var get_user_params = function(user_id, callback) {
                 // uid, name, uin, provider
 var base_user = [ 'user@host.com', 'Joe User', null, 'provider1' ];
 
-describe('sproc users_select_or_insert tests', function() {
+describe.only('sproc users_select_or_insert tests', () => {
 
         before('set up testing server', helperDb.before);
         after('tear down testing database', helperDb.after);
 
-        it('create new user', function(callback) {
+        it('create new user', (callback) => {
             var params = _.clone(base_user);
 
             sqldb.call('users_select_or_insert', params, (err, result) => {
@@ -34,7 +34,7 @@ describe('sproc users_select_or_insert tests', function() {
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
 
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -51,7 +51,7 @@ describe('sproc users_select_or_insert tests', function() {
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
 
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -67,7 +67,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -83,7 +83,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -99,7 +99,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -115,7 +115,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -132,7 +132,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 1);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -147,7 +147,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 2);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -164,7 +164,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 2);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(after, fromdb);
                     callback(null);
@@ -180,7 +180,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 3);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -196,7 +196,7 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 3);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(params, fromdb);
                     callback(null);
@@ -213,11 +213,45 @@ describe('sproc users_select_or_insert tests', function() {
 
                 var user_id = result.rows[0].user_id;
                 assert.equal(user_id, 3);
-                get_user_params(user_id, function(err, fromdb) {
+                get_user_params(user_id, (err, fromdb) => {
                     if (ERR(err, callback)) return;
                     assert.deepEqual(after, fromdb);
                     callback(null);
                 });
             });
         });
+
+        it('user 4 created with wrong netid and correct UIN', (callback) => {
+            var params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'shibboleth'];
+
+            sqldb.call('users_select_or_insert', params, (err, result) => {
+                if (ERR(err, callback)) return;
+
+                var user_id = result.rows[0].user_id;
+                assert.equal(user_id, 4);
+                get_user_params(user_id, (err, fromdb) => {
+                    if (ERR(err, callback)) return;
+                    assert.deepEqual(params, fromdb);
+                    callback(null);
+                });
+            });
+        });
+
+        it('user 4 logs in with full correct credentials, account updated', (callback) => {
+            var params = ['newstudent', 'Johnny New Student', '888899990', 'shibboleth'];
+
+            sqldb.call('users_select_or_insert', params, (err, result) => {
+                if (ERR(err, callback)) return;
+
+                var user_id = result.rows[0].user_id;
+                assert.equal(user_id, 4);
+                get_user_params(user_id, (err, fromdb) => {
+                    if (ERR(err, callback)) return;
+                    assert.deepEqual(params, fromdb);
+                    callback(null);
+                });
+            });
+        });
+
+
 });
