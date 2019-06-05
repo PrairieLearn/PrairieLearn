@@ -20,7 +20,7 @@ var get_user_params = (user_id, callback) => {
                 // uid, name, uin, provider
 var base_user = [ 'user@host.com', 'Joe User', null, 'provider1' ];
 
-describe.only('sproc users_select_or_insert tests', () => {
+describe('sproc users_select_or_insert tests', () => {
 
         before('set up testing server', helperDb.before);
         after('tear down testing database', helperDb.after);
