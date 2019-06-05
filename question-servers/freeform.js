@@ -168,7 +168,7 @@ module.exports = {
 
             let dataCopy = _.cloneDeep(data);
             if ('base_url' in data.options) {
-                dataCopy.options.client_files_element_url = path.join(data.options.base_url, "elements", elementName, 'clientFilesElement');
+                dataCopy.options.client_files_element_url = path.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
             }
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
