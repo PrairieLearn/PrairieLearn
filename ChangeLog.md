@@ -200,6 +200,7 @@
   * Fix (or at least attempt to) S3 file uploads for external grading (Nathan Walters).
 
   * Fix handling of binary files during external grading (Nathan Walters).
+
   * Fix `users_select_or_insert` to handle NetID changes with same UIN (Dave Mussulman).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
