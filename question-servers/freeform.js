@@ -165,7 +165,12 @@ module.exports = {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-            const pythonArgs = [elementHtml, data];
+
+            let dataCopy = _.cloneDeep(data);
+            if ('base_url' in data.options) {
+                dataCopy.options.client_files_element_url = path.join(data.options.base_url, "elements", elementName, 'clientFilesElement');
+            }
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
@@ -795,7 +800,7 @@ module.exports = {
             data.options.client_files_question_url = locals.clientFilesQuestionUrl;
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
-            data.options.elements_url = locals.elementsUrl;
+            data.options.base_url = locals.baseUrl;
 
             // Put key paths in data.options
             data.options.question_path = context.question_dir;

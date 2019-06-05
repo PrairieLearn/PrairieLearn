@@ -22,7 +22,7 @@ router.get('/*', function(req, res, next) {
         err.status = 404;
         return next(err);
     }
-    
+
     let elementFilesDir;
     if (res.locals.course) {
         // Files should be served from the course directory
