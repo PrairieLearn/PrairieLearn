@@ -168,6 +168,8 @@ module.exports = {
 
             let dataCopy = _.cloneDeep(data);
             if ('base_url' in data.options) {
+                /* Join the URL using Posix join to avoid generating a path with backslashes,
+                   as would be the case when running on Windows */
                 dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
             }
             const pythonArgs = [elementHtml, dataCopy];
