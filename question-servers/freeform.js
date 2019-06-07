@@ -167,6 +167,8 @@ module.exports = {
             const controller = resolvedElement.controller;
 
             let dataCopy = _.cloneDeep(data);
+            /* The options field will be empty unless in the 'render' stage, so check
+               if it is populated before adding the element url */
             if ('base_url' in data.options) {
                 /* Join the URL using Posix join to avoid generating a path with backslashes,
                    as would be the case when running on Windows */
