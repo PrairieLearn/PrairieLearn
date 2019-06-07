@@ -71,6 +71,8 @@
 
   * Add example questions for `pl-multiple-choice` and `pl-integer-input` customizations (James Balamuta).
 
+  * Add `clientFilesElement` folder for loading element-specific client files (Nicolas Nytko).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
