@@ -21,18 +21,8 @@
         <div class="card-header bg-primary text-white">Courses</div>
         <table class="table table-sm table-hover table-striped">
           <tbody>
-            <%# If useModals=true, then the UI will use modal confirmation
-                dialogs. If false, then the old popover tooltips with buttons
-                will be generated instead. %>
-            <% var useModals=true; %>
-            <%# Modal configuration preamble. This has to come before the
-                following forEach: %>
-            <%
-              var modalIdx=0;
-              var dataToggleVal="popover";
-              if (useModals) {dataToggleVal="modal";}
-            %>
-            <% course_instances.forEach(function(course_instance) { %>
+            <%# var modalIdx=0; must come before the forEach: %>
+            <% var modalIdx=0; course_instances.forEach(function(course_instance) { %>
             <tr>
               <td class="align-middle">
                 <%= course_instance.label %>
@@ -40,21 +30,7 @@
               <td>
                 <% if (!course_instance.enrolled) { %>
                 <a tabindex="0" class="btn btn-sm btn-info" role="button"
-                   data-toggle="<%= dataToggleVal %>"
-                   data-trigger="focus" data-container="body"
-                   data-html="true" data-placement="auto" title="Confirm add"
-                   data-target="#addModal<%= modalIdx %>"
-                   data-content="
-                                 <form name=&quot;enroll-form&quot; method=&quot;POST&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;enroll&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
-                                          value=&quot;<%= course_instance.course_instance_id %>&quot;>
-                                   <button type=&quot;submit&quot; class=&quot;btn btn-info&quot;>
-                                     Add <%= course_instance.short_label %>
-                                   </button>
-                                 </form>
-                                 ">
+                   data-toggle="modal" data-target="#addModal<%= modalIdx %>" >
                   Add course
                 </a>
                 <div class="modal fade" id="addModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="addModal<%= modalIdx %>Title" aria-hidden="true">
@@ -69,8 +45,7 @@
                       <div class="modal-body">
                         <p>Are you sure you want to add this course content to your PrairieLearn account?</p>
                         <p class="modal-course-title-style"><%= course_instance.label %></p>
-                        <p>This does not register you in the actual course.
-                         You need to formally register for courses with the University separately.</p>
+                        <p>Adding or removing courses here only affects what is visible to you on PrairieLearn. This does not change your university course registration.</p>
                       </div>
                       <div class="modal-footer">
                          <form name="enroll-form" method="POST">
@@ -94,21 +69,7 @@
               <td>
                 <% if (course_instance.enrolled) { %>
                 <a tabindex="0" class="btn btn-sm btn-danger" role="button"
-                   data-toggle="<%= dataToggleVal %>"
-                   data-trigger="focus" data-container="body"
-                   data-html="true" data-placement="auto" title="Confirm remove"
-                   data-target="#removeModal<%= modalIdx %>"
-                   data-content="
-                                 <form name=&quot;unenroll-form&quot; method=&quot;POST&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;unenroll&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
-                                          value=&quot;<%= course_instance.course_instance_id %>&quot;>
-                                   <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>
-                                     Remove <%= course_instance.short_label %>
-                                   </button>
-                                 </form>
-                                 ">
+                   data-toggle="modal" data-target="#removeModal<%= modalIdx %>" >
                   Remove course
                 </a>
                 <div class="modal fade" id="removeModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="removeModal<%= modalIdx %>Title" aria-hidden="true">
@@ -121,18 +82,9 @@
                         </button>
                       </div>
                       <div class="modal-body">
-                        <p>Are you sure you want to remove this course content from your
-                          PrairieLearn account?
-                        </p>
+                        <p>Are you sure you want to remove this course content from your PrairieLearn account?</p>
                         <p class="modal-course-title-style"><%= course_instance.label %></p>
-                        <p>This does not drop you from the actual course.
-                         You need to formally drop classes through the University registration system.</p>
-                        <%# Perhaps the following notice isn't necessary if students removing themselves
-                            from courses doesn't affect our records of results. (?) %>
-                        <p>
-                          If you have recently used this PrairieLearn course to take an exam for
-                          proficiency, placement, or entrance qualification, please do not remove yourself from the course.
-                        </p>
+                        <p>Adding or removing courses here only affects what is visible to you on PrairieLearn. This does not change your university course registration.</p>
                       </div>
                       <div class="modal-footer">
                          <form name="unenroll-form" method="POST">
@@ -154,8 +106,8 @@
                 <% } %>
               </td>
             </tr>
-            <% ; modalIdx++; %>
-            <% }); %>
+            <%# incrementing modalIdx must be done before closing the forEach function block: %>
+            <% ; modalIdx++; }); %>
           </tbody>
         </table>
       </div>
