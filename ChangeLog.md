@@ -72,6 +72,8 @@
   * Add example questions for `pl-multiple-choice` and `pl-integer-input` customizations (James Balamuta).
 
   * Add `clientFilesElement` folder for loading element-specific client files (Nicolas Nytko).
+  
+  * Add course-level pages for viewing all questions, individual questions, and issues (Ray Essick).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
