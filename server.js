@@ -459,6 +459,7 @@ app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix 
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
 app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/courseOverview'));
+app.use('/pl/course/:course_id/questions', require('./pages/courseQuestions/courseQuestions'));
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));

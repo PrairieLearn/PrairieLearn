@@ -12,6 +12,7 @@
       <!-- Main pages ------------------------------------------------------------------>
 
       <li class="nav-item <% if (navPage == "courseOverview") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/overview">Course</a></li>
+      <li class="nav-item <% if (navPage == "courseQuestions") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/questions">Questions</a></li>
       <% if (!devMode && authz_data.has_course_permission_edit) { %>
       <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
       <% } %>
