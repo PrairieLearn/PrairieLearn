@@ -143,7 +143,10 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_instructor_edit && 
+        !res.locals.authz_data.has_course_permission_edit) {
+        return next( error.make(403, 'Action requires instructor or course admin permissions', {locals: res.locals, body: req.body}) );
+    }
     if (req.body.__action == 'open') {
         let params = [
             req.body.issue_id,
