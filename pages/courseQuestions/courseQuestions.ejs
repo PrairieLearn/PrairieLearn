@@ -41,7 +41,7 @@
                 <td class="align-middle"><%- include('../partials/tags', {tags: question.tags}); %></td>
                 <!-- Render each course instance assessment list -->
                 <% question.course_instances.forEach(function(course_instance) { %>
-                <td class="align-middle"><%- include('../partials/assessments', {course_instance_id: course_instance.course_instance_id, assessments: course_instance.assessments}); %></td>
+                <td class="align-middle"><%- include('../partials/courseAssessments', {course_instance_id: course_instance.course_instance_id, assessments: course_instance.assessments}); %></td>
                 <% }); %>
               </tr>
               <% }); %>
