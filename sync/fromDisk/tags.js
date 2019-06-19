@@ -28,18 +28,18 @@ function safeAsync(func, callback) {
 module.exports = { 
     sync: function(courseInfo, questionDB, callback) {
         safeAsync(async () => {
-            const start = new Date();
-
             // Aggregate all tags into a form that we can pass in one go to our sproc
             // Since all this data will be sent over the wire, we'll send it in a
             // compact form of an array of arrays, where each array will correspond to
-            // one tag: [tag_name, tag_color_description]
+            // one tag: [tag_name, tag_color_description]. This saves bytes over JSON's
+            // typical verbose objects.
             const tags = courseInfo.tags || [];
             const paramTags = tags.map(tag => ([
                 tag.name,
                 tag.color,
                 tag.description,
             ]));
+
             const tagParams = {
                 // node-postgres will try to convert to postgres arrays, so we
                 // need to explicitly serialize ourselves: see
@@ -47,9 +47,6 @@ module.exports = {
                 new_tags: JSON.stringify(paramTags),
                 course_id: courseInfo.courseId,
             };
-
-            console.log(tagParams);
-
             const res = await asyncQueryOneRow(sql.update_tags, tagParams);
 
             // We'll get back a single row containing an array of IDs of the tags
@@ -59,13 +56,12 @@ module.exports = {
                 return acc;
             }, {});
 
-            // Iterate over all the questions and validate that they all have
-            // valid tags. As we go, build up an array of all the information that
-            // we'll need when updating the DB. Since this entire thing will
-            // need to be sent over the wire, we'll use a compact representation
-            // instead of more verbose JSON for courses with many hundreds of tags.
-            // We'll have an array of arrays, which each array containing info for one
-            // question in the form [question_id, [tag_1_id, tag_2_id, ...]].
+            // Ensure that all question tags are valid. As we go, build
+            // up an array of all the information that we'll need at the DB.
+            // As above, we'll use a compact representation to send this information
+            // to the DB. We'll have an array of arrays, which each array
+            // containing info for one question in the form
+            // [question_id, [tag_1_id, tag_2_id, ...]].
             const paramQuestionTags = [];
 
             for (const qid in questionDB) {
@@ -82,8 +78,6 @@ module.exports = {
                 new_question_tags: JSON.stringify(paramQuestionTags),
             }
             await asyncQueryOneRow(sql.update_question_tags, questionTagParams);
-
-            console.log(`Elapsed: ${new Date() - start}ms`);
         }, callback);
     }
 }
