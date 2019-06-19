@@ -53,7 +53,7 @@ module.exports = {
                 color: tag.color,
                 description: tag.description,
             }));
-            const params = {
+            const tagParams = {
                 // node-postgres will try to convert to postgres arrays, so we
                 // need to explicitly serialize ourselves: see
                 // https://github.com/brianc/node-postgres/issues/442
@@ -61,33 +61,41 @@ module.exports = {
                 course_id: courseInfo.courseId,
             };
 
-            const res = await asyncQueryOneRow(sql.update_tags, params);
+            const res = await asyncQueryOneRow(sql.update_tags, tagParams);
             console.log(res);
 
             // We'll get back some rows, each one containing the ID of the
             // corresponding tag in the tags array
             const tagIdsByName = res.rows[0].new_tag_ids.reduce((acc, id, index) => {
                 acc[paramTags[index].name] = id;
+                return acc;
             }, {});
+
+            console.log('tagIdsByName', tagIdsByName);
 
             // Iterate over all the questions and validate that they all have
             // valid tags. As we go, build up an array of all the information that
-            // we'll need when updating the DB.
+            // we'll need when updating the DB. Since this entire thing will
+            // need to be sent over the wire, we'll use a compact representation
+            // instead of more verbose JSON for courses with many hundreds of tags.
+            // We'll have an array of arrays, which each array containing info for one
+            // question in the form [question_id, [tag_1_id, tag_2_id, ...]].
             const paramQuestionTags = [];
 
             for (const qid in questionDB) {
                 const question = questionDB[qid]
                 const tags = question.tags || []
-                const unknownTags = tags.filter(tag => tag in tagIdsByName);
+                const unknownTags = tags.filter(tag => !(tag in tagIdsByName));
                 if (unknownTags.length > 0) {
-                    callback(new Error(`Question ${qid} has unknown tags: ${unknownTags.join(', ')}`))
-                    return;
+                    throw new Error(`Question ${qid} has unknown tags: ${unknownTags.join(', ')}`);
                 }
-                paramQuestionTags.push({
-                    qid,
-                    tag_ids: tags.map(tag => tagIdsByName[tag]),
-                });
+                paramQuestionTags.push([question.id, tags.map(tag => tagIdsByName[tag])]);
             }
+
+            const questionTagParams = {
+                new_question_tags: JSON.stringify(paramQuestionTags),
+            }
+            await asyncQueryOneRow(sql.update_question_tags, questionTagParams);
         }, callback);
     }
 }

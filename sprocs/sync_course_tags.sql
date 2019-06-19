@@ -15,7 +15,7 @@ BEGIN
     FOR tag IN SELECT * FROM JSONB_ARRAY_ELEMENTS(new_tags) LOOP
         INSERT INTO tags
                 (name, number, color, description, course_id)
-        VALUES (tag->'name', (tag->>'number')::integer, tag->'color', tag->'description', new_course_id)
+        VALUES (tag->>'name', (tag->>'number')::integer, tag->>'color', tag->>'description', new_course_id)
         ON CONFLICT (name, course_id) DO UPDATE
         SET
             number = EXCLUDED.number,

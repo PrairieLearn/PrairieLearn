@@ -34,4 +34,4 @@ WHERE
     AND qi.id NOT IN (SELECT unnest($keep_question_tag_ids::integer[]));
 
 -- BLOCK update_question_tags
-SELECT * FROM sync_question_tags($new_question_tags::jsonb, $course_id);
+SELECT * FROM sync_question_tags($new_question_tags::jsonb);
