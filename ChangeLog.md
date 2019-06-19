@@ -199,6 +199,8 @@
 
   * Fix handling of binary files during external grading (Nathan Walters).
 
+  * Fix question tag syncing to be significantly faster (Nathan Walters).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
