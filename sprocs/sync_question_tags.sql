@@ -9,7 +9,6 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     question JSONB;
-    question_tag JSONB;
     question_tag_id bigint;
     new_question_id bigint;
     new_question_tag_id bigint;
@@ -20,13 +19,10 @@ BEGIN
     FOR question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(new_question_tags) LOOP
         new_question_id := (question->>0)::bigint;
 
-        FOR question_tag IN SELECT * FROM JSONB_ARRAY_ELEMENTS(question->1) LOOP
-            -- Necessary because values come to us as quoted strings
-            question_tag_id := trim('""' FROM question_tag::text)::bigint;
-
+        FOR question_tag_id IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) LOOP
             INSERT INTO question_tags
                 (question_id, tag_id, number)
-            VALUES (new_question_id::bigint, question_tag_id, question_tag_number)
+            VALUES (new_question_id::bigint, question_tag_id::bigint, question_tag_number)
             ON CONFLICT (question_id, tag_id) DO UPDATE
             SET
                 number = question_tag_number
