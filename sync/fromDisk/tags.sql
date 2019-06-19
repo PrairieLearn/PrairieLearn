@@ -15,6 +15,9 @@ WHERE
     t.course_id = $course_id
     AND t.id NOT IN (SELECT unnest($keep_tag_ids::integer[]));
 
+-- BLOCK update_tags
+SELECT * FROM sync_course_tags($new_tags::jsonb, $course_id);
+
 -- BLOCK insert_question_tag
 INSERT INTO question_tags
         (question_id,  tag_id,  number)
@@ -29,3 +32,6 @@ DELETE FROM question_tags AS qi
 WHERE
     qi.question_id = $question_id
     AND qi.id NOT IN (SELECT unnest($keep_question_tag_ids::integer[]));
+
+-- BLOCK update_question_tags
+SELECT * FROM sync_question_tags($new_question_tags::jsonb, $course_id);

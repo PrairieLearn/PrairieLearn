@@ -4,12 +4,95 @@ var async = require('async');
 
 var logger = require('../../lib/logger');
 var sqldb = require('@prairielearn/prairielib/sql-db');
-var config = require('../../lib/config');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports = {
+function asyncCallOneRow(functionName, params) {
+    return new Promise((resolve, reject) => {
+        sqldb.callOneRow(functionName, params, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function asyncQueryOneRow(sql, params) {
+    return new Promise((resolve, reject) => {
+        sqldb.queryOneRow(sql, params, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function safeAsync(func, callback) {
+    new Promise(async () => {
+        try {
+            callback(await func());
+        } catch (err) {
+            callback(err);
+        }
+    });
+};
+
+module.exports = { 
+    sync: function(courseInfo, questionDB, callback) {
+        safeAsync(async () => {
+            // Aggregate all tags into a form that we can pass in one go to our sproc
+            const tags = courseInfo.tags || [];
+            const paramTags = tags.map((tag, index) => ({
+                name: tag.name,
+                number: index + 1,
+                color: tag.color,
+                description: tag.description,
+            }));
+            const params = {
+                // node-postgres will try to convert to postgres arrays, so we
+                // need to explicitly serialize ourselves: see
+                // https://github.com/brianc/node-postgres/issues/442
+                new_tags: JSON.stringify(paramTags),
+                course_id: courseInfo.courseId,
+            };
+
+            const res = await asyncQueryOneRow(sql.update_tags, params);
+            console.log(res);
+
+            // We'll get back some rows, each one containing the ID of the
+            // corresponding tag in the tags array
+            const tagIdsByName = res.rows[0].new_tag_ids.reduce((acc, id, index) => {
+                acc[paramTags[index].name] = id;
+            }, {});
+
+            // Iterate over all the questions and validate that they all have
+            // valid tags. As we go, build up an array of all the information that
+            // we'll need when updating the DB.
+            const paramQuestionTags = [];
+
+            for (const qid in questionDB) {
+                const question = questionDB[qid]
+                const tags = question.tags || []
+                const unknownTags = tags.filter(tag => tag in tagIdsByName);
+                if (unknownTags.length > 0) {
+                    callback(new Error(`Question ${qid} has unknown tags: ${unknownTags.join(', ')}`))
+                    return;
+                }
+                paramQuestionTags.push({
+                    qid,
+                    tag_ids: tags.map(tag => tagIdsByName[tag]),
+                });
+            }
+        }, callback);
+    }
+}
+
+module.exportsss = {
     sync: function(courseInfo, questionDB, callback) {
         async.series([
             function(callback) {
@@ -33,7 +116,7 @@ module.exports = {
                 }, function(err) {
                     if (ERR(err, callback)) return;
 
-                    // delete topics from the DB that aren't on disk
+                    // delete tags from the DB that aren't on disk
                     var params = {
                         course_id: courseInfo.courseId,
                         keep_tag_ids: tagIds,
@@ -51,6 +134,14 @@ module.exports = {
                     logger.debug('Syncing tags for question ' + qid);
                     q.tags = q.tags || [];
                     var questionTagIds = [];
+
+                    // Figure out if any specified tags don't exist in the course
+                    const unknownTags = q.tags.filter(tag => tag in tagsByName);
+                    if (unknownTags.length > 0) {
+                        callback(new Error(`Question ${qid} has unknown tags: ${unknownTags.join(', ')}`))
+                        return;
+                    }
+
                     async.forEachOfSeries(q.tags, function(tagName, i, callback) {
                         if (!_(tagsByName).has(tagName)) {
                             return callback(new Error('Question ' + qid + ', unknown tag: ' + tagName));
@@ -68,7 +159,7 @@ module.exports = {
                     }, function(err) {
                         if (ERR(err, callback)) return;
 
-                        // delete topics from the DB that aren't on disk
+                        // delete question tags from the DB that aren't on disk
                         logger.debug('Deleting unused tags');
                         var params = {
                             question_id: q.id,
