@@ -16,28 +16,51 @@ const syncAssessmentSets = require('./fromDisk/assessmentSets');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 
-module.exports = {};
+const perfMarkers = {};
+
+const start = (name) => {
+    perfMarkers[name] = new Date();
+}
+
+const end = (name) => {
+    if (!(name in perfMarkers)) {
+        return;
+    }
+    console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
+}
+
+const timedFunc = (name, func, callback) => {
+    start(name);
+    func((err) => {
+        end(name);
+        callback(err);
+    });
+}
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
+    start("sync");
+    start("loadFullCourse");
     courseDB.loadFullCourse(courseDir, logger, function(err, course) {
+        end("loadFullCourse");
         if (ERR(err, callback)) return;
         logger.info("Successfully loaded all info.json files");
         async.series([
             function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
-            syncCourseInfo.sync.bind(null, course.courseInfo, course_id),
+            timedFunc.bind(null, "syncCourseInfo", syncCourseInfo.sync.bind(null, course.courseInfo, course_id)),
             function(callback) {logger.info("Syncing courseInstances from git repository to database..."); callback(null);},
-            syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB),
+            timedFunc.bind(null, "syncCourseInstances", syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB)),
             function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
-            syncTopics.sync.bind(null, course.courseInfo),
+            timedFunc.bind(null, "syncTopics", syncTopics.sync.bind(null, course.courseInfo)),
             function(callback) {logger.info("Syncing questions from git repository to database..."); callback(null);},
-            syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger),
+            timedFunc.bind(null, "syncQuestions", syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger)),
             function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
-            syncTags.sync.bind(null, course.courseInfo, course.questionDB),
+            timedFunc.bind(null, "syncTags", syncTags.sync.bind(null, course.courseInfo, course.questionDB)),
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
-            syncAssessmentSets.sync.bind(null, course.courseInfo),
+            timedFunc.bind(null, "syncAssessmentSets", syncAssessmentSets.sync.bind(null, course.courseInfo)),
             (callback) => {
+                start("syncCourseInstaces");
                 async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     async.series([
                         function(callback) {logger.info("Syncing " + courseInstanceShortName
@@ -51,6 +74,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
                         callback(null);
                     });
                 }, function(err) {
+                    end("syncCourseInstances");
                     if (ERR(err, callback)) return;
                     logger.info("Completed sync of git repository to database");
                     callback(null);
@@ -59,6 +83,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             function(callback) {logger.info("Reloading course elements..."); callback(null);},
             freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
         ], function(err) {
+            end("sync");
             if (ERR(err, callback)) return;
             logger.info("Completed sync of git repository to database");
             callback(null);
