@@ -65,7 +65,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             .groupBy('uuid')
             .each(function(questions, uuid) {
                 if (questions.length > 1) {
-                    const directories = questions.map(q => q.directory).join();
+                    const directories = questions.map(q => q.directory).join(', ');
                     throw new Error(`UUID ${uuid} is used in multiple questions: ${directories}`);
                 }
             });
