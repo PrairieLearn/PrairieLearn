@@ -178,6 +178,7 @@ module.exports = {
                     password: _(dbRule).has('password') ? dbRule.password : null,
                     seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
                     exam_uuid: _(dbRule).has('examUuid') ? dbRule.examUuid : null,
+                    lti_outcome_required: _(dbRule).has('LTIOutcomeRequired') ? dbRule.LTIOutcomeRequired : null,
                 };
                 sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                     if (ERR(err, callback)) return;

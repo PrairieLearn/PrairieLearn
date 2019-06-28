@@ -26,6 +26,7 @@
                 <th>Time limit</th>
                 <th>Password</th>
                 <th>CBTF exam</th>
+                <th>LTI Outcome Required</th>
               </tr>
             </thead>
             <tbody>
@@ -40,6 +41,7 @@
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
                 <td><%- access_rule.exam %></td>
+                <td><%= access_rule.lti_outcome_required %></td>
               </tr>
               <% }); %>
             </tbody>

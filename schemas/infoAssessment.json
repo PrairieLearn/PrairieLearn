@@ -119,6 +119,10 @@
                     "type": "integer",
                     "minimum": 0
                 },
+                "LTIOutcomeRequired": {
+                    "description": "Check to see if we have an LTI outcome recorded for this user and assessment to provide access",
+                    "type": "boolean"
+                },
                 "password": {
                     "description": "Password to begin the assessment (only for Exams).",
                     "type": "string"
