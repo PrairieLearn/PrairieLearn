@@ -24,7 +24,83 @@ const end = (name) => {
     console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
 }
 
-module.exports.sync = function(courseInfo, courseInstance, callback) {
+function asyncQueryOneRow(sql, params) {
+    return new Promise((resolve, reject) => {
+        sqldb.queryOneRow(sql, params, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function asyncCallOneRow(sql, params) {
+    return new Promise((resolve, reject) => {
+        sqldb.callOneRow(sql, params, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
+        })
+    })
+}
+
+function safeAsync(func, callback) {
+    new Promise(async () => {
+        try {
+            callback(await func());
+        } catch (err) {
+            callback(err);
+        }
+    });
+};
+
+/*
+module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
+    safeAsync(async () => {
+        const { assessmentDB } = courseInstance;
+        // Assign an ordering to all assessments
+        const assessmentList = Object.values(assessmentDB);
+        assessmentList.sort((a, b) => naturalSort(String(a.number), String(b.number)));
+        assessmentList.forEach((assessment, index) => assessment.order_by = index);
+
+        // Check for duplicate UUIDs within the course instance's assessments
+        // TODO: does this correctly detect duplicates across course instances within one course?
+        _(assessmentDB)
+            .groupBy('uuid')
+            .each(function(assessments, uuid) {
+                if (assessments.length > 1) {
+                    const directories = assessments.map(a => a.directory).join(', ');
+                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`)
+                }
+            });
+
+        // Check if any of the UUIDs used in this course instance's assessments
+        // are used by any other course instance
+        const params = [
+            JSON.stringify(Object.values(assessmentDB).map(a => a.uuid)),
+            courseInstance.courseInstanceId,
+        ];
+
+        start('assessmentsDuplicateUUID');
+        const duplicateUuidResult = await asyncCallOneRow('sync_check_duplicate_assessment_uuids', params);
+        end('assessmentsDuplicateUUID');
+
+        const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
+        if (duplicateUUID) {
+            // Determine the corresponding TID to provide a useful error
+            const tid = Object.keys(assessmentDB).find((tid) => assessmentDB[tid].uuid === duplicateUUID);
+            throw new Error(`UUID ${duplicateUUID} from assessment ${tid} is already in use by a different course instance (possibly in a different course)`);
+        }
+
+    }, callback);
+}
+*/
+
+module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     var assessmentIds = [];
     async.series([
         function(callback) {
@@ -103,7 +179,7 @@ module.exports.sync = function(courseInfo, courseInstance, callback) {
                             end(`syncCourseInstanceAssessment${tid}Zones`);
                             if (ERR(err, callback)) return;
                             start(`syncCourseInstanceAssessment${tid}Questions`);
-                            syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, function(err) {
+                            syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, questionDB, function(err) {
                                 end(`syncCourseInstanceAssessment${tid}Questions`);
                                 if (ERR(err, callback)) return;
                                 callback(null);
@@ -252,7 +328,7 @@ function syncZones(assessmentId, dbAssessment, callback) {
     });
 }
 
-function syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, callback) {
+function syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, questionDB, callback) {
     var zoneList = dbAssessment.zones || [];
     var iAssessmentQuestion = 0;
     var iInAlternativeGroup;
@@ -337,7 +413,7 @@ function syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, callbac
                 async.eachSeries(alternatives, function(alternative, callback) {
                     iAssessmentQuestion++;
                     iInAlternativeGroup++;
-                    syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, alternative.forceMaxPoints, alternative.triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
+                    syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, alternative.forceMaxPoints, alternative.triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, questionDB, function(err, assessmentQuestionId) {
                         if (ERR(err, callback)) return;
                         assessmentQuestionIds.push(assessmentQuestionId);
                         callback(null);
@@ -375,32 +451,30 @@ function syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, callbac
     });
 }
 
-function syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, forceMaxPoints, triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
-    var params = {
-        qid: qid,
-        course_id: courseInfo.courseId,
-    };
-    sqldb.query(sql.select_question_by_qid, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount < 1) return callback(new Error('invalid QID: "' + qid + '"'));
-        var questionId = result.rows[0].id;
+function syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, forceMaxPoints, triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, questionDB, callback) {
+    // Look up the ID of the question based on its QID
+    const question = questionDB[qid];
+    if (!question) {
+        callback(new Error(`Invalid QID: ${qid}`));
+        return;
+    }
+    const questionId = question.id;
 
-        logger.debug('Syncing assessment question number ' + iAssessmentQuestion + ' with QID ' + qid);
-        var params = {
-            number: iAssessmentQuestion,
-            max_points: maxPoints,
-            points_list: pointsList,
-            init_points: initPoints,
-            force_max_points: forceMaxPoints,
-            tries_per_variant: triesPerVariant,
-            assessment_id: assessmentId,
-            question_id: questionId,
-            alternative_group_id: alternative_group_id,
-            number_in_alternative_group: iInAlternativeGroup,
-        };
-        sqldb.queryOneRow(sql.insert_assessment_question, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            callback(null, result.rows[0].id);
-        });
+    logger.debug('Syncing assessment question number ' + iAssessmentQuestion + ' with QID ' + qid);
+    var params = {
+        number: iAssessmentQuestion,
+        max_points: maxPoints,
+        points_list: pointsList,
+        init_points: initPoints,
+        force_max_points: forceMaxPoints,
+        tries_per_variant: triesPerVariant,
+        assessment_id: assessmentId,
+        question_id: questionId,
+        alternative_group_id: alternative_group_id,
+        number_in_alternative_group: iInAlternativeGroup,
+    };
+    sqldb.queryOneRow(sql.insert_assessment_question, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        callback(null, result.rows[0].id);
     });
 }
