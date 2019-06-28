@@ -9,6 +9,19 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+const perfMarkers = {};
+
+const start = (name) => {
+    perfMarkers[name] = new Date();
+}
+
+const end = (name) => {
+    if (!(name in perfMarkers)) {
+        return;
+    }
+    console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
+}
+
 module.exports = {
     sync: function(courseInfo, questionDB, jobLogger, callback) {
         var questionIds = [];
@@ -29,15 +42,25 @@ module.exports = {
                 callback(null);
             },
             function(callback) {
-                async.forEachOfSeries(questionDB, function(q, qid, callback) {
-                    logger.debug('Checking uuid for ' + qid);
-                    sqldb.call('questions_with_uuid_elsewhere', [courseInfo.courseId, q.uuid], function(err, result) {
-                        if (ERR(err, callback)) return;
-                        if (result.rowCount > 0) return callback(new Error('UUID ' + q.uuid + ' from question ' + qid + ' already in use in different course'));
-                        callback(null);
-                    });
-                }, function(err) {
+                // Check if any of the UUIDs in this course's questions are in use in any other course
+                start('questionsDuplicateUUID');
+
+                const params = [
+                    JSON.stringify(Object.values(questionDB).map(q => q.uuid)),
+                    courseInfo.courseId,
+                ];
+
+                sqldb.callOneRow('sync_check_duplicate_question_uuids', params, (err, result) => {
+                    end('questionsDuplicateUUID');
                     if (ERR(err, callback)) return;
+
+                    const duplicateUUID = result.rows[0].duplicate_uuid;
+                    if (duplicateUUID) {
+                        // Determine the corresponding QID to provide a useful error
+                        const qid = Object.keys(questionDB).find((qid) => questionDB[qid].uuid === duplicateUUID);
+                        callback(new Error(`UUID ${duplicateUUID} from question ${qid} is already in use by a different course`));
+                        return;
+                    }
                     callback(null);
                 });
             },
