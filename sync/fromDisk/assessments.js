@@ -58,6 +58,34 @@ function safeAsync(func, callback) {
     });
 };
 
+/**
+ * SYNCING PROCESS:
+ * 
+ * 1. Assign order_by number to every assessment
+ * 2. Check that no UUIDs are duplicated within this course instance
+ * 3. Check that no UUIDS are duplicated in any other course instance
+ * 4. For each assessment...
+ *   a) Insert an assessment; associate the ID of the new assessment with the assessment object
+ *   b) For each access rule from the assessment...
+ *     i) Ensure that a PS exam exists if needed (if an `examUuid` exists)
+ *     ii) Insert the access rule with a new number
+ *   c) Delete excess assessment access rules
+ *   d) For each zone from the assessment...
+ *     i) Insert the zone with a new number; associate the ID of the new zone with the zone object
+ *   e) Delete any excess zones from the current assessment using the zone number
+ *   f) For each zone from the assessment...
+ *     i) Generate a list of alternatives for the zone (either one or many questions, depending on if `id` or `alternatives` is used)
+ *     ii) Insert a new alternative group
+ *     iii) For each alternative in the group...
+ *       1. Insert an assessment question
+ *   g) Delete excess alternative groups
+ *   h) Soft-delete unused assessments (that were deleted since the last sync)
+ *   i) Soft-delete unused assessment questions (from deleted assessments)
+ *   j) Soft-delete unused assessment questions (from deleted assessments)
+ *   k) Delete unused assessment access rules (from deleted assessments)
+ *   l) Delete unused zones (from deletes assessments)
+ */
+
 /*
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     safeAsync(async () => {
