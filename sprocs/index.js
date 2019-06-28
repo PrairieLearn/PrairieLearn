@@ -145,6 +145,7 @@ module.exports = {
             'sync_course_tags.sql',
             'sync_question_tags.sql',
             'sync_check_duplicate_question_uuids.sql',
+            'sync_questions.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
