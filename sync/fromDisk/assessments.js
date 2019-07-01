@@ -86,7 +86,167 @@ function safeAsync(func, callback) {
  *   l) Delete unused zones (from deletes assessments)
  */
 
-/*
+/**
+ * Builds the giant blob of JSON that will be shipped to the assessments syncing sproc.
+ */
+function buildSyncData(courseInfo, courseInstance, questionDB) {
+    const assessments = Object.entries(courseInfo).map(([tid, assessment]) => {
+        // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
+        const allowIssueReporting = true;
+        if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
+        const assessmentParams = {
+            tid: tid,
+            uuid: assessment.uuid,
+            type: assessment.type,
+            number: assessment.number,
+            order_by: assessment.order_by,
+            title: assessment.title,
+            config: assessment.options,
+            multiple_instance: assessment.multipleInstance ? true : false,
+            shuffle_questions: assessment.shuffleQuestions ? true : false,
+            allow_issue_reporting: allowIssueReporting,
+            auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
+            max_points: assessment.maxPoints,
+            set_name: assessment.set,
+            text: assessment.text,
+            constant_question_value: _.has(assessment, 'constantQuestionValue') ? dbAssessment.constantQuestionValue : false,
+        };
+
+        const allowAccess = assessment.allowAccess || [];
+        assessmentParams.allowAccess = allowAccess.map((accessRule, index) => {
+            return {
+                number: index + 1,
+                mode: _(accessRule).has('mode') ? accessRule.mode : null,
+                role: _(accessRule).has('role') ? accessRule.role : null,
+                uids: _(accessRule).has('uids') ? accessRule.uids : null,
+                start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
+                end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
+                credit: _(accessRule).has('credit') ? accessRule.credit : null,
+                time_limit_min: _(accessRule).has('timeLimitMin') ? dbaccessRuleRule.timeLimitMin : null,
+                password: _(accessRule).has('password') ? accessRule.password : null,
+                seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
+                exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+            }
+        });
+
+        const zones = assessment.zones || [];
+        assessmentParams.zones = zones.map((zone, index) => {
+            return {
+                number: index + 1,
+                title: zone.title,
+                number_choose: zone.numberChoose,
+                max_points: zone.maxPoints,
+                best_questions: zone.bestQuestions,
+            };
+        });
+
+        let alternativeGroupNumber = 0;
+        let assessmentQuestionNumber = 0;
+        assessmentParams.alternativeGroups = zones.flatMap((zone, zoneIndex) => {
+            return zone.questions.map((question, questionIndex) => {
+                let alternatives;
+                if (_(question).has('alternatives')) {
+                    if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
+                    alternatives = _.map(question.alternatives, function(alternative) {
+                        return {
+                            qid: alternative.id,
+                            maxPoints: alternative.maxPoints || question.maxPoints,
+                            points: alternative.points || question.points,
+                            forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
+                                : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
+                            triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
+                        };
+                    });
+                } else if (_(question).has('id')) {
+                    alternatives = [
+                        {
+                            qid: question.id,
+                            maxPoints: question.maxPoints,
+                            points: question.points,
+                            forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false,
+                            triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : 1,
+                        }
+                    ];
+                } else {
+                    throw error.make(400, 'Must specify either "id" or "alternatives" in question', {question});
+                }
+
+                for (let i = 0; i < alternatives.length; i++) {
+                    const alternative = alternatives[i];
+
+                    if (assessment.type == 'Exam') {
+                        if (alternative.maxPoints != undefined) {
+                            throw error.make(400, 'Cannot specify "maxPoints" for a question in an "Exam" assessment', {question});
+                        }
+                        if (alternative.points == undefined) {
+                            throw error.make(400, 'Must specifiy "points" for a question in an "Exam" assessment', {question});
+                        }
+                        if (_.isArray(alternative.points)) {
+                            alternative.pointsList = alternative.points;
+                        } else {
+                            alternative.pointsList = [alternative.points];
+                        }
+                        delete alternative.points;
+                        alternative.maxPoints = _.max(alternative.pointsList);
+                    }
+                    if (assessment.type == 'Homework') {
+                        if (alternative.points == undefined) {
+                            throw error.make(400, 'Must specifiy "points" for a question in a "Homework" assessment', {question});
+                        }
+                        if (_.isArray(alternative.points)) {
+                            throw error.make(400, 'Cannot specify "points" as a list for a question in a "Homework" assessment', {question});
+                        }
+                        if (alternative.maxPoints == undefined) {
+                            alternative.maxPoints = alternative.points;
+                        }
+                        alternative.initPoints = alternative.points;
+                    }
+                }
+
+                alternativeGroupNumber++;
+                const alternativeGroupParams = {
+                    number: alternativeGroupNumber,
+                    number_choose: question.numberChoose,
+                    assessment_id: assessmentId,
+                    zone_id: dbZone.id,
+                };
+
+                alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
+                    assessmentQuestionNumber++;
+                    // Loop up the ID of this question based on its QID
+                    const question = questionDB[alternative.qid]
+                    if (!question) {
+                        throw new Error(`Invalid QID: ${qid}`);
+                    }
+                    const questionId = question.id;
+                    return {
+                        number: assessmentQuestionNumber,
+                        max_points: alternative.maxPoints,
+                        points_list: alternative.pointsList,
+                        init_points: alternative.initPoints,
+                        force_max_points: alternative.forceMaxPoints,
+                        tries_per_variant: alternative.triesPerVariant,
+                        question_id: questionId,
+                        number_in_alternative_group: alternativeIndex + 1,
+                    }
+
+                });
+
+                return alternativeGroupParams;
+            });
+        });
+
+        return assessmentParams;
+    });
+
+    return {
+        assessments,
+        course_instance_id: courseInstance.courseInstanceId,
+        course_id: courseInfo.courseId,
+        check_access_rules_exam_uuid: config.checkAccessRulesExamUuid,
+    }
+}
+
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     safeAsync(async () => {
         const { assessmentDB } = courseInstance;
@@ -126,7 +286,6 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
 
     }, callback);
 }
-*/
 
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     var assessmentIds = [];
