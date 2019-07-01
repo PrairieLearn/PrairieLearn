@@ -90,7 +90,7 @@ function safeAsync(func, callback) {
  * Builds the giant blob of JSON that will be shipped to the assessments syncing sproc.
  */
 function buildSyncData(courseInfo, courseInstance, questionDB) {
-    const assessments = Object.entries(courseInfo).map(([tid, assessment]) => {
+    const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
         // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
         const allowIssueReporting = true;
         if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
@@ -109,7 +109,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             max_points: assessment.maxPoints,
             set_name: assessment.set,
             text: assessment.text,
-            constant_question_value: _.has(assessment, 'constantQuestionValue') ? dbAssessment.constantQuestionValue : false,
+            constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -122,7 +122,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
                 end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
                 credit: _(accessRule).has('credit') ? accessRule.credit : null,
-                time_limit_min: _(accessRule).has('timeLimitMin') ? dbaccessRuleRule.timeLimitMin : null,
+                time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
                 password: _(accessRule).has('password') ? accessRule.password : null,
                 seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
                 exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
@@ -142,7 +142,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         let alternativeGroupNumber = 0;
         let assessmentQuestionNumber = 0;
-        assessmentParams.alternativeGroups = zones.flatMap((zone, zoneIndex) => {
+        assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
             return zone.questions.map((question, questionIndex) => {
                 let alternatives;
                 if (_(question).has('alternatives')) {
@@ -207,8 +207,6 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 const alternativeGroupParams = {
                     number: alternativeGroupNumber,
                     number_choose: question.numberChoose,
-                    assessment_id: assessmentId,
-                    zone_id: dbZone.id,
                 };
 
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
@@ -236,6 +234,9 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             });
         });
 
+        // Needed when deleting unused alternative groups
+        assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;
+
         return assessmentParams;
     });
 
@@ -247,6 +248,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
     }
 }
 
+/*
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     safeAsync(async () => {
         const { assessmentDB } = courseInstance;
@@ -286,8 +288,10 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
 
     }, callback);
 }
+*/
 
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
+    console.log(JSON.stringify(buildSyncData(courseInfo, courseInstance, questionDB)));
     var assessmentIds = [];
     async.series([
         function(callback) {

@@ -9,10 +9,16 @@ AS $$
 DECLARE
     assessment JSONB;
     new_assessment_id bigint;
+    zone_index integer;
+    new_zone_id bigint;
+    new_alternative_group_id bigint;
     access_rule JSONB;
+    new_assessment_question_ids biting[];
 BEGIN
     -- The outermost structure of the JSON blob is an array of assessments
     FOR assessment IN SELECT * FROM JSONB_ARRAY_ELEMENTS(sync_assessments.assessments) LOOP
+        new_assessment_question_ids := array[]::bigint[];
+
         INSERT INTO assessments
             (uuid,
             tid,
@@ -102,18 +108,18 @@ BEGIN
                     access_rule->>'mode'::enum_mode,
                     access_rule->>'role'::enum_role,
                     access_rule->>'credit'::integer,
-                    $uids::TEXT[],
-                    $time_limit_min,
-                    $password,
-                    $seb_config,
-                    $exam_uuid,
+                    access_rule->>'uids'::TEXT[],
+                    access_rule->>'time_limit_min'::integer,
+                    access_rule->>'password',
+                    access_rule->'seb_config',
+                    access_rule->>'exam_uuid'::uuid,
                     input_date(access_rule->>'start_date', ci.display_timezone),
                     input_date(access_rule->>'end_date', ci.display_timezone)
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
                 WHERE
-                    a.id = $assessment_id
+                    a.id = new_assessment_id
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -128,6 +134,147 @@ BEGIN
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date;
         END LOOP;
+
+        -- Delete excess access rules
+        DELETE FROM assessment_access_rules
+        WHERE
+            assessment_id = new_assessment_id
+            AND number > jsonb_array_length(assessment->'allowAccess');
+
+        -- Insert all zones for this assessment
+        zone_index := 0;
+        FOR zone IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'zones') LOOP;
+            INSERT INTO zones (
+                assessment_id,
+                number,
+                title,
+                max_points
+                number_choose,
+                best_questions
+            ) VALUES (
+                new_assessment_id,
+                zone->>'number'::integer,
+                zone->>'title',
+                zone->>'max_points'::double precision,
+                zone->>'number_choose'::integer,
+                zone->>'best_questions'::integer
+            )
+            ON CONFLICT (number, assessment_id) DO UPDATE
+            SET
+                title = EXCLUDED.title,
+                max_points = EXCLUDED.max_points,
+                number_choose = EXCLUDED.number_choose,
+                best_questions = EXCLUDED.best_questions
+            RETURNING id INTO new_zone_id;
+
+            -- Insert each alternative group in this zone
+            FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'alternativeGroups'->zone_index) LOOP
+                INSERT INTO alternative_groups (
+                    number,
+                    number_choose,
+                    assessment_id,
+                    zone_id
+                ) VALUES (
+                    alternative_group->>'number'::integer,
+                    alternative_group->>'number_choose'::integer,
+                    new_assessment_id,
+                    new_zone_id
+                ) ON CONFLICT (number, assessment_id) DO UPDATE
+                SET
+                    number_choose = EXCLUDED.number_choose,
+                    zone_id = EXCLUDED.zone_id
+                RETURNING id INTO new_alternative_group_id;
+
+                -- Insert an assessment question for each question in this alternative group
+                FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                    INSERT INTO assessment_questions AS aq (
+                        number,
+                        max_points,
+                        init_points,
+                        points_list,
+                        force_max_points,
+                        tries_per_variant,
+                        deleted_at,
+                        assessment_id,
+                        question_id,
+                        alternative_group_id,
+                        number_in_alternative_group
+                    ) VALUES (
+                        assessment_question->>'number',
+                        assessment_question->>'max_points'::double precision,
+                        assessment_question->>'init_points'::double precision,
+                        assessment_question->>'points_list'::double precision[],
+                        assessment_question->>'force_max_points'::boolean,
+                        assessment_question->>'tries_per_variant'::integer,
+                        NULL,
+                        new_assessment_id,
+                        assessment_question->>'question_id'::bigint,
+                        new_alternative_group_id,
+                        assessment_question->>'number_in_alternative_group'::integer
+                    ) ON CONFLICT (question_id, assessment_id) DO UPDATE
+                    SET
+                        number = EXCLUDED.number,
+                        max_points = EXCLUDED.max_points,
+                        points_list = EXCLUDED.points_list,
+                        init_points = EXCLUDED.init_points,
+                        force_max_points = EXCLUDED.force_max_points,
+                        tries_per_variant = EXCLUDED.tries_per_variant,
+                        deleted_at = EXCLUDED.deleted_at,
+                        alternative_group_id = EXCLUDED.alternative_group_id,
+                        number_in_alternative_group = EXCLUDED.number_in_alternative_group,
+                        question_id = EXCLUDED.question_id
+                    RETURNING aq.id INTO new_assessment_question_id;
+                    new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
+                END LOOP;
+            END LOOP;
+            zone_index := zone_index + 1;
+        END LOOP;
+
+        -- Delete excess zones for this assessment
+        DELETE FROM zones
+        WHERE
+            assessment_id = new_assessment_id
+            AND number > jsonb_array_length(assessment->'zones');
+
+        -- Delete excess alternative groups for this assessment
+        DELETE FROM alternative_groups
+        WHERE
+            assessment_id = new_assessment_id
+            AND ((number < 1) OR (number > assessment->>'lastAlternativeGroupNumber'::integer));
+
+        
+
+        -- Soft-delete unused assessment questions
+        UPDATE assessment_questions AS aq
+        SET
+            deleted_at = CURRENT_TIMESTAMP
+        WHERE
+            aq.assessment_id = new_assessment_id
+            AND aq.deleted_at IS NULL
+            AND aq.id NOT IN (SELECT unnest(new_assessment_question_ids));
     END LOOP;
+
+    -- Soft-delete unused assessments
+
+    -- Soft-delete unused assessment questions
+
+    -- Delete unused assessment access rules
+    DELETE FROM assessment_access_rules AS tar
+    WHERE NOT EXISTS (
+        SELECT 1 FROM assessments AS a
+        WHERE
+            a.id = tar.assessment_id
+            AND a.deleted_at IS NULL
+    );
+
+    -- Delete unused zones
+    -- TODO: how inefficient is this? can we be smarter about this (limit by course instance ID?)
+    DELETE FROM zones AS z
+    WHERE NOT EXISTS (
+        SELECT 1 FROM assessments AS a
+        WHERE
+            a.id = z.assessment_id
+            AND a.deleted_at IS NULL
+    );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
