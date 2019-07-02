@@ -9,14 +9,14 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports.synccc = function(courseInfo, callback) {
+module.exports.sync = function(courseInfo, callback) {
     const assessmentSets = courseInfo.assessmentSets || [];
     const assessmentSetsParams = assessmentSets.map((assessmentSet, index) => ({
         abbreviation: assessmentSet.abbreviation,
         name: assessmentSet.name,
         heading: assessmentSet.heading,
         color: assessmentSet.color,
-        number: i + 1,
+        number: index + 1,
     }));
 
     const params = [
@@ -29,8 +29,7 @@ module.exports.synccc = function(courseInfo, callback) {
     });
 }
 
-module.exports.sync = function(courseInfo, callback) {
-    console.log(courseInfo.assessmentSets);
+module.exports.synccc = function(courseInfo, callback) {
     async.forEachOfSeries(courseInfo.assessmentSets, function(assessmentSet, i, callback) {
         logger.debug('Syncing assessment_set ' + assessmentSet.name);
         var params = {

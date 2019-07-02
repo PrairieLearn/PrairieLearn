@@ -17,11 +17,14 @@ function asyncQueryOneRow(sql, params) {
 
 function safeAsync(func, callback) {
     new Promise(async () => {
+        let error = null;
+        let result;
         try {
-            callback(await func());
+            result = await func();
         } catch (err) {
-            callback(err);
+            error = err;
         }
+        callback(error, result);
     });
 };
 
