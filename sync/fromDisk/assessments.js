@@ -248,7 +248,6 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
     }
 }
 
-/*
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
     safeAsync(async () => {
         const { assessmentDB } = courseInstance;
@@ -286,11 +285,20 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             throw new Error(`UUID ${duplicateUUID} from assessment ${tid} is already in use by a different course instance (possibly in a different course)`);
         }
 
+        const syncData = buildSyncData(courseInfo, courseInstance, questionDB);
+        console.log(JSON.stringify(syncData));
+        const syncParams = [
+            JSON.stringify(syncData.assessments),
+            syncData.course_id,
+            syncData.course_instance_id,
+            syncData.check_access_rules_exam_uuid,
+        ];
+        const syncRes = await asyncCallOneRow('sync_assessments', syncParams);
+        console.log(syncRes);
     }, callback);
 }
-*/
 
-module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
+module.exports.synccc = function(courseInfo, courseInstance, questionDB, callback) {
     console.log(JSON.stringify(buildSyncData(courseInfo, courseInstance, questionDB)));
     var assessmentIds = [];
     async.series([
