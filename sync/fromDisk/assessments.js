@@ -286,15 +286,13 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         }
 
         const syncData = buildSyncData(courseInfo, courseInstance, questionDB);
-        console.log(JSON.stringify(syncData));
         const syncParams = [
             JSON.stringify(syncData.assessments),
             syncData.course_id,
             syncData.course_instance_id,
             syncData.check_access_rules_exam_uuid,
         ];
-        const syncRes = await asyncCallOneRow('sync_assessments', syncParams);
-        console.log(syncRes);
+        await asyncCallOneRow('sync_assessments', syncParams);
     }, callback);
 }
 
