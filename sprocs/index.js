@@ -148,6 +148,7 @@ module.exports = {
             'sync_questions.sql',
             'sync_check_duplicate_assessment_uuids.sql',
             'sync_assessments.sql',
+            'sync_course_staff.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
