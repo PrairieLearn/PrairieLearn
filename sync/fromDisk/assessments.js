@@ -92,7 +92,7 @@ function safeAsync(func, callback) {
 function buildSyncData(courseInfo, courseInstance, questionDB) {
     const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
         // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
-        const allowIssueReporting = true;
+        let allowIssueReporting = true;
         if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
         const assessmentParams = {
             tid: tid,
