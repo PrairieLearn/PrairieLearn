@@ -192,6 +192,8 @@
   * Fix editing popovers to work with the new sanitization defaults (Matt West).
 
   * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
+  
+  * Fix `tools/generate_uuid.py` to be able to find uppercase UUIDs (Eric Huber).
 
   * Fix gradebook download link for courses with special characters in their names (Nathan Walters).
 
