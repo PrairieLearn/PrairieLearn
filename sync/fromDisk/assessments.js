@@ -277,9 +277,9 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             courseInstance.courseInstanceId,
         ];
 
-        start('assessmentsDuplicateUUID');
+        start(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
         const duplicateUuidResult = await asyncCallOneRow('sync_check_duplicate_assessment_uuids', params);
-        end('assessmentsDuplicateUUID');
+        end(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
 
         const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
         if (duplicateUUID) {
@@ -295,7 +295,9 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             syncData.course_instance_id,
             syncData.check_access_rules_exam_uuid,
         ];
+        start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
         await asyncCallOneRow('sync_assessments', syncParams);
+        end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     }, callback);
 }
 
