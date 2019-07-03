@@ -1,85 +1,85 @@
 module.exports = {
-  $schema: "http://json-schema.org/draft-04/schema#",
-  title: "Element Info",
-  description: "Info files for v3 elements.",
-  type: "object",
+  $schema: 'http://json-schema.org/draft-04/schema#',
+  title: 'Element Info',
+  description: 'Info files for v3 elements.',
+  type: 'object',
   additionalProperties: false,
-  required: ["controller"],
+  required: ['controller'],
   properties: {
     controller: {
       description: "The name of the element's controller file.",
-      type: "string"
+      type: 'string',
     },
     dependencies: {
       description: "The element's client-side dependencies.",
-      type: "object",
+      type: 'object',
       additionalProperties: false,
       properties: {
         coreStyles: {
-          description: "The styles required by this element from /public/stylesheets.",
-          type: "array",
+          description: 'The styles required by this element from /public/stylesheets.',
+          type: 'array',
           items: {
-            description: "A .css file located in /public/stylesheets.",
-            type: "string"
-          }
+            description: 'A .css file located in /public/stylesheets.',
+            type: 'string',
+          },
         },
         coreScripts: {
-          description: "The scripts required by this element from /public/javascripts.",
-          type: "array",
+          description: 'The scripts required by this element from /public/javascripts.',
+          type: 'array',
           items: {
-            description: "A .js file located in /public/javascripts.",
-            type: "string"
-          }
+            description: 'A .js file located in /public/javascripts.',
+            type: 'string',
+          },
         },
         nodeModulesStyles: {
-          description: "The styles required by this element from /node_modules.",
-          type: "array",
+          description: 'The styles required by this element from /node_modules.',
+          type: 'array',
           items: {
-            description: "A .css file located in /node_modules.",
-            type: "string"
-          }
+            description: 'A .css file located in /node_modules.',
+            type: 'string',
+          },
         },
         nodeModulesScripts: {
-          description: "The scripts required by this element from /node_modules.",
-          type: "array",
+          description: 'The scripts required by this element from /node_modules.',
+          type: 'array',
           items: {
-            description: "A .js file located in /node_modules.",
-            type: "string"
-          }
+            description: 'A .js file located in /node_modules.',
+            type: 'string',
+          },
         },
         clientFilesCourseStyles: {
-          description: "The styles required by this element from clientFilesCourse.",
-          type: "array",
+          description: 'The styles required by this element from clientFilesCourse.',
+          type: 'array',
           items: {
-            description: "A .css file located in clientFilesCourse.",
-            type: "string"
-          }
+            description: 'A .css file located in clientFilesCourse.',
+            type: 'string',
+          },
         },
         clientFilesCourseScripts: {
-          description: "The styles required by this element from clientFilesCourse.",
-          type: "array",
+          description: 'The styles required by this element from clientFilesCourse.',
+          type: 'array',
           items: {
-            description: "A .js file located in clientFilesCourse.",
-            type: "string"
-          }
+            description: 'A .js file located in clientFilesCourse.',
+            type: 'string',
+          },
         },
         elementStyles: {
           description: "The styles required by this element from the element's directory.",
-          type: "array",
+          type: 'array',
           items: {
             description: "A .css file located in the element's directory.",
-            type: "string"
-          }
+            type: 'string',
+          },
         },
         elementScripts: {
           description: "The scripts required by this element from the element's directory.",
-          type: "array",
+          type: 'array',
           items: {
             description: "A .js file located in the element's directory.",
-            type: "string"
-          }
-        }
-      }
-    }
-  }
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
 };

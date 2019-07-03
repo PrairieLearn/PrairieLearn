@@ -1,123 +1,123 @@
 module.exports = {
-  $schema: "http://json-schema.org/draft-04/schema#",
-  title: "Question Info",
-  description: "Info files for questions.",
-  type: "object",
+  $schema: 'http://json-schema.org/draft-04/schema#',
+  title: 'Question Info',
+  description: 'Info files for questions.',
+  type: 'object',
   additionalProperties: false,
-  required: ["uuid", "type", "title", "topic"],
+  required: ['uuid', 'type', 'title', 'topic'],
   properties: {
     uuid: {
-      description: "Unique identifier (UUID v4).",
-      type: "string",
-      pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      description: 'Unique identifier (UUID v4).',
+      type: 'string',
+      pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
     },
     type: {
-      description: "Type of the test.",
-      enum: ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
+      description: 'Type of the test.',
+      enum: ['Calculation', 'ShortAnswer', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'],
     },
     title: {
       description: "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
-      type: "string"
+      type: 'string',
     },
     topic: {
       description: "The category of question (e.g., 'Vectors', 'Energy').",
-      type: "string"
+      type: 'string',
     },
     secondaryTopics: {
       description: "Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
-      type: "array",
+      type: 'array',
       items: {
-        description: "A single topic covered by the question.",
-        type: "string"
-      }
+        description: 'A single topic covered by the question.',
+        type: 'string',
+      },
     },
     tags: {
       description: "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
-      type: "array",
+      type: 'array',
       items: {
-        description: "A tag associated with a question.",
-        type: "string"
-      }
+        description: 'A tag associated with a question.',
+        type: 'string',
+      },
     },
     clientFiles: {
       description: 'The list of question files accessible by the client (defaults to ["client.js"]).',
-      type: "array",
+      type: 'array',
       items: {
-        description: "A single file accessible by the client.",
-        type: "string"
-      }
+        description: 'A single file accessible by the client.',
+        type: 'string',
+      },
     },
     clientTemplates: {
-      description: "List of client-accessible templates to render server-side.",
-      type: "array",
+      description: 'List of client-accessible templates to render server-side.',
+      type: 'array',
       items: {
-        description: "A single template file accessible by the client.",
-        type: "string"
-      }
+        description: 'A single template file accessible by the client.',
+        type: 'string',
+      },
     },
     template: {
-      description: "The QID of a question that serves at the template for this question.",
-      type: "string"
+      description: 'The QID of a question that serves at the template for this question.',
+      type: 'string',
     },
     gradingMethod: {
-      description: "The grading method used for this question.",
-      enum: ["Internal", "External", "Manual"]
+      description: 'The grading method used for this question.',
+      enum: ['Internal', 'External', 'Manual'],
     },
     singleVariant: {
       description: 'Whether the question is not randomized and only generates a single variant (defaults to "false").',
-      type: "boolean"
+      type: 'boolean',
     },
     partialCredit: {
       description: 'Whether the question will give partial points for fractional scores (defaults to "false" for v2 questions and "true" for v3.).',
-      type: "boolean"
+      type: 'boolean',
     },
     options: {
-      description: "Options that define how the question will work, specific to the individual question type.",
-      type: "object"
+      description: 'Options that define how the question will work, specific to the individual question type.',
+      type: 'object',
     },
     externalGradingOptions: {
-      description: "Options for externally graded questions.",
-      type: "object",
+      description: 'Options for externally graded questions.',
+      type: 'object',
       additionalProperties: false,
-      required: ["image", "entrypoint"],
+      required: ['image', 'entrypoint'],
       properties: {
         enabled: {
-          description: "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
-          type: "boolean"
+          description: 'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
+          type: 'boolean',
         },
         image: {
-          description: "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
-          type: "string"
+          description: 'The Docker image that will be used to grade this question. Should be specified as Dockerhub image.',
+          type: 'string',
         },
         entrypoint: {
           description: "Program to run as the entrypoint to your grader. Must be runnable as 'chmod +x script && ./script'.",
-          type: "string"
+          type: 'string',
         },
         files: {
-          description: "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
-          type: "array",
+          description: 'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
+          type: 'array',
           items: {
-            description: "A single file or directory that will be copied to the external grader.",
-            type: "string"
-          }
+            description: 'A single file or directory that will be copied to the external grader.',
+            type: 'string',
+          },
         },
         serverFilesCourse: {
-          description: "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
-          type: "array",
+          description: 'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
+          type: 'array',
           items: {
-            description: "A single file or directory that will be copied to the external grader.",
-            type: "string"
-          }
+            description: 'A single file or directory that will be copied to the external grader.',
+            type: 'string',
+          },
         },
         timeout: {
-          description: "The number of seconds after which the grading job will timeout.",
-          type: "integer"
+          description: 'The number of seconds after which the grading job will timeout.',
+          type: 'integer',
         },
         enableNetworking: {
-          description: "Whether the grading containers should have network access. Access is disabled by default.",
-          type: "boolean"
-        }
-      }
-    }
-  }
+          description: 'Whether the grading containers should have network access. Access is disabled by default.',
+          type: 'boolean',
+        },
+      },
+    },
+  },
 };

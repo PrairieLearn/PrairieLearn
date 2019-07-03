@@ -39,6 +39,7 @@ for (const schemaName of Object.keys(schemas)) {
             ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
             const valid = ajv.validateSchema(schema);
             if (ajv.errors) {
+                // eslint-disable-next-line no-console
                 console.error(ajv.errors);
             }
             assert.isTrue(valid);
