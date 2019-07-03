@@ -9,36 +9,27 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     question JSONB;
-    question_tag_id bigint;
-    new_question_id bigint;
-    new_question_tag_id bigint;
-    new_question_tag_ids bigint[] := array[]::bigint[];
-    question_tag_number integer := 1;
-    tag JSONB;
 BEGIN
     FOR question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(new_question_tags) LOOP
-        new_question_id := (question->>0)::bigint;
-
-        FOR question_tag_id IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) LOOP
-            INSERT INTO question_tags
-                (question_id, tag_id, number)
-            VALUES (new_question_id::bigint, question_tag_id::bigint, question_tag_number)
+        WITH new_tags AS (
+            INSERT INTO question_tags (
+                question_id,
+                tag_id,
+                number
+            ) SELECT
+                (question->>0)::bigint,
+                tag_id::bigint,
+                number
+            FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) WITH ORDINALITY AS t(tag_id, number)
             ON CONFLICT (question_id, tag_id) DO UPDATE
             SET
-                number = question_tag_number
-            RETURNING id INTO new_question_tag_id;
-
-            new_question_tag_ids := array_append(new_question_tag_ids, new_question_tag_id);
-            question_tag_number := question_tag_number + 1;
-        END LOOP;
-
+                number = EXCLUDED.number
+            RETURNING id
+        )
         DELETE FROM question_tags AS qt
         WHERE
-            qt.question_id = (new_question_id)::bigint
-            AND qt.id NOT IN (SELECT unnest(new_question_tag_ids));
-
-        new_question_tag_ids := array[]::bigint[];
-        question_tag_number := 1;
+            qt.question_id = (question->>0)::bigint
+            AND qt.id NOT IN (SELECT id FROM new_tags);
     END LOOP;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
