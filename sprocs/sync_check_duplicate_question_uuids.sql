@@ -13,15 +13,20 @@ AS $$
 DECLARE
     question_uuid text;
 BEGIN
-    FOR question_uuid IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(question_uuids) LOOP
-        SELECT
-            q.uuid INTO duplicate_uuid
-        FROM
-            questions AS q
-        WHERE
-            q.uuid = question_uuid::uuid
-            AND q.course_id != check_course_id;
-        EXIT WHEN FOUND;
-    END LOOP;
+    SELECT
+        q.uuid INTO duplicate_uuid
+    FROM
+        questions AS q
+    WHERE
+        q.uuid IN (
+            SELECT UNNEST(
+                (SELECT
+                    ARRAY_AGG(uuids)::uuid[]
+                FROM
+                    JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(question_uuids, '[]')::jsonb) uuids
+                    )::uuid[]
+            )
+        )
+        AND q.course_id != check_course_id;
 END;
 $$ LANGUAGE plpgsql STABLE;

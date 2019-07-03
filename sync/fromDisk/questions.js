@@ -86,8 +86,12 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
         if (duplicateUUID) {
             // Determine the corresponding QID to provide a useful error
-            const qid = Object.keys(questionDB).find((qid) => questionDB[qid].uuid === duplicateUUID);
-            throw new Error(`UUID ${duplicateUUID} from question ${qid} is already in use by a different course`);
+            // We lose capitalization once we round-trip UUIDs through postgres,
+            // so explicitly convert to lowercase when finding the UUID, but
+            // present the UUID in its original case for easy grepping by the
+            // user.
+            const qid = Object.keys(questionDB).find((qid) => questionDB[qid].uuid.toLowerCase() === duplicateUUID.toLowerCase());
+            throw new Error(`UUID ${questionDB[qid].uuid} from question ${qid} is already in use by a different course`);
         }
 
         // Preprocess questions into obects before sending them to the sproc
