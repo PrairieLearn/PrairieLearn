@@ -1,4 +1,3 @@
-DROP FUNCTION IF EXISTS sync_course_staff(JSONB, bigint);
 -- Accepts a course instance ID and a list [uid, role] pairs, ensures that
 -- users exist for all uids, and then ensures enrollments and roles are
 -- updated.
