@@ -200,6 +200,8 @@
   * Fix (or at least attempt to) S3 file uploads for external grading (Nathan Walters).
 
   * Fix handling of binary files during external grading (Nathan Walters).
+  
+  * Fix hljs syntax highlighting compatibility issue in `pl-code.py` (Eric Huber).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
