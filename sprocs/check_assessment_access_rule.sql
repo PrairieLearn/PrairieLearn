@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION
         IN role enum_role,
         IN user_id bigint,
         IN uid text,
+        IN assessment_id bigint,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
         OUT authorized boolean
@@ -48,6 +49,26 @@ BEGIN
     IF use_date_check AND assessment_access_rule.end_date IS NOT NULL THEN
         IF date IS NULL OR date > assessment_access_rule.end_date THEN
             authorized := FALSE;
+        END IF;
+    END IF;
+
+    IF assessment_access_rule.lti_outcome_required IS NOT NULL THEN
+        IF assessment_access_rule.lti_outcome_required THEN
+        << lookup_lti_outcome >>
+        DECLARE
+            lti_outcomes lti_outcomes;
+        BEGIN
+            SELECT * FROM lti_outcomes AS lo
+            INTO lti_outcomes
+            WHERE
+                lo.user_id = check_assessment_access_rule.user_id
+                AND lo.assessment_id = check_assessment_access_rule.assessment_id;
+
+                IF NOT FOUND THEN
+                    -- no outcome recorded but required so block access
+                    authorized := FALSE;
+                END IF;
+        END lookup_lti_outcome;
         END IF;
     END IF;
 

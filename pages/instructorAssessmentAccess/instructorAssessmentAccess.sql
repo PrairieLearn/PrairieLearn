@@ -33,6 +33,10 @@ SELECT
         ELSE aar.password
     END AS password,
     CASE
+        WHEN aar.lti_outcome_required IS NULL THEN '—'
+        ELSE aar.lti_outcome_required::TEXT
+    END AS lti_outcome_required,
+    CASE
         WHEN aar.exam_uuid IS NULL THEN '—'
         WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_uuid
         WHEN NOT $link_exam_id THEN ps_c.rubric || ': ' || e.exam_string

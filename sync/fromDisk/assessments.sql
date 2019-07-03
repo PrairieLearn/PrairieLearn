@@ -78,13 +78,13 @@ WHERE uuid = $exam_uuid;
 -- BLOCK insert_assessment_access_rule
 INSERT INTO assessment_access_rules
         (assessment_id,  number,  mode,  role,  credit,  uids,          time_limit_min,
-        password,   seb_config,  exam_uuid,
+        password,   seb_config,  exam_uuid, lti_outcome_required,
         start_date,
         end_date)
 (
     SELECT
         $assessment_id, $number, $mode, $role, $credit, $uids::TEXT[], $time_limit_min,
-        $password, $seb_config, $exam_uuid,
+        $password, $seb_config, $exam_uuid, $lti_outcome_required,
         input_date($start_date, ci.display_timezone),
         input_date($end_date, ci.display_timezone)
     FROM
@@ -101,6 +101,7 @@ SET
     time_limit_min = EXCLUDED.time_limit_min,
     password = EXCLUDED.password,
     exam_uuid = EXCLUDED.exam_uuid,
+    lti_outcome_required = EXCLUDED.lti_outcome_required,
     uids = EXCLUDED.uids,
     seb_config = EXCLUDED.seb_config,
     start_date = EXCLUDED.start_date,
