@@ -19,7 +19,7 @@ Each assessment is a single directory in the `assessments` folder. The directory
 }
 ```
 
-* [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.js)
+* [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
 ## Assessment naming
 
