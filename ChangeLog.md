@@ -117,6 +117,8 @@
 
   * Change element documentation to follow a common structure (James Balamuta).
 
+  * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).

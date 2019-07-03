@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const schemas = require('../schemas');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
@@ -49,23 +50,17 @@ module.exports = {
         let elementSchema;
         async.waterfall([
             (callback) => {
-                // Load the element schema
-                let schemaName;
                 switch (elementType) {
                     case 'core':
-                        schemaName = 'infoElementCore.json';
+                        elementSchema = schemas.infoElementCore;
                         break;
                     case 'course':
-                        schemaName = 'infoElementCourse.json';
+                        elementSchema = schemas.infoElementCourse;
                         break;
                     default:
                         return callback(new Error(`Unknown element type ${elementType}`));
                 }
-                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', schemaName), (err, schema) => {
-                    if (ERR(err, callback)) return;
-                    elementSchema = schema;
-                    callback(null);
-                });
+                callback(null);
             },
             (callback) => {
                 // Read all files in the given path
