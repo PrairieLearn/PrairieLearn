@@ -113,7 +113,7 @@
   
   * Change element documentation to follow a common structure (James Balamuta).
 
-  * Change JSON validation to use schemas from the [`@prairielearn/schemas`](https://github.com/PrairieLearn/schemas) package (Nathan Walters).
+  * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
 

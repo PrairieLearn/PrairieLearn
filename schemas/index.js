@@ -1,0 +1,13 @@
+module.exports.infoAssessment = require('./schemas/infoAssessment');
+module.exports.infoCourse = require('./schemas/infoCourse');
+module.exports.infoCourseInstance = require('./schemas/infoCourseInstance');
+module.exports.infoElementCore = require('./schemas/infoElementCourse');
+module.exports.infoElementCourse = require('./schemas/infoElementCourse');
+module.exports.infoQuestion = require('./schemas/infoQuestion');
+module.exports.questionOptionsCalculation = require('./schemas/questionOptionsCalculation');
+module.exports.questionOptionsCheckbox = require('./schemas/questionOptionsCheckbox');
+module.exports.questionOptionsFile = require('./schemas/questionOptionsFile');
+module.exports.questionOptionsMultipleChoice = require('./schemas/questionOptionsMultipleChoice');
+module.exports.questionOptionsMultipleTrueFalse = require('./schemas/questionOptionsMultipleTrueFalse');
+module.exports.questionOptionsv3 = require('./schemas/questionOptionsv3');
+module.exports.serverConfig = require('./schemas/serverConfig');

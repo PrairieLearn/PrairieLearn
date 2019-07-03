@@ -7,9 +7,9 @@ const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
-const schemas = require('@prairielearn/schemas');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const schemas = require('../schemas');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
