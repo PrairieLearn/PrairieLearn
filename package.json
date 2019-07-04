@@ -86,7 +86,7 @@
         "nyc": "^13.3.0",
         "request": "^2.87.0",
         "sinon": "^7.3.2",
-        "tmp": "0.0.33"
+        "tmp": "0.1.0"
     },
     "scripts": {
         "start": "node server.js",
