@@ -61,7 +61,8 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             timedFunc.bind(null, "syncAssessmentSets", syncAssessmentSets.sync.bind(null, course.courseInfo)),
             (callback) => {
                 start("syncCourseInstaces");
-                async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                // TODO: is running these in parallel safe? Everything should be isolated by course instance.
+                async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     start(`syncCourseInstance${courseInstanceShortName}`);
                     async.series([
                         function(callback) {logger.info("Syncing " + courseInstanceShortName
