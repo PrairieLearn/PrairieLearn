@@ -13,6 +13,9 @@ notifications:
 before_install:
   - docker build -t pltest .
 script:
+  - 'echo $TRAVIS_PULL_REQUEST'
+  - 'echo $TRAVIS_BRANCH'
+  - 'echo $TRAVIS_PULL_REQUEST_BRANCH'
   - 'if [[ "$TRAVIS_PULL_REQUEST" != "false" && ! ( "$TRAVIS_BRANCH" =~ ^dependabot/ ) && ! ( "$TRAVIS_PULL_REQUEST_BRANCH" =~ ^dependabot/ ) ]]; then sh ./tools/verify-changelog.sh; fi'
   - docker run -itd --name=test_container pltest /bin/bash
   - docker exec -it test_container /PrairieLearn/docker/lint_js.sh
