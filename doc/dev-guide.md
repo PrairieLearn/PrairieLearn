@@ -47,7 +47,6 @@ PrairieLearn
 |   +-- localscripts   # all local site-wide JS
 |   `-- stylesheets    # all CSS, both external and local
 +-- question-servers   # one file per question type
-+-- schemas            # JSON schemas for input file formats
 +-- server.js          # top-level program
 +-- sprocs             # DB stored procedures, one per file
 |   +-- index.js       # entry point for all sproc initialization

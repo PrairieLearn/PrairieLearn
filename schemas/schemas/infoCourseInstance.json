@@ -3,17 +3,19 @@
     "title": "Course instance information",
     "description": "The specification file for a course instance.",
     "type": "object",
+    "required": [
+        "uuid",
+        "longName"
+    ],
     "properties": {
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            "required": true
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         "longName": {
             "description": "The long name of this course instance (e.g., 'Spring 2015').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "number": {
             "description": "The number of this course instance, used for sorting.",
@@ -35,7 +37,11 @@
             "patternProperties": {
                 ".+": {
                     "description": "The role for a given UID.",
-                    "enum": ["Student", "TA", "Instructor"]
+                    "enum": [
+                        "Student",
+                        "TA",
+                        "Instructor"
+                    ]
                 }
             }
         },
@@ -46,28 +52,38 @@
                 "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
                 "type": "object",
                 "properties": {
-                    "role" : {
+                    "role": {
                         "description": "The minimum user role required for access.",
-                        "enum": ["Student", "TA", "Instructor", "Superuser"]
+                        "enum": [
+                            "Student",
+                            "TA",
+                            "Instructor",
+                            "Superuser"
+                        ]
                     },
-                    "uids" : {
+                    "uids": {
                         "description": "A list of UIDs, one of which is required for access",
                         "type": "array",
                         "items": {
                             "type": "string"
                         }
                     },
-                    "startDate" : {
+                    "startDate": {
                         "description": "The earliest date on which access is permitted.",
                         "type": "string"
                     },
-                    "endDate" : {
+                    "endDate": {
                         "description": "The latest date on which access is permitted.",
                         "type": "string"
                     },
-                    "institution" : {
+                    "institution": {
                         "description": "The institution from which access is permitted (default: UIUC).",
-                        "enum": ["UIUC", "ZJUI", "LTI", "Any"]
+                        "enum": [
+                            "UIUC",
+                            "ZJUI",
+                            "LTI",
+                            "Any"
+                        ]
                     }
                 }
             }
