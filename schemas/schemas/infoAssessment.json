@@ -4,32 +4,37 @@
     "description": "Configuration data for an assessment.",
     "type": "object",
     "additionalProperties": false,
+    "required": [
+        "uuid",
+        "type",
+        "title",
+        "set",
+        "number"
+    ],
     "properties": {
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            "required": true
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         "type": {
             "description": "Type of the assessment.",
-            "enum": ["Homework", "Exam"],
-            "required": true
+            "enum": [
+                "Homework",
+                "Exam"
+            ]
         },
         "title": {
             "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "set": {
             "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "number": {
             "description": "The number of this assessment within the set (e.g., '1', '2R', '3B').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "allowIssueReporting": {
             "description": "Whether to allow students to report issues for assessment questions",
@@ -49,7 +54,9 @@
         "allowAccess": {
             "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
             "type": "array",
-            "items": {"$ref": "#/definitions/accessRule"}
+            "items": {
+                "$ref": "#/definitions/accessRule"
+            }
         },
         "text": {
             "description": "HTML text shown on the assessment overview page.",
@@ -67,7 +74,9 @@
         "zones": {
             "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
             "type": "array",
-            "items": {"$ref": "#/definitions/zone"}
+            "items": {
+                "$ref": "#/definitions/zone"
+            }
         },
         "constantQuestionValue": {
             "description": "Whether to keep the value of a question constant after a student solves it correctly.",
@@ -81,36 +90,44 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "mode" : {
+                "mode": {
                     "description": "The server mode required for access.",
-                    "enum": ["Public", "Exam", "SEB"]
+                    "enum": [
+                        "Public",
+                        "Exam",
+                        "SEB"
+                    ]
                 },
                 "examUuid": {
                     "description": "The scheduler exam UUID for which a student must be registered.",
                     "type": "string",
                     "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                 },
-                "role" : {
+                "role": {
                     "description": "The minimum user role required for access.",
-                    "enum": ["Student", "TA", "Instructor"]
+                    "enum": [
+                        "Student",
+                        "TA",
+                        "Instructor"
+                    ]
                 },
-                "uids" : {
+                "uids": {
                     "description": "A list of UIDs (like 'username@example.com', one of which is required for access",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "credit" : {
+                "credit": {
                     "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
                     "type": "integer",
                     "minimum": 0
                 },
-                "startDate" : {
+                "startDate": {
                     "description": "The earliest date on which access is permitted.",
                     "type": "string"
                 },
-                "endDate" : {
+                "endDate": {
                     "description": "The latest date on which access is permitted.",
                     "type": "string"
                 },
@@ -139,7 +156,9 @@
                             "description": "Keyword array for allowed programs in SEB",
                             "type": "array",
                             "minItems": 0,
-                            "items": {"type": "string"}
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -170,23 +189,37 @@
                     "description": "Array of questions in the zone.",
                     "type": "array",
                     "minItems": 1,
-                    "items": {"$ref": "#/definitions/zoneQuestion"}
+                    "items": {
+                        "$ref": "#/definitions/zoneQuestion"
+                    }
                 }
             },
-            "required": ["questions"]
+            "required": [
+                "questions"
+            ]
         },
         "zoneQuestion": {
             "type": "object",
             "properties": {
-                "points": {"$ref": "#/definitions/points"},
-                "maxPoints": {"$ref": "#/definitions/points"},
-                "id": {"$ref": "#/definitions/questionId"},
-                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"},
+                "points": {
+                    "$ref": "#/definitions/points"
+                },
+                "maxPoints": {
+                    "$ref": "#/definitions/points"
+                },
+                "id": {
+                    "$ref": "#/definitions/questionId"
+                },
+                "forceMaxPoints": {
+                    "$ref": "#/definitions/forceMaxPoints"
+                },
                 "alternatives": {
                     "description": "Array of question alternatives to choose from.",
                     "type": "array",
                     "minItems": 1,
-                    "items": {"$ref": "#/definitions/questionAlternative"}
+                    "items": {
+                        "$ref": "#/definitions/questionAlternative"
+                    }
                 },
                 "numberChoose": {
                     "description": "Number of questions to choose from this group.",
@@ -204,10 +237,18 @@
         "questionAlternative": {
             "type": "object",
             "properties": {
-                "points": {"$ref": "#/definitions/points"},
-                "maxPoints": {"$ref": "#/definitions/points"},
-                "id": {"$ref": "#/definitions/questionId"},
-                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"},
+                "points": {
+                    "$ref": "#/definitions/points"
+                },
+                "maxPoints": {
+                    "$ref": "#/definitions/points"
+                },
+                "id": {
+                    "$ref": "#/definitions/questionId"
+                },
+                "forceMaxPoints": {
+                    "$ref": "#/definitions/forceMaxPoints"
+                },
                 "triesPerVariant": {
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
@@ -217,8 +258,12 @@
         },
         "points": {
             "oneOf": [
-                {"$ref": "#/definitions/pointsSingle"},
-                {"$ref": "#/definitions/pointsList"}
+                {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                {
+                    "$ref": "#/definitions/pointsList"
+                }
             ]
         },
         "pointsSingle": {
@@ -231,7 +276,9 @@
             "description": "An array of points values.",
             "type": "array",
             "minItems": 1,
-            "items": {"$ref": "#/definitions/points"}
+            "items": {
+                "$ref": "#/definitions/points"
+            }
         },
         "questionId": {
             "description": "Question ID (directory name of the question).",

@@ -4,7 +4,9 @@
     "description": "Info files for v3 elements.",
     "type": "object",
     "additionalProperties": false,
-    "required": ["controller"],
+    "required": [
+        "controller"
+    ],
     "properties": {
         "controller": {
             "description": "The name of the element's controller file.",
@@ -44,22 +46,6 @@
                     "type": "array",
                     "items": {
                         "description": "A .js file located in /node_modules.",
-                        "type": "string"
-                    }
-                },
-                "clientFilesCourseStyles": {
-                    "description": "The styles required by this element from clientFilesCourse.",
-                    "type": "array",
-                    "items": {
-                        "description": "A .css file located in clientFilesCourse.",
-                        "type": "string"
-                    }
-                },
-                "clientFilesCourseScripts": {
-                    "description": "The styles required by this element from clientFilesCourse.",
-                    "type": "array",
-                    "items": {
-                        "description": "A .js file located in clientFilesCourse.",
                         "type": "string"
                     }
                 },
