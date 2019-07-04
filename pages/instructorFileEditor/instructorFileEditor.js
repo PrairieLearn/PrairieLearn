@@ -32,6 +32,8 @@ router.get('/instructorFileEditorClient.js', (req, res) => {
 });
 
 router.get('/', (req, res, next) => {
+    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
+
     if (_.isEmpty(req.query)) {
         return next(error.make(400, 'no file in query', {
             locals: res.locals,
