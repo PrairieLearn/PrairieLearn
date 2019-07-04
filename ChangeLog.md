@@ -74,6 +74,8 @@
   * Add `clientFilesElement` folder for loading element-specific client files (Nicolas Nytko).
 
   * Add `ignore-case` option to `pl-string-input` to allow for case insensitivity (James Balamuta).
+
+  * Add dependabot status to README (Matt West).
   
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
