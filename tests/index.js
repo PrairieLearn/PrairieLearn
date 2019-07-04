@@ -6,6 +6,7 @@ consoleTransport.level = 'warn';
 const helperDb = require('./helperDb');
 const config = require('../lib/config');
 config.workersCount = 2; // explicitly use 2 workers to test parallelism
+config.fileEditorUseGit = true; // test use of git in file editor
 
 // Root level hooks
 before('drop the template database, just in case', helperDb.dropTemplate);

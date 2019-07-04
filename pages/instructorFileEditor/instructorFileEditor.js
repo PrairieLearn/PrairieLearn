@@ -132,6 +132,7 @@ router.post('/', (req, res, next) => {
         fileName: req.body.file_edit_file_name,
         coursePath: res.locals.course.path,
         uid: res.locals.user.uid,
+        user_name: res.locals.user.name,
     };
 
     // Do not allow users to edit the exampleCourse
@@ -527,7 +528,7 @@ function saveAndSync(locals, fileEdit, callback) {
                 type: 'push_to_remote',
                 description: 'Write saved draft to disk',
                 job_sequence_id: job_sequence_id,
-                on_success: _unstage,
+                on_success: (config.fileEditorUseGit ? _unstage : _unlock),
                 on_error: _cleanup,
                 no_job_sequence_update: true,
             };
@@ -602,7 +603,11 @@ function saveAndSync(locals, fileEdit, callback) {
                 type: 'push_to_remote',
                 description: 'Commit changes',
                 command: 'git',
-                arguments: ['commit', '-m', `"in-browser change to ${fileEdit.fileName} by ${fileEdit.uid}"`],
+                arguments: [
+                    '-c', `user.name="${fileEdit.user_name}"`,
+                    '-c', `user.email="${fileEdit.uid}"`,
+                    'commit', '-m', `in-browser change to ${fileEdit.fileName}`
+                ],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,
                 on_success: _push,
