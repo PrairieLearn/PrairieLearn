@@ -13,12 +13,13 @@ def generate(data):
         list1.append(random.randint(0, 1))
 
     d = ''.join(str(e) for e in list1)
-
+    e = 'cAsE iNsEnSiTiVe'
 
     data["params"]["a"] = a
     data["params"]["b"] = b
     data["params"]["c"] = c
     data["params"]["d"] = d
+    data["params"]["e"] = e
     data["params"]["stringname"] = stringname
 
     data["correct_answers"]["ans1"] = a*stringname
@@ -26,3 +27,4 @@ def generate(data):
     data["correct_answers"]["ans3"] = d
     data["correct_answers"]["ans4"] = d
     data["correct_answers"]["ans5"] = "blank"
+    data["correct_answers"]["ans6"] = e

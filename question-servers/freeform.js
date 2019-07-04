@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const schemas = require('../schemas');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
@@ -49,23 +50,17 @@ module.exports = {
         let elementSchema;
         async.waterfall([
             (callback) => {
-                // Load the element schema
-                let schemaName;
                 switch (elementType) {
                     case 'core':
-                        schemaName = 'infoElementCore.json';
+                        elementSchema = schemas.infoElementCore;
                         break;
                     case 'course':
-                        schemaName = 'infoElementCourse.json';
+                        elementSchema = schemas.infoElementCourse;
                         break;
                     default:
                         return callback(new Error(`Unknown element type ${elementType}`));
                 }
-                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', schemaName), (err, schema) => {
-                    if (ERR(err, callback)) return;
-                    elementSchema = schema;
-                    callback(null);
-                });
+                callback(null);
             },
             (callback) => {
                 // Read all files in the given path
@@ -165,7 +160,16 @@ module.exports = {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-            const pythonArgs = [elementHtml, data];
+
+            let dataCopy = _.cloneDeep(data);
+            /* The options field will be empty unless in the 'render' stage, so check
+               if it is populated before adding the element url */
+            if ('base_url' in data.options) {
+                /* Join the URL using Posix join to avoid generating a path with backslashes,
+                   as would be the case when running on Windows */
+                dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
+            }
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
@@ -795,6 +799,7 @@ module.exports = {
             data.options.client_files_question_url = locals.clientFilesQuestionUrl;
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+            data.options.base_url = locals.baseUrl;
 
             // Put key paths in data.options
             data.options.question_path = context.question_dir;

@@ -24,7 +24,7 @@ def add_uuid_to_file(filename):
                 return 0 # we don't want new UUIDs, so just skip this file
 
             # replace the exising UUID
-            (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"',
+            (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"',
                                             r'"uuid":\1"%s"' % uuid.uuid4(),
                                             contents)
             if n_sub == 0:

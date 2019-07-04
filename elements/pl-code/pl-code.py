@@ -89,7 +89,7 @@ def highlight_lines_in_code(code, highlight_lines, color):
             if len(line.strip()) == 0:
                 # insert line break to prevent collapsing the line
                 line = '<br>'
-            result_lines += '<span class="pl-code-highlighted-line" style="background-color: ' + color + ';">' + line + '</span>'
+            result_lines += '<span class="pl-code-highlighted-line" style="background-color: ' + color + ';">' + line + '\n</span>'
         else:
             result_lines += line + '\n'
         line_number += 1
