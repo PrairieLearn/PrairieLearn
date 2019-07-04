@@ -606,7 +606,7 @@ function saveAndSync(locals, fileEdit, callback) {
                 arguments: [
                     '-c', `user.name="${fileEdit.user_name}"`,
                     '-c', `user.email="${fileEdit.uid}"`,
-                    'commit', '-m', `in-browser change to ${fileEdit.fileName}`
+                    'commit', '-m', `in-browser change to ${fileEdit.fileName}`,
                 ],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,

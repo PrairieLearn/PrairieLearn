@@ -257,7 +257,7 @@ function badGet(url) {
     describe(`GET to edit url with bad path`, function() {
         it('should not load successfully', function(callback) {
             locals.preStartTime = Date.now();
-            request(url, function (error, response, body) {
+            request(url, function (error, response) {
                 if (error) {
                     return callback(error);
                 }
