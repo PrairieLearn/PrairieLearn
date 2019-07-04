@@ -27,7 +27,7 @@
     "byline": "5.0.0",
     "dockerode": "2.5.8",
     "fs-extra": "7.0.1",
-    "js-yaml": "3.13.0",
+    "js-yaml": "3.13.1",
     "lodash": "4.17.11",
     "s3-streamlogger": "1.5.0",
     "tmp": "0.1.0",
