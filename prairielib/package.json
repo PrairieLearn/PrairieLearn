@@ -27,7 +27,7 @@
     "pg": "^7.7.1"
   },
   "devDependencies": {
-    "eslint": "^5.11.1",
+    "eslint": "^6.0.1",
     "jest": "^23.6.0"
   }
 }
