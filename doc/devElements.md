@@ -7,44 +7,45 @@ Element code uses the libraries in [`freeformPythonLib/`](https://github.com/Pra
 
 ### Anatomy of an element
 
-All PrairieLearn elements should live in `/question-servers/elements` inside a
-folder corresponding to the element name. By convention, all element files are
-named the same as the element they belong to. That directory should contain an
-`info.json` file that contains metadata about the element, including which file
-is the element controller and any dependencies of the element. See
-[the section on dependencies](#element-dependencies) for more information
+The system-wide elements available in the current build of the PrairieLearn server
+live in `[PrairieLearn directory]/elements` inside a folder corresponding to the element name.
+You can also have course-specific elements in a directory inside
+the root of your course repository, such as `[course directory]/elements`.
+See [`exampleCourse/elements`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/elements)
+for a real example of this.
+
+By convention,
+all element files are named the same as the element they belong to. That directory
+should contain an `info.json` file that contains metadata about the element, including
+which file is the element controller and any dependencies of the element. See [the section on dependencies](#element-dependencies) for more information
 
 Each element should have a `.py` controller that contains the functions listed
 in the next section. This controller is responsible for rendering the element,
 parsing the student's submission, and optionally grading the submission.
 
-You can also have course-specific elements in an `/elements` directory inside
-the root of your course repository. See [`exampleCourse/elements`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/elements)
-for an example of this.
-
-As an example, element `my_custom_element` would have the following file
+As a simple example, element `pl-my-element` would have the following file
 structure:
 
 ```
-my_custom_element
+pl-my-element
 +-- info.json
-|-- my_custom_element.py
-|-- my_custom_element.mustache
-|-- my_custom_element.js
-`-- my_custom_element.css
+|-- pl-my-element.py
+|-- pl-my-element.mustache
+|-- pl-my-element.js
+`-- pl-my-element.css
 ```
 
 And an `info.json` with the following contents:
 
 ```json
 {
-    "controller": "my_custom_element.py",
+    "controller": "pl-my-element.py",
     "dependencies": {
-        "scripts": [
-            "my_custom_element.js"
+        "elementScripts": [
+            "pl-my-element.js"
         ],
-        "styles": [
-            "my_custom_element.css"
+        "elementStyles": [
+            "pl-my-element.css"
         ]
     }
 }
@@ -114,34 +115,47 @@ you can place those dependencies in other files. If you depend on libraries like
 of all dependencies needed by all elements on a page, dedup the dependencies,
 and ensure they are loaded on the page.
 
-Dependencies are listed in your element's `info.json`.`question-servers/elements/index.js`. You can
+Dependencies are listed in your element's `info.json`. You can
 configure them for your element as follows:
 
 ```json
 {
-    "controller": "my_custom_element.py",
+    "controller": "pl-my-element.py",
     "dependencies": {
-        "globalScripts": [
+        "coreScripts": [
             "d3.min.js"
         ],
-        "globalStyles": [
-            "globalStylesheet.css"
+        "nodeModulesScripts": [
+            "three/build/three.min.js"
         ],
-        "scripts": [
-            "my_custom_element.js"
+        "elementScripts": [
+            "pl-my-element.js"
         ],
-        "styles": [
-            "my_custom_element.css"
+        "elementStyles": [
+            "pl-my-element.css"
+        ],
+        "clientFilesCourseStyles": [
+            "courseStylesheet1.css",
+            "courseStylesheet2.css"
         ]
     }
 }
 ```
 
-Any global resources will map to the url `/javascripts/[filename]` or `/stylesheets/[filename]`. Non-global
-resources will map to the url `/pl/static/elements/[elementname]/[filename]`; PrairieLearn
-will serve any CSS or JS files in `question-servers/elements/` at that url. In
-the above example, the file is located at `question-servers/elements/pl_my_element/pl_my_element.css`,
-and it will be served at `/pl/static/elements/pl_my_element/pl_my_element.css`.
+The different types of dependency properties currently available are summarized in this table:
 
-If an element belongs to a specific course, its files will be served at
-`/pl/course_instance/:course_instance_id/elements` instead of `/pl/static/elements/`.
+Property | Description
+--- | ---
+`coreStyles` | The styles required by this element, relative to `[PrairieLearn directory]/public/stylesheets`.
+`coreScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/public/javascripts`.
+`nodeModulesStyles` | The styles required by this element, relative to `[PrairieLearn directory]/node_modules`.
+`nodeModulesScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/node_modules`.
+`elementStyles` | The styles required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
+`elementScripts` | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
+`clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
+`clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
+
+You can also find the types of dependencies defined in these schema files:
+
+- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoElementCore.json)
+- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoElementCourse.json)
