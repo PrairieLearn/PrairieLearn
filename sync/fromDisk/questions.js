@@ -1,13 +1,7 @@
-var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var async = require('async');
 
 var logger = require('../../lib/logger');
 var sqldb = require('@prairielearn/prairielib/sql-db');
-var config = require('../../lib/config');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
 
 const perfMarkers = {};
 
@@ -20,18 +14,6 @@ const end = (name) => {
         return;
     }
     console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
-}
-
-function asyncQueryOneRow(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.queryOneRow(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        });
-    });
 }
 
 function asyncCallOneRow(sql, params) {
