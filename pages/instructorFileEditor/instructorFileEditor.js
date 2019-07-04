@@ -59,10 +59,20 @@ router.get('/', (req, res, next) => {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }
 
+    const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+    const relPath = path.relative(fileEdit.coursePath, fullPath);
+    debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
+    if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
+        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
+
     async.series([
         (callback) => {
             debug('Read original file');
-            fs.readFile(path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName), 'utf8', (err, contents) => {
+            fs.readFile(fullPath, 'utf8', (err, contents) => {
                 if (ERR(err, callback)) return;
                 fileEdit.origContents = b64EncodeUnicode(contents);
                 callback(null);
@@ -114,6 +124,16 @@ router.post('/', (req, res, next) => {
         coursePath: res.locals.course.path,
         uid: res.locals.user.uid,
     };
+
+    const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+    const relPath = path.relative(fileEdit.coursePath, fullPath);
+    debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
+    if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
+        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
 
     if (req.body.__action == 'save_draft') {
         updateEdit(fileEdit, req.body.file_edit_contents, err => {
