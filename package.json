@@ -11,7 +11,7 @@
         "archiver": "^3.0.0",
         "async": "^2.6.1",
         "async-stacktrace": "0.0.2",
-        "aws-sdk": "^2.382.0",
+        "aws-sdk": "^2.488.0",
         "backbone": "^1.4.0",
         "base64url": "^3.0.1",
         "blocked-at": "^1.1.3",
