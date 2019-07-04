@@ -75,6 +75,8 @@
   * Add `clientFilesElement` folder for loading element-specific client files (Nicolas Nytko).
 
   * Add `ignore-case` option to `pl-string-input` to allow for case insensitivity (James Balamuta).
+
+  * Add dependabot status to README (Matt West).
   
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -117,6 +119,10 @@
   * Change instructor question page to hide "Test 100 times" for externally graded questions (Nathan Walters).
 
   * Change element documentation to follow a common structure (James Balamuta).
+
+  * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
+
+  * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -192,7 +198,9 @@
 
   * Fix editing popovers to work with the new sanitization defaults (Matt West).
 
-  * Fix `tools/generate_uuid.py` to not add UUID in element subdirectory (Pavitra Shadvani).
+  * Fix `tools/generate_uuids.py` to not add UUID in element subdirectory (Pavitra Shadvani).
+  
+  * Fix `tools/generate_uuids.py` to be able to find uppercase UUIDs (Eric Huber).
 
   * Fix gradebook download link for courses with special characters in their names (Nathan Walters).
 
@@ -207,6 +215,8 @@
   * Fix JSON format when dumping DB subsets with `dump_filter.sh` (Matt West).
 
   * Fix vulnerabilities in node packages (Dave Mussulman).
+  
+  * Fix documentation page for elements and their dependencies (Eric Huber).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 

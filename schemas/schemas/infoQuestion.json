@@ -4,7 +4,12 @@
     "description": "Info files for questions.",
     "type": "object",
     "additionalProperties": false,
-    "required": ["uuid", "type", "title", "topic"],
+    "required": [
+        "uuid",
+        "type",
+        "title",
+        "topic"
+    ],
     "properties": {
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -13,7 +18,15 @@
         },
         "type": {
             "description": "Type of the test.",
-            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
+            "enum": [
+                "Calculation",
+                "ShortAnswer",
+                "MultipleChoice",
+                "Checkbox",
+                "File",
+                "MultipleTrueFalse",
+                "v3"
+            ]
         },
         "title": {
             "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
@@ -61,7 +74,11 @@
         },
         "gradingMethod": {
             "description": "The grading method used for this question.",
-            "enum": ["Internal", "External", "Manual"]
+            "enum": [
+                "Internal",
+                "External",
+                "Manual"
+            ]
         },
         "singleVariant": {
             "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
@@ -79,7 +96,10 @@
             "description": "Options for externally graded questions.",
             "type": "object",
             "additionalProperties": false,
-            "required": ["image", "entrypoint"],
+            "required": [
+                "image",
+                "entrypoint"
+            ],
             "properties": {
                 "enabled": {
                     "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",

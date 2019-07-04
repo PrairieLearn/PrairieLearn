@@ -38,11 +38,19 @@
         },
         "authType": {
             "description": "The type of authentication to use.",
-            "enum": ["none", "x-auth", "eppn", "x-trust-auth"]
+            "enum": [
+                "none",
+                "x-auth",
+                "eppn",
+                "x-trust-auth"
+            ]
         },
         "serverType": {
             "description": "The type of server to start.",
-            "enum": ["http", "https"]
+            "enum": [
+                "http",
+                "https"
+            ]
         },
         "serverPort": {
             "description": "The TCP port number for the server.",

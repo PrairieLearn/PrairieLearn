@@ -27,3 +27,5 @@ require('./testApi');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
 require('./testSproc-check_assessment_access');
+require('./testJsonLoad');
+require('./testSchemas');
