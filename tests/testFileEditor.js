@@ -70,6 +70,7 @@ const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionJsonPath}`;
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionHtmlPath}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
+const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
 
 const findEditUrlData = [
     {
@@ -231,7 +232,57 @@ describe('test file editor', function() {
             doEdits(element);
         });
     });
+
+    describe('disallow edits outside course directory', function() {
+        badGet(badPathUrl);
+    });
 });
+
+function badGet(url) {
+    describe(`GET to edit url with bad path`, function() {
+        it('should not load successfully', function(callback) {
+            locals.preStartTime = Date.now();
+            request(url, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                locals.postStartTime = Date.now();
+                if (response.statusCode != 400) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            });
+        });
+    });
+}
+
+function badPost(action, fileEditContents, url) {
+    describe(`POST to edit url with action ${action} and with bad path`, function() {
+        it('should not load successfully', function(callback) {
+            let form = {
+                __action: action,
+                __csrf_token: locals.__csrf_token,
+                file_edit_contents: b64EncodeUnicode(fileEditContents),
+                file_edit_user_id: locals.file_edit_user_id,
+                file_edit_course_id: locals.file_edit_course_id,
+                file_edit_id: locals.file_edit_id,
+                file_edit_dir_name: '../PrairieLearn/',
+                file_edit_file_name: 'config.json',
+            };
+            locals.preEndTime = Date.now();
+            request.post({url: url, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                locals.postEndTime = Date.now();
+                if (response.statusCode != 400) {
+                    return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                }
+                callback(null);
+            });
+        });
+    });
+}
 
 function b64EncodeUnicode(str) {
     // (1) use encodeURIComponent to get percent-encoded UTF-8
@@ -537,6 +588,8 @@ function doEdits(data) {
         editGet(data.url, false, false, data.contentsA);
         // get - saved draft => (A, A, A)
         editGet(data.url, true, false, data.contentsA);
+        // save_and_sync with bad file name (should fail)
+        badPost('save_and_sync', data.contentsB, data.url);
         // save and sync => (_, B, A)
         editPost('save_and_sync', data.contentsB, data.url);
         waitForJobSequence(locals, 'Success');
