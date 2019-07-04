@@ -43,7 +43,7 @@
                 <th>Type</th>
                 <td><%= question.type %></td>
               </tr>
-              <% if (locals.course.title != 'Example Course') { %>
+              <% if (!locals.course.options.isExampleCourse) { %>
                 <tr>
                   <th>Files</th>
                   <td>
