@@ -71,6 +71,7 @@ const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/edit?
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionHtmlPath}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
 const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
+const badExampleCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
 
 const findEditUrlData = [
     {
@@ -195,47 +196,61 @@ const verifyEditData = [
 describe('test file editor', function() {
     this.timeout(20000);
 
-    before('create test course files', function(callback) {
-        createCourseFiles((err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+    describe('not the example course', function() {
+        before('create test course files', function(callback) {
+            createCourseFiles((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+
+        before('set up testing server', helperServer.before(courseDir));
+
+        after('shut down testing server', helperServer.after);
+
+        after('delete test course files', function(callback) {
+            deleteCourseFiles((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+
+        describe('the locals object', function() {
+            it('should be cleared', function() {
+                for (var prop in locals) {
+                    delete locals[prop];
+                }
+            });
+        });
+
+        describe('verify existence of edit links', function() {
+            findEditUrlData.forEach((element) => {
+                findEditUrl(element.name, element.selector, element.url, element.expectedEditUrl);
+            });
+        });
+
+        describe('verify edits', function() {
+            verifyEditData.forEach((element) => {
+                doEdits(element);
+            });
+        });
+
+        describe('disallow edits outside course directory', function() {
+            badGet(badPathUrl);
         });
     });
 
-    before('set up testing server', helperServer.before(courseDir));
+    describe('the example course', function() {
 
-    after('shut down testing server', helperServer.after);
+        before('set up testing server', helperServer.before());
 
-    after('delete test course files', function(callback) {
-        deleteCourseFiles((err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+        after('shut down testing server', helperServer.after);
+
+        describe('disallow edits inside exampleCourse', function() {
+            badGet(badExampleCoursePathUrl);
         });
     });
 
-    describe('the locals object', function() {
-        it('should be cleared', function() {
-            for (var prop in locals) {
-                delete locals[prop];
-            }
-        });
-    });
-
-    describe('verify existence of edit links', function() {
-        findEditUrlData.forEach((element) => {
-            findEditUrl(element.name, element.selector, element.url, element.expectedEditUrl);
-        });
-    });
-
-    describe('verify edits', function() {
-        verifyEditData.forEach((element) => {
-            doEdits(element);
-        });
-    });
-
-    describe('disallow edits outside course directory', function() {
-        badGet(badPathUrl);
-    });
 });
 
 function badGet(url) {

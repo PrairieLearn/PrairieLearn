@@ -59,6 +59,15 @@ router.get('/', (req, res, next) => {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }
 
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.options.isExampleCourse) {
+        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
+
+    // Do not allow users to edit files outside the course
     const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
@@ -125,6 +134,15 @@ router.post('/', (req, res, next) => {
         uid: res.locals.user.uid,
     };
 
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.options.isExampleCourse) {
+        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
+
+    // Do not allow users to edit files outside the course
     const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
