@@ -1,4 +1,4 @@
--- Accepts a course ID and a list of objects containins qids and tag IDs,
+-- Accepts a list of lists containins question IDs and tag IDs,
 -- ensures that all question tags are updated in the DB, and removes
 -- any old unused question tags. 
 
