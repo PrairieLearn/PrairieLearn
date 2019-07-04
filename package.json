@@ -29,7 +29,7 @@
         "diff": "^4.0.1",
         "dockerode": "^2.5.8",
         "ejs": "^2.6.2",
-        "express": "^4.16.4",
+        "express": "^4.17.1",
         "fs-extra": "^8.1.0",
         "googleapis": "^40.0.1",
         "handlebars": "^4.1.2",
