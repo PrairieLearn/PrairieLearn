@@ -214,6 +214,8 @@
   * Fix JSON format when dumping DB subsets with `dump_filter.sh` (Matt West).
 
   * Fix vulnerabilities in node packages (Dave Mussulman).
+  
+  * Fix documentation page for elements and their dependencies (Eric Huber).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
