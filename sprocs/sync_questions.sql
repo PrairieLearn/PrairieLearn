@@ -10,28 +10,10 @@ CREATE OR REPLACE FUNCTION
         OUT new_question_ids bigint[]
     )
 AS $$
-DECLARE
-    question JSONB;
-    new_question_id bigint;
-    client_file text;
-    client_files_array text[];
-    external_grading_file text;
-    external_grading_files_array text[];
 BEGIN
-    FOR question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(new_questions) LOOP
-        -- TODO how to convert from JSON array to postgres array?
-        IF question->'client_files' != NULL THEN
-            FOR client_file IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(question->'client_files') LOOP
-                client_files_array := array_append(client_files_array, client_file);
-            END LOOP;
-        END IF;
-        IF question->'external_grading_files' != null THEN
-            FOR external_grading_file IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(question->'external_grading_files') LOOP
-                external_grading_files_array := array_append(external_grading_files_array, external_grading_file);
-            END LOOP;
-        END IF;
-        INSERT INTO questions
-            (uuid,
+    WITH new_questions AS (
+        INSERT INTO questions (
+            uuid,
             qid,
             directory,
             type,
@@ -50,15 +32,15 @@ BEGIN
             external_grading_files,
             external_grading_entrypoint,
             external_grading_timeout,
-            external_grading_enable_networking)
-        (SELECT
+            external_grading_enable_networking
+        ) SELECT
             (question->>'uuid')::uuid,
             question->>'qid',
             question->>'qid',
             (question->>'type')::enum_question_type,
             question->>'title',
             (question->'options')::JSONB,
-            client_files_array,
+            (SELECT ARRAY_AGG(client_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(question->>'client_files', '[]')::jsonb) client_files)::text[],
             (question->>'partial_credit')::boolean,
             new_course_id,
             (question->>'grading_method')::enum_grading_method,
@@ -68,11 +50,15 @@ BEGIN
             COALESCE((SELECT id FROM topics WHERE name = question->>'topic' AND course_id = new_course_id), NULL),
             (question->>'external_grading_enabled')::boolean,
             question->>'external_grading_image',
-            external_grading_files_array,
+            (SELECT ARRAY_AGG(external_grading_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(question->>'external_grading_files', '[]')::jsonb) external_grading_files)::text[],
             question->>'external_grading_entrypoint',
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean
-        )
+        FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) WITH ORDINALITY AS t(question, number)
+        -- TODO: is this necessary? does postgres make any guarantees about a) order when
+        -- selecting from JSONB_ARRAY_ELEMENTS or b) insertion order when inserting from a
+        -- SELECT expression?
+        ORDER BY number
         ON CONFLICT (uuid) DO UPDATE
         SET
             qid = EXCLUDED.qid,
@@ -95,12 +81,9 @@ BEGIN
             external_grading_enable_networking = EXCLUDED.external_grading_enable_networking
         WHERE
             questions.course_id = new_course_id
-        RETURNING id INTO new_question_id;
-
-        new_question_ids := array_append(new_question_ids, new_question_id);
-        client_files_array := array[]::text[];
-        external_grading_files_array := array[]::text[];
-    END LOOP;
+        RETURNING id
+    )
+    SELECT array_agg(id) INTO new_question_ids FROM (SELECT id FROM new_questions) AS ids;
 
     -- Soft-delete any unused questions
     UPDATE questions AS q
