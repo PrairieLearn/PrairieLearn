@@ -530,9 +530,9 @@ function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContent
         elemList = locals.$('script');
         for (let i = 0; i < elemList.length; i++) {
             let elem = elemList[i];
-            if (typeof elem != undefined && elem.hasOwnProperty('children')) {
+            if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
                 if (elem.children.length > 0) {
-                    if (elem.children[0].hasOwnProperty('data')) {
+                    if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
                         let match = elem.children[0].data.match(/contents: "(.*?)"/);
                         if (match != null) {
                             locals.fileContents = b64DecodeUnicode(match[1]);
