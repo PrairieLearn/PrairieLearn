@@ -427,7 +427,7 @@ module.exports = {
                         }
                     }
                 } else {
-		    // the following line is safe because we can't be in multiple copies of this function simultaneously
+                    // the following line is safe because we can't be in multiple copies of this function simultaneously
                     data = ret_val; // eslint-disable-line require-atomic-updates
                     const checkErr = module.exports.checkData(data, origData, phase);
                     if (checkErr) {
@@ -448,7 +448,7 @@ module.exports = {
                     }
                 }
             }
-	    // the following line is safe because we can't be in multiple copies of this function simultaneously
+            // the following line is safe because we can't be in multiple copies of this function simultaneously
             node.childNodes = newChildren; // eslint-disable-line require-atomic-updates
             return node;
         };
