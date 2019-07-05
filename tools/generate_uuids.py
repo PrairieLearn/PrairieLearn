@@ -15,7 +15,7 @@ error_list = []
 
 def add_uuid_to_file(filename):
     try:
-        with open(filename, 'rU') as in_f:
+        with open(filename, 'r') as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:
