@@ -14,7 +14,7 @@ module.exports.sync = (courseInfo, course_id, callback) => {
         title: courseInfo.title,
         display_timezone: courseInfo.timezone || null,
         grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
-        options: courseInfo.options,
+        options: courseInfo.options || {},
     };
     sqldb.queryZeroOrOneRow(sql.update_course, params, (err, result) => {
         if (ERR(err, callback)) return;
