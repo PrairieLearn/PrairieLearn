@@ -35,7 +35,7 @@ const qids = [
 describe('Auto-test questions', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     qids.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));

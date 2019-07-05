@@ -112,7 +112,7 @@ const partialCreditTests = [
 describe('Exam assessment', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var elemList;
@@ -818,7 +818,7 @@ describe('Exam assessment', function() {
                     debug('partial credit test: server starting up');
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
-                    helperServer.before.call(that, function(err) {
+                    helperServer.before().call(that, function(err) {
                         debug('partial credit test: server startup complete');
                         if (ERR(err, callback)) return;
                         callback(null);

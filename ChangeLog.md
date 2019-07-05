@@ -77,6 +77,10 @@
 
   * Add dependabot status to README (Matt West).
 
+  * Add tabs for course admin page (Tim Bretl).
+
+  * Add in-browser editing of course files (Tim Bretl).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -380,6 +384,7 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+
   * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).

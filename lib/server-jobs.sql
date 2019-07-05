@@ -35,10 +35,10 @@ max_over_jobs_with_same_sequence AS (
         AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
+    (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
      user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory,  env)
 SELECT
-    $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
+    $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
     $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory, $env
 FROM
     max_over_jobs_with_same_course,
@@ -82,6 +82,7 @@ job_sequence_updates AS (
     SELECT
         j.*,
         CASE
+            WHEN j.no_job_sequence_update THEN FALSE
             WHEN j.status = 'Error' THEN TRUE
             WHEN j.last_in_sequence THEN TRUE
             ELSE FALSE
@@ -119,15 +120,26 @@ WITH updated_jobs AS (
         j.id = $job_id
     RETURNING
         j.*
+),
+job_sequence_updates AS (
+    SELECT
+        j.*,
+        CASE
+            WHEN j.no_job_sequence_update THEN FALSE
+            ELSE TRUE
+        END AS update_job_sequence
+    FROM
+        updated_jobs AS j
 )
 UPDATE job_sequences AS js
 SET
     finish_date = j.finish_date,
     status = j.status
 FROM
-    updated_jobs AS j
+    job_sequence_updates AS j
 WHERE
-    js.id = j.job_sequence_id;
+    js.id = j.job_sequence_id
+    AND j.update_job_sequence;
 
 -- BLOCK select_running_jobs
 SELECT

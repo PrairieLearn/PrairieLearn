@@ -1,55 +1,78 @@
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Course title ---------------------------------------------------------------->
 
-      <li class="nav-item mr-4"><span class="navbar-text"><%= course.short_name %>, <%= course_instance.short_name %></span></li>
+    <!-------------------------------------------------------------------------------->
+    <!-- Course Admin ---------------------------------------------------------------->
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Main pages ------------------------------------------------------------------>
-
-      <li class="nav-item <% if (navPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a></li>
-      <li class="nav-item <% if (navPage == "questions")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/questions">Questions</a></li>
-      <li class="nav-item <% if (navPage == "issues")      { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
-      <li class="nav-item <% if (navPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
-
-      <li class="nav-item dropdown <% if (navPage == "admin") { %>active<% } %>">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              Admin
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuAdminLink">
-              <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/admin/access"><i class="far fa-calendar-alt"></i> Access</a>
-              <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti") { %>active<% } %>" href="<%= urlPrefix %>/admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
-              <% if (authz_data.has_course_permission_view) { %>
-                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "course") { %>active<% } %>" href="<%= urlPrefix %>/admin/course">
-                  <i class="fab fa-fort-awesome"></i> Course
-                </a>
-              <% } %>
-          </div>
-      </li>
-
-      <% if (!devMode && authz_data.has_course_permission_edit) { %>
-      <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
-      <% } %>
-
-      <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-      <li class="nav-item dropdown <% if (navPage == "assessment") { %>active<% } %>">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          <%= assessment_label %>
+    <li class="nav-item dropdown <% if (navPage == "course_admin") { %>active<% } %>">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <%= course.short_name %>
         </a>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "assessmentStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questionStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics"><i class="fas fa-table"></i> Question statistics</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "downloads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads"><i class="fas fa-download"></i> Downloads</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "uploads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads"><i class="fas fa-upload"></i> Uploads</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "regrading") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading"><i class="fa fa-sync"></i> Regrading</a>
-          <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Student assessments</a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
+            <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "info" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/info"><i class="far fa-calendar-alt"></i> Information</a>
+            <% if (authz_data.has_course_permission_own) { %>
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+            <% } %>
+            <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "sets" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/sets"><i class="far fa-calendar-alt"></i> Assessment Sets</a>
+            <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "topics" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/topics"><i class="far fa-calendar-alt"></i> Topics</a>
+            <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "tags" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/tags"><i class="far fa-calendar-alt"></i> Tags</a>
+            <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "grading" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/grading"><i class="far fa-calendar-alt"></i> External Grading</a>
+            <% if (!locals.course.options.isExampleCourse) { %>
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "edit" && navPage == "course_admin") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/edit?file=infoCourse.json"><i class="fa fa-edit"></i> Edit</a>
+            <% } %>
         </div>
-      </li>
-      <% } %>
+    </li>
 
-    </ul>
+    <% if (locals.course_instance) { %>
+
+        <!-------------------------------------------------------------------------------->
+        <!-- Instance Admin -------------------------------------------------------------->
+
+        <li class="nav-item dropdown <% if (navPage == "instance_admin") { %>active<% } %>">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <%= course_instance.short_name %>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
+                <% if (!locals.course.options.isExampleCourse) { %>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "edit" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"><i class="fa fa-edit"></i> Edit</a>
+                <% } %>
+            </div>
+        </li>
+
+        <!-------------------------------------------------------------------------------->
+        <!-- Instance Other -------------------------------------------------------------->
+
+        <li class="nav-item <% if (navPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a></li>
+        <li class="nav-item <% if (navPage == "questions")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/questions">Questions</a></li>
+        <li class="nav-item <% if (navPage == "issues")      { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
+        <li class="nav-item <% if (navPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+
+        <% if (!devMode && authz_data.has_course_permission_edit) { %>
+            <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
+        <% } %>
+
+        <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
+            <li class="nav-item dropdown <% if (navPage == "assessment") { %>active<% } %>">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <%= assessment_label %>
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questions" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "assessmentStatistics" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questionStatistics" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics"><i class="fas fa-table"></i> Question statistics</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "downloads" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads"><i class="fas fa-download"></i> Downloads</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "uploads" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads"><i class="fas fa-upload"></i> Uploads</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "regrading" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading"><i class="fa fa-sync"></i> Regrading</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "instances" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Student assessments</a>
+                    <% if (!locals.course.options.isExampleCourse) { %>
+                        <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "edit" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/edit?file=courseInstances/<%= course_instance.short_name %>/assessments/<%= assessment.tid %>/infoAssessment.json"><i class="fa fa-edit"></i> Edit</a>
+                    <% } %>
+                </div>
+            </li>
+        <% } %>
+    <% } else { %>
+        <% if (!devMode && authz_data.has_course_permission_edit) { %>
+            <li class="nav-item <% if (navPage == "sync") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
+        <% } %>
+    <% } %>
