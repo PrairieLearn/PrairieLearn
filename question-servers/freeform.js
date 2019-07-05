@@ -367,7 +367,7 @@ module.exports = {
         return null;
     },
 
-    travserseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
+    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
         const courseIssues = [];
@@ -569,7 +569,7 @@ module.exports = {
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {
-                processFunction = module.exports.travserseQuestionAndExecuteFunctions;
+                processFunction = module.exports.traverseQuestionAndExecuteFunctions;
                 args = [phase, pc, data, context, html];
             } else {
                 processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
