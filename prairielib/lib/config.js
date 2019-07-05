@@ -34,7 +34,7 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
             // Load configs, following the inheritance chain
             let parent = environment;
             async.whilst(
-                () => parent != null,
+                (callback) => callback(null, parent != null),
                 (callback) => {
                     fs.readFile(path.join(configDir, `${parent}.yaml`), 'utf-8', (err, data) => {
                         if (ERR(err, callback)) return;
