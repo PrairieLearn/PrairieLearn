@@ -64,7 +64,7 @@ for root, dirs, files in os.walk(args.directory):
         if skip_dir in dirs:
             dirs.remove(skip_dir)
     for f in files:
-        if re.fullmatch(r'.*\.json', f):
+        if re.fullmatch(r'info.*\.json', f):
             filename = os.path.join(root, f)
             num_files += 1
             num_changed += add_uuid_to_file(filename)
