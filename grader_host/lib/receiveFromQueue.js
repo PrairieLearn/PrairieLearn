@@ -36,8 +36,8 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
                     }
                     return done(null, parsedMessage);
                 });
-            }, (result) => {
-                return !!result;
+            }, (result, callback) => {
+                callback(null, !!result);
             }, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
