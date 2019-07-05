@@ -4,12 +4,12 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'access'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'access'}); %>
+      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Access rules
         </div>
 

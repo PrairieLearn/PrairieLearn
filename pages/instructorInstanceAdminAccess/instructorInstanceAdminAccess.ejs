@@ -5,16 +5,15 @@
   </head>
   <body>
 
-    <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'access'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAdminTabs', {navSubPage: 'access'}); %>
-
+        <%- include('../partials/navtabs'); %>
 
         <!-- ###################################################################### -->
         <!-- ###################################################################### -->
 
         <div class="card mb-4">
-          <div class="card-header bg-primary text-white">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
             <%= course_instance.long_name %> course instance access rules
           </div>
 

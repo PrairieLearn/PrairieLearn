@@ -9,9 +9,9 @@
           $('[data-toggle="popover"]').popover({sanitize: false})
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'regrading'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'regrading'}); %>
+      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
         <div class="modal-dialog" role="document">
@@ -54,7 +54,7 @@
             the "Action" dropdown on the assessment instances page.
           </p>
         </div>
-        
+
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <thead>

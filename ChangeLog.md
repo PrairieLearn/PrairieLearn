@@ -76,7 +76,13 @@
   * Add `clientFilesElement` folder for loading element-specific client files (Nicolas Nytko).
 
   * Add `ignore-case` option to `pl-string-input` to allow for case insensitivity (James Balamuta).
-  
+
+  * Add dependabot status to README (Matt West).
+
+  * Add tabs for course admin page (Tim Bretl).
+
+  * Add in-browser editing of course files (Tim Bretl).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -120,6 +126,8 @@
   * Change element documentation to follow a common structure (James Balamuta).
 
   * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
+
+  * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -196,7 +204,7 @@
   * Fix editing popovers to work with the new sanitization defaults (Matt West).
 
   * Fix `tools/generate_uuids.py` to not add UUID in element subdirectory (Pavitra Shadvani).
-  
+
   * Fix `tools/generate_uuids.py` to be able to find uppercase UUIDs (Eric Huber).
 
   * Fix gradebook download link for courses with special characters in their names (Nathan Walters).
@@ -206,7 +214,7 @@
   * Fix (or at least attempt to) S3 file uploads for external grading (Nathan Walters).
 
   * Fix handling of binary files during external grading (Nathan Walters).
-  
+
   * Fix hljs syntax highlighting compatibility issue in `pl-code.py` (Eric Huber).
 
   * Fix JSON format when dumping DB subsets with `dump_filter.sh` (Matt West).
@@ -214,6 +222,12 @@
   * Fix vulnerabilities in node packages (Dave Mussulman).
 
   * Fix `users_select_or_insert` to handle NetID changes with same UIN (Dave Mussulman).
+
+  * Fix documentation page for elements and their dependencies (Eric Huber).
+
+  * Fix question tag syncing to be significantly faster (Nathan Walters).
+
+  * Fix `generate_uuids.py` to only process files starting with `info` (Matt West).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
@@ -374,6 +388,7 @@
   * Change instructor assessment page into multiple sub-pages (Matt West).
 
   * Change log level of external grading jobs to reduce syslog volume (Matt West).
+
   * Change test cases to use templated DB for faster performance (Dave Mussulman).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).

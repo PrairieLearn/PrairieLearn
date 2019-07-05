@@ -8,18 +8,16 @@
   </button>
   <div class="collapse navbar-collapse">
     <ul class="nav navbar-nav mr-auto" id="main-nav">
-
-<% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
-<%- include('navbarPlain'); %>
-<% } else if (navbarType == 'student') { %>
-<%- include('navbarStudent'); %>
-<% } else if (navbarType == 'instructor') { %>
-<%- include('navbarInstructor'); %>
-<% } else if (navbarType == 'course') { %>
-<%- include('navbarCourse'); %>
-<% } else { %>
-<% throw new Error('Unknown navbarType: ' + navbarType); %>
-<% } %>
+        <% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
+        <%- include('navbarPlain'); %>
+        <% } else if (navbarType == 'student') { %>
+        <%- include('navbarStudent'); %>
+        <% } else if (navbarType == 'instructor') { %>
+        <%- include('navbarInstructor'); %>
+        <% } else { %>
+        <% throw new Error('Unknown navbarType: ' + navbarType); %>
+        <% } %>
+    </ul>
 
     <!-------------------------------------------------------------------------------->
     <!-------------------------------------------------------------------------------->

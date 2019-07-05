@@ -12,10 +12,10 @@
           $('[data-toggle="popover"]').popover({sanitize: false})
       });
     </script>
-    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'instances'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'instances'}); %>
-      
+      <%- include('../partials/instructorAssessmentTabs'); %>
+
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">

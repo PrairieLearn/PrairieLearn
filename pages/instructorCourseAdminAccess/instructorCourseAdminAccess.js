@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
@@ -13,10 +12,9 @@ router.get('/', function(req, res, next) {
     var params = {
         course_id: res.locals.course.id,
     };
-    sqldb.queryOneRow(sql.select_course_info, params, function(err, result) {
+    sqldb.query(sql.select_course_users, params, function(err, result) {
         if (ERR(err, next)) return;
-
-        _.assign(res.locals, result.rows[0]);
+        res.locals.course_users = result.rows;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

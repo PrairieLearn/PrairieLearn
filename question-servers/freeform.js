@@ -367,7 +367,7 @@ module.exports = {
         return null;
     },
 
-    travserseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
+    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
         const courseIssues = [];
@@ -427,7 +427,8 @@ module.exports = {
                         }
                     }
                 } else {
-                    data = ret_val;
+                    // the following line is safe because we can't be in multiple copies of this function simultaneously
+                    data = ret_val; // eslint-disable-line require-atomic-updates
                     const checkErr = module.exports.checkData(data, origData, phase);
                     if (checkErr) {
                         const courseIssue = new Error(`${elementFile}: Invalid state after ${phase}(): ${checkErr}`);
@@ -447,7 +448,8 @@ module.exports = {
                     }
                 }
             }
-            node.childNodes = newChildren;
+            // the following line is safe because we can't be in multiple copies of this function simultaneously
+            node.childNodes = newChildren; // eslint-disable-line require-atomic-updates
             return node;
         };
         let questionHtml = '';
@@ -567,7 +569,7 @@ module.exports = {
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {
-                processFunction = module.exports.travserseQuestionAndExecuteFunctions;
+                processFunction = module.exports.traverseQuestionAndExecuteFunctions;
                 args = [phase, pc, data, context, html];
             } else {
                 processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;

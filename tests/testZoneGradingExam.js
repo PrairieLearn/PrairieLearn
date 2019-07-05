@@ -49,7 +49,7 @@ const zoneGradingTests = [
 describe('Zone grading exam assessment', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var startAssessment = function() {
@@ -262,7 +262,7 @@ describe('Zone grading exam assessment', function() {
                 it('should start up', function(callback) {
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
-                    helperServer.before.call(that, function(err) {
+                    helperServer.before().call(that, function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });

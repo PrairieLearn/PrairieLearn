@@ -6,7 +6,7 @@ function PLThreeJS(options) {
     var uuid = options.uuid;
     this.uuid = uuid;
     this.startPose = JSON.parse(atob(options.pose));
-    if (options.hasOwnProperty('pose_default')) {
+    if (Object.prototype.hasOwnProperty.call(options, 'pose_default')) {
         this.resetPose = JSON.parse(atob(options.pose_default));
     } else {
         this.resetPose = this.startPose;
