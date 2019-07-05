@@ -272,75 +272,43 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
 });
-app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
-    function(req, res, next) {
-        res.locals.navPage = 'assessment';
-        next();
-    },
-]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', function(req, res, next) {res.locals.navPage = 'assessment'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'questions';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'access';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'assessmentStatistics';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'assessmentStatistics'; next();},
     require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'questionStatistics';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'questionStatistics'; next();},
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'downloads';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'downloads'; next();},
     require('./pages/instructorAssessmentDownloads/instructorAssessmentDownloads'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'uploads';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'uploads'; next();},
     require('./pages/instructorAssessmentUploads/instructorAssessmentUploads'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'regrading';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
     require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'instances';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
     require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/edit', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'edit';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -351,12 +319,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/edit', [
-    function(req, res, next) {
-        res.locals.navbarType = 'instructor';
-        res.locals.navPage = 'question';
-        res.locals.navSubPage = 'edit';
-        next();
-    },
+    function(req, res, next) {res.locals.navbarType = 'instructor'; res.locals.navPage = 'question'; res.locals.navSubPage = 'edit'; next();},
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
@@ -381,59 +344,33 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/info`);
 });
-app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
-    function(req, res, next) {
-        res.locals.navPage = 'course_admin';
-        next();
-    },
-]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', function(req, res, next) {res.locals.navPage = 'course_admin'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/info', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'info';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'info'; next();},
     require('./pages/instructorCourseAdminInfo/instructorCourseAdminInfo'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/access', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'access';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorCourseAdminAccess/instructorCourseAdminAccess'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'sets';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
     require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/topics', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'topics';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
     require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/tags', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'tags';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
     require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/grading', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'grading';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
     require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/edit', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'edit';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -441,37 +378,18 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/edit', 
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/instance_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/access`);
 });
-app.use('/pl/course_instance/:course_instance_id/instructor', [
-    function(req, res, next) {
-        res.locals.navbarType = 'instructor';
-        next();
-    },
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin', [
-    function(req, res, next) {
-        res.locals.navPage = 'instance_admin';
-        next();
-    },
-]);
+app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin', function(req, res, next) {res.locals.navPage = 'instance_admin'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/access', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'access';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'lti';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'lti'; next();},
     require('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/edit', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'edit';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -605,59 +523,33 @@ app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res
 app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/info`);
 });
-app.use('/pl/course/:course_id/course_admin', [
-    function(req, res, next) {
-        res.locals.navPage = 'course_admin';
-        next();
-    },
-]);
+app.use('/pl/course/:course_id/course_admin', function(req, res, next) {res.locals.navPage = 'course_admin'; next();});
 app.use('/pl/course/:course_id/course_admin/info', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'info';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'info'; next();},
     require('./pages/instructorCourseAdminInfo/instructorCourseAdminInfo'),
 ]);
 app.use('/pl/course/:course_id/course_admin/access', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'access';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorCourseAdminAccess/instructorCourseAdminAccess'),
 ]);
 app.use('/pl/course/:course_id/course_admin/sets', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'sets';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
     require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
 ]);
 app.use('/pl/course/:course_id/course_admin/topics', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'topics';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
     require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
 ]);
 app.use('/pl/course/:course_id/course_admin/tags', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'tags';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
     require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
 ]);
 app.use('/pl/course/:course_id/course_admin/grading', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'grading';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
     require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
 ]);
 app.use('/pl/course/:course_id/course_admin/edit', [
-    function(req, res, next) {
-        res.locals.navSubPage = 'edit';
-        next();
-    },
+    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
