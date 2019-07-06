@@ -1,6 +1,6 @@
 <% if (authz_data.has_instructor_view) { %>
 <div class="card mb-4 border-warning">
-  <div class="card-header bg-warning"><em>Instructor only information</em></div>
+  <div class="card-header bg-warning">Instructor information</div>
   <div class="card-body">
   <h5 class="card-title">User:</h5>
   <div class="d-flex flex-wrap pb-2">
@@ -9,6 +9,7 @@
   </div>
 
       <% if (typeof question !== "undefined") { %>
+          <hr>
           <h5 class="card-title">Question:</h5>
 
           <div class="d-flex flex-wrap">
@@ -41,6 +42,7 @@
       <% } %>
 
       <% if (typeof assessment !== "undefined") { %>
+          <hr>
           <h5 class="card-title">Assessment Instance:</h5>
           <div class="d-flex flex-wrap">
               <div class="pr-1">AID:</div>
@@ -61,6 +63,9 @@
               <a href="<%= urlPrefix %>/instructor/assessment_instance/<%= assessment_instance.id %>">View log</a>
           </div>
       <% } %>
+  </div>
+  <div class="card-footer small">
+      This box is not visible to students.
   </div>
 </div>
 <% } %>
