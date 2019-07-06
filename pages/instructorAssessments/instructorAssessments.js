@@ -50,7 +50,7 @@ router.get('/:filename', function(req, res, next) {
         sqldb.query(sql.select_assessments, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStats = result.rows;
-            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'AID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',
                               'Hist1', 'Hist2', 'Hist3', 'Hist4', 'Hist5',

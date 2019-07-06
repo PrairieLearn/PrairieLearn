@@ -128,6 +128,8 @@ router.post('/', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
+    var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
+    debug(`variant_seed ${variant_seed}`);
     async.series([
         (callback) => {
             debug('set filenames');
@@ -154,7 +156,7 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
-            question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+            question.getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

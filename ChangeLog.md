@@ -43,6 +43,8 @@
 
   * Add a second example of reading XML code in from a file with `pl-code` (James Balamuta).
 
+  * Add instructor info panel to student pages (Dave Mussulman).
+
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
   * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
@@ -196,6 +198,8 @@
   * Fix documentation to be more descriptive for local development with externally graded questions, especially in Windows. (Dave Mussulman, h/t James Balamuta, Mariana Silva, Zhenxi Zhou)
 
   * Fix copy button (Tim Bretl).
+
+  * Fix python question random to seed from `variant.variant_seed` (Dave Mussulman).
 
   * Fix TravisCI for Greenkeeper PRs (Matt West).
 
