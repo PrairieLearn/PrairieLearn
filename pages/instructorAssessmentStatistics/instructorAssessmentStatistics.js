@@ -3,7 +3,7 @@ const _ = require('lodash');
 const async = require('async');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 

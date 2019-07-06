@@ -20,6 +20,7 @@ require('./testGetHomepage');
 require('./testQuestions');
 require('./testInstructorQuestions');
 require('./testInstructorAssessment');
+require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');

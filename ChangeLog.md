@@ -45,6 +45,10 @@
 
   * Add ability to highlight the background of specific lines of text in `pl-code` (Nathan Walters).
 
+  * Add R Data Packages and SQLite connection to centos-plbase. (James Balamuta).
+
+  * Add test cases for the InstructorAssessmentDownloads page (Yuchen Pang).
+
   * Add verbose flag to `tools/generate_uuid.py` to show all the files changed by script (Pavitra Shadvani).
 
   * Add better logging of requests that don't have corresponding responses (Matt West).
@@ -150,6 +154,8 @@
   * Fix issues link on instructor question page (Nathan Walters).
 
   * Fix `users.lti_course_instance_id` foreign key delete action (Matt West).
+
+  * Fix CSV stringifier which blocks the event loop (Yuchen Pang).
 
   * Fix missing `event-stream` dependency (Matt West).
 

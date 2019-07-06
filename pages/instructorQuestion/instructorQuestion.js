@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');

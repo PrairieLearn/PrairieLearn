@@ -1,6 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const archiver = require('archiver');
 const router = express.Router();
