@@ -16,6 +16,7 @@ const workers = require('../lib/workers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
+const markdown = require('../lib/markdown');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -284,6 +285,12 @@ module.exports = {
             err = null;
             try {
                 html = mustache.render(rawFile, data);
+            } catch (e) {
+                err = e;
+            }
+            if (ERR(err, callback)) return;
+            try {
+                html = markdown.processQuestion(html);
             } catch (e) {
                 err = e;
             }
