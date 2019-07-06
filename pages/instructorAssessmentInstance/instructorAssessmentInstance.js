@@ -5,18 +5,14 @@ const express = require('express');
 const router = express.Router();
 const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
 const logCsvFilename = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name
-        + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
-        + '_'
-        + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')
+    return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
+        + sanitizeName.sanitizeString(locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'

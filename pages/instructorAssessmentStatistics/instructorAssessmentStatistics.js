@@ -7,14 +7,14 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const assessment = require('../../lib/assessment');
+const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const setFilenames = function(locals) {
-    const prefix = assessment.filenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
+    const prefix = sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
     locals.scoreStatsCsvFilename = prefix + 'score_stats.csv';
     locals.durationStatsCsvFilename = prefix + 'duration_stats.csv';
     locals.statsByDateCsvFilename = prefix + 'scores_by_date.csv';

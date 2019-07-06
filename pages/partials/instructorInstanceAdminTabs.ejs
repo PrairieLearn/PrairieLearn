@@ -1,0 +1,13 @@
+<ul class="nav nav-tabs mb-4" id="navtabsInstructorInstanceAdmin">
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "access" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
+  </li>
+  <% if (!locals.course.options.isExampleCourse) { %>
+      <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "edit" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"><i class="fa fa-edit"></i> Edit</a>
+      </li>
+  <% } %>
+</ul>

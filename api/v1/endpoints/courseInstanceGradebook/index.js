@@ -13,9 +13,9 @@ router.get('/', (req, res, next) => {
     const params = {
         course_instance_id: req.params.course_instance_id,
     };
-    sqldb.query(sql.select_user_scores, params, (err, result) => {
+    sqldb.queryOneRow(sql.select_user_scores, params, (err, result) => {
         if (ERR(err, next)) return;
-        res.send(result.rows);
+        res.send(result.rows[0].item);
     });
 });
 

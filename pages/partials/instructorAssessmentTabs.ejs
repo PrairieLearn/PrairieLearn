@@ -1,4 +1,4 @@
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-tabs mb-4" id="navtabsInstructorAssessment">
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
   </li>
@@ -23,4 +23,9 @@
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Students</a>
   </li>
+  <% if (!locals.course.options.isExampleCourse) { %>
+      <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "edit") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/edit?file=courseInstances/<%= course_instance.short_name %>/assessments/<%= assessment.tid %>/infoAssessment.json"><i class="fa fa-edit"></i> Edit</a>
+      </li>
+  <% } %>
 </ul>

@@ -6,24 +6,19 @@ const archiver = require('archiver');
 const router = express.Router();
 
 const { paginateQuery } = require('../../lib/paginate');
+const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name.replace(/\s+/g, '')
-        + '_'
+    return sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course)
         + 'assessment_stats.csv';
 };
 
 const fileSubmissionsName = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name.replace(/\s+/g, '')
-        + '_'
+    return sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course)
         + 'file_submissions';
 };
 

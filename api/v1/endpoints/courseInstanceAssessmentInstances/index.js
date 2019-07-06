@@ -16,14 +16,15 @@ router.get('/:assessment_instance_id', (req, res, next) => {
         assessment_id: null,
         assessment_instance_id: req.params.assessment_instance_id,
     };
-    sqldb.queryZeroOrOneRow(sql.select_assessment_instances, params, (err, result) => {
+    sqldb.queryOneRow(sql.select_assessment_instances, params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.length === 0) {
+        const data = result.rows[0].item;
+        if (data.length === 0) {
             res.status(404).send({
                 message: 'Not Found',
             });
         } else {
-            res.status(200).send(result.rows[0]);
+            res.status(200).send(data[0]);
         }
     });
 });
@@ -34,9 +35,9 @@ router.get('/:assessment_instance_id/submissions', (req, res, next) => {
         assessment_instance_id: req.params.assessment_instance_id,
         submission_id: null,
     };
-    sqldb.query(sql.select_submissions, params, (err, result) => {
+    sqldb.queryOneRow(sql.select_submissions, params, (err, result) => {
         if (ERR(err, next)) return;
-        res.status(200).send(result.rows);
+        res.status(200).send(result.rows[0].item);
     });
 });
 
