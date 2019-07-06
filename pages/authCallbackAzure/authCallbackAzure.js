@@ -9,6 +9,7 @@ var sqldb = require('@prairielearn/prairielib/sql-db');
 
 // FIXME: do we need "all" below for both "get" and "post", or just one of them?
 router.all('/', function(req, res, next) {
+    if (!config.hasAzure) return next(new Error('Microsoft login is not enabled'));
     const authData = {
         response: res,
         failureRedirect: '/pl',

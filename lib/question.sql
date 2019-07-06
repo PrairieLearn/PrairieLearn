@@ -95,3 +95,14 @@ WHERE
         LEFT JOIN grading_jobs AS gj2 ON (gj2.submission_id = s.id)
         WHERE s.id = $submission_id
     );
+
+-- BLOCK select_assessment_for_submission
+SELECT
+    ai.id AS assessment_instance_id
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+    s.id = $submission_id;

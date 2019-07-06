@@ -115,7 +115,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     const variant_id = null;
-    question.getAndRenderVariant(variant_id, res.locals, function(err) {
+    question.getAndRenderVariant(variant_id, null, res.locals, function(err) {
         if (ERR(err, next)) return;
         logPageView(req, res, (err) => {
             if (ERR(err, next)) return;

@@ -1,16 +1,17 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const express = require('express');
+const router = express.Router();
 
-var error = require('@prairielearn/prairielib/error');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('@prairielearn/prairielib/error');
+const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const cache = require('../../lib/cache');
 
-router.get('/', function(req, res, next) {
-    sqldb.queryOneRow(sql.select, [], function(err, result) {
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+router.get('/', (req, res, next) => {
+    sqlDb.queryOneRow(sql.select, [], (err, result) => {
         if (ERR(err, next)) return;
 
         _.assign(res.locals, result.rows[0]);
@@ -18,14 +19,14 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', (req, res, next) => {
     if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
     if (req.body.__action == 'administrators_insert_by_user_uid') {
         let params = [
             req.body.uid,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('administrators_insert_by_user_uid', params, function(err, _result) {
+        sqlDb.call('administrators_insert_by_user_uid', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -34,7 +35,7 @@ router.post('/', function(req, res, next) {
             req.body.user_id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('administrators_delete_by_user_id', params, function(err, _result) {
+        sqlDb.call('administrators_delete_by_user_id', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -47,7 +48,7 @@ router.post('/', function(req, res, next) {
             req.body.repository,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('courses_insert', params, function(err, _result) {
+        sqlDb.call('courses_insert', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -58,7 +59,7 @@ router.post('/', function(req, res, next) {
             req.body.value,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('courses_update_column', params, function(err, _result) {
+        sqlDb.call('courses_update_column', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -66,7 +67,7 @@ router.post('/', function(req, res, next) {
         let params = {
             course_id: req.body.course_id,
         };
-        sqldb.queryZeroOrOneRow(sql.select_course, params, function(err, result) {
+        sqlDb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
             if (ERR(err, next)) return;
             if (result.rowCount != 1) return next(new Error('course not found'));
 
@@ -81,10 +82,15 @@ router.post('/', function(req, res, next) {
                 req.body.course_id,
                 res.locals.authn_user.user_id,
             ];
-            sqldb.call('courses_delete', params, function(err, _result) {
+            sqlDb.call('courses_delete', params, (err, _result) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
+        });
+    } else if (req.body.__action === 'invalidate_question_cache') {
+        cache.reset((err) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

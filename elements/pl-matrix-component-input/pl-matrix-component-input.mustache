@@ -2,18 +2,19 @@
 {{#question}}
 <script>
     $(function() {
-        $('#pl-matrix-components-input-{{uuid}} [data-toggle="popover"]').popover({
+        $('#pl-matrix-component-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
-            template: '<div class="popover pl-matrix-components-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            template: '<div class="popover pl-matrix-component-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
     });
 </script>
-<span class="form-inline d-inline-block ml-2">
-    <div id="pl-matrix-components-input-{{uuid}}" class="input-group">
+<span class="form-inline d-inline-block ml-2 pl-matrix-component-span-fullwidth">
+    <div id="pl-matrix-component-input-{{uuid}}" class="input-group">
         <span class="input-group-prepend">
             {{#label}}<label class="input-group-text" id="basic-addon2">{{label}}</label>{{/label}}
         </span>
-        <div class="d-inline-flex form-control">
+        <div class="form-control" >
             {{{input_array}}}
         </div>
         <div class="input-group-append">
@@ -37,6 +38,7 @@
 <script>
     $(function(){
         $('#pl-matrix-component-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-matrix-component-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -68,7 +70,7 @@
 {{#answer}}
 <div class="d-inline-block ml-2" id="pl-matrix-component-input-answer-{{uuid}}">
     {{#label}}<span>{{label}}</span>{{/label}}
-    <samp id="latex-data-{{element_index}}">{{latex_data}}</samp>
+    <samp id="latex-data-{{uuid}}">{{latex_data}}</samp>
 </div>
 {{/answer}}
 

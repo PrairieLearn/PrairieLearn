@@ -1,51 +1,45 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var csvStringify = require('csv').stringify;
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const express = require('express');
+const router = express.Router();
+const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
-var error = require('@prairielearn/prairielib/error');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sanitizeName = require('../../lib/sanitize-name');
+const ltiOutcomes = require('../../lib/ltiOutcomes');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var logCsvFilename = function(locals) {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name
-        + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
-        + '_'
-        + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')
+const logCsvFilename = (locals) => {
+    return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
+        + sanitizeName.sanitizeString(locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
         + 'log.csv';
 };
 
-router.get('/', function(req, res, next) {
+router.get('/', (req, res, next) => {
     res.locals.logCsvFilename = logCsvFilename(res.locals);
-    var params = {assessment_instance_id: res.locals.assessment_instance.id};
-    sqldb.query(sql.assessment_instance_stats, params, function(err, result) {
+    const params = {assessment_instance_id: res.locals.assessment_instance.id};
+    sqlDb.query(sql.assessment_instance_stats, params, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.assessment_instance_stats = result.rows;
 
-        sqldb.queryOneRow(sql.select_formatted_duration, params, function (err, result) {
+        sqlDb.queryOneRow(sql.select_formatted_duration, params, (err, result) => {
             if (ERR(err, next)) return;
             res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
-            var params = {assessment_instance_id: res.locals.assessment_instance.id};
-            sqldb.query(sql.select_instance_questions, params, function(err, result) {
+            const params = {assessment_instance_id: res.locals.assessment_instance.id};
+            sqlDb.query(sql.select_instance_questions, params, (err, result) => {
                 if (ERR(err, next)) return;
                 res.locals.instance_questions = result.rows;
 
-                var params = {assessment_instance_id: res.locals.assessment_instance.id};
-                sqldb.query(sql.select_log, params, function (err, result) {
+                const params = {assessment_instance_id: res.locals.assessment_instance.id};
+                sqlDb.query(sql.select_log, params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
-                
+
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
             });
@@ -53,14 +47,14 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.get('/:filename', function(req, res, next) {
+router.get('/:filename', (req, res, next) => {
     if (req.params.filename == logCsvFilename(res.locals)) {
-        var params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqldb.query(sql.select_log, params, function(err, result) {
+        const params = {assessment_instance_id: res.locals.assessment_instance.id};
+        sqlDb.query(sql.select_log, params, (err, result) => {
             if (ERR(err, next)) return;
-            var log = result.rows;
-            var csvHeaders = ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'];
-            var csvData = _.map(log, function(row) {
+            const log = result.rows;
+            const csvHeaders = ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'];
+            const csvData = _.map(log, (row) => {
                 return [
                     row.date_iso8601,
                     row.auth_user_uid,
@@ -72,7 +66,7 @@ router.get('/:filename', function(req, res, next) {
                 ];
             });
             csvData.splice(0, 0, csvHeaders);
-            csvStringify(csvData, function(err, csv) {
+            csvStringify(csvData, (err, csv) => {
                 if (err) throw Error('Error formatting CSV', err);
                 res.attachment(req.params.filename);
                 res.send(csv);
@@ -83,47 +77,59 @@ router.get('/:filename', function(req, res, next) {
     }
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', (req, res, next) => {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'edit_total_points') {
-        let params = [
-            req.body.assessment_instance_id,
+        const params = [
+            res.locals.assessment_instance.id,
             req.body.points,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_update_points', params, function(err, _result) {
+        sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_total_score_perc') {
-        let params = [
+        const params = [
             req.body.assessment_instance_id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+        sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_question_points') {
-        let params = [
+        const params = [
             req.body.instance_question_id,
             req.body.points,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('instance_questions_update_points', params, function(err, _result) {
+        sqlDb.call('instance_questions_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_question_score_perc') {
-        let params = [
+        const params = [
             req.body.instance_question_id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('instance_questions_update_score_perc', params, function(err, _result) {
+        sqlDb.call('instance_questions_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

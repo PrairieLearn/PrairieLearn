@@ -1,0 +1,14 @@
+{
+  "controller": "pl-graphviz-render.py",
+  "dependencies": {
+    "nodeModulesScripts": [
+      "viz.js/viz.js"
+    ],
+    "elementScripts": [
+      "pl-graphviz-render.js"
+    ],
+    "elementStyles": [
+      "pl-graphviz-render.css"
+    ]
+  }
+}

@@ -4,16 +4,18 @@ import sys, os, json, re, uuid, argparse
 
 parser = argparse.ArgumentParser(description="Generate UUIDs for info*.json files that don't already have them.")
 parser.add_argument("directory", help="the directory to search for info*.json files")
+parser.add_argument("-v", "--verbose", action="store_true", help="list all the files for which UUIDs were generated")
 parser.add_argument("-n", "--new", action="store_true", help="generate new UUIDs for all files, even if they already have one")
 args = parser.parse_args()
 
-skip_dirs = [".git"]
+
+skip_dirs = [".git", "elements"]
 
 error_list = []
 
 def add_uuid_to_file(filename):
     try:
-        with open(filename, 'rU') as in_f:
+        with open(filename, 'r') as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:
@@ -22,7 +24,7 @@ def add_uuid_to_file(filename):
                 return 0 # we don't want new UUIDs, so just skip this file
 
             # replace the exising UUID
-            (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"',
+            (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"',
                                             r'"uuid":\1"%s"' % uuid.uuid4(),
                                             contents)
             if n_sub == 0:
@@ -47,6 +49,8 @@ def add_uuid_to_file(filename):
             out_f.write(new_contents)
         os.remove(filename) # needed on Windows
         os.rename(tmp_filename, filename)
+        if  args.verbose:
+            print("Created a UUID for ", filename)
         return 1
     except Exception as error:
         error_list.append(error)
@@ -60,7 +64,7 @@ for root, dirs, files in os.walk(args.directory):
         if skip_dir in dirs:
             dirs.remove(skip_dir)
     for f in files:
-        if re.fullmatch(r'.*\.json', f):
+        if re.fullmatch(r'info.*\.json', f):
             filename = os.path.join(root, f)
             num_files += 1
             num_changed += add_uuid_to_file(filename)

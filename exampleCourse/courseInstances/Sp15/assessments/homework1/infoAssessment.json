@@ -4,7 +4,6 @@
     "title": "Homework for automatic test suite",
     "set": "Homework",
     "number": "1",
-    "allowIssueReporting": true,
     "allowAccess": [
         {
             "credit": 100
@@ -22,7 +21,8 @@
                 {"id": "partialCredit3",            "points": 3, "maxPoints": 11, "triesPerVariant": 5},
                 {"id": "partialCredit4_v2",         "points": 4, "maxPoints": 13},
                 {"id": "partialCredit5_v2_partial", "points": 5, "maxPoints": 12},
-                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 8}
+                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 8},
+                {"id": "brokenGrading",             "points": 2, "maxPoints": 4}
             ]
         }
     ]

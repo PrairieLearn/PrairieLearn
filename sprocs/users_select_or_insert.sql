@@ -15,7 +15,8 @@ BEGIN
     SELECT *
     INTO u
     FROM users
-    WHERE users.uid = users_select_or_insert.uid;
+    WHERE users.uid = users_select_or_insert.uid OR
+          users.uin = users_select_or_insert.uin;
 
     -- if we don't have the user already, make it
     IF NOT FOUND THEN
@@ -31,6 +32,22 @@ BEGIN
     END IF;
 
     -- update user data as needed
+
+    IF uid IS NOT NULL AND uid IS DISTINCT FROM u.uid THEN
+        UPDATE users
+        SET uid = users_select_or_insert.uid
+        WHERE users.user_id = u.user_id
+        RETURNING * INTO new_u;
+
+        INSERT INTO audit_logs
+            (table_name, column_name, row_id, action,
+            parameters,
+            old_state, new_state)
+        VALUES
+            ('users', 'uid', u.user_id, 'update',
+            jsonb_build_object('uid', uid),
+            to_jsonb(u), to_jsonb(new_u));
+    END IF;
 
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users

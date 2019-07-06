@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <%- include('../partials/head'); %>
+        <script src="/javascripts/lodash.min.js"></script>
+        <script src="/javascripts/d3.min.js"></script>
+        <script src="/localscripts/histmini.js"></script>
+    </head>
+    <body>
+        <%- include('../partials/navbar'); %>
+        <div id="content" class="container">
+            <%- include('../partials/navtabs'); %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Assessment sets</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead>
+                            <tr>
+                            <th>Number</th>
+                            <th>Abbreviation</th>
+                            <th>Name</th>
+                            <th>Heading</th>
+                            <th>Color</th>
+                        </thead>
+                        <tbody>
+                            <% assessment_sets.forEach(function(assessment_set) { %>
+                                <tr>
+                                    <td class="align-middle"><%= assessment_set.number %></td>
+                                    <td class="align-middle">
+                                        <span class="badge color-<%= assessment_set.color %>">
+                                            <%= assessment_set.abbreviation %>
+                                        </span>
+                                    </td>
+                                    <td class="align-middle"><%= assessment_set.name %></td>
+                                    <td class="align-middle"><%= assessment_set.heading %></td>
+                                    <td class="align-middle"><%= assessment_set.color %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

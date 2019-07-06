@@ -2,13 +2,14 @@ columns
     course_id: bigint not null
     exam_id: bigint not null default nextval('exams_exam_id_seq'::regclass)
     exam_string: text not null
+    uuid: uuid
 
 indexes
     exams_pkey: PRIMARY KEY (exam_id) USING btree (exam_id)
+    exams_uuid_key: UNIQUE (uuid) USING btree (uuid)
 
 foreign-key constraints
     exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(course_id)
 
 referenced by
-    assessment_access_rules: FOREIGN KEY (exam_id) REFERENCES exams(exam_id) ON UPDATE CASCADE ON DELETE SET NULL
     reservations: FOREIGN KEY (exam_id) REFERENCES exams(exam_id)

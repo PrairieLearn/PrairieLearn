@@ -14,7 +14,6 @@ var helperQuestion = require('./helperQuestion');
 
 const locals = {};
 
-// sorted alphabetically by qid
 const questionsArray = [
     {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
     {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
@@ -26,11 +25,12 @@ const questionsArray = [
     {qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 13},
     {qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12},
     {qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 8},
+    {qid: 'brokenGrading', type: 'Freeform', maxPoints: 4},
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 104;
+const assessmentMaxPoints = 108;
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -143,7 +143,7 @@ const partialCreditTests = [
 describe('Homework assessment', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var res, page, elemList;
@@ -961,12 +961,32 @@ describe('Homework assessment', function() {
                 assert.equal(page,'This data is specific to the course.');
             });
         });
-        describe('downloading question text file', function() {
-            it('should contain a link to clientFilesQuestion/data.txt', function() {
-                elemList = locals.$('a[href*="clientFilesQuestion"]');
+        describe('downloading question text files', function() {
+            it('should contain a force-download link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"][download]');
                 assert.lengthOf(elemList, 1);
             });
-            it('should download something with the link to clientFilesQuestion/data.txt', function(callback) {
+            it('should download something with the force-download link to clientFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is specific to the question.');
+            });
+            it('should contain a new tab link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the new tab link to clientFilesQuestion/data.txt', function(callback) {
                 const fileUrl = locals.siteUrl+elemList[0].attribs.href;
                 request(fileUrl, function (error, response, body) {
                     if (error) {
@@ -1104,7 +1124,7 @@ describe('Homework assessment', function() {
                 it('should start up', function(callback) {
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
-                    helperServer.before.call(that, function(err) {
+                    helperServer.before().call(that, function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });

@@ -1,0 +1,39 @@
+<script>
+    $(function(){
+        PrairieUtil.initCopyButton('#pl-variable-output-{{uuid}} .copy-button');
+    });
+</script>
+
+<div id="pl-variable-output-{{uuid}}" class="card mb-4">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            {{#show_matlab}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_matlab}} active{{/active_tab_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-toggle="pill">Matlab</a></li>{{/show_matlab}}
+
+            {{#show_mathematica}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_mathematica}} active{{/active_tab_mathematica}}" href="#mathematica-{{uuid}}" aria-controls="mathematica-{{uuid}}" role="tab" data-toggle="pill">Mathematica</a></li>{{/show_mathematica}}
+
+            {{#show_python}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_python}} active{{/active_tab_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">Python</a></li>{{/show_python}}
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane {{#active_tab_matlab}}active{{/active_tab_matlab}}" id="matlab-{{uuid}}">
+                <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}">{{matlab_data}}</pre>
+                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
+                    copy this text
+                </button>
+            </div>
+            <div role="tabpanel" class="tab-pane {{#active_tab_mathematica}}active{{/active_tab_mathematica}}" id="mathematica-{{uuid}}">
+                <pre class="bg-dark text-white rounded p-2" id="mathematica-data-{{uuid}}">{{mathematica_data}}</pre>
+                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#mathematica-data-{{uuid}}">
+                    copy this text
+                </button>
+            </div>
+            <div role="tabpanel" class="tab-pane {{#active_tab_python}}active{{/active_tab_python}}" id="python-{{uuid}}">
+                <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">{{python_data}}</pre>
+                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
+                    copy this text
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

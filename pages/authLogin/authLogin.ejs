@@ -76,19 +76,19 @@
               <span class="font-weight-bold">DevMode by-pass</span>
             </a>
           <% } %>
-          <% if (config.hasShib || showAll) { %>
+          <% if (config.hasShib) { %>
             <a class="btn btn-illinois w-100 position-relative" href="/pl/shibcallback" role="button">
               <img src="/images/illinois_logo.svg" class="social-icon"/>
               <span class="font-weight-bold">Sign in with Illinois</span>
             </a>
           <% } %>
-          <% if (config.hasOauth || showAll) { %>
+          <% if (config.hasOauth) { %>
             <a class="btn btn-primary w-100 position-relative" href="/pl/oauth2login" role="button">
               <img src="/images/google_logo.svg" class="social-icon"/>
               <span class="font-weight-bold">Sign in with Google
             </a>
           <% } %>
-          <% if (config.hasAzure || showAll) { %>
+          <% if (config.hasAzure) { %>
             <a class="btn btn-dark w-100 position-relative" href="/pl/azure_login" role="button">
               <img src="/images/ms_logo.svg" class="social-icon"/>
               <span class="font-weight-bold">Sign in with Microsoft</span>

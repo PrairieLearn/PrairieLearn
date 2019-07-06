@@ -3,12 +3,12 @@ import lxml.html
 import os
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label', 'force-download'])
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
@@ -22,6 +22,9 @@ def render(element_html, element_index, data):
 
     # Get label (default is file_name)
     file_label = pl.get_string_attrib(element, 'label', file_name)
+
+    # Get whether to force a download or open in-browser
+    force_download = pl.get_boolean_attrib(element, 'force-download', True)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':
@@ -43,4 +46,7 @@ def render(element_html, element_index, data):
     file_url = os.path.join(base_url, file_name)
 
     # Create and return html
-    return '<a href="' + file_url + '" download>' + file_label + '</a>'
+    if force_download:
+        return '<a href="' + file_url + '" download>' + file_label + '</a>'
+    else:
+        return '<a href="' + file_url + '" target="_blank">' + file_label + '</a>'

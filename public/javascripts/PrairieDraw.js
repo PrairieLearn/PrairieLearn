@@ -1653,8 +1653,8 @@
         this._ctx.fill();
         this._ctx.restore();
     };
-    
-    /*****************************************************************************/    
+
+    /*****************************************************************************/
     /** Draw a triagular distributed load
 
         @param {Vector} startDw The first point (in drawing coordinates) of the distributed load
@@ -1667,27 +1667,34 @@
         @param {boolean} true if arrow points up (positive y-axis), false otherwise
     */
     PrairieDraw.prototype.triangularDistributedLoad = function(startDw, endDw, sizeStartDw, sizeEndDw, labelStart, labelEnd, arrowToLine, arrowDown ) {
-                
+
         var LengthDw = endDw.subtract(startDw);
         var L = LengthDw.modulus();
         if (arrowDown) {
-            var sizeStartDwSign = sizeStartDw; 
+            var sizeStartDwSign = sizeStartDw;
             var sizeEndDwSign = sizeEndDw;
         }
         else {
-            var sizeStartDwSign = -sizeStartDw; 
+            var sizeStartDwSign = -sizeStartDw;
             var sizeEndDwSign = -sizeEndDw;
         }
-        var nSpaces = Math.ceil(2*L/sizeStartDw);
+
+        if (sizeStartDw != 0) {
+            var nSpaces = Math.ceil(2*L/sizeStartDw);
+        }
+        else {
+            var nSpaces = Math.ceil(2*L/sizeEndDw);
+        }
+
         var spacing = L/nSpaces;
         var inc = 0;
-        
+
         this.save();
         this.setProp("shapeOutlineColor", "rgb(255,0,0)");
         this.setProp("arrowLineWidthPx", 1);
         this.setProp("arrowheadLengthRatio", 11);
 
-        if (arrowToLine) {            
+        if (arrowToLine) {
             this.line( startDw.add($V([0, sizeStartDwSign])), endDw.add($V([0, sizeEndDwSign])) );
             var startArrow = startDw.add($V([0, sizeStartDwSign]));
             var endArrow = startDw;
@@ -1709,9 +1716,9 @@
             this.text(endArrow, $V([2, 0]), labelStart);
             this.text(endArrow.add($V([inc-spacing, -(inc-spacing)*(sizeEndDwSign-sizeStartDwSign)/L])), $V([-2, 0]), labelEnd);
         }
-            
+
         this.restore();
-        
+
     };
     /*****************************************************************************/
     /** Draw a rod with hinge points at start and end and the given width.
@@ -1749,7 +1756,7 @@
         this._ctx.stroke();
         this._ctx.restore();
     };
-       
+
  /** Draw a L-shape rod with hinge points at start, center and end, and the given width.
 
         @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
@@ -1758,14 +1765,14 @@
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
     PrairieDraw.prototype.LshapeRod = function(startDw, centerDw, endDw, widthDw) {
-        
+
         var offsetLength1Dw = centerDw.subtract(startDw);
         var offsetLength2Dw = endDw.subtract(centerDw);
         var offsetWidthDw = offsetLength1Dw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
-                        
+
         var startPx = this.pos2Px(startDw);
         var centerPx = this.pos2Px(centerDw);
-        var endPx = this.pos2Px(endDw);     
+        var endPx = this.pos2Px(endDw);
         var offsetLength1Px = this.vec2Px(offsetLength1Dw);
         var offsetLength2Px = this.vec2Px(offsetLength2Dw);
         var offsetWidthPx = this.vec2Px(offsetWidthDw);
@@ -1778,14 +1785,14 @@
         this._ctx.rotate(PrairieGeom.angleOf(offsetLength1Px));
         this._ctx.beginPath();
         this._ctx.moveTo(0, rPx);
-        
-        var beta = - PrairieGeom.angleFrom(offsetLength1Px,offsetLength2Px);        
+
+        var beta = - PrairieGeom.angleFrom(offsetLength1Px,offsetLength2Px);
         var x1 = length1Px + rPx/Math.sin(beta) - rPx/Math.tan(beta);
         var y1 = rPx;
         var x2 = length1Px + length2Px*Math.cos(beta);
-        var y2 = -length2Px*Math.sin(beta);     
-        var x3 = x2+rPx*Math.sin(beta);     
-        var y3 = y2+rPx*Math.cos(beta);     
+        var y2 = -length2Px*Math.sin(beta);
+        var x3 = x2+rPx*Math.sin(beta);
+        var y3 = y2+rPx*Math.cos(beta);
         var x4 = x3+rPx*Math.cos(beta);
         var y4 = y3-rPx*Math.sin(beta);
         var x5 = x2+rPx*Math.cos(beta);
@@ -1794,13 +1801,13 @@
         var y6 = y5-rPx*Math.cos(beta);
         var x7 = length1Px - rPx/Math.sin(beta) + rPx/Math.tan(beta);
         var y7 = -rPx;
-        
+
         this._ctx.arcTo(x1,y1,x3,y3,rPx);
         this._ctx.arcTo(x4,y4,x5,y5,rPx);
         this._ctx.arcTo(x6,y6,x7,y7,rPx);
         this._ctx.arcTo(x7,y7,0,-rPx, rPx);
         this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
-        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);        
+        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
 
         if (this._props.shapeInsideColor !== "none") {
             this._ctx.fillStyle = this._props.shapeInsideColor;
@@ -1823,15 +1830,15 @@
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
     PrairieDraw.prototype.TshapeRod = function(startDw, centerDw, endDw, centerEndDw, widthDw) {
-        
+
         var offsetStartRodDw = centerDw.subtract(startDw);
         var offsetEndRodDw = endDw.subtract(centerDw);
         var offsetCenterRodDw = centerEndDw.subtract(centerDw);
         var offsetWidthDw = offsetStartRodDw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
-                        
+
         var startPx = this.pos2Px(startDw);
         var centerPx = this.pos2Px(centerDw);
-        var endPx = this.pos2Px(endDw);     
+        var endPx = this.pos2Px(endDw);
         var offsetStartRodPx = this.vec2Px(offsetStartRodDw);
         var offsetEndRodPx = this.vec2Px(offsetEndRodDw);
         var offsetCenterRodPx = this.vec2Px(offsetCenterRodDw);
@@ -1846,7 +1853,7 @@
         this._ctx.rotate(PrairieGeom.angleOf(offsetStartRodPx));
         this._ctx.beginPath();
         this._ctx.moveTo(0, rPx);
-        
+
         var angleStartToEnd = PrairieGeom.angleFrom(offsetStartRodPx,offsetEndRodPx);
         var angleEndToCenter = PrairieGeom.angleFrom(offsetEndRodPx,offsetCenterRodPx);
 
@@ -1863,44 +1870,44 @@
             var length3Px = lengthEndRodPx;
             var beta = -PrairieGeom.angleFrom(offsetStartRodPx,offsetCenterRodPx);
             var alpha = angleEndToCenter;
-        }   
-        
+        }
+
         var x1 = length1Px + rPx/Math.sin(beta) - rPx/Math.tan(beta);
         var y1 = rPx;
         var x2 = length1Px + length2Px*Math.cos(beta);
-        var y2 = -length2Px*Math.sin(beta);     
-        var x3 = x2+rPx*Math.sin(beta);     
-        var y3 = y2+rPx*Math.cos(beta);     
+        var y2 = -length2Px*Math.sin(beta);
+        var x3 = x2+rPx*Math.sin(beta);
+        var y3 = y2+rPx*Math.cos(beta);
         var x4 = x3+rPx*Math.cos(beta);
         var y4 = y3-rPx*Math.sin(beta);
         var x5 = x2+rPx*Math.cos(beta);
         var y5 = y2-rPx*Math.sin(beta);
         var x6 = x5-rPx*Math.sin(beta);
-        var y6 = y5-rPx*Math.cos(beta);     
+        var y6 = y5-rPx*Math.cos(beta);
         var x7 = length1Px + rPx*Math.cos(beta)*(1/Math.sin(alpha) + 1/Math.tan(alpha) - Math.tan(beta));
-        var y7 = -rPx/Math.cos(beta) - rPx*Math.sin(beta)*(1/Math.sin(alpha) + 1/Math.tan(alpha)- Math.tan(beta));              
+        var y7 = -rPx/Math.cos(beta) - rPx*Math.sin(beta)*(1/Math.sin(alpha) + 1/Math.tan(alpha)- Math.tan(beta));
         var x8 = length1Px + length3Px*Math.cos(beta+alpha);
-        var y8 = -length3Px*Math.sin(beta+alpha);           
-        var x9 = x8+rPx*Math.sin(beta+alpha);       
-        var y9 = y8+rPx*Math.cos(beta+alpha);       
+        var y8 = -length3Px*Math.sin(beta+alpha);
+        var x9 = x8+rPx*Math.sin(beta+alpha);
+        var y9 = y8+rPx*Math.cos(beta+alpha);
         var x10 = x9+rPx*Math.cos(beta+alpha);
         var y10 = y9-rPx*Math.sin(beta+alpha);
         var x11 = x8+rPx*Math.cos(beta+alpha);
         var y11 = y8-rPx*Math.sin(beta+alpha);
         var x12 = x11-rPx*Math.sin(beta+alpha);
-        var y12 = y11-rPx*Math.cos(beta+alpha);     
+        var y12 = y11-rPx*Math.cos(beta+alpha);
         var x13 = length1Px - rPx/Math.sin(beta+alpha) + rPx/Math.tan(beta+alpha);
         var y13 =  - rPx;
-        
+
         this._ctx.arcTo(x1,y1,x3,y3,rPx);
-        this._ctx.arcTo(x4,y4,x5,y5,rPx);       
+        this._ctx.arcTo(x4,y4,x5,y5,rPx);
         this._ctx.arcTo(x6,y6,x7,y7,rPx);
         this._ctx.arcTo(x7,y7,x9,y9,rPx);
         this._ctx.arcTo(x10,y10,x11,y11,rPx);
-        this._ctx.arcTo(x12,y12,x13,y13,rPx);       
+        this._ctx.arcTo(x12,y12,x13,y13,rPx);
         this._ctx.arcTo(x13,y13,0,-rPx, rPx);
         this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
-        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);        
+        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
 
         if (this._props.shapeInsideColor !== "none") {
             this._ctx.fillStyle = this._props.shapeInsideColor;
@@ -1911,8 +1918,8 @@
         this._ctx.strokeStyle = this._props.shapeOutlineColor;
         this._ctx.stroke();
         this._ctx.restore();
-    };  
-    
+    };
+
     /** Draw a pivot.
 
         @param {Vector} baseDw The center of the base (drawing coordinates).

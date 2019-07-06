@@ -1,29 +1,24 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const archiver = require('archiver');
 const router = express.Router();
 
 const { paginateQuery } = require('../../lib/paginate');
+const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name.replace(/\s+/g, '')
-        + '_'
+    return sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course)
         + 'assessment_stats.csv';
 };
 
 const fileSubmissionsName = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name.replace(/\s+/g, '')
-        + '_'
+    return sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course)
         + 'file_submissions';
 };
 
@@ -55,7 +50,7 @@ router.get('/:filename', function(req, res, next) {
         sqldb.query(sql.select_assessments, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStats = result.rows;
-            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'AID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',
                               'Hist1', 'Hist2', 'Hist3', 'Hist4', 'Hist5',

@@ -60,10 +60,8 @@ module.exports = {
             'assessments_format.sql',
             'assessments_format_for_question.sql',
             'tags_for_question.sql',
-            'assessment_instances_points.sql',
             'random_unique.sql',
             'question_order.sql',
-            'exam_question_status.sql',
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
@@ -117,6 +115,7 @@ module.exports = {
             'ip_to_mode.sql',
             'config_select.sql',
             'users_select_or_insert.sql',
+            'users_select_or_insert_lti.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
             'issues_insert_for_variant.sql',
@@ -140,6 +139,11 @@ module.exports = {
             'assessment_questions_calculate_stats.sql',
             'instance_questions_calculate_stats.sql',
             'issues_select_with_filter.sql',
+            'access_tokens_insert.sql',
+            'access_tokens_delete.sql',
+            'assessment_instances_points.sql',
+            'sync_course_tags.sql',
+            'sync_question_tags.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

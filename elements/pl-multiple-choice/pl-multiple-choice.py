@@ -4,7 +4,7 @@ import random
 import math
 
 
-def prepare(element_html, element_index, data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
@@ -69,7 +69,7 @@ def prepare(element_html, element_index, data):
     data['correct_answers'][name] = correct_answer
 
 
-def render(element_html, element_index, data):
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -86,12 +86,13 @@ def render(element_html, element_index, data):
 
         html = ''
         for answer in answers:
-            item = '  <label class="form-check-label">\n' \
-                + '    <input class="form-check-input" type="radio"' \
+            item = '<input class="form-check-input" type="radio"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (submitted_key == answer['key']) else '') \
+                + f' id="{name}-{answer["key"]}"' \
                 + ' />\n' \
+                + f'<label class="form-check-label" for="{name}-{answer["key"]}">\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'] + '\n'
             if score is not None:
                 if submitted_key == answer['key']:
@@ -99,7 +100,7 @@ def render(element_html, element_index, data):
                         item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     else:
                         item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-            item += '  </label>\n'
+            item += '</label>\n'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             html += item
         if inline:
@@ -150,7 +151,7 @@ def render(element_html, element_index, data):
     return html
 
 
-def parse(element_html, element_index, data):
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -166,7 +167,7 @@ def parse(element_html, element_index, data):
         return
 
 
-def grade(element_html, element_index, data):
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
@@ -181,7 +182,7 @@ def grade(element_html, element_index, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-def test(element_html, element_index, data):
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)

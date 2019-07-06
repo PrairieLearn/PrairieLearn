@@ -7,7 +7,11 @@ SELECT
     q.title AS question_title,
     aq.max_points,
     qo.row_order,
-    qo.question_number
+    qo.question_number,
+    z.max_points AS zone_max_points,
+    (z.max_points IS NOT NULL) AS zone_has_max_points,
+    z.best_questions AS zone_best_questions,
+    (z.best_questions IS NOT NULL) AS zone_has_best_questions
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -21,17 +25,3 @@ WHERE
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
-
--- BLOCK tmp_upgrade_iq_status
-UPDATE instance_questions AS iq
-SET
-    status = exam_question_status(iq)::enum_instance_question_status
-WHERE
-    iq.assessment_instance_id = $assessment_instance_id;
-
--- BLOCK tmp_set_upgraded
-UPDATE assessment_instances AS ai
-SET
-    tmp_upgraded_iq_status = TRUE
-WHERE
-    ai.id = $assessment_instance_id;

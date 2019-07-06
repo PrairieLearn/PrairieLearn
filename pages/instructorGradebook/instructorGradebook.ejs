@@ -3,6 +3,41 @@
   <head>
     <%- include('../partials/head'); %>
   </head>
+  <script>
+    $(function() {
+      $('a.edit-score').popover({
+        sanitize: false,
+        placement: 'auto',
+        container: 'body',
+        html: true,
+        content: function() {
+          var that = this
+          var assessmentInstanceId = $(this).data('ai-id')
+          var score = $(this).data('score')
+          var form = $('<form name="edit-total-score-perc-form" method="POST"></form>')
+          form.append('<input type="hidden" name="__action" value="edit_total_score_perc">')
+          form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">')
+          form.append('<input type="hidden" name="assessment_instance_id" value="' + assessmentInstanceId + '">')
+          var formGroup = $('<div class="form-group">')
+          var inputGroup = $('<div class="input-group">')
+          inputGroup.append('<input type="text" class="form-control" name="score_perc" value="' + score + '">')
+          inputGroup.append('<div class="input-group-append"><span class="input-group-text">%</span></div>')
+          formGroup.append(inputGroup)
+          form.append(formGroup)
+          form.append('<p><small>This change will be overwritten if further questions are answered by the student.</small></p>')
+          var cancel = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>')
+          cancel.on('click', function() {
+            $(that).popover('hide')
+          })
+          form.append(cancel)
+          form.append('<button type="submit" class="btn btn-primary">Change</button>')
+          return form
+        },
+        title: 'Change total percentage score',
+        trigger: 'click',
+      })
+    })
+  </script>
   <body>
     <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
     <div id="content" class="container">
@@ -42,18 +77,14 @@
                     <%= Math.floor(score.score_perc) %>%
                   </a>
                   <% if (authz_data.has_instructor_edit) { %>
-                  <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
-                     tabindex="0" class="btn btn-xs btn-secondary editTotalScorePercButton" role="button"
-                     data-toggle="popover" data-container="body"
-                     data-html="true" data-placement="auto" title="Change total percentage score"
-                     data-content="<%= include('editTotalScorePercForm',
-                                   {id: 'editTotalScorePercButton' + iRow + '-' + iScore,
-                                   score_perc: score.score_perc,
-                                   assessment_instance_id: score.assessment_instance_id}); %>"
-                     data-trigger="manual" onclick="$(this).popover('show')">
+                  <a class="btn btn-xs btn-secondary edit-score"
+                     role="button"
+                     tabindex="0"
+                     data-ai-id="<%= score.assessment_instance_id%>"
+                     data-score="<%= score.score_perc %>">
                     <i class="fa fa-edit" aria-hidden="true"></i>
-                    <% } %>
-                  </a>
+                  <a/>
+                  <% } %>
                   <% } %>
                 </td>
                 <% }); %>
@@ -69,5 +100,7 @@
 
       </div>
     </div>
+    <!-- needed for tests since we can't grab it out of javascript -->
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"
   </body>
 </html>

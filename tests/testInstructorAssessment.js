@@ -1,53 +1,39 @@
-var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
-var helperAssessment = require('./helperAssessment');
+var helperExam = require('./helperExam');
 
 const locals = {};
 
-// sorted alphabetically by qid
-const questionsArray = [
-    {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
-    {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
-    {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
-    {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
-    {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
-    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
-];
-
-const questions = _.keyBy(questionsArray, 'qid');
-
-const assessmentMaxPoints = 74;
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
 describe('Instructor assessment editing', function() {
     this.timeout(20000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var page, elemList;
 
-    helperAssessment.startExam(locals, questionsArray);
+    helperExam.startExam(locals);
 
     describe('1. grade incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addNumbers;
+                locals.question = helperExam.questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/5 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 0/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -67,14 +53,14 @@ describe('Instructor assessment editing', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addNumbers;
+                locals.question = helperExam.questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 3/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -94,14 +80,14 @@ describe('Instructor assessment editing', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = questions.addVectors;
+                locals.question = helperExam.questions.addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/assessmentMaxPoints * 100,
+                    assessment_instance_score_perc: 14/helperExam.assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -143,9 +129,10 @@ describe('Instructor assessment editing', function() {
         });
     });
 
-    describe('5. GET to instructor assessment URL', function() {
+    describe('5. GET to instructor assessment instances URL', function() {
         it('should load successfully', function(callback) {
-            request(locals.instructorAssessmentUrl, function (error, response, body) {
+            locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances';
+            request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }
@@ -461,7 +448,7 @@ describe('Instructor assessment editing', function() {
             elemList = locals.$('#total-points');
             assert.lengthOf(elemList, 1);
             const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-            assert.equal(totalPoints, assessmentSetScorePerc / 100 * assessmentMaxPoints);
+            assert.equal(totalPoints, assessmentSetScorePerc / 100 * helperExam.assessmentMaxPoints);
         });
     });
 
@@ -481,6 +468,13 @@ describe('Instructor assessment editing', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
+        it('should have CSRF token for testing', function() {
+            elemList = locals.$('input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
         it('should contain a row for the dev user', function() {
             elemList = locals.$('tr td:contains("dev@illinois.edu")');
             assert.lengthOf(elemList, 1);
@@ -493,44 +487,19 @@ describe('Instructor assessment editing', function() {
             locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
         });
-    });
-
-    describe('16. edit-total-score-perc form', function() {
-        it('should exist', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.editTotalScorePercButton');
+        it('should contain button to edit score', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.edit-score');
             assert.lengthOf(elemList, 1);
         });
-        it('should have data-content', function() {
-            assert.isString(elemList[0].attribs['data-content']);
-        });
-        it('data-content should parse', function() {
-            locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
-        });
-        it('data-content should have a CSRF token', function() {
-            elemList = locals.data$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__csrf_token = elemList[0].attribs.value;
-            assert.isString(locals.__csrf_token);
-        });
-        it('data-content should have an __action', function() {
-            elemList = locals.data$('form input[name="__action"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__action = elemList[0].attribs.value;
-            assert.isString(locals.__action);
-            assert.equal(locals.__action, 'edit_total_score_perc');
-        });
-        it('data-content should have the correct assessment_instance_id', function() {
-            elemList = locals.data$('form input[name="assessment_instance_id"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
+        it('should contain the assessment instance id in a data tag', function() {
+            assert.nestedProperty(elemList[0], 'attribs.data-ai-id');
+            const assessment_instance_id = elemList[0].attribs['data-ai-id'];
             assert.equal(assessment_instance_id, 1);
         });
-        it('data-content should have a score_perc input', function() {
-            elemList = locals.data$('form input[name="score_perc"]');
-            assert.lengthOf(elemList, 1);
+        it('should contain the assessment score in a data tag', function() {
+            assert.nestedProperty(elemList[0], 'attribs.data-score');
+            const score = elemList[0].attribs['data-score'];
+            assert.equal(score, '37');
         });
     });
 

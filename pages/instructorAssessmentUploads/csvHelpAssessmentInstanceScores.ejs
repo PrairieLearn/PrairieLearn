@@ -1,0 +1,20 @@
+<p>
+  Upload a CSV file like this:
+</p>
+<pre class="ml-4">uid,instance,score_perc
+mwest@illinois.edu,1,63.5
+zilles@illinois.edu,1,100</pre>
+<p>
+  The example above will change the total assessment
+  percentage scores for <tt>mwest@illinois.edu</tt> to 63.5% and for
+  <tt>zilles@illinois.edu</tt> to 100%. The <tt>instance</tt> column
+  indicates which assessment instance to modify, and should
+  be <tt>1</tt> if there is only a single instance per student.
+</p>
+<p>
+  Alternatively, the total assessment points can be changed with a CSV
+  containing a <tt>points</tt> column, like:
+</p>
+<pre class="ml-4">uid,instance,score_perc
+mwest@illinois.edu,1,120
+zilles@illinois.edu,1,130.27</pre>

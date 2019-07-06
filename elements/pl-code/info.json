@@ -9,6 +9,9 @@
         ],
         "elementScripts": [
             "pl-code.js"
+        ],
+        "elementStyles": [
+            "pl-code.css"
         ]
     }
 }

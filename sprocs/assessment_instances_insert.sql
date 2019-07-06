@@ -18,7 +18,6 @@ DECLARE
     number integer := 1;
     date_limit timestamptz := NULL;
     auto_close boolean := FALSE;
-    tmp_upgraded_iq_status boolean := TRUE; -- FIXME: delete this
 BEGIN
     -- ######################################################################
     -- get the assessment
@@ -56,8 +55,8 @@ BEGIN
     -- do the actual insert
 
     INSERT INTO assessment_instances
-            (auth_user_id, assessment_id, user_id, mode, auto_close, tmp_upgraded_iq_status, date_limit, number)
-    VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, tmp_upgraded_iq_status, date_limit, number)
+            (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
+    VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
     RETURNING id
     INTO assessment_instance_id;
 
@@ -76,9 +75,7 @@ BEGIN
     IF assessment.type = 'Homework' THEN
         new_instance_question_ids := array[]::bigint[];
     ELSIF assessment.type = 'Exam' THEN
-        SELECT new_instance_question_ids
-        INTO assessment_instances_insert.new_instance_question_ids
-        FROM assessment_instances_update(assessment_instance_id, authn_user_id);
+        PERFORM assessment_instances_update(assessment_instance_id, authn_user_id);
     ELSE
         RAISE EXCEPTION 'invalid assessment.type: %', assessment.type;
     END IF;
