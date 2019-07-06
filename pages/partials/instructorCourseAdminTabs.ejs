@@ -1,0 +1,27 @@
+<ul class="nav nav-tabs mb-4" id="navtabsInstructorCourseAdmin">
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "info") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/info"><i class="far fa-calendar-alt"></i> Information</a>
+    </li>
+    <% if (authz_data.has_course_permission_own) { %>
+        <li class="nav-item">
+            <a class="nav-link <% if (navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
+        </li>
+    <% } %>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "sets") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/sets"><i class="far fa-calendar-alt"></i> Assessment Sets</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "topics") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/topics"><i class="far fa-calendar-alt"></i> Topics</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "tags") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/tags"><i class="far fa-calendar-alt"></i> Tags</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "grading") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/grading"><i class="far fa-calendar-alt"></i> External Grading</a>
+    </li>
+    <% if (!locals.course.options.isExampleCourse) { %>
+        <li class="nav-item">
+          <a class="nav-link <% if (navSubPage == "edit") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/edit?file=infoCourse.json"><i class="fa fa-edit"></i> Edit</a>
+        </li>
+    <% } %>
+</ul>

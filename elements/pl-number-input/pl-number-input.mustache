@@ -2,6 +2,7 @@
 <script>
     $(function(){
         $('#pl-number-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -15,16 +16,30 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
-        <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text">{{suffix}}</span>{{/suffix}}
-            <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-            </a>
-        </span>
+        <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+          
+          <span class="input-group-append">
+            {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
+            {{#show_info}}
+              <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+              <i class="fa fa-question-circle" aria-hidden="true"></i>
+            {{/show_info}}
+            {{^show_info}}
+              <span style="display: flex; align-items: center;">
+            {{/show_info}}
+              
+            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+              
+            {{#show_info}}
+              </a>
+            {{/show_info}}
+            {{^show_info}}
+              </span>
+            {{/show_info}}
+          </span>
+          
     </span>
 {{#inline}}</span>{{/inline}}
 {{/question}}
@@ -36,6 +51,7 @@
 <script>
     $(function(){
         $('#pl-number-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
             container: 'body',
             template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
@@ -50,7 +66,28 @@
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#correct}}
+<script>
+    $(function(){
+        $('#pl-number-input-correct-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-number-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+<span id="pl-number-input-correct-{{uuid}}">
+  {{^a_tru}}
+    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+  {{/a_tru}}
+  {{#a_tru}}
+    <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Correct Answer" data-content="The correct answer used for grading is <samp>{{a_tru}}</samp>" data-placement="auto" data-trigger="focus" tabindex="0">
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+      &nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+    </a>
+  {{/a_tru}}
+</span>
+{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/parse_error}}
@@ -64,6 +101,7 @@
 {{/answer}}
 
 {{#format}}
+{{#show_info}}
 <p>
 {{#allow_complex}}
 Your answer must be either a real number between <code>-1e308</code> and <code>1e308</code> or a complex number with both real and imaginary parts between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision real or complex number). Complex numbers must use either <code>i</code> or <code>j</code> as the imaginary unit, must place the imaginary unit after the imaginary part (e.g., <code>2j</code> not <code>j2</code>), must write the imaginary part even when <code>1</code> or <code>-1</code> (e.g., <code>1j</code> not <code>j</code>), and must write the real part before the imaginary part (e.g., <code>1+2j</code> not <code>2j+1</code>). Standard python print format is accepted for complex numbers (e.g., <code>(1+2j)</code>).
@@ -72,6 +110,10 @@ Your answer must be either a real number between <code>-1e308</code> and <code>1
 Your answer must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number).
 {{/allow_complex}}
 No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
+{{/show_info}}
+{{#show_correct}}
+The correct answer used for grading is <samp>{{a_tru}}</samp>
+{{/show_correct}}
 {{/format}}
 
 {{#shortformat}}

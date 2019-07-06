@@ -29,7 +29,7 @@ const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform
 describe('Instructor questions', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var page, elemList;
@@ -280,12 +280,32 @@ describe('Instructor questions', function() {
                 assert.equal(page,'This data is specific to the course.');
             });
         });
-        describe('downloading question text file', function() {
-            it('should contain a link to clientFilesQuestion/data.txt', function() {
-                elemList = locals.$('a[href*="clientFilesQuestion"]');
+        describe('downloading question text files', function() {
+            it('should contain a force-download link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"][download]');
                 assert.lengthOf(elemList, 1);
             });
-            it('should download something with the link to clientFilesQuestion/data.txt', function(callback) {
+            it('should download something with the force-download link to clientFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is specific to the question.');
+            });
+            it('should contain a new tab link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the new tab link to clientFilesQuestion/data.txt', function(callback) {
                 const fileUrl = locals.siteUrl+elemList[0].attribs.href;
                 request(fileUrl, function (error, response, body) {
                     if (error) {

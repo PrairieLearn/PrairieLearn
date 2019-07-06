@@ -6,7 +6,7 @@
 <body>
   <script>
     $(function () {
-      $('[data-toggle="popover"]').popover()
+      $('[data-toggle="popover"]').popover({sanitize: false})
     });
   </script>
 
@@ -110,8 +110,25 @@
         <% } %>
 
         <% if (assessment_text_templated) { %>
-        <div class="alert alert-secondary mb-0 mt-4">
-          <%- assessment_text_templated %>
+        <div class="card bg-light mb-0 mt-4">
+          <div class="card-body">
+            <%- assessment_text_templated %>
+          </div>
+        </div>
+        <% } %>
+
+        <% if (file_list.length > 0) { %>
+        <div class="card mb-0 mt-4">
+          <ul class="list-group list-group-flush">
+            <% for (let file of file_list) { %>
+            <li class="list-group-item">
+              <a target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
+                <%- include('../partials/fileLabel', {type: file.type}) %>
+                <%= file.display_filename %>
+              </a>
+            </li>
+            <% } %>
+          </ul>
         </div>
         <% } %>
 

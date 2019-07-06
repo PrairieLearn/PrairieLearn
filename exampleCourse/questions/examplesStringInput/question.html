@@ -66,3 +66,17 @@ that you will not receive the <code>INVALID</code> feedback (and hence the quest
 <pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true">
 </pl-string-input>
 </p>
+
+<pl-question-panel>
+<p> 6) To allow for case insensitivity, use <code>ignore-case="true"</code>. 
+This will autoconvert both the student answer and the correct answer to lower case.  Entering the string below with any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
+
+<pl-code language="python">
+  "{{params.e}}"
+</pl-code>
+</pl-question-panel>
+  
+<p>
+<pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
+</pl-string-input>
+</p>

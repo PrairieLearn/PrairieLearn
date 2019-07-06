@@ -53,6 +53,8 @@ select_question_render_cache_stats AS (
         ) AS question_render_cache_stats
     FROM
         page_view_logs AS pvl
+    WHERE
+        pvl.date > now() - interval '1 day'
 )
 SELECT
     administrator_users,
