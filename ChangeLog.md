@@ -247,6 +247,8 @@
 
   * Fix best submissions downloads to use ungraded submissions as a last resort (Matt West).
 
+  * Fix help text CSV upload example with `points` (Matt West, h/t Mariana Silva and James Balamuta).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
