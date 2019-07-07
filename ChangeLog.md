@@ -254,6 +254,8 @@
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
   * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
+  
+  * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 
 * __3.1.0__ - 2018-10-08
 
