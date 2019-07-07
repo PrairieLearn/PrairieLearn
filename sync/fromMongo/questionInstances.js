@@ -2,7 +2,7 @@ var fs = require('fs');
 var _ = require('lodash');
 var async = require('async');
 var moment = require('moment-timezone');
-var csvStringify = require('csv').stringify;
+var csvStringify = require('../../lib/nonblocking-csv-stringify');
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var config = require('../../lib/config');

@@ -1,21 +1,18 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
 const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
+const sanitizeName = require('../../lib/sanitize-name');
+const ltiOutcomes = require('../../lib/ltiOutcomes');
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name
-        + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
-        + '_'
-        + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')
+    return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
+        + sanitizeName.sanitizeString(locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -84,13 +81,16 @@ router.post('/', (req, res, next) => {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'edit_total_points') {
         const params = [
-            req.body.assessment_instance_id,
+            res.locals.assessment_instance.id,
             req.body.points,
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_total_score_perc') {
         const params = [
@@ -100,7 +100,10 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_question_points') {
         const params = [
@@ -110,7 +113,10 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('instance_questions_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else if (req.body.__action == 'edit_question_score_perc') {
         const params = [
@@ -120,7 +126,10 @@ router.post('/', (req, res, next) => {
         ];
         sqlDb.call('instance_questions_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

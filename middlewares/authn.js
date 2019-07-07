@@ -23,6 +23,12 @@ module.exports = function(req, res, next) {
       return;
     }
 
+    if (/^\/pl\/api\//.test(req.path)) {
+      // API calls will be authenticated outside this normal flow using tokens
+      next();
+      return;
+    }
+
     // look for load-testing override cookie
     if (req.cookies.load_test_token) {
         if (!csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {maxAge: 24 * 60 * 60 * 1000})) {

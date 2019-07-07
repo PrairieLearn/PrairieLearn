@@ -40,10 +40,6 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
 matplotlib.use('PDF')
 
 def worker_loop():
-    # re-seed the PRNGs so we don't just copy our parent's fixed seed
-    random.seed()
-    numpy.random.seed()
-
     # file descriptor 3 is for output data
     with open(3, 'w', encoding='utf-8') as outf:
 
@@ -74,6 +70,13 @@ def worker_loop():
                 outf.flush()
                 break
 
+            # re-seed the PRNGs
+            if type(args[-1]) is dict:
+                variant_seed = args[-1].get('variant_seed', None)
+                random.seed(variant_seed)
+                numpy.random.seed(variant_seed)
+
+
             # reset and then set up the path
             sys.path = copy.copy(saved_path)
             for path in reversed(paths):
@@ -83,12 +86,17 @@ def worker_loop():
             # change to the desired working directory
             os.chdir(cwd)
 
-            # load the "file" as a module
-            #mod = importlib.import_module('.' + file, os.path.basename(os.getcwd()));
+            # we used to load the "file" as a module:
+            #   mod = importlib.import_module('.' + file, os.path.basename(os.getcwd()));
+            # now, instead, we read the "file" as a string, then compile and exec it:
             mod = {}
-            with open(os.path.join(cwd, file + '.py')) as inf:
-                contents = inf.read()
-                exec(contents, mod)
+            file_path = os.path.join(cwd, file + '.py')
+            with open(file_path) as inf:
+                # use compile to associate filename with code object, so the
+                # filename appears in the traceback if there is an error
+                # (https://stackoverflow.com/a/437857)
+                code = compile(inf.read(), file_path, 'exec')
+                exec(code, mod)
 
             # check whether we have the desired fcn in the module
             if fcn in mod: #hasattr(mod, fcn):

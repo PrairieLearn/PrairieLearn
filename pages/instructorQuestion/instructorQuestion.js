@@ -2,10 +2,11 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
+const sanitizeName = require('../../lib/sanitize-name');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -15,19 +16,10 @@ const logPageView = require('../../middlewares/logPageView')('instructorQuestion
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const sanitizeName = function(name) {
-    return name.replace(/[^a-zA-Z0-9]/g, '_');
-};
-
 const filenames = function(locals) {
-    const prefix = sanitizeName(locals.course.short_name)
-        + '_'
-        + sanitizeName(locals.course_instance.short_name)
-        + '_'
-        + sanitizeName(locals.question.qid + '')
-        + '_';
+    const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
     return {
-        assessmentStatsCsvFilename:       prefix + 'assessment_stats.csv',
+        questionStatsCsvFilename: prefix + 'stats.csv',
     };
 };
 
@@ -114,12 +106,16 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
-        const count = 100;
-        const showDetails = false;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
-            if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-        });
+        if (res.locals.question.grading_method !== 'External') {
+            const count = 100;
+            const showDetails = false;
+            question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+                if (ERR(err, next)) return;
+                res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+            });
+        } else {
+            next(new Error('Not supported for externally-graded questions'));
+        }
     } else if (req.body.__action == 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
@@ -132,6 +128,8 @@ router.post('/', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
+    var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
+    debug(`variant_seed ${variant_seed}`);
     async.series([
         (callback) => {
             debug('set filenames');
@@ -158,7 +156,7 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
-            question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+            question.getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -174,13 +172,10 @@ router.get('/', function(req, res, next) {
             if (res.locals.course.repository) {
                 const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
                 if (GHfound) {
-                    if (GHfound[1] == 'PrairieLearn/PrairieLearn') {
-                        // this is exampleCourse, so handle it specially
-                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/exampleCourse/questions/' + res.locals.question.qid;
-                    } else {
-                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
-                    }
+                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
+            } else if (res.locals.course.options.isExampleCourse) {
+                res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);
         },
@@ -193,7 +188,7 @@ router.get('/', function(req, res, next) {
 router.get('/:filename', function(req, res, next) {
     _.assign(res.locals, filenames(res.locals));
 
-    if (req.params.filename === res.locals.assessmentStatsCsvFilename) {
+    if (req.params.filename === res.locals.questionStatsCsvFilename) {
         sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;

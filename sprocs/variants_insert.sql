@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
     variants_insert(
@@ -12,7 +13,7 @@ CREATE OR REPLACE FUNCTION
         IN course_instance_id bigint,   -- can be NULL for some instructor questions
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
-        OUT variant variants
+        OUT variant jsonb
     )
 AS $$
 DECLARE
@@ -22,6 +23,7 @@ DECLARE
     new_number integer;
     assessment_instance_id bigint;
     course_id bigint;
+    variant_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -88,7 +90,10 @@ BEGIN
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
-    RETURNING *
+    RETURNING id
+    INTO variant_id;
+
+    SELECT variants_select(variant_id)
     INTO variant;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -40,8 +40,8 @@ insert_course_result AS (
     VALUES (1, 1, 'TPL 101')
 )
 INSERT INTO exams
-        (exam_id, course_id, exam_string)
-VALUES (1, 1, 'Exam 1');
+        (exam_id, course_id, exam_string, uuid)
+VALUES (1, 1, 'Exam 1', 'e92efcfe-32fa-47af-bc2b-f880ad694d7f');
 
 -- BLOCK delete_ps_course_link
 UPDATE courses
@@ -66,6 +66,6 @@ DELETE FROM assessment_access_rules;
 
 -- BLOCK insert_ps_exam_access_rule
 INSERT INTO assessment_access_rules
-    (assessment_id, credit, exam_id, number)
+    (assessment_id, credit, exam_uuid, number)
 VALUES
-    ($assessment_id, 100, 1, 100);
+    ($assessment_id, 100, 'e92efcfe-32fa-47af-bc2b-f880ad694d7f', 100);

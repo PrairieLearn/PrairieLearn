@@ -19,7 +19,7 @@
   <body>
     <script>
       $(function () {
-          $('[data-toggle="popover"]').popover({container: 'body'});
+          $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
     </script>
 
@@ -88,7 +88,7 @@
             <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
           </p>
           <% } %>
-
+          <%- include('../partials/instructorInfoPanel') %>
         </div>
       </div>
     </div>

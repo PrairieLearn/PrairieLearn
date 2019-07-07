@@ -55,7 +55,11 @@ SELECT
     aq.max_points,
     qo.row_order,
     qo.question_number,
-    admin_assessment_question_number(aq.id) as instructor_question_number
+    admin_assessment_question_number(aq.id) as instructor_question_number,
+    z.max_points AS zone_max_points,
+    (z.max_points IS NOT NULL) AS zone_has_max_points,
+    z.best_questions AS zone_best_questions,
+    (z.best_questions IS NOT NULL) AS zone_has_best_questions
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

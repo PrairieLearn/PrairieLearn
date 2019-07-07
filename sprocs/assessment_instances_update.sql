@@ -92,15 +92,11 @@ BEGIN
     new_assessment_instance_max_points := assessment_max_points;
     IF new_assessment_instance_max_points IS NULL THEN
         SELECT
-            sum(aq.max_points)
+            sum(zmp.max_points)
         INTO
             new_assessment_instance_max_points
         FROM
-            instance_questions AS iq
-            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        WHERE
-            iq.assessment_instance_id = assessment_instances_update.assessment_instance_id
-            AND aq.deleted_at IS NULL;
+            assessment_instances_points(assessment_instance_id) AS zmp;
     END IF;
 
     -- update max_points if necessary and log it

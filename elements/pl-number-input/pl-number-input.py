@@ -10,7 +10,7 @@ import random
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -19,6 +19,25 @@ def prepare(element_html, data):
         if name in data['correct_answers']:
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
+
+
+def format_true_ans(element, data, name):
+    a_tru = pl.from_json(data['correct_answers'].get(name, None))
+    if a_tru is not None:
+        # Get comparison parameters
+        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        if comparison == 'relabs':
+            # FIXME: render correctly with respect to rtol and atol
+            a_tru = '{:.12g}'.format(a_tru)
+        elif comparison == 'sigfig':
+            digits = pl.get_integer_attrib(element, 'digits', 2)
+            a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
+        elif comparison == 'decdig':
+            digits = pl.get_integer_attrib(element, 'digits', 2)
+            a_tru = '{:.{ndigits}f}'.format(a_tru, ndigits=digits)
+        else:
+            raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+    return a_tru
 
 
 def render(element_html, data):
@@ -31,6 +50,30 @@ def render(element_html, data):
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
+
+        html_params = {
+            'question': True,
+            'name': name,
+            'label': label,
+            'suffix': suffix,
+            'editable': editable,
+            'size': pl.get_integer_attrib(element, 'size', 35),
+            'uuid': pl.get_uuid()
+        }
+
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score' + score)
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -54,38 +97,42 @@ def render(element_html, data):
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+
+        # Update parameters for the info popup
+        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, 'show-correct-answer', True)
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
+        info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', True)
+        info_params['show_correct'] = show_correct
+
+        # Find the true answer to be able to display it in the info popup
+        ans_true = None
+        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
+            ans_true = format_true_ans(element, data, name)
+        if ans_true is not None:
+            info_params['a_tru'] = ans_true
+
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
-            info_params['shortformat'] = True
+            # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
+            # Here we opt to not generate the value, hence the placeholder is empty.
+            info_params['shortformat'] = pl.get_boolean_attrib(element, 'show-placeholder', True)
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
-            'question': True,
-            'name': name,
-            'label': label,
-            'suffix': suffix,
-            'editable': editable,
-            'info': info,
-            'shortinfo': shortinfo,
-            'uuid': pl.get_uuid()
-        }
+        html_params['info'] = info
+        html_params['shortinfo'] = shortinfo
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
-        if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError('invalid score' + score)
+        # Determine the title of the popup based on what information is being shown
+        if pl.get_boolean_attrib(element, 'show-help-text', True):
+            html_params['popup_title'] = 'Number'
+        else:
+            html_params['popup_title'] = 'Correct Answer'
+
+        # Enable or disable the popup
+        if pl.get_boolean_attrib(element, 'show-help-text', True) or show_correct:
+            html_params['show_info'] = True
+        html_params['display_append_span'] = 'questionmark' in html_params or suffix
 
         if display == 'inline':
             html_params['inline'] = True
@@ -124,6 +171,13 @@ def render(element_html, data):
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
 
+        # Add true answer to be able to display it in the submitted answer panel
+        ans_true = None
+        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
+            ans_true = format_true_ans(element, data, name)
+        if ans_true is not None:
+            html_params['a_tru'] = ans_true
+
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         if score is not None:
@@ -141,27 +195,9 @@ def render(element_html, data):
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        a_tru = pl.from_json(data['correct_answers'].get(name, None))
-        if a_tru is not None:
-
-            # Get comparison parameters
-            comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
-            if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-                atol = pl.get_float_attrib(element, 'atol', 1e-8)
-                # FIXME: render correctly with respect to rtol and atol
-                a_tru = '{:.12g}'.format(a_tru)
-            elif comparison == 'sigfig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
-                a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
-            elif comparison == 'decdig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
-                a_tru = '{:.{ndigits}f}'.format(a_tru, ndigits=digits)
-            else:
-                raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-
-            # FIXME: render correctly with respect to method of comparison
-            html_params = {'answer': True, 'label': label, 'a_tru': a_tru, 'suffix': suffix}
+        ans_true = format_true_ans(element, data, name)
+        if ans_true is not None:
+            html_params = {'answer': True, 'label': label, 'a_tru': ans_true, 'suffix': suffix}
             with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:

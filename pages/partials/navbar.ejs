@@ -8,18 +8,16 @@
   </button>
   <div class="collapse navbar-collapse">
     <ul class="nav navbar-nav mr-auto" id="main-nav">
-
-<% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
-<%- include('navbarPlain'); %>
-<% } else if (navbarType == 'student') { %>
-<%- include('navbarStudent'); %>
-<% } else if (navbarType == 'instructor') { %>
-<%- include('navbarInstructor'); %>
-<% } else if (navbarType == 'course') { %>
-<%- include('navbarCourse'); %>
-<% } else { %>
-<% throw new Error('Unknown navbarType: ' + navbarType); %>
-<% } %>
+        <% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
+        <%- include('navbarPlain'); %>
+        <% } else if (navbarType == 'student') { %>
+        <%- include('navbarStudent'); %>
+        <% } else if (navbarType == 'instructor') { %>
+        <%- include('navbarInstructor'); %>
+        <% } else { %>
+        <% throw new Error('Unknown navbarType: ' + navbarType); %>
+        <% } %>
+    </ul>
 
     <!-------------------------------------------------------------------------------->
     <!-------------------------------------------------------------------------------->
@@ -34,7 +32,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     } else {
         displayedName = authz_data.user.uid;
     }
-    displayedName += '(' + authz_data.role;
+    displayedName += ' (' + authz_data.role;
 	if (authz_data.mode != 'Public') {
         displayedName += ', ' + authz_data.mode;
     }
@@ -43,7 +41,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     if (typeof authn_user == 'undefined') {
         displayedName = '(No user)';
     } else if (is_administrator) {
-        displayedName = authn_user.name + '(Administrator)';
+        displayedName = authn_user.name + ' (Administrator)';
     } else {
         displayedName = authn_user.name;
     }

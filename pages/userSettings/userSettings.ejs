@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: 'user_settings'}); %>
     <div id="content" class="container">
       <h1 class="mb-4">Settings</h1>
@@ -28,7 +33,7 @@
               New access token created! Be sure to copy it now, as you won&apos;t be able to see it later.
             </div>
             <% newAccessTokens.forEach(function(token) { %>
-            <div class="alert alert-success mb-0" role="alert">
+            <div class="alert alert-success mb-0 new-access-token" role="alert">
               <%= token %>
             </div>
             <% }); %>
@@ -46,7 +51,7 @@
               <strong><%= token.name %></strong>
               <span class="text-muted">Created at <%= token.created_at %></span>
               <span class="text-muted">
-                <% if (token.created_at === null) { %>
+                <% if (token.last_used_at !== null) { %>
                 Last used at <%= token.last_used_at %>
                 <% } else { %>
                 Never used

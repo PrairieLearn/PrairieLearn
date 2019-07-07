@@ -1,28 +1,24 @@
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_points(bigint,integer,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_points(bigint);
+DROP FUNCTION IF EXISTS zones_points(BIGINT);
+DROP FUNCTION IF EXISTS zones_max_points(BIGINT);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_points(
-        IN assessment_instance_id bigint,
-        IN credit INTEGER,
-        IN allow_decrease BOOLEAN DEFAULT FALSE,
-        OUT points DOUBLE PRECISION,
-        OUT points_in_grading DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
-        OUT score_perc_in_grading DOUBLE PRECISION
+        assessment_instance_id BIGINT
+    ) RETURNS TABLE (
+        zid BIGINT,
+        points DOUBLE PRECISION,
+        iq_ids BIGINT[],
+        max_points DOUBLE PRECISION,
+        max_iq_ids BIGINT[]
     ) AS $$
 DECLARE
     assessment_type enum_assessment_type;
-    total_points DOUBLE PRECISION;
-    total_points_in_grading DOUBLE PRECISION;
-    max_points DOUBLE PRECISION;
-    current_score_perc DOUBLE PRECISION;
-    max_possible_points DOUBLE PRECISION;
-    max_possible_score_perc DOUBLE PRECISION;
 BEGIN
     -- #########################################################################
     -- determine the assessment type
-    
+
     SELECT a.type
     INTO assessment_type
     FROM
@@ -34,81 +30,84 @@ BEGIN
         RAISE EXCEPTION 'No assessment_instance found with id: %', assessment_instance_id;
     END IF;
 
-    -- #########################################################################
-    -- compute the total points
-
-    IF assessment_type = 'Exam' THEN
-        -- for Exams, include all assessment_questions, even deleted ones
-        SELECT sum(iq.points), sum(iq.points_in_grading)
-        INTO    total_points,   total_points_in_grading
-        FROM instance_questions AS iq
-        WHERE iq.assessment_instance_id = assessment_instances_points.assessment_instance_id;
-    ELSIF assessment_type = 'Homework' THEN
-        -- for Homeworks, drop deleted questions
-        SELECT sum(iq.points), sum(iq.points_in_grading)
-        INTO    total_points,   total_points_in_grading
-        FROM
-            instance_questions AS iq
-            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        WHERE
-            iq.assessment_instance_id = assessment_instances_points.assessment_instance_id
-            AND aq.deleted_at IS NULL;
-    ELSE
+    IF NOT ((assessment_type = 'Exam') OR (assessment_type = 'Homework')) THEN
         RAISE EXCEPTION 'Unknown assessment_type: %', assessment_type;
     END IF;
 
-    SELECT ai.max_points INTO max_points
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
-
-    SELECT ai.score_perc INTO current_score_perc
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
-
     -- #########################################################################
-    -- awarded points and score_perc
-
-    -- compute the score in points, maxing out at max_points
-    points := least(total_points, max_points);
-
-    -- compute the score as a percentage, applying credit bonus/limits
-    score_perc := points
-        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
-    IF credit < 100 THEN
-        score_perc := least(score_perc, credit);
-    ELSIF (credit > 100) AND (points = max_points) THEN
-        score_perc := credit;
-    END IF;
-
-    IF NOT allow_decrease THEN
-        -- no matter what, don't decrease the score_perc
-        score_perc := greatest(score_perc, current_score_perc);
-    END IF;
-
-    -- #########################################################################
-    -- in_grading versions of points and score_perc
-    -- computed by finding max_possible points and score_perc
-    -- and then subtracting off the new values of each quantity
-
-    -- repeat calculation for points_in_grading
-    max_possible_points := least(points + total_points_in_grading, max_points);
-    total_points_in_grading := max_possible_points - points;
-
-    -- compute max achieveable score_perc if all grading points are awarded
-    max_possible_score_perc := max_possible_points
-        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
-    IF credit < 100 THEN
-        max_possible_score_perc := least(max_possible_score_perc, credit);
-    ELSIF (credit > 100) AND (max_possible_points = max_points) THEN
-        max_possible_score_perc := credit;
-    END IF;
-    
-    IF NOT allow_decrease THEN
-        -- no matter what, don't decrease the achieveable score_perc below new score_perc
-        max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
-    END IF;
-
-    -- compute score_perc_in_grading
-    score_perc_in_grading := max_possible_score_perc - score_perc;
+    -- compute the points by zone
+    RETURN QUERY
+        WITH all_questions AS (
+            SELECT
+                iq.id AS iq_id,
+                z.id AS zid,
+                iq.points,
+                row_number() OVER (PARTITION BY z.id ORDER BY iq.points DESC) AS points_rank,
+                aq.max_points,
+                row_number() OVER (PARTITION BY z.id ORDER BY aq.max_points DESC) AS max_points_rank,
+                z.best_questions,
+                z.max_points AS zone_max_points
+            FROM
+                instance_questions AS iq
+                JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+                JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+                JOIN zones AS z ON (z.id = ag.zone_id)
+            WHERE
+                -- need assessment_instances_points.assessment_instance_id because just
+                -- assessment_instance_id would be ambiguous (it has already been
+                -- joined as a column to the table from which we are selecting)
+                iq.assessment_instance_id = assessment_instances_points.assessment_instance_id
+                -- drop deleted questions unless assessment type is Exam
+                AND ((aq.deleted_at IS NULL) OR (assessment_type = 'Exam'))
+        ), points_questions AS (
+            SELECT
+                allq.iq_id,
+                allq.zid,
+                allq.points,
+                allq.zone_max_points
+            FROM
+                all_questions AS allq
+            WHERE
+                ((allq.points_rank <= allq.best_questions) OR (allq.best_questions IS NULL))
+        ), max_points_questions AS (
+            SELECT
+                allq.iq_id,
+                allq.zid,
+                allq.max_points,
+                allq.zone_max_points
+            FROM
+                all_questions AS allq
+            WHERE
+                ((allq.max_points_rank <= allq.best_questions) OR (allq.best_questions IS NULL))
+        ), points_zones AS (
+            SELECT
+                ptsq.zid,
+                LEAST(sum(ptsq.points), ptsq.zone_max_points) AS points,
+                array_agg(ptsq.iq_id) AS iq_ids
+            FROM
+                points_questions AS ptsq
+            GROUP BY
+                ptsq.zid,
+                ptsq.zone_max_points
+        ), max_points_zones AS (
+            SELECT
+                ptsq.zid,
+                LEAST(sum(ptsq.max_points), ptsq.zone_max_points) AS max_points,
+                array_agg(ptsq.iq_id) AS max_iq_ids
+            FROM
+                max_points_questions AS ptsq
+            GROUP BY
+                ptsq.zid,
+                ptsq.zone_max_points
+        )
+        SELECT
+            pz.zid,
+            pz.points,
+            pz.iq_ids,
+            mpz.max_points,
+            mpz.max_iq_ids
+        FROM
+            points_zones AS pz
+            INNER JOIN max_points_zones AS mpz USING (zid);
 END;
 $$ LANGUAGE plpgsql STABLE;

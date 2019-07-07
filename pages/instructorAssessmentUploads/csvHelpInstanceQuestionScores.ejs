@@ -1,0 +1,25 @@
+<p>
+  Upload a CSV file like this:
+</p>
+<pre class="ml-4">uid,instance,qid,score_perc
+mwest@illinois.edu,1,addTwoNumbers,34.5
+zilles@illinois.edu,1,matrixMultiply,100
+zilles@illinois.edu,1,addTwoNumbers,78.92</pre>
+<p>
+  The example above will change the percentage score for
+  <tt>mwest@illinois.edu</tt> on one question (<tt>addTwoNumbers</tt>
+  to 34.5%), and for <tt>zilles@illinois.edu</tt> on two
+  questions. Only questions explictly listed will have their scores
+  changed. The <tt>instance</tt> column indicates which assessment
+  instance to modify, and should be <tt>1</tt> if there is only a
+  single instance per student. The total scores for the assessments
+  will be automatically recalculated.
+</p>
+<p>
+  Alternatively, the per-question points can be changed with a CSV
+  containing a <tt>points</tt> column, like:
+</p>
+<pre class="ml-4">uid,instance,qid,points
+mwest@illinois.edu,1,addTwoNumbers,8.73
+zilles@illinois.edu,1,matrixMultiply,14
+zilles@illinois.edu,1,addTwoNumbers,0</pre>

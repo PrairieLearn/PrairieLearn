@@ -4,25 +4,12 @@ FROM submissions
 ORDER BY date DESC
 LIMIT 1;
 
--- BLOCK variant_update_broken
-UPDATE variants
-SET broken = $broken
-WHERE id = $variant_id
-RETURNING *;
-
--- BLOCK submission_update_broken
-WITH last_submission AS (
-    SELECT *
-    FROM submissions
-    WHERE variant_id = $variant_id
-    ORDER BY date DESC
-    LIMIT 1
-)
-UPDATE submissions AS s
-SET broken = $broken
-FROM last_submission
-WHERE s.id = last_submission.id
-RETURNING *;
+-- BLOCK select_variants_for_qid
+SELECT v.id AS variant_id
+FROM
+    variants AS v
+    JOIN questions AS q ON (q.id = v.question_id)
+WHERE q.qid = $qid;
 
 -- BLOCK close_all_assessment_instances
 UPDATE assessment_instances

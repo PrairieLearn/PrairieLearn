@@ -4,6 +4,7 @@
 # whitelist things to copy
 !.eslintignore
 !.eslintrc.json
+!api/
 !cron/
 !database/
 !doc/

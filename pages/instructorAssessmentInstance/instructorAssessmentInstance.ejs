@@ -11,6 +11,11 @@
     <script src="/localscripts/scatter.js"></script>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
 
@@ -29,7 +34,9 @@
             <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
             <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
             <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
-            <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %></td></tr>
+            <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
+                (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
+            </td></tr>
             <tr>
               <th>Points</th>
               <td colspan="2">
@@ -100,7 +107,15 @@
             <% instance_questions.forEach(function(instance_question, i_instance_question) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th colspan="4"><%= instance_question.zone_title %></th>
+                <th colspan="4">
+                  <%= instance_question.zone_title %>
+                  <% if (instance_question.zone_has_max_points) { %>
+                      (maximum <%= instance_question.zone_max_points %> points)
+                  <% } %>
+                  <% if (instance_question.zone_has_best_questions) { %>
+                      (best <%= instance_question.zone_best_questions %> questions)
+                  <% } %>
+                </th>
             </tr>
             <% } %>
             <tr>
