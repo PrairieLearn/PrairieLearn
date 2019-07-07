@@ -87,10 +87,10 @@ WITH all_submissions AS (
         format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
         format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
         s.score,
-        CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
+        CASE WHEN s.correct THEN 'TRUE' WHEN NOT s.correct THEN 'FALSE' ELSE NULL END AS correct,
         s.feedback,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant
     FROM
         assessments AS a
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -131,7 +131,7 @@ WITH all_submissions_with_files AS (
         s.submitted_answer,
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
