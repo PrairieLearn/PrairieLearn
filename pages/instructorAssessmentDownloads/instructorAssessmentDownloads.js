@@ -201,14 +201,10 @@ router.get('/:filename', function(req, res, next) {
                 ['Score', 'score'],
                 ['Correct', 'correct'],
                 ['Feedback', 'feedback'],
+                ['Question points', 'points'],
+                ['Max points', 'max_points'],
+                ['Question % score', 'score_perc'],
             ];
-            if (!include_all) {
-                columns = columns.concat([
-                    ['Question points', 'points'],
-                    ['Max points', 'max_points'],
-                    ['Question % score', 'score_perc'],
-                ]);
-            }
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
