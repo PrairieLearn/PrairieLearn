@@ -243,6 +243,8 @@
 
   * Fix `async.doWhilst()` and `async.doUntil()` for `async` v3 (Matt West).
 
+  * Fix best submissions downloads to use ungraded submissions as a last resort (Matt West).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
