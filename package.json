@@ -78,7 +78,7 @@
         "three": "^0.106.2",
         "unified": "^8.0.1",
         "unified-stream": "^1.0.4",
-        "unist-util-visit": "^1.4.0",
+        "unist-util-visit": "^1.4.1",
         "uuid": "^3.2.1",
         "viz.js": "^2.1.2",
         "winston": "^3.2.1",
