@@ -59,7 +59,7 @@ BEGIN
         -- selecting from JSONB_ARRAY_ELEMENTS or b) insertion order when inserting from a
         -- SELECT expression?
         ORDER BY number
-        ON CONFLICT (uuid) DO UPDATE
+        ON CONFLICT (course_id, uuid) DO UPDATE
         SET
             qid = EXCLUDED.qid,
             directory = EXCLUDED.directory,

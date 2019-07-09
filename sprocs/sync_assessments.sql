@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     sync_assessments(
         IN assessments JSONB,
         IN course_id bigint,
-        IN course_instance_id bigint,
+        IN new_course_instance_id bigint,
         IN check_access_rules_exam_uuid boolean
     ) returns void
 AS $$
@@ -56,13 +56,13 @@ BEGIN
                 (assessment->>'max_points')::double precision,
                 (assessment->>'auto_close')::boolean,
                 NULL,
-                sync_assessments.course_instance_id,
+                sync_assessments.new_course_instance_id,
                 assessment->>'text',
                 COALESCE((SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id), NULL),
                 (assessment->>'constant_question_value')::boolean,
                 (assessment->>'allow_issue_reporting')::boolean
         )
-        ON CONFLICT (uuid) DO UPDATE
+        ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
             tid = EXCLUDED.tid,
             type = EXCLUDED.type,
@@ -80,7 +80,7 @@ BEGIN
             constant_question_value = EXCLUDED.constant_question_value,
             allow_issue_reporting = EXCLUDED.allow_issue_reporting
         WHERE
-            assessments.course_instance_id = sync_assessments.course_instance_id
+            assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
@@ -265,7 +265,7 @@ BEGIN
     SET
         deleted_at = CURRENT_TIMESTAMP
     WHERE
-        a.course_instance_id = sync_assessments.course_instance_id
+        a.course_instance_id = sync_assessments.new_course_instance_id
         AND a.deleted_at IS NULL
         AND a.id NOT IN (SELECT unnest(new_assessment_ids));
 
@@ -277,7 +277,7 @@ BEGIN
         assessments AS a
     WHERE
         a.id = aq.assessment_id
-        AND a.course_instance_id = sync_assessments.course_instance_id
+        AND a.course_instance_id = sync_assessments.new_course_instance_id
         AND aq.deleted_at IS NULL
         AND a.id NOT IN (SELECT unnest(new_assessment_ids));
 

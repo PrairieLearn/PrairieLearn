@@ -2,7 +2,7 @@
 INSERT INTO course_instances
         (course_id,  uuid,  short_name,  long_name,  number,  display_timezone, deleted_at)
 VALUES ($course_id, $uuid, $short_name, $long_name, $number, $display_timezone, NULL)
-ON CONFLICT (uuid) DO UPDATE
+ON CONFLICT (course_id, uuid) DO UPDATE
 SET
     short_name = EXCLUDED.short_name,
     long_name = EXCLUDED.long_name,
