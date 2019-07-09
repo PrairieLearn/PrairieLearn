@@ -14,6 +14,7 @@ columns
     id: bigint not null default nextval('jobs_id_seq'::regclass)
     job_sequence_id: bigint
     last_in_sequence: boolean
+    no_job_sequence_update: boolean default false
     number: integer
     number_in_sequence: integer
     output: text

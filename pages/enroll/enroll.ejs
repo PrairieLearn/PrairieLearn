@@ -2,6 +2,12 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+
+    <style>
+      .modal-course-title-style {
+        font-size: 125%;
+      }
+    </style>
   </head>
   <body>
     <script>
@@ -15,7 +21,8 @@
         <div class="card-header bg-primary text-white">Courses</div>
         <table class="table table-sm table-hover table-striped">
           <tbody>
-            <% course_instances.forEach(function(course_instance) { %>
+            <%# var modalIdx=0; must come before the forEach: %>
+            <% var modalIdx=0; course_instances.forEach(function(course_instance) { %>
             <tr>
               <td class="align-middle">
                 <%= course_instance.label %>
@@ -23,45 +30,84 @@
               <td>
                 <% if (!course_instance.enrolled) { %>
                 <a tabindex="0" class="btn btn-sm btn-info" role="button"
-                   data-toggle="popover" data-trigger="focus" data-container="body"
-                   data-html="true" data-placement="auto" title="Confirm add"
-                   data-content="
-                                 <form name=&quot;enroll-form&quot; method=&quot;POST&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;enroll&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
-                                          value=&quot;<%= course_instance.course_instance_id %>&quot;>
-                                   <button type=&quot;submit&quot; class=&quot;btn btn-info&quot;>
-                                     Add <%= course_instance.short_label %>
-                                   </button>
-                                 </form>
-                                 ">
+                   data-toggle="modal" data-target="#addModal<%= modalIdx %>" >
                   Add course
                 </a>
+                <div class="modal fade" id="addModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="addModal<%= modalIdx %>Title" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="addModal<%= modalIdx %>Title">Confirm add course</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Are you sure you want to add this course content to your PrairieLearn account?</p>
+                        <p class="modal-course-title-style"><%= course_instance.label %></p>
+                        <p>Adding or removing courses here only affects what is visible to you on PrairieLearn. This does not change your university course registration.</p>
+                      </div>
+                      <div class="modal-footer">
+                         <form name="enroll-form" method="POST">
+                           <input type="hidden" name="__action" value="enroll">
+                           <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                           <input type="hidden" name="course_instance_id"
+                                  value="<%= course_instance.course_instance_id %>">
+                           <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                           Cancel
+                           </button>
+                           <button type="submit" class="btn btn-info">
+                             Add <%= course_instance.short_label %>
+                           </button>
+                         </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <% } %>
               </td>
               <td>
                 <% if (course_instance.enrolled) { %>
                 <a tabindex="0" class="btn btn-sm btn-danger" role="button"
-                   data-toggle="popover" data-trigger="focus" data-container="body"
-                   data-html="true" data-placement="auto" title="Confirm remove"
-                   data-content="
-                                 <form name=&quot;unenroll-form&quot; method=&quot;POST&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;unenroll&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
-                                          value=&quot;<%= course_instance.course_instance_id %>&quot;>
-                                   <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>
-                                     Remove <%= course_instance.short_label %>
-                                   </button>
-                                 </form>
-                                 ">
+                   data-toggle="modal" data-target="#removeModal<%= modalIdx %>" >
                   Remove course
                 </a>
+                <div class="modal fade" id="removeModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="removeModal<%= modalIdx %>Title" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="removeModal<%= modalIdx %>Title">Confirm remove course</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Are you sure you want to remove this course content from your PrairieLearn account?</p>
+                        <p class="modal-course-title-style"><%= course_instance.label %></p>
+                        <p>Adding or removing courses here only affects what is visible to you on PrairieLearn. This does not change your university course registration.</p>
+                      </div>
+                      <div class="modal-footer">
+                         <form name="unenroll-form" method="POST">
+                           <input type="hidden" name="__action" value="unenroll">
+                           <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                           <input type="hidden" name="course_instance_id"
+                                  value="<%= course_instance.course_instance_id %>">
+                           <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                           Cancel
+                           </button>
+                           <button type="submit" class="btn btn-danger">
+                             Remove <%= course_instance.short_label %>
+                           </button>
+                         </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <% } %>
               </td>
             </tr>
-            <% }); %>
+            <%# incrementing modalIdx must be done before closing the forEach function block: %>
+            <% ; modalIdx++; }); %>
           </tbody>
         </table>
       </div>

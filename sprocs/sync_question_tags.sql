@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 -- Accepts a list of lists containing question IDs and tag IDs,
+=======
+-- Accepts a list of lists containins question IDs and tag IDs,
+>>>>>>> master
 -- ensures that all question tags are updated in the DB, and removes
 -- any old unused question tags. 
 

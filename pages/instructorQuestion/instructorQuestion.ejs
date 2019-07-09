@@ -43,6 +43,27 @@
                 <th>Type</th>
                 <td><%= question.type %></td>
               </tr>
+              <% if (!locals.course.options.isExampleCourse) { %>
+                <tr>
+                  <th>Files</th>
+                  <td>
+                    <a id="editJsonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/info.json">
+                        <i class="fa fa-edit"></i>
+                        <span class="d-none d-sm-inline">Edit info.json</span>
+                    </a>
+                    <% if (question.type == 'Freeform') { %>
+                        <a id="editHtmlButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/question.html">
+                            <i class="fa fa-edit"></i>
+                            <span class="d-none d-sm-inline">Edit question.html</span>
+                        </a>
+                        <a id="editPythonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=questions/<%= question.qid %>/server.py">
+                            <i class="fa fa-edit"></i>
+                            <span class="d-none d-sm-inline">Edit server.py</span>
+                        </a>
+                    <% } %>
+                  </td>
+                </tr>
+              <% } %>
               <tr>
                 <th>Topic</th>
                 <td><%- include('../partials/topic', {topic: topic}); %></td>
@@ -100,7 +121,23 @@
         </div>
       </div>
 
-      <%- include('../partials/question', {question_context: 'instructor'}); %>
+      <div class="row">
+          <div class="col-lg-9 col-sm-12">
+              <%- include('../partials/question', {question_context: 'instructor'}); %>
+          </div>
+
+          <div class="col-lg-3 col-sm-12">
+              <div class="card mb-4">
+                  <div class="card-header bg-secondary">Student view placeholder</div>
+                  <div class="card-body">
+                      <div class="d-flex justify-content-center">
+                          In student views this area is used for assessment and score info.
+                      </div>
+                  </div>
+              </div>
+              <%- include('../partials/instructorInfoPanel'); %>
+          </div>
+      </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->

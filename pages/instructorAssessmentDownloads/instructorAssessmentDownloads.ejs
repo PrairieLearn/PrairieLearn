@@ -4,9 +4,9 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'downloads'}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container">
-      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'downloads'}); %>
+      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -178,7 +178,9 @@
                 </td>
                 <td>
                   Best submitted answers for each question for all
-                  students for all assessment instances.
+                  students for all assessment instances. If a student
+                  has no graded submissions for a question, then the
+                  last submission (if any) is used instead.
                 </td>
               </tr>
               <tr>
@@ -213,7 +215,9 @@
                   Best submitted files for each question for all
                   students for all assessment instances. Only data
                   from <tt>File</tt>-type questions will be included in
-                  the zip.
+                  the zip. If a student has no graded submissions for a
+                  question then the last submission (if any) is used
+                  instead.
                 </td>
               </tr>
             </tbody>
