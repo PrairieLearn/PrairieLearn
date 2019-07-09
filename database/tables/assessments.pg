@@ -23,7 +23,7 @@ columns
 
 indexes
     assessments_pkey: PRIMARY KEY (id) USING btree (id)
-    assessments_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    assessments_course_instance_id_uuid_key: UNIQUE (course_instance_id, uuid) USING btree (course_instance_id, uuid)
     assessments_assessment_set_id_idx: USING btree (assessment_set_id)
     assessments_course_instance_id_idx: USING btree (course_instance_id)
 
