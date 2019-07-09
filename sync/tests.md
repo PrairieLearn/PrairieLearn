@@ -6,6 +6,20 @@ We'll test two different types of syncs:
 
 * **Incremental sync**: Syncing a course that already exists. In this case, we also need to check that the correct things happen in the case of updates and deletions. So we're checking that new things have been created, existing things have been updated, and removed things have been deleted (possible soft-deleted).
 
+The following tables are potentially modified during a sync:
+* `course_instances`
+* `assessments`
+* `assessment_sets`
+* `topics`
+* `tags`
+* `course_instance_access_rules`
+* `assessment_access_rules`
+* `zones`
+* `alternative_groups`
+* `assessment_questions`
+* `questions`
+* `question_tags`
+
 ## `infoCourse.json`
 
 ### Fresh sync
@@ -51,20 +65,61 @@ We'll test two different types of syncs:
 
 ### Incremental sync
 * A course instance is added
-  * A new course instance should be created in the DB
+  * A new course instance should be created in the `course_instances` table
+  * Associated access rules should be created in the `course_instance_access_rules` table
+* A course instance short name/long name/timezone is updated
+  * The course instance should be updated in the `course_instances` table
 * A course instance is removed
-  * The course instance should be soft deleted
-  * Any associated access rules should be completely deleted
+  * The course instance should be soft-deleted
+  * Any associated access rules should be deleted
 * A course instance with a previously existing UUID is added again
   * The course instance should be set to have `deleted_at = NULL`
+  * The course instance access rules should be created in the `course_instance_access_rules` table
 
-## Questions
+* A course instance access rule is added
+  * A new access rule should be created in the `course_instance_access_rules` table
+* A course instance access rule is changed
+  * The access rule should be updated in the `course_instance_access_rules` table
+* A course instance access rule is deleted
+  * The access rule should be deleted from the `course_instance_access_rules` table
 
+## `infoAssessment.json`
+
+## Fresh sync
+* Assessments are created in the `assessments` table
+* Access rules are created in the `assessment_access_rules` table
+* Zones are created in the `zones` table
+* Alternative groups are created in the `alternative_groups` table
+* Assessment questions are created in the `assessment_questions` table
+
+## Incremental sync
+* A zone is added
+  * A new zone is created in the `zones` table
+  * Alternative groups are created in the `alternative_groups` table
+  * Assessment questions are created in the `assessment_questions` table
+* A zone is removed
+  * The zone is removed from the `zones` table
+  * The zone's alternative groups are removed from the `alternative_groups` table
+  * The assessment questions under the zone are soft-deleted
+
+## `question.json`
+
+## Fresh sync
+* Questions are created in the `questions` table
+* Question tags are created in the `question_tags` table
+
+## Incremental sync
 * A question is added
-  * A new question should be created in the DB
+  * Questions are created in the `questions` table
+  * Question tags are created in the `question_tags` table
 * A question is deleted
-  * The question is soft deleted, but still present in the DB
-* A question is modified
-  * The modification should be reflected in the DB
-
-
+  * The question is soft-deleted from the `questions` table
+  * The question's tags are deleted from the `question_tags` table
+* A question is modified (excluding tags)
+  * The changed attributes are reflected in the `questions` table
+* A question's tags are modified
+  * The old tags are removed from the `question_tags` table
+  * The new tags are removed from the `questions` table
+* A question with a previously-existing UUID is added again
+  * The question is set to have `deleted_at = NULL`
+  * The question's tags are created in the `question_tags` table
