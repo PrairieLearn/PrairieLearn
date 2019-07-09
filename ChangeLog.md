@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
+
   * Add feedback for correct answers in submitted answer panel (Brian Mercer).
 
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
