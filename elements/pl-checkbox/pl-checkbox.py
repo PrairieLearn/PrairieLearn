@@ -14,6 +14,11 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
+    if not partial_credit and partial_credit_method is not None:
+        raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
+
     correct_answers = []
     incorrect_answers = []
     index = 0

@@ -95,6 +95,8 @@
 
   * Add question score information to `all_submissions` CSV download (Matt West).
 
+  * Add warning to `pl-checkbox` if `partial-credit-method` is set but `partial-credit` is not enabled (Nathan Walters).
+
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   * Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
