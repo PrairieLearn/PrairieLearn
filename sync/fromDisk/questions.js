@@ -43,27 +43,6 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 }
             });
 
-        // Check if any of the UUIDs in this course's questions are in use in any other course
-        const params = [
-            JSON.stringify(Object.values(questionDB).map(q => q.uuid)),
-            courseInfo.courseId,
-        ];
-
-        start('questionsDuplicateUUID');
-        const duplicateUuidResult = await sqldb.callOneRowAsync('sync_check_duplicate_question_uuids', params);
-        end('questionsDuplicateUUID');
-
-        const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
-        if (duplicateUUID) {
-            // Determine the corresponding QID to provide a useful error
-            // We lose capitalization once we round-trip UUIDs through postgres,
-            // so explicitly convert to lowercase when finding the UUID, but
-            // present the UUID in its original case for easy grepping by the
-            // user.
-            const qid = Object.keys(questionDB).find((qid) => questionDB[qid].uuid.toLowerCase() === duplicateUUID.toLowerCase());
-            throw new Error(`UUID ${questionDB[qid].uuid} from question ${qid} is already in use by a different course`);
-        }
-
         // Preprocess questions into obects before sending them to the sproc
         // for syncing
         const questionsParam = Object.keys(questionDB).map(qid => {

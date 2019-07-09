@@ -230,7 +230,6 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         assessmentList.forEach((assessment, index) => assessment.order_by = index);
 
         // Check for duplicate UUIDs within the course instance's assessments
-        // TODO: does this correctly detect duplicates across course instances within one course?
         _(assessmentDB)
             .groupBy('uuid')
             .each(function(assessments, uuid) {
@@ -239,24 +238,6 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
                     throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`)
                 }
             });
-
-        // Check if any of the UUIDs used in this course instance's assessments
-        // are used by any other course instance
-        const params = [
-            JSON.stringify(Object.values(assessmentDB).map(a => a.uuid)),
-            courseInstance.courseInstanceId,
-        ];
-
-        start(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
-        const duplicateUuidResult = await sqldb.callOneRowAsync('sync_check_duplicate_assessment_uuids', params);
-        end(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
-
-        const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
-        if (duplicateUUID) {
-            // Determine the corresponding TID to provide a useful error
-            const tid = Object.keys(assessmentDB).find((tid) => assessmentDB[tid].uuid === duplicateUUID);
-            throw new Error(`UUID ${duplicateUUID} from assessment ${tid} is already in use by a different course instance (possibly in a different course)`);
-        }
 
         const syncData = buildSyncData(courseInfo, courseInstance, questionDB);
         const syncParams = [

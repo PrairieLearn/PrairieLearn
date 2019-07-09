@@ -46,34 +46,6 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             callback(null);
         },
         function(callback) {
-            var err = null;
-            _(courseInstanceDB)
-                .flatMap(ci => _.map(ci.assessmentDB || [], a => _.assign(a, {course_instance_directory: ci.directory})))
-                .groupBy('uuid')
-                .each(function(assessments, uuid) {
-                    if (assessments.length > 1) {
-                        err = new Error('UUID ' + uuid + ' is used in multiple assessments: '
-                                        + _.map(assessments, a => a.course_instance_directory + '/' + a.directory).join());
-                        return false; // terminate each()
-                    }
-                });
-            if (err) return callback(err);
-            callback(null);
-        },
-        function(callback) {
-            async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                logger.debug('Checking uuid for ' + courseInstanceShortName);
-                sqldb.call('course_instances_with_uuid_elsewhere', [courseInfo.courseId, courseInstance.uuid], function(err, result) {
-                    if (ERR(err, callback)) return;
-                    if (result.rowCount > 0) return callback(new Error('UUID ' + courseInstance.uuid + ' from course instance ' + courseInstanceShortName + ' already in use in different course'));
-                    callback(null);
-                });
-            }, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
             async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                 logger.debug('Syncing ' + courseInstance.longName);
                 var params = {
