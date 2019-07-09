@@ -1,17 +1,5 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-function asyncCall(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.call(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        })
-    })
-}
-
 function safeAsync(func, callback) {
     new Promise(async () => {
         let error = null;
@@ -40,6 +28,6 @@ module.exports.sync = function(courseInfo, callback) {
             JSON.stringify(assessmentSetsParams),
             courseInfo.courseId,
         ];
-        await asyncCall('sync_assessment_sets', params);
+        await sqldb.callAsync('sync_assessment_sets', params);
     }, callback);
 }

@@ -1,17 +1,5 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-function asyncCall(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.call(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        });
-    });
-}
-
 function safeAsync(func, callback) {
     new Promise(async () => {
         try {
@@ -66,7 +54,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             JSON.stringify(paramTags),
             courseInfo.courseId,
         ];
-        const res = await asyncCall('sync_course_tags', tagParams);
+        const res = await sqldb.callAsync('sync_course_tags', tagParams);
 
         // We'll get back a single row containing an array of IDs of the tags
         // in order.
@@ -97,6 +85,6 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             paramQuestionTags.push([question.id, tags.map(tag => tagIdsByName[tag])]);
         }
 
-        await asyncCall('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
+        await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
     }, callback);
 }

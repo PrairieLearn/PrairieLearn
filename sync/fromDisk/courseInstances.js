@@ -1,26 +1,12 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var path = require('path');
 var async = require('async');
 
 var logger = require('../../lib/logger');
-var config = require('../../lib/config');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
-
-function asyncCallOneRow(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.callOneRow(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        })
-    })
-}
 
 function safeAsync(func, callback) {
     new Promise(async () => {

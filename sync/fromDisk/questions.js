@@ -16,18 +16,6 @@ const end = (name) => {
     console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
 }
 
-function asyncCallOneRow(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.callOneRow(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        })
-    })
-}
-
 function safeAsync(func, callback) {
     new Promise(async () => {
         let error = null;
@@ -62,7 +50,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         ];
 
         start('questionsDuplicateUUID');
-        const duplicateUuidResult = await asyncCallOneRow('sync_check_duplicate_question_uuids', params);
+        const duplicateUuidResult = await sqldb.callOneRowAsync('sync_check_duplicate_question_uuids', params);
         end('questionsDuplicateUUID');
 
         const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
@@ -135,7 +123,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         ];
 
         start('syncQuestionsSproc');
-        const syncQuestionsResult = await asyncCallOneRow('sync_questions', syncQuestionsParams);
+        const syncQuestionsResult = await sqldb.callOneRowAsync('sync_questions', syncQuestionsParams);
         end('syncQuestionsSproc');
 
         // Associate the new IDs with their respective questions; future

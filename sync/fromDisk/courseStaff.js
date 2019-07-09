@@ -2,18 +2,6 @@ const logger = require('../../lib/logger');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const config = require('../../lib/config');
 
-function asyncCall(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.call(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        })
-    })
-}
-
 function safeAsync(func, callback) {
     new Promise(async () => {
         let error = null;
@@ -45,6 +33,6 @@ module.exports.sync = function(courseInstance, callback) {
             JSON.stringify(usersToSync),
             courseInstance.courseInstanceId,
         ];
-        await asyncCall('sync_course_staff', params);
+        await sqldb.callAsync('sync_course_staff', params);
     }, callback);
 }

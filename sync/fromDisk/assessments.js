@@ -18,18 +18,6 @@ const end = (name) => {
     console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
 }
 
-function asyncCallOneRow(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.callOneRow(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        })
-    })
-}
-
 function safeAsync(func, callback) {
     new Promise(async () => {
         let error = null;
@@ -260,7 +248,7 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         ];
 
         start(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
-        const duplicateUuidResult = await asyncCallOneRow('sync_check_duplicate_assessment_uuids', params);
+        const duplicateUuidResult = await sqldb.callOneRowAsync('sync_check_duplicate_assessment_uuids', params);
         end(`syncAssessments${courseInstance.courseInstanceId}DuplicateUUIDSproc`);
 
         const duplicateUUID = duplicateUuidResult.rows[0].duplicate_uuid;
@@ -278,7 +266,7 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             syncData.check_access_rules_exam_uuid,
         ];
         start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
-        await asyncCallOneRow('sync_assessments', syncParams);
+        await sqldb.callOneRowAsync('sync_assessments', syncParams);
         end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     }, callback);
 }
