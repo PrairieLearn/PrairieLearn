@@ -288,6 +288,7 @@ BEGIN
         WHERE
             a.id = aar.assessment_id
             AND a.deleted_at IS NULL
+            AND a.course_instance_id = sync_assessments.new_course_instance_id
     );
 
     -- Delete unused zones
@@ -298,6 +299,7 @@ BEGIN
         WHERE
             a.id = z.assessment_id
             AND a.deleted_at IS NULL
+            AND a.course_instance_id = sync_assessments.new_course_instance_id
     );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
