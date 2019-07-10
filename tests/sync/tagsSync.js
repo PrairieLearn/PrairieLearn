@@ -1,0 +1,76 @@
+
+const chaiAsPromised = require('chai-as-promised');
+const chai = require('chai');
+chai.use(chaiAsPromised);
+const util = require('./util');
+const helperDb = require('../helperDb');
+
+const { assert } = chai;
+
+function makeTag() {
+  return {
+    name: 'a new tag',
+    color: 'green1',
+    description: 'description for a new tag',
+  };
+}
+
+/**
+ * Checks that the tag present in the database matches the data
+ * from the original tag in `infoCourse.json`.
+ * 
+ * @param {any} syncedTag - The tag from the database
+ * @param {any} tag - The tag from `infoCourse.json`.
+ */
+function checkTag(syncedTag, tag) {
+  assert.isOk(syncedTag);
+  assert.equal(syncedTag.name, tag.name);
+  assert.equal(syncedTag.color, tag.color);
+  assert.equal(syncedTag.description, tag.description);
+}
+
+describe('Assessment set syncing', () => {
+  // use when changing sprocs
+  // before('remove the template database', helperDb.dropTemplate);
+  beforeEach('set up testing database', helperDb.before);
+  afterEach('tear down testing database', helperDb.after);
+
+  it('adds a new tag', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const newTag = makeTag();
+    courseData.course.tags.push(newTag);
+    await util.writeAndSyncCourseData(courseData, courseDir);
+    const syncedTags = await util.dumpTable('tags');
+    const syncedTag = syncedTags.find(tag => tag.name === newTag.name);
+    checkTag(syncedTag, newTag);
+  });
+
+  it('removes a tag', async () => {
+    const courseData = util.getCourseData();
+    const oldTag = makeTag();
+    courseData.course.tags.unshift(oldTag);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    courseData.course.tags.splice(0, 1);
+    await util.writeAndSyncCourseData(courseData, courseDir);
+    const syncedTags = await util.dumpTable('tags');
+    const syncedTag = syncedTags.find(tag => tag.name === oldTag.name);
+    assert.isUndefined(syncedTag);
+  });
+
+  it('renames a tag', async () => {
+    const courseData = util.getCourseData();
+    const oldTag = makeTag();
+    courseData.course.tags.unshift(oldTag);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const oldName = courseData.course.tags[0].name;
+    const newName = 'new name';
+    courseData.course.tags[0].name = newName;
+    await util.writeAndSyncCourseData(courseData, courseDir);
+    const syncedTags = await util.dumpTable('tags');
+    assert.isUndefined(syncedTags.find(tag => tag.name === oldName));
+    const syncedTag = syncedTags.find(as => as.name = newName);
+    checkTag(syncedTag, oldTag);
+  });
+});

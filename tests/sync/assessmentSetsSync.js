@@ -39,12 +39,7 @@ describe('Assessment set syncing', () => {
 
   it('adds a new assessment set', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
-    const newAssessmentSet = {
-      name: 'new assessment set',
-      abbreviation: 'new',
-      heading: 'a new assessment set to sync',
-      color: 'red1',
-    };
+    const newAssessmentSet = makeAssessmentSet();
     courseData.course.assessmentSets.push(newAssessmentSet);
     await util.writeAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
@@ -55,7 +50,7 @@ describe('Assessment set syncing', () => {
   it('removes an assessment set', async () => {
     const courseData = util.getCourseData();
     const oldAssessmentSet = makeAssessmentSet();
-    courseData.course.assessmentSets.shift(oldAssessmentSet);
+    courseData.course.assessmentSets.unshift(oldAssessmentSet);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     courseData.course.assessmentSets.splice(0, 1);
@@ -66,7 +61,11 @@ describe('Assessment set syncing', () => {
   });
 
   it('renames an assessment set', async () => {
-    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const courseData = util.getCourseData();
+    const oldAssessmentSet = makeAssessmentSet();
+    courseData.course.assessmentSets.unshift(oldAssessmentSet);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
     const oldName = courseData.course.assessmentSets[0].name;
     const newName = 'new name';
     courseData.course.assessmentSets[0].name = newName;
