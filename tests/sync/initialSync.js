@@ -23,8 +23,9 @@ describe('Initial Sync', () => {
       const syncedQuestion = questions.find(q => q.qid === qid);
       assert.isOk(syncedQuestion);
       assert.equal(syncedQuestion.uuid, question.uuid);
-      assert.equal(syncedQuestion.qid, 'test');
-      assert.equal(syncedQuestion.type, 'Freeform');
+      assert.equal(syncedQuestion.qid, qid);
+      const expectedType = question.type === 'v3' ? 'Freeform' : question.type;
+      assert.equal(syncedQuestion.type, expectedType);
       assert.equal(syncedQuestion.title, question.title);
     }
 
@@ -59,6 +60,6 @@ describe('Initial Sync', () => {
     const snapshot = await util.captureDatabaseSnapshot();
     await util.syncCourseData(courseDir);
     const newSnapshot = await util.captureDatabaseSnapshot();
-    assert.deepEqual(newSnapshot, snapshot);
+    util.assertSnapshotsMatch(newSnapshot, snapshot);
   });
 });

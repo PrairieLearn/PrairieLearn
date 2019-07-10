@@ -93,6 +93,7 @@
         "coveralls": "^3.0.4",
         "eslint": "^6.0.1",
         "jsdoc": "^3.6.2",
+        "json-stable-stringify": "^1.0.1",
         "mocha": "^6.1.4",
         "nyc": "^14.1.1",
         "request": "^2.87.0",

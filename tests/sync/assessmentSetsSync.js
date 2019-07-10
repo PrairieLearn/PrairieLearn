@@ -22,6 +22,15 @@ function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
   assert.equal(syncedAssessmentSet.color, assessmentSet.color);
 };
 
+function makeAssessmentSet() {
+  return {
+    name: 'new assessment set',
+    abbreviation: 'new',
+    heading: 'a new assessment set to sync',
+    color: 'red1',
+  };
+}
+
 describe('Assessment set syncing', () => {
   // use when changing sprocs
   // before('remove the template database', helperDb.dropTemplate);
@@ -44,8 +53,11 @@ describe('Assessment set syncing', () => {
   });
 
   it('removes an assessment set', async () => {
-    const { courseData, courseDir } = await util.createAndSyncCourseData();
-    const oldAssessmentSet = courseData.course.assessmentSets[0];
+    const courseData = util.getCourseData();
+    const oldAssessmentSet = makeAssessmentSet();
+    courseData.course.assessmentSets.shift(oldAssessmentSet);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
     courseData.course.assessmentSets.splice(0, 1);
     await util.writeAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');

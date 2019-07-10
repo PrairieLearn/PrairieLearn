@@ -2,6 +2,8 @@ const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const stringify = require('json-stable-stringify');
+const { assert } = require('chai');
 
 const syncFromDisk = require('../../sync/syncFromDisk');
 
@@ -75,16 +77,29 @@ const course = {
     abbreviation: 'Test',
     heading: 'Testing set',
     color: 'red1',
+  }, {
+    name: 'ANOTHER TEST',
+    abbreviation: 'Another Test',
+    heading: 'Another testing set',
+    color: 'red2',
   }],
   topics: [{
     name: 'Test',
-    color: 'gray3',
+    color: 'gray1',
     description: 'A test topic',
+  }, {
+    name: 'Another test',
+    color: 'gray2',
+    description: 'Another test topic',
   }],
   tags: [{
     name: 'test',
     color: 'blue1',
     description: 'A test tag',
+  }, {
+    name: 'another test',
+    color: 'blue2',
+    description: 'Another test tag',
   }],
 };
 
@@ -95,6 +110,13 @@ const questions = {
     topic: 'Test',
     tags: ['test'],
     type: 'v3',
+  },
+  test2: {
+    uuid: '697a6188-8215-4806-92a1-592987342b9e',
+    title: 'Another test question',
+    topic: 'Test',
+    tags: ['test'],
+    type: 'Calculation',
   },
 };
 
@@ -170,4 +192,62 @@ module.exports.captureDatabaseSnapshot = async function() {
     questions: await module.exports.dumpTable('questions'),
     questionTags: await module.exports.dumpTable('question_tags'),
   };
+};
+
+/**
+ * Computes setA \ setB.
+ * 
+ * @template T
+ * @param {Set.<T>} setA 
+ * @param {Set.<T>} setB 
+ * @returns {Set.<T>} The difference of setA and setB
+ */
+function setDifference(setA, setB) {
+  return new Set([...setA].filter(x => !setB.has(x)));
+}
+
+/**
+ * Computes setA U setB.
+ * 
+ * @template T
+ * @param {Set.<T>} setA 
+ * @param {Set.<T>}setB 
+ * @returns {Set.<T>} The union of setA and setB
+ */
+function setUnion(setA, setB) {
+  return new Set([...setA, ...setB]);
+}
+
+/**
+ * Checks if two sets contain the same elements.
+ * 
+ * @param {Set.<any>} setA
+ * @param {Set.<any>} setB 
+ * @returns {boolean} whether or not the sets contain the same elements.
+ */
+function checkSetsSame(setA, setB) {
+  const union = setUnion(setA, setB);
+  return setA.size === setB.size && union.size === setA.size;
+}
+
+/**
+ * Asserts that two snapshots match each other. Two snapshots are defined as
+ * matching if they both contain the same keys and if for each key, the array
+ * of values contains the same elements. Elements may be in different orders.
+ * Optionally, a subset of the keys in the snapshot can be ignored.
+ * 
+ * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
+ * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
+ * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
+ */
+module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoreKeys = []) {
+  // Sanity check - make sure both snapshots have the same keys
+  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  for (const key of Object.keys(snapshotA)) {
+    if (ignoreKeys.indexOf(key) !== -1) continue;
+    // Build a set of deterministically-stringified rows for each snapshot
+    const setA = new Set(snapshotA[key].map(s => stringify(s)));
+    const setB = new Set(snapshotB[key].map(s => stringify(s)));
+    assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
+  }
 };
