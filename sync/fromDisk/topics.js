@@ -1,17 +1,5 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
-
-function safeAsync(func, callback) {
-    new Promise(async () => {
-        let error = null;
-        let result;
-        try {
-            result = await func();
-        } catch (err) {
-            error = err;
-        }
-        callback(error, result);
-    });
-};
+const { safeAsync } = require('../../lib/async');
 
 module.exports.sync = function(courseInfo, callback) {
     safeAsync(async () => {

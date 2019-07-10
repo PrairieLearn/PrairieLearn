@@ -4,6 +4,7 @@ const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const config = require('../../lib/config');
+const { safeAsync } = require('../../lib/async');
 
 const perfMarkers = {};
 
@@ -17,19 +18,6 @@ const end = (name) => {
     }
     console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
 }
-
-function safeAsync(func, callback) {
-    new Promise(async () => {
-        let error = null;
-        let result;
-        try {
-            result = await func();
-        } catch (err) {
-            error = err;
-        }
-        callback(error, result);
-    });
-};
 
 /**
  * SYNCING PROCESS:

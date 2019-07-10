@@ -1,14 +1,5 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
-
-function safeAsync(func, callback) {
-    new Promise(async () => {
-        try {
-            callback(await func());
-        } catch (err) {
-            callback(err);
-        }
-    });
-};
+const { safeAsync } = require('../../lib/async');
 
 function getDuplicates(arr) {
     const seen = {};
