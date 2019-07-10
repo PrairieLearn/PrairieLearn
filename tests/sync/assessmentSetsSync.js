@@ -20,7 +20,7 @@ function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
   assert.equal(syncedAssessmentSet.abbreviation, assessmentSet.abbreviation);
   assert.equal(syncedAssessmentSet.heading, assessmentSet.heading);
   assert.equal(syncedAssessmentSet.color, assessmentSet.color);
-};
+}
 
 function makeAssessmentSet() {
   return {

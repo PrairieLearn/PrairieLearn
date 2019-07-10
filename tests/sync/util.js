@@ -353,18 +353,6 @@ module.exports.captureDatabaseSnapshot = async function() {
 };
 
 /**
- * Computes setA \ setB.
- * 
- * @template T
- * @param {Set.<T>} setA 
- * @param {Set.<T>} setB 
- * @returns {Set.<T>} The difference of setA and setB
- */
-function setDifference(setA, setB) {
-  return new Set([...setA].filter(x => !setB.has(x)));
-}
-
-/**
  * Computes setA U setB.
  * 
  * @template T
