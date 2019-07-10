@@ -8,6 +8,7 @@ const helperDb = require('../helperDb');
 const { assert } = chai;
 
 describe('Assessment set syncing', () => {
+  before('wig', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -34,10 +35,8 @@ describe('Assessment set syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const oldAssessmentSet = courseData.course.assessmentSets[0];
     courseData.course.assessmentSets.splice(0, 1);
-    console.log(JSON.stringify(courseData, null, 2));
     await util.writeAndSyncCourseData(courseData, courseDir);
     const assessmentSets = await util.dumpTable('assessment_sets');
-    console.log(assessmentSets);
     const assessmentSet = assessmentSets.find(as => as.name === oldAssessmentSet.name);
     assert.isUndefined(assessmentSet);
   });
