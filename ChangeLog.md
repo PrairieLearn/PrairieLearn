@@ -139,6 +139,8 @@
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
 
+  * Change syncing process to be faster and more efficient (Nathan Walters).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
