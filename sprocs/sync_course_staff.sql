@@ -36,12 +36,10 @@ BEGIN
     UPDATE enrollments AS e
     SET role = 'Student'
     FROM
-        users AS u,
-        course_instances AS ci
+        users AS u
     WHERE
         u.user_id = e.user_id
-        AND ci.id = new_course_instance_id
-        AND ci.id = e.course_instance_id
+        AND e.course_instance_id = new_course_instance_id
         AND u.user_id NOT IN (SELECT unnest(new_user_ids))
         AND e.role != 'Student';
 END;
