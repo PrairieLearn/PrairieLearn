@@ -1,7 +1,5 @@
 
-const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
-chai.use(chaiAsPromised);
 const util = require('./util');
 const helperDb = require('../helperDb');
 
@@ -41,7 +39,7 @@ describe('Assessment set syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const newAssessmentSet = makeAssessmentSet();
     courseData.course.assessmentSets.push(newAssessmentSet);
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === newAssessmentSet.name);
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet);
@@ -54,7 +52,7 @@ describe('Assessment set syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     courseData.course.assessmentSets.splice(0, 1);
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === oldAssessmentSet.name);
     assert.isUndefined(syncedAssessmentSet);
@@ -69,7 +67,7 @@ describe('Assessment set syncing', () => {
     const oldName = courseData.course.assessmentSets[0].name;
     const newName = 'new name';
     courseData.course.assessmentSets[0].name = newName;
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const dbAssessmentSets = await util.dumpTable('assessment_sets');
     assert.isUndefined(dbAssessmentSets.find(as => as.name === oldName));
     const dbAssessmentSet = dbAssessmentSets.find(as => as.name = newName);

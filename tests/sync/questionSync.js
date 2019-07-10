@@ -16,7 +16,7 @@ describe('Question syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
 
     delete courseData.questions['test'];
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     const snapshot = await util.captureDatabaseSnapshot();
     const question = snapshot.questions.find(question => question.qid === 'test');

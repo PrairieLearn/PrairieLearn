@@ -217,14 +217,19 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
     await fs.writeJSON(courseInstanceInfoPath, courseInstance.courseInstance);
 
     // Write all assessments for this course instance
+    const assessmentsPath = path.join(courseInstancePath, 'assessments');
+    await fs.ensureDir(assessmentsPath);
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
-      const assessmentPath = path.join(courseInstancePath, assessmentName);
+      const assessmentPath = path.join(assessmentsPath, assessmentName);
       await fs.ensureDir(assessmentPath);
       const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
     }
   }
 };
+
+module.exports.QUESTION_ID = 'test';
+module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
 const course = {
@@ -264,7 +269,7 @@ const course = {
 
 /** @type {{ [id: string]: Question }} */
 const questions = {
-  test: {
+  [module.exports.QUESTION_ID]: {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
     topic: 'Test',
@@ -282,7 +287,7 @@ const questions = {
 
 /** @type {{ [id: string]: CourseInstanceData }} */
 const courseInstances = {
-  Fa19: {
+  [module.exports.COURSE_INSTANCE_ID]: {
     assessments: {},
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
@@ -342,9 +347,28 @@ module.exports.createAndSyncCourseData = async function() {
   };
 };
 
-module.exports.writeAndSyncCourseData = async function(courseData, coursePath) {
-  await this.writeCourseToDirectory(courseData, coursePath);
-  await this.syncCourseData(coursePath);
+/**
+ * Writes the given course data to a new temporary directory and returns the
+ * path to the directory.
+ * 
+ * @param {CourseData} courseData - The course data to write and sync
+ * @returns {string} the path to the new temp directory
+ */
+module.exports.writeAndSyncCourseData = async function(courseData) {
+  const courseDir = await this.writeCourseToTempDirectory(courseData);
+  await this.syncCourseData(courseDir);
+  return courseDir;
+};
+
+/**
+ * Overwrites the course data in the given directory and 
+ * 
+ * @param {CourseData} courseData - The course data write and sync
+ * @param {string} courseDir - The path to write the course data to
+ */
+module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir) {
+  await this.writeCourseToDirectory(courseData, courseDir);
+  await this.syncCourseData(courseDir);
 };
 
 module.exports.dumpTable = async function(tableName) {

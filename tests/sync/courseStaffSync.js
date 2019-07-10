@@ -13,7 +13,7 @@ describe('Course staff syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalUids = Object.keys(courseData.courseInstances['Fa19'].courseInstance.userRoles);
     courseData.courseInstances['Fa19'].courseInstance.userRoles = {};
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const users = await util.dumpTable('users');
     const syncedEnrollments = await util.dumpTable('enrollments');
     for (const uid of originalUids) {
@@ -30,7 +30,7 @@ describe('Course staff syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     courseData.courseInstances['Fa19'].courseInstance.userRoles[uid] = 'Instructor';
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const users = await util.dumpTable('users');
     const user = users.find(u => u.uid === uid);
     const syncedEnrollments = await util.dumpTable('enrollments');

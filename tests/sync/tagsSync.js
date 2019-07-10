@@ -39,7 +39,7 @@ describe('Assessment set syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const newTag = makeTag();
     courseData.course.tags.push(newTag);
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedTags = await util.dumpTable('tags');
     const syncedTag = syncedTags.find(tag => tag.name === newTag.name);
     checkTag(syncedTag, newTag);
@@ -49,10 +49,9 @@ describe('Assessment set syncing', () => {
     const courseData = util.getCourseData();
     const oldTag = makeTag();
     courseData.course.tags.unshift(oldTag);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
+    const courseDir = await util.writeAndSyncCourseData(courseData);
     courseData.course.tags.splice(0, 1);
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedTags = await util.dumpTable('tags');
     const syncedTag = syncedTags.find(tag => tag.name === oldTag.name);
     assert.isUndefined(syncedTag);
@@ -62,12 +61,11 @@ describe('Assessment set syncing', () => {
     const courseData = util.getCourseData();
     const oldTag = makeTag();
     courseData.course.tags.unshift(oldTag);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
+    const courseDir = await util.writeAndSyncCourseData(courseData);
     const oldName = courseData.course.tags[0].name;
     const newName = 'new name';
     courseData.course.tags[0].name = newName;
-    await util.writeAndSyncCourseData(courseData, courseDir);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedTags = await util.dumpTable('tags');
     assert.isUndefined(syncedTags.find(tag => tag.name === oldName));
     const syncedTag = syncedTags.find(as => as.name = newName);

@@ -140,7 +140,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             throw error.make(400, 'Cannot specify "maxPoints" for a question in an "Exam" assessment', {question});
                         }
                         if (alternative.points == undefined) {
-                            throw error.make(400, 'Must specifiy "points" for a question in an "Exam" assessment', {question});
+                            throw error.make(400, 'Must specify "points" for a question in an "Exam" assessment', {question});
                         }
                         if (_.isArray(alternative.points)) {
                             alternative.pointsList = alternative.points;
@@ -152,7 +152,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                     }
                     if (assessment.type == 'Homework') {
                         if (alternative.points == undefined) {
-                            throw error.make(400, 'Must specifiy "points" for a question in a "Homework" assessment', {question});
+                            throw error.make(400, 'Must specify "points" for a question in a "Homework" assessment', {question});
                         }
                         if (_.isArray(alternative.points)) {
                             throw error.make(400, 'Cannot specify "points" as a list for a question in a "Homework" assessment', {question});
