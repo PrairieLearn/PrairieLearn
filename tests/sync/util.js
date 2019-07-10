@@ -41,8 +41,22 @@ module.exports.course = {
  * @param {CourseData} courseData - The course data to write to disk
  * @returns string - The path to the directory containing the course data
  */
-module.exports.writeCourseToDisk = async function(courseData) {
+module.exports.writeCourseToTempDirectory = async function(courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
+  await this.writeCourseToDirectory(courseData, coursePath);
+  return coursePath;
+};
+
+/**
+ * Accepts a CourseData object and writes it as a PrairieLearn course
+ * into the given directory. Removes any existing content from the
+ * directory.
+ * 
+ * @param {CourseData} courseData - The course data to write to disk
+ * @param {string} coursePath - The path to the directory to write to
+ */
+module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
+  await fs.emptyDir(coursePath);
 
   // courseInfo.json
   const courseInfoPath = path.join(coursePath, 'infoCourse.json');
@@ -76,8 +90,6 @@ module.exports.writeCourseToDisk = async function(courseData) {
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
     }
   }
-
-  return coursePath;
 };
 
 const course = {
@@ -142,6 +154,22 @@ module.exports.syncCourseData = function(courseDir) {
     });
   });
 };
+
+module.exports.createAndSyncCourseData = async function() {
+  const courseData = this.getCourseData();
+  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
+  await module.exports.syncCourseData(courseDir);
+
+  return {
+    courseData,
+    courseDir,
+  };
+};
+
+module.exports.writeAndSyncCourseData = async function(courseData, coursePath) {
+  await this.writeCourseToDirectory(courseData, coursePath);
+  await this.syncCourseData(coursePath);
+}
 
 module.exports.dumpTable = async function(tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});

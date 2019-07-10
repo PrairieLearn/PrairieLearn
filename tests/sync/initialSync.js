@@ -8,7 +8,7 @@ describe('Initial Sync', () => {
 
   it('correctly syncs content from disk to the database', async () => {
     const courseData = util.getCourseData();
-    const courseDir = await util.writeCourseToDisk(courseData);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
     const courses = await util.dumpTable('pl_courses');
@@ -38,7 +38,7 @@ describe('Initial Sync', () => {
 
   it('is idempotent when syncing the exact same course twice', async () => {
     const courseData = util.getCourseData();
-    const courseDir = await util.writeCourseToDisk(courseData);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const snapshot = await util.captureDatabaseSnapshot();
     await util.syncCourseData(courseDir);
