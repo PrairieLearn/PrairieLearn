@@ -2,6 +2,8 @@ const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
 
+const syncFromDisk = require('../../sync/syncFromDisk');
+
 module.exports.course = {
   course: {
     uuid: '1234',
@@ -75,4 +77,67 @@ module.exports.writeCourseToDisk = async function(courseData) {
   }
 
   return coursePath;
+};
+
+const course = {
+  uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
+  name: 'TEST 101',
+  title: 'Test Course',
+  assessmentSets: [],
+  topics: [{
+    name: 'Test',
+    color: 'gray3',
+    description: 'A test topic',
+  }],
+  tags: [{
+    name: 'test',
+    color: 'blue1',
+    description: 'A test tag',
+  }],
+};
+
+const questions = {
+  test: {
+    uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
+    title: 'Test question',
+    topic: 'Test',
+    tags: ['test'],
+    type: 'v3',
+  },
+};
+
+/**
+ * @returns {CourseData} - The base course data for syncing testing
+ */
+module.exports.getCourseData = function() {
+  // Round-trip through JSON.stringify to ensure that mutations to nested
+  // objects aren't reflected in the original objects.
+  const courseData = {
+    course,
+    questions,
+    courseInstances: {},
+  };
+  return JSON.parse(JSON.stringify(courseData));
+};
+
+/**
+ * Async wrapper for syncing course data from a directory. Also stubs out the
+ * logger interface.
+ */
+module.exports.syncCourseData = function(courseDir) {
+  const logger = {
+    verbose: () => {},
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+  };
+  return new Promise((resolve, reject) => {
+    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
 };
