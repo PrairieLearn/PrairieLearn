@@ -169,7 +169,7 @@ module.exports.createAndSyncCourseData = async function() {
 module.exports.writeAndSyncCourseData = async function(courseData, coursePath) {
   await this.writeCourseToDirectory(courseData, coursePath);
   await this.syncCourseData(coursePath);
-}
+};
 
 module.exports.dumpTable = async function(tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
