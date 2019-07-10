@@ -7,18 +7,25 @@ const helperDb = require('../helperDb');
 
 const { assert } = chai;
 
-function checkAssessmentSet(fromDb, original) {
-  assert.isOk(fromDb);
-  assert.equal(fromDb.name, original.name);
-  assert.equal(fromDb.abbreviation, original.abbreviation);
-  assert.equal(fromDb.heading, original.heading);
-  assert.equal(fromDb.color, original.color);
-}
+/**
+ * Checks that the assessment set present in the database matches the data
+ * from the original assessment set in `infoCourse.json`.
+ * 
+ * @param {any} syncedAssessmentSet - The assessment set from the database
+ * @param {any} assessmentSet - The assessment set from `infoCourse.json`.
+ */
+function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
+  assert.isOk(syncedAssessmentSet);
+  assert.equal(syncedAssessmentSet.name, assessmentSet.name);
+  assert.equal(syncedAssessmentSet.abbreviation, assessmentSet.abbreviation);
+  assert.equal(syncedAssessmentSet.heading, assessmentSet.heading);
+  assert.equal(syncedAssessmentSet.color, assessmentSet.color);
+};
 
 describe('Assessment set syncing', () => {
-  before('wig', helperDb.dropTemplate);
   // use when changing sprocs
-  // before('set up testing database', helperDb.before);
+  // before('remove the template database', helperDb.dropTemplate);
+  beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
   it('adds a new assessment set', async () => {
@@ -31,9 +38,9 @@ describe('Assessment set syncing', () => {
     };
     courseData.course.assessmentSets.push(newAssessmentSet);
     await util.writeAndSyncCourseData(courseData, courseDir);
-    const dbAssessmentSets = await util.dumpTable('assessment_sets');
-    const dbAssessmentSet = dbAssessmentSets.find(as => as.name === newAssessmentSet.name);
-    checkAssessmentSet(dbAssessmentSet, newAssessmentSet);
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === newAssessmentSet.name);
+    checkAssessmentSet(syncedAssessmentSet, newAssessmentSet);
   });
 
   it('removes an assessment set', async () => {
@@ -41,9 +48,9 @@ describe('Assessment set syncing', () => {
     const oldAssessmentSet = courseData.course.assessmentSets[0];
     courseData.course.assessmentSets.splice(0, 1);
     await util.writeAndSyncCourseData(courseData, courseDir);
-    const assessmentSets = await util.dumpTable('assessment_sets');
-    const assessmentSet = assessmentSets.find(as => as.name === oldAssessmentSet.name);
-    assert.isUndefined(assessmentSet);
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === oldAssessmentSet.name);
+    assert.isUndefined(syncedAssessmentSet);
   });
 
   it('renames an assessment set', async () => {

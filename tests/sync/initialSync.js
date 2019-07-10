@@ -7,9 +7,7 @@ describe('Initial Sync', () => {
   afterEach('tear down testing database', helperDb.after);
 
   it('correctly syncs content from disk to the database', async () => {
-    const courseData = util.getCourseData();
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
 
     const courses = await util.dumpTable('pl_courses');
     assert.lengthOf(courses, 1);
@@ -19,21 +17,39 @@ describe('Initial Sync', () => {
     assert.isNull(course.deleted_at);
 
     const questions = await util.dumpTable('questions');
-    assert.lengthOf(questions, 1);
-    const [question] = questions;
-    const syncedQuestion = courseData.questions['test'];
-    assert.equal(question.uuid, syncedQuestion.uuid);
-    assert.equal(question.qid, 'test');
-    assert.equal(question.type, 'Freeform');
-    assert.equal(question.title, syncedQuestion.title);
+    assert.lengthOf(questions, Object.keys(courseData.questions).length);
+    for (const qid of Object.keys(courseData.questions)) {
+      const question = courseData.questions[qid];
+      const syncedQuestion = questions.find(q => q.qid === qid);
+      assert.isOk(syncedQuestion);
+      assert.equal(syncedQuestion.uuid, question.uuid);
+      assert.equal(syncedQuestion.qid, 'test');
+      assert.equal(syncedQuestion.type, 'Freeform');
+      assert.equal(syncedQuestion.title, question.title);
+    }
 
     const topics = await util.dumpTable('topics');
-    assert.lengthOf(topics, 1);
-    const [topic] = topics;
-    const [syncedTopic] = courseData.course.topics;
-    assert.equal(topic.name, syncedTopic.name);
-    assert.equal(topic.color, syncedTopic.color);
-    assert.equal(topic.description, syncedTopic.description);
+    // Cannot precisely assert the length of the topics array given that we'll
+    // have additional default topics added for us
+    assert(topics.length >= courseData.course.topics.length);
+    for (const topic of courseData.course.topics) {
+      const syncedTopic = topics.find(t => t.name === topic.name);
+      assert.isOk(syncedTopic);
+      assert.equal(syncedTopic.name, topic.name);
+      assert.equal(syncedTopic.color, topic.color);
+      assert.equal(syncedTopic.description, topic.description);
+    }
+
+    const tags = await util.dumpTable('tags');
+    // As above, we don't know exactly how many tags there will be
+    assert(tags.length >= courseData.course.tags.length);
+    for (const tag of courseData.course.tags) {
+      const syncedTag = tags.find(t => t.name === tag.name);
+      assert.isOk(syncedTag);
+      assert.equal(syncedTag.name, tag.name);
+      assert.equal(syncedTag.color, tag.color);
+      assert.equal(syncedTag.description, tag.description);
+    }
   });
 
   it('is idempotent when syncing the exact same course twice', async () => {
