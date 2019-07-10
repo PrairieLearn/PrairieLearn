@@ -226,6 +226,7 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
   }
 };
 
+/** @type {Course} */
 const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
@@ -261,6 +262,7 @@ const course = {
   }],
 };
 
+/** @type {{ [id: string]: Question }} */
 const questions = {
   test: {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
@@ -278,6 +280,21 @@ const questions = {
   },
 };
 
+/** @type {{ [id: string]: CourseInstanceData }} */
+const courseInstances = {
+  Fa19: {
+    assessments: {},
+    courseInstance: {
+      uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
+      longName: 'Testing instance',
+      userRoles: {
+        'user1@illinois.edu': 'Instructor',
+        'user2@illinois.edu': 'TA',
+      },
+    },
+  },
+};
+
 /**
  * @returns {CourseData} - The base course data for syncing testing
  */
@@ -287,7 +304,7 @@ module.exports.getCourseData = function() {
   const courseData = {
     course,
     questions,
-    courseInstances: {},
+    courseInstances,
   };
   return JSON.parse(JSON.stringify(courseData));
 };
@@ -349,6 +366,8 @@ module.exports.captureDatabaseSnapshot = async function() {
     assessmentQuestions: await module.exports.dumpTable('assessment_questions'),
     questions: await module.exports.dumpTable('questions'),
     questionTags: await module.exports.dumpTable('question_tags'),
+    users: await module.exports.dumpTable('users'),
+    enrollments: await module.exports.dumpTable('enrollments'),
   };
 };
 

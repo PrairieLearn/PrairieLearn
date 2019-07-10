@@ -19,6 +19,8 @@ The following tables are potentially modified during a sync:
 * `assessment_questions`
 * `questions`
 * `question_tags`
+* `users`
+* `enrollments`
 
 ## `infoCourse.json`
 
@@ -55,6 +57,14 @@ The following tables are potentially modified during a sync:
 * A tag is removed
   * The tag should be deleted from the `tags` table
   * Sync should error if any question still references the tag
+
+* Course staff is added
+  * New users, if needed, are created in `users`
+  * Enrollments are created in the `enrollments` table
+* Course staff is removed
+  * Enrollments are downgraded to `Student` in the `enrollments` table
+* Course staff role is changed
+  * Enrollment is updated to the appropriate role in the `enrollments` table
 
 
 ## `infoCourseInstance.json`
