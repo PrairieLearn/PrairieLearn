@@ -1,6 +1,8 @@
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
+const fs = require('fs-extra');
+const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');
 
@@ -40,5 +42,12 @@ describe('Question syncing', () => {
     await util.syncCourseData(secondDirectory);
     // No need for assertions - either sync succeeds, or it'll fail and throw
     // an error, thus failing the test.
+  });
+
+  it('fails if a question directory is missing an info.json file', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await fs.ensureDir(path.join(courseDir, 'questions', 'badQuestion'));
+    await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
   });
 });
