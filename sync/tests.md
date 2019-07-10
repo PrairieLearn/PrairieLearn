@@ -123,3 +123,11 @@ The following tables are potentially modified during a sync:
 * A question with a previously-existing UUID is added again
   * The question is set to have `deleted_at = NULL`
   * The question's tags are created in the `question_tags` table
+
+# Observed behavior to maybe test
+
+* Questions have a ton of default/implicit behavior, including...
+  * `grading_method` is inferred
+  * `client_files` defaults to `[ 'client.js', 'question.html', 'answer.html' ]`
+  * `single_varient` defaults to false
+  * `partial_credit` defaults to true for `v3`

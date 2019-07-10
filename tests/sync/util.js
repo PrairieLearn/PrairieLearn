@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const syncFromDisk = require('../../sync/syncFromDisk');
 
@@ -140,4 +141,26 @@ module.exports.syncCourseData = function(courseDir) {
       }
     });
   });
+};
+
+module.exports.dumpTable = async function(tableName) {
+  const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
+  return res.rows;
+};
+
+module.exports.captureDatabaseSnapshot = async function() {
+  return {
+    courseInstances: await module.exports.dumpTable('course_instances'),
+    assessments: await module.exports.dumpTable('assessments'),
+    assessmentSets: await module.exports.dumpTable('assessment_sets'),
+    topics: await module.exports.dumpTable('topics'),
+    tags: await module.exports.dumpTable('tags'),
+    courseInstanceAccesRules: await module.exports.dumpTable('course_instance_access_rules'),
+    assessmentAccessRules: await module.exports.dumpTable('assessment_access_rules'),
+    zones: await module.exports.dumpTable('zones'),
+    alternativeGroups: await module.exports.dumpTable('alternative_groups'),
+    assessmentQuestions: await module.exports.dumpTable('assessment_questions'),
+    questions: await module.exports.dumpTable('questions'),
+    questionTags: await module.exports.dumpTable('question_tags'),
+  };
 };
