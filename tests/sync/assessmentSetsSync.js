@@ -7,9 +7,18 @@ const helperDb = require('../helperDb');
 
 const { assert } = chai;
 
+function checkAssessmentSet(fromDb, original) {
+  assert.isOk(fromDb);
+  assert.equal(fromDb.name, original.name);
+  assert.equal(fromDb.abbreviation, original.abbreviation);
+  assert.equal(fromDb.heading, original.heading);
+  assert.equal(fromDb.color, original.color);
+}
+
 describe('Assessment set syncing', () => {
   before('wig', helperDb.dropTemplate);
-  beforeEach('set up testing database', helperDb.before);
+  // use when changing sprocs
+  // before('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
   it('adds a new assessment set', async () => {
@@ -22,13 +31,9 @@ describe('Assessment set syncing', () => {
     };
     courseData.course.assessmentSets.push(newAssessmentSet);
     await util.writeAndSyncCourseData(courseData, courseDir);
-    const assessmentSets = await util.dumpTable('assessment_sets');
-    const assessmentSet = assessmentSets.find(as => as.name === newAssessmentSet.name);
-    assert.isOk(assessmentSet);
-    assert.equal(assessmentSet.name, newAssessmentSet.name);
-    assert.equal(assessmentSet.abbreviation, newAssessmentSet.abbreviation);
-    assert.equal(assessmentSet.description, newAssessmentSet.description);
-    assert.equal(assessmentSet.color, newAssessmentSet.color);
+    const dbAssessmentSets = await util.dumpTable('assessment_sets');
+    const dbAssessmentSet = dbAssessmentSets.find(as => as.name === newAssessmentSet.name);
+    checkAssessmentSet(dbAssessmentSet, newAssessmentSet);
   });
 
   it('removes an assessment set', async () => {
@@ -39,5 +44,17 @@ describe('Assessment set syncing', () => {
     const assessmentSets = await util.dumpTable('assessment_sets');
     const assessmentSet = assessmentSets.find(as => as.name === oldAssessmentSet.name);
     assert.isUndefined(assessmentSet);
+  });
+
+  it('renames an assessment set', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const oldName = courseData.course.assessmentSets[0].name;
+    const newName = 'new name';
+    courseData.course.assessmentSets[0].name = newName;
+    await util.writeAndSyncCourseData(courseData, courseDir);
+    const dbAssessmentSets = await util.dumpTable('assessment_sets');
+    assert.isUndefined(dbAssessmentSets.find(as => as.name === oldName));
+    const dbAssessmentSet = dbAssessmentSets.find(as => as.name = newName);
+    checkAssessmentSet(dbAssessmentSet, courseData.course.assessmentSets[0]);
   });
 });
