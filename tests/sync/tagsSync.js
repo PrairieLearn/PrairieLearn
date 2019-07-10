@@ -20,7 +20,7 @@ function makeTag() {
  * from the original tag in `infoCourse.json`.
  * 
  * @param {any} syncedTag - The tag from the database
- * @param {any} tag - The tag from `infoCourse.json`.
+ * @param {import('./util').Tag} tag - The tag from `infoCourse.json`.
  */
 function checkTag(syncedTag, tag) {
   assert.isOk(syncedTag);

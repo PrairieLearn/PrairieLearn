@@ -68,8 +68,105 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {CourseInstanceAllowAccess[]} allowAccess
  */
 
-/** @typedef {{ assessments: object, courseInstance: CourseInstance }} CourseInstanceData */
-/** @typedef {{ course: Course, questions: { [id: string]: object }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
+/**
+ * @typedef {Object} SEBConfig
+ * @property {string} password
+ * @property {string} quitPassword
+ * @property {string[]} allowPrograms
+ */
+
+/**
+ * @typedef {Object} AssessmentAllowAccess
+ * @property {"Public" | "Exam" | "SEB"} mode
+ * @property {string} examUuid
+ * @property {"Student" | "TA" | "Instructor"} role
+ * @property {string[]} uids
+ * @property {number} credit
+ * @property {string} startDate
+ * @property {string} endDate
+ * @property {number} timeLimitMin
+ * @property {string} password
+ * @property {SEBConfig} SEBConfig
+ */
+
+ /**
+  * @typedef {Object} QuestionAlternative
+  * @property {number | number[]} points
+  * @property {numer | number[]} maxPoints
+  * @property {string} id
+  * @property {boolean} forceMaxPoints
+  * @property {number} triesPerVariant
+  */
+
+/**
+ * @typedef {Object} ZoneQuestion
+ * @property {number | number[]} points
+ * @property {number | []} maxPoints
+ * @property {string} id
+ * @property {boolean} forceMaxPoints
+ * @property {QuestionAlternative[]} alternatives
+ * @property {number} numberChoose
+ * @property {number} triesPerVariant
+ */
+
+/**
+ * @typedef {Object} Zone
+ * @property {string} title
+ * @property {number} maxPoints
+ * @property {number} maxChoose
+ * @property {number} bestQuestions
+ * @property {ZoneQuestion[]} questions
+ */
+
+/**
+ * @typedef {Object} Assessment
+ * @property {string} uuid
+ * @property {"Homework" | "Exam"} type
+ * @property {string} title
+ * @property {string} set
+ * @property {string} number
+ * @property {boolean} allowIssueReporting
+ * @property {boolean} multipleInstance
+ * @property {boolean} shuffleQuestions
+ * @property {AssessmentAllowAccess[]} allowAccess
+ * @property {string} text
+ * @property {number} maxPoints
+ * @property {boolean} autoClose
+ * @property {Zone[]} zones
+ * @property {boolean} constantQuestionValue
+ */
+
+/**
+ * @typedef {Object} QuestionExternalGradingOptions
+ * @property {boolean} enabled
+ * @property {string} image
+ * @property {string} entrypoint
+ * @property {string[]} files
+ * @property {string[]} serverFilesCourse
+ * @property {number} timeout
+ * @property {boolean} enableNetworking
+ */
+
+ /**
+  * @typedef {Object} Question
+  * @property {string} uuid
+  * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+  * @property {string} title
+  * @property {string} topic
+  * @property {string[]} secondaryTopics
+  * @property {string[]} tags
+  * @property {string[]} clientFiles
+  * @property {string[]} clientTemplates
+  * @property {string} template
+  * @property {"Internal" | "External" | "Manual"} gradingMethod
+  * @property {boolean} singleVariant
+  * @property {boolean} partialCredit
+  * @property {Object} options
+  * @property {QuestionExternalGradingOptions} externalGradingOptions
+  */
+
+/** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
+/** @typedef {{ course: Course, questions: { [id: string]: Question }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
 
 /**
  * Accepts a CourseData object and creates a PrairieLearn course directory
