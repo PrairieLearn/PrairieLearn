@@ -292,7 +292,6 @@ BEGIN
     );
 
     -- Delete unused zones
-    -- TODO: how inefficient is this? can we be smarter about this (limit by course instance ID?)
     DELETE FROM zones AS z
     WHERE NOT EXISTS (
         SELECT 1 FROM assessments AS a
