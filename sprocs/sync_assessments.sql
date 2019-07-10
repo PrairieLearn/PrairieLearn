@@ -58,7 +58,7 @@ BEGIN
                 NULL,
                 sync_assessments.new_course_instance_id,
                 assessment->>'text',
-                COALESCE((SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id), NULL),
+                (SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id),
                 (assessment->>'constant_question_value')::boolean,
                 (assessment->>'allow_issue_reporting')::boolean
         )

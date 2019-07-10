@@ -101,6 +101,8 @@ The following tables are potentially modified during a sync:
   * The zone is removed from the `zones` table
   * The zone's alternative groups are removed from the `alternative_groups` table
   * The assessment questions under the zone are soft-deleted
+* An assessment uses a `set` that does not exist in the course
+  * An error should be thrown
 
 ## `question.json`
 
