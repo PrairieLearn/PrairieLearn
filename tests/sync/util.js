@@ -5,32 +5,6 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const syncFromDisk = require('../../sync/syncFromDisk');
 
-module.exports.course = {
-  course: {
-    uuid: '1234',
-  },
-  questions: {
-    qid: {
-      uuid: '1234',
-    },
-    qid2: {
-      uuid: '4321',
-    },
-  },
-  courseInstances: {
-    sp15: {
-      assessments: {
-        exam1: {
-          uuid: '1423',
-        },
-      },
-      courseInstance: {
-        uuid: '4321',
-      },
-    },
-  },
-};
-
 /** @typedef {{ assessments: object, courseInstance: object }} CourseInstanceData */
 /** @typedef {{ course: object, questions: { [id: string]: object }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
 
