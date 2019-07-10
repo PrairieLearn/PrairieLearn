@@ -282,11 +282,11 @@ BEGIN
         AND a.id NOT IN (SELECT unnest(new_assessment_ids));
 
     -- Delete unused assessment access rules
-    DELETE FROM assessment_access_rules AS tar
+    DELETE FROM assessment_access_rules AS aar
     WHERE NOT EXISTS (
         SELECT 1 FROM assessments AS a
         WHERE
-            a.id = tar.assessment_id
+            a.id = aar.assessment_id
             AND a.deleted_at IS NULL
     );
 
