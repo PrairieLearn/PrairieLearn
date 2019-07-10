@@ -7,8 +7,69 @@ const { assert } = require('chai');
 
 const syncFromDisk = require('../../sync/syncFromDisk');
 
-/** @typedef {{ assessments: object, courseInstance: object }} CourseInstanceData */
-/** @typedef {{ course: object, questions: { [id: string]: object }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
+/**
+ * @typedef {Object} CourseOptions
+ * @property {boolean} useNewQuestionRenderer
+ */
+
+/**
+ * @typedef {Object} Tag
+ * @property {string} name
+ * @property {string} color
+ * @property {string} description
+ */
+
+/**
+ * @typedef {Object} Topic
+ * @property {string} name
+ * @property {string} color
+ * @property {string} description
+ */
+
+/**
+ * @typedef {Object} AssessmentSet
+ * @property {string} abbreviation
+ * @property {string} name
+ * @property {string} heading
+ * @property {string} color
+ */
+
+/** 
+ * @typedef {Object} Course
+ * @property {string} uuid
+ * @property {string} name
+ * @property {string} title
+ * @property {string} timezone
+ * @property {CourseOptions} options
+ * @property {Tag[]} tags
+ * @property {Topic[]} topics
+ * @property {AssessmentSet[]} assessmentSets
+ */
+
+/** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
+/** @typedef {"UIUC" | "ZJUI" | "LTI" | "Any"} Institution */
+
+/**
+ * @typedef {Object} CourseInstanceAllowAccess
+ * @property {UserRule} role
+ * @property {string[]} uids
+ * @property {string} startDate
+ * @property {string} endDate
+ * @property {Institution} institution
+ */
+
+/**
+ * @typedef {Object} CourseInstance
+ * @property {string} uuid
+ * @property {string} longName
+ * @property {number} number
+ * @property {string} timezone
+ * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
+ * @property {CourseInstanceAllowAccess[]} allowAccess
+ */
+
+/** @typedef {{ assessments: object, courseInstance: CourseInstance }} CourseInstanceData */
+/** @typedef {{ course: Course, questions: { [id: string]: object }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
 
 /**
  * Accepts a CourseData object and creates a PrairieLearn course directory
