@@ -255,6 +255,8 @@
 
   * Fix CSRF checking for external grading live updates (Nathan Walters).
 
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
