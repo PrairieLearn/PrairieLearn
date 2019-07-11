@@ -121,7 +121,7 @@ describe('Assessments syncing', () => {
     assert.isNotNull(syncedData.assessment_questions[0].deleted_at);
   });
 
-  it.only('removes an access rule from an exam', async () => {
+  it('removes an access rule from an exam', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowAccess.push({
