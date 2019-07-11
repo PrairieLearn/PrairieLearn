@@ -88,6 +88,8 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             paramQuestionTags.push([question.id, tags.map(tag => tagIdsByName[tag])]);
         }
 
+        console.log(JSON.stringify(paramQuestionTags, null, 2));
+
         await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
     }, callback);
 }
