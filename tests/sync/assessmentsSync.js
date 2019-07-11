@@ -30,7 +30,7 @@ function makeAssessment(courseData, type = 'Exam') {
   };
 }
 
-async function getSyncedData(tid) {
+async function getSyncedAssessmentData(tid) {
   const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {tid});
   return res.rows[0];
 }
@@ -54,7 +54,7 @@ describe('Assessments syncing', () => {
     });
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const syncedData = await getSyncedData('newexam');
+    const syncedData = await getSyncedAssessmentData('newexam');
 
     assert.lengthOf(syncedData.zones, 2);
     assert.equal(syncedData.zones[0].title, 'zone 1');
@@ -85,7 +85,7 @@ describe('Assessments syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedData = await getSyncedData('newexam');
+    const syncedData = await getSyncedAssessmentData('newexam');
     assert.lengthOf(syncedData.zones, 1);
     assert.lengthOf(syncedData.alternative_groups, 1);
     assert.lengthOf(syncedData.assessment_questions, 2);
@@ -111,7 +111,7 @@ describe('Assessments syncing', () => {
     assessment.zones.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const syncedData = await getSyncedDatay('newexam');
+    const syncedData = await getSyncedAssessmentData('newexam');
 
     assert.lengthOf(syncedData.zones, 0);
     assert.lengthOf(syncedData.alternative_groups, 0);
