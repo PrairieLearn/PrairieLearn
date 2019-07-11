@@ -101,6 +101,42 @@ describe('Assessments syncing', () => {
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
+  it.only('reuses assessment questions when questions are removed and added again', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones = [{
+      title: 'zone 1',
+      questions: [{
+        id: util.QUESTION_ID,
+        points: 5,
+      }, {
+        id: util.ALTERNATIVE_QUESTION_ID,
+        points: 10,
+      }],
+    }];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    let syncedData = await getSyncedAssessmentData('newexam');
+    const originalFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    const originalSecondSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+
+    const removedQuestion = assessment.zones[0].questions.shift();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedData = await getSyncedAssessmentData('newexam');
+    const deletedFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    assert.isOk(deletedFirstSyncedAssessmentQuestion);
+    assert.isNotNull(deletedFirstSyncedAssessmentQuestion.deleted_at);
+
+    assessment.zones[0].questions.push(removedQuestion);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedData = await getSyncedAssessmentData('newexam');
+    const newFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    const newSecondSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    // The questions were reordered, but they should still have the same assessment question IDs
+    assert.equal(newFirstSyncedAssessmentQuestion.id, originalSecondSyncedAssessmentQuestion.id);
+    assert.equal(newSecondSyncedAssessmentQuestion.id, originalFirstSyncedAssessmentQuestion.id);
+  });
+
   it('removes a zone from an assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
