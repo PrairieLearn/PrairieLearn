@@ -323,8 +323,35 @@ def test(element_html, data):
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = str(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        # Get method of comparison, with relabs as default
+        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        if comparison == 'relabs':
+            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
+            atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            # Get max error according to numpy.allclose()
+            eps = np.absolute(a_tru) * rtol + atol
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        elif comparison == 'sigfig':
+            digits = pl.get_integer_attrib(element, 'digits', 2)
+            # Get max error according to pl.is_correct_scalar_sf()
+            if (a_tru == 0):
+                n = digits - 1
+            else:
+                n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
+            eps = 0.51 * (10**-n)
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        elif comparison == 'decdig':
+            digits = pl.get_integer_attrib(element, 'digits', 2)
+            # Get max error according to pl.is_correct_scalar_dd()
+            eps = 0.51 * (10**-digits)
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        else:
+            raise ValueError('method of comparison "%s" is not valid' % comparison)
+        data['raw_submitted_answers'][name] = str(answer)
     elif result == 'invalid':
         # FIXME: add more invalid expressions, make text of format_errors
         # correct, and randomize

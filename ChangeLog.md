@@ -179,6 +179,8 @@
 
   * Fix Python linter errors in (Matt West).
 
+  * Fix flaky test cases in pl-number-input which didn't handle comparison options properly
+
   * Fix `pl-code` HTML escaping (Nathan Walters).
 
   * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
