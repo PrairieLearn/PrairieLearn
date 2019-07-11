@@ -10,7 +10,6 @@ import random
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 SIZE_DEFAULT = 35
-NONE_DEFAULT = None
 DIGITS_DEFAULT = 2
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = 'inline'
@@ -57,8 +56,8 @@ def format_true_ans(element, data, name):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', NONE_DEFAULT)
-    suffix = pl.get_string_attrib(element, 'suffix', NONE_DEFAULT)
+    label = pl.get_string_attrib(element, 'label', None)
+    suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
 
     if data['panel'] == 'question':

@@ -179,8 +179,6 @@
 
   * Fix Python linter errors in (Matt West).
 
-  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
-
   * Fix `pl-code` HTML escaping (Nathan Walters).
 
   * Fix legacy question renderer by explicitly using `htmlparser2` for cheerio (Nathan Walters).
@@ -256,6 +254,8 @@
   * Fix help text CSV upload example with `points` (Matt West, h/t Mariana Silva and James Balamuta).
 
   * Fix CSRF checking for external grading live updates (Nathan Walters).
+
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
