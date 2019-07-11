@@ -3,13 +3,16 @@
 -- questions that are no longer in use by the course. Returns an array
 -- of IDs for each created or update question.
 
+DROP FUNCTION IF EXISTS sync_questions(JSONB, bigint);
 CREATE OR REPLACE FUNCTION
     sync_questions(
         IN new_questions JSONB,
         IN new_course_id bigint,
-        OUT new_question_ids bigint[]
+        OUT new_questions_json JSONB
     )
 AS $$
+DECLARE
+    new_question_ids bigint[];
 BEGIN
     WITH new_questions AS (
         INSERT INTO questions (
@@ -54,7 +57,7 @@ BEGIN
             question->>'external_grading_entrypoint',
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean
-        FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) WITH ORDINALITY AS t(question, number)
+        FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
             qid = EXCLUDED.qid,
@@ -77,9 +80,28 @@ BEGIN
             external_grading_enable_networking = EXCLUDED.external_grading_enable_networking
         WHERE
             questions.course_id = new_course_id
-        RETURNING id, number
+        RETURNING id, qid
+    ),
+    questions_json AS (
+        SELECT
+            coalesce(
+                jsonb_agg(jsonb_build_object(
+                    'qid', qid,
+                    'id', id
+                )),
+                '[]'::jsonb
+            ) AS questions_json
+        FROM new_questions
+    ),
+    question_ids AS (
+        SELECT array_agg(id) AS question_ids
+        FROM new_questions
     )
-    SELECT array_agg(id) INTO new_question_ids FROM (SELECT id FROM new_questions ORDER BY number ASC) AS ids;
+    SELECT
+        questions_json.questions_json,
+        question_ids.question_ids
+    FROM questions_json, question_ids
+    INTO new_questions_json, new_question_ids;
 
     -- Soft-delete any unused questions
     UPDATE questions AS q

@@ -79,9 +79,9 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
 
         // Associate the new IDs with their respective questions; future
         // states of the sync process will need these
-        const newQuestionIds = syncQuestionsResult.rows[0].new_question_ids;
-        questionsParam.forEach((questionParam, index) => {
-            questionDB[questionParam.qid].id = newQuestionIds[index];
+        const newQuestions = syncQuestionsResult.rows[0].new_questions_json;
+        newQuestions.forEach((idMapping) => {
+            questionDB[idMapping.qid].id = idMapping.id;
         });
     }, callback);
 }

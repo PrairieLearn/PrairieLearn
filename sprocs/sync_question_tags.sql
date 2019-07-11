@@ -18,7 +18,7 @@ BEGIN
             ) SELECT
                 (question->>0)::bigint,
                 tag_id::bigint
-            FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) WITH ORDINALITY AS tag_id
+            FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) WITH ORDINALITY AS t(tag_id, number)
             ON CONFLICT (question_id, tag_id) DO NOTHING
             RETURNING id
         )

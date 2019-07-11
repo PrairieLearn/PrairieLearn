@@ -248,8 +248,6 @@ BEGIN
             assessment_id = new_assessment_id
             AND ((number < 1) OR (number > (assessment->>'lastAlternativeGroupNumber')::integer));
 
-        
-
         -- Soft-delete unused assessment questions
         UPDATE assessment_questions AS aq
         SET
