@@ -12,16 +12,24 @@ describe('Question syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
-  it('soft-deletes questions that are removed from the course', async () => {
+  it('sof-deletes and restores questions', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const oldSyncedQuestions = await util.dumpTable('questions');
+    const oldSyncedQuestion = oldSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
 
-    delete courseData.questions['test'];
+    const oldQuestion = courseData.questions[util.QUESTION_ID];
+    delete courseData.questions[util.QUESTION_ID];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const midSyncedQuestions = await util.dumpTable('questions');
+    const midSyncedQuestion = midSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    assert.isOk(midSyncedQuestion);
+    assert.isNotNull(midSyncedQuestion.deleted_at);
 
-    const snapshot = await util.captureDatabaseSnapshot();
-    const question = snapshot.questions.find(question => question.qid === 'test');
-    assert.isOk(question);
-    assert.isNotNull(question.deleted_at);
+    courseData.questions[util.QUESTION_ID] = oldQuestion;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedQuestions = await util.dumpTable('questions');
+    const newSyncedQuestion = newSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    assert.deepEqual(newSyncedQuestion, oldSyncedQuestion);
   });
 
   it('fails if same UUID is used in multiple questions', async () => {

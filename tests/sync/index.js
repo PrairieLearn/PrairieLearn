@@ -1,5 +1,6 @@
 require('./initialSync');
-require('./questionSync');
+require('./questionsSync');
 require('./assessmentSetsSync');
 require('./tagsSync');
 require('./courseStaffSync');
+require('./assessmentsSync');

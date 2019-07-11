@@ -62,7 +62,7 @@ describe('Assessments syncing', () => {
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
   });
 
-  it.only('removes a zone from an assessment', async () => {
+  it('removes a zone from an assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones.push({
