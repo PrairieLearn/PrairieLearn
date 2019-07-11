@@ -32,13 +32,6 @@ describe('Question syncing', () => {
     assert.deepEqual(newSyncedQuestion, oldSyncedQuestion);
   });
 
-  it('fails if same UUID is used in multiple questions', async () => {
-    const courseData = util.getCourseData();
-    courseData.questions['test2'] = courseData.questions['test'];
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir));
-  });
-
   it('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
@@ -50,6 +43,27 @@ describe('Question syncing', () => {
     await util.syncCourseData(secondDirectory);
     // No need for assertions - either sync succeeds, or it'll fail and throw
     // an error, thus failing the test.
+  });
+
+  it('fails if a question has unknown tags', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].tags.push('not a real tag');
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /invalid "tags"/);
+  });
+
+  it('fails if a question has duplicate tags', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].tags.push(courseData.questions[util.QUESTION_ID].tags[0]);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /duplicate tags/);
+  });
+
+  it('fails if same UUID is used in multiple questions', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir));
   });
 
   it('fails if a question directory is missing an info.json file', async () => {

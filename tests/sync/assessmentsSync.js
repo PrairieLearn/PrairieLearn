@@ -67,7 +67,7 @@ describe('Assessments syncing', () => {
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
   });
 
-  it.only('syncs a zone with alternatives', async () => {
+  it('syncs a zone with alternatives', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones.push({
