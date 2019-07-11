@@ -14,16 +14,12 @@ BEGIN
         WITH new_tags AS (
             INSERT INTO question_tags (
                 question_id,
-                tag_id,
-                number
+                tag_id
             ) SELECT
                 (question->>0)::bigint,
-                tag_id::bigint,
-                number
-            FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) WITH ORDINALITY AS t(tag_id, number)
-            ON CONFLICT (question_id, tag_id) DO UPDATE
-            SET
-                number = EXCLUDED.number
+                tag_id::bigint
+            FROM JSONB_ARRAY_ELEMENTS_TEXT(question->1) WITH ORDINALITY AS tag_id
+            ON CONFLICT (question_id, tag_id) DO NOTHING
             RETURNING id
         )
         DELETE FROM question_tags AS qt
