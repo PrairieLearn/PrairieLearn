@@ -37,7 +37,7 @@ async function getSyncedAssessmentData(tid) {
   return res.rows[0];
 }
 
-describe('Assessments syncing', () => {
+describe('Assessment syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 

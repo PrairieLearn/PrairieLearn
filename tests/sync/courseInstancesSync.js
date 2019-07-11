@@ -1,6 +1,8 @@
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
+const fs = require('fs-extra');
+const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');
 
@@ -35,5 +37,19 @@ describe('Course instance syncing', () => {
     assert.isOk(newSyncedCourseInstance);
     assert.isNull(newSyncedCourseInstance.deleted_at);
     assert.deepEqual(newSyncedCourseInstance, originalSyncedCourseInstance);
+  });
+
+  it('fails if same UUID is used in multiple course instances', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances['newinstance'] = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /used in multiple course instances/);
+  });
+
+  it('fails if a course instance directory is missing an infoCourseInstance.json file', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await fs.ensureDir(path.join(courseDir, 'courseInstances', 'badCourseInstance'));
+    await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
   });
 });

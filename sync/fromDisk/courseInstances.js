@@ -11,7 +11,7 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             .each(function(courseInstances, uuid) {
                 if (courseInstances.length > 1) {
                     const directories = courseInstances.map(ci => ci.directory).join(', ')
-                    throw new Error(`UUID ${uuid} is used in multiple course instanced: ${directories}`);
+                    throw new Error(`UUID ${uuid} is used in multiple course instances: ${directories}`);
                 }
             });
 
