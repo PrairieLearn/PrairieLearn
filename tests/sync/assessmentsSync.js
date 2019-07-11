@@ -17,6 +17,7 @@ const { assert } = chai;
  * 
  * @param {import('./util').CourseData} courseData
  * @param {"Homework" | "Exam"} type
+ * @returns {import('./util').Assessment}
  */
 function makeAssessment(courseData, type = 'Exam') {
   const assessmentSet = courseData.course.assessmentSets[0].name;
@@ -27,6 +28,7 @@ function makeAssessment(courseData, type = 'Exam') {
     set: assessmentSet,
     number: '1',
     zones: [],
+    allowAccess: [],
   };
 }
 
@@ -117,6 +119,30 @@ describe('Assessments syncing', () => {
     assert.lengthOf(syncedData.alternative_groups, 0);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isNotNull(syncedData.assessment_questions[0].deleted_at);
+  });
+
+  it.only('removes an access rule from an exam', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess.push({
+      mode: 'Exam',
+      role: 'Student',
+    }, {
+      mode: 'Public',
+      role: 'TA',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const syncedAssessments = await util.dumpTable('assessments');
+    const originalSyncedAssessment = syncedAssessments.find(a => a.tid === 'newexam');
+
+    assessment.allowAccess.shift();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessment = syncedAssessmentAccessRules.filter(aar => aar.assessment_id === originalSyncedAssessment.id);
+    assert.lengthOf(rulesForAssessment, 1);
+    assert.equal(rulesForAssessment[0].role, 'TA');
+    assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
   it('fails if an assessment uses a set that is not present in the course', async () => {
