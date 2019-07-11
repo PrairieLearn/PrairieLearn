@@ -7,7 +7,7 @@ branches:
   - /^dependabot\//
 notifications:
   slack:
-    secure: DzxZ8DNGFANLnls0j0/hiKjwg6aO/gI3UO8SiRKjqCO/x27uvBCJiDkTqCx834XVzuDBp6LIdHbyUuwRFyaVHyFYTbA0pqE4fe4/DxkK5DuRDj89cw8JgoK7/g9m/J9Y6GvwaOaE4SW0tnHeTwNDVCt7/w8rn1kxDo/tWtS+3cg=
+    secure: g50KkD1G8z10AM3OHtYzdQbmoaNnQk//Wj41p5ELNGobbNe+oj5EEz5qurUw0aV5KcQojxV6HhF1b1NnzyLiuHCN0Pt2bR+qyuwuN2RgnDaXq+FzLX7hcL9VRX9dOQBw9N78lsFOZxZzPz7+z5a8JWsndAJ1t1vqz0C8r08yr/OipFoBpz4YBRq4mUrjPVz+G//xADb/z3xQXYu/ZrU7M/+OwaBgaIxsY6Sau6/IwRYLvV6WWxhl0dBk/nWmsb40FPhLdCOLUTbSj9I7lX9f7y0Os+EWe634KbBzOqZ31BAcO0vf9ookzY1KQMXLfrfPpVbjsUsL1ZqGdqVwcW4C8qDS/2RjRKcVyb9skYlAW1uJnVPmnbDV8MhjrmyCCTVYzF1DpYg0ybkBkfCd+Q+2qYLIu3rC2ybCLxiYPi2/eBkRKT63veokNZYe/kB9hXBPdI7xj6/QFR/OFAUM4NmatllwzJ31fUKG1NyoWGcxbmH27nEKDaZMPh1KGCIM+vILB07EYqi+l2a8ArddfUFtRdIh2kHtg14+8mnhvC4WuqBUvM6u6E/YBmmaGELP40sbZKOokK1lkwZQiSJbK8QDvjF1SBrCTRRzepj0xl74w7qb+oVjZgkB5o1pZgTe+fbdaLrM5I53wBiRxAsCMXsEL/RdEZH0/ewWQIj5W5B2aLs=
 script:
   - npm run lint -s
   - npm run test
