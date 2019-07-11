@@ -12,7 +12,7 @@ describe('Question syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
-  it('sof-deletes and restores questions', async () => {
+  it('soft-deletes and restores questions', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const oldSyncedQuestions = await util.dumpTable('questions');
     const oldSyncedQuestion = oldSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
