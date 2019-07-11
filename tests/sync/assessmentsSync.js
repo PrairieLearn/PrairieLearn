@@ -101,7 +101,7 @@ describe('Assessment syncing', () => {
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
-  it.only('reuses assessment questions when questions are removed and added again', async () => {
+  it('reuses assessment questions when questions are removed and added again', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones = [{
@@ -281,6 +281,24 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await assert.isRejected(util.syncCourseData(courseDir), /Invalid QID/);
+  });
+
+  it('fails if an assessment references a QID more than once', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [{
+        id: util.QUESTION_ID,
+        points: 5,
+      }, {
+        id: util.QUESTION_ID,
+        points: 5,
+      }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /more than once/);
   });
 
   it('fails if the same UUID is used multiple times in one course instance', async () => {

@@ -101,6 +101,15 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             };
         });
 
+        // Track which QIDs we've seen so we can detect duplicates
+        const usedQIDs = new Set();
+        function checkAndRecordQID(qid) {
+            if (usedQIDs.has(qid)) {
+                throw new Error(`Assessment "${assessment.tid}" uses question "${qid}" more than once.`);
+            }
+            usedQIDs.add(qid);
+        }
+
         let alternativeGroupNumber = 0;
         let assessmentQuestionNumber = 0;
         assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
@@ -108,6 +117,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 let alternatives;
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
+                    question.alternaives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
                         return {
                             qid: alternative.id,
@@ -119,6 +129,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         };
                     });
                 } else if (_(question).has('id')) {
+                    checkAndRecordQID(question.id);
                     alternatives = [
                         {
                             qid: question.id,
