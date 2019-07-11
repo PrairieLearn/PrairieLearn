@@ -179,7 +179,7 @@
 
   * Fix Python linter errors in (Matt West).
 
-  * Fix flaky test cases in pl-number-input which didn't handle comparison options properly
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
 
   * Fix `pl-code` HTML escaping (Nathan Walters).
 
