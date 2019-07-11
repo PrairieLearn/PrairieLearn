@@ -7,13 +7,14 @@ window.InstructorFileEditor = function(uuid, options) {
         throw new Error('Instructor file editor element ' + elementId + ' was not found!');
     }
 
+    this.saveElement = this.element.find('button[value=save_and_sync]');
     this.inputElement = this.element.find('input[name=file_edit_contents]');
     this.editorElement = this.element.find('.editor');
     this.editor = ace.edit(this.editorElement.get(0));
     this.editor.setTheme('ace/theme/chrome');
     this.editor.getSession().setUseWrapMode(true);
     this.editor.setShowPrintMargin(false);
-    this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
+    this.editor.getSession().on('change', this.onChange.bind(this));
 
     if (options.aceMode) {
         this.editor.getSession().setMode(options.aceMode);
@@ -33,11 +34,11 @@ window.InstructorFileEditor = function(uuid, options) {
         this.editor.setTheme('ace/theme/chrome');
     }
 
-    let contents = '';
+    this.originalContents = '';
     if (options.contents) {
-        contents = this.b64DecodeUnicode(options.contents);
+        this.originalContents = this.b64DecodeUnicode(options.contents);
     }
-    this.setEditorContents(contents);
+    this.setEditorContents(this.originalContents);
 };
 
 window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
@@ -45,6 +46,7 @@ window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.gotoLine(1, 0);
     this.editor.focus();
     this.syncFileToHiddenInput();
+    this.checkDiff();
 };
 
 window.InstructorFileEditor.prototype.syncFileToHiddenInput = function() {
@@ -65,4 +67,13 @@ window.InstructorFileEditor.prototype.b64EncodeUnicode = function(str) {
     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
         return String.fromCharCode('0x' + p1);
     }));
+};
+
+window.InstructorFileEditor.prototype.onChange = function() {
+    this.syncFileToHiddenInput();
+    this.checkDiff();
+};
+
+window.InstructorFileEditor.prototype.checkDiff = function() {
+    this.saveElement.prop('disabled', (this.editor.getValue() == this.originalContents));
 };
