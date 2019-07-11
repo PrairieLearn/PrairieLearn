@@ -17,6 +17,8 @@ const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
 
+// Performance data can be logged by setting the `PROFILE_SYNC` environment variable
+
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
