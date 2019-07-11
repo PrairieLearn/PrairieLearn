@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
+
   * Add feedback for correct answers in submitted answer panel (Brian Mercer).
 
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
@@ -92,6 +94,8 @@
   * Add in-browser editing of course files (Tim Bretl).
 
   * Add question score information to `all_submissions` CSV download (Matt West).
+
+  * Add warning to `pl-checkbox` if `partial-credit-method` is set but `partial-credit` is not enabled (Nathan Walters).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -250,6 +254,10 @@
   * Fix best submissions downloads to use ungraded submissions as a last resort (Matt West).
 
   * Fix help text CSV upload example with `points` (Matt West, h/t Mariana Silva and James Balamuta).
+
+  * Fix CSRF checking for external grading live updates (Nathan Walters).
+
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 

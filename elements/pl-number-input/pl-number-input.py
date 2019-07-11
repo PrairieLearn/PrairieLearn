@@ -7,6 +7,19 @@ import numpy as np
 import random
 
 
+RTOL_DEFAULT = 1e-2
+ATOL_DEFAULT = 1e-8
+SIZE_DEFAULT = 35
+DIGITS_DEFAULT = 2
+WEIGHT_DEFAULT = 1
+DISPLAY_DEFAULT = 'inline'
+COMPARISON_DEFAULT = 'relabs'
+ALLOW_COMPLEX_DEFAULT = False
+SHOW_HELP_TEXT_DEFAULT = True
+SHOW_PLACEHOLDER_DEFAULT = True
+SHOW_CORRECT_ANSWER_DEFAULT = True
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -25,15 +38,15 @@ def format_true_ans(element, data, name):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
         # Get comparison parameters
-        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
             # FIXME: render correctly with respect to rtol and atol
             a_tru = '{:.12g}'.format(a_tru)
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             a_tru = pl.string_from_number_sigfig(a_tru, digits=digits)
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             a_tru = '{:.{ndigits}f}'.format(a_tru, ndigits=digits)
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
@@ -45,7 +58,7 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
-    display = pl.get_string_attrib(element, 'display', 'inline')
+    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -57,7 +70,7 @@ def render(element_html, data):
             'label': label,
             'suffix': suffix,
             'editable': editable,
-            'size': pl.get_integer_attrib(element, 'size', 35),
+            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
             'uuid': pl.get_uuid()
         }
 
@@ -76,22 +89,22 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-            atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+            atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
             if (rtol < 0):
                 raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
             if (atol < 0):
                 raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
             info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
@@ -99,14 +112,14 @@ def render(element_html, data):
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
         # Update parameters for the info popup
-        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, 'show-correct-answer', True)
-        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
-        info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', True)
+        show_correct = 'correct' in html_params and pl.get_boolean_attrib(element, 'show-correct-answer', SHOW_CORRECT_ANSWER_DEFAULT)
+        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
+        info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT)
         info_params['show_correct'] = show_correct
 
         # Find the true answer to be able to display it in the info popup
         ans_true = None
-        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
+        if pl.get_boolean_attrib(element, 'show-correct-answer', SHOW_CORRECT_ANSWER_DEFAULT):
             ans_true = format_true_ans(element, data, name)
         if ans_true is not None:
             info_params['a_tru'] = ans_true
@@ -117,20 +130,20 @@ def render(element_html, data):
             info_params.pop('format', None)
             # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
             # Here we opt to not generate the value, hence the placeholder is empty.
-            info_params['shortformat'] = pl.get_boolean_attrib(element, 'show-placeholder', True)
+            info_params['shortformat'] = pl.get_boolean_attrib(element, 'show-placeholder', SHOW_PLACEHOLDER_DEFAULT)
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params['info'] = info
         html_params['shortinfo'] = shortinfo
 
         # Determine the title of the popup based on what information is being shown
-        if pl.get_boolean_attrib(element, 'show-help-text', True):
+        if pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT):
             html_params['popup_title'] = 'Number'
         else:
             html_params['popup_title'] = 'Correct Answer'
 
         # Enable or disable the popup
-        if pl.get_boolean_attrib(element, 'show-help-text', True) or show_correct:
+        if pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT) or show_correct:
             html_params['show_info'] = True
         html_params['display_append_span'] = 'questionmark' in html_params or suffix
 
@@ -173,7 +186,7 @@ def render(element_html, data):
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
-        if pl.get_boolean_attrib(element, 'show-correct-answer', True):
+        if pl.get_boolean_attrib(element, 'show-correct-answer', SHOW_CORRECT_ANSWER_DEFAULT):
             ans_true = format_true_ans(element, data, name)
         if ans_true is not None:
             html_params['a_tru'] = ans_true
@@ -211,7 +224,7 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -241,7 +254,7 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -284,18 +297,18 @@ def grade(element_html, data):
         a_tru = np.float64(a_tru)
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
 
     # Compare submitted answer with true answer
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-        atol = pl.get_float_attrib(element, 'atol', 1e-8)
+        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+        atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
         correct = pl.is_correct_scalar_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_scalar_sf(a_sub, a_tru, digits)
     elif comparison == 'decdig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_scalar_dd(a_sub, a_tru, digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
@@ -309,7 +322,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -323,8 +336,35 @@ def test(element_html, data):
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = str(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        # Get method of comparison, with relabs as default
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
+        if comparison == 'relabs':
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+            atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
+            # Get max error according to numpy.allclose()
+            eps = np.absolute(a_tru) * rtol + atol
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        elif comparison == 'sigfig':
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
+            # Get max error according to pl.is_correct_scalar_sf()
+            if (a_tru == 0):
+                n = digits - 1
+            else:
+                n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
+            eps = 0.51 * (10**-n)
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        elif comparison == 'decdig':
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
+            # Get max error according to pl.is_correct_scalar_dd()
+            eps = 0.51 * (10**-digits)
+            eps += random.uniform(1, 10)
+            answer = a_tru + eps * random.choice([-1, 1])
+        else:
+            raise ValueError('method of comparison "%s" is not valid' % comparison)
+        data['raw_submitted_answers'][name] = str(answer)
     elif result == 'invalid':
         # FIXME: add more invalid expressions, make text of format_errors
         # correct, and randomize
