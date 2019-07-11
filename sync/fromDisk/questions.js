@@ -1,21 +1,9 @@
-var _ = require('lodash');
-var sqldb = require('@prairielearn/prairielib/sql-db');
+const _ = require('lodash');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
-var logger = require('../../lib/logger');
+const logger = require('../../lib/logger');
 const { safeAsync } = require('../../lib/async');
-
-const perfMarkers = {};
-
-const start = (name) => {
-    perfMarkers[name] = new Date();
-}
-
-const end = (name) => {
-    if (!(name in perfMarkers)) {
-        return;
-    }
-    console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
-}
+const perf = require('../performance')('question');
 
 module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
     safeAsync(async () => {
@@ -85,9 +73,9 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             courseInfo.courseId,
         ];
 
-        start('syncQuestionsSproc');
+        perf.start('syncQuestionsSproc');
         const syncQuestionsResult = await sqldb.callOneRowAsync('sync_questions', syncQuestionsParams);
-        end('syncQuestionsSproc');
+        perf.end('syncQuestionsSproc');
 
         // Associate the new IDs with their respective questions; future
         // states of the sync process will need these

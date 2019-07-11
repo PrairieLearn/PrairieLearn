@@ -5,19 +5,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const config = require('../../lib/config');
 const { safeAsync } = require('../../lib/async');
-
-const perfMarkers = {};
-
-const start = (name) => {
-    perfMarkers[name] = new Date();
-}
-
-const end = (name) => {
-    if (!(name in perfMarkers)) {
-        return;
-    }
-    console.log(`${name} took ${(new Date()) - perfMarkers[name]}ms`);
-}
+const perf = require('../performance')('assessments');
 
 /**
  * SYNCING PROCESS:
@@ -117,7 +105,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 let alternatives;
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
-                    question.alternaives.forEach(a => checkAndRecordQID(a.id));
+                    question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
                         return {
                             qid: alternative.id,
@@ -245,8 +233,8 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             syncData.course_instance_id,
             syncData.check_access_rules_exam_uuid,
         ];
-        start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
+        perf.start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
         await sqldb.callOneRowAsync('sync_assessments', syncParams);
-        end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
+        perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     }, callback);
 }

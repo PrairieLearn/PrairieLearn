@@ -101,7 +101,7 @@ describe('Assessment syncing', () => {
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
-  it('reuses assessment questions when questions are removed and added again', async () => {
+  it.only('reuses assessment questions when questions are removed and added again', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones = [{
@@ -124,6 +124,7 @@ describe('Assessment syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedData = await getSyncedAssessmentData('newexam');
     const deletedFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    console.log(JSON.stringify(syncedData, null, 2));
     assert.isOk(deletedFirstSyncedAssessmentQuestion);
     assert.isNotNull(deletedFirstSyncedAssessmentQuestion.deleted_at);
 
