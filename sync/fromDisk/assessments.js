@@ -175,7 +175,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                     // Loop up the ID of this question based on its QID
                     const question = questionDB[alternative.qid]
                     if (!question) {
-                        throw new Error(`Invalid QID: ${qid}`);
+                        throw new Error(`Invalid QID: ${alternative.qid}`);
                     }
                     const questionId = question.id;
                     return {

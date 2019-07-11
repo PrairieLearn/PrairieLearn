@@ -168,4 +168,29 @@ describe('Assessments syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'courseInstances', 'Fa19', 'assessments', 'badAssessment'));
     await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
   });
+
+  it('fails if a zone references an invalid QID', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [{
+        id: 'i do not exist',
+        points: [1,2,3],
+      }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /Invalid QID/);
+
+  })
+
+  it('fails if the same UUID is used multiple times in one course instance', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail1'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail2'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /used in multiple assessments/);
+  });
 });
