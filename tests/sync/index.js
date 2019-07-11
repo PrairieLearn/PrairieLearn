@@ -4,3 +4,4 @@ require('./assessmentSetsSync');
 require('./tagsSync');
 require('./courseStaffSync');
 require('./assessmentsSync');
+require('./courseInstancesSync');
