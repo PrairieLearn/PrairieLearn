@@ -9,7 +9,6 @@ module.exports.sync = function(courseInfo, callback) {
             name: assessmentSet.name,
             heading: assessmentSet.heading,
             color: assessmentSet.color,
-            number: index + 1,
         }));
 
         const params = [

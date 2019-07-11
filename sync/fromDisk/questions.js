@@ -80,10 +80,6 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             };
         });
 
-        // Sync the questions to the DB. This will create/update all questions,
-        // soft-delete any unused questions, and ensure that all questions have
-        // assigned numbers (TODO clarify what these numbers are?)
-
         const syncQuestionsParams = [
             JSON.stringify(questionsParam),
             courseInfo.courseId,

@@ -18,9 +18,9 @@ BEGIN
             assessment_set->>'name',
             assessment_set->>'heading',
             assessment_set->>'color',
-            (assessment_set->>'number')::integer,
+            number,
             new_course_id
-        FROM JSONB_ARRAY_ELEMENTS(sync_assessment_sets.assessment_sets) AS assessment_set
+        FROM JSONB_ARRAY_ELEMENTS(sync_assessment_sets.assessment_sets) WITH ORDINALITY AS t(assessment_set, number)
         ON CONFLICT (name, course_id) DO UPDATE
         SET
             abbreviation = EXCLUDED.abbreviation,

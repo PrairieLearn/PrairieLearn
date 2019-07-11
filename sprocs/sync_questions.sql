@@ -55,10 +55,6 @@ BEGIN
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) WITH ORDINALITY AS t(question, number)
-        -- TODO: is this necessary? does postgres make any guarantees about a) order when
-        -- selecting from JSONB_ARRAY_ELEMENTS or b) insertion order when inserting from a
-        -- SELECT expression?
-        ORDER BY number
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
             qid = EXCLUDED.qid,
@@ -81,9 +77,9 @@ BEGIN
             external_grading_enable_networking = EXCLUDED.external_grading_enable_networking
         WHERE
             questions.course_id = new_course_id
-        RETURNING id
+        RETURNING id, number
     )
-    SELECT array_agg(id) INTO new_question_ids FROM (SELECT id FROM new_questions) AS ids;
+    SELECT array_agg(id) INTO new_question_ids FROM (SELECT id FROM new_questions ORDER BY number ASC) AS ids;
 
     -- Soft-delete any unused questions
     UPDATE questions AS q

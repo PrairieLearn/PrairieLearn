@@ -29,6 +29,12 @@ function checkTag(syncedTag, tag) {
   assert.equal(syncedTag.description, tag.description);
 }
 
+function checkTagOrder(syncedTags, courseData) {
+  courseData.course.tags.forEach((tag, index) => {
+    assert.equal(syncedTags.find(t => t.name === tag.name).number, index + 1);
+  });
+}
+
 describe('Assessment set syncing', () => {
   // use when changing sprocs
   // before('remove the template database', helperDb.dropTemplate);
@@ -43,6 +49,7 @@ describe('Assessment set syncing', () => {
     const syncedTags = await util.dumpTable('tags');
     const syncedTag = syncedTags.find(tag => tag.name === newTag.name);
     checkTag(syncedTag, newTag);
+    checkTagOrder(syncedTags, courseData);
   });
 
   it('removes a tag', async () => {
@@ -55,6 +62,7 @@ describe('Assessment set syncing', () => {
     const syncedTags = await util.dumpTable('tags');
     const syncedTag = syncedTags.find(tag => tag.name === oldTag.name);
     assert.isUndefined(syncedTag);
+    checkTagOrder(syncedTags, courseData);
   });
 
   it('renames a tag', async () => {
@@ -70,5 +78,6 @@ describe('Assessment set syncing', () => {
     assert.isUndefined(syncedTags.find(tag => tag.name === oldName));
     const syncedTag = syncedTags.find(as => as.name = newName);
     checkTag(syncedTag, oldTag);
+    checkTagOrder(syncedTags, courseData);
   });
 });
