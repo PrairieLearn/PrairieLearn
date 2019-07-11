@@ -30,6 +30,11 @@ function makeAssessment(courseData, type = 'Exam') {
   };
 }
 
+async function getSyncedData(tid) {
+  const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {tid});
+  return res.rows[0];
+}
+
 describe('Assessments syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
@@ -49,7 +54,7 @@ describe('Assessments syncing', () => {
     });
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const syncedData = (await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {tid: 'newexam'})).rows[0];
+    const syncedData = await getSyncedData('newexam');
 
     assert.lengthOf(syncedData.zones, 2);
     assert.equal(syncedData.zones[0].title, 'zone 1');
@@ -60,6 +65,38 @@ describe('Assessments syncing', () => {
     assert.lengthOf(syncedData.assessment_questions, 2);
     assert.equal(syncedData.assessment_questions[0].question.qid, util.QUESTION_ID);
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
+  });
+
+  it.only('syncs a zone with alternatives', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [{
+        points: 10,
+        alternatives: [{
+          id: util.QUESTION_ID,
+        }, {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+        }],
+      }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedData('newexam');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 1);
+    assert.lengthOf(syncedData.assessment_questions, 2);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    assert.equal(firstAssessmentQuestion.max_points, 10);
+    assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    assert.equal(secondAssessmentQuestion.max_points, 5);
+    assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
   it('removes a zone from an assessment', async () => {
@@ -74,7 +111,7 @@ describe('Assessments syncing', () => {
     assessment.zones.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const syncedData = (await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {tid: 'newexam'})).rows[0];
+    const syncedData = await getSyncedDatay('newexam');
 
     assert.lengthOf(syncedData.zones, 0);
     assert.lengthOf(syncedData.alternative_groups, 0);
