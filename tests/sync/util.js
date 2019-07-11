@@ -229,6 +229,7 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
 };
 
 module.exports.QUESTION_ID = 'test';
+module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -276,7 +277,7 @@ const questions = {
     tags: ['test'],
     type: 'v3',
   },
-  test2: {
+  [module.exports.ALTERNATIVE_QUESTION_ID]: {
     uuid: '697a6188-8215-4806-92a1-592987342b9e',
     title: 'Another test question',
     topic: 'Test',
