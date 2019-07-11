@@ -182,8 +182,7 @@ describe('Assessments syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await assert.isRejected(util.syncCourseData(courseDir), /Invalid QID/);
-
-  })
+  });
 
   it('fails if the same UUID is used multiple times in one course instance', async () => {
     const courseData = util.getCourseData();
