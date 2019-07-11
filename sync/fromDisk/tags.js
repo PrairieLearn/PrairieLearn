@@ -27,6 +27,18 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             throw new Error(`Duplicate tag names found: ${duplicateNamesJoined}. Tag names must be unique within the course.`);
         }
 
+        // We'll create placeholder tags for tags that aren't specified in
+        // infoCourse.json.
+        const knownTagNames = new Set(tags.map(tag => tag.name));
+        const questionTagNames = [];
+        Object.values(questionDB).forEach(q => questionTagNames.push(...(q.tags || [])))
+        const missingTagNames = questionTagNames.filter(name => !knownTagNames.has(name));
+        tags.push(...missingTagNames.map(name => ({
+            name,
+            color: 'gray1',
+            description: 'Auto-generated from use in a question; add this tag to your courseInfo.json file to customize',
+        })));
+
         // Aggregate all tags into a form that we can pass in one go to our sproc
         // Since all this data will be sent over the wire, we'll send it in a
         // compact form of an array of arrays, where each array will correspond to
