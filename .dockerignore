@@ -1,0 +1,31 @@
+# blacklist all
+*
+
+# whitelist things to copy
+!.eslintignore
+!.eslintrc.json
+!api/
+!cron/
+!database/
+!doc/
+!docker/
+!elements/
+!exampleCourse/
+!lib/
+!middlewares/
+!migrations/
+!models/
+!package.json
+!package-lock.json
+!pages/
+!public/
+!question-servers/
+!requirements.txt
+!server.js
+!setup.cfg
+!schemas/
+!sprocs/
+!sync/
+!tests/
+!tools/
+!webhooks/

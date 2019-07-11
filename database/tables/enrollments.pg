@@ -1,0 +1,14 @@
+columns
+    course_instance_id: bigint not null
+    id: bigint not null default nextval('enrollments_id_seq'::regclass)
+    role: enum_role
+    user_id: bigint not null
+
+indexes
+    enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
+    enrollments_course_instance_id_idx: USING btree (course_instance_id)
+
+foreign-key constraints
+    enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

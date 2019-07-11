@@ -1,0 +1,31 @@
+{{#question}}
+<script>
+$(function() {
+    var UUID = "{{uuid}}";
+
+    new window.PLFileEditor(UUID, {
+        originalContents: "{{original_file_contents}}",
+        currentContents: "{{current_file_contents}}",
+        aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
+        aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}}
+    });
+});
+</script>
+<div id="file-editor-{{uuid}}">
+    <input type="hidden" name="{{name}}">
+    <div class="card">
+        <div class="card-header">{{file_name}}</div>
+        <div class="editor"></div>
+        <div class="card-footer d-flex">
+            <div class="ml-auto">
+                <a class="btn btn-outline-secondary btn-sm restore-original" role="button" tabindex="-1">Restore original file</a>
+                <div class="restore-original-confirm-container" style="display: none;">
+                    <a class="btn btn-success btn-sm restore-original-confirm" role="button" tabindex="-1">Confirm restore original</a>
+                    <a class="btn btn-secondary btn-sm restore-original-cancel" role="button" tabindex="-1">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{submission}}
+</div>
+{{/question}}

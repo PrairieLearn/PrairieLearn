@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html class="bg-dark">
+<head>
+  <%- include('../partials/head'); %>
+  <style>
+  html, body {
+    height: 100%;
+    background-color: #e9ecef;
+  }
+  .login-container-wrapper {
+    width: 100%;
+    height: 100%;
+  }
+  .login-container {
+    background-color: white;
+    padding: 20px;
+    height: 100%;
+  }
+  .login-methods > a:not(:last-child) {
+    margin-bottom: 0.5rem;
+  }
+  @media (min-width: 576px) {
+    .login-container-wrapper {
+      max-width: 500px;
+      margin: auto;
+      height: auto;
+    }
+    .login-container {
+      border-radius: 5px;
+      box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+      height: auto;
+      margin: 20px;
+    }
+  }
+  .subheader {
+    font-weight: 300;
+    font-size: 1.2rem;
+  }
+  .btn .social-icon {
+    position: absolute;
+    left: 7px;
+    height: 24px;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+  }
+  .btn-illinois {
+    background-color: #E84A27;
+    border-color: #E84A27;
+    color: white;
+  }
+  .btn-illinois:hover {
+    background-color: #D04223;
+    border-color: #D04223;
+    color: white;
+  }
+  .btn-illinois:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 83, 0, 0.35);
+  }
+  .btn-illinois:active {
+    background-color: #B93B1F;
+    border-color: #B93B1F;
+  }
+  </style>
+</head>
+<body class="d-flex bg-dark">
+  <div class="login-container-wrapper">
+    <div class="login-container">
+      <div>
+        <h1 class="text-center">PrairieLearn</h1>
+        <h2 class="text-center subheader">An online system for problem-driven learning</h2>
+        <hr>
+        <div class="login-methods">
+          <% if (devMode) { %>
+            <a class="btn btn-success w-100" href="/pl" role="button">
+              <span class="font-weight-bold">DevMode by-pass</span>
+            </a>
+          <% } %>
+          <% if (config.hasShib) { %>
+            <a class="btn btn-illinois w-100 position-relative" href="/pl/shibcallback" role="button">
+              <img src="/images/illinois_logo.svg" class="social-icon"/>
+              <span class="font-weight-bold">Sign in with Illinois</span>
+            </a>
+          <% } %>
+          <% if (config.hasOauth) { %>
+            <a class="btn btn-primary w-100 position-relative" href="/pl/oauth2login" role="button">
+              <img src="/images/google_logo.svg" class="social-icon"/>
+              <span class="font-weight-bold">Sign in with Google
+            </a>
+          <% } %>
+          <% if (config.hasAzure) { %>
+            <a class="btn btn-dark w-100 position-relative" href="/pl/azure_login" role="button">
+              <img src="/images/ms_logo.svg" class="social-icon"/>
+              <span class="font-weight-bold">Sign in with Microsoft</span>
+            </a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

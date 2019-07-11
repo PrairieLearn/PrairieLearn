@@ -1,0 +1,9 @@
+<% if (status == 'Running') { %>
+<span class="badge badge-primary">Running</span>
+<% } else if (status == 'Success') { %>
+<span class="badge badge-success">Success</span>
+<% } else if (status == 'Error') { %>
+<span class="badge badge-danger">Error</span>
+<% } else { %>
+<span class="badge badge-secondary">Unknown</span>
+<% } %>

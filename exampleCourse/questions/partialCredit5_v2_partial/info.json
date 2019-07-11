@@ -1,0 +1,9 @@
+{
+    "uuid": "d3d60b64-491b-4599-80ad-c68fecdb29ec",
+    "title": "Partial credit 5 (v2 with partial credit)",
+    "topic": "Algebra",
+    "tags": ["mwest", "fa17", "tpl101", "v2"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
+    "type": "Calculation",
+    "partialCredit": true
+}

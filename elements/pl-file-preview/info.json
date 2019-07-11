@@ -1,0 +1,8 @@
+{
+    "controller": "pl-file-preview.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-file-preview.css"
+        ]
+    }
+}

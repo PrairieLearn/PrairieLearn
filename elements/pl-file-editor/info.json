@@ -1,0 +1,14 @@
+{
+    "controller": "pl-file-editor.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "ace-builds/src-min-noconflict/ace.js"
+        ],
+        "elementScripts": [
+            "pl-file-editor.js"
+        ],
+        "elementStyles": [
+            "pl-file-editor.css"
+        ]
+    }
+}

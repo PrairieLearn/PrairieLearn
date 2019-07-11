@@ -1,0 +1,35 @@
+.pl-matrix-component-input-popover {
+    width: 400px;
+    max-width: 100%;
+}
+
+.pl-matrix-component-span-fullwidth {
+    max-width: calc(100% - 15px)
+}
+
+[id^=pl-matrix-component-input] .close-left {
+  border-left: 3px solid black;
+  border-top: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 8px;
+}
+[id^=pl-matrix-component-input] .right,
+[id^=pl-matrix-component-input] .bottom-and-right,
+[id^=pl-matrix-component-input] .top-and-right,
+[id^=pl-matrix-component-input] .close-right {
+  border-right: 3px solid black;
+  border-top: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 8px;
+}
+
+[id^=pl-matrix-component-input] .allborder {
+  border: thin solid #D8D8D8;
+  min-width: 60px
+}
+
+[id^=pl-matrix-component-input] .form-control {
+  height: auto;
+  overflow-x: auto;
+  overflow-y: auto;
+}

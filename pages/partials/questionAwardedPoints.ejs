@@ -1,0 +1,11 @@
+<% include('pointsFormatter'); %>
+
+<% for (var i = 0; i < awarded_points.length; i++) { %>
+    <% if (awarded_points[i] < init_points) { %>
+        <% if (awarded_points[i] > 0) { %>
+            <span class="badge badge-warning"><%= getStringFromFloat(awarded_points[i]) %></span>
+        <% } %>
+    <% } else { %>
+        <span class="badge badge-success"><%= getStringFromFloat(awarded_points[i]) %></span>
+    <% } %>
+<% } %>

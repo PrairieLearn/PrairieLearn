@@ -1,0 +1,8 @@
+columns
+    date: timestamp with time zone not null
+    id: bigint not null default nextval('cron_jobs_id_seq'::regclass)
+    name: text not null
+
+indexes
+    cron_jobs_pkey: PRIMARY KEY (id) USING btree (id)
+    cron_jobs_name_key: UNIQUE (name) USING btree (name)

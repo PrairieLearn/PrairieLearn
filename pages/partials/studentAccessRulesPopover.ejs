@@ -1,0 +1,18 @@
+<a tabindex="0" class="btn btn-xs" role="button"
+   data-toggle="popover" data-trigger="focus" data-container="body"
+   data-html="true" title="<%= assessmentSetName %> <%= assessmentNumber %>"
+   data-content="<table class=&quot;table&quot;>
+                   <tr>
+                     <th>Credit</th>
+                     <th>Start</th>
+                     <th>End</th>
+                   </tr>
+                   <% accessRules.forEach(function(access_rule) { %>
+                     <tr <% if (access_rule.active) { %>class=&quot;info&quot;<% } %>>
+                       <td><%= access_rule.credit %></td>
+                       <td><%= access_rule.start_date %></td>
+                       <td><%= access_rule.end_date %></td>
+                     </tr>
+                   <% }); %>
+                 </table>
+                "><i class="fa fa-question-circle"></i></a>

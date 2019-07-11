@@ -1,0 +1,57 @@
+# JetBrains IDE files
+/.idea/
+
+# OS X Finder files
+**/.DS_Store
+
+# Backend dependencies
+/v1/backend/node_modules/
+/v1/frontend-build/
+/node_modules/
+
+# Custom startup script
+/start.sh
+
+# Server log files
+/v1/backend/server.log
+/server.log
+
+# MkDocs generated HTML
+/site/
+
+# JSDoc generated HTML
+/doc/code-docs/
+
+# Config files
+/v1/backend/config.json
+/v1/backend/config.json.*
+/config.json
+/aws-config.json
+
+# Swap files
+**/*.swp
+**/*.swo
+
+# Backup Files
+**/*~
+
+# NPM log file
+npm-debug.log
+
+# Code coverage files
+/coverage/
+/.nyc_output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# VSCode files
+.vscode

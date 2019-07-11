@@ -1,0 +1,29 @@
+{
+    "uuid": "294e5841-b705-4720-b5d4-266b82e9c6c8",
+    "type": "Homework",
+    "title": "Homework for automatic test suite",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "addNumbers",                "points": 1, "maxPoints": 5},
+                {"id": "addVectors",                "points": 2, "maxPoints": 11},
+                {"id": "fossilFuelsRadio",          "points": 3, "maxPoints": 14},
+                {"id": "downloadFile",              "points": 5, "maxPoints": 17},
+                {"id": "partialCredit1",            "points": 1, "maxPoints": 6},
+                {"id": "partialCredit2",            "points": 2, "maxPoints": 7, "triesPerVariant": 3},
+                {"id": "partialCredit3",            "points": 3, "maxPoints": 11, "triesPerVariant": 5},
+                {"id": "partialCredit4_v2",         "points": 4, "maxPoints": 13},
+                {"id": "partialCredit5_v2_partial", "points": 5, "maxPoints": 12},
+                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 8},
+                {"id": "brokenGrading",             "points": 2, "maxPoints": 4}
+            ]
+        }
+    ]
+}

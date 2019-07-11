@@ -1,0 +1,45 @@
+{
+    "uuid": "ffc6cb45-5d86-4b97-ab73-b828050deec9",
+    "type": "Homework",
+    "title": "Homework to test partial credit",
+    "set": "Homework",
+    "number": "3",
+    "constantQuestionValue": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "partialCredit1",            "points": 1, "maxPoints": 5},
+                {"id": "partialCredit2",            "points": 2, "maxPoints": 10},
+                {"id": "partialCredit3",            "points": 2, "maxPoints": 10, "triesPerVariant": 3},
+                {"id": "partialCredit4_v2",         "points": 2, "maxPoints": 10},
+                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 11}
+            ]
+        }
+    ]
+}

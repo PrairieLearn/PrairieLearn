@@ -1,0 +1,17 @@
+columns
+    color: text
+    course_id: bigint not null
+    description: text
+    id: bigint not null default nextval('tags_id_seq'::regclass)
+    name: text
+    number: integer
+
+indexes
+    tags_pkey: PRIMARY KEY (id) USING btree (id)
+    tags_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
+
+foreign-key constraints
+    tags_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    question_tags: FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE

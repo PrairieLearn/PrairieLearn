@@ -1,0 +1,14 @@
+{
+    "controller": "pl-prairiedraw-figure.py",
+    "dependencies": {
+        "coreScripts": [
+            "sylvester.js",
+            "sha1.js",
+            "underscore.js",
+            "backbone.js",
+            "numeric-1.2.6.min.js",
+            "PrairieGeom.js",
+            "PrairieDraw.js"
+        ]
+    }
+}

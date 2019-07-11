@@ -1,0 +1,11 @@
+{
+    "controller": "pl-matrix-output.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "clipboard/dist/clipboard.min.js"
+        ],
+        "coreScripts": [
+            "PrairieUtil.js"
+        ]
+    }
+}

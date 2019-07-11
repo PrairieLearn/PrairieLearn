@@ -1,0 +1,28 @@
+columns
+    assessment_id: bigint
+    assessment_instance_id: bigint
+    authn_user_id: bigint not null
+    course_instance_id: bigint
+    date: timestamp with time zone not null default now()
+    id: bigint not null default nextval('current_pages_id_seq'::regclass)
+    page_type: text
+    path: text
+    question_id: bigint
+    user_id: bigint not null
+    variant_id: bigint
+
+indexes
+    current_pages_pkey: PRIMARY KEY (id) USING btree (id)
+    current_pages_user_id_key: UNIQUE (user_id) USING btree (user_id)
+    current_pages_assessment_instance_id_idx: USING btree (assessment_instance_id)
+    current_pages_date_idx: USING btree (date)
+    current_pages_variant_id_idx: USING btree (variant_id)
+
+foreign-key constraints
+    current_pages_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

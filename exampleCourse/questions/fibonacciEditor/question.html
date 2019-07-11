@@ -1,0 +1,30 @@
+<pl-question-panel>
+  <p>
+    The Fibonacci numbers are 1, 1, 2, 3, 5, 8, ..., where each
+    number is the sum of the two before it.
+    \[
+    F_n = F_{n-1} + F_{n-2}
+    \]
+  </p>
+  <p>
+    Write a Python function <tt>fib</tt> that takes a number <tt>n</tt>
+    and returns the n<sup>th</sup> Fibonacci number.
+  </p>
+
+  <pl-file-editor file-name="fib.py" ace-mode="ace/mode/python" source-file-name="initial_code.py">
+  </pl-file-editor>
+
+  <p class="mt-2">
+    <strong>Note:</strong> In the above example, the attribute
+    <code>source-file-name='initial_code.py'</code> was used to add existing code
+    to the in-browser file editor from a source file. Another option is omit the <code>source-file-name</code>
+    attribute and instead write the existing code directly inside the html element, between the
+    <code>pl-file-editor</code> tags.
+  </p>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+  <pl-external-grader-results></pl-external-grader-results>
+</pl-submission-panel>

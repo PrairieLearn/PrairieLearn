@@ -1,0 +1,33 @@
+<nav aria-label="...">
+  <ul class="pagination justify-content-center mb-0">
+    <li class="page-item <% if (currPage == 1) { %>disabled<% } %>">
+      <a class="page-link" href="?page=1<% if (params) { %>&<%= params %><% } %>">
+        <i class="fa fa-angle-double-left" aria-hidden="true"></i>
+        First
+      </a>
+    </li>
+    <li class="page-item <% if (currPage == 1) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= prevPage %><% if (params) { %>&<%= params %><% } %>">
+        <i class="fa fa-angle-left" aria-hidden="true"></i>
+        Prev
+      </a>
+    </li>
+    <li class="page-item">
+      <a class="page-link" href="?page=<%= currPage %><% if (params) { %>&<%= params %><% } %>">
+        Page <%= currPage %>/<%= lastPage %>
+      </a>
+    </li>
+    <li class="page-item <% if (currPage == lastPage) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= nextPage %><% if (params) { %>&<%= params %><% } %>">
+        Next
+        <i class="fa fa-angle-right" aria-hidden="true"></i>
+      </a>
+    </li>
+    <li class="page-item <% if (currPage == lastPage) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= lastPage %><% if (params) { %>&<%= params %><% } %>">
+        Last
+        <i class="fa fa-angle-double-right" aria-hidden="true"></i>
+      </a>
+    </li>
+  </ul>
+</nav>

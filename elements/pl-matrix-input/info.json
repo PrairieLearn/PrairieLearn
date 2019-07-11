@@ -1,0 +1,14 @@
+{
+    "controller": "pl-matrix-input.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "clipboard/dist/clipboard.min.js"
+        ],
+        "coreScripts": [
+            "PrairieUtil.js"
+        ],
+        "elementStyles": [
+            "pl-matrix-input.css"
+        ]
+    }
+}

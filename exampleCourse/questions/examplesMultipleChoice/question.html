@@ -1,0 +1,89 @@
+<pl-question-panel>
+    <p>
+        Questions below were designed to showcase the different features of
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>.
+        The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element"><code>pl-multiple-choice</code></a>
+        is to allow users to select a <b>single option</b> from a list of choices. To allow for more than one option, please consider using <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>.
+    </p>
+</pl-question-panel>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 1
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, you can observe the default behavior of the <code>pl-multiple-choice</code> element.
+               In particular, all options are presented in a randomized form. Only one option may be selected from the list may be selected. </p>
+            <p> What is the color of the sky? </p>
+        </pl-question-panel>
+
+        <pl-multiple-choice answers-name="sky-color1">
+          <pl-answer correct="true">Blue</pl-answer>
+          <pl-answer>Pink</pl-answer>
+          <pl-answer>Purple</pl-answer>
+          <pl-answer>Orange</pl-answer>
+          <pl-answer>Yellow</pl-answer>
+          <pl-answer>Brown</pl-answer>
+          <pl-answer>Red</pl-answer>
+        </pl-multiple-choice>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 2
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer. 
+            In addition, the choices are placed "inline" instead of being displayed
+            within a list. </p>
+               
+            <p> What is the color of the sky? </p>
+        </pl-question-panel>
+
+        <pl-multiple-choice answers-name="sky-color2" number-answers="4" inline="true">
+          <pl-answer correct="true">Blue</pl-answer>
+          <pl-answer>Pink</pl-answer>
+          <pl-answer>Purple</pl-answer>
+          <pl-answer>Orange</pl-answer>
+          <pl-answer>Yellow</pl-answer>
+          <pl-answer>Brown</pl-answer>
+          <pl-answer>Red</pl-answer>
+        </pl-multiple-choice>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 3
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices. 
+               Moreover, the weight of this question has also been increased meaning it will contribute more to the overall score than other elements.</p>
+            <p> What is the color of the sky? </p>
+        </pl-question-panel>
+
+        <pl-multiple-choice answers-name="sky-color3" fixed-order="true" weight="3">
+          <pl-answer correct="true">Blue</pl-answer>
+          <pl-answer>Pink</pl-answer>
+          <pl-answer>Purple</pl-answer>
+          <pl-answer>Orange</pl-answer>
+          <pl-answer>Yellow</pl-answer>
+          <pl-answer>Brown</pl-answer>
+          <pl-answer>Red</pl-answer>
+        </pl-multiple-choice>
+
+    </div>
+</div>
