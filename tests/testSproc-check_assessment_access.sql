@@ -7,9 +7,12 @@ setup_ci AS (
     INSERT INTO course_instances (id, uuid, course_id) VALUES
         (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1)
 ),
+setup_assessment_sets AS (
+    INSERT INTO assessment_sets (id, course_id) VALUES (1, 1)
+),
 setup_assessments AS (
-    INSERT INTO assessments (id, uuid, tid, title, course_instance_id) VALUES
-        (1, '490f481a-8a3e-4689-ad9c-110c19191570', 'tid', 'title', 1)
+    INSERT INTO assessments (id, uuid, tid, title, course_instance_id, assessment_set_id) VALUES
+        (1, '490f481a-8a3e-4689-ad9c-110c19191570', 'tid', 'title', 1, 1)
 ),
 setup_aars AS (
     INSERT INTO assessment_access_rules (id, assessment_id, mode, role, uids, start_date, end_date) VALUES
@@ -60,23 +63,29 @@ setup_ci AS (
         (3, '335c2f78-f8d3-4a14-99da-53af231b0428', 3),
         (4, '2256b06e-c00a-4596-a3b2-510f159d36d5', 3)
 ),
+setup_assessment_sets AS (
+    INSERT INTO assessment_sets (id, course_id) VALUES
+        (1, 1),
+        (2, 2),
+        (3, 3)
+),
 setup_assessments AS (
-    INSERT INTO assessments (id, uuid, tid, title, course_instance_id) VALUES
-        (10, '423e8913-0608-4c85-9b2e-bca9c81f52d3', 'someExam', 'Some Exam', 1),
-        (11, 'a0b4cd67-931d-4173-b722-23d3f3a359a5', 'someExam', 'Some Exam', 1),
-        (12, '91fac0da-e943-4775-83ff-aef9487a1c9f', 'someExam', 'Some Exam', 1),
-        (13, '794666e4-bbf9-47c1-9613-6bf2057dbd1c', 'someExam', 'Some Exam', 1),
-        (20, '71b1cf06-6494-4491-bc05-cba7f93dacfd', 'someExam', 'Some Exam', 2),
-        (21, '5fe78f9c-bfeb-4065-a9f3-20ec0c00140f', 'someExam', 'Some Exam', 2),
-        (22, 'd803d2df-000c-4949-b25b-d7781c31d726', 'someExam', 'Some Exam', 2),
-        (23, '0727036e-43a2-467c-a0ee-b1df8ffe7096', 'someExam', 'Some Exam', 2),
-        (30, '3538dfb4-c0e4-4be6-80e1-a7f294904fc7', 'someExam', 'Some Exam', 3),
-        (31, '2cf82007-d760-4f29-8755-42e7089c5352', 'someExam', 'Some Exam', 3),
-        (32, '5f2e00b7-6ec4-4422-a8c4-dce04f6b6b05', 'someExam', 'Some Exam', 3),
-        (40, '24fc184d-656b-44e5-979a-33e4d41abebd', 'someExam', 'Some Exam', 4),
-        (41, '6a4eba13-930d-4e1b-99db-0a5b4205cf83', 'someExam', 'Some Exam', 4),
-        (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4),
-        (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4)
+    INSERT INTO assessments (id, uuid, tid, title, course_instance_id, assessment_set_id) VALUES
+        (10, '423e8913-0608-4c85-9b2e-bca9c81f52d3', 'someExam', 'Some Exam', 1, 1),
+        (11, 'a0b4cd67-931d-4173-b722-23d3f3a359a5', 'someExam', 'Some Exam', 1, 1),
+        (12, '91fac0da-e943-4775-83ff-aef9487a1c9f', 'someExam', 'Some Exam', 1, 1),
+        (13, '794666e4-bbf9-47c1-9613-6bf2057dbd1c', 'someExam', 'Some Exam', 1, 1),
+        (20, '71b1cf06-6494-4491-bc05-cba7f93dacfd', 'someExam', 'Some Exam', 2, 2),
+        (21, '5fe78f9c-bfeb-4065-a9f3-20ec0c00140f', 'someExam', 'Some Exam', 2, 2),
+        (22, 'd803d2df-000c-4949-b25b-d7781c31d726', 'someExam', 'Some Exam', 2, 2),
+        (23, '0727036e-43a2-467c-a0ee-b1df8ffe7096', 'someExam', 'Some Exam', 2, 2),
+        (30, '3538dfb4-c0e4-4be6-80e1-a7f294904fc7', 'someExam', 'Some Exam', 3, 3),
+        (31, '2cf82007-d760-4f29-8755-42e7089c5352', 'someExam', 'Some Exam', 3, 3),
+        (32, '5f2e00b7-6ec4-4422-a8c4-dce04f6b6b05', 'someExam', 'Some Exam', 3, 3),
+        (40, '24fc184d-656b-44e5-979a-33e4d41abebd', 'someExam', 'Some Exam', 4, 3),
+        (41, '6a4eba13-930d-4e1b-99db-0a5b4205cf83', 'someExam', 'Some Exam', 4, 3),
+        (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4, 3),
+        (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4, 3)
 ),
 setup_assessment_access_rule AS (
     INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_uuid) VALUES
