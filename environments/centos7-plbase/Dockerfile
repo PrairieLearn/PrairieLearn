@@ -40,7 +40,7 @@ RUN yum -y install \
         && git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)` \
         && source /nvm/nvm.sh \
         && export NVM_SYMLINK_CURRENT=true \
-        && nvm install 10 \
+        && nvm install 12 \
         && npm install npm@latest -g \
         && for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done \
     && echo "setting up postgres..." \
