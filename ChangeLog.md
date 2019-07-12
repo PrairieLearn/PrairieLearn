@@ -143,6 +143,8 @@
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
 
+  * Change developer docs to recommend the use of async/await (Matt West).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
