@@ -281,22 +281,18 @@ BEGIN
 
     -- Delete unused assessment access rules
     DELETE FROM assessment_access_rules AS aar
-    WHERE NOT EXISTS (
-        SELECT 1 FROM assessments AS a
-        WHERE
-            a.id = aar.assessment_id
-            AND a.deleted_at IS NULL
-            AND a.course_instance_id = sync_assessments.new_course_instance_id
-    );
+    USING assessments AS a
+    WHERE
+        aar.assessment_id = a.id
+        AND a.deleted_at IS NOT NULL
+        AND a.course_instance_id = sync_assessments.new_course_instance_id;
 
     -- Delete unused zones
     DELETE FROM zones AS z
-    WHERE NOT EXISTS (
-        SELECT 1 FROM assessments AS a
-        WHERE
-            a.id = z.assessment_id
-            AND a.deleted_at IS NULL
-            AND a.course_instance_id = sync_assessments.new_course_instance_id
-    );
+    USING assessments AS a
+    WHERE
+        z.assessment_id = a.id
+        AND a.deleted_at IS NOT NULL
+        AND a.course_instance_id = sync_assessments.new_course_instance_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

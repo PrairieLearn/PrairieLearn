@@ -247,6 +247,11 @@ const course = {
     abbreviation: 'Another Test',
     heading: 'Another testing set',
     color: 'red2',
+  }, {
+    name: 'PRIVATE SET',
+    abbreviation: 'Private',
+    heading: 'Used by the default assessment, do not use in your own tests',
+    color: 'red2',
   }],
   topics: [{
     name: 'Test',
@@ -270,6 +275,14 @@ const course = {
 
 /** @type {{ [id: string]: Question }} */
 const questions = {
+  private: {
+    uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
+    title: 'Test question',
+    topic: 'Test',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'v3',
+  },
   [module.exports.QUESTION_ID]: {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
@@ -291,7 +304,26 @@ const questions = {
 /** @type {{ [id: string]: CourseInstanceData }} */
 const courseInstances = {
   [module.exports.COURSE_INSTANCE_ID]: {
-    assessments: {},
+    assessments: {
+      test: {
+        uuid: '73432669-2663-444e-ade5-43f689a50dea',
+        title: 'Test assessment',
+        type: 'Exam',
+        set: 'PRIVATE SET',
+        number: '100',
+        allowAccess: [{
+          mode: 'Exam',
+          role: 'Student',
+        }],
+        zones: [{
+          title: 'zone 1',
+          questions: [{
+            points: 10,
+            alternatives: [{ id: 'private' }],
+          }],
+        }],
+      },
+    },
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
@@ -432,14 +464,34 @@ function checkSetsSame(setA, setB) {
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoreKeys = []) {
+module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
   assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
   for (const key of Object.keys(snapshotA)) {
-    if (ignoreKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.indexOf(key) !== -1) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map(s => stringify(s)));
     const setB = new Set(snapshotB[key].map(s => stringify(s)));
     assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
+  }
+};
+
+/**
+ * Asserts that `snapshotA` is a subset of `snapshotB` using the same algorithm
+ * from `assertSnapshotsMatch`.
+ *
+ * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
+ * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
+ * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
+ */
+module.exports.assertSnapshotSubset = function(snapshotA, snapshotB, ignoredKeys = []) {
+  // Sanity check - make sure both snapshots have the same keys
+  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  for (const key of Object.keys(snapshotA)) {
+    if (ignoredKeys.indexOf(key) !== -1) continue;
+    // Build a set of deterministically-stringified rows for each snapshot
+    const setA = new Set(snapshotA[key].map(s => stringify(s)));
+    const setB = new Set(snapshotB[key].map(s => stringify(s)));
+    assert([...setA].every(entry => setB.has(entry)), `Snapshot of ${key} is not a subset`);
   }
 };

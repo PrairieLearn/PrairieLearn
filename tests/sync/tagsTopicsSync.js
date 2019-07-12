@@ -83,7 +83,7 @@ async function testRename(entityName) {
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
-describe('Tag syncing', () => {
+describe('Tag/topic syncing', () => {
   // use when changing sprocs
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);

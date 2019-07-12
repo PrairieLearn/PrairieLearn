@@ -3,6 +3,7 @@ const util = require('./util');
 const helperDb = require('../helperDb');
 
 describe('Initial Sync', () => {
+  before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -61,5 +62,14 @@ describe('Initial Sync', () => {
     await util.syncCourseData(courseDir);
     const newSnapshot = await util.captureDatabaseSnapshot();
     util.assertSnapshotsMatch(newSnapshot, snapshot);
+  });
+
+  it('does not modify one course when syncing another', async () => {
+    const courseData = util.getCourseData();
+    await util.writeAndSyncCourseData(courseData);
+    const firstSnapshot = await util.captureDatabaseSnapshot();
+    await util.writeAndSyncCourseData(courseData);
+    const secondSnapshot = await util.captureDatabaseSnapshot();
+    util.assertSnapshotSubset(firstSnapshot, secondSnapshot);
   });
 });
