@@ -142,6 +142,8 @@
   * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
+  
+  * Change developer docs to recommend the use of async/await (Matt West).
 
   * Change syncing process to be faster (Nathan Walters).
 

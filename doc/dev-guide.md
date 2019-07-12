@@ -458,11 +458,58 @@ SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 ```
 
 
-## Error handling and control flow in JavaScript
+## Asynchronous control flow in JavaScript
 
-* Use tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+* New code in PrairieLearn should use async/await whenever possible.
 
-* Use the [async library](http://caolan.github.io/async/) for control flow.
+* Older code in PrairieLearn uses the tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+
+* Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
+
+
+## Interfacing between callback-style and async/await-style functions
+
+* To write a callback-style function that internally uses async/await code, use this pattern:
+
+```javascript
+util = require('util');
+function oldFunction(x1, x2, callback) {
+    util.callbackify(() => {
+        # here we can use async/await code
+        y1 = await f(x1);
+        y2 = await f(x2);
+        return y1 + y2;
+    })(callback);
+}
+```
+
+* To call a callback-style function from within an async/await function, use this pattern:
+
+```javascript
+util = require('util');
+async function g(x) {
+    x1 = await f(x + 2);
+    x2 = await f(x + 4);
+    z = await util.promisify(oldFunction)(x1, x2);
+    return z;
+}
+```
+
+* To call an async/await function from within a callback-style function, use this pattern:
+
+```javascript
+util = require('util');
+function oldFunction(v, callback) {
+    x = 2 * v;
+    util.callbackify(g)(x, (err, z) => {
+        if (ERR(err, callback)) return;
+        callback(null, z);
+    });
+}
+```
+
+
+## Stack traces with callback-style functions
 
 * Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
@@ -528,10 +575,6 @@ function foo(p, callback) {
     callback(null, result);
 }
 ```
-
-* Don't use promises.
-
-* We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) once it is stable and widely supported in Node.js and the libraries we use. As of 2017-08-04 the internal Node.js support for async/await is still under development.
 
 
 ## Security model
