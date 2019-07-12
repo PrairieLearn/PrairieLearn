@@ -467,7 +467,7 @@ SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
 
-# Interfacing between callback-style and async/await-style functions
+## Interfacing between callback-style and async/await-style functions
 
 * To write a callback-style function that internally uses async/await code, use this pattern:
 
