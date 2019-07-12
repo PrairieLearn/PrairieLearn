@@ -58,12 +58,8 @@ describe('Initial Sync', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const snapshot = await util.captureDatabaseSnapshot();
-    console.log(await util.dumpTable('question_tags'));
     await util.syncCourseData(courseDir);
     const newSnapshot = await util.captureDatabaseSnapshot();
-    console.log(await util.dumpTable('question_tags'));
-    console.log(JSON.stringify(snapshot.questionTags, null, 2));
-    console.log(JSON.stringify(newSnapshot.questionTags, null, 2));
     util.assertSnapshotsMatch(newSnapshot, snapshot);
   });
 });
