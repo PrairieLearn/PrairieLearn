@@ -501,7 +501,7 @@ async function g(x) {
 util = require('util');
 function oldFunction(v, callback) {
     x = 2 * v;
-    async.callbackify(g)(x, (err, z) => {
+    util.callbackify(g)(x, (err, z) => {
         if (ERR(err, callback)) return;
         callback(null, z);
     });
