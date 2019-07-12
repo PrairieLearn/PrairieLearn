@@ -1,10 +1,10 @@
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
-const { safeAsync } = require('../../lib/async');
 
 module.exports.sync = function(courseInstance, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         logger.debug('Syncing instructors and TAs');
         const userRoles = courseInstance.userRoles || {};
         if (config.devMode) {
@@ -22,5 +22,5 @@ module.exports.sync = function(courseInstance, callback) {
             courseInstance.courseInstanceId,
         ];
         await sqldb.callAsync('sync_course_staff', params);
-    }, callback);
+    })(callback);
 }

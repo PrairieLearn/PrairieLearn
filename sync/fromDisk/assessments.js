@@ -1,10 +1,10 @@
 const _ = require('lodash');
+const { callbackify } = require('util');
 const naturalSort = require('javascript-natural-sort');
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const config = require('../../lib/config');
-const { safeAsync } = require('../../lib/async');
 const perf = require('../performance')('assessments');
 
 /**
@@ -209,7 +209,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 }
 
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         const { assessmentDB } = courseInstance;
         // Assign an ordering to all assessments
         const assessmentList = Object.values(assessmentDB);
@@ -236,5 +236,5 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         perf.start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
         await sqldb.callOneRowAsync('sync_assessments', syncParams);
         perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
-    }, callback);
+    })(callback);
 }

@@ -1,11 +1,9 @@
 const _ = require('lodash');
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-const { safeAsync } = require('../../lib/async');
-
-
 module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         _(courseInstanceDB)
             .groupBy('uuid')
             .each(function(courseInstances, uuid) {
@@ -45,5 +43,5 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
         courseInstancesParam.forEach((courseInstanceParam, index) => {
             courseInstanceDB[courseInstanceParam.short_name].courseInstanceId = newCourseInstanceIds[index];
         });
-    }, callback);
+    })(callback);
 }

@@ -1,8 +1,8 @@
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const { safeAsync } = require('../../lib/async');
 
 module.exports.sync = function(courseInfo, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         const assessmentSets = courseInfo.assessmentSets || [];
         const assessmentSetsParams = assessmentSets.map((assessmentSet, index) => ({
             abbreviation: assessmentSet.abbreviation,
@@ -16,5 +16,5 @@ module.exports.sync = function(courseInfo, callback) {
             courseInfo.courseId,
         ];
         await sqldb.callAsync('sync_assessment_sets', params);
-    }, callback);
+    })(callback);
 }

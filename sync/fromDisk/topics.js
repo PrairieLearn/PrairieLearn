@@ -1,8 +1,8 @@
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const { safeAsync } = require('../../lib/async');
 
 module.exports.sync = function(courseInfo, questionDB, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         const topics = courseInfo.topics || [];
 
         // We'll create placeholder topics for tags that aren't specified in
@@ -31,5 +31,5 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             courseInfo.courseId,
         ];
         await sqldb.callAsync('sync_topics', params);
-    }, callback);
+    })(callback);
 }

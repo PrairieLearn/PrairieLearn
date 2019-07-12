@@ -1,5 +1,5 @@
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const { safeAsync } = require('../../lib/async');
 
 function getDuplicates(arr) {
     const seen = {};
@@ -15,7 +15,7 @@ function getDuplicatesByKey(arr, key) {
 }
 
 module.exports.sync = function(courseInfo, questionDB, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         const tags = courseInfo.tags || [];
 
         // First, do a sanity check for duplicate tag names. Because of how the
@@ -91,5 +91,5 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         console.log(JSON.stringify(paramQuestionTags, null, 2));
 
         await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
-    }, callback);
+    })(callback);
 }

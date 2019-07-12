@@ -1,12 +1,12 @@
 const _ = require('lodash');
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const logger = require('../../lib/logger');
-const { safeAsync } = require('../../lib/async');
 const perf = require('../performance')('question');
 
 module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         logger.debug('Syncing questions');
 
         // Check for duplicate UUIDs within this course's questions
@@ -83,5 +83,5 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         newQuestions.forEach((idMapping) => {
             questionDB[idMapping.qid].id = idMapping.id;
         });
-    }, callback);
+    })(callback);
 }
