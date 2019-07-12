@@ -143,7 +143,13 @@
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
 
-  * Change syncing process to be faster and more efficient (Nathan Walters).
+  * Change syncing process to be faster (Nathan Walters).
+
+  * Change syncing process to allow for tags/topics that are not explicitly listed in `courseInfo.json` (Nathan Walters).
+
+  * Change UUIDs to no longer be globally unique; they are not unique only in the smallest possible scope (Nathan Walters).
+
+  * Change syncing process to validate that QIDs are not repeated in an assessment; this is a potentially breaking change (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -264,6 +270,8 @@
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
   * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
+
+  * Remove `number` column from `question_tags` table; question tags are now sorted by `tags.number` (Nathan Walters).
   
   * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 
