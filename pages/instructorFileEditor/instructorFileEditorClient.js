@@ -42,7 +42,8 @@ window.InstructorFileEditor = function(uuid, options) {
 };
 
 window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
-    this.editor.setValue(contents);
+    // use session.setValue to reset the undo stack as well
+    this.editor.getSession().setValue(contents);
     this.editor.gotoLine(1, 0);
     this.editor.focus();
     this.syncFileToHiddenInput();
