@@ -94,6 +94,19 @@ describe('Question syncing', () => {
     // an error, thus failing the test.
   });
 
+  it('fails if "options" object is invalid', async () => {
+    const courseData = util.getCourseData();
+    const testQuestion = courseData.questions[util.QUESTION_ID];
+    testQuestion.type = 'Checkbox';
+    // Bad options - missing `incorrectAnswers`
+    testQuestion.options = {
+      text: 'is this a bad question?',
+      correctAnswers: ['yes'],
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /Error validating/);
+  });
+
   it('fails if a question has duplicate tags', async () => {
     const courseData = util.getCourseData();
     courseData.questions[util.QUESTION_ID].tags.push(courseData.questions[util.QUESTION_ID].tags[0]);
