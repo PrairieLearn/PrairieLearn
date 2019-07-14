@@ -38,7 +38,7 @@ async function getSyncedAssessmentData(tid) {
 }
 
 describe('Assessment syncing', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 

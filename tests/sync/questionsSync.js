@@ -5,10 +5,12 @@ const fs = require('fs-extra');
 const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');
+const syncFromDisk = require('../../sync/syncFromDisk');
 
 const { assert } = chai;
 
 describe('Question syncing', () => {
+  before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -92,6 +94,39 @@ describe('Question syncing', () => {
     await util.syncCourseData(secondDirectory);
     // No need for assertions - either sync succeeds, or it'll fail and throw
     // an error, thus failing the test.
+  });
+
+  it.only('incrementally syncs a single question', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const newTitle = 'This is a new title';
+    const newTopic = 'this is a new topic';
+    const newTag = 'this is a new tag';
+    const question = courseData.questions[util.QUESTION_ID];
+    question.title = newTitle;
+    question.topic = newTopic;
+    question.tags.push(newTag);
+    await util.writeCourseToDirectory(courseData, courseDir);
+    await syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion.title, newTitle);
+
+    // A new topic should have been created for this question
+    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopic = syncedTopics.find(t => t.name === newTopic);
+    assert.equal(syncedTopic.color, 'gray1');
+    assert.equal(syncedQuestion.topic_id, syncedTopic.id);
+
+    // A new tag should have been created for this question
+    const syncedTags = await util.dumpTable('tags');
+    const syncedTag = syncedTags.find(t => t.name === newTag);
+    assert.equal(syncedTag.color, 'gray1');
+
+    // A relationship should exist between the new tag and the question
+    const syncedQuestionTags = await util.dumpTable('question_tags');
+    const syncedQuestionTag = syncedQuestionTags.find(qt => qt.question_id === syncedQuestion.id && qt.tag_id === syncedTag.id);
+    assert.isOk(syncedQuestionTag);
   });
 
   it('fails if "options" object is invalid', async () => {

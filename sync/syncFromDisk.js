@@ -76,6 +76,14 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
     });
 };
 
+module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
+    const questionInfo = await courseDB.loadSingleQuestion(courseDir, qid, logger);
+
+    // TODO check if UUID changed for this QID - if it did, do a full sync for safety
+    // TODO sync tags
+    await syncQuestions.syncSingleQuestion(courseDir, questionInfo, logger);
+}
+
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
     logger.verbose(`Trying lock ${lockName}`);
