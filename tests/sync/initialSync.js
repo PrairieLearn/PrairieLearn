@@ -25,6 +25,7 @@ describe('Initial Sync', () => {
       assert.isOk(syncedQuestion);
       assert.equal(syncedQuestion.uuid, question.uuid);
       assert.equal(syncedQuestion.qid, qid);
+      assert.equal(syncedQuestion.directory, qid);
       const expectedType = question.type === 'v3' ? 'Freeform' : question.type;
       assert.equal(syncedQuestion.type, expectedType);
       assert.equal(syncedQuestion.title, question.title);
