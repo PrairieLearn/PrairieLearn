@@ -141,7 +141,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} enabled
  * @property {string} image
  * @property {string} entrypoint
- * @property {string[]} files
  * @property {string[]} serverFilesCourse
  * @property {number} timeout
  * @property {boolean} enableNetworking

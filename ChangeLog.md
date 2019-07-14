@@ -278,6 +278,8 @@
   * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
 
   * Remove `number` column from `question_tags` table; question tags are now sorted by `tags.number` (Nathan Walters).
+
+  * Remove support for `externalGradingOptions.files` in question `info.json` files (Nathan Walters).
   
   * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 

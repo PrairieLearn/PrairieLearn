@@ -24,19 +24,6 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
 
-            let external_grading_files = null;
-            if (q.externalGradingOptions) {
-                const opts = q.externalGradingOptions;
-                if (opts.files && opts.serverFilesCourse) {
-                    throw new Error(`Question ${qid} cannot use both externalGradingOptions.files and externalGradingOptions.serverFilesCourse`);
-                } else if (opts.files) {
-                    jobLogger.warn(`WARNING: Question ${qid} uses externalGradingOptions.files, which will be deprecated in favor of externalGradingOptions.serverFilesCourse`);
-                    external_grading_files = opts.files;
-                } else if (opts.serverFilesCourse) {
-                    external_grading_files = opts.serverFilesCourse;
-                }
-            }
-
             let partialCredit;
             if (q.partialCredit != null) {
                 partialCredit = q.partialCredit;
@@ -61,7 +48,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 single_variant: !!q.singleVariant,
                 external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
                 external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
-                external_grading_files: external_grading_files,
+                external_grading_files: (q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse),
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
