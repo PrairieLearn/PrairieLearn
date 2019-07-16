@@ -265,91 +265,86 @@ function getS3Key(editID, fileName) {
 }
 
 function readEdit(fileEdit, callback) {
-    selectEdit(fileEdit, (err) => {
-        if (ERR(err, callback)) return;
-        if ('editID' in fileEdit) {
-            debug('Read contents of file edit');
-            if (config.fileEditorUseAws) {
-                const params = {
-                    Bucket: config.fileEditorS3Bucket,
-                    Key: getS3Key(fileEdit.editID, fileEdit.fileName),
-                };
-                const s3 = new AWS.S3();
-                s3.getObject(params, (err, data) => {
-                    if (ERR(err, callback)) return;
-                    fileEdit.editContents = b64EncodeUnicode(data.Body);
-                    fileEdit.editHash = getHash(fileEdit.editContents);
-                    callback(null);
-                });
-            } else {
-                const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-                fs.readFile(fullPath, 'utf8', (err, contents) => {
-                    if (ERR(err, callback)) return;
-                    debug(`Got contents from ${fullPath}`);
-                    fileEdit.editContents = b64EncodeUnicode(contents);
-                    fileEdit.editHash = getHash(fileEdit.editContents);
-                    callback(null);
-                });
-            }
-        } else {
-            callback(null);
-        }
-    });
-}
-
-function selectEdit(fileEdit, callback) {
-    sqldb.beginTransaction((err, client, done) => {
-        if (ERR(err, callback)) return;
-        async.series([
-            (callback) => {
-                const params = {
-                    user_id: fileEdit.userID,
-                    course_id: fileEdit.courseID,
-                    dir_name: fileEdit.dirName,
-                    file_name: fileEdit.fileName,
-                };
-                debug(`Looking for previously saved drafts`);
-                sqldb.queryWithClient(client, sql.select_file_edit, params, (err, result) => {
-                    if (ERR(err, callback)) return;
-                    if (result.rows.length > 0) {
-                        debug(`Found ${result.rows.length} saved drafts, the first of which has id ${result.rows[0].id}`);
-                        if (result.rows[0].age < 24) {
-                            fileEdit.editID = result.rows[0].id;
-                            fileEdit.origHash = result.rows[0].orig_hash;
-                            fileEdit.editPushed = result.rows[0].pushed;
-                            fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
-                            if (config.fileEditorUseAws) {
-                                fileEdit.s3_bucket = result.rows[0].s3_bucket;
-                            } else {
-                                fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                            }
-                            debug(`This draft was ${fileEdit.editPushed ? "pushed" : "not pushed"}`);
-                        } else {
-                            debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
-                        }
-                    }
-                    callback(null);
-                });
-            },
-            (callback) => {
-                const params = {
-                    user_id: fileEdit.userID,
-                    course_id: fileEdit.courseID,
-                    dir_name: fileEdit.dirName,
-                    file_name: fileEdit.fileName,
-                };
-                sqldb.queryWithClient(client, sql.soft_delete_file_edit, params, (err) => {
-                    if (ERR(err, callback)) return;
-                    debug('Deleted all previously saved drafts');
-                    callback(null);
-                });
-            },
-        ], (err) => {
-            sqldb.endTransaction(client, done, err, (err) => {
+    async.series([
+        (callback) => {
+            const params = {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+            };
+            debug(`Looking for previously saved drafts`);
+            sqldb.query(sql.select_file_edit, params, (err, result) => {
                 if (ERR(err, callback)) return;
+                if (result.rows.length > 0) {
+                    debug(`Found ${result.rows.length} saved drafts, the first of which has id ${result.rows[0].id}`);
+                    if (result.rows[0].age < 24) {
+                        fileEdit.editID = result.rows[0].id;
+                        fileEdit.origHash = result.rows[0].orig_hash;
+                        fileEdit.editPushed = result.rows[0].pushed;
+                        fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
+                        if (config.fileEditorUseAws) {
+                            fileEdit.s3_bucket = result.rows[0].s3_bucket;
+                        } else {
+                            fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
+                        }
+                        debug(`This draft was ${fileEdit.editPushed ? "pushed" : "not pushed"}`);
+                    } else {
+                        debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
+                    }
+                }
                 callback(null);
             });
-        });
+        },
+        (callback) => {
+            // We are choosing to soft-delete all drafts *before* reading the
+            // contents of whatever draft we found, because we don't want to get
+            // in a situation where the user is trapped with an unreadable draft.
+            // We accept the possibility that a draft will occasionally be lost.
+            const params = {
+                user_id: fileEdit.userID,
+                course_id: fileEdit.courseID,
+                dir_name: fileEdit.dirName,
+                file_name: fileEdit.fileName,
+            };
+            sqldb.query(sql.soft_delete_file_edit, params, (err) => {
+                if (ERR(err, callback)) return;
+                debug('Deleted all previously saved drafts');
+                callback(null);
+            });
+        },
+        (callback) => {
+            if ('editID' in fileEdit) {
+                debug('Read contents of file edit');
+                if (config.fileEditorUseAws) {
+                    const params = {
+                        Bucket: config.fileEditorS3Bucket,
+                        Key: getS3Key(fileEdit.editID, fileEdit.fileName),
+                    };
+                    const s3 = new AWS.S3();
+                    s3.getObject(params, (err, data) => {
+                        if (ERR(err, callback)) return;
+                        fileEdit.editContents = b64EncodeUnicode(data.Body);
+                        fileEdit.editHash = getHash(fileEdit.editContents);
+                        callback(null);
+                    });
+                } else {
+                    const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
+                    fs.readFile(fullPath, 'utf8', (err, contents) => {
+                        if (ERR(err, callback)) return;
+                        debug(`Got contents from ${fullPath}`);
+                        fileEdit.editContents = b64EncodeUnicode(contents);
+                        fileEdit.editHash = getHash(fileEdit.editContents);
+                        callback(null);
+                    });
+                }
+            } else {
+                callback(null);
+            }
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
     });
 }
 
