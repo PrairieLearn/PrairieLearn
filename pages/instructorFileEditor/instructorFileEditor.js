@@ -219,6 +219,7 @@ router.post('/', (req, res, next) => {
             },
             (callback) => {
                 debug('Write edit to disk (also push and sync if necessary)');
+                fileEdit.needToSync = (path.extname(fileEdit.fileName) == '.json');
                 saveAndSync(fileEdit, res.locals, (err) => {
                     // If there is an error, log it and pass null to the callback.
                     if (ERR(err, (err) => logger.info(err))) {
@@ -744,7 +745,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'unlock',
                 description: 'Unlock',
                 job_sequence_id: job_sequence_id,
-                on_success: (jobSequenceHasFailed ? _finishWithFailure : _finishWithSuccess),
+                on_success: (jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash),
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -766,45 +767,8 @@ function saveAndSync(fileEdit, locals, callback) {
             });
         };
 
-        const _finishWithSuccess = () => {
-            debug(`finish job sequence id=${job_sequence_id} with success`);
-
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'finish',
-                description: 'Finish job sequence',
-                job_sequence_id: job_sequence_id,
-                last_in_sequence: true,
-            };
-            serverJobs.createJob(jobOptions, (jobErr, job) => {
-                if (jobErr) {
-                    logger.error('Error in createJob()', jobErr);
-                    serverJobs.failJobSequence(job_sequence_id);
-                    return;
-                }
-
-                job.succeed();
-                if (ERR(err, (err) => logger.info(err))) {
-                    callback(null, job_sequence_id);
-                    return;
-                }
-                callback(null, job_sequence_id);
-            });
-        };
-
-        const _finishWithFailure = () => {
-            debug(`finish job sequence id=${job_sequence_id} with failure`);
-            serverJobs.failJobSequence(job_sequence_id);
-            if (ERR(err, (err) => logger.info(err))) {
-                callback(null, job_sequence_id);
-                return;
-            }
-            callback(null, job_sequence_id);
-        };
-
         const _updateCommitHash = () => {
+            debug('Update commit hash');
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
                 ERR(err, (e) => logger.error(e));
                 if (fileEdit.needToSync) {
@@ -816,6 +780,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _syncFromDisk = () => {
+            debug('create job: sync from disk');
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -824,6 +789,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 description: 'Sync course',
                 job_sequence_id: job_sequence_id,
                 on_success: _reloadQuestionServers,
+                on_failure: _finishWithFailure,
+                no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
                 if (err) {
@@ -842,6 +809,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _reloadQuestionServers = () => {
+            debug('create job: reload question servers');
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -849,7 +817,9 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'reload_question_servers',
                 description: 'Reload server.js code (for v2 questions)',
                 job_sequence_id: job_sequence_id,
-                last_in_sequence: true,
+                on_success: _finishWithSuccess,
+                on_failure: _finishWithFailure,
+                no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
                 if (err) {
@@ -916,6 +886,44 @@ function saveAndSync(fileEdit, locals, callback) {
             debug(`Job id ${id} has failed`);
             jobSequenceHasFailed = true;
             _unlock();
+        };
+
+        const _finishWithSuccess = () => {
+            debug(`finish job sequence id=${job_sequence_id} with success`);
+
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'finish',
+                description: 'Finish job sequence',
+                job_sequence_id: job_sequence_id,
+                last_in_sequence: true,
+            };
+            serverJobs.createJob(jobOptions, (jobErr, job) => {
+                if (jobErr) {
+                    logger.error('Error in createJob()', jobErr);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                job.succeed();
+                if (ERR(err, (err) => logger.info(err))) {
+                    callback(null, job_sequence_id);
+                    return;
+                }
+                callback(null, job_sequence_id);
+            });
+        };
+
+        const _finishWithFailure = () => {
+            debug(`finish job sequence id=${job_sequence_id} with failure`);
+            serverJobs.failJobSequence(job_sequence_id);
+            if (ERR(err, (err) => logger.info(err))) {
+                callback(null, job_sequence_id);
+                return;
+            }
+            callback(null, job_sequence_id);
         };
 
         _markEditWithJobSequenceId();
