@@ -7,7 +7,7 @@ const async = require('async');
 const moment = require('moment');
 const schemas = require('../schemas');
 
-const jsonLoad = require('./json-load');
+const jsonLoad = require('../lib/json-load');
 
 const DEFAULT_QUESTION_INFO = {
     type: 'Calculation',
@@ -64,8 +64,9 @@ var defaultTags = [
     {'name': 'Fa21', 'color': 'gray1'},
 ];
 
-function loadCourseInfo(courseInfo, courseDir, logger, callback) {
-    var courseInfoFilename = path.join(courseDir, 'infoCourse.json');
+function loadCourseInfo(courseDir, logger, callback) {
+    const courseInfoFilename = path.join(courseDir, 'infoCourse.json');
+    const courseInfo = {};
     jsonLoad.readInfoJSON(courseInfoFilename, schemas.infoCourse, function(err, info) {
         if (ERR(err, callback)) return;
         courseInfo.uuid = info.uuid.toLowerCase();
@@ -105,9 +106,11 @@ function loadCourseInfo(courseInfo, courseDir, logger, callback) {
         }
 
         courseInfo.jsonFilename = info.jsonFilename;
-        callback(null);
+        callback(null, courseInfo);
     });
 }
+
+function loadQuestion() {}
 
 function checkInfoValid(idName, info, infoFile, courseInfo, logger, cache) {
     var myError = null;
@@ -226,13 +229,15 @@ module.exports.loadSingleQuestion = async function(courseDir, qid, logger) {
 };
 
 module.exports.loadFullCourse = function(courseDir, logger, callback) {
-    const course = {
-        courseInfo: {},
-        questionDB: {},
-        courseInstanceDB: {},
-    };
+    const course = {};
     async.series([
-        loadCourseInfo.bind(null, course.courseInfo, courseDir, logger),
+        function(callback) {
+            loadCourseInfo(courseDir, logger, function(err, courseInfo) {
+                if (ERR(err, callback)) return;
+                course.courseInfo = courseInfo;
+                callback(null);
+            });
+        },
         function(callback) {
             loadInfoDB('qid', course.courseInfo.questionsDir, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions', course.courseInfo, logger, function(err, questionDB) {
                 if (ERR(err, callback)) return;
