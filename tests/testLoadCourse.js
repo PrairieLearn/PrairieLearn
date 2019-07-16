@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var assert = require('assert');
 var fs = require('fs');
 
-var courseDB = require('../lib/course-db');
+var courseDB = require('../sync/course-db');
 var logger = require('./dummyLogger');
 
 describe('courseDB.loadFullCourse() on exampleCourse', function() {

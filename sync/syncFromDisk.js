@@ -3,7 +3,7 @@ const _ = require('lodash');
 const async = require('async');
 
 const namedLocks = require('../lib/named-locks');
-const courseDB = require('../lib/course-db');
+const courseDB = require('../sync/course-db');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');

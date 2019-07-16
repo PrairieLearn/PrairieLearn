@@ -1,6 +1,6 @@
 var ERR = require('async-stacktrace');
 
-var courseDB = require('../lib/course-db');
+var courseDB = require('../sync/course-db');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var helperDb = require('./helperDb');
 var syncCourseInfo = require('../sync/fromDisk/courseInfo');
