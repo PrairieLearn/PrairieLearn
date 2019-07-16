@@ -1,23 +1,36 @@
 /* eslint-env browser,jquery */
 /* global ace */
-window.InstructorFileEditor = function(uuid, options) {
-    const elementId = '#file-editor-' + uuid;
-    this.element = $(elementId);
+window.InstructorFileEditor = function(options) {
+    this.element = $(`#${options.elementId}`);
     if (!this.element) {
-        throw new Error('Instructor file editor element ' + elementId + ' was not found!');
+        throw new Error(`Instructor file editor element ${options.elementId} was not found!`);
     }
 
-    this.saveElement = this.element.find('button[value=save_and_sync]');
+    this.saveElement = $(`#${options.saveElementId}`);
     this.inputElement = this.element.find('input[name=file_edit_contents]');
     this.editorElement = this.element.find('.editor');
-    this.editor = ace.edit(this.editorElement.get(0));
-    this.editor.setTheme('ace/theme/chrome');
-    this.editor.getSession().setUseWrapMode(true);
-    this.editor.setShowPrintMargin(false);
-    this.editor.getSession().on('change', this.onChange.bind(this));
+    this.editor = ace.edit(this.editorElement.get(0), {
+        minLines: 10,
+        maxLines: Infinity,
+        autoScrollEditorIntoView: true,
+        wrap: true,
+        showPrintMargin: false,
+        mode: options.aceMode,
+        readOnly: options.readOnly,
+    });
 
-    if (options.aceMode) {
-        this.editor.getSession().setMode(options.aceMode);
+    if (options.altElementId) {
+        this.editor.setReadOnly(true);
+        this.altElement = $(`#${options.altElementId}`);
+        this.chooseElement = this.element.find('button[id=choose]');
+        this.chooseContainerElement = this.element.find('.card-header')
+        this.chooseElement.click(function() {
+            this.editor.setReadOnly(false);
+            this.altElement.remove();
+            this.chooseContainerElement.remove();
+            this.checkDiff.bind(this);
+            this.editor.resize();
+        }.bind(this));
     }
 
     // The following line is to avoid this warning in the console:
@@ -39,6 +52,8 @@ window.InstructorFileEditor = function(uuid, options) {
         this.originalContents = this.b64DecodeUnicode(options.contents);
     }
     this.setEditorContents(this.originalContents);
+
+    this.editor.getSession().on('change', this.onChange.bind(this));
 };
 
 window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
@@ -47,7 +62,6 @@ window.InstructorFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.gotoLine(1, 0);
     this.editor.focus();
     this.syncFileToHiddenInput();
-    this.checkDiff();
 };
 
 window.InstructorFileEditor.prototype.syncFileToHiddenInput = function() {
