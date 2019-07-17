@@ -144,6 +144,7 @@ module.exports = {
             'assessment_instances_points.sql',
             'sync_course_tags.sql',
             'sync_question_tags.sql',
+            'lock_timeout_set.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
