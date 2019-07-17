@@ -483,7 +483,7 @@ function saveAndSync(fileEdit, locals, callback) {
         let showHelpMsg = '';
 
         const _updateJobSequenceId = () => {
-            debug('create job: updateJobSequenceId');
+            debug(`${job_sequence_id}: _updateJobSequenceId`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -491,7 +491,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'update_job_sequence_id',
                 description: 'Add job sequence id to edit in database',
                 job_sequence_id: job_sequence_id,
-                on_success: _finishWithFailure, //_lock,
+                on_success: _lock,
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -515,7 +515,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _lock = () => {
-            debug('create job: lock');
+            debug(`${job_sequence_id}: _lock`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -536,7 +536,7 @@ function saveAndSync(fileEdit, locals, callback) {
 
                 const lockName = 'coursedir:' + options.courseDir;
                 job.verbose(`Trying lock ${lockName}`);
-                namedLocks.tryLock(lockName, (err, lock) => {
+                namedLocks.waitLockWithTimeout(lockName, 5000, (err, lock) => {
                     if (err) {
                         job.fail(err);
                     } else if (lock == null) {
@@ -553,7 +553,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _checkHash = () => {
-            debug('create job: checkHash');
+            debug(`${job_sequence_id}: _checkHash`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -590,7 +590,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _writeFile = () => {
-            debug('create job: writeFile');
+            debug(`${job_sequence_id}: _writeFile`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -624,7 +624,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _unstage = function() {
-            debug('create job: unstage');
+            debug(`${job_sequence_id}: _unstage`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -644,7 +644,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _add = function() {
-            debug('create job: add');
+            debug(`${job_sequence_id}: _add`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -664,7 +664,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _commit = function() {
-            debug('create job: commit');
+            debug(`${job_sequence_id}: _commit`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -688,7 +688,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _push = function() {
-            debug('create job: push');
+            debug(`${job_sequence_id}: _push`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -708,7 +708,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _didSave = () => {
-            debug('create job: didSave');
+            debug(`${job_sequence_id}: _didSave`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -740,7 +740,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _unlock = () => {
-            debug('create job: unlock');
+            debug(`${job_sequence_id}: _unlock`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -771,7 +771,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _updateCommitHash = () => {
-            debug('Update commit hash');
+            debug(`${job_sequence_id}: _updateCommitHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
                 ERR(err, (e) => logger.error(e));
                 if (fileEdit.needToSync) {
@@ -783,7 +783,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _syncFromDisk = () => {
-            debug('create job: sync from disk');
+            debug(`${job_sequence_id}: _syncFromDisk`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -812,7 +812,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _reloadQuestionServers = () => {
-            debug('create job: reload question servers');
+            debug(`${job_sequence_id}: _reloadQuestionServers`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -842,7 +842,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _didSync = () => {
-            debug('create job: didSync');
+            debug(`${job_sequence_id}: _didSync`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -876,7 +876,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _cleanupAfterCommit = (id) => {
             debug(`Job id ${id} has failed (after git commit)`);
             jobSequenceHasFailed = true;
-            debug('create job: roll back commit');
+            debug(`${job_sequence_id}: _cleanupAfterCommit`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -898,7 +898,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _cleanupAfterWrite = (id) => {
             debug(`Job id ${id} has failed (after write)`);
             jobSequenceHasFailed = true;
-            debug('create job: revert changes to file on disk');
+            debug(`${job_sequence_id}: _cleanupAfterWrite`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -924,7 +924,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _finishWithSuccess = () => {
-            debug(`finish job sequence id=${job_sequence_id} with success`);
+            debug(`${job_sequence_id}: _finishWithSuccess`);
 
             const jobOptions = {
                 course_id: options.course_id,
@@ -954,7 +954,7 @@ function saveAndSync(fileEdit, locals, callback) {
         };
 
         const _finishWithFailure = () => {
-            debug(`finish job sequence id=${job_sequence_id} with failure`);
+            debug(`${job_sequence_id}: _finishWithFailure`);
             serverJobs.failJobSequence(job_sequence_id);
             if (ERR(err, (err) => logger.info(err))) {
                 callback(null, job_sequence_id);
