@@ -62,8 +62,6 @@ router.get('/', (req, res, next) => {
         coursePath: res.locals.course.path,
         dirName: path.dirname(req.query.file),
         fileName: path.basename(req.query.file),
-        redirectResult: req.query.result,
-        redirectUrl: getUrl(req.baseUrl, req.query.file),
     };
 
     const ext = path.extname(req.query.file);
@@ -168,7 +166,6 @@ router.post('/', (req, res, next) => {
         coursePath: res.locals.course.path,
         uid: res.locals.user.uid,
         user_name: res.locals.user.name,
-        redirectUrl: getUrl(req.baseUrl, path.join(req.body.file_edit_dir_name, req.body.file_edit_file_name)),
     };
 
     // Do not allow users to edit the exampleCourse
