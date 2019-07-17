@@ -5,7 +5,9 @@
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/node_modules/ace-builds/src-min-noconflict/ace.js"></script>
     <script src="./edit/instructorFileEditorClient.js"></script>
+    <% if (fileEdit.jobSequenceId != null) { %>
     <script src="/javascripts/socket.io.js"></script>
+    <% } %>
 </head>
 
 <body>
@@ -13,7 +15,7 @@
 
     <div class="container">
         <%- include('../partials/navtabs'); %>
-
+        
         <script>
             $(function() {
                 new window.InstructorFileEditor({
@@ -21,7 +23,7 @@
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
                     saveElementId: "file-editor-<%= fileEdit.uuid %>-save-button",
-                    <% if (fileEdit.doChoiceDialog) { %>
+                    <% if (fileEdit.alertChoice) { %>
                     altElementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     <% } %>
                 });
@@ -57,25 +59,23 @@
                 </div>
                 <div class="card-body p-0 row">
                     <div class="container">
-                        <% if (fileEdit.alertPushSuccess) { %>
-                        <div class="alert alert-success alert-dismissible fade show m-2" role="alert">
-                            File was saved successfully.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <% } %>
-
-                        <% if (fileEdit.alertPushFailure) { %>
-                        <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
-
+                        <% if (fileEdit.alertResults) { %>
+                        <div class="alert <% if (fileEdit.didSave && fileEdit.didSync) { %>alert-success<% } else { %>alert-danger<% } %> alert-dismissible fade show m-2" role="alert">
                             <div class="row align-items-center">
                                 <div class="col-auto">
-                                    Failed to save file.
+                                    <% if (fileEdit.didSave) { %>
+                                        <% if (fileEdit.didSync) { %>
+                                            File was both saved and synced successfully.
+                                        <% } else { %>
+                                            File was saved, but failed to sync.
+                                        <% } %>
+                                    <% } else { %>
+                                        Failed to save (or to sync) file.
+                                    <% } %>
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
                                 <div class="col-auto">
-                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#error-<%= fileEdit.uuid %>" role="button">Detail</a>
+                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button">Detail</a>
                                 </div>
                                 <% } %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -83,7 +83,7 @@
                                 </button>
                             </div>
                             <% if (fileEdit.jobSequenceId != null) { %>
-                            <div class="row collapse mt-2" id="error-<%= fileEdit.uuid %>">
+                            <div class="row collapse mt-2" id="results-<%= fileEdit.uuid %>">
                                 <div class="card card-body">
                                     <%- include('../partials/jobSequenceResults', {job_sequence: fileEdit.jobSequence, job_sequence_enable_live_update: false}); %>
                                 </div>
@@ -92,18 +92,13 @@
                         </div>
                         <% } %>
 
-                        <% if (fileEdit.alertChoiceSameHash) { %>
+                        <% if (fileEdit.alertChoice) { %>
                         <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+                            <% if (fileEdit.hasSameHash) { %>
                             You were editing this file and made changes. You may choose either to continue editing or to discard your changes.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <% } %>
-
-                        <% if (fileEdit.alertChoiceDiffHash) { %>
-                        <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+                            <% } else { %>
                             Both you and another user made changes to this file. You may choose either to continue editing your draft or to discard your changes.
+                            <% } %>
                             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
@@ -113,7 +108,7 @@
 
                     <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col">
                         <div class="card p-0">
-                            <% if (fileEdit.doChoiceDialog) { %>
+                            <% if (fileEdit.alertChoice) { %>
                             <div class="card-header bg-white text-center">
                                 <button id="choose" class="btn btn-warning" type="button">Choose this version (continue editing)</button>
                             </div>
@@ -124,11 +119,11 @@
                             </div>
                         </div>
                     </div>
-                    <% if (fileEdit.doChoiceDialog) { %>
+                    <% if (fileEdit.alertChoice) { %>
                     <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col">
                         <div class="card p-0">
                             <div class="card-header bg-white text-center">
-                                <button name="__action" value="discard_draft" class="btn btn-warning">Choose this version (discard changes)</button>
+                                <button class="btn btn-warning" type="button" onClick="window.location.reload()">Choose this version (discard changes)</button>
                             </div>
                             <div class="card-body p-0">
                                 <div class="editor"></div>

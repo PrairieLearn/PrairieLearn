@@ -4,7 +4,8 @@ SELECT
     fe.orig_hash,
     fe.local_tmp_dir,
     fe.s3_bucket,
-    fe.pushed,
+    fe.did_save,
+    fe.did_sync,
     floor(EXTRACT(epoch FROM CURRENT_TIMESTAMP - fe.created_at) / 3600) AS age,
     fe.job_sequence_id
 FROM
@@ -35,14 +36,21 @@ WHERE
     AND fe.file_name = $file_name
     AND fe.deleted_at IS NULL;
 
--- BLOCK mark_file_edit_as_pushed
+-- BLOCK update_did_save
 UPDATE file_edits AS fe
 SET
-    pushed = TRUE
+    did_save = TRUE
 WHERE
     fe.id = $id;
 
--- BLOCK mark_file_edit_with_job_sequence_id
+-- BLOCK update_did_sync
+UPDATE file_edits AS fe
+SET
+    did_sync = TRUE
+WHERE
+    fe.id = $id;
+
+-- BLOCK update_job_sequence_id
 UPDATE file_edits AS fe
 SET
     job_sequence_id = $job_sequence_id

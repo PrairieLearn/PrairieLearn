@@ -121,6 +121,10 @@ router.get('/', (req, res, next) => {
                 jobSequenceResults.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
                     if (ERR(err, callback)) return;
                     fileEdit.jobSequence = job_sequence;
+                    if (fileEdit.jobSequence.status == 'Running') {
+                        debug('Job sequence is still running - redirect to status page');
+                        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
+                    }
                     callback(null);
                 });
             }
@@ -128,25 +132,19 @@ router.get('/', (req, res, next) => {
     ], (err) => {
         if (ERR(err, next)) return;
 
-        fileEdit.doChoiceDialog = false;
+        fileEdit.alertChoice = false;
 
         if ('editID' in fileEdit) {
             // There is a recently saved draft ...
-            if ((!fileEdit.editPushed) && (fileEdit.editHash != fileEdit.diskHash)) {
+            fileEdit.alertResults = true;
+            if ((!fileEdit.didSave) && (fileEdit.editHash != fileEdit.diskHash)) {
                 // ...that was not written to disk and that differs from what is on disk.
-                fileEdit.doChoiceDialog = true;
-                if (fileEdit.origHash == fileEdit.diskHash) {
-                    fileEdit.alertChoiceSameHash = true;
-                } else {
-                    fileEdit.alertChoiceDiffHash = true;
-                }
+                fileEdit.alertChoice = true;
+                fileEdit.hasSameHash = (fileEdit.origHash == fileEdit.diskHash);
             }
-
-            fileEdit.alertPushSuccess = fileEdit.editPushed;
-            fileEdit.alertPushFailure = !fileEdit.editPushed;
         }
 
-        if (!fileEdit.doChoiceDialog) {
+        if (!fileEdit.alertChoice) {
             fileEdit.editContents = fileEdit.diskContents;
             fileEdit.origHash = fileEdit.diskHash;
         }
@@ -192,10 +190,7 @@ router.post('/', (req, res, next) => {
         }));
     }
 
-    if (req.body.__action == 'discard_draft') {
-        debug('Discard Draft');
-        res.redirect(req.originalUrl);
-    } else if (req.body.__action == 'save_and_sync') {
+    if (req.body.__action == 'save_and_sync') {
         debug('Save and sync');
 
         // The "Save and Sync" button is enabled only when changes have been made
@@ -282,14 +277,15 @@ function readEdit(fileEdit, callback) {
                     if (result.rows[0].age < 24) {
                         fileEdit.editID = result.rows[0].id;
                         fileEdit.origHash = result.rows[0].orig_hash;
-                        fileEdit.editPushed = result.rows[0].pushed;
+                        fileEdit.didSave = result.rows[0].did_save;
+                        fileEdit.didSync = result.rows[0].did_sync;
                         fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
                         if (config.fileEditorUseAws) {
                             fileEdit.s3_bucket = result.rows[0].s3_bucket;
                         } else {
                             fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
                         }
-                        debug(`This draft was ${fileEdit.editPushed ? "pushed" : "not pushed"}`);
+                        debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
                     } else {
                         debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
                     }
@@ -349,23 +345,33 @@ function readEdit(fileEdit, callback) {
     });
 }
 
-function markEditWithJobSequenceId(fileEdit, job_sequence_id, callback) {
-    sqldb.query(sql.mark_file_edit_with_job_sequence_id, {
+function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
+    sqldb.query(sql.update_job_sequence_id, {
         id: fileEdit.editID,
         job_sequence_id: job_sequence_id,
     }, (err) => {
         if (ERR(err, callback)) return;
-        debug('Marked saved draft with job sequence id');
+        debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
         callback(null);
     });
 }
 
-function markEditAsPushed(fileEdit, callback) {
-    sqldb.query(sql.mark_file_edit_as_pushed, {
+function updateDidSave(fileEdit, callback) {
+    sqldb.query(sql.update_did_save, {
         id: fileEdit.editID,
     }, (err) => {
         if (ERR(err, callback)) return;
-        debug('Marked saved draft as pushed');
+        debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
+        callback(null);
+    });
+}
+
+function updateDidSync(fileEdit, callback) {
+    sqldb.query(sql.update_did_sync, {
+        id: fileEdit.editID,
+    }, (err) => {
+        if (ERR(err, callback)) return;
+        debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
         callback(null);
     });
 }
@@ -479,16 +485,16 @@ function saveAndSync(fileEdit, locals, callback) {
         let showHelpJob = false;
         let showHelpMsg = '';
 
-        const _markEditWithJobSequenceId = () => {
-            debug('create job: markEditWithJobSequenceId');
+        const _updateJobSequenceId = () => {
+            debug('create job: updateJobSequenceId');
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
                 authn_user_id: options.authn_user_id,
-                type: 'mark_edit_with_job_sequence_id',
+                type: 'update_job_sequence_id',
                 description: 'Add job sequence id to edit in database',
                 job_sequence_id: job_sequence_id,
-                on_success: _lock,
+                on_success: _finishWithFailure, //_lock,
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -500,7 +506,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 }
 
                 debug('Add job sequence id to edit in database');
-                markEditWithJobSequenceId(fileEdit, job_sequence_id, (err) => {
+                updateJobSequenceId(fileEdit, job_sequence_id, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -595,7 +601,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'write_file',
                 description: 'Write saved draft to disk',
                 job_sequence_id: job_sequence_id,
-                on_success: (config.fileEditorUseGit ? _unstage : _markEditAsPushed),
+                on_success: (config.fileEditorUseGit ? _unstage : _didSave),
                 on_error: _cleanup,
                 no_job_sequence_update: true,
             };
@@ -697,21 +703,21 @@ function saveAndSync(fileEdit, locals, callback) {
                 arguments: ['push'],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,
-                on_success: _markEditAsPushed,
+                on_success: _didSave,
                 on_error: _cleanupAfterCommit,
                 no_job_sequence_update: true,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        const _markEditAsPushed = () => {
-            debug('create job: markEditAsPushed');
+        const _didSave = () => {
+            debug('create job: didSave');
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
                 authn_user_id: options.authn_user_id,
-                type: 'mark_edit_as_pushed',
-                description: 'Mark edit as pushed (or just written to disk, if no git)',
+                type: 'did_save',
+                description: 'Mark edit as saved',
                 job_sequence_id: job_sequence_id,
                 on_success: _unlock,
                 on_error: _cleanup,
@@ -724,12 +730,12 @@ function saveAndSync(fileEdit, locals, callback) {
                     return;
                 }
 
-                debug('Mark edit as pushed (or just written to disk, if no git)');
-                markEditAsPushed(fileEdit, (err) => {
+                debug('Mark edit as saved');
+                updateDidSave(fileEdit, (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
-                        job.verbose('Marked edit as pushed');
+                        job.verbose('Marked edit as saved');
                         job.succeed();
                     }
                 });
@@ -817,7 +823,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'reload_question_servers',
                 description: 'Reload server.js code (for v2 questions)',
                 job_sequence_id: job_sequence_id,
-                on_success: _finishWithSuccess,
+                on_success: _didSync,
                 on_failure: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -832,6 +838,38 @@ function saveAndSync(fileEdit, locals, callback) {
                     if (err) {
                         job.fail(err);
                     } else {
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        const _didSync = () => {
+            debug('create job: didSync');
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                type: 'did_sync',
+                description: 'Mark edit as synced',
+                job_sequence_id: job_sequence_id,
+                on_success: _finishWithSuccess,
+                on_error: _finishWithFailure,
+                no_job_sequence_update: true,
+            };
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
+
+                debug('Mark edit as synced');
+                updateDidSync(fileEdit, (err) => {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.verbose('Marked edit as synced');
                         job.succeed();
                     }
                 });
@@ -907,8 +945,10 @@ function saveAndSync(fileEdit, locals, callback) {
                     return;
                 }
 
+                job.verbose('Finished with success');
                 job.succeed();
                 if (ERR(err, (err) => logger.info(err))) {
+                    // Should never get here
                     callback(null, job_sequence_id);
                     return;
                 }
@@ -926,7 +966,7 @@ function saveAndSync(fileEdit, locals, callback) {
             callback(null, job_sequence_id);
         };
 
-        _markEditWithJobSequenceId();
+        _updateJobSequenceId();
     });
 }
 
