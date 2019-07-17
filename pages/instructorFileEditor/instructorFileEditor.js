@@ -39,8 +39,6 @@ router.get('/instructorFileEditorClient.js', (req, res) => {
 router.get('/', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
 
-    debug(req.query);
-
     if (_.isEmpty(req.query)) {
         return next(error.make(400, 'no query', {
             locals: res.locals,
@@ -471,6 +469,9 @@ function saveAndSync(fileEdit, locals, callback) {
     };
 
     serverJobs.createJobSequence(options, (err, job_sequence_id) => {
+        // Return immediately if we fail to create a job sequence
+        if (ERR(err, callback)) return;
+
         let gitEnv = process.env;
         if (config.gitSshCommand != null) {
             gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
@@ -496,9 +497,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -528,9 +528,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -566,9 +565,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -603,9 +601,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -721,9 +718,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -753,9 +749,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -796,9 +791,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
@@ -825,9 +819,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
                 const coursePath = locals.course.path;
@@ -855,9 +848,8 @@ function saveAndSync(fileEdit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (err) {
-                    logger.error('Error in createJob()', err);
-                    serverJobs.failJobSequence(job_sequence_id);
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
@@ -935,20 +927,14 @@ function saveAndSync(fileEdit, locals, callback) {
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
-            serverJobs.createJob(jobOptions, (jobErr, job) => {
-                if (jobErr) {
-                    logger.error('Error in createJob()', jobErr);
-                    serverJobs.failJobSequence(job_sequence_id);
+            serverJobs.createJob(jobOptions, (err, job) => {
+                if (ERR(err, (err) => logger.info(err))) {
+                    _finishWithFailure();
                     return;
                 }
 
                 job.verbose('Finished with success');
                 job.succeed();
-                if (ERR(err, (err) => logger.info(err))) {
-                    // Should never get here
-                    callback(null, job_sequence_id);
-                    return;
-                }
                 callback(null, job_sequence_id);
             });
         };
@@ -956,10 +942,6 @@ function saveAndSync(fileEdit, locals, callback) {
         const _finishWithFailure = () => {
             debug(`${job_sequence_id}: _finishWithFailure`);
             serverJobs.failJobSequence(job_sequence_id);
-            if (ERR(err, (err) => logger.info(err))) {
-                callback(null, job_sequence_id);
-                return;
-            }
             callback(null, job_sequence_id);
         };
 
