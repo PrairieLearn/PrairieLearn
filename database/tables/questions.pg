@@ -25,7 +25,7 @@ columns
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
     questions_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
-    questions_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    questions_course_id_uuid_key: UNIQUE (course_id, uuid) USING btree (course_id, uuid)
     questions_topic_id_idx: USING btree (topic_id)
 
 foreign-key constraints

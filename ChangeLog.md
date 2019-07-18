@@ -142,6 +142,20 @@
   * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
+  
+  * Change developer docs to recommend the use of async/await (Matt West).
+
+  * Change syncing process to be faster (Nathan Walters).
+
+  * Change syncing process to allow for tags/topics that are not explicitly listed in `courseInfo.json` (Nathan Walters).
+
+  * Change UUIDs to no longer be globally unique; they are not unique only in the smallest possible scope (Nathan Walters).
+
+  * Change syncing process to validate that QIDs are not repeated in an assessment; this is a potentially breaking change (Nathan Walters).
+
+  * Change to PostgreSQL version 11 (from version 10) (Matt West).
+
+  * Change to NodeJS version 12 (from v10) (Matt West).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -253,11 +267,19 @@
 
   * Fix help text CSV upload example with `points` (Matt West, h/t Mariana Silva and James Balamuta).
 
+  * Fix CSRF checking for external grading live updates (Nathan Walters).
+
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
   * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
+
+  * Remove `number` column from `question_tags` table; question tags are now sorted by `tags.number` (Nathan Walters).
+
+  * Remove support for `externalGradingOptions.files` in question `info.json` files (Nathan Walters).
   
   * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 

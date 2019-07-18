@@ -65,10 +65,7 @@ module.exports = {
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
-            'course_instances_with_uuid_elsewhere.sql',
-            'questions_with_uuid_elsewhere.sql',
             'questions_select.sql',
-            'assessments_with_uuid_elsewhere.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
             'admin_assessment_question_number.sql',
@@ -144,6 +141,12 @@ module.exports = {
             'assessment_instances_points.sql',
             'sync_course_tags.sql',
             'sync_question_tags.sql',
+            'sync_questions.sql',
+            'sync_assessments.sql',
+            'sync_course_staff.sql',
+            'sync_assessment_sets.sql',
+            'sync_topics.sql',
+            'sync_course_instances.sql',
             'lock_timeout_set.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
