@@ -16,15 +16,7 @@ WHERE
     js.id = $job_sequence_id;
 
 -- BLOCK insert_job
-WITH max_over_jobs_with_same_course AS (
-    SELECT
-        coalesce(max(j.number) + 1, 1) AS new_number
-    FROM
-        jobs AS j
-    WHERE
-        j.course_id IS NOT DISTINCT FROM $course_id
-),
-max_over_jobs_with_same_sequence AS (
+WITH max_over_jobs_with_same_sequence AS (
     SELECT
         coalesce(max(j.number_in_sequence) + 1, 1) AS new_number_in_sequence
     FROM
@@ -35,13 +27,12 @@ max_over_jobs_with_same_sequence AS (
         AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
+    (course_id,  course_instance_id,  assessment_id,  job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
      user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory,  env)
 SELECT
-    $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
+    $course_id, $course_instance_id, $assessment_id, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
     $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory, $env
 FROM
-    max_over_jobs_with_same_course,
     max_over_jobs_with_same_sequence
 RETURNING jobs.id;
 
