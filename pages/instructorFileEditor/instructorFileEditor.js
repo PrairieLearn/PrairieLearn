@@ -117,16 +117,17 @@ router.get('/', (req, res, next) => {
                 jobSequenceResults.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
                     if (ERR(err, callback)) return;
                     fileEdit.jobSequence = job_sequence;
-                    if (fileEdit.jobSequence.status == 'Running') {
-                        debug('Job sequence is still running - redirect to status page');
-                        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
-                    }
                     callback(null);
                 });
             }
         },
     ], (err) => {
         if (ERR(err, next)) return;
+        if (('jobSequence' in fileEdit) && (fileEdit.jobSequence.status == 'Running')) {
+            debug('Job sequence is still running - redirect to status page');
+            res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
+            return;
+        }
 
         fileEdit.alertChoice = false;
 
