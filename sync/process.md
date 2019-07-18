@@ -16,10 +16,9 @@
 ## Partial sync
 
 - Check if a partial sync is possible
-  - Is the thing being synced a question? If so, are we syncing a question for which…
-    - The QID does not exist in the DB?
-    - The QID exists but with a different UUID?
-  - If so, abort the partial sync and fall back to a full course sync
+  - Does the thing being synced have a UUID? If so:
+    - If there is an existing entity with the ID of the one being synced but the UUID did not match, fall back to full sync
+    - If there is no existing entity with this ID but there was another entity with the same UUID, fall back to full sync
 - Load and validate the relevant `info.json` file
   - If this fails, fail sync with a detailed error message
 - Are we syncing an assessment? If so…

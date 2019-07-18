@@ -1,10 +1,12 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
+const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
-const courseDB = require('../sync/course-db');
+const courseDB = require('./course-db');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
@@ -16,6 +18,8 @@ const syncAssessmentSets = require('./fromDisk/assessmentSets');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
@@ -76,11 +80,63 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
     });
 };
 
+/**
+ * Checks if it's safe to perform an incremental sync on an entity with an ID
+ * (QID, TID, etc.) and a UUID.
+ * @param {string} syncingUuid The UUID of the entity being synced
+ * @param {string | null} existingId A matching entity ID based on `syncingUuid`
+ * @param {string | null} existingUuid A matching UUID based on `syncingQid`
+ * @returns {boolean} Whether or not an incremental sync is safe
+ */
+function isEntityIncrementalSyncSafe(syncingUuid, existingId, existingUuid) {
+    if (existingUuid) {
+        // There's a question with this QID; we have a UUID for it
+        if (existingUuid === syncingUuid) {
+            // The UUID did not change; incremental sync is safe
+            return true;
+        }
+        // The UUID changed; fall back to a full sync for safety
+        return false;
+    } else {
+        // There's no existing question with this QID
+        if (existingId) {
+            // However, there is a question with this UUID
+            // We'll just fall through to a full sync so the normal duplicate UUID
+            // detection can run there
+            return false;
+        }
+        // This is a new question and there's no UUID overlap; incremental sync is safe
+        return true;
+    }
+}
+
+async function isQuestionIncrementalSyncSafe(courseDir, qid, questionInfo) {
+    const integrityCheckParams = {
+        qid,
+        uuid: questionInfo.uuid,
+        course_path: courseDir,
+    };
+    const integrityCheckRes = await sqldb.queryZeroOrOneRowAsync(sql.select_for_integrity_check, integrityCheckParams);
+    if (integrityCheckRes.rows.length === 0) {
+        // There's no QID or UUID overlap; incremental sync is safe
+        return true;
+    }
+    // We located an existing question with either a matching UUID or QID
+    // To safely do a partial sync, we must ensure that if there's an existing
+    // question with this QID, that the UUID has not changed. Otherwise, we run
+    // the risk of not detecting duplicate UUIDs. If the UUID was not stable,
+    // we'll fall back to a full sync
+    const { uuid: matchingUuid, qid: matchingQid } = integrityCheckRes.rows[0];
+    return isEntityIncrementalSyncSafe(questionInfo.uuid, matchingQid, matchingUuid);
+}
+
 module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
     const questionInfo = await courseDB.loadSingleQuestion(courseDir, qid, logger);
+    if (!(await isQuestionIncrementalSyncSafe(courseDir, qid, questionInfo))) {
+        // Fall back to full sync
+        return;
+    }
 
-    // TODO check if UUID changed for this QID - if it did, do a full sync for safety
-    // TODO sync tags
     await syncQuestions.syncSingleQuestion(courseDir, questionInfo, logger);
 }
 
