@@ -159,6 +159,8 @@
 
   * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 
+  * Change file editor to simplify the use of drafts and to improve the user interface (Tim Bretl).
+
   * Fix load-reporting close during unit tests (Matt West).
 
   * Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).
@@ -282,6 +284,8 @@
   * Remove `number` column from `question_tags` table; question tags are now sorted by `tags.number` (Nathan Walters).
 
   * Remove support for `externalGradingOptions.files` in question `info.json` files (Nathan Walters).
+
+  * Remove `number` column and the corresponding uniqueness constraint from `jobs` table (Tim Bretl).
 
 * __3.1.0__ - 2018-10-08
 
