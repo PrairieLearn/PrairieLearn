@@ -81,6 +81,19 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
 };
 
 /**
+ * Gets the ID for the course with the given directory.
+ * @param {string} courseDir The course directory
+ * @returns {Promise.<string>} The ID of the course
+ */
+async function getCourseId(courseDir) {
+    const params = {
+        path: courseDir,
+    };
+    const res = await sqldb.queryOneRowAsync(sql.select_course_id, params);
+    return res.rows[0].id;
+}
+
+/**
  * Checks if it's safe to perform an incremental sync on an entity with an ID
  * (QID, TID, etc.) and a UUID.
  * @param {string} syncingUuid The UUID of the entity being synced
@@ -90,7 +103,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
  */
 function isEntityIncrementalSyncSafe(syncingUuid, existingId, existingUuid) {
     if (existingUuid) {
-        // There's a question with this QID; we have a UUID for it
+        // There's a entity with this ID; we have a UUID for it
         if (existingUuid === syncingUuid) {
             // The UUID did not change; incremental sync is safe
             return true;
@@ -98,23 +111,19 @@ function isEntityIncrementalSyncSafe(syncingUuid, existingId, existingUuid) {
         // The UUID changed; fall back to a full sync for safety
         return false;
     } else {
-        // There's no existing question with this QID
-        if (existingId) {
-            // However, there is a question with this UUID
-            // We'll just fall through to a full sync so the normal duplicate UUID
-            // detection can run there
-            return false;
-        }
-        // This is a new question and there's no UUID overlap; incremental sync is safe
+        // There's no existing entity with this ID
+        // Either this was a renamed entity, in which case the existing one with
+        // a matching UUID should be overwritten, or this is a new entity and there's
+        // no UUID overlap. In either case, incremental sync is safe.
         return true;
     }
 }
 
-async function isQuestionIncrementalSyncSafe(courseDir, qid, questionInfo) {
+async function isQuestionIncrementalSyncSafe(courseId, qid, questionInfo) {
     const integrityCheckParams = {
         qid,
         uuid: questionInfo.uuid,
-        course_path: courseDir,
+        course_id: courseId,
     };
     const integrityCheckRes = await sqldb.queryZeroOrOneRowAsync(sql.select_for_integrity_check, integrityCheckParams);
     if (integrityCheckRes.rows.length === 0) {
@@ -130,16 +139,33 @@ async function isQuestionIncrementalSyncSafe(courseDir, qid, questionInfo) {
     return isEntityIncrementalSyncSafe(questionInfo.uuid, matchingQid, matchingUuid);
 }
 
+/**
+ * @param {string} courseDir
+ * @param {string} qid
+ * @param {any} logger
+ * @returns {Promise.<{ fullSync: boolean }>} Indicates if a full sync was performed
+ */
 module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
-    const questionInfo = await courseDB.loadSingleQuestion(courseDir, qid, logger);
-    if (!(await isQuestionIncrementalSyncSafe(courseDir, qid, questionInfo))) {
+    const [courseId, questionInfo] = await Promise.all([
+        getCourseId(courseDir),
+        courseDB.loadSingleQuestion(courseDir, qid, logger),
+    ]);
+    if (!(await isQuestionIncrementalSyncSafe(courseId, qid, questionInfo))) {
         // Fall back to full sync
-        return;
+        await (util.promisify(module.exports.syncDiskToSql))(courseDir, courseId, logger);
+        return { fullSync: true };
     }
 
     await syncQuestions.syncSingleQuestion(courseDir, questionInfo, logger);
+    return { fullSync: false };
 }
 
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @param {(err: Error | null | undefined) => void} callback
+ */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
     logger.verbose(`Trying lock ${lockName}`);
@@ -150,7 +176,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
             callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
         } else {
             logger.verbose(`Acquired lock ${lockName}`);
-            this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+            module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
                 namedLocks.releaseLock(lock, (lockErr) => {
                     if (ERR(lockErr, callback)) return;
                     if (ERR(err, callback)) return;

@@ -65,3 +65,17 @@
   - Sync assessments for all valid course instances
     - Create/update all valid assessments for a given course instance
     - Delete excess assessments for a given course instance as defined as assessments not in (\$VALID_SYNCING_TIDS union \$INVALID_SYNCING_QIDS)
+
+## Special considerations
+
+Currently, an edit operation is keyed by QID/etc.; we don't allow entities to be renamed in the browser. However, we'll want to allow that someday. There are a number of interesting cases here:
+
+* We rename and keep the UUID the same. Since all entities are unique
+  (in their course/course instance scope), we can rely on a conflict and
+  subsequent overwrite to take case of the "deletion" of the old entity.
+* We rename and change the UUID in one edit operation. We can either a)
+  disallow this entirely or b) detect this and fall back to a full sync.
+* We rename a question that is referenced by one or more assessments. We'll
+  need a full sync to handle this properly.
+
+The first case is the only one that we can optimize with a partial sync. Given that, I propose that we don't attempt to be clever with renames. Whatever piece of code is handling edits should detect a rename and unconditionally do a full sync.

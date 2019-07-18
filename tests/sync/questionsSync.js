@@ -10,7 +10,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const { assert } = chai;
 
 describe('Question syncing', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -96,7 +96,7 @@ describe('Question syncing', () => {
     // an error, thus failing the test.
   });
 
-  it.only('incrementally syncs a single question', async () => {
+  it('incrementally syncs a single question', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const newTitle = 'This is a new title';
     const newTopic = 'this is a new topic';
@@ -106,7 +106,8 @@ describe('Question syncing', () => {
     question.topic = newTopic;
     question.tags.push(newTag);
     await util.writeCourseToDirectory(courseData, courseDir);
-    await syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID);
+    const syncInfo = await syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID, util.getFakeLogger());
+    assert.isFalse(syncInfo.fullSync);
 
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
@@ -127,6 +128,27 @@ describe('Question syncing', () => {
     const syncedQuestionTags = await util.dumpTable('question_tags');
     const syncedQuestionTag = syncedQuestionTags.find(qt => qt.question_id === syncedQuestion.id && qt.tag_id === syncedTag.id);
     assert.isOk(syncedQuestionTag);
+  });
+
+  it('handles duplicate UUIDs during an incremental sync', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    courseData.questions[util.QUESTION_ID] = courseData.questions[util.ALTERNATIVE_QUESTION_ID];
+    await util.writeCourseToDirectory(courseData, courseDir);
+    await assert.isRejected(syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID, util.getFakeLogger()), /multiple questions/);
+  });
+
+  it('handles a rename with unchanged UUID during an incremental sync', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    courseData.questions['new_question'] = courseData.questions[util.QUESTION_ID];
+    delete courseData.questions[util.QUESTION_ID];
+    await util.writeCourseToDirectory(courseData, courseDir);
+    await syncFromDisk.syncSingleQuestion(courseDir, 'new_question', util.getFakeLogger());
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find(q => q.qid === 'new_question');
+    assert.isOk(syncedQuestion);
+    const deletedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    assert.isUndefined(deletedQuestion);
   });
 
   it('fails if "options" object is invalid', async () => {
@@ -153,7 +175,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir));
+    await assert.isRejected(util.syncCourseData(courseDir), /multiple questions/);
   });
 
   it('fails if a question directory is missing an info.json file', async () => {

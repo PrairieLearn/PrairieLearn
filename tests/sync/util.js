@@ -349,17 +349,21 @@ module.exports.getCourseData = function() {
   return JSON.parse(JSON.stringify(courseData));
 };
 
-/**
- * Async wrapper for syncing course data from a directory. Also stubs out the
- * logger interface.
- */
-module.exports.syncCourseData = function(courseDir) {
-  const logger = {
+module.exports.getFakeLogger = function() {
+  return {
     verbose: () => {},
     debug: () => {},
     info: () => {},
     warn: () => {},
   };
+};
+
+/**
+ * Async wrapper for syncing course data from a directory. Also stubs out the
+ * logger interface.
+ */
+module.exports.syncCourseData = function(courseDir) {
+  const logger = this.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
