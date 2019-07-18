@@ -15,7 +15,7 @@
 
     <div class="container">
         <%- include('../partials/navtabs'); %>
-        
+
         <script>
             $(function() {
                 new window.InstructorFileEditor({
@@ -37,7 +37,7 @@
             });
         </script>
 
-        <form method="POST">
+        <form name="editor-form" method="POST">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="file_edit_user_id" value="<%= fileEdit.userID %>">
             <input type="hidden" name="file_edit_course_id" value="<%= fileEdit.courseID %>">
