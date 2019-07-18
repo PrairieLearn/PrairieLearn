@@ -23,13 +23,7 @@ const sha256 = require('crypto-js/sha256');
 const base64url = require('base64url');
 const jobSequenceResults = require('../../lib/jobSequenceResults');
 
-const {exec} = require('child_process');
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
-
-function getUrl(baseUrl, filePath) {
-    return baseUrl + `?file=${filePath}`;
-}
 
 router.get('/instructorFileEditorClient.js', (req, res) => {
     debug('Responding to request for /instructorFileEditorClient.js');
@@ -94,7 +88,7 @@ router.get('/', (req, res, next) => {
 
     async.series([
         (callback) => {
-            debug('Read from db')
+            debug('Read from db');
             readEdit(fileEdit, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -479,10 +473,7 @@ function saveAndSync(fileEdit, locals, callback) {
         }
 
         let courseLock;
-
         let jobSequenceHasFailed = false;
-        let showHelpJob = false;
-        let showHelpMsg = '';
 
         const _updateJobSequenceId = () => {
             debug(`${job_sequence_id}: _updateJobSequenceId`);
@@ -948,14 +939,6 @@ function saveAndSync(fileEdit, locals, callback) {
 
         _updateJobSequenceId();
     });
-}
-
-function mySucceed(callback) {
-    callback(null);
-}
-
-function myFail(callback) {
-    callback(new Error('fail on purpose'));
 }
 
 module.exports = router;

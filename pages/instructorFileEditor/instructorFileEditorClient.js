@@ -23,7 +23,7 @@ window.InstructorFileEditor = function(options) {
         this.editor.setReadOnly(true);
         this.altElement = $(`#${options.altElementId}`);
         this.chooseElement = this.element.find('button[id=choose]');
-        this.chooseContainerElement = this.element.find('.card-header')
+        this.chooseContainerElement = this.element.find('.card-header');
         this.chooseElement.click(function() {
             this.editor.setReadOnly(false);
             this.altElement.remove();
