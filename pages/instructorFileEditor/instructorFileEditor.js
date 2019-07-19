@@ -872,7 +872,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 arguments: ['reset', '--hard', 'HEAD~1'],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,
-                on_success: _cleanupAfterWrite,
+                on_success: _unlock,
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
