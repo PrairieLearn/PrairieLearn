@@ -135,6 +135,14 @@ router.get('/', (req, res, next) => {
             }
         }
 
+        if ('jobSequence' in fileEdit) {
+            fileEdit.jobSequence.jobs.forEach((item) => {
+                if ((item.type == 'git_push') && (item.status == 'Error')) {
+                    fileEdit.failedPush = true;
+                }
+            });
+        }
+
         if (!fileEdit.alertChoice) {
             fileEdit.editContents = fileEdit.diskContents;
             fileEdit.origHash = fileEdit.diskHash;

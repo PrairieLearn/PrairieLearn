@@ -72,7 +72,7 @@
                                             File was saved, but failed to sync.
                                         <% } %>
                                     <% } else { %>
-                                        Failed to save (or to sync) file.
+                                        Failed to save and sync file.
                                     <% } %>
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
@@ -80,12 +80,24 @@
                                     <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button">Detail</a>
                                 </div>
                                 <% } %>
+                                <% if (fileEdit.failedPush) { %>
+                                <div class="col-auto">
+                                    <a class="btn btn-primary btn-sm" href="<%= urlPrefix %>/syncs" role="button" target="_blank" rel="noreferrer">Open Sync Page in New Window</a>
+                                </div>
+                                <% } %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
+                            <% if (fileEdit.failedPush) { %>
+                            <div class="row mt-4">
+                                <div class="col-auto">
+                                    In particular, it looks like there was a failure to push your changes to the remote git repo. The most likely cause is that another user made changes to other course files while you were editing. In this case, you should open the sync page in a new browser window, pull from remote git repo, close the window, and continue editing.
+                                </div>
+                            </div>
+                            <% } %>
                             <% if (fileEdit.jobSequenceId != null) { %>
-                            <div class="row collapse mt-2" id="results-<%= fileEdit.uuid %>">
+                            <div class="row collapse mt-4" id="results-<%= fileEdit.uuid %>">
                                 <div class="card card-body">
                                     <%- include('../partials/jobSequenceResults', {job_sequence: fileEdit.jobSequence, job_sequence_enable_live_update: false}); %>
                                 </div>
@@ -112,7 +124,7 @@
                         <div class="card p-0">
                             <% if (fileEdit.alertChoice) { %>
                             <div class="card-header bg-white text-center">
-                                <button id="choose" class="btn btn-warning" type="button">Choose this version (continue editing)</button>
+                                <button id="choose" class="btn btn-primary" type="button">Choose this version (continue editing)</button>
                             </div>
                             <% } %>
                             <div class="card-body p-0">
@@ -125,7 +137,7 @@
                     <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col">
                         <div class="card p-0">
                             <div class="card-header bg-white text-center">
-                                <button class="btn btn-warning" type="button" onClick="window.location.reload()">Choose this version (discard changes)</button>
+                                <button class="btn btn-primary" type="button" onClick="window.location.reload()">Choose this version (discard changes)</button>
                             </div>
                             <div class="card-body p-0">
                                 <div class="editor"></div>
