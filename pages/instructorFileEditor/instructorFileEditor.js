@@ -20,7 +20,6 @@ const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 const AWS = require('aws-sdk');
 const sha256 = require('crypto-js/sha256');
-const base64url = require('base64url');
 const jobSequenceResults = require('../../lib/jobSequenceResults');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -251,7 +250,7 @@ function b64DecodeUnicode(str) {
 }
 
 function getHash(contents) {
-    return base64url.encode(sha256(contents).toString());
+    return b64EncodeUnicode(sha256(contents).toString());
 }
 
 function getS3Key(editID, fileName) {

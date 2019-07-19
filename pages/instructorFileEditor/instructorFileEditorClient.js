@@ -1,11 +1,13 @@
 /* eslint-env browser,jquery */
 /* global ace */
+/* global CryptoJS */
 window.InstructorFileEditor = function(options) {
     this.element = $(`#${options.elementId}`);
     if (!this.element) {
         throw new Error(`Instructor file editor element ${options.elementId} was not found!`);
     }
 
+    this.origHash = options.origHash;
     this.saveElement = $(`#${options.saveElementId}`);
     this.inputElement = this.element.find('input[name=file_edit_contents]');
     this.editorElement = this.element.find('.editor');
@@ -28,7 +30,7 @@ window.InstructorFileEditor = function(options) {
             this.editor.setReadOnly(false);
             this.altElement.remove();
             this.chooseContainerElement.remove();
-            this.checkDiff.bind(this);
+            this.checkDiff();
             this.editor.resize();
         }.bind(this));
     }
@@ -90,5 +92,6 @@ window.InstructorFileEditor.prototype.onChange = function() {
 };
 
 window.InstructorFileEditor.prototype.checkDiff = function() {
-    this.saveElement.prop('disabled', (this.editor.getValue() == this.originalContents));
+    let curHash = this.b64EncodeUnicode(CryptoJS.SHA256(this.b64EncodeUnicode(this.editor.getValue())).toString());
+    this.saveElement.prop('disabled', (curHash == this.origHash));
 };
