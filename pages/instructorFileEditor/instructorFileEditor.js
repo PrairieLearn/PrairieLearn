@@ -786,7 +786,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 description: 'Sync course',
                 job_sequence_id: job_sequence_id,
                 on_success: _reloadQuestionServers,
-                on_failure: _finishWithFailure,
+                on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
@@ -814,7 +814,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 description: 'Reload server.js code (for v2 questions)',
                 job_sequence_id: job_sequence_id,
                 on_success: _didSync,
-                on_failure: _finishWithFailure,
+                on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
