@@ -36,24 +36,34 @@ const questionPythonPath = 'questions/testQuestion/server.py';
 const infoCourseJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'));
 let infoCourseJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'));
 infoCourseJsonB.title = 'Test Course (Renamed)';
+let infoCourseJsonC = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'));
+infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
 
 const infoCourseInstanceJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'));
 let infoCourseInstanceJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'));
 infoCourseInstanceJsonB.longName = 'Fall 2019';
+let infoCourseInstanceJsonC = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8'));
+infoCourseInstanceJsonC.longName = 'Spring 2020';
 
 const infoAssessmentJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'));
 let infoAssessmentJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'));
 infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
+let infoAssessmentJsonC = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'));
+infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Aagain)';
 
 const questionJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'));
 let questionJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'));
 questionJsonB.title = 'Test question (Renamed)';
+let questionJsonC = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'));
+questionJsonC.title = 'Test question (Renamed Yet Again)';
 
 const questionHtmlA = fs.readFileSync(path.join(courseTemplateDir, questionHtmlPath), 'utf-8');
 const questionHtmlB = questionHtmlA + '\nAnother line of text.\n\n';
+const questionHtmlC = questionHtmlB + '\nYet another line of text.\n\n';
 
 const questionPythonA = fs.readFileSync(path.join(courseTemplateDir, questionPythonPath), 'utf-8');
 const questionPythonB = questionPythonA + '\n# Comment.\n\n';
+const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -149,6 +159,7 @@ const verifyEditData = [
         'path': infoCoursePath,
         'contentsA': jsonToContents(infoCourseJsonA),
         'contentsB': jsonToContents(infoCourseJsonB),
+        'contentsC': jsonToContents(infoCourseJsonC),
         'contentsX': 'garbage',
     },
     {
@@ -157,6 +168,7 @@ const verifyEditData = [
         'path': infoCourseInstancePath,
         'contentsA': jsonToContents(infoCourseInstanceJsonA),
         'contentsB': jsonToContents(infoCourseInstanceJsonB),
+        'contentsC': jsonToContents(infoCourseInstanceJsonC),
         'contentsX': 'garbage',
     },
     {
@@ -165,6 +177,7 @@ const verifyEditData = [
         'path': infoAssessmentPath,
         'contentsA': jsonToContents(infoAssessmentJsonA),
         'contentsB': jsonToContents(infoAssessmentJsonB),
+        'contentsC': jsonToContents(infoAssessmentJsonC),
         'contentsX': 'garbage',
     },
     {
@@ -173,6 +186,7 @@ const verifyEditData = [
         'path': questionJsonPath,
         'contentsA': jsonToContents(questionJsonA),
         'contentsB': jsonToContents(questionJsonB),
+        'contentsC': jsonToContents(questionJsonC),
         'contentsX': 'garbage',
     },
     {
@@ -181,6 +195,7 @@ const verifyEditData = [
         'path': questionHtmlPath,
         'contentsA': questionHtmlA,
         'contentsB': questionHtmlB,
+        'contentsC': questionHtmlC,
         'contentsX': 'garbage',
     },
     {
@@ -189,6 +204,7 @@ const verifyEditData = [
         'path': questionPythonPath,
         'contentsA': questionPythonA,
         'contentsB': questionPythonB,
+        'contentsC': questionPythonC,
         'contentsX': 'garbage',
     },
 ];
@@ -280,9 +296,9 @@ function badPost(action, fileEditContents, url) {
                 file_edit_contents: b64EncodeUnicode(fileEditContents),
                 file_edit_user_id: locals.file_edit_user_id,
                 file_edit_course_id: locals.file_edit_course_id,
-                file_edit_id: locals.file_edit_id,
                 file_edit_dir_name: '../PrairieLearn/',
                 file_edit_file_name: 'config.json',
+                file_edit_orig_hash: locals.file_edit_orig_hash,
             };
             locals.preEndTime = Date.now();
             request.post({url: url, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -415,7 +431,7 @@ function deleteCourseFiles(callback) {
     });
 }
 
-function editPost(action, fileEditContents, url, expectedToFindDraft, expectedToFindOutdated, expectedContents) {
+function editPost(action, fileEditContents, url, expectedToFindResults, expectedToFindChoice, expectedDiskContents) {
     describe(`POST to edit url with action ${action}`, function() {
         it('should load successfully', function(callback) {
             let form = {
@@ -424,9 +440,9 @@ function editPost(action, fileEditContents, url, expectedToFindDraft, expectedTo
                 file_edit_contents: b64EncodeUnicode(fileEditContents),
                 file_edit_user_id: locals.file_edit_user_id,
                 file_edit_course_id: locals.file_edit_course_id,
-                file_edit_id: locals.file_edit_id,
                 file_edit_dir_name: locals.file_edit_dir_name,
                 file_edit_file_name: locals.file_edit_file_name,
+                file_edit_orig_hash: locals.file_edit_orig_hash,
             };
             locals.preEndTime = Date.now();
             request.post({url: url, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -444,8 +460,8 @@ function editPost(action, fileEditContents, url, expectedToFindDraft, expectedTo
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        if (action != 'save_and_sync') {
-            verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents);
+        if (action == 'save_and_sync') {
+            verifyEdit(expectedToFindResults, expectedToFindChoice, fileEditContents, expectedDiskContents);
         }
     });
 }
@@ -483,7 +499,7 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
     });
 }
 
-function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents) {
+function verifyEdit(expectedToFindResults, expectedToFindChoice, expectedDraftContents, expectedDiskContents) {
     it('should have a CSRF token', function() {
         elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
@@ -505,13 +521,6 @@ function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContent
         locals.file_edit_course_id = elemList[0].attribs.value;
         assert.isString(locals.file_edit_course_id);
     });
-    it('should have a file_edit_id', function() {
-        elemList = locals.$('form[name="editor-form"] input[name="file_edit_id"]');
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.file_edit_id = elemList[0].attribs.value;
-        assert.isString(locals.file_edit_id);
-    });
     it('should have a file_edit_dir_name', function() {
         elemList = locals.$('form[name="editor-form"] input[name="file_edit_dir_name"]');
         assert.lengthOf(elemList, 1);
@@ -526,14 +535,21 @@ function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContent
         locals.file_edit_file_name = elemList[0].attribs.value;
         assert.isString(locals.file_edit_file_name);
     });
-    it('should have a script with file contents', function(callback) {
+    it('should have a file_edit_orig_hash', function() {
+        elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
+        assert.lengthOf(elemList, 1);
+        assert.nestedProperty(elemList[0], 'attribs.value');
+        locals.file_edit_orig_hash = elemList[0].attribs.value;
+        assert.isString(locals.file_edit_orig_hash);
+    });
+    it('should have a script with draft file contents', function(callback) {
         elemList = locals.$('script');
         for (let i = 0; i < elemList.length; i++) {
             let elem = elemList[i];
             if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
                 if (elem.children.length > 0) {
                     if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
-                        let match = elem.children[0].data.match(/contents: "(.*?)"/);
+                        let match = elem.children[0].data.match(/{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms);
                         if (match != null) {
                             locals.fileContents = b64DecodeUnicode(match[1]);
                             return callback(null);
@@ -542,38 +558,53 @@ function verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContent
                 }
             }
         }
-        return callback(new Error('found no script with file contents'));
+        return callback(new Error('found no script with draft file contents'));
     });
-    it('should match expected file contents', function() {
-        assert.strictEqual(locals.fileContents, expectedContents);
+    it('should match expected draft file contents', function() {
+        assert.strictEqual(locals.fileContents, expectedDraftContents);
     });
-    it(`should have saved draft - ${expectedToFindDraft}`, function() {
-        elemList = locals.$('div:contains("Found a saved draft of this file.")');
-        if (expectedToFindDraft) {
-            assert.isAtLeast(elemList.length, 1);
+    it(`should have results of save and sync - ${expectedToFindResults}`, function() {
+        elemList = locals.$('form[name="editor-form"] div[id^="results-"]');
+        if (expectedToFindResults) {
+            assert.lengthOf(elemList, 1);
         } else {
             assert.lengthOf(elemList, 0);
         }
     });
-    it(`should have warning about outdated commit hash - ${expectedToFindOutdated}`, function() {
-        elemList = locals.$('div:contains("The file you are trying to edit was changed by another user since your last saved draft.")');
-        if (expectedToFindOutdated) {
-            assert.isAtLeast(elemList.length, 1);
+    it(`should have a script with disk file contents - ${expectedToFindChoice}`, function(callback) {
+        elemList = locals.$('script');
+        for (let i = 0; i < elemList.length; i++) {
+            let elem = elemList[i];
+            if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
+                if (elem.children.length > 0) {
+                    if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
+                        let match = elem.children[0].data.match(/{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms);
+                        if (match != null) {
+                            if (expectedToFindChoice) {
+                                locals.diskContents = b64DecodeUnicode(match[1]);
+                                return callback(null);
+                            } else {
+                                return callback(new Error('found a script with disk file contents'));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (expectedToFindChoice) {
+            return callback(new Error('found no script with disk file contents'));
         } else {
-            assert.lengthOf(elemList, 0);
+            return callback(null);
         }
     });
-    if (expectedToFindOutdated) {
-        const buttonNames = ['revert_to_draft', 'save_draft', 'save_and_sync'];
-        buttonNames.forEach((buttonName) => {
-            it(`should have disabled button ${buttonName}`, function() {
-                elemList = locals.$(`button[value="${buttonName}"]:disabled`);
-            });
+    if (expectedToFindChoice) {
+        it('should match expected disk file contents', function() {
+            assert.strictEqual(locals.diskContents, expectedDiskContents);
         });
     }
 }
 
-function editGet(url, expectedToFindDraft, expectedToFindOutdated, expectedContents) {
+function editGet(url, expectedToFindResults, expectedToFindChoice, expectedDraftContents, expectedDiskContents) {
     describe(`GET to edit url`, function() {
         it('should load successfully', function(callback) {
             locals.preStartTime = Date.now();
@@ -592,98 +623,121 @@ function editGet(url, expectedToFindDraft, expectedToFindOutdated, expectedConte
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        verifyEdit(expectedToFindDraft, expectedToFindOutdated, expectedContents);
+        verifyEdit(expectedToFindResults, expectedToFindChoice, expectedDraftContents, expectedDiskContents);
     });
 }
 
 function doEdits(data) {
     describe(`edit ${data.path}`, function() {
-        // (draft, live, dev)
-        // get - no saved draft => (A, A, A)
-        editGet(data.url, false, false, data.contentsA);
-        // get - saved draft => (A, A, A)
-        editGet(data.url, true, false, data.contentsA);
-        // save_and_sync with bad file name (should fail)
-        badPost('save_and_sync', data.contentsB, data.url);
-        // save and sync => (_, B, A)
-        editPost('save_and_sync', data.contentsB, data.url);
-        waitForJobSequence(locals, 'Success');
-        // verify push => (_, B, B)
-        pullAndVerifyFileInDev(data.path, data.contentsB);
-        // get - no saved draft => (B, B, B)
-        editGet(data.url, false, false, data.contentsB);
-        // change file on live => (B, A, B)
-        writeAndCommitFile(data.path, data.contentsA);
-        // get with warning and disabled buttons - outdated commit hash => (B, A, B)
-        editGet(data.url, true, true, data.contentsB);
-        // revert to original => (_, A, B)
-        editPost('revert_to_original', data.contentsB, data.url, false, false, data.contentsA);
-        // save draft => (B, A, B)
-        editPost('save_draft', data.contentsB, data.url, true, false, data.contentsB);
-        // revert to draft => (B, A, B)
-        editPost('revert_to_draft', data.contentsA, data.url, true, false, data.contentsB);
-        // revert to original => (_, A, B)
-        editPost('revert_to_original', data.contentsB, data.url, false, false, data.contentsA);
-        // failed save and sync (on commit) - no local changes yet => (A, A, B)
-        editPost('save_and_sync', data.contentsA, data.url);
-        waitForJobSequence(locals, 'Error');
-        // get - saved draft => (A, A, B)
-        editGet(data.url, true, false, data.contentsA);
-        // change file on live => (A, B, B)
-        writeAndCommitFile(data.path, data.contentsB);
-        // failed save and sync - outdated commit hash => (X, B, B)
-        editPost('save_and_sync', data.contentsX, data.url);
-        waitForJobSequence(locals, 'Error');
-        // verify non-push => (X, B, B)
-        pullAndVerifyFileInDev(data.path, data.contentsB);
-        // get with warning and disabled buttons - outdated commit hash => (X, B, B)
-        editGet(data.url, true, true, data.contentsX);
-        // revert to original => (B, B, B)
-        editPost('revert_to_original', data.contentsX, data.url, false, false, data.contentsB);
-        // save and sync => (_, A, B)
-        editPost('save_and_sync', data.contentsA, data.url);
-        waitForJobSequence(locals, 'Success');
-        // verify push => (_, A, A)
-        pullAndVerifyFileInDev(data.path, data.contentsA);
-        // change file on dev and push => (_, A, A*)
-        writeAndPushFileFromDev('README.md', `New readme to test edit of ${data.path}`);
-        // get - no saved draft => (A, A, A*)
-        editGet(data.url, false, false, data.contentsA);
-        // failed save and sync (on push) - need to Sync remote changes => (B, A, A*)
-        editPost('save_and_sync', data.contentsB, data.url);
-        waitForJobSequence(locals, 'Error');
-        // pull (in production, this would also be a course Sync) => (B, A*, A*)
-        pullInLive();
-        // get - saved draft => (B, A*, A*)
-        editGet(data.url, true, false, data.contentsB);
-        // save and sync => (_, B*, B*)
-        editPost('save_and_sync', data.contentsB, data.url);
-        waitForJobSequence(locals, 'Success');
-        // get - no saved draft => (B, B, B)
-        editGet(data.url, false, false, data.contentsB);
+        //
+        // "live" is a clone of origin (this is what's on the production server)
+        // "dev" is a clone of origin (this is what's on someone's laptop)
+        // "origin" is the bare git repo
+        //
+        // in LIVE
+        // - writeAndCommitFileInLive does git commit
+        // - pullInLive does git pull
+        // in DEV
+        // - pullAndVerifyFileInDev does git pull
+        // - writeAndPushFileInDev does git push
+        //
+        // Remember that "origHash" has whatever was on disk at last GET.
+        //
+        // (live at last post, live, dev, origin)
+        //
 
+        editGet(data.url, false, false, data.contentsA, null);
+        // (A, A, A, A)
+
+        badPost('save_and_sync', data.contentsB, data.url);
+        // (A, A, A, A)
+
+        editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+        // (B, B, A, B)
+
+        waitForJobSequence(locals, 'Success');
+        pullAndVerifyFileInDev(data.path, data.contentsB);
+        // (B, B, B, B)
+
+        editGet(data.url, false, false, data.contentsB, null);
+        // (B, B, B, B)
+
+        writeAndCommitFileInLive(data.path, data.contentsA);
+        // (B, A, B, B)
+
+        editGet(data.url, false, false, data.contentsA, null);
+        // (A, A, B, B)
+
+        writeAndCommitFileInLive(data.path, data.contentsB);
+        // (A, B, B, B)
+
+        editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
+        // (A, B, B, B)
+
+        waitForJobSequence(locals, 'Error');
+        pullAndVerifyFileInDev(data.path, data.contentsB);
+        // (A, B, B, B)
+
+        editGet(data.url, false, false, data.contentsB, null);
+        // (B, B, B, B)
+
+        editPost('save_and_sync', data.contentsC, data.url, true, false, null);
+        // (C, C, B, C)
+
+        waitForJobSequence(locals, 'Success');
+        pullAndVerifyFileInDev(data.path, data.contentsC);
+        // (C, C, C, C)
+
+        writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
+        // (C, C, C*, C*)
+
+        editGet(data.url, false, false, data.contentsC, null);
+        // (C, C, C*, C*)
+
+        editPost('save_and_sync', data.contentsB, data.url, true, true, data.contentsC);
+        // (C, C, C*, C*)
+
+        waitForJobSequence(locals, 'Error');
+        pullInLive();
+        // (C, C, C, C)
+
+        editGet(data.url, false, false, data.contentsC, null);
+        // (C, C, C, C)
+
+        editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+        // (B, B, C, B)
+
+        waitForJobSequence(locals, 'Success');
+        writeAndCommitFileInLive(data.path, data.contentsA);
+        // (B, A, C, B)
+
+        editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+        // (A, A, C, B)
+
+        waitForJobSequence(locals, 'Error');
+        editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+        // (B, B, C, B)
+
+        waitForJobSequence(locals, 'Success');
         if (data.isJson) {
-            // save draft
-            editPost('save_draft', data.contentsX, data.url, true, false, data.contentsX);
-            // successful push but failed sync - bad json
-            editPost('save_and_sync', data.contentsX, data.url);
+            editPost('save_and_sync', data.contentsX, data.url, true, false, null);
+            // (X, X, C, X) <- successful push but failed sync because of bad json
+
             waitForJobSequence(locals, 'Error');
-            // verify successful push
             pullAndVerifyFileInDev(data.path, data.contentsX);
-            // get - no saved draft
-            editGet(data.url, false, false, data.contentsX);
-            // save and sync
-            editPost('save_and_sync', data.contentsB, data.url, true, false, data.contentsB);
+            // (X, X, X, X)
+
+            editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+            // (A, A, X, A)
+
             waitForJobSequence(locals, 'Success');
-            // verify successful push
-            pullAndVerifyFileInDev(data.path, data.contentsB);
-            // get - no saved draft
-            editGet(data.url, false, false, data.contentsB);
+            pullAndVerifyFileInDev(data.path, data.contentsA);
+            // (A, A, A, A)
         }
     });
 }
 
-function writeAndCommitFile(fileName, fileContents) {
+function writeAndCommitFileInLive(fileName, fileContents) {
     describe(`commit a change to ${fileName} by exec`, function() {
         it('should write', function(callback) {
             fs.writeFile(path.join(courseLiveDir, fileName), fileContents, (err) => {
@@ -732,7 +786,7 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
     });
 }
 
-function writeAndPushFileFromDev(fileName, fileContents) {
+function writeAndPushFileInDev(fileName, fileContents) {
     describe(`write ${fileName} in courseDev and push to courseOrigin`, function() {
         it('should write', function(callback) {
             fs.writeFile(path.join(courseDevDir, fileName), fileContents, (err) => {
