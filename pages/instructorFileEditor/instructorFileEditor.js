@@ -157,8 +157,8 @@ router.post('/', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
 
     let fileEdit = {
-        userID: req.body.file_edit_user_id,
-        courseID: req.body.file_edit_course_id,
+        userID: res.locals.user.user_id,
+        courseID: res.locals.course.id,
         dirName: req.body.file_edit_dir_name,
         fileName: req.body.file_edit_file_name,
         origHash: req.body.file_edit_orig_hash,
