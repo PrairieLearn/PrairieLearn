@@ -20,7 +20,6 @@ const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 const AWS = require('aws-sdk');
 const sha256 = require('crypto-js/sha256');
-const jobSequenceResults = require('../../lib/jobSequenceResults');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -107,7 +106,7 @@ router.get('/', (req, res, next) => {
                 callback(null);
             } else {
                 debug('Read job sequence');
-                jobSequenceResults.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
+                serverJobs.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
                     if (ERR(err, callback)) return;
                     fileEdit.jobSequence = job_sequence;
                     callback(null);
