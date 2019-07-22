@@ -17,7 +17,7 @@ module.exports = {};
 module.exports.init = function(callback) {
     const lockName = 'migrations';
     logger.verbose(`Waiting for lock ${lockName}`);
-    namedLocks.waitLock(lockName, (err, lock) => {
+    namedLocks.waitLock(lockName, {}, (err, lock) => {
         if (ERR(err, callback)) return;
         logger.verbose(`Acquired lock ${lockName}`);
         this._initWithLock((err) => {

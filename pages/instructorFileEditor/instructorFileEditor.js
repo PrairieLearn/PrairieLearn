@@ -534,7 +534,7 @@ function saveAndSync(fileEdit, locals, callback) {
 
                 const lockName = 'coursedir:' + options.courseDir;
                 job.verbose(`Trying lock ${lockName}`);
-                namedLocks.waitLockWithTimeout(lockName, 5000, (err, lock) => {
+                namedLocks.waitLock(lockName, {timeout: 5000}, (err, lock) => {
                     if (err) {
                         job.fail(err);
                     } else if (lock == null) {

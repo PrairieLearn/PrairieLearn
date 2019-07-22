@@ -12,7 +12,7 @@ module.exports = {
     init(callback) {
         const lockName = 'sprocs';
         logger.verbose(`Waiting for lock ${lockName}`);
-        namedLocks.waitLock(lockName, (err, lock) => {
+        namedLocks.waitLock(lockName, {}, (err, lock) => {
             if (ERR(err, callback)) return;
             logger.verbose(`Acquired lock ${lockName}`);
             this._initWithLock((err) => {
