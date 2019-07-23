@@ -23,6 +23,7 @@
                     contents: "<%- fileEdit.editContents %>",
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
                     origHash: "<%- fileEdit.origHash %>",
+                    diskHash: "<%- fileEdit.diskHash %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
                     saveElementId: "file-editor-<%= fileEdit.uuid %>-save-button",
                     <% if (fileEdit.alertChoice) { %>
@@ -50,11 +51,6 @@
 
         <form name="editor-form" method="POST">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="file_edit_user_id" value="<%= fileEdit.userID %>">
-            <input type="hidden" name="file_edit_course_id" value="<%= fileEdit.courseID %>">
-            <input type="hidden" name="file_edit_dir_name" value="<%= fileEdit.dirName %>">
-            <input type="hidden" name="file_edit_file_name" value="<%= fileEdit.fileName %>">
-            <input type="hidden" name="file_edit_orig_hash" value="<%= fileEdit.origHash %>">
 
             <div class="card mb-4">
                 <div class="card-header">
@@ -138,6 +134,11 @@
                             </div>
                             <% } %>
                             <div class="card-body p-0">
+                                <input type="hidden" name="file_edit_user_id" value="<%= fileEdit.userID %>">
+                                <input type="hidden" name="file_edit_course_id" value="<%= fileEdit.courseID %>">
+                                <input type="hidden" name="file_edit_dir_name" value="<%= fileEdit.dirName %>">
+                                <input type="hidden" name="file_edit_file_name" value="<%= fileEdit.fileName %>">
+                                <input type="hidden" name="file_edit_orig_hash" value="<%= fileEdit.origHash %>">
                                 <input type="hidden" name="file_edit_contents">
                                 <div class="editor"></div>
                             </div>
