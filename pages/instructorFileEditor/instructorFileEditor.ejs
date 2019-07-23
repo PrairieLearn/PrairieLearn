@@ -38,6 +38,13 @@
                     readOnly: true,
                 });
                 <% } %>
+
+                <% if (fileEdit.alertResults) { %>
+                    let showDetailElement = $("#results-<%= fileEdit.uuid %>-button");
+                    showDetailElement.click(() => {
+                        showDetailElement.text(showDetailElement.text() == "Show Detail" ? "Hide Detail" : "Show Detail");
+                    });
+                <% } %>
             });
         </script>
 
@@ -79,7 +86,7 @@
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
                                 <div class="col-auto">
-                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button">Detail</a>
+                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button" id="results-<%= fileEdit.uuid %>-button">Show Detail</a>
                                 </div>
                                 <% } %>
                                 <% if (fileEdit.failedPush) { %>
