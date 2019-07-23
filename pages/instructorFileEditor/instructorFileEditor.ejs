@@ -125,8 +125,9 @@
                     <div id="file-editor-<%= fileEdit.uuid %>-draft" class="col">
                         <div class="card p-0">
                             <% if (fileEdit.alertChoice) { %>
-                            <div class="card-header bg-white text-center">
-                                <button id="choose" class="btn btn-primary" type="button">Choose this version (continue editing)</button>
+                            <div class="card-header text-center">
+                                <h4 class="mb-4">My version</h4>
+                                <button id="choose" class="btn btn-primary" type="button">Choose my version (continue editing)</button>
                             </div>
                             <% } %>
                             <div class="card-body p-0">
@@ -138,8 +139,9 @@
                     <% if (fileEdit.alertChoice) { %>
                     <div id="file-editor-<%= fileEdit.uuid %>-disk" class="col">
                         <div class="card p-0">
-                            <div class="card-header bg-white text-center">
-                                <button class="btn btn-primary" type="button" onClick="window.location.reload()">Choose this version (discard changes)</button>
+                            <div class="card-header text-center">
+                                <h4 class="mb-4">Their version</h4>
+                                <button class="btn btn-primary" type="button" onClick="window.location.reload()">Choose their version (discard my changes)</button>
                             </div>
                             <div class="card-body p-0">
                                 <div class="editor"></div>
