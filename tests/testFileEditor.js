@@ -460,7 +460,7 @@ function editPost(action, fileEditContents, url, expectedToFindResults, expected
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        if (action == 'save_and_sync') {
+        if ((action == 'save_and_sync') || (action == 'pull_and_save_and_sync')) {
             verifyEdit(expectedToFindResults, expectedToFindChoice, fileEditContents, expectedDiskContents);
         }
     });
@@ -681,14 +681,36 @@ function doEdits(data) {
         editGet(data.url, false, false, data.contentsB, null);
         // (B, B, B, B)
 
-        editPost('save_and_sync', data.contentsC, data.url, true, false, null);
-        // (C, C, B, C)
+        editPost('save_and_sync', data.contentsA, data.url, true, false, null);
+        // (A, A, B, A)
 
         waitForJobSequence(locals, 'Success');
+        pullAndVerifyFileInDev(data.path, data.contentsA);
+        // (A, A, A, A)
+
+        writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
+        // (A, A, A*, A*)
+
+        editGet(data.url, false, false, data.contentsA, null);
+        // (A, A, A*, A*)
+
+        editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsA);
+        // (A, A, A*, A*)
+
+        waitForJobSequence(locals, 'Error');
+        pullInLive();
+        // (A, A, A, A)
+
+        editGet(data.url, false, false, data.contentsA, null);
+        // (A, A, A, A)
+
+        editPost('save_and_sync', data.contentsC, data.url, true, false, null);
+        // (C, C, A, C)
+
         pullAndVerifyFileInDev(data.path, data.contentsC);
         // (C, C, C, C)
 
-        writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
+        writeAndPushFileInDev('README.md', `Another new readme to test edit of ${data.path}`);
         // (C, C, C*, C*)
 
         editGet(data.url, false, false, data.contentsC, null);
@@ -698,13 +720,7 @@ function doEdits(data) {
         // (C, C, C*, C*)
 
         waitForJobSequence(locals, 'Error');
-        pullInLive();
-        // (C, C, C, C)
-
-        editGet(data.url, false, false, data.contentsC, null);
-        // (C, C, C, C)
-
-        editPost('save_and_sync', data.contentsB, data.url, true, false, null);
+        editPost('pull_and_save_and_sync', data.contentsB, data.url, true, false, null);
         // (B, B, C, B)
 
         waitForJobSequence(locals, 'Success');
