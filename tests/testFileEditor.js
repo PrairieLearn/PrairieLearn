@@ -694,7 +694,7 @@ function doEdits(data) {
         editGet(data.url, false, false, data.contentsA, null);
         // (A, A, A*, A*)
 
-        editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsA);
+        editPost('save_and_sync', data.contentsC, data.url, true, false, null);
         // (A, A, A*, A*)
 
         waitForJobSequence(locals, 'Error');
@@ -716,7 +716,7 @@ function doEdits(data) {
         editGet(data.url, false, false, data.contentsC, null);
         // (C, C, C*, C*)
 
-        editPost('save_and_sync', data.contentsB, data.url, true, true, data.contentsC);
+        editPost('save_and_sync', data.contentsB, data.url, true, false, null);
         // (C, C, C*, C*)
 
         waitForJobSequence(locals, 'Error');
