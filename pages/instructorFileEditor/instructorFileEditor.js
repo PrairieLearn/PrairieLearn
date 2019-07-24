@@ -186,7 +186,7 @@ router.post('/', (req, res, next) => {
         }));
     }
 
-    if (req.body.__action == 'save_and_sync') {
+    if ((req.body.__action == 'save_and_sync') || (req.body.__action == 'pull_and_save_and_sync')) {
         debug('Save and sync');
 
         // The "Save and Sync" button is enabled only when changes have been made
@@ -199,6 +199,9 @@ router.post('/', (req, res, next) => {
                 body: req.body,
             }));
         }
+
+        // Whether or not to pull from remote git repo before proceeding to save and sync
+        fileEdit.doPull = (req.body.__action == 'pull_and_save_and_sync');
 
         async.series([
             (callback) => {
@@ -521,7 +524,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'lock',
                 description: 'Lock',
                 job_sequence_id: job_sequence_id,
-                on_success: _checkHash,
+                on_success: (fileEdit.doPull ? _pullFromRemoteFetch : _checkHash),
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -546,6 +549,74 @@ function saveAndSync(fileEdit, locals, callback) {
                     }
                     return;
                 });
+            });
+        };
+
+        const _pullFromRemoteFetch = () => {
+            debug(`${job_sequence_id}: _pullFromRemoteFetch`);
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'fetch_from_git',
+                description: 'Fetch from remote git repository',
+                command: 'git',
+                arguments: ['fetch'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _pullFromRemoteClean,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _pullFromRemoteClean = () => {
+            debug(`${job_sequence_id}: _pullFromRemoteClean`);
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'clean_git_repo',
+                description: 'Clean local files not in remote git repository',
+                command: 'git',
+                arguments: ['clean', '-fdx'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _pullFromRemoteReset,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _pullFromRemoteReset = () => {
+            debug(`${job_sequence_id}: _pullFromRemoteReset`);
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'reset_from_git',
+                description: 'Reset state to remote git repository',
+                command: 'git',
+                arguments: ['reset', '--hard', 'origin/master'],
+                working_directory: fileEdit.coursePath,
+                env: gitEnv,
+                on_success: _pullFromRemoteHash,
+                on_error: _cleanup,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _pullFromRemoteHash = () => {
+            debug(`${job_sequence_id}: _pullFromRemoteHash`);
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+                ERR(err, (e) => logger.error(e));
+                _checkHash();
             });
         };
 

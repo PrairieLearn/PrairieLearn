@@ -43,7 +43,7 @@
                 <% if (fileEdit.alertResults) { %>
                     let showDetailElement = $("#results-<%= fileEdit.uuid %>-button");
                     showDetailElement.click(() => {
-                        showDetailElement.text(showDetailElement.text() == "Show Detail" ? "Hide Detail" : "Show Detail");
+                        showDetailElement.text(showDetailElement.text() == "Show detail" ? "Hide detail" : "Show detail");
                     });
                 <% } %>
             });
@@ -59,7 +59,7 @@
                             Editing file <%= fileEdit.dirName %>/<%= fileEdit.fileName %>
                         </div>
                         <div class="col-auto">
-                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and Sync</button>
+                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and sync</button>
                         </div>
                     </div>
 
@@ -82,12 +82,12 @@
                                 </div>
                                 <% if (fileEdit.jobSequenceId != null) { %>
                                 <div class="col-auto">
-                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button" id="results-<%= fileEdit.uuid %>-button">Show Detail</a>
+                                    <a class="btn btn-secondary btn-sm" data-toggle="collapse" href="#results-<%= fileEdit.uuid %>" role="button" id="results-<%= fileEdit.uuid %>-button">Show detail</a>
                                 </div>
                                 <% } %>
                                 <% if (fileEdit.failedPush) { %>
                                 <div class="col-auto">
-                                    <a class="btn btn-primary btn-sm" href="<%= urlPrefix %>/syncs" role="button" target="_blank" rel="noreferrer">Open Sync Page in New Window</a>
+                                    <button name="__action" value="pull_and_save_and_sync" class="btn btn-primary btn-sm">Retry save and sync after pull from remote git repository</button>
                                 </div>
                                 <% } %>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -97,7 +97,7 @@
                             <% if (fileEdit.failedPush) { %>
                             <div class="row mt-4">
                                 <div class="col-auto">
-                                    In particular, it looks like there was a failure to push your changes to the remote git repo. The most likely cause is that another user made changes to other course files while you were editing. In this case, you should open the sync page in a new browser window, pull from remote git repo, close the window, and continue editing.
+                                    In particular, it looks like there was a failure to push your changes to the remote git repo. The most likely cause is that another user made changes to other course files while you were editing. In this case, you should retry save and sync after pulling from the remote git repository.
                                 </div>
                             </div>
                             <% } %>
