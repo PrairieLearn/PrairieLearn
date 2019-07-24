@@ -28,7 +28,7 @@ window.InstructorFileEditor = function(options) {
         this.altElement = $(`#${options.altElementId}`);
         this.chooseElement = this.element.find('button[id=choose]');
         this.chooseContainerElement = this.element.find('.card-header');
-        this.buttonsContainerElement = $(`#${options.buttonsContainerElementId}`)
+        this.buttonsContainerElement = $(`#${options.buttonsContainerElementId}`);
         this.chooseElement.click(function() {
             //
             // This is what happens when the user clicks "Choose my version"
