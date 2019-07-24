@@ -52,6 +52,7 @@ router.get('/', (req, res, next) => {
         coursePath: res.locals.course.path,
         dirName: path.dirname(req.query.file),
         fileName: path.basename(req.query.file),
+        fileNameForDisplay: path.normalize(req.query.file),
     };
 
     const ext = path.extname(req.query.file);

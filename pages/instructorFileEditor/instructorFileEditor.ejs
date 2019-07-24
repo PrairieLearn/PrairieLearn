@@ -56,7 +56,7 @@
                 <div class="card-header">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
-                            Editing file <%= fileEdit.dirName %>/<%= fileEdit.fileName %>
+                            <span class="text-monospace font-weight-bolder"><%= fileEdit.fileNameForDisplay %></span>
                         </div>
                         <div class="col-auto">
                             <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and sync</button>
