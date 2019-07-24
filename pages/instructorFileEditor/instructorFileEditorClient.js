@@ -28,6 +28,7 @@ window.InstructorFileEditor = function(options) {
         this.altElement = $(`#${options.altElementId}`);
         this.chooseElement = this.element.find('button[id=choose]');
         this.chooseContainerElement = this.element.find('.card-header');
+        this.buttonsContainerElement = $(`#${options.buttonsContainerElementId}`)
         this.chooseElement.click(function() {
             //
             // This is what happens when the user clicks "Choose my version"
@@ -46,6 +47,9 @@ window.InstructorFileEditor = function(options) {
 
             // Get rid of header that presents the version labels and choice buttons
             this.chooseContainerElement.remove();
+
+            // Show div that contains "Show help" and "Save and sync" buttons
+            this.buttonsContainerElement.collapse('show');
 
             // Enable "save and sync" button again by checking diff on text hash
             this.checkDiff();
