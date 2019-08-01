@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 const favicon = require('serve-favicon');
 const async = require('async');
 const express = require('express');
@@ -33,6 +34,7 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
+const hostfiles = require('./lib/hostfiles');
 
 
 // If there is only one argument, legacy it into the config option
@@ -760,6 +762,16 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
+        },
+        function(callback) {
+            util.callbackify(async () => {
+                // TODO adds a fair amount to startup time; make this configurable
+                // TODO for dev, watch directories and copy files when they change
+                await Promise.all([
+                    hostfiles.copyElementFiles(),
+                    hostfiles.copyQuestionPythonFiles(),
+                ]);
+            })(callback);
         },
         function(callback) {
             serverJobs.init(function(err) {
