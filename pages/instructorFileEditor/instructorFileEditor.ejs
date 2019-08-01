@@ -67,7 +67,6 @@
                         <div class="col-auto">
                             <span class="text-monospace font-weight-bolder"><%= fileEdit.fileNameForDisplay %></span>
                         </div>
-                        <!-- <div class="col-auto"> -->
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
                             <a class="btn btn-secondary" data-toggle="collapse" href="#help-<%= fileEdit.uuid %>" role="button" id="help-<%= fileEdit.uuid %>-button">Show help</a>
                             <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and sync</button>
