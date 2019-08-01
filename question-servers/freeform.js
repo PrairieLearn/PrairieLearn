@@ -708,7 +708,7 @@ module.exports = {
                 variant_seed: parseInt(variant_seed, 36),
                 options: _.defaults({}, course.options, question.options),
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -741,7 +741,7 @@ module.exports = {
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -885,7 +885,7 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         let panelCount = 0, cacheHitCount = 0;
-        workers.getPythonCaller((err, pc) => {
+        workers.getPythonCaller(course, (err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
                 // FIXME: suppprt 'header'
@@ -1072,7 +1072,7 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 filename: filename,
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1104,7 +1104,7 @@ module.exports = {
                 raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
                 gradable: _.get(submission, 'gradable', true),
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1149,7 +1149,7 @@ module.exports = {
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1195,7 +1195,7 @@ module.exports = {
                 raw_submitted_answers: {},
                 gradable: true,
             };
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
