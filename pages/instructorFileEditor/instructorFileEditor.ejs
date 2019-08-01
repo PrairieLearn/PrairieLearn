@@ -29,6 +29,7 @@
                     <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
                     altElementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     buttonsContainerElementId: "buttons-<%= fileEdit.uuid %>",
+                    choiceAlertElementId: "file-editor-<%= fileEdit.uuid %>-choicealert",
                     <% } %>
                     <% if (fileEdit.failedPush) { %>
                     readOnly: true,
@@ -138,7 +139,7 @@
                         <% } %>
 
                         <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
-                        <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+                        <div id="file-editor-<%= fileEdit.uuid %>-choicealert" class="alert alert-danger alert-dismissible fade show m-2" role="alert">
                             <% if (fileEdit.hasSameHash) { %>
                             You were editing this file and made changes. You may choose either to continue editing or to discard your changes.
                             <% } else { %>
