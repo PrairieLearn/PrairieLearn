@@ -143,6 +143,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
+// Support legacy use of ace by v2 questions
+app.use('/public/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+
+
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
 app.use(function(req, res, next) {res.locals.response_id = uuidv4(); next();});
