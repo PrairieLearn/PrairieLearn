@@ -174,7 +174,7 @@ module.exports = {
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths: [path.join(__dirname, '..', 'python')],
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
@@ -205,7 +205,7 @@ module.exports = {
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths: [path.join(__dirname, '..', 'python')],
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
@@ -255,7 +255,7 @@ module.exports = {
         if (phase == 'render') pythonArgs.push(html);
         const opts = {
             cwd: context.question_dir,
-            paths: [path.join(__dirname, 'freeformPythonLib'), path.join(context.course_dir, 'serverFilesCourse')],
+            paths: [path.join(__dirname, '..', 'python'), path.join(context.course_dir, 'serverFilesCourse')],
         };
         const fullFilename = path.join(context.question_dir, 'server.py');
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
