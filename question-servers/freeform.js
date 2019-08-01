@@ -11,7 +11,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const schemas = require('../schemas');
 const logger = require('../lib/logger');
-const codeCaller = require('../lib/code-caller');
+const codeCaller = require('../lib/code-caller-python');
 const workers = require('../lib/workers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
