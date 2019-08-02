@@ -765,13 +765,13 @@ if (config.startServer) {
         },
         function(callback) {
             util.callbackify(async () => {
-                // TODO adds a fair amount to startup time; make this configurable
-                // TODO for dev, watch directories and copy files when they change
-                await Promise.all([
-                    hostfiles.copyElementFiles({ watch: true }),
-                    hostfiles.copyQuestionPythonFiles({ watch: true }),
-                    hostfiles.copyExampleCourseFiles({ watch: true }),
-                ]);
+                if (config.workersExecutionMode === 'container') {
+                    await Promise.all([
+                        hostfiles.copyElementFiles({ watch: true }),
+                        hostfiles.copyQuestionPythonFiles({ watch: true }),
+                        hostfiles.copyExampleCourseFiles({ watch: true }),
+                    ]);
+                }
             })(callback);
         },
         function(callback) {
