@@ -212,11 +212,9 @@ module.exports = {
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 paths: [path.join(__dirname, '..', 'python')],
-                type: `${type}-element`,
-                directory: resolvedElementName,
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
-            const type = `${resolvedElementType}-type`;
+            const type = `${resolvedElementType}-element`;
             const directory = resolvedElementName;
             pc.call(type, directory, pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
