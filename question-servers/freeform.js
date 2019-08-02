@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const config = require('../lib/config');
 const schemas = require('../schemas');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller-python');
@@ -820,8 +821,8 @@ module.exports = {
             data.options.base_url = locals.baseUrl;
 
             // Put key paths in data.options
-            data.options.question_path = context.question_dir;
-            data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+            data.options.question_path = context.question_dir_worker;
+            data.options.client_files_question_path = path.join(context.question_dir_worker, 'clientFilesQuestion');
 
             // This function will render the panel and then cache the results
             // if cacheKey is not null
@@ -1229,11 +1230,18 @@ module.exports = {
     },
 
     getContext(question, course, callback) {
+        // question_dir is the path to the question as PL sees it
+        // question_dir_worker is the path to the question as the worker that
+        // executes code will see it
+        const courseRootWorker = config.workersExecutionMode === 'internal' ? course.path : '/course';
+        const question_dir = path.join(course.path, 'questions', question.directory);
+        const question_dir_worker = path.join(courseRootWorker, 'questions', question.directory);
         const context = {
             question,
             course,
             course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
+            question_dir,
+            question_dir_worker,
             course_elements_dir: path.join(course.path, 'elements'),
         };
         module.exports.loadElementsForCourse(course, (err, elements) => {
