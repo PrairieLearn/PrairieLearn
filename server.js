@@ -768,9 +768,9 @@ if (config.startServer) {
                 // TODO adds a fair amount to startup time; make this configurable
                 // TODO for dev, watch directories and copy files when they change
                 await Promise.all([
-                    hostfiles.copyElementFiles(),
-                    hostfiles.copyQuestionPythonFiles(),
-                    hostfiles.copyExampleCourseFiles(),
+                    hostfiles.copyElementFiles({ watch: true }),
+                    hostfiles.copyQuestionPythonFiles({ watch: true }),
+                    hostfiles.copyExampleCourseFiles({ watch: true }),
                 ]);
             })(callback);
         },
