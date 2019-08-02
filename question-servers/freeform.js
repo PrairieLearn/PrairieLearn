@@ -159,8 +159,11 @@ module.exports = {
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
-            const cwd = resolvedElement.directory;
-            const controller = resolvedElement.controller;
+            const {
+                controller,
+                type: resolvedElementType,
+                name: resolvedElementName,
+            } = resolvedElement;
 
             let dataCopy = _.cloneDeep(data);
             /* The options field will be empty unless in the 'render' stage, so check
@@ -173,10 +176,11 @@ module.exports = {
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
-                cwd,
                 paths: [path.join(__dirname, '..', 'python')],
             };
-            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = `${resolvedElementType}-element`;
+            const directory = resolvedElementName;
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
@@ -195,8 +199,11 @@ module.exports = {
             return callback(e);
         }
 
-        const cwd = resolvedElement.directory;
-        const controller = resolvedElement.controller;
+        const {
+            controller,
+            type: resolvedElementType,
+            name: resolvedElementName,
+        } = resolvedElement;
 
         if (_.isString(controller)) {
             // python module
@@ -204,11 +211,14 @@ module.exports = {
             const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
-                cwd,
                 paths: [path.join(__dirname, '..', 'python')],
+                type: `${type}-element`,
+                directory: resolvedElementName,
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
-            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = `${resolvedElementType}-type`;
+            const directory = resolvedElementName;
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
@@ -254,7 +264,6 @@ module.exports = {
         const pythonArgs = [data];
         if (phase == 'render') pythonArgs.push(html);
         const opts = {
-            cwd: context.question_dir,
             paths: [path.join(__dirname, '..', 'python'), path.join(context.course_dir, 'serverFilesCourse')],
         };
         const fullFilename = path.join(context.question_dir, 'server.py');
@@ -265,7 +274,9 @@ module.exports = {
             }
 
             debug(`execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`);
-            pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = 'question';
+            const directory = context.question.directory;
+            pc.call(type, directory, pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`execPythonServer(): function not present`);

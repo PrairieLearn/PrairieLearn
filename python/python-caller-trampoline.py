@@ -54,11 +54,11 @@ def worker_loop():
             inp = json.loads(json_inp)
 
             # get the contents of the JSON input
-            file = inp['file']
-            fcn = inp['fcn']
-            args = inp['args']
-            cwd = inp['cwd']
-            paths = inp['paths']
+            file = inp.get('file', None)
+            fcn = inp.get('fcn', None)
+            args = inp.get('args', None)
+            cwd = inp.get('cwd', None)
+            paths = inp.get('paths', None)
 
             # "restart" is a special fake function name that causes
             # the forked worker to exit, returning control to the
