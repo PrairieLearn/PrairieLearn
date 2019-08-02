@@ -770,6 +770,7 @@ if (config.startServer) {
                 await Promise.all([
                     hostfiles.copyElementFiles(),
                     hostfiles.copyQuestionPythonFiles(),
+                    hostfiles.copyExampleCourseFiles(),
                 ]);
             })(callback);
         },
