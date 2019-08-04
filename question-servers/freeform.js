@@ -176,12 +176,9 @@ module.exports = {
             }
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-            const opts = {
-                paths: [path.join(__dirname, '..', 'python')],
-            };
             const type = `${resolvedElementType}-element`;
             const directory = resolvedElementName;
-            pc.call(type, directory, pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
@@ -211,13 +208,10 @@ module.exports = {
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
             const pythonArgs = [elementHtml, data];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-            const opts = {
-                paths: [path.join(__dirname, '..', 'python')],
-            };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             const type = `${resolvedElementType}-element`;
             const directory = resolvedElementName;
-            pc.call(type, directory, pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
@@ -262,9 +256,6 @@ module.exports = {
         const pythonFunction = phase;
         const pythonArgs = [data];
         if (phase == 'render') pythonArgs.push(html);
-        const opts = {
-            paths: [path.join(__dirname, '..', 'python'), path.join(context.course_dir, 'serverFilesCourse')],
-        };
         const fullFilename = path.join(context.question_dir, 'server.py');
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
             if (err) {
@@ -275,7 +266,7 @@ module.exports = {
             debug(`execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`);
             const type = 'question';
             const directory = context.question.directory;
-            pc.call(type, directory, pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+            pc.call(type, directory, pythonFile, pythonFunction, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`execPythonServer(): function not present`);
