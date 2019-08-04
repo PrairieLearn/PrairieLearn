@@ -35,6 +35,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 const hostfiles = require('./lib/hostfiles');
+const { cleanupMountDirectories } = require('./lib/code-caller-docker');
 
 
 // If there is only one argument, legacy it into the config option
@@ -741,6 +742,20 @@ if (config.startServer) {
             callback(null);
         },
         function(callback) {
+            util.callbackify(cleanupMountDirectories)(callback);
+        },
+        function(callback) {
+            util.callbackify(async () => {
+                if (config.workersExecutionMode === 'container') {
+                    await Promise.all([
+                        hostfiles.copyElementFiles({ watch: true }),
+                        hostfiles.copyQuestionPythonFiles({ watch: true }),
+                        hostfiles.copyExampleCourseFiles({ watch: true }),
+                    ]);
+                }
+            })(callback);
+        },
+        function(callback) {
             workers.init();
             callback(null);
         },
@@ -762,17 +777,6 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        function(callback) {
-            util.callbackify(async () => {
-                if (config.workersExecutionMode === 'container') {
-                    await Promise.all([
-                        hostfiles.copyElementFiles({ watch: true }),
-                        hostfiles.copyQuestionPythonFiles({ watch: true }),
-                        hostfiles.copyExampleCourseFiles({ watch: true }),
-                    ]);
-                }
-            })(callback);
         },
         function(callback) {
             serverJobs.init(function(err) {
