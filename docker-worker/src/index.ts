@@ -82,13 +82,11 @@ async function handleInput(
   // discard it.
   let processingRequest = false;
   rl.on("line", line => {
-    console.error(`got line: ${line}`);
     if (processingRequest) {
-      console.error("ALREADY HANDLING");
+      // Someone else messed up, ignore this line
       return;
     }
     processingRequest = true;
-    const start = Date.now();
     handleInput(line, pc)
       .then(results => {
         const { needsFullRestart, ...rest } = results;
@@ -98,7 +96,6 @@ async function handleInput(
           pc.ensureChild();
         }
         console.log(JSON.stringify(rest));
-        console.error(`ELAPSED: ${Date.now() - start}`);
         processingRequest = false;
       })
       .catch(err => {
