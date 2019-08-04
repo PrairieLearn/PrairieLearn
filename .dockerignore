@@ -19,6 +19,7 @@
 !package-lock.json
 !pages/
 !public/
+!python/
 !question-servers/
 !requirements.txt
 !server.js
