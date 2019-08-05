@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
