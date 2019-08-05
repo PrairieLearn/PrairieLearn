@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Fix dead letter cron job for `async` v3 (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
