@@ -12,7 +12,7 @@ module.exports = {
     init(callback) {
         const lockName = 'sprocs';
         logger.verbose(`Waiting for lock ${lockName}`);
-        namedLocks.waitLock(lockName, (err, lock) => {
+        namedLocks.waitLock(lockName, {}, (err, lock) => {
             if (ERR(err, callback)) return;
             logger.verbose(`Acquired lock ${lockName}`);
             this._initWithLock((err) => {
@@ -147,6 +147,7 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_topics.sql',
             'sync_course_instances.sql',
+            'lock_timeout_set.sql',
             'sync_single_question.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

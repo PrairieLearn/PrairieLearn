@@ -124,8 +124,8 @@ function drainQueue(sqs, queueName, callback) {
                 callback(null, true); // keep getting messages if we got some this time
             });
         });
-    }, (keepGoing) => {
-        return keepGoing;
+    }, (keepGoing, callback) => {
+        callback(null, keepGoing);
     }, (err) => {
         if (ERR(err, callback)) return;
         callback(null, messages);
