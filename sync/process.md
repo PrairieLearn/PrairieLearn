@@ -28,11 +28,11 @@
 
 ## Full sync
 - Load and validate entire course
-  - Load and validate `infoCourse.json`
-    - If this fails, alert the user with a detailed error message, continue sync
+  - If the file `infoCourse.json` does not or is not valid, alert the user with a detailed error message and continue sync
+  - If the file `infoCourse.json` exists and is valid, record the course and all associated tags/topics for syncing
   - Loop over each subdirectory \$QID in the `questions` directory
     - If the file `info.json` is missing, count this question as not existing (note that this means that if the question previously existed, the question will later be soft-deleted from the DB)
-    - If the file is invalid, report the error to the user but note that question \$QID does exist and should not be removed from the DB if it’s already there; add \$QID to \$INVALID_SYNCING_IDS
+    - If the file is invalid, report the error to the user but note that question \$QID does exist and should not be removed from the DB if it’s already there; add \$QID to \$INVALID_SYNCING_QIDS
     - If the file is valid, record the question for syncing and add \$QID to the set \$VALID_SYNCING_QIDS
   - Load a list of QIDs currently in the database into the set \$VALID_DB_QIDS
   - Store the union of (\$VALID_DB_QIDS - (\$VALID_SYNCING_QIDS union \$INVALID_SYNCING_QIDS) into \$VALID_QIDS
@@ -42,10 +42,10 @@
       - Count this course instance as not existing (note that this means that if the course instance previously existed, the course instance will later be soft-deleted from the DB)
       - Abort loading this course instance (note that this means that if the course instance previously existed, any assessments/assessment questions will later be soft-deleted and any zones/alternative groups will be fully deleted)
     - If the file is invalid:
-      - set \$INVALID_CI = TRUE
-      - add 
-      - report the error to the user but note that the course instance \$CIID does exist and should not be removed from the DB if it’s already there
-    - If the file is valid, record the course instance for syncing
+      - Set \$INVALID_CI = TRUE
+      - Add \$CIID to \$INVALID_SYNCING_CIIDS
+      - Report the error to the user but note that the course instance \$CIID does exist and should not be removed from the DB if it’s already there
+    - If the file is valid, record the course instance for syncing and add \$CIID to \$VALID_CIIDS
     - Loop over each subdirectory \$TID in the \$CIID/assessments directory
       - If the file `infoAssessment.json` is missing, count this assessment as not existing (note that this means that if the assessment previously existed, the assessment/assessment questions will later be soft deleted and any zones/alternative groups will be fully deleted)
       - If the file is invalid, report the error to the user but note that assessment \$TID does exist and should not be removed from the DB if it’s already there; add \$TID to \$INVALID_SYNCING_TIDS for this course instance
@@ -70,12 +70,8 @@
 
 Currently, an edit operation is keyed by QID/etc.; we don't allow entities to be renamed in the browser. However, we'll want to allow that someday. There are a number of interesting cases here:
 
-* We rename and keep the UUID the same. Since all entities are unique
-  (in their course/course instance scope), we can rely on a conflict and
-  subsequent overwrite to take case of the "deletion" of the old entity.
-* We rename and change the UUID in one edit operation. We can either a)
-  disallow this entirely or b) detect this and fall back to a full sync.
-* We rename a question that is referenced by one or more assessments. We'll
-  need a full sync to handle this properly.
+* We rename and keep the UUID the same. Since all entities are unique (in their course/course instance scope), we can rely on a conflict and subsequent overwrite to take case of the "deletion" of the old entity.
+* We rename and change the UUID in one edit operation. We can either a) disallow this entirely or b) detect this and fall back to a full sync.
+* We rename a question that is referenced by one or more assessments. We'll need a full sync to handle this properly.
 
 The first case is the only one that we can optimize with a partial sync. Given that, I propose that we don't attempt to be clever with renames. Whatever piece of code is handling edits should detect a rename and unconditionally do a full sync.
