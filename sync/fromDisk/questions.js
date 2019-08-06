@@ -80,46 +80,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 }
             });
 
-<<<<<<< HEAD
         const questionsParam = Object.values(questionDB).map(getParamsForQuestion);
-=======
-        // Preprocess questions into obects before sending them to the sproc
-        // for syncing
-        const questionsParam = Object.keys(questionDB).map(qid => {
-            const q = questionDB[qid];
-
-            let partialCredit;
-            if (q.partialCredit != null) {
-                partialCredit = q.partialCredit;
-            } else {
-                if (q.type == 'v3') {
-                    partialCredit = true;
-                } else {
-                    partialCredit = false;
-                }
-            }
-            return {
-                uuid: q.uuid,
-                qid: qid,
-                type: (q.type == 'v3') ? 'Freeform' : q.type,
-                title: q.title,
-                partial_credit: partialCredit,
-                template_directory: q.template,
-                options: q.options,
-                client_files: q.clientFiles || [],
-                topic: q.topic,
-                grading_method: q.gradingMethod || 'Internal',
-                single_variant: !!q.singleVariant,
-                external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
-                external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
-                external_grading_files: (q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse),
-                external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
-                external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
-                external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
-            };
-        });
-
->>>>>>> master
         const syncQuestionsParams = [
             JSON.stringify(questionsParam),
             courseInfo.courseId,
