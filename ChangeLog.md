@@ -9,6 +9,8 @@
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
+  * Fix deadlock when syncing course staff (Nathan Walters).
+
   * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
 
 * __3.2.0__ - 2019-08-05
