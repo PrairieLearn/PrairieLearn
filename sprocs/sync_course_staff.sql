@@ -18,9 +18,12 @@ BEGIN
         INSERT INTO users
                 (uid)
         VALUES (enrollment->>0)
-        ON CONFLICT (uid) DO UPDATE
-        SET uid = users.uid -- re-set uid to force row to be returned
-        RETURNING user_id INTO new_user_id;
+        ON CONFLICT (uid) DO NOTHING;
+
+        SELECT user_id into new_user_id
+        FROM users
+        WHERE uid = enrollment->>0;
+
         new_user_ids := array_append(new_user_ids, new_user_id);
 
         -- Ensure enrollment for this course instance
