@@ -38,7 +38,7 @@ describe('course database', () => {
   describe('course info loading', () => {
     it('loads a working course successfully', async () => {
       await withTempFile(getCourse(), async (filepath) => {
-        const result = await courseDb.loadCourseInfoNew(filepath);
+        const result = await courseDb.loadCourseInfoNew('dummydir', filepath);
         assert.isNotOk(result.error);
         assert.isNotOk(result.warning);
         assert.isOk(result.data);
@@ -54,11 +54,11 @@ describe('course database', () => {
         color: 'red1',
       });
       await withTempFile(course, async (filepath) => {
-        const result = await courseDb.loadCourseInfoNew(filepath);
+        const result = await courseDb.loadCourseInfoNew('dummydir', filepath);
         assert.isNotOk(result.error);
         assert.include(result.warning, 'Default assessmentSet "Homework" should not be included in infoCourse.json');
         assert.isOk(result.data);
-      })
+      });
     });
   });
 });

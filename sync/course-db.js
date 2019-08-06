@@ -2,7 +2,7 @@
 const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
-const fs = require('fs');
+const fs = require('fs-extra');
 const util = require('util');
 const async = require('async');
 const moment = require('moment');
@@ -65,95 +65,43 @@ const DEFAULT_TAGS = [
     {'name': 'Fa21', 'color': 'gray1'},
 ];
 
-function loadCourseInfo(courseDir, logger, callback) {
-    const courseInfoFilename = path.join(courseDir, 'infoCourse.json');
-    const courseInfo = {};
-    jsonLoad.readInfoJSON(courseInfoFilename, schemas.infoCourse, function(err, info) {
-        if (ERR(err, callback)) return;
-        courseInfo.uuid = info.uuid.toLowerCase();
-        courseInfo.path = courseDir;
-        courseInfo.name = info.name;
-        courseInfo.title = info.title;
-        courseInfo.timezone = info.timezone;
-        // TODO: no longer used
-        courseInfo.userRoles = info.userRoles;
-        courseInfo.questionsDir = path.join(courseDir, 'questions');
-        courseInfo.courseInstancesDir = path.join(courseDir, 'courseInstances');
-        courseInfo.topics = info.topics;
-        courseInfo.assessmentSets = info.assessmentSets || [];
-        _.each(DEFAULT_ASSESSMENT_SETS, function(aset) {
-            if (_.find(courseInfo.assessmentSets, ['name', aset.name])) {
-                logger.warn('WARNING: Default assessmentSet "' + aset.name + '" should not be included in infoCourse.json');
-            } else {
-                courseInfo.assessmentSets.push(aset);
-            }
-        });
-        courseInfo.tags = info.tags || [];
-        _.each(DEFAULT_TAGS, function(tag) {
-            if (_.find(courseInfo.tags, ['name', tag.name])) {
-                logger.warn('WARNING: Default tag "' + tag.name + '" should not be included in infoCourse.json');
-            } else {
-                courseInfo.tags.push(tag);
-            }
-        });
-
-        // Course options
-        courseInfo.options = {};
-        courseInfo.options.useNewQuestionRenderer = _.get(info, 'options.useNewQuestionRenderer', false);
-        courseInfo.options.isExampleCourse = false;
-        if (courseInfo.uuid == 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
-            && courseInfo.title == 'Example Course'
-            && courseInfo.name == 'XC 101') {
-                courseInfo.options.isExampleCourse = true;
-        }
-
-        courseInfo.jsonFilename = info.jsonFilename;
-        callback(null, courseInfo);
-    });
-}
-
-function loadQuestion() {}
-
-function checkInfoValid(idName, info, infoFile, courseInfo, logger, cache) {
-    var myError = null;
+/**
+ * 
+ * @param {*} idName 
+ * @param {*} info 
+ * @param {*} infoFile 
+ * @returns {{ error?: string, warning?: string }}
+ */
+function checkInfoValid(idName, info, infoFile) {
+    const errors = [];
+    const warnings = [];
 
     // check assessments all have a valid assessmentSet
     if (idName == 'tid') {
-        let { validAssessmentSets } = cache;
-        if (!validAssessmentSets) {
-            validAssessmentSets = new Set(courseInfo.assessmentSets.map(as => as.name));
-            cache.validAssessmentSets = validAssessmentSets;
-        }
-        if (courseInfo.assessmentSets && !validAssessmentSets.has(info.set)) {
-            return new Error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "assessmentSets" listed in infoCourse.json)');
-        }
+        // TODO: we previously validated that all assessment sets listed in assessments
+        // were also present in infoCourse.json. I removed that check for now, but we
+        // still need to treat assessment sets like we do topics and tags and create them
+        // on the fly for courses
         // check assessment access rules
         if (_(info).has('allowAccess')) {
             _(info.allowAccess).forEach(function(rule) {
+                let startDate, endDate;
                 if ('startDate' in rule) {
-                    var startDate = moment(rule.startDate, moment.ISO_8601);
+                    startDate = moment(rule.startDate, moment.ISO_8601);
                     if (startDate.isValid() == false) {
-                        myError = new Error(`${infoFile}: invalid allowAccess startDate: ${rule.startDate}`);
-                        return false;
+                        errors.push(`${infoFile}: invalid allowAccess startDate: ${rule.startDate}`);
                     }
                 }
                 if ('endDate' in rule) {
-                    var endDate = moment(rule.endDate, moment.ISO_8601);
+                    endDate = moment(rule.endDate, moment.ISO_8601);
                     if (endDate.isValid() == false) {
-                        myError = new Error(`${infoFile}: invalid allowAccess endDate: ${rule.startDate}`);
-                        return false;
+                        errors.push(`${infoFile}: invalid allowAccess endDate: ${rule.startDate}`);
                     }
                 }
-                if ('startDate' in rule && 'endDate' in rule) {
-                    if (startDate.isAfter(endDate)) {
-                        myError = new Error(`${infoFile}: invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
-                        return false;
-                    }
+                if (startDate && endDate && startDate.isAfter(endDate)) {
+                    errors.push(`${infoFile}: invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
                 }
             });
-        }
-        if (myError) {
-            return myError;
         }
     }
 
@@ -161,17 +109,20 @@ function checkInfoValid(idName, info, infoFile, courseInfo, logger, cache) {
     if (idName == 'ciid') {
         if (_(info).has('allowIssueReporting')) {
             if (info.allowIssueReporting) {
-                logger.warn(`WARNING: ${infoFile}: "allowIssueReporting" is no longer needed.`);
+                warnings.push(`"allowIssueReporting" is no longer needed.`);
             } else {
-                return new Error(`${infoFile}: "allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.`);
+                errors.push(`${infoFile}: "allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.`);
             }
         }
     }
 
-    return null;
+    return {
+        error: errors.join('\n'),
+        warning: warnings.join('\n'),
+    }
 }
 
-async function loadAndValidateJson(id, idName, jsonPath, defaults, schema, optionSchemaPrefix, courseInfo, cache, logger) {
+async function loadAndValidateJson(id, idName, jsonPath, defaults, schema, optionSchemaPrefix) {
     let json;
     try {
         json = await jsonLoad.readInfoJSONAsync(jsonPath, schema);
@@ -193,109 +144,69 @@ async function loadAndValidateJson(id, idName, jsonPath, defaults, schema, optio
 
     await jsonLoad.validateOptionsAsync(json, jsonPath, optionSchemaPrefix, schemas);
     json[idName] = id;
-    const optionsError = checkInfoValid(idName, json, jsonPath, courseInfo, logger, cache);
+    const optionsError = checkInfoValid(idName, json, jsonPath);
     if (optionsError) throw optionsError;
 
     return _.defaults(json, defaults);
 }
 
-function loadInfoDB(idName, parentDir, infoFilename, defaultInfo, schema, optionSchemaPrefix, courseInfo, logger, callback) {
-    // `cache` is an object with which we can cache information derived from course info
-    // in between successive calls to `checkInfoValid`
-    const cache = {};
-    const db = {};
-    fs.readdir(parentDir, function(err, files) {
-        if (ERR(err, callback)) return;
-
-        async.each(files, async function(dir) {
-            const infoFile = path.join(parentDir, dir, infoFilename);
-            const info = await loadAndValidateJson(dir, idName, infoFile, defaultInfo, schema, optionSchemaPrefix, courseInfo, cache,logger);
-            if (info) {
-                db[dir] = info;
-            }
-        }, function(err) {
-            if (ERR(err, callback)) return;
-            logger.debug('successfully loaded info from ' + parentDir + ', number of items = ' + _.size(db));
-            callback(null, db);
-        });
-    });
-}
-
 /**
  * @param {string} courseDir The directory of the course
  * @param {string} qid The QID of the question to load
- * @param {any} logger An object to log job output to
  */
-module.exports.loadSingleQuestion = async function(courseDir, qid, logger) {
-    // TODO: we can probably refactor loadAndValidateJson to not need `courseInto`
-    const courseInfo = {};
-    // No need to cache, only a single call here
-    const cache = {};
+module.exports.loadSingleQuestion = async function(courseDir, qid) {
     const infoQuestionPath = path.join(courseDir, 'questions', qid, 'info.json');
-    return await loadAndValidateJson(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions', courseInfo, cache, logger);
+    return await loadAndValidateJson(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
 };
 
 module.exports.loadFullCourse = function(courseDir, logger, callback) {
-    const course = {};
-    async.series([
-        function(callback) {
-            loadCourseInfo(courseDir, logger, function(err, courseInfo) {
-                if (ERR(err, callback)) return;
-                course.courseInfo = courseInfo;
-                callback(null);
-            });
-        },
-        function(callback) {
-            loadInfoDB('qid', course.courseInfo.questionsDir, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions', course.courseInfo, logger, function(err, questionDB) {
-                if (ERR(err, callback)) return;
-                course.questionDB = questionDB;
-                callback(null);
-            });
-        },
-        function(callback) {
-            loadInfoDB('ciid', course.courseInfo.courseInstancesDir, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, null, course.courseInfo, logger, function(err, courseInstanceDB) {
-                if (ERR(err, callback)) return;
-                course.courseInstanceDB = courseInstanceDB;
-                callback(null);
-            });
-        },
-    ], function(err) {
+    util.callbackify(this.loadFullCourseNewAsync)(courseDir, (err, courseData) => {
         if (ERR(err, callback)) return;
-        async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceDir, callback) {
-            var assessmentsDir = path.join(course.courseInfo.courseInstancesDir, String(courseInstanceDir), 'assessments');
-            courseInstance.assessmentDB = {};
-            // Check that the assessments folder exists and is accessible before loading from it
-            fs.lstat(assessmentsDir, function(err, stats) {
-                if (err) {
-                    // ENOENT: Directory does not exist
-                    if (err.code == 'ENOENT') {
-                        logger.warn(`Warning: ${courseInstanceDir} has no \`assessments\` directory (lstat error code ENOENT).`);
-                    }
-                    // Other access permissions error
-                    else {
-                        logger.warn(`Warning: \`${courseInstanceDir}/assessments\` is inaccessible (lstat error code ${err.code}).`);
-                    }
-                    // The above handles the error
-                    callback(null);
+
+        // First, scan through everything to check for errors, and if we find one, "throw" it
+        if (courseData.course.error) {
+            return callback(new Error(courseData.course.error));
+        }
+        for (const qid in courseData.questions) {
+            if (courseData.questions[qid].error) {
+                return callback(new Error(courseData.questions[qid].error));
+            }
+        }
+        for (const ciid in courseData.courseInstances) {
+            if (courseData.courseInstances[ciid].courseInstance.error) {
+                return callback(new Error(courseData.courseInstances[ciid].courseInstance.error));
+            }
+        }
+        for (const ciid in courseData.courseInstances) {
+            const courseInstance = courseData.courseInstances[ciid];
+            for (const tid in courseInstance.assessments) {
+                if (courseInstance.assessments[tid].error) {
+                    return callback(new Error(courseInstance.assessments[tid].error));
                 }
-                // ENOTDIR: `assessments` is not a directory
-                else if (!stats.isDirectory()) {
-                    logger.warn(`Warning: \`${courseInstanceDir}/assessments\` is not a directory.`);
-                    // This handles the error
-                    callback(null);
-                }
-                else {
-                    loadInfoDB('tid', assessmentsDir, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, null, course.courseInfo, logger, function(err, assessmentDB) {
-                        if (ERR(err, callback)) return;
-                        courseInstance.assessmentDB = assessmentDB;
-                        callback(null);
-                    });
-                }
+            }
+        }
+
+        const questions = {};
+        Object.entries(courseData.questions).forEach(([qid, question]) => questions[qid] = question.data);
+
+        const courseInstances = {};
+        Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
+            const assessments = {};
+            Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
+                assessments[tid] = assessment.data;
             });
-        }, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null, course);
+            courseInstances[ciid] = {
+                ...courseInstance.courseInstance.data,
+                assessmentDB: assessments,
+            };
         });
+
+        const course = {
+            courseInfo: courseData.course.data,
+            questionDB: questions,
+            courseInstanceDB: courseInstances,
+        };
+        callback(null, course);
     });
 };
 
@@ -481,16 +392,31 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
 
 /**
  * @param {string} courseDir
- * @param {any} logger
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourseNewAsync = async function(courseDir, logger) {
+module.exports.loadFullCourseNewAsync = async function(courseDir) {
     const infoCoursePath = path.join(courseDir, 'infoCourse.json');
-    const courseInfo = await this.loadCourseInfoNew(infoCoursePath);
+    const questionsPath = path.join(courseDir, 'questions');
+    const courseInstancesPath = path.join(courseDir, 'courseInstances');
+    const courseInfo = await module.exports.loadCourseInfoNew(courseDir, infoCoursePath);
+    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+    const courseInstanceInfo = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, null);
+    const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
+    for (const courseInstanceId in courseInstanceInfo) {
+        // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
+        // If so, duplicate all that here
+        const assessmentsPath = path.join(courseDir, 'courseInstances', courseInstanceId, 'assessments');
+        const assessments = /** @type {{ [tid: string]: Either<Assessment> }} */ (await loadInfoForDirectory('tid', assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, null));
+        const courseInstance = {
+            courseInstance: courseInstanceInfo[courseInstanceId],
+            assessments,
+        };
+        courseInstances[courseInstanceId] = courseInstance;
+    }
     return {
         course: courseInfo,
-        questions: {},
-        courseInstances: {},
+        questions,
+        courseInstances,
     }
 }
 
@@ -498,9 +424,8 @@ module.exports.loadFullCourseNewAsync = async function(courseDir, logger) {
  * @param {string} infoCoursePath
  * @returns {Promise<Either<Course>>}
  */
-module.exports.loadCourseInfoNew = async function(infoCoursePath) {
+module.exports.loadCourseInfoNew = async function(courseDirectory, infoCoursePath) {
     return new Promise((resolve) => {
-        /** @type Course */
         jsonLoad.readInfoJSON(infoCoursePath, schemas.infoCourse, function(err, info) {
             if (err) {
                 resolve({ error: err.message });
@@ -533,10 +458,9 @@ module.exports.loadCourseInfoNew = async function(infoCoursePath) {
                 && info.title === 'Example Course'
                 && info.name === 'XC 101';
 
-            /** @type {Course} */
             const course = {
                 uuid: info.uuid.toLowerCase(),
-                path: infoCoursePath,
+                path: courseDirectory,
                 name: info.name,
                 title: info.title,
                 timezone: info.timezone,
@@ -555,4 +479,78 @@ module.exports.loadCourseInfoNew = async function(infoCoursePath) {
             });
         });
     });
+}
+
+/**
+ * @template T
+ * @param {*} id 
+ * @param {*} idName 
+ * @param {*} jsonPath 
+ * @param {*} defaults 
+ * @param {*} schema 
+ * @param {*} optionSchemaPrefix 
+ * @returns {Promise<Either<T>>}
+ */
+async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, optionSchemaPrefix) {
+    let json;
+    try {
+        json = await jsonLoad.readInfoJSONAsync(jsonPath, schema);
+    } catch (err) {
+        if (err && err.code && err.path && (err.code === 'ENOTDIR') && err.path === jsonPath) {
+            // In a previous version of this code, we'd pre-filter
+            // all files in the parent directory to remove anything
+            // that may have accidentally slipped in, like .DS_Store.
+            // However, that resulted in a huge number of system calls
+            // that got really slow for large directories. Now, we'll
+            // just blindly try to read a file from the directory and assume
+            // that if we see ENOTDIR, that means the directory was not
+            // in fact a directory.
+            return undefined;
+        }
+        return { error: err.message };
+    }
+
+    try {
+        await jsonLoad.validateOptionsAsync(json, jsonPath, optionSchemaPrefix, schemas);
+    } catch (err) {
+        return { error: err.message };
+    }
+    json[idName] = id;
+    const validationResult = checkInfoValid(idName, json, jsonPath);
+    if (validationResult.error) {
+        return { error: validationResult.error };
+    }
+
+    return {
+        data: _.defaults(json, defaults),
+        warning: validationResult.warning,
+    }
+}
+
+/**
+ * @template T
+ * @param {"qid" | "ciid" | "tid"} idName
+ * @param {string} directory
+ * @param {string} infoFilename
+ * @param {any} defaultInfo
+ * @param {object} schema
+ * @param {string} optionSchemaPrefix
+ * @returns {Promise<{ [id: string]: Either<T> }>}
+ */
+async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, optionSchemaPrefix) {
+    // `cache` is an object with which we can cache information derived from course info
+    // in between successive calls to `checkInfoValid`
+    const cache = {};
+    const infos = /** @type {{ [id: string]: Either<T> }} */ ({});
+    const files = await fs.readdir(directory);
+
+    await async.each(files, async function(dir) {
+        const infoFile = path.join(directory, dir, infoFilename);
+        const info = await loadAndValidateJsonNew(dir, idName, infoFile, defaultInfo, schema, optionSchemaPrefix);
+        if (info) {
+            infos[dir] = info;
+        }
+    });
+
+    return infos;
 }
