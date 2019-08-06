@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
@@ -16,7 +17,7 @@ const DEFAULT_QUESTION_INFO = {
 const DEFAULT_COURSE_INSTANCE_INFO = {};
 const DEFAULT_ASSESSMENT_INFO = {};
 
-var defaultAssessmentSets = [
+const DEFAULT_ASSESSMENT_SETS = [
     {'abbreviation': 'HW', 'name': 'Homework', 'heading': 'Homeworks', 'color': 'green1'},
     {'abbreviation': 'Q', 'name': 'Quiz', 'heading': 'Quizzes', 'color': 'red1'},
     {'abbreviation': 'PQ', 'name': 'Practice Quiz', 'heading': 'Practice Quizzes', 'color': 'pink1'},
@@ -26,7 +27,7 @@ var defaultAssessmentSets = [
     {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
 ];
 
-var defaultTags = [
+const DEFAULT_TAGS = [
     {'name': 'numeric', 'color': 'brown1', 'description': 'The answer format is one or more numerical values.'},
     {'name': 'symbolic', 'color': 'blue1', 'description': 'The answer format is a symbolic expression.'},
     {'name': 'drawing', 'color': 'yellow1', 'description': 'The answer format requires drawing on a canvas to input a graphical representation of an answer.'},
@@ -74,12 +75,13 @@ function loadCourseInfo(courseDir, logger, callback) {
         courseInfo.name = info.name;
         courseInfo.title = info.title;
         courseInfo.timezone = info.timezone;
+        // TODO: no longer used
         courseInfo.userRoles = info.userRoles;
         courseInfo.questionsDir = path.join(courseDir, 'questions');
         courseInfo.courseInstancesDir = path.join(courseDir, 'courseInstances');
         courseInfo.topics = info.topics;
         courseInfo.assessmentSets = info.assessmentSets || [];
-        _.each(defaultAssessmentSets, function(aset) {
+        _.each(DEFAULT_ASSESSMENT_SETS, function(aset) {
             if (_.find(courseInfo.assessmentSets, ['name', aset.name])) {
                 logger.warn('WARNING: Default assessmentSet "' + aset.name + '" should not be included in infoCourse.json');
             } else {
@@ -87,7 +89,7 @@ function loadCourseInfo(courseDir, logger, callback) {
             }
         });
         courseInfo.tags = info.tags || [];
-        _.each(defaultTags, function(tag) {
+        _.each(DEFAULT_TAGS, function(tag) {
             if (_.find(courseInfo.tags, ['name', tag.name])) {
                 logger.warn('WARNING: Default tag "' + tag.name + '" should not be included in infoCourse.json');
             } else {
@@ -219,6 +221,11 @@ function loadInfoDB(idName, parentDir, infoFilename, defaultInfo, schema, option
     });
 }
 
+/**
+ * @param {string} courseDir The directory of the course
+ * @param {string} qid The QID of the question to load
+ * @param {any} logger An object to log job output to
+ */
 module.exports.loadSingleQuestion = async function(courseDir, qid, logger) {
     // TODO: we can probably refactor loadAndValidateJson to not need `courseInto`
     const courseInfo = {};
@@ -255,7 +262,7 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
     ], function(err) {
         if (ERR(err, callback)) return;
         async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceDir, callback) {
-            var assessmentsDir = path.join(course.courseInfo.courseInstancesDir, courseInstanceDir, 'assessments');
+            var assessmentsDir = path.join(course.courseInfo.courseInstancesDir, String(courseInstanceDir), 'assessments');
             courseInstance.assessmentDB = {};
             // Check that the assessments folder exists and is accessible before loading from it
             fs.lstat(assessmentsDir, function(err, stats) {
@@ -291,3 +298,261 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
         });
     });
 };
+
+/**
+ * @template T
+ * @typedef {object} Either Contains either an error or data; data may include warnings.
+ * @property {string} [error]
+ * @property {string} [warning]
+ * @property {T} [data]
+ */
+
+/**
+ * @typedef {Object} CourseOptions
+ * @property {boolean} useNewQuestionRenderer
+ * @property {boolean} isExampleCourse
+ */
+
+/**
+ * @typedef {Object} Tag
+ * @property {string} name
+ * @property {string} color
+ * @property {string} [description]
+ */
+
+/**
+ * @typedef {Object} Topic
+ * @property {string} name
+ * @property {string} color
+ * @property {string} description
+ */
+
+/**
+ * @typedef {Object} AssessmentSet
+ * @property {string} abbreviation
+ * @property {string} name
+ * @property {string} heading
+ * @property {string} color
+ */
+
+/** 
+ * @typedef {Object} Course
+ * @property {string} uuid
+ * @property {string} name
+ * @property {string} title
+ * @property {string} path
+ * @property {string} timezone
+ * @property {CourseOptions} options
+ * @property {Tag[]} tags
+ * @property {Topic[]} topics
+ * @property {AssessmentSet[]} assessmentSets
+ */
+
+/** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
+/** @typedef {"UIUC" | "ZJUI" | "LTI" | "Any"} Institution */
+
+/**
+ * @typedef {Object} CourseInstanceAllowAccess
+ * @property {UserRule} role
+ * @property {string[]} uids
+ * @property {string} startDate
+ * @property {string} endDate
+ * @property {Institution} institution
+ */
+
+/**
+ * @typedef {Object} CourseInstance
+ * @property {string} uuid
+ * @property {string} longName
+ * @property {number} number
+ * @property {string} timezone
+ * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
+ * @property {CourseInstanceAllowAccess[]} allowAccess
+ */
+
+/**
+ * @typedef {Object} SEBConfig
+ * @property {string} password
+ * @property {string} quitPassword
+ * @property {string[]} allowPrograms
+ */
+
+/**
+ * @typedef {Object} AssessmentAllowAccess
+ * @property {"Public" | "Exam" | "SEB"} mode
+ * @property {string} examUuid
+ * @property {"Student" | "TA" | "Instructor"} role
+ * @property {string[]} uids
+ * @property {number} credit
+ * @property {string} startDate
+ * @property {string} endDate
+ * @property {number} timeLimitMin
+ * @property {string} password
+ * @property {SEBConfig} SEBConfig
+ */
+
+ /**
+  * @typedef {Object} QuestionAlternative
+  * @property {number | number[]} points
+  * @property {numer | number[]} maxPoints
+  * @property {string} id
+  * @property {boolean} forceMaxPoints
+  * @property {number} triesPerVariant
+  */
+
+/**
+ * @typedef {Object} ZoneQuestion
+ * @property {number | number[]} points
+ * @property {number | []} maxPoints
+ * @property {string} id
+ * @property {boolean} forceMaxPoints
+ * @property {QuestionAlternative[]} alternatives
+ * @property {number} numberChoose
+ * @property {number} triesPerVariant
+ */
+
+/**
+ * @typedef {Object} Zone
+ * @property {string} title
+ * @property {number} maxPoints
+ * @property {number} maxChoose
+ * @property {number} bestQuestions
+ * @property {ZoneQuestion[]} questions
+ */
+
+/**
+ * @typedef {Object} Assessment
+ * @property {string} uuid
+ * @property {"Homework" | "Exam"} type
+ * @property {string} title
+ * @property {string} set
+ * @property {string} number
+ * @property {boolean} allowIssueReporting
+ * @property {boolean} multipleInstance
+ * @property {boolean} shuffleQuestions
+ * @property {AssessmentAllowAccess[]} allowAccess
+ * @property {string} text
+ * @property {number} maxPoints
+ * @property {boolean} autoClose
+ * @property {Zone[]} zones
+ * @property {boolean} constantQuestionValue
+ */
+
+/**
+ * @typedef {Object} QuestionExternalGradingOptions
+ * @property {boolean} enabled
+ * @property {string} image
+ * @property {string} entrypoint
+ * @property {string[]} serverFilesCourse
+ * @property {number} timeout
+ * @property {boolean} enableNetworking
+ */
+
+ /**
+  * @typedef {Object} Question
+  * @property {string} uuid
+  * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+  * @property {string} title
+  * @property {string} topic
+  * @property {string[]} secondaryTopics
+  * @property {string[]} tags
+  * @property {string[]} clientFiles
+  * @property {string[]} clientTemplates
+  * @property {string} template
+  * @property {"Internal" | "External" | "Manual"} gradingMethod
+  * @property {boolean} singleVariant
+  * @property {boolean} partialCredit
+  * @property {Object} options
+  * @property {QuestionExternalGradingOptions} externalGradingOptions
+  */
+
+/**
+ * @typedef {object} CourseInstanceData
+ * @property {Either<CourseInstance>} courseInstance
+ * @property {{ [tid: string]: Either<Assessment> }} assessments
+ */
+
+/**
+ * @typedef {object} CourseData
+ * @property {Either<Course>} course
+ * @property {{ [qid: string]: Either<Question> }} questions
+ * @property {{ [ciid: string]: CourseInstanceData }} courseInstances
+ */
+
+/**
+ * @param {string} courseDir
+ * @param {any} logger
+ * @returns {Promise<CourseData>}
+ */
+module.exports.loadFullCourseNewAsync = async function(courseDir, logger) {
+    const infoCoursePath = path.join(courseDir, 'infoCourse.json');
+    const courseInfo = await this.loadCourseInfoNew(infoCoursePath);
+    return {
+        course: courseInfo,
+        questions: {},
+        courseInstances: {},
+    }
+}
+
+/**
+ * @param {string} infoCoursePath
+ * @returns {Promise<Either<Course>>}
+ */
+module.exports.loadCourseInfoNew = async function(infoCoursePath) {
+    return new Promise((resolve) => {
+        /** @type Course */
+        jsonLoad.readInfoJSON(infoCoursePath, schemas.infoCourse, function(err, info) {
+            if (err) {
+                resolve({ error: err.message });
+                return;
+            }
+
+            const warnings = [];
+
+            /** @type {AssessmentSet[]} */
+            const assessmentSets = info.assessmentSets || [];
+            DEFAULT_ASSESSMENT_SETS.forEach(aset => {
+                if (assessmentSets.find(a => a.name === aset.name)) {
+                    warnings.push(`Default assessmentSet "${aset.name}" should not be included in infoCourse.json`);
+                } else {
+                    assessmentSets.push(aset);
+                }
+            });
+
+            /** @type {Tag[]} */
+            const tags = info.tags || [];
+            DEFAULT_TAGS.forEach(tag => {
+                if (tags.find(t => t.name === tag.name)) {
+                    warnings.push(`Default tag "${tag.name}" should not be included in infoCourse.json`);
+                } else {
+                    tags.push(tag);
+                }
+            });
+
+            const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
+                && info.title === 'Example Course'
+                && info.name === 'XC 101';
+
+            /** @type {Course} */
+            const course = {
+                uuid: info.uuid.toLowerCase(),
+                path: infoCoursePath,
+                name: info.name,
+                title: info.title,
+                timezone: info.timezone,
+                topics: info.topics,
+                assessmentSets,
+                tags,
+                options: {
+                    useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+                    isExampleCourse,
+                },
+            };
+
+            resolve({
+                data: course,
+                warning: warnings.join('\n'),
+            });
+        });
+    });
+}

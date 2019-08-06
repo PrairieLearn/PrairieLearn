@@ -75,3 +75,5 @@ Currently, an edit operation is keyed by QID/etc.; we don't allow entities to be
 * We rename a question that is referenced by one or more assessments. We'll need a full sync to handle this properly.
 
 The first case is the only one that we can optimize with a partial sync. Given that, I propose that we don't attempt to be clever with renames. Whatever piece of code is handling edits should detect a rename and unconditionally do a full sync.
+
+Normally, we'll be able to gracefully recover from a failure to load/find `infoCourse.json`. However, the only case where we can't do this is if the course does not yet exist in the database. We need to check for that, and if that's the case, prevent syncing until we can ensure that the course either is in the DB or will be created.
