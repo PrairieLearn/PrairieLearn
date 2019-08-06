@@ -7,6 +7,8 @@
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
+  * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
