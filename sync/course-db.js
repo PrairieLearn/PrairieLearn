@@ -160,7 +160,7 @@ module.exports.loadSingleQuestion = async function(courseDir, qid) {
 };
 
 module.exports.loadFullCourse = function(courseDir, logger, callback) {
-    util.callbackify(this.loadFullCourseNewAsync)(courseDir, (err, courseData) => {
+    util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
         if (ERR(err, callback)) return;
 
         // First, scan through everything to check for errors, and if we find one, "throw" it
@@ -394,11 +394,11 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourseNewAsync = async function(courseDir) {
+module.exports.loadFullCourseNew = async function(courseDir) {
     const infoCoursePath = path.join(courseDir, 'infoCourse.json');
     const questionsPath = path.join(courseDir, 'questions');
     const courseInstancesPath = path.join(courseDir, 'courseInstances');
-    const courseInfo = await module.exports.loadCourseInfoNew(courseDir, infoCoursePath);
+    const courseInfo = await module.exports.loadCourseInfo(courseDir, infoCoursePath);
     const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
     const courseInstanceInfo = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, null);
     const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
@@ -424,7 +424,7 @@ module.exports.loadFullCourseNewAsync = async function(courseDir) {
  * @param {string} infoCoursePath
  * @returns {Promise<Either<Course>>}
  */
-module.exports.loadCourseInfoNew = async function(courseDirectory, infoCoursePath) {
+module.exports.loadCourseInfo = async function(courseDirectory, infoCoursePath) {
     return new Promise((resolve) => {
         jsonLoad.readInfoJSON(infoCoursePath, schemas.infoCourse, function(err, info) {
             if (err) {
@@ -540,7 +540,6 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, op
 async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, optionSchemaPrefix) {
     // `cache` is an object with which we can cache information derived from course info
     // in between successive calls to `checkInfoValid`
-    const cache = {};
     const infos = /** @type {{ [id: string]: Either<T> }} */ ({});
     const files = await fs.readdir(directory);
 
@@ -552,5 +551,17 @@ async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo
         }
     });
 
+    // Now that we've loaded all entities, do a second pass to check for duplicate UUIDs
+    // First, create a map from UUIDs to questions that use them
+    const uuids = Object.entries(infos).reduce((set, [id, info]) => {
+        // TODO: this
+        return set;
+    }, new Set());
+
     return infos;
+}
+
+async function loadQuestions(courseDirectory) {
+    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+
 }
