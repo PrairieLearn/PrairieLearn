@@ -4,6 +4,7 @@ WITH file_list AS (
     FROM files AS f
     WHERE
         f.assessment_instance_id = $assessment_instance_id
+        AND f.instance_question_id IS NULL
         AND f.deleted_at IS NULL
 )
 SELECT
