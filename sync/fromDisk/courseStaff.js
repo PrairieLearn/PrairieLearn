@@ -13,9 +13,21 @@ module.exports.sync = function(courseInstance, callback) {
         }
 
         // Consists of an array of [uid, role] pairs
+        // IMPORTANT: these must be sorted by UID to avoid deadlock in the DB.
+        // We attempt to sync multiple course instances at the same time, and
+        // we might be trying to create the same user in multiple transactions.
         const usersToSync = Object
             .entries(userRoles)
-            .filter(([_, role]) => role === 'Instructor' || role === 'TA');
+            .filter(([_, role]) => role === 'Instructor' || role === 'TA')
+            .sort((entryA, entryB) => {
+                if (entryA[0] < entryB[0]) {
+                    return -1;
+                }
+                if (entryA[0] > entryB[0]) {
+                    return 1;
+                }
+                return 0;
+            });
 
         const params = [
             JSON.stringify(usersToSync),
