@@ -178,6 +178,9 @@
               <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
                 Question <%= instance_question.question_number %>
               </a>
+              <% if (instance_question.file_count > 0) { %>
+                <i class="far fa-file-alt"></i>
+              <% } %>
             </td>
             <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
             <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
