@@ -3,9 +3,17 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add UUIDs to cron job logs for better debugging (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
+
+  * Fix deadlock when syncing course staff (Nathan Walters).
+
+  * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
+  
+  * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
 
 * __3.2.0__ - 2019-08-05
 
