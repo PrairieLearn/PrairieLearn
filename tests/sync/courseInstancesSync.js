@@ -43,7 +43,7 @@ describe('Course instance syncing', () => {
     const courseData = util.getCourseData();
     courseData.courseInstances['newinstance'] = courseData.courseInstances[util.COURSE_INSTANCE_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /used in multiple course instances/);
+    await assert.isRejected(util.syncCourseData(courseDir), /used in other course instances/);
   });
 
   it('fails if a course instance directory is missing an infoCourseInstance.json file', async () => {

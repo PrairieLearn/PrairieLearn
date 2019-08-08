@@ -129,9 +129,9 @@ describe('course database', () => {
         assert.isFalse(either.hasErrors(result));
         assert.isFalse(either.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
-        assert.isTrue(either.hasErrors(result['question1']));
+        assert.match(either.stringifyErrors(result['question1']), /UUID.*is used in other questions/);
         assert.isFalse(either.hasWarnings(result['question1']));
-        assert.isTrue(either.hasErrors(result['question2']));
+        assert.match(either.stringifyErrors(result['question2']), /UUID.*is used in other questions/);
         assert.isFalse(either.hasWarnings(result['question2']));
         assert.isFalse(either.hasErrors(result['question3']));
         assert.isFalse(either.hasWarnings(result['question3']));

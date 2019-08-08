@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const async = require('async');
@@ -32,6 +33,10 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
         perf.end("loadFullCourse");
         if (ERR(err, callback)) return;
         logger.info("Successfully loaded all info.json files");
+        // We need to handle assessment sets in two stages: first we add new
+        // ones, then we sync assessments, then finally we remove all unused
+        // sets.
+        let usedAssessmentSetIds;
         async.series([
             function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
             perf.timedFunc.bind(null, "syncCourseInfo", syncCourseInfo.sync.bind(null, course.courseInfo, course_id)),
@@ -44,7 +49,13 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
             perf.timedFunc.bind(null, "syncTags", syncTags.sync.bind(null, course.courseInfo, course.questionDB)),
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncAssessmentSets", syncAssessmentSets.sync.bind(null, course.courseInfo)),
+            perf.timedFunc.bind(null, "syncAssessmentSets", (callback) => {
+                syncAssessmentSets.sync(course.courseInfo, course.courseInstanceDB, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    usedAssessmentSetIds = result;
+                    callback(null);
+                })
+            }),
             (callback) => {
                 perf.start("syncCourseInstaces");
                 // TODO: is running these in parallel safe? Everything should be isolated by course instance.
@@ -58,7 +69,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
                                                         + " assessments from git repository to database..."); callback(null);},
                         perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Assessments`, syncAssessments.sync.bind(null, course.courseInfo, courseInstance, course.questionDB)),
                     ], function(err) {
-                    perf.end(`syncCourseInstance${courseInstanceShortName}`);
+                        perf.end(`syncCourseInstance${courseInstanceShortName}`);
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
@@ -69,6 +80,13 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
                     callback(null);
                 });
             },
+            function(callback) {logger.info("Removing unused assessment sets from database..."); callback(null);},
+            perf.timedFunc.bind(null, "syncAssessmentSetsDeleteUnused", (callback) => {
+                syncAssessmentSets.deleteUnused(course.courseInfo, usedAssessmentSetIds, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }),
             function(callback) {logger.info("Reloading course elements..."); callback(null);},
             freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
         ], function(err) {
@@ -148,7 +166,7 @@ async function isQuestionIncrementalSyncSafe(courseId, qid, questionInfo) {
 module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
     const [courseId, questionInfo] = await Promise.all([
         getCourseId(courseDir),
-        courseDB.loadSingleQuestion(courseDir, qid, logger),
+        courseDB.loadSingleQuestion(courseDir, qid),
     ]);
     if (!(await isQuestionIncrementalSyncSafe(courseId, qid, questionInfo))) {
         // Fall back to full sync

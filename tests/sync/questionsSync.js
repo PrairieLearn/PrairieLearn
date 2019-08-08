@@ -134,7 +134,7 @@ describe('Question syncing', () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     courseData.questions[util.QUESTION_ID] = courseData.questions[util.ALTERNATIVE_QUESTION_ID];
     await util.writeCourseToDirectory(courseData, courseDir);
-    await assert.isRejected(syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID, util.getFakeLogger()), /multiple questions/);
+    await assert.isRejected(syncFromDisk.syncSingleQuestion(courseDir, util.QUESTION_ID, util.getFakeLogger()), /UUID.*is used in other questions/);
   });
 
   it('handles a rename with unchanged UUID during an incremental sync', async () => {
@@ -161,7 +161,7 @@ describe('Question syncing', () => {
       correctAnswers: ['yes'],
     };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Error validating/);
+    await assert.isRejected(util.syncCourseData(courseDir), /should have required property/);
   });
 
   it('fails if a question has duplicate tags', async () => {
@@ -175,7 +175,7 @@ describe('Question syncing', () => {
     const courseData = util.getCourseData();
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /multiple questions/);
+    await assert.isRejected(util.syncCourseData(courseDir), /other questions/);
   });
 
   it('fails if a question directory is missing an info.json file', async () => {

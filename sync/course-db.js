@@ -67,151 +67,6 @@ const DEFAULT_TAGS = [
 ];
 
 /**
- * 
- * @param {*} idName 
- * @param {*} info 
- * @param {*} infoFile 
- * @returns {{ errors: string[], warnings: string[] }}
- */
-function checkInfoValid(idName, info, infoFile) {
-    const errors = [];
-    const warnings = [];
-
-    // check assessments all have a valid assessmentSet
-    if (idName == 'tid') {
-        // TODO: we previously validated that all assessment sets listed in assessments
-        // were also present in infoCourse.json. I removed that check for now, but we
-        // still need to treat assessment sets like we do topics and tags and create them
-        // on the fly for courses
-        // check assessment access rules
-        if (_(info).has('allowAccess')) {
-            _(info.allowAccess).forEach(function(rule) {
-                let startDate, endDate;
-                if ('startDate' in rule) {
-                    startDate = moment(rule.startDate, moment.ISO_8601);
-                    if (startDate.isValid() == false) {
-                        errors.push(`${infoFile}: invalid allowAccess startDate: ${rule.startDate}`);
-                    }
-                }
-                if ('endDate' in rule) {
-                    endDate = moment(rule.endDate, moment.ISO_8601);
-                    if (endDate.isValid() == false) {
-                        errors.push(`${infoFile}: invalid allowAccess endDate: ${rule.startDate}`);
-                    }
-                }
-                if (startDate && endDate && startDate.isAfter(endDate)) {
-                    errors.push(`${infoFile}: invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
-                }
-            });
-        }
-    }
-
-    // checks for infoCourseInstance.json
-    if (idName == 'ciid') {
-        if (_(info).has('allowIssueReporting')) {
-            if (info.allowIssueReporting) {
-                warnings.push(`"allowIssueReporting" is no longer needed.`);
-            } else {
-                errors.push(`${infoFile}: "allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.`);
-            }
-        }
-    }
-
-    return {
-        errors,
-        warnings,
-    };
-}
-
-async function loadAndValidateJson(id, idName, jsonPath, defaults, schema, optionSchemaPrefix) {
-    let json;
-    try {
-        json = await jsonLoad.readInfoJSONAsync(jsonPath, schema);
-    } catch (err) {
-        if (err && err.code && err.path && (err.code === 'ENOTDIR') && err.path === jsonPath) {
-            // In a previous version of this code, we'd pre-filter
-            // all files in the parent directory to remove anything
-            // that may have accidentally slipped in, like .DS_Store.
-            // However, that resulted in a huge number of system calls
-            // that got really slow for large directories. Now, we'll
-            // just blindly try to read a file from the directory and assume
-            // that if we see ENOTDIR, that means the directory was not
-            // in fact a directory.
-            return undefined;
-        }
-        // This is another error, possibly validation-related. Just re-throw it.
-        throw err;
-    }
-
-    await jsonLoad.validateOptionsAsync(json, jsonPath, optionSchemaPrefix, schemas);
-    json[idName] = id;
-    const optionsError = checkInfoValid(idName, json, jsonPath);
-    if (optionsError) throw optionsError;
-
-    return _.defaults(json, defaults);
-}
-
-/**
- * @param {string} courseDir The directory of the course
- * @param {string} qid The QID of the question to load
- */
-module.exports.loadSingleQuestion = async function(courseDir, qid) {
-    const infoQuestionPath = path.join(courseDir, 'questions', qid, 'info.json');
-    return await loadAndValidateJson(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
-};
-
-module.exports.loadFullCourse = function(courseDir, logger, callback) {
-    util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
-        if (ERR(err, callback)) return;
-
-        // First, scan through everything to check for errors, and if we find one, "throw" it
-        if (either.hasErrors(courseData.course)) {
-            return callback(new Error(either.stringifyErrors(courseData.course)));
-        }
-        for (const qid in courseData.questions) {
-            if (either.hasErrors(courseData.questions[qid])) {
-                return callback(new Error(either.stringifyErrors(courseData.questions[qid])));
-            }
-        }
-        for (const ciid in courseData.courseInstances) {
-            if (either.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
-                return callback(new Error(either.stringifyErrors(courseData.courseInstances[ciid].courseInstance)));
-            }
-        }
-        for (const ciid in courseData.courseInstances) {
-            const courseInstance = courseData.courseInstances[ciid];
-            for (const tid in courseInstance.assessments) {
-                if (either.hasErrors(courseInstance.assessments[tid])) {
-                    return callback(new Error(either.stringifyErrors(courseInstance.assessments[tid])));
-                }
-            }
-        }
-
-        const questions = {};
-        Object.entries(courseData.questions).forEach(([qid, question]) => questions[qid] = question.data);
-
-        const courseInstances = {};
-        Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
-            const assessments = {};
-            Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
-                assessments[tid] = assessment.data;
-            });
-            courseInstances[ciid] = {
-                ...courseInstance.courseInstance.data,
-                assessmentDB: assessments,
-            };
-        });
-
-        const course = {
-            courseInfo: courseData.course.data,
-            questionDB: questions,
-            courseInstanceDB: courseInstances,
-        };
-        callback(null, course);
-    });
-};
-
-/**
  * @template T
  * @typedef {object} Either Contains either an error or data; data may include warnings.
  * @property {string[]} [errors]
@@ -280,6 +135,7 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
  * @property {string} timezone
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
+ * @property {boolean} allowIssueReporting
  */
 
 /**
@@ -392,24 +248,92 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
  */
 
 /**
+ * @param {string} courseDir The directory of the course
+ * @param {string} qid The QID of the question to load
+ */
+module.exports.loadSingleQuestion = async function(courseDir, qid) {
+    const infoQuestionPath = path.join(courseDir, 'questions', qid, 'info.json');
+    const result = await loadAndValidateJsonNew(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
+    // TODO: once we have error/warning handling elsewhere in the stack,
+    // rewrite to just propagate the Either directly instead of throwing here.
+    if (either.hasErrors(result)) {
+        throw new Error(either.stringifyErrors(result));
+    }
+    return result.data;
+};
+
+/**
+ * TODO: Remove `logger` param when we do later refactoring.
+ * @param {string} courseDir
+ */
+module.exports.loadFullCourse = function(courseDir, logger, callback) {
+    util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
+        if (ERR(err, callback)) return;
+
+        // First, scan through everything to check for errors, and if we find one, "throw" it
+        if (either.hasErrors(courseData.course)) {
+            return callback(new Error(either.stringifyErrors(courseData.course)));
+        }
+        for (const qid in courseData.questions) {
+            if (either.hasErrors(courseData.questions[qid])) {
+                return callback(new Error(either.stringifyErrors(courseData.questions[qid])));
+            }
+        }
+        for (const ciid in courseData.courseInstances) {
+            if (either.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
+                return callback(new Error(either.stringifyErrors(courseData.courseInstances[ciid].courseInstance)));
+            }
+        }
+        for (const ciid in courseData.courseInstances) {
+            const courseInstance = courseData.courseInstances[ciid];
+            for (const tid in courseInstance.assessments) {
+                if (either.hasErrors(courseInstance.assessments[tid])) {
+                    return callback(new Error(either.stringifyErrors(courseInstance.assessments[tid])));
+                }
+            }
+        }
+
+        const questions = {};
+        Object.entries(courseData.questions).forEach(([qid, question]) => questions[qid] = question.data);
+
+        const courseInstances = {};
+        Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
+            const assessments = {};
+            Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
+                assessments[tid] = assessment.data;
+            });
+            courseInstances[ciid] = {
+                ...courseInstance.courseInstance.data,
+                assessmentDB: assessments,
+            };
+        });
+
+        const course = {
+            courseInfo: courseData.course.data,
+            questionDB: questions,
+            courseInstanceDB: courseInstances,
+        };
+        callback(null, course);
+    });
+};
+
+
+
+/**
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
 module.exports.loadFullCourseNew = async function(courseDir) {
-    const infoCoursePath = path.join(courseDir, 'infoCourse.json');
-    const questionsPath = path.join(courseDir, 'questions');
-    const courseInstancesPath = path.join(courseDir, 'courseInstances');
     const courseInfo = await module.exports.loadCourseInfo(courseDir);
     const questions = await module.exports.loadQuestions(courseDir);
-    const courseInstanceInfo = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, null);
+    const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
     const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
-    for (const courseInstanceId in courseInstanceInfo) {
+    for (const courseInstanceId in courseInstanceInfos) {
         // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
         // If so, duplicate all that here
-        const assessmentsPath = path.join(courseDir, 'courseInstances', courseInstanceId, 'assessments');
-        const assessments = /** @type {{ [tid: string]: Either<Assessment> }} */ (await loadInfoForDirectory('tid', assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, null));
+        const assessments = await module.exports.loadAssessments(courseDir, courseInstanceId);
         const courseInstance = {
-            courseInstance: courseInstanceInfo[courseInstanceId],
+            courseInstance: courseInstanceInfos[courseInstanceId],
             assessments,
         };
         courseInstances[courseInstanceId] = courseInstance;
@@ -485,15 +409,15 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
 /**
  * @template T
- * @param {*} id 
- * @param {*} idName 
- * @param {*} jsonPath 
- * @param {*} defaults 
- * @param {*} schema 
- * @param {*} optionSchemaPrefix 
+ * @param {string} id 
+ * @param {string} idName 
+ * @param {string} jsonPath 
+ * @param {any} defaults 
+ * @param {any} schema 
+ * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
  * @returns {Promise<Either<T>>}
  */
-async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, optionSchemaPrefix) {
+async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, validate) {
     let json;
     try {
         json = await jsonLoad.readInfoJSONAsync(jsonPath, schema);
@@ -511,14 +435,9 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, op
         }
         return either.makeError(err.message);
     }
-
-    try {
-        await jsonLoad.validateOptionsAsync(json, jsonPath, optionSchemaPrefix, schemas);
-    } catch (err) {
-        return either.makeError(err.message);
-    }
     json[idName] = id;
-    const validationResult = checkInfoValid(idName, json, jsonPath);
+
+    const validationResult = await validate(json);
     if (validationResult.errors.length > 0) {
         return { errors: validationResult.errors };
     }
@@ -537,10 +456,10 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, op
  * @param {string} infoFilename
  * @param {any} defaultInfo
  * @param {object} schema
- * @param {string} optionSchemaPrefix
+ * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
  * @returns {Promise<{ [id: string]: Either<T> }>}
  */
-async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, optionSchemaPrefix) {
+async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, validate) {
     // `cache` is an object with which we can cache information derived from course info
     // in between successive calls to `checkInfoValid`
     const infos = /** @type {{ [id: string]: Either<T> }} */ ({});
@@ -548,7 +467,7 @@ async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo
 
     await async.each(files, async function(dir) {
         const infoFile = path.join(directory, dir, infoFilename);
-        const info = await loadAndValidateJsonNew(dir, idName, infoFile, defaultInfo, schema, optionSchemaPrefix);
+        const info = await loadAndValidateJsonNew(dir, idName, infoFile, defaultInfo, schema, validate);
         if (info) {
             infos[dir] = info;
         }
@@ -565,6 +484,10 @@ async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
     // First, create a map from UUIDs to questions that use them
     const uuids = Object.entries(infos).reduce((map, [id, info]) => {
+        if (!info.data) {
+            // Either missing or error validating; skip.
+            return map;
+        }
         let ids = map.get(info.data.uuid);
         if (!ids) {
             ids = [];
@@ -588,13 +511,118 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 }
 
 /**
+ * @param {Question} question 
+ * @returns {Promise<{ warnings: string[], errors: string[] }>}
+ */
+async function validateQuestion(question) {
+    const warnings = [];
+    const errors = [];
+
+    if (question.type && question.options) {
+        try {
+            const schema = schemas[`questionOptions${question.type}`];
+            const options = question.options;
+            await jsonLoad.validateJSONAsync(options, schema);
+        } catch (err) {
+            errors.push(err.message);
+        }
+    }
+
+    return { warnings, errors };
+}
+
+/**
+ * @param {Assessment} assessment 
+ * @returns {Promise<{ warnings: string[], errors: string[] }>}
+ */
+async function validateAssessment(assessment) {
+    const warnings = [];
+    const errors = [];
+
+    // TODO: we previously validated that all assessment sets listed in assessments
+    // were also present in infoCourse.json. I removed that check for now, but we
+    // still need to treat assessment sets like we do topics and tags and create them
+    // on the fly for courses
+    // check assessment access rules
+    if (_(assessment).has('allowAccess')) {
+        _(assessment.allowAccess).forEach(function(rule) {
+            let startDate, endDate;
+            if ('startDate' in rule) {
+                startDate = moment(rule.startDate, moment.ISO_8601);
+                if (startDate.isValid() == false) {
+                    errors.push(`Invalid allowAccess startDate: ${rule.startDate}`);
+                }
+            }
+            if ('endDate' in rule) {
+                endDate = moment(rule.endDate, moment.ISO_8601);
+                if (endDate.isValid() == false) {
+                    errors.push(`Invalid allowAccess endDate: ${rule.startDate}`);
+                }
+            }
+            if (startDate && endDate && startDate.isAfter(endDate)) {
+                errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
+            }
+        });
+    }
+
+    return { warnings, errors };
+}
+
+/**
+ * @param {CourseInstance} courseInstance
+ * @returns {Promise<{ warnings: string[], errors: string[] }>}
+ */
+async function validateCourseInstance(courseInstance) {
+    const warnings = [];
+    const errors = [];
+
+    if (_(courseInstance).has('allowIssueReporting')) {
+        if (courseInstance.allowIssueReporting) {
+            warnings.push('"allowIssueReporting" is no longer needed.');
+        } else {
+            errors.push('"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.');
+        }
+    }
+
+    return { warnings, errors };
+}
+
+/**
+ * Loads all questions in a course directory.
+ * 
  * @param {string} courseDirectory 
  */
 module.exports.loadQuestions = async function(courseDirectory) {
     const questionsPath = path.join(courseDirectory, 'questions');
     /** @type {{ [qid: string]: Either<Question> }} */
-    let questions = {};
-    questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID ${uuid} is used in other questions: ${ids.join(', ')}`);
     return questions;
+}
+
+/**
+ * Loads all course instances in a course directory.
+ * 
+ * @param {string} courseDirectory
+ */
+module.exports.loadCourseInstances = async function(courseDirectory) {
+    const courseInstancesPath = path.join(courseDirectory, 'courseInstances');
+    /** @type {{ [ciid: string]: Either<CourseInstance> }} */
+    const courseInstances = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
+    checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID ${uuid} is used in other course instances: ${ids.join(', ')}`);
+    return courseInstances;
+}
+
+/**
+ * Loads all assessments in a course instance.
+ * 
+ * @param {string} courseDirectory
+ * @param {string} courseInstance
+ */
+module.exports.loadAssessments = async function(courseDirectory, courseInstance) {
+    const assessmentsPath = path.join(courseDirectory, 'courseInstances', courseInstance, 'assessments');
+    /** @type {{ [tid: string]: Either<Assessment> }} */
+    const assessments = await loadInfoForDirectory('tid', assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
+    checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments: ${ids.join(', ')}`);
+    return assessments;
 }

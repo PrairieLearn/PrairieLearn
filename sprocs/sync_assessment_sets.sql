@@ -1,8 +1,10 @@
+DROP FUNCTION IF EXISTS sync_assessment_sets(jsonb,bigint);
 CREATE OR REPLACE FUNCTION
     sync_assessment_sets(
         IN assessment_sets JSONB,
-        IN new_course_id bigint
-    ) returns void
+        IN new_course_id bigint,
+        OUT used_assessment_set_ids bigint[]
+    ) RETURNS bigint[]
 AS $$
 BEGIN
     WITH new_assessment_sets AS (
@@ -29,9 +31,7 @@ BEGIN
             number = EXCLUDED.number
         RETURNING id
     )
-    DELETE FROM assessment_sets AS aset
-    WHERE
-        aset.course_id = new_course_id
-        AND aset.id NOT IN (SELECT id FROM new_assessment_sets);
+    SELECT array_agg(id) INTO used_assessment_set_ids
+    FROM new_assessment_sets;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

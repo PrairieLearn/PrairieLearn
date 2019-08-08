@@ -182,13 +182,26 @@ describe('Assessment syncing', () => {
     assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
-  it('fails if an assessment uses a set that is not present in the course', async () => {
+  it('handles assessment sets that are not present in infoCourse.json', async () => {
+    // Missing tags should be created
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    assessment.set = 'not in the course';
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /invalid/);
+    const missingAssessmentSetName = 'missing tag name';
+    assessment.set = missingAssessmentSetName;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['new'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    let syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    let syncedAssessmentSet = syncedAssessmentSets.find(aset => aset.name === missingAssessmentSetName);
+    assert.isOk(syncedAssessmentSet);
+    assert(syncedAssessmentSet.heading && syncedAssessmentSet.heading.length > 0, 'assessment set should not have empty heading');
+
+    // When missing assessment sets are no longer used in any questions, they should
+    // be removed from the DB
+    assessment.set = 'Homework';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    syncedAssessmentSet = syncedAssessmentSets.find(aset => aset.name === missingAssessmentSetName);
+    assert.isUndefined(syncedAssessmentSet);
   });
 
   it('fails if a question specifies neither an ID nor an alternative', async () => {
@@ -308,6 +321,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail1'] = assessment;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail2'] = assessment;
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /used in multiple assessments/);
+    await assert.isRejected(util.syncCourseData(courseDir), /used in other assessments/);
   });
 });
