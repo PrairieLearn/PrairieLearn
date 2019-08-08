@@ -255,7 +255,12 @@ module.exports = {
                     this.runJob(job, cronUuid, (err) => {
                         if (ERR(err, callback)) return;
                         debug(`tryJobWithTime(): ${job.name}: done`);
-                        callback(null);
+                        const params = {name: job.name};
+                        sqldb.query(sql.update_succeeded_at, params, (err, _result) => {
+                            if (ERR(err, callback)) return;
+                            debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
+                            callback(null);
+                        });
                     });
                 });
             }
