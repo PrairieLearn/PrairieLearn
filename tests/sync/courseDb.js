@@ -2,25 +2,40 @@
 const { assert } = require('chai');
 const tmp = require('tmp-promise');
 const fs = require('fs-extra');
+const path = require('path');
 
 const courseDb = require('../../sync/course-db');
+const either = require('../../sync/either');
+
+/**
+ * @param {(dir: string) => Promise<void>} callback 
+ */
+async function withTempDirectory(callback) {
+  const dir = await tmp.dir({ unsafeCleanup: true });
+  try {
+    await callback(dir.path);
+  } finally {
+    await dir.cleanup();
+  }
+}
+
+/**
+ * @param {string} courseDir 
+ * @param {object} course 
+ */
+async function writeCourse(courseDir, course) {
+  await fs.writeJSON(path.join(courseDir, 'infoCourse.json'), course);
+}
 
 /**
  * 
- * @param {any} contents 
- * @param {(filename: string) => Promise<void>} callback 
+ * @param {string} courseDir 
+ * @param {string} qid 
+ * @param {object} question 
  */
-async function withTempFile(contents, callback) {
-  if (typeof contents !== 'string') {
-    contents = JSON.stringify(contents);
-  }
-  const file = await tmp.file();
-  await fs.writeFile(file.path, contents);
-  try {
-    await callback(file.path);
-  } finally {
-    await file.cleanup();
-  }
+async function writeQuestion(courseDir, qid, question) {
+  await fs.mkdirs(path.join(courseDir, 'questions', qid));
+  await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
 }
 
 function getCourse() {
@@ -34,30 +49,92 @@ function getCourse() {
   };
 }
 
+function getQuestion() {
+  return {
+    uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
+    title: 'Test question',
+    topic: 'Test',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'v3',
+  };
+}
+
+function getAlternativeQuestion() {
+  return {
+    uuid: '697a6188-8215-4806-92a1-592987342b9e',
+    title: 'Another test question',
+    topic: 'Test',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'Calculation',
+  };
+}
+
 describe('course database', () => {
   describe('course info loading', () => {
     it('loads a working course successfully', async () => {
-      await withTempFile(getCourse(), async (filepath) => {
-        const result = await courseDb.loadCourseInfoNew('dummydir', filepath);
-        assert.isNotOk(result.error);
-        assert.isNotOk(result.warning);
+      await withTempDirectory(async (dir) => {
+        await writeCourse(dir, getCourse());
+        const result = await courseDb.loadCourseInfo(dir);
+        assert.isFalse(either.hasErrors(result));
+        assert.isFalse(either.hasWarnings(result));
         assert.isOk(result.data);
       });
     });
 
     it('warns about a default assessment set being present', async () => {
-      const course = getCourse();
-      course.assessmentSets.push({
-        name: 'Homework',
-        abbreviation: 'HW',
-        heading: 'Homeworks',
-        color: 'red1',
-      });
-      await withTempFile(course, async (filepath) => {
-        const result = await courseDb.loadCourseInfoNew('dummydir', filepath);
-        assert.isNotOk(result.error);
-        assert.include(result.warning, 'Default assessmentSet "Homework" should not be included in infoCourse.json');
+      await withTempDirectory(async (dir) => {
+        const course = getCourse();
+        course.assessmentSets.push({
+          name: 'Homework',
+          abbreviation: 'HW',
+          heading: 'Homeworks',
+          color: 'red1',
+        });
+        await writeCourse(dir, course);
+        const result = await courseDb.loadCourseInfo(dir);
+        assert.isFalse(either.hasErrors(result));
+        assert.isTrue(either.hasWarnings(result));
+        assert.include(result.warnings, 'Default assessmentSet "Homework" should not be included in infoCourse.json');
         assert.isOk(result.data);
+      });
+    });
+  });
+
+  describe('questions loading', () => {
+    it('loads some questions successfully', async () => {
+      await withTempDirectory(async (dir) => {
+        const question1 = getQuestion();
+        const question2 = getAlternativeQuestion();
+        await writeQuestion(dir, 'question1', getQuestion());
+        await writeQuestion(dir, 'question2', getAlternativeQuestion());
+        const result = await courseDb.loadQuestions(dir);
+        assert.equal(Object.keys(result).length, 2);
+        assert.isFalse(either.hasErrors(result['question1']));
+        assert.isFalse(either.hasWarnings(result['question1']));
+        assert.isFalse(either.hasErrors(result['question2']));
+        assert.isFalse(either.hasWarnings(result['question2']));
+        assert.equal(result['question1'].data.uuid, question1.uuid);
+        assert.equal(result['question2'].data.uuid, question2.uuid);
+      });
+    });
+
+    it('errors if two questions share a UUID', async () => {
+      await withTempDirectory(async (dir) => {
+        await writeQuestion(dir, 'question1', getQuestion());
+        await writeQuestion(dir, 'question2', getQuestion());
+        await writeQuestion(dir, 'question3', getAlternativeQuestion());
+        const result = await courseDb.loadQuestions(dir);
+        assert.isFalse(either.hasErrors(result));
+        assert.isFalse(either.hasWarnings(result));
+        assert.equal(Object.keys(result).length, 3);
+        assert.isTrue(either.hasErrors(result['question1']));
+        assert.isFalse(either.hasWarnings(result['question1']));
+        assert.isTrue(either.hasErrors(result['question2']));
+        assert.isFalse(either.hasWarnings(result['question2']));
+        assert.isFalse(either.hasErrors(result['question3']));
+        assert.isFalse(either.hasWarnings(result['question3']));
       });
     });
   });

@@ -7,6 +7,7 @@ const util = require('util');
 const async = require('async');
 const moment = require('moment');
 const schemas = require('../schemas');
+const either = require('./either');
 
 const jsonLoad = require('../lib/json-load');
 
@@ -70,7 +71,7 @@ const DEFAULT_TAGS = [
  * @param {*} idName 
  * @param {*} info 
  * @param {*} infoFile 
- * @returns {{ error?: string, warning?: string }}
+ * @returns {{ errors: string[], warnings: string[] }}
  */
 function checkInfoValid(idName, info, infoFile) {
     const errors = [];
@@ -117,9 +118,9 @@ function checkInfoValid(idName, info, infoFile) {
     }
 
     return {
-        error: errors.join('\n'),
-        warning: warnings.join('\n'),
-    }
+        errors,
+        warnings,
+    };
 }
 
 async function loadAndValidateJson(id, idName, jsonPath, defaults, schema, optionSchemaPrefix) {
@@ -164,24 +165,24 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
         if (ERR(err, callback)) return;
 
         // First, scan through everything to check for errors, and if we find one, "throw" it
-        if (courseData.course.error) {
-            return callback(new Error(courseData.course.error));
+        if (either.hasErrors(courseData.course)) {
+            return callback(new Error(either.stringifyErrors(courseData.course)));
         }
         for (const qid in courseData.questions) {
-            if (courseData.questions[qid].error) {
-                return callback(new Error(courseData.questions[qid].error));
+            if (either.hasErrors(courseData.questions[qid])) {
+                return callback(new Error(either.stringifyErrors(courseData.questions[qid])));
             }
         }
         for (const ciid in courseData.courseInstances) {
-            if (courseData.courseInstances[ciid].courseInstance.error) {
-                return callback(new Error(courseData.courseInstances[ciid].courseInstance.error));
+            if (either.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
+                return callback(new Error(either.stringifyErrors(courseData.courseInstances[ciid].courseInstance)));
             }
         }
         for (const ciid in courseData.courseInstances) {
             const courseInstance = courseData.courseInstances[ciid];
             for (const tid in courseInstance.assessments) {
-                if (courseInstance.assessments[tid].error) {
-                    return callback(new Error(courseInstance.assessments[tid].error));
+                if (either.hasErrors(courseInstance.assessments[tid])) {
+                    return callback(new Error(either.stringifyErrors(courseInstance.assessments[tid])));
                 }
             }
         }
@@ -213,8 +214,8 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
 /**
  * @template T
  * @typedef {object} Either Contains either an error or data; data may include warnings.
- * @property {string} [error]
- * @property {string} [warning]
+ * @property {string[]} [errors]
+ * @property {string[]} [warnings]
  * @property {T} [data]
  */
 
@@ -398,8 +399,8 @@ module.exports.loadFullCourseNew = async function(courseDir) {
     const infoCoursePath = path.join(courseDir, 'infoCourse.json');
     const questionsPath = path.join(courseDir, 'questions');
     const courseInstancesPath = path.join(courseDir, 'courseInstances');
-    const courseInfo = await module.exports.loadCourseInfo(courseDir, infoCoursePath);
-    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+    const courseInfo = await module.exports.loadCourseInfo(courseDir);
+    const questions = await module.exports.loadQuestions(courseDir);
     const courseInstanceInfo = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, null);
     const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
     for (const courseInstanceId in courseInstanceInfo) {
@@ -421,14 +422,15 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 }
 
 /**
- * @param {string} infoCoursePath
+ * @param {string} courseDirectory
  * @returns {Promise<Either<Course>>}
  */
-module.exports.loadCourseInfo = async function(courseDirectory, infoCoursePath) {
+module.exports.loadCourseInfo = async function(courseDirectory) {
     return new Promise((resolve) => {
+        const infoCoursePath = path.join(courseDirectory, 'infoCourse.json');
         jsonLoad.readInfoJSON(infoCoursePath, schemas.infoCourse, function(err, info) {
             if (err) {
-                resolve({ error: err.message });
+                resolve({ errors:  [err.message] });
                 return;
             }
 
@@ -475,7 +477,7 @@ module.exports.loadCourseInfo = async function(courseDirectory, infoCoursePath) 
 
             resolve({
                 data: course,
-                warning: warnings.join('\n'),
+                warnings,
             });
         });
     });
@@ -507,27 +509,28 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, op
             // in fact a directory.
             return undefined;
         }
-        return { error: err.message };
+        return either.makeError(err.message);
     }
 
     try {
         await jsonLoad.validateOptionsAsync(json, jsonPath, optionSchemaPrefix, schemas);
     } catch (err) {
-        return { error: err.message };
+        return either.makeError(err.message);
     }
     json[idName] = id;
     const validationResult = checkInfoValid(idName, json, jsonPath);
-    if (validationResult.error) {
-        return { error: validationResult.error };
+    if (validationResult.errors.length > 0) {
+        return { errors: validationResult.errors };
     }
 
     return {
         data: _.defaults(json, defaults),
-        warning: validationResult.warning,
+        warnings: validationResult.warnings,
     }
 }
 
 /**
+ * Loads and schema-validates all info files in a directory.
  * @template T
  * @param {"qid" | "ciid" | "tid"} idName
  * @param {string} directory
@@ -551,17 +554,47 @@ async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo
         }
     });
 
-    // Now that we've loaded all entities, do a second pass to check for duplicate UUIDs
-    // First, create a map from UUIDs to questions that use them
-    const uuids = Object.entries(infos).reduce((set, [id, info]) => {
-        // TODO: this
-        return set;
-    }, new Set());
-
     return infos;
 }
 
-async function loadQuestions(courseDirectory) {
-    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+/**
+ * @template {{ uuid: string }} T
+ * @param {{ [id: string]: Either<T>}} infos 
+ * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
+ */
+function checkDuplicateUUIDs(infos, makeErrorMessage) {
+    // First, create a map from UUIDs to questions that use them
+    const uuids = Object.entries(infos).reduce((map, [id, info]) => {
+        let ids = map.get(info.data.uuid);
+        if (!ids) {
+            ids = [];
+            map.set(info.data.uuid, ids);
+        }
+        ids.push(id);
+        return map;
+    }, /** @type {Map<string, string[]>} */ (new Map()));
 
+    // Do a second pass to add errors for things with duplicate IDs
+    uuids.forEach((ids, uuid) => {
+        if (ids.length === 1) {
+            // Only one question uses this UUID
+            return;
+        }
+        ids.forEach(id => {
+            const otherIds = ids.filter(other => other !== id);
+            either.addError(infos[id], makeErrorMessage(uuid, otherIds));
+        });
+    });
+}
+
+/**
+ * @param {string} courseDirectory 
+ */
+module.exports.loadQuestions = async function(courseDirectory) {
+    const questionsPath = path.join(courseDirectory, 'questions');
+    /** @type {{ [qid: string]: Either<Question> }} */
+    let questions = {};
+    questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, 'questionOptions');
+    checkDuplicateUUIDs(questions, (uuid, ids) => `UUID ${uuid} is used in other questions: ${ids.join(', ')}`);
+    return questions;
 }
