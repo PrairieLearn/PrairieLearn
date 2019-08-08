@@ -5,6 +5,8 @@
 
   * Add UUIDs to cron job logs for better debugging (Matt West).
 
+  * Add report of unsuccessful cron jobs (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Fix dead letter cron job for `async` v3 (Matt West).

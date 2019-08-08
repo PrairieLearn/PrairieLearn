@@ -31,6 +31,11 @@ module.exports = {
        debug(`init()`);
         const jobs = [
             {
+                name: 'sendUnfinishedCronWarnings',
+                module: require('./sendUnfinishedCronWarnings'),
+                intervalSec: 'daily',
+            },
+            {
                 name: 'autoFinishExams',
                 module: require('./autoFinishExams'),
                 intervalSec: config.cronIntervalAutoFinishExamsSec,
