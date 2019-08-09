@@ -146,7 +146,7 @@ describe('course database', () => {
 
     it('errors if two UUIDs are found in malformed file', async () => {
       await withTempFile(async (file) => {
-        const json = { uuid: 'bar' };
+        const json = `{{malformed, "uuid":"${UUID}","uuid": "${UUID}"}`;
         await fs.writeJson(file, json);
         const result = await courseDb.loadInfoFile(file);
         assert.isTrue(infofile.hasErrors(result));
