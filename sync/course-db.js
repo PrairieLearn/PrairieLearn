@@ -358,6 +358,7 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 /**
  * @template T
  * @param {string} filepath
+ * @param {object} [schema]
  * @returns {Promise<InfoFile<T>>} 
  */
 module.exports.loadInfoFile = async function(filepath, schema) {
@@ -395,6 +396,14 @@ module.exports.loadInfoFile = async function(filepath, schema) {
             return infofile.makeError('UUID is not a valid v4 UUID');
         }
 
+        if (!schema) {
+            // Skip schema validation, just return the data
+            return {
+                uuid: json.uuid,
+                data: json,
+            };
+        }
+
         // Validate file against schema
         const validate = ajv.compile(schema);
         try {
@@ -414,14 +423,16 @@ module.exports.loadInfoFile = async function(filepath, schema) {
     } catch (err) {
         // The document was still valid JSON, but we may still be able to
         // extract a UUID from the raw files contents with a regex.
-
         const match = (contents || '').match(FILE_UUID_REGEX);
-        if (match.length === 0) {
+        if (!match) {
             return infofile.makeError('UUID not found in file');
         }
         if (match.length > 1) {
             return infofile.makeError('More that one UUID found in file');
         }
+
+        // Extract and store UUID
+        const uuid = match[0].match(UUID_REGEX)[0];
 
         // If we found a UUID, let's re-parse with jju to generate a better
         // error report for users.
@@ -429,7 +440,9 @@ module.exports.loadInfoFile = async function(filepath, schema) {
             // This should always throw
             jju.parse(contents, { mode: 'json' });
         } catch (e) {
-            return infofile.makeError(`Error parsing JSON (line ${e.row}, column ${e.column}): ${e.message}`);
+            const result = { uuid };
+            infofile.addError(result, `Error parsing JSON (line ${e.row}, column ${e.column}): ${e.message}`);
+            return result;
         }
 
         // If we got here, we must not have caught an error above, which is
