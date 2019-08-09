@@ -24,7 +24,37 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
+/**
+ * 
+ * @param {string} courseDir 
+ * @param {any} courseId 
+ * @param {any} logger 
+ */
+async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+    logger.info('Loading info.json file from git repository');
+    const courseData = await courseDB.loadFullCourseNew(courseDir);
+    const missingUuids = await courseDB.getPathsWithMissingUuids(courseData);
+    if (missingUuids.length > 0) {
+        // If anything is missing UUIDs, error and abort sync immediately
+        missingUuids.forEach(item => {
+            logger.info(`> ${item.path}`);
+            item.errors.forEach(line => logger.info(`* ${line}`));
+        });
+        logger.error('One or more UUIDs were missing or invalid; aborting sync.');
+        return;
+    }
+
+    // We can now begin syncing to the DB
+}
+
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
+    // Uncomment to use new process
+    /*
+    util.callbackify(async () => {
+        await syncDiskToSqlWithLock(courseDir, course_id, logger);
+    })(callback);
+    return;
+    */
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
     perf.start("sync");

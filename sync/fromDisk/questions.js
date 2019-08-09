@@ -109,19 +109,19 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
 module.exports.newSync = async function(courseId, courseData) {
     const validQuestions = [];
     const invalidQuestions = [];
-    Object.entries(courseData.questions).forEach(([qid, questionEither]) => {
-        if (either.hasErrors(questionEither)) {
+    Object.entries(courseData.questions).forEach(([qid, questionInfo]) => {
+        if (either.hasErrors(questionInfo)) {
             invalidQuestions.push({
                 qid,
-                sync_errors: either.stringifyErrors(questionEither),
+                sync_errors: either.stringifyErrors(questionInfo),
                 // In case we need to create a dummy question to hold errors
                 backup_uuid: uuidv4(),
             });
         } else {
-            const params = getParamsForQuestion(questionEither.data);
+            const params = getParamsForQuestion(questionInfo.data);
             validQuestions.push({
                 ...params,
-                sync_warnings: either.stringifyWarnings(questionEither) || undefined,
+                sync_warnings: either.stringifyWarnings(questionInfo) || undefined,
             });
         }
     });

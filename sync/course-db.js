@@ -356,6 +356,45 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 }
 
 /**
+ * @param {CourseData} courseData
+ * @returns {Promise<{ path: string, errors: string[] }[]>}
+ */
+module.exports.getPathsWithMissingUuids = async function(courseData) {
+    const paths = [];
+    if (!infofile.hasUuid(courseData.course)) {
+        paths.push({
+            path: 'infoCourse.json',
+            errors: courseData.course.errors,
+        });
+    }
+    Object.entries(courseData.questions).forEach(([qid, questionInfo]) => {
+        if (!infofile.hasUuid(questionInfo)) {
+            paths.push({
+                path: path.join('questions', qid, 'info.json'),
+                errors: questionInfo.errors,
+            });
+        }
+    });
+    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceInfo]) => {
+        if (!infofile.hasUuid(courseInstanceInfo.courseInstance)) {
+            paths.push({
+                path: path.join('courseInstances', ciid, 'infoCourseInstance.json'),
+                errors: courseInstanceInfo.courseInstance.errors,
+            });
+        }
+        Object.entries(courseInstanceInfo.assessments).forEach(([tid, info]) => {
+            if (!infofile.hasUuid(info)) {
+                paths.push({
+                    path: path.join('courseInstance', ciid, 'assessments', tid, 'infoAssessment.json'),
+                    errors: info.errors,
+                });
+            }
+        })
+    });
+    return paths;
+}
+
+/**
  * @template T
  * @param {string} filepath
  * @param {object} [schema]

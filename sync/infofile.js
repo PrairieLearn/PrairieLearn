@@ -15,6 +15,15 @@
  * @param {InfoFile<T>} either
  * @returns {boolean}
  */
+module.exports.hasUuid = function(either) {
+    return !!either.uuid;
+}
+
+/**
+ * @template T
+ * @param {InfoFile<T>} either
+ * @returns {boolean}
+ */
 module.exports.hasErrors = function(either) {
     return !!(either.errors && either.errors.length > 0);
 }
