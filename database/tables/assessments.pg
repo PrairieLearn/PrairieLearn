@@ -1,6 +1,6 @@
 columns
     allow_issue_reporting: boolean default true
-    assessment_set_id: bigint not null
+    assessment_set_id: bigint
     auto_close: boolean default true
     config: jsonb
     constant_question_value: boolean default false
