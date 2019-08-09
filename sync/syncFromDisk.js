@@ -29,7 +29,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
     logger.info("Loading info.json files from git repository...");
     perf.start("sync");
     perf.start("loadFullCourse");
-    courseDB.loadFullCourse(courseDir, logger, function(err, course) {
+    courseDB.loadFullCourse(courseDir, logger, function(err, course, newCourse) {
         perf.end("loadFullCourse");
         if (ERR(err, callback)) return;
         logger.info("Successfully loaded all info.json files");

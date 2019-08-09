@@ -1,10 +1,15 @@
+// @ts-check
 const _ = require('lodash');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const uuidv4 = require('uuid/v4');
 
-const logger = require('../../lib/logger');
+const either = require('../infofile');
 const perf = require('../performance')('question');
 
+/**
+ * @param {import('../course-db').Question} q
+ */
 function getParamsForQuestion(q) {
     const { qid } = q;
 
@@ -68,8 +73,6 @@ module.exports.syncSingleQuestion = async function(courseDir, questionInfo, jobL
 
 module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
     callbackify(async () => {
-        logger.debug('Syncing questions');
-
         // Check for duplicate UUIDs within this course's questions
         _(questionDB)
             .groupBy('uuid')
@@ -97,4 +100,47 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             questionDB[idMapping.qid].id = idMapping.id;
         });
     })(callback);
+}
+
+/**
+ * @param {any} courseId
+ * @param {import('../course-db').CourseData} courseData
+ */
+module.exports.newSync = async function(courseId, courseData) {
+    const validQuestions = [];
+    const invalidQuestions = [];
+    Object.entries(courseData.questions).forEach(([qid, questionEither]) => {
+        if (either.hasErrors(questionEither)) {
+            invalidQuestions.push({
+                qid,
+                sync_errors: either.stringifyErrors(questionEither),
+                // In case we need to create a dummy question to hold errors
+                backup_uuid: uuidv4(),
+            });
+        } else {
+            const params = getParamsForQuestion(questionEither.data);
+            validQuestions.push({
+                ...params,
+                sync_warnings: either.stringifyWarnings(questionEither) || undefined,
+            });
+        }
+    });
+
+    const syncQuestionsParams = [
+        JSON.stringify(validQuestions),
+        JSON.stringify(invalidQuestions),
+        courseId,
+    ];
+
+    perf.start('syncQuestionsSproc');
+    const syncQuestionsResult = await sqldb.callOneRowAsync('sync_questions_new', syncQuestionsParams);
+    perf.end('syncQuestionsSproc');
+
+    // Associate the new IDs with their respective questions; future
+    // states of the sync process will need these
+    /** @type {{ id: any, qid: string }[]} */
+    const newQuestions = syncQuestionsResult.rows[0].new_questions_json;
+    newQuestions.forEach((idMapping) => {
+        courseData.questions[idMapping.qid].data.id = idMapping.id;
+    });
 }

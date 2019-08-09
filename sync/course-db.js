@@ -6,10 +6,17 @@ const fs = require('fs-extra');
 const util = require('util');
 const async = require('async');
 const moment = require('moment');
-const schemas = require('../schemas');
-const either = require('./either');
+const jju = require('jju');
+const Ajv = require('ajv');
 
+const schemas = require('../schemas');
+const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
+
+// We use a single global instance so that schemas aren't recompiled every time they're used
+const ajv = new Ajv({ schemaId: 'auto' });
+// @ts-ignore
+ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
 
 const DEFAULT_QUESTION_INFO = {
     type: 'Calculation',
@@ -66,12 +73,14 @@ const DEFAULT_TAGS = [
     {'name': 'Fa21', 'color': 'gray1'},
 ];
 
-/**
+// For testing if a string is a v4 UUID
+const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+// For finding all v4 UUIDs in a string/file
+const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
+
+/** 
  * @template T
- * @typedef {object} Either Contains either an error or data; data may include warnings.
- * @property {string[]} [errors]
- * @property {string[]} [warnings]
- * @property {T} [data]
+ * @typedef {import('./infofile').InfoFile<T>} InfoFile<T>
  */
 
 /**
@@ -218,6 +227,8 @@ const DEFAULT_TAGS = [
 
  /**
   * @typedef {Object} Question
+  * @property {any} id
+  * @property {string} qid
   * @property {string} uuid
   * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
   * @property {string} title
@@ -236,14 +247,14 @@ const DEFAULT_TAGS = [
 
 /**
  * @typedef {object} CourseInstanceData
- * @property {Either<CourseInstance>} courseInstance
- * @property {{ [tid: string]: Either<Assessment> }} assessments
+ * @property {InfoFile<CourseInstance>} courseInstance
+ * @property {{ [tid: string]: InfoFile<Assessment> }} assessments
  */
 
 /**
  * @typedef {object} CourseData
- * @property {Either<Course>} course
- * @property {{ [qid: string]: Either<Question> }} questions
+ * @property {InfoFile<Course>} course
+ * @property {{ [qid: string]: InfoFile<Question> }} questions
  * @property {{ [ciid: string]: CourseInstanceData }} courseInstances
  */
 
@@ -256,8 +267,8 @@ module.exports.loadSingleQuestion = async function(courseDir, qid) {
     const result = await loadAndValidateJsonNew(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     // TODO: once we have error/warning handling elsewhere in the stack,
     // rewrite to just propagate the Either directly instead of throwing here.
-    if (either.hasErrors(result)) {
-        throw new Error(either.stringifyErrors(result));
+    if (infofile.hasErrors(result)) {
+        throw new Error(infofile.stringifyErrors(result));
     }
     return result.data;
 };
@@ -265,30 +276,31 @@ module.exports.loadSingleQuestion = async function(courseDir, qid) {
 /**
  * TODO: Remove `logger` param when we do later refactoring.
  * @param {string} courseDir
+ * @param {(err: Error | null | undefined, course?: any, newCourse?: CourseData) => void} callback
  */
 module.exports.loadFullCourse = function(courseDir, logger, callback) {
     util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
         if (ERR(err, callback)) return;
 
         // First, scan through everything to check for errors, and if we find one, "throw" it
-        if (either.hasErrors(courseData.course)) {
-            return callback(new Error(either.stringifyErrors(courseData.course)));
+        if (infofile.hasErrors(courseData.course)) {
+            return callback(new Error(infofile.stringifyErrors(courseData.course)));
         }
         for (const qid in courseData.questions) {
-            if (either.hasErrors(courseData.questions[qid])) {
-                return callback(new Error(either.stringifyErrors(courseData.questions[qid])));
+            if (infofile.hasErrors(courseData.questions[qid])) {
+                return callback(new Error(infofile.stringifyErrors(courseData.questions[qid])));
             }
         }
         for (const ciid in courseData.courseInstances) {
-            if (either.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
-                return callback(new Error(either.stringifyErrors(courseData.courseInstances[ciid].courseInstance)));
+            if (infofile.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
+                return callback(new Error(infofile.stringifyErrors(courseData.courseInstances[ciid].courseInstance)));
             }
         }
         for (const ciid in courseData.courseInstances) {
             const courseInstance = courseData.courseInstances[ciid];
             for (const tid in courseInstance.assessments) {
-                if (either.hasErrors(courseInstance.assessments[tid])) {
-                    return callback(new Error(either.stringifyErrors(courseInstance.assessments[tid])));
+                if (infofile.hasErrors(courseInstance.assessments[tid])) {
+                    return callback(new Error(infofile.stringifyErrors(courseInstance.assessments[tid])));
                 }
             }
         }
@@ -313,11 +325,9 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
             questionDB: questions,
             courseInstanceDB: courseInstances,
         };
-        callback(null, course);
+        callback(null, course, courseData);
     });
 };
-
-
 
 /**
  * @param {string} courseDir
@@ -346,65 +356,143 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 }
 
 /**
+ * @template T
+ * @param {string} filepath
+ * @returns {Promise<InfoFile<T>>} 
+ */
+module.exports.loadInfoFile = async function(filepath, schema) {
+    let contents;
+    try {
+        contents = await fs.readFile(filepath, 'utf-8');
+    } catch (err) {
+        if (err.code === 'ENOTDIR' && err.path === filepath) {
+            // In a previous version of this code, we'd pre-filter
+            // all files in the parent directory to remove anything
+            // that may have accidentally slipped in, like .DS_Store.
+            // However, that resulted in a huge number of system calls
+            // that got really slow for large directories. Now, we'll
+            // just blindly try to read a file from the directory and assume
+            // that if we see ENOTDIR, that means the directory was not
+            // in fact a directory.
+            return null;
+        } 
+
+        // If it wasn't a missing file, this is another error. Propagate it to
+        // the caller.
+        return infofile.makeError(err.message);
+    }
+
+    try {
+        // jju is about 5x slower than standard JSON.parse. In the average
+        // case, we'll have valid JSON, so we can take the fast path. If we
+        // fail to parse, we'll take the hit and reparse with jju to generate
+        // a better error report for users.
+        const json = JSON.parse(contents);
+        if (!json.uuid) {
+            return infofile.makeError('UUID is missing');
+        }
+        if (!UUID_REGEX.test(json.uuid)) {
+            return infofile.makeError('UUID is not a valid v4 UUID');
+        }
+
+        // Validate file against schema
+        const validate = ajv.compile(schema);
+        try {
+            const valid = validate(json);
+            if (!valid) {
+                const result = { uuid: json.uuid };
+                infofile.addError(result, ajv.errorsText(validate.errors));
+                return result;
+            }
+            return {
+                uuid: json.uuid,
+                data: json,
+            };
+        } catch (err) {
+            return infofile.makeError(err.message);
+        }
+    } catch (err) {
+        // The document was still valid JSON, but we may still be able to
+        // extract a UUID from the raw files contents with a regex.
+
+        const match = (contents || '').match(FILE_UUID_REGEX);
+        if (match.length === 0) {
+            return infofile.makeError('UUID not found in file');
+        }
+        if (match.length > 1) {
+            return infofile.makeError('More that one UUID found in file');
+        }
+
+        // If we found a UUID, let's re-parse with jju to generate a better
+        // error report for users.
+        try {
+            // This should always throw
+            jju.parse(contents, { mode: 'json' });
+        } catch (e) {
+            return infofile.makeError(`Error parsing JSON (line ${e.row}, column ${e.column}): ${e.message}`);
+        }
+
+        // If we got here, we must not have caught an error above, which is
+        // completely unexpected. For safety, throw an error to abort sync.
+        throw new Error(`Expected file ${filepath} to have invalid JSON, but parsing succeeded.`);
+    }
+}
+
+/**
  * @param {string} courseDirectory
- * @returns {Promise<Either<Course>>}
+ * @returns {Promise<InfoFile<Course>>}
  */
 module.exports.loadCourseInfo = async function(courseDirectory) {
-    return new Promise((resolve) => {
-        const infoCoursePath = path.join(courseDirectory, 'infoCourse.json');
-        jsonLoad.readInfoJSON(infoCoursePath, schemas.infoCourse, function(err, info) {
-            if (err) {
-                resolve({ errors:  [err.message] });
-                return;
-            }
+    const infoCoursePath = path.join(courseDirectory, 'infoCourse.json');
+    const loadedData = await module.exports.loadInfoFile(infoCoursePath, schemas.infoCourse);
+    if (infofile.hasErrors(loadedData)) {
+        // We'll only have an error if we couldn't parse JSON data; abort
+        return loadedData;
+    }
 
-            const warnings = [];
+    const info = loadedData.data;
 
-            /** @type {AssessmentSet[]} */
-            const assessmentSets = info.assessmentSets || [];
-            DEFAULT_ASSESSMENT_SETS.forEach(aset => {
-                if (assessmentSets.find(a => a.name === aset.name)) {
-                    warnings.push(`Default assessmentSet "${aset.name}" should not be included in infoCourse.json`);
-                } else {
-                    assessmentSets.push(aset);
-                }
-            });
-
-            /** @type {Tag[]} */
-            const tags = info.tags || [];
-            DEFAULT_TAGS.forEach(tag => {
-                if (tags.find(t => t.name === tag.name)) {
-                    warnings.push(`Default tag "${tag.name}" should not be included in infoCourse.json`);
-                } else {
-                    tags.push(tag);
-                }
-            });
-
-            const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
-                && info.title === 'Example Course'
-                && info.name === 'XC 101';
-
-            const course = {
-                uuid: info.uuid.toLowerCase(),
-                path: courseDirectory,
-                name: info.name,
-                title: info.title,
-                timezone: info.timezone,
-                topics: info.topics,
-                assessmentSets,
-                tags,
-                options: {
-                    useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
-                    isExampleCourse,
-                },
-            };
-
-            resolve({
-                data: course,
-                warnings,
-            });
-        });
+    /** @type {AssessmentSet[]} */
+    const assessmentSets = info.assessmentSets || [];
+    DEFAULT_ASSESSMENT_SETS.forEach(aset => {
+        if (assessmentSets.find(a => a.name === aset.name)) {
+            infofile.addWarning(loadedData, `Default assessmentSet "${aset.name}" should not be included in infoCourse.json`);
+        } else {
+            assessmentSets.push(aset);
+        }
     });
+
+    /** @type {Tag[]} */
+    const tags = info.tags || [];
+    DEFAULT_TAGS.forEach(tag => {
+        if (tags.find(t => t.name === tag.name)) {
+            infofile.addWarning(loadedData, `Default tag "${tag.name}" should not be included in infoCourse.json`);
+        } else {
+            tags.push(tag);
+        }
+    });
+
+    const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
+        && info.title === 'Example Course'
+        && info.name === 'XC 101';
+
+    const course = {
+        uuid: info.uuid.toLowerCase(),
+        path: courseDirectory,
+        name: info.name,
+        title: info.title,
+        timezone: info.timezone,
+        topics: info.topics,
+        assessmentSets,
+        tags,
+        options: {
+            useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+            isExampleCourse,
+        },
+    };
+
+    loadedData.data = course;
+    return loadedData;
 }
 
 /**
@@ -415,37 +503,28 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
  * @param {any} defaults 
  * @param {any} schema 
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
- * @returns {Promise<Either<T>>}
+ * @returns {Promise<InfoFile<T>>}
  */
 async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, validate) {
-    let json;
-    try {
-        json = await jsonLoad.readInfoJSONAsync(jsonPath, schema);
-    } catch (err) {
-        if (err && err.code && err.path && (err.code === 'ENOTDIR') && err.path === jsonPath) {
-            // In a previous version of this code, we'd pre-filter
-            // all files in the parent directory to remove anything
-            // that may have accidentally slipped in, like .DS_Store.
-            // However, that resulted in a huge number of system calls
-            // that got really slow for large directories. Now, we'll
-            // just blindly try to read a file from the directory and assume
-            // that if we see ENOTDIR, that means the directory was not
-            // in fact a directory.
-            return undefined;
-        }
-        return either.makeError(err.message);
+    const loadedJson = await module.exports.loadInfoFile(jsonPath, schema);
+    if (loadedJson === null) {
+        // This should only occur if we looked for a file in a non-directory,
+        // as would happen if there was a .DS_Store file.
+        return null;
     }
-    json[idName] = id;
+    if (infofile.hasErrors(loadedJson)) {
+        return loadedJson;
+    }
+    loadedJson.data[idName] = id;
 
-    const validationResult = await validate(json);
+    const validationResult = await validate(loadedJson.data);
     if (validationResult.errors.length > 0) {
         return { errors: validationResult.errors };
     }
 
-    return {
-        data: _.defaults(json, defaults),
-        warnings: validationResult.warnings,
-    }
+    loadedJson.data = _.defaults(loadedJson.data, defaults);
+    loadedJson.warnings = validationResult.warnings;
+    return loadedJson;
 }
 
 /**
@@ -457,12 +536,10 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, va
  * @param {any} defaultInfo
  * @param {object} schema
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
- * @returns {Promise<{ [id: string]: Either<T> }>}
+ * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
 async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, validate) {
-    // `cache` is an object with which we can cache information derived from course info
-    // in between successive calls to `checkInfoValid`
-    const infos = /** @type {{ [id: string]: Either<T> }} */ ({});
+    const infos = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
     const files = await fs.readdir(directory);
 
     await async.each(files, async function(dir) {
@@ -478,7 +555,7 @@ async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo
 
 /**
  * @template {{ uuid: string }} T
- * @param {{ [id: string]: Either<T>}} infos 
+ * @param {{ [id: string]: InfoFile<T>}} infos 
  * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
  */
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
@@ -505,7 +582,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
         }
         ids.forEach(id => {
             const otherIds = ids.filter(other => other !== id);
-            either.addError(infos[id], makeErrorMessage(uuid, otherIds));
+            infofile.addError(infos[id], makeErrorMessage(uuid, otherIds));
         });
     });
 }
@@ -594,7 +671,7 @@ async function validateCourseInstance(courseInstance) {
  */
 module.exports.loadQuestions = async function(courseDirectory) {
     const questionsPath = path.join(courseDirectory, 'questions');
-    /** @type {{ [qid: string]: Either<Question> }} */
+    /** @type {{ [qid: string]: InfoFile<Question> }} */
     const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID ${uuid} is used in other questions: ${ids.join(', ')}`);
     return questions;
@@ -607,7 +684,7 @@ module.exports.loadQuestions = async function(courseDirectory) {
  */
 module.exports.loadCourseInstances = async function(courseDirectory) {
     const courseInstancesPath = path.join(courseDirectory, 'courseInstances');
-    /** @type {{ [ciid: string]: Either<CourseInstance> }} */
+    /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
     const courseInstances = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
     checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID ${uuid} is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
@@ -621,7 +698,7 @@ module.exports.loadCourseInstances = async function(courseDirectory) {
  */
 module.exports.loadAssessments = async function(courseDirectory, courseInstance) {
     const assessmentsPath = path.join(courseDirectory, 'courseInstances', courseInstance, 'assessments');
-    /** @type {{ [tid: string]: Either<Assessment> }} */
+    /** @type {{ [tid: string]: InfoFile<Assessment> }} */
     const assessments = await loadInfoForDirectory('tid', assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments: ${ids.join(', ')}`);
     return assessments;

@@ -1,15 +1,18 @@
 // @ts-check
 /**
+ * Represents the result of attempting to load and validate an info file. May
+ * contain any combination of errors, warnings, data, and a UUID.
  * @template T
- * @typedef {object} Either Contains either an error or data; data may include warnings.
+ * @typedef {object} InfoFile
  * @property {string[]} [errors]
  * @property {string[]} [warnings]
  * @property {T} [data]
+ * @property {string} [uuid]
  */
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  * @returns {boolean}
  */
 module.exports.hasErrors = function(either) {
@@ -18,7 +21,7 @@ module.exports.hasErrors = function(either) {
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  * @returns {boolean}
  */
 module.exports.hasWarnings = function(either) {
@@ -27,7 +30,7 @@ module.exports.hasWarnings = function(either) {
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  */
 module.exports.stringifyErrors = function(either) {
     if (!this.hasErrors(either)) return '';
@@ -36,7 +39,7 @@ module.exports.stringifyErrors = function(either) {
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  */
 module.exports.stringifyWarnings = function(either) {
     if (!this.hasErrors(either)) return '';
@@ -45,7 +48,7 @@ module.exports.stringifyWarnings = function(either) {
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  * @param {string} error
  */
 module.exports.addError = function(either, error) {
@@ -57,7 +60,7 @@ module.exports.addError = function(either, error) {
 
 /**
  * @template T
- * @param {Either<T>} either
+ * @param {InfoFile<T>} either
  * @param {string} warning
  */
 module.exports.addWarning = function(either, warning) {
@@ -70,7 +73,7 @@ module.exports.addWarning = function(either, warning) {
 /**
  * @template T
  * @param {string} error
- * @returns {Either<T>}
+ * @returns {InfoFile<T>}
  */
 module.exports.makeError = function(error) {
     return { errors: [error] };
@@ -79,7 +82,7 @@ module.exports.makeError = function(error) {
 /**
  * @template T
  * @param {string} warning
- * @returns {Either<T>}
+ * @returns {InfoFile<T>}
  */
 module.exports.makeWarning = function(warning) {
     return { warnings: [warning] };

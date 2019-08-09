@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const courseDb = require('../../sync/course-db');
-const either = require('../../sync/either');
+const infofile = require('../../sync/infofile');
 
 /**
  * @param {(dir: string) => Promise<void>} callback 
@@ -77,8 +77,8 @@ describe('course database', () => {
       await withTempDirectory(async (dir) => {
         await writeCourse(dir, getCourse());
         const result = await courseDb.loadCourseInfo(dir);
-        assert.isFalse(either.hasErrors(result));
-        assert.isFalse(either.hasWarnings(result));
+        assert.isFalse(infofile.hasErrors(result));
+        assert.isFalse(infofile.hasWarnings(result));
         assert.isOk(result.data);
       });
     });
@@ -94,8 +94,8 @@ describe('course database', () => {
         });
         await writeCourse(dir, course);
         const result = await courseDb.loadCourseInfo(dir);
-        assert.isFalse(either.hasErrors(result));
-        assert.isTrue(either.hasWarnings(result));
+        assert.isFalse(infofile.hasErrors(result));
+        assert.isTrue(infofile.hasWarnings(result));
         assert.include(result.warnings, 'Default assessmentSet "Homework" should not be included in infoCourse.json');
         assert.isOk(result.data);
       });
@@ -111,10 +111,10 @@ describe('course database', () => {
         await writeQuestion(dir, 'question2', getAlternativeQuestion());
         const result = await courseDb.loadQuestions(dir);
         assert.equal(Object.keys(result).length, 2);
-        assert.isFalse(either.hasErrors(result['question1']));
-        assert.isFalse(either.hasWarnings(result['question1']));
-        assert.isFalse(either.hasErrors(result['question2']));
-        assert.isFalse(either.hasWarnings(result['question2']));
+        assert.isFalse(infofile.hasErrors(result['question1']));
+        assert.isFalse(infofile.hasWarnings(result['question1']));
+        assert.isFalse(infofile.hasErrors(result['question2']));
+        assert.isFalse(infofile.hasWarnings(result['question2']));
         assert.equal(result['question1'].data.uuid, question1.uuid);
         assert.equal(result['question2'].data.uuid, question2.uuid);
       });
@@ -126,15 +126,15 @@ describe('course database', () => {
         await writeQuestion(dir, 'question2', getQuestion());
         await writeQuestion(dir, 'question3', getAlternativeQuestion());
         const result = await courseDb.loadQuestions(dir);
-        assert.isFalse(either.hasErrors(result));
-        assert.isFalse(either.hasWarnings(result));
+        assert.isFalse(infofile.hasErrors(result));
+        assert.isFalse(infofile.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
-        assert.match(either.stringifyErrors(result['question1']), /UUID.*is used in other questions/);
-        assert.isFalse(either.hasWarnings(result['question1']));
-        assert.match(either.stringifyErrors(result['question2']), /UUID.*is used in other questions/);
-        assert.isFalse(either.hasWarnings(result['question2']));
-        assert.isFalse(either.hasErrors(result['question3']));
-        assert.isFalse(either.hasWarnings(result['question3']));
+        assert.match(infofile.stringifyErrors(result['question1']), /UUID.*is used in other questions/);
+        assert.isFalse(infofile.hasWarnings(result['question1']));
+        assert.match(infofile.stringifyErrors(result['question2']), /UUID.*is used in other questions/);
+        assert.isFalse(infofile.hasWarnings(result['question2']));
+        assert.isFalse(infofile.hasErrors(result['question3']));
+        assert.isFalse(infofile.hasWarnings(result['question3']));
       });
     });
   });
