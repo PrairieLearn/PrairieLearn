@@ -13,14 +13,12 @@ module.exports.run = (callback) => {
     if (!opsbot.canSendMessages()) return callback(null);
     sqldb.query(sql.select_unfinished_cron_jobs, [], (err, result) => {
         if (ERR(err, callback)) return;
-        let msg;
-        if (result.rowCount <= 0) {
-            msg = `_All cron jobs successfully finished_\n`;
-        } else {
-            msg = `_Unfinished cron jobs:_\n`;
-            for (const row of result.rows) {
-                msg += `    *${row.name}:* started at ${row.formatted_started_at} but not finished\n`;
-            }
+
+        if (result.rowCount <= 0) return callback(null);
+
+        let msg = `_Unfinished cron jobs:_\n`;
+        for (const row of result.rows) {
+            msg += `    *${row.name}:* started at ${row.formatted_started_at} but not finished\n`;
         }
 
         opsbot.sendMessage(msg, (err, res, body) => {
