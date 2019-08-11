@@ -151,6 +151,7 @@ module.exports = {
             'sync_single_question.sql',
             'sync_assessment_sets_delete_unused.sql',
             'sync_questions_new.sql',
+            'sync_course_instances_new.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

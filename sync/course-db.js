@@ -596,7 +596,17 @@ async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, va
  */
 async function loadInfoForDirectory(coursePath, directory, infoFilename, defaultInfo, schema, validate) {
     const infos = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
-    const files = await fs.readdir(path.join(coursePath, directory));
+    let files;
+    try {
+        files = await fs.readdir(path.join(coursePath, directory));
+    } catch (e) {
+        if (e.code === 'ENOENT') {
+            // Missing directory; fail gracefully and return empty collection
+            return infos;
+        }
+        // Some other error, permissions perhaps. Throw to abort sync.
+        throw e;
+    }
 
     await async.each(files, async function(dir) {
         const infoFile = path.join(directory, dir, infoFilename);
@@ -610,7 +620,7 @@ async function loadInfoForDirectory(coursePath, directory, infoFilename, default
 }
 
 /**
- * @template {{ uuid: string }} T
+ * @template T
  * @param {{ [id: string]: InfoFile<T>}} infos 
  * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
  */
@@ -621,10 +631,10 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
             // Either missing or error validating; skip.
             return map;
         }
-        let ids = map.get(info.data.uuid);
+        let ids = map.get(info.uuid);
         if (!ids) {
             ids = [];
-            map.set(info.data.uuid, ids);
+            map.set(info.uuid, ids);
         }
         ids.push(id);
         return map;
@@ -756,6 +766,6 @@ module.exports.loadAssessments = async function(courseDirectory, courseInstance)
     const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
     const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
-    checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments: ${ids.join(', ')}`);
+    checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;
 }

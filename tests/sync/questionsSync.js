@@ -185,7 +185,7 @@ describe('Question syncing', () => {
   });
   */
 
-  it('records warnings if same UUID is used in multiple questions', async () => {
+  it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
