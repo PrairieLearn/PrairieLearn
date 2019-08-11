@@ -3,7 +3,7 @@ const util = require('./util');
 const helperDb = require('../helperDb');
 
 describe('Initial Sync', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 

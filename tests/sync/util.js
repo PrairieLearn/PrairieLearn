@@ -326,6 +326,10 @@ const courseInstances = {
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
+      allowAccess: [{
+        startDate: '2019-01-14T00:00:00',
+        endDate: '2019-05-15T00:00:00',
+      }],
       userRoles: {
         'user1@illinois.edu': 'Instructor',
         'user2@illinois.edu': 'TA',

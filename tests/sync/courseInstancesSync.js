@@ -10,9 +10,17 @@ const helperDb = require('../helperDb');
 const { assert } = chai;
 
 describe('Course instance syncing', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
+
+  it('syncs access rules', async () => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.equal(syncedAccessRules.length, courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.length);
+  });
 
   it('soft-deletes and restores course instnaces', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
@@ -27,9 +35,6 @@ describe('Course instance syncing', () => {
     const deletedSyncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
     assert.isOk(deletedSyncedCourseInstance);
     assert.isNotNull(deletedSyncedCourseInstance.deleted_at);
-    let syncedCourseInstanceAccessRules = await util.dumpTable('course_instance_access_rules');
-    const syncedRulesForCourse = syncedCourseInstanceAccessRules.filter(ciar => ciar.course_instance_id === originalSyncedCourseInstance.id);
-    assert.lengthOf(syncedRulesForCourse, 0);
 
     courseData.courseInstances[util.COURSE_INSTANCE_ID] = originalCourseInstance;
     await util.overwriteAndSyncCourseData(courseData, courseDir);

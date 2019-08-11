@@ -10,7 +10,7 @@ const helperDb = require('../helperDb');
 const { assert } = chai;
 
 describe('Question syncing', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 

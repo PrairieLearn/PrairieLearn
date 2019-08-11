@@ -5,6 +5,9 @@ CREATE OR REPLACE FUNCTION
         OUT course_instance_ids JSONB
     )
 AS $$
+DECLARE
+    valid_course_instance record;
+    syncing_course_instance_id bigint;
 BEGIN
     -- Move all our data into a temporary table so it's easier to work with
     DROP TABLE IF EXISTS disk_course_instances;
@@ -114,6 +117,54 @@ BEGIN
         ci.short_name = dci.short_name
         AND ci.course_id = syncing_course_id
         AND (dci.errors IS NULL OR dci.errors = '');
+
+    -- Now, loop over all valid course instances and sync access rules for them
+    FOR valid_course_instance IN (
+        SELECT short_name, data
+        FROM disk_course_instances AS dci
+        WHERE (dci.errors IS NULL OR dci.errors = '')
+    ) LOOP
+        SELECT ci.id INTO syncing_course_instance_id
+        FROM course_instances AS ci
+        WHERE
+            ci.short_name = valid_course_instance.short_name
+            AND ci.course_id = syncing_course_id;
+
+        INSERT INTO course_instance_access_rules (
+            course_instance_id,
+            number,
+            role,
+            uids,
+            start_date,
+            end_date,
+            institution
+        ) SELECT
+            syncing_course_instance_id,
+            number,
+            (access_rule->>'role')::enum_role,
+            CASE
+                WHEN access_rule->'uids' = null::JSONB THEN NULL
+                ELSE (SELECT ARRAY_AGG(uids)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(access_rule->>'uids', '[]')::jsonb) uids)::text[]
+            END,
+            input_date(access_rule->>'start_date', valid_course_instance.data->>'display_timezone'),
+            input_date(access_rule->>'end_date', valid_course_instance.data->>'display_timezone'),
+            access_rule->>'institution'
+        FROM
+            JSONB_ARRAY_ELEMENTS(valid_course_instance.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
+        ON CONFLICT (number, course_instance_id) DO UPDATE
+        SET
+            role = EXCLUDED.role,
+            uids = EXCLUDED.uids,
+            start_date = EXCLUDED.start_date,
+            end_date = EXCLUDED.end_date,
+            institution = EXCLUDED.institution;
+
+        -- Delete excess access rules
+        DELETE FROM course_instance_access_rules
+        WHERE
+            course_instance_id = syncing_course_instance_id
+            AND number > JSONB_ARRAY_LENGTH(valid_course_instance.data->'access_rules');
+    END LOOP;
 
     -- Second pass: add errors where needed.
     UPDATE course_instances AS ci

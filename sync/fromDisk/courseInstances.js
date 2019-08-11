@@ -98,8 +98,6 @@ module.exports.syncNew = async function(courseId, courseData) {
         ]);
     });
 
-    console.log(courseInstanceParams);
-
     const params = [
         courseInstanceParams,
         courseId,
