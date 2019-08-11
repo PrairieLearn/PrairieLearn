@@ -51,8 +51,8 @@ module.exports.stringifyErrors = function(either) {
  * @param {InfoFile<T>} either
  */
 module.exports.stringifyWarnings = function(either) {
-    if (!this.hasErrors(either)) return '';
-    return either.errors.join('\n');
+    if (!this.hasWarnings(either)) return '';
+    return either.warnings.join('\n');
 }
 
 /**
@@ -70,6 +70,18 @@ module.exports.addError = function(either, error) {
 /**
  * @template T
  * @param {InfoFile<T>} either
+ * @param {string[]} errors
+ */
+module.exports.addErrors = function(either, errors) {
+    if (!this.hasErrors(either)) {
+        either.errors = [];
+    }
+    either.errors = either.errors.concat(errors);
+}
+
+/**
+ * @template T
+ * @param {InfoFile<T>} either
  * @param {string} warning
  */
 module.exports.addWarning = function(either, warning) {
@@ -77,6 +89,18 @@ module.exports.addWarning = function(either, warning) {
         either.warnings = [];
     }
     either.warnings.push(warning);
+}
+
+/**
+ * @template T
+ * @param {InfoFile<T>} either
+ * @param {string[]} warnings
+ */
+module.exports.addWarnings = function(either, warnings) {
+    if (!this.hasWarnings(either)) {
+        either.warnings = [];
+    }
+    either.warnings = either.warnings.concat(warnings);
 }
 
 /**

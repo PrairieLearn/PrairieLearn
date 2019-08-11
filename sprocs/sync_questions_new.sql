@@ -93,6 +93,17 @@ BEGIN
     INSERT INTO questions (qid, course_id)
     SELECT qid, syncing_course_id FROM qids_to_insert;
 
+    -- Finally, soft-delete rows with unwanted names
+    WITH qids_to_delete AS (
+        SELECT qid FROM questions WHERE deleted_at IS NULL
+        EXCEPT
+        SELECT qid FROM disk_questions
+    )
+    UPDATE questions
+    SET deleted_at = now()
+    FROM qids_to_delete
+    WHERE questions.qid = qids_to_delete.qid;
+
     -- At this point, there will be exactly one non-deleted row for all qids
     -- that we loaded from disk. It is now safe to update all those rows with
     -- the new information from disk (if we have any).

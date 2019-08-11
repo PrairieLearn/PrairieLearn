@@ -264,7 +264,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  */
 module.exports.loadSingleQuestion = async function(courseDir, qid) {
     const infoQuestionPath = path.join(courseDir, 'questions', qid, 'info.json');
-    const result = await loadAndValidateJsonNew(qid, 'qid', infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
+    const result = await loadAndValidateJsonNew(courseDir, infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     // TODO: once we have error/warning handling elsewhere in the stack,
     // rewrite to just propagate the Either directly instead of throwing here.
     if (infofile.hasErrors(result)) {
@@ -360,6 +360,7 @@ module.exports.loadFullCourseNew = async function(courseDir) {
  * @returns {Promise<{ path: string, errors: string[] }[]>}
  */
 module.exports.getPathsWithMissingUuids = async function(courseData) {
+    // TODO: this is probably unused, remove later if that ends up being the case
     const paths = [];
     if (!infofile.hasUuid(courseData.course)) {
         paths.push({
@@ -395,17 +396,22 @@ module.exports.getPathsWithMissingUuids = async function(courseData) {
 }
 
 /**
+ * Loads a JSON file at the path `path.join(coursePath, filePath). The
+ * path is passed as two separate paths so that we can avoid leaking the
+ * absolute path on disk to users.
  * @template T
- * @param {string} filepath
+ * @param {string} coursePath
+ * @param {string} filePath
  * @param {object} [schema]
  * @returns {Promise<InfoFile<T>>} 
  */
-module.exports.loadInfoFile = async function(filepath, schema) {
+module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
+    const absolutePath = path.join(coursePath, filePath);
     let contents;
     try {
-        contents = await fs.readFile(filepath, 'utf-8');
+        contents = await fs.readFile(absolutePath, 'utf-8');
     } catch (err) {
-        if (err.code === 'ENOTDIR' && err.path === filepath) {
+        if (err.code === 'ENOTDIR' && err.path === absolutePath) {
             // In a previous version of this code, we'd pre-filter
             // all files in the parent directory to remove anything
             // that may have accidentally slipped in, like .DS_Store.
@@ -419,7 +425,7 @@ module.exports.loadInfoFile = async function(filepath, schema) {
 
         // If it wasn't a missing file, this is another error. Propagate it to
         // the caller.
-        return infofile.makeError(err.message);
+        return infofile.makeError(`Error reading JSON file ${filePath}: ${err.code}`);
     }
 
     try {
@@ -486,7 +492,7 @@ module.exports.loadInfoFile = async function(filepath, schema) {
 
         // If we got here, we must not have caught an error above, which is
         // completely unexpected. For safety, throw an error to abort sync.
-        throw new Error(`Expected file ${filepath} to have invalid JSON, but parsing succeeded.`);
+        throw new Error(`Expected file ${absolutePath} to have invalid JSON, but parsing succeeded.`);
     }
 }
 
@@ -495,8 +501,7 @@ module.exports.loadInfoFile = async function(filepath, schema) {
  * @returns {Promise<InfoFile<Course>>}
  */
 module.exports.loadCourseInfo = async function(courseDirectory) {
-    const infoCoursePath = path.join(courseDirectory, 'infoCourse.json');
-    const loadedData = await module.exports.loadInfoFile(infoCoursePath, schemas.infoCourse);
+    const loadedData = await module.exports.loadInfoFile(courseDirectory, 'infoCourse.json', schemas.infoCourse);
     if (infofile.hasErrors(loadedData)) {
         // We'll only have an error if we couldn't parse JSON data; abort
         return loadedData;
@@ -549,16 +554,15 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
 /**
  * @template T
- * @param {string} id 
- * @param {string} idName 
- * @param {string} jsonPath 
+ * @param {string} coursePath
+ * @param {string} filePath 
  * @param {any} defaults 
  * @param {any} schema 
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, validate) {
-    const loadedJson = await module.exports.loadInfoFile(jsonPath, schema);
+async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, validate) {
+    const loadedJson = await module.exports.loadInfoFile(coursePath, filePath, schema);
     if (loadedJson === null) {
         // This should only occur if we looked for a file in a non-directory,
         // as would happen if there was a .DS_Store file.
@@ -567,36 +571,36 @@ async function loadAndValidateJsonNew(id, idName, jsonPath, defaults, schema, va
     if (infofile.hasErrors(loadedJson)) {
         return loadedJson;
     }
-    loadedJson.data[idName] = id;
 
     const validationResult = await validate(loadedJson.data);
     if (validationResult.errors.length > 0) {
-        return { errors: validationResult.errors };
+        infofile.addErrors(loadedJson, validationResult.errors);
+        return loadedJson;
     }
 
     loadedJson.data = _.defaults(loadedJson.data, defaults);
-    loadedJson.warnings = validationResult.warnings;
+    infofile.addWarnings(loadedJson, validationResult.warnings);
     return loadedJson;
 }
 
 /**
  * Loads and schema-validates all info files in a directory.
  * @template T
- * @param {"qid" | "ciid" | "tid"} idName
- * @param {string} directory
+ * @param {string} coursePath The path of the course being synced
+ * @param {string} directory The path of the directory relative to `coursePath`
  * @param {string} infoFilename
  * @param {any} defaultInfo
  * @param {object} schema
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
-async function loadInfoForDirectory(idName, directory, infoFilename, defaultInfo, schema, validate) {
+async function loadInfoForDirectory(coursePath, directory, infoFilename, defaultInfo, schema, validate) {
     const infos = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
-    const files = await fs.readdir(directory);
+    const files = await fs.readdir(path.join(coursePath, directory));
 
     await async.each(files, async function(dir) {
         const infoFile = path.join(directory, dir, infoFilename);
-        const info = await loadAndValidateJsonNew(dir, idName, infoFile, defaultInfo, schema, validate);
+        const info = await loadAndValidateJsonNew(coursePath, infoFile, defaultInfo, schema, validate);
         if (info) {
             infos[dir] = info;
         }
@@ -627,6 +631,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
     }, /** @type {Map<string, string[]>} */ (new Map()));
 
     // Do a second pass to add errors for things with duplicate IDs
+    // We also null out UUIDs for items where duplicates are found
     uuids.forEach((ids, uuid) => {
         if (ids.length === 1) {
             // Only one question uses this UUID
@@ -634,7 +639,8 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
         }
         ids.forEach(id => {
             const otherIds = ids.filter(other => other !== id);
-            infofile.addError(infos[id], makeErrorMessage(uuid, otherIds));
+            infofile.addWarning(infos[id], makeErrorMessage(uuid, otherIds));
+            infos[id].uuid = null;
         });
     });
 }
@@ -722,9 +728,8 @@ async function validateCourseInstance(courseInstance) {
  * @param {string} courseDirectory 
  */
 module.exports.loadQuestions = async function(courseDirectory) {
-    const questionsPath = path.join(courseDirectory, 'questions');
     /** @type {{ [qid: string]: InfoFile<Question> }} */
-    const questions = await loadInfoForDirectory('qid', questionsPath, 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
+    const questions = await loadInfoForDirectory(courseDirectory, 'questions', 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID ${uuid} is used in other questions: ${ids.join(', ')}`);
     return questions;
 }
@@ -735,9 +740,8 @@ module.exports.loadQuestions = async function(courseDirectory) {
  * @param {string} courseDirectory
  */
 module.exports.loadCourseInstances = async function(courseDirectory) {
-    const courseInstancesPath = path.join(courseDirectory, 'courseInstances');
     /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
-    const courseInstances = await loadInfoForDirectory('ciid', courseInstancesPath, 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
+    const courseInstances = await loadInfoForDirectory(courseDirectory, 'courseInstances', 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
     checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID ${uuid} is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
 }
@@ -749,9 +753,9 @@ module.exports.loadCourseInstances = async function(courseDirectory) {
  * @param {string} courseInstance
  */
 module.exports.loadAssessments = async function(courseDirectory, courseInstance) {
-    const assessmentsPath = path.join(courseDirectory, 'courseInstances', courseInstance, 'assessments');
+    const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
-    const assessments = await loadInfoForDirectory('tid', assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
+    const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments: ${ids.join(', ')}`);
     return assessments;
 }
