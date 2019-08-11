@@ -1,7 +1,15 @@
+// @ts-check
 const _ = require('lodash');
-const { callbackify } = require('util');
+const { callbackify, promisify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
+const infofile = require('../infofile');
+
+/**
+ * @param {any} courseInfo
+ * @param {any} courseInstanceDB
+ * @param {(err: Error | null | undefined) => void} callback
+ */
 module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
     callbackify(async () => {
         _(courseInstanceDB)
@@ -44,4 +52,35 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             courseInstanceDB[courseInstanceParam.short_name].courseInstanceId = newCourseInstanceIds[index];
         });
     })(callback);
+}
+
+/**
+ * @param {any} courseId
+ * @param {import('../course-db').CourseData} courseData
+ * @returns {Promise<{ [ciid: string]: any }>}
+ */
+module.exports.syncNew = async function(courseId, courseData) {
+    // Transform data into format expected by old function
+    const oldCourseInstances = {};
+    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
+        if (infofile.hasErrors(courseInstance.courseInstance)) {
+            // Skip it for now
+            // TODO: write errors to DB, don't delete broken instance
+            return;
+        }
+        oldCourseInstances[ciid] = courseInstance.courseInstance.data;
+    });
+
+    const courseInfo = {
+        courseId,
+        timezone: (courseData.course.data && courseData.course.data.timezone),
+    };
+    await promisify(module.exports.sync)(courseInfo, oldCourseInstances);
+
+    // Extract and return new IDs
+    const courseInstanceIds = {};
+    Object.entries(oldCourseInstances).forEach(([ciid, courseInstance]) => {
+        courseInstanceIds[ciid] = courseInstance.courseInstanceId;
+    });
+    return courseInstanceIds;
 }

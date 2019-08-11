@@ -45,16 +45,18 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     }
 
     // We can now begin syncing to the DB
+    await syncCourseInfo.syncNew(courseData, courseId);
+    const courseInstanceIds = await syncCourseInstances.syncNew(courseId, courseData);
+    await syncTopics.syncNew(courseId, courseData);
+    await syncQuestions.syncNew(courseId, courseData);
 }
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     // Uncomment to use new process
-    /*
     util.callbackify(async () => {
         await syncDiskToSqlWithLock(courseDir, course_id, logger);
     })(callback);
     return;
-    */
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
     perf.start("sync");

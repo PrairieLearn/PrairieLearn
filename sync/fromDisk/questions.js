@@ -1,17 +1,17 @@
 // @ts-check
 const _ = require('lodash');
-const { callbackify } = require('util');
+const { callbackify, promisify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const uuidv4 = require('uuid/v4');
 
-const either = require('../infofile');
+const infofile = require('../infofile');
 const perf = require('../performance')('question');
 
 /**
  * @param {import('../course-db').Question} q
  */
 function getParamsForQuestion(q) {
-    const { qid } = q;
+    if (!q) return null;
 
     let partialCredit;
     if (q.partialCredit != null) {
@@ -24,8 +24,6 @@ function getParamsForQuestion(q) {
         }
     }
     return {
-        uuid: q.uuid,
-        qid: qid,
         type: (q.type == 'v3') ? 'Freeform' : q.type,
         title: q.title,
         partial_credit: partialCredit,
@@ -71,6 +69,12 @@ module.exports.syncSingleQuestion = async function(courseDir, questionInfo, jobL
     await sqldb.callAsync('sync_single_question', params);
 }
 
+/**
+ * @param {any} courseInfo
+ * @param {any} questionDB
+ * @param {any} jobLogger
+ * @param {(err: Error | null | undefined) => void} callback
+ */
 module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
     callbackify(async () => {
         // Check for duplicate UUIDs within this course's questions
@@ -105,42 +109,32 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
 /**
  * @param {any} courseId
  * @param {import('../course-db').CourseData} courseData
+ * @returns {Promise<{ [qid: string]: any }>}
  */
-module.exports.newSync = async function(courseId, courseData) {
-    const validQuestions = [];
-    const invalidQuestions = [];
-    Object.entries(courseData.questions).forEach(([qid, questionInfo]) => {
-        if (either.hasErrors(questionInfo)) {
-            invalidQuestions.push({
-                qid,
-                sync_errors: either.stringifyErrors(questionInfo),
-                // In case we need to create a dummy question to hold errors
-                backup_uuid: uuidv4(),
-            });
-        } else {
-            const params = getParamsForQuestion(questionInfo.data);
-            validQuestions.push({
-                ...params,
-                sync_warnings: either.stringifyWarnings(questionInfo) || undefined,
-            });
-        }
+module.exports.syncNew = async function(courseId, courseData) {
+    const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+        return JSON.stringify([
+            qid,
+            question.uuid,
+            infofile.stringifyErrors(question),
+            infofile.stringifyWarnings(question),
+            getParamsForQuestion(question.data),
+        ]);
     });
 
-    const syncQuestionsParams = [
-        JSON.stringify(validQuestions),
-        JSON.stringify(invalidQuestions),
+    const params = [
+        questionParams,
         courseId,
     ];
+    
+    perf.start('syncQuestionsSprocNew');
+    const result = await sqldb.callOneRowAsync('sync_questions_new', params);
+    perf.end('syncQuestionsSprocNew');
 
-    perf.start('syncQuestionsSproc');
-    const syncQuestionsResult = await sqldb.callOneRowAsync('sync_questions_new', syncQuestionsParams);
-    perf.end('syncQuestionsSproc');
-
-    // Associate the new IDs with their respective questions; future
-    // states of the sync process will need these
-    /** @type {{ id: any, qid: string }[]} */
-    const newQuestions = syncQuestionsResult.rows[0].new_questions_json;
-    newQuestions.forEach((idMapping) => {
-        courseData.questions[idMapping.qid].data.id = idMapping.id;
-    });
+    /** @type {[string, any][]} */
+    const newQuestions = result.rows[0].new_questions_json;
+    return newQuestions.reduce((acc, [qid, id]) => {
+        acc[qid] = id;
+        return acc;
+    }, {});
 }

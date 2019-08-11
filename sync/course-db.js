@@ -480,7 +480,7 @@ module.exports.loadInfoFile = async function(filepath, schema) {
             jju.parse(contents, { mode: 'json' });
         } catch (e) {
             const result = { uuid };
-            infofile.addError(result, `Error parsing JSON (line ${e.row}, column ${e.column}): ${e.message}`);
+            infofile.addError(result, `Error parsing JSON: ${e.message}`);
             return result;
         }
 

@@ -1,6 +1,14 @@
-const { callbackify } = require('util');
+// @ts-check
+const { callbackify, promisify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
+const infofile = require('../infofile');
+
+/**
+ * @param {any} courseInfo
+ * @param {any} questionDB
+ * @param {(err: Error | null | undefined) => void} callback
+ */
 module.exports.sync = function(courseInfo, questionDB, callback) {
     callbackify(async () => {
         const topics = courseInfo.topics || [];
@@ -32,4 +40,33 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         ];
         await sqldb.callAsync('sync_topics', params);
     })(callback);
+}
+
+/**
+ * @param {import('../course-db').CourseData} courseData
+ */
+module.exports.syncNew = async function(courseId, courseData) {
+    if (infofile.hasErrors(courseData.course)) {
+        // Skip; no valid course from which to sync
+        return;
+    }
+
+    const courseInfo = {
+        courseId,
+        topics: courseData.course.data.topics,
+    };
+
+    const oldQuestions = {};
+    Object.entries(courseData.questions).forEach(([qid, question]) => {
+        if (infofile.hasErrors(question)) {
+            // Skip for now
+            // TODO: make sure that we maintain tags that are currently used
+            // by unsyncable questions
+            return;
+        }
+        oldQuestions[qid] = question.data;
+    });
+
+
+    await promisify(module.exports.sync)(courseInfo, oldQuestions);
 }

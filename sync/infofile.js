@@ -6,8 +6,8 @@
  * @typedef {object} InfoFile
  * @property {string[]} [errors]
  * @property {string[]} [warnings]
- * @property {T} [data]
  * @property {string} [uuid]
+ * @property {T} [data]
  */
 
 /**
