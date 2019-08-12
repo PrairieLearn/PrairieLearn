@@ -46,27 +46,31 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
  * @param {import('../course-db').CourseData} courseData
  */
 module.exports.syncNew = async function(courseId, courseData) {
-    if (infofile.hasErrors(courseData.course)) {
-        // Skip; no valid course from which to sync
-        return;
+    /** @type {string[]} */
+    let courseTopics = [];
+    if (!infofile.hasErrors(courseData.course)) {
+        courseTopics = courseData.course.data.topics.map(t => JSON.stringify([
+            t.name,
+            t.description,
+            t.color,
+        ]));
     }
 
-    const courseInfo = {
-        courseId,
-        topics: courseData.course.data.topics,
-    };
-
-    const oldQuestions = {};
-    Object.entries(courseData.questions).forEach(([qid, question]) => {
-        if (infofile.hasErrors(question)) {
-            // Skip for now
-            // TODO: make sure that we maintain tags that are currently used
-            // by unsyncable questions
-            return;
+    /** @type Set<string> */
+    const knownQuestionTopicNames = new Set();
+    Object.values(courseData.questions).forEach(q => {
+        if (!infofile.hasErrors(q)) {
+            knownQuestionTopicNames.add(q.data.topic);
         }
-        oldQuestions[qid] = question.data;
     });
+    const questionTopicNames = [...knownQuestionTopicNames];
 
+    const params = [
+        !infofile.hasErrors(courseData.course),
+        courseTopics,
+        questionTopicNames,
+        courseId,
+    ];
 
-    await promisify(module.exports.sync)(courseInfo, oldQuestions);
+    const res = await sqldb.callOneRowAsync('sync_topics_new', params);
 }

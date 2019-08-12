@@ -1,0 +1,73 @@
+CREATE OR REPLACE FUNCTION
+    sync_topics_new(
+        IN valid_course_info boolean,
+        IN course_info_topics JSONB[],
+        IN question_topic_names text[],
+        IN syncing_course_id bigint
+    ) RETURNS void
+AS $$
+DECLARE
+    question_topics_item JSONB;
+    inserted_topic_ids bigint[];
+    keep_topic_ids bigint[];
+    num_existing_topics bigint;
+BEGIN
+    IF valid_course_info THEN
+        WITH new_topics AS (
+            INSERT INTO topics (
+                name,
+                number,
+                description,
+                color,
+                course_id
+            ) SELECT
+                topic->>0,
+                number,
+                topic->>1,
+                topic->>2,
+                syncing_course_id
+            FROM UNNEST(course_info_topics) WITH ORDINALITY AS t(topic, number)
+            ON CONFLICT (name, course_id) DO UPDATE
+            SET
+                number = EXCLUDED.number,
+                color = EXCLUDED.color,
+                description = EXCLUDED.description
+            RETURNING id
+        )
+        SELECT array_agg(id) INTO keep_topic_ids FROM (SELECT id FROM new_topics) AS ids;
+
+        num_existing_topics := array_length(keep_topic_ids, 1);
+    ELSE
+        SELECT COUNT(*) INTO num_existing_topics
+        FROM topics
+        WHERE course_id = syncing_course_id;
+    END IF;
+
+    WITH new_topics AS (
+        INSERT INTO topics (
+            name,
+            number,
+            description,
+            color,
+            course_id
+        ) SELECT
+            name,
+            (num_existing_topics + number),
+            'Auto-generated from use in a question; add this topic to your courseInfo.json file to customize',
+            'gray1',
+            syncing_course_id
+        FROM UNNEST(question_topic_names) WITH ORDINALITY AS t(name, number)
+        ON CONFLICT (name, course_id) DO NOTHING
+        RETURNING id
+    )
+    SELECT array_agg(id) INTO inserted_topic_ids FROM (SELECT id FROM new_topics) AS ids;
+    keep_topic_ids := array_cat(keep_topic_ids, inserted_topic_ids);
+
+    IF valid_course_info THEN
+        DELETE FROM topics AS t
+        WHERE
+            t.course_id = syncing_course_id
+            AND t.id NOT IN (SELECT UNNEST(keep_topic_ids));
+    END IF;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
