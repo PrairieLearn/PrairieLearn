@@ -73,7 +73,7 @@ BEGIN
     WITH qids_to_insert AS (
         SELECT qid FROM disk_questions WHERE uuid IS NOT NULL
         EXCEPT
-        SELECT qid FROM questions WHERE deleted_at IS NULL
+        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
     )
     INSERT INTO questions (qid, uuid, course_id)
     SELECT
@@ -88,14 +88,14 @@ BEGIN
     WITH qids_to_insert AS (
         SELECT qid FROM disk_questions WHERE uuid IS NULL
         EXCEPT
-        SELECT qid FROM questions WHERE deleted_at IS NULL
+        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
     )
     INSERT INTO questions (qid, course_id)
     SELECT qid, syncing_course_id FROM qids_to_insert;
 
     -- Finally, soft-delete rows with unwanted names
     WITH qids_to_delete AS (
-        SELECT qid FROM questions WHERE deleted_at IS NULL
+        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
         EXCEPT
         SELECT qid FROM disk_questions
     )

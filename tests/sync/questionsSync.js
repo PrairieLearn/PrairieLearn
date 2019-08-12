@@ -10,7 +10,7 @@ const helperDb = require('../helperDb');
 const { assert } = chai;
 
 describe('Question syncing', () => {
-  // before('remove the template database', helperDb.dropTemplate);
+  before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -87,6 +87,8 @@ describe('Question syncing', () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
     // separate courses.
+    // TODO: we should actually assert that two independent copies of all data exist.
+    // While developing, I found some cases where data wasn't correctly scoped to one course/course instance.
     const courseData = util.getCourseData();
     const firstDirectory = await util.writeCourseToTempDirectory(courseData);
     const secondDirectory = await util.writeCourseToTempDirectory(courseData);

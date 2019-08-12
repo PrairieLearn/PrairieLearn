@@ -81,7 +81,6 @@ BEGIN
         ) AS tags_json
     FROM tags AS t
     INTO new_tags_json
-    WHERE
-        t.course_id = syncing_course_id;
+    WHERE t.course_id = syncing_course_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

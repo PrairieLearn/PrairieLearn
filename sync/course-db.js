@@ -519,7 +519,7 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
         if (knownAssessmentSets.has(aset.name)) {
             duplicateAssessmentSetNames.add(aset.name);
         }
-        knownAssessmentSets.set(aset.name ,aset);
+        knownAssessmentSets.set(aset.name, aset);
     });
     const duplicateAssessmentSetNamesString = [...duplicateAssessmentSetNames.values()].join(', ');
     infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateAssessmentSetNamesString}. Only the last of each duplicate will be synced.`);
@@ -543,6 +543,7 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
         if (knownTags.has(tag.name)){
             duplicateTagNames.add(tag.name);
         }
+        knownTags.set(tag.name, tag);
     });
     const duplicateTagNamesString = [...duplicateTagNames.values()].join(', ');
     infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateTagNamesString}. Only the last of each duplicate will be synced.`);

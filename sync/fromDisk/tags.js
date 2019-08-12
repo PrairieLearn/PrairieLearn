@@ -169,4 +169,3 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
 
     await sqldb.callAsync('sync_question_tags_new', [questionTagsParam]);
 }
-

@@ -68,7 +68,7 @@ BEGIN
     WITH short_names_to_insert AS (
         SELECT short_name FROM disk_course_instances WHERE uuid IS NOT NULL
         EXCEPT
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL
+        SELECT short_name FROM course_instances WHERE deleted_at IS NULL AND course_id = syncing_course_id
     )
     INSERT INTO course_instances (short_name, uuid, course_id)
     SELECT
@@ -83,21 +83,23 @@ BEGIN
     WITH short_names_to_insert AS (
         SELECT short_name FROM disk_course_instances WHERE uuid IS NULL
         EXCEPT
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL
+        SELECT short_name FROM course_instances WHERE deleted_at IS NULL AND course_id = syncing_course_id
     )
     INSERT INTO course_instances (short_name, course_id)
     SELECT short_name, syncing_course_id FROM short_names_to_insert;
 
     -- Finally, soft-delete rows with unwanted names
     WITH short_names_to_delete AS (
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL
+        SELECT short_name FROM course_instances WHERE deleted_at IS NULL  AND course_id = syncing_course_id
         EXCEPT
         SELECT short_name FROM disk_course_instances
     )
     UPDATE course_instances
     SET deleted_at = now()
     FROM short_names_to_delete
-    WHERE course_instances.short_name = short_names_to_delete.short_name;
+    WHERE
+        course_instances.short_name = short_names_to_delete.short_name
+        AND course_instances.course_id = syncing_course_id;
 
 
     -- At this point, there will be exactly one non-deleted row for all short names
