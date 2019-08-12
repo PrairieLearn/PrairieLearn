@@ -501,6 +501,7 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
  * @returns {Promise<InfoFile<Course>>}
  */
 module.exports.loadCourseInfo = async function(courseDirectory) {
+    /** @type {import('./infofile').InfoFile<Course>} */
     const loadedData = await module.exports.loadInfoFile(courseDirectory, 'infoCourse.json', schemas.infoCourse);
     if (infofile.hasErrors(loadedData)) {
         // We'll only have an error if we couldn't parse JSON data; abort
@@ -509,25 +510,53 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
     const info = loadedData.data;
 
-    /** @type {AssessmentSet[]} */
-    const assessmentSets = info.assessmentSets || [];
+    // Make a first pass over assessment sets, warn about duplicates
+    /** @type {Map<string, AssessmentSet>} */
+    const knownAssessmentSets = new Map();
+    /** @type{Set<string>} */
+    const duplicateAssessmentSetNames = new Set();
+    (info.assessmentSets || []).forEach(aset => {
+        if (knownAssessmentSets.has(aset.name)) {
+            duplicateAssessmentSetNames.add(aset.name);
+        }
+        knownAssessmentSets.set(aset.name ,aset);
+    });
+    const duplicateAssessmentSetNamesString = [...duplicateAssessmentSetNames.values()].join(', ');
+    infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateAssessmentSetNamesString}. Only the last of each duplicate will be synced.`);
+
+    // Add any default assessment sets that weren't also defined by the course
     DEFAULT_ASSESSMENT_SETS.forEach(aset => {
-        if (assessmentSets.find(a => a.name === aset.name)) {
-            infofile.addWarning(loadedData, `Default assessmentSet "${aset.name}" should not be included in infoCourse.json`);
-        } else {
-            assessmentSets.push(aset);
+        if (!knownAssessmentSets.has(aset.name)) {
+            knownAssessmentSets.set(aset.name, aset);
         }
     });
 
-    /** @type {Tag[]} */
-    const tags = info.tags || [];
-    DEFAULT_TAGS.forEach(tag => {
-        if (tags.find(t => t.name === tag.name)) {
-            infofile.addWarning(loadedData, `Default tag "${tag.name}" should not be included in infoCourse.json`);
-        } else {
-            tags.push(tag);
+    // Turn the map back into a list; the JS spec ensures that Maps remember
+    // insertion order, so the order is preserved.
+    const assessmentSets = [...knownAssessmentSets.values()];
+
+    // Now, we do the same thing for tags
+    // Make a first pass over tags, warn about duplicates
+    const knownTags = new Map();
+    const duplicateTagNames = new Set();
+    (info.tags || []).forEach(tag => {
+        if (knownTags.has(tag.name)){
+            duplicateTagNames.add(tag.name);
         }
     });
+    const duplicateTagNamesString = [...duplicateTagNames.values()].join(', ');
+    infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateTagNamesString}. Only the last of each duplicate will be synced.`);
+
+    // Add any default tags that weren't also defined by the course
+    DEFAULT_TAGS.forEach(tag => {
+        if (!knownTags.has(tag.name)) {
+            knownTags.set(tag.name, tag);
+        }
+    });
+
+    // Turn the map back into a list; the JS spec ensures that Maps remember
+    // insertion order, so the order is preserved.
+    const tags = [...knownTags.values()];
 
     const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
