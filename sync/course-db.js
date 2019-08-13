@@ -789,11 +789,12 @@ async function validateAssessment(assessment, questions) {
                     }
                 }
                 if (assessment.type === 'Homework') {
+                    console.log(alternative);
                     if (alternative.maxPoints == undefined) {
                         errors.push('Must specify "maxPoints" for a question in a "Homework" assessment');
                     }
-                    if (alternative.points != undefined) {
-                        errors.push('Cannot specify "points" for a question in a "Homework" assessment');
+                    if (Array.isArray(alternative.points)) {
+                        errors.push('Cannot specify "points" as a list for a question in a "Homework" assessment');
                     }
                 }
             });

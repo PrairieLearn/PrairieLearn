@@ -120,20 +120,19 @@ BEGIN
     ) LOOP
         UPDATE assessments AS a
         SET
-            type = (da.data->>'type')::enum_assessment_type,
-            number = da.data->>'number',
-            title = da.data->>'title',
-            config = da.data->'config',
-            multiple_instance = (da.data->>'multiple_instance')::boolean,
-            shuffle_questions = (da.data->>'shuffle_questions')::boolean,
-            max_points = (da.data->>'max_points')::double precision,
-            auto_close = (da.data->>'auto_close')::boolean,
-            text = da.data->>'text',
+            type = (valid_assessment.data->>'type')::enum_assessment_type,
+            number = valid_assessment.data->>'number',
+            title = valid_assessment.data->>'title',
+            config = valid_assessment.data->'config',
+            multiple_instance = (valid_assessment.data->>'multiple_instance')::boolean,
+            shuffle_questions = (valid_assessment.data->>'shuffle_questions')::boolean,
+            max_points = (valid_assessment.data->>'max_points')::double precision,
+            auto_close = (valid_assessment.data->>'auto_close')::boolean,
+            text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
-            constant_question_value = (da.data->>'constant_question_value')::boolean,
-            allow_issue_reporting = (da.data->>'allow_issue_reporting')::boolean
+            constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
+            allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean
         FROM
-            disk_assessments AS da,
             (
                 SELECT
                     tid,
@@ -141,11 +140,10 @@ BEGIN
                 FROM disk_assessments AS da
             ) AS aggregates
         WHERE
-            a.tid = da.tid
+            a.tid = valid_assessment.tid
             AND a.tid = aggregates.tid
             AND a.course_instance_id = syncing_course_instance_id
         RETURNING id INTO new_assessment_id;
-        RAISE EXCEPTION 'fuckkkk';
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
         -- Now process all access rules for this assessment
@@ -331,7 +329,7 @@ BEGIN
         sync_warnings = da.warnings
     FROM disk_assessments AS da
     WHERE
-        a.tid = da.aid
+        a.tid = da.tid
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
 
@@ -344,7 +342,7 @@ BEGIN
         assessments AS a
     WHERE
         a.id = aq.assessment_id
-        AND a.course_instance_id = sync_assessments.new_course_instance_id
+        AND a.course_instance_id = syncing_course_instance_id
         AND aq.deleted_at IS NULL
         AND a.deleted_at IS NOT NULL;
 
@@ -354,7 +352,7 @@ BEGIN
     WHERE
         aar.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
-        AND a.course_instance_id = sync_assessments.new_course_instance_id;
+        AND a.course_instance_id = syncing_course_instance_id;
 
     -- Delete unused zones
     DELETE FROM zones AS z
@@ -362,6 +360,6 @@ BEGIN
     WHERE
         z.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
-        AND a.course_instance_id = sync_assessments.new_course_instance_id;
+        AND a.course_instance_id = syncing_course_instance_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
