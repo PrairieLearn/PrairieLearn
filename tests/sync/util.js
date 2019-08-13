@@ -152,7 +152,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
   * @property {string} title
   * @property {string} topic
-  * @property {string[]} secondaryTopics
   * @property {string[]} tags
   * @property {string[]} clientFiles
   * @property {string[]} clientTemplates

@@ -233,7 +233,6 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
   * @property {string} title
   * @property {string} topic
-  * @property {string[]} secondaryTopics
   * @property {string[]} tags
   * @property {string[]} clientFiles
   * @property {string[]} clientTemplates

@@ -39,11 +39,12 @@ const infofile = require('../infofile');
 
  /**
   * 
-  * @param {import('../course-db').Assessment} assessment 
+  * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessment 
   * @param {{ [qid: string]: any }} questionIds
   */
-function getParamsForAssessment(assessment, questionIds) {
-    if (!assessment) return null;
+function getParamsForAssessment(assessmentInfoFile, questionIds) {
+    if (infofile.hasErrors(assessmentInfoFile)) return null;
+    const assessment = assessmentInfoFile.data;
 
     // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
     let allowIssueReporting = true;
@@ -116,8 +117,6 @@ function getParamsForAssessment(assessment, questionIds) {
                     forceMaxPoints: question.forceMaxPoints || false,
                     triesPerVariant: question.triesPerVariant || 1,
                 }];
-            } else {
-                throw error.make(400, 'Must specify either "id" or "alternatives" in question', {question});
             }
 
             for (let i = 0; i < alternatives.length; i++) {
@@ -188,7 +187,7 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
             assessment.uuid,
             infofile.stringifyErrors(assessment),
             infofile.stringifyWarnings(assessment),
-            getParamsForAssessment(assessment.data, questionIds),
+            getParamsForAssessment(assessment, questionIds),
         ]);
     });
 

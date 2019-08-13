@@ -37,6 +37,11 @@ async function getSyncedAssessmentData(tid) {
   return res.rows[0];
 }
 
+async function findSyncedAssessment(tid) {
+  const syncedAssessments = await util.dumpTable('assessments');
+  return syncedAssessments.find(a => a.tid === tid);
+}
+
 describe('Assessment syncing', () => {
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
@@ -204,7 +209,7 @@ describe('Assessment syncing', () => {
     assert.isUndefined(syncedAssessmentSet);
   });
 
-  it('fails if a question specifies neither an ID nor an alternative', async () => {
+  it('records an error if a question specifies neither an ID nor an alternative', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones.push({
@@ -212,11 +217,12 @@ describe('Assessment syncing', () => {
       questions: [{}],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Must specify either/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Zone question must specify either "alternatives" or "id"/);
   });
 
-  it('fails if a question specifies maxPoints on an Exam-type assessment', async () => {
+  it('records an error if a question specifies maxPoints on an Exam-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones.push({
@@ -228,11 +234,12 @@ describe('Assessment syncing', () => {
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Cannot specify/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Cannot specify "maxPoints" for a question in an "Exam" assessment/);
   });
 
-  it('fails if a question does not specify points on an Exam-type assessment', async () => {
+  it('records an error if a question does not specify points on an Exam-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones.push({
@@ -242,11 +249,12 @@ describe('Assessment syncing', () => {
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Must specify/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Must specify "points" for a question in an "Exam" assessment/);
   });
 
-  it('fails if a question does not specify points on an Homework-type assessment', async () => {
+  it('records an error if a question does not specify points on an Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones.push({
@@ -256,33 +264,38 @@ describe('Assessment syncing', () => {
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Must specify/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Must specify "maxPoints" for a question in a "Homework" assessment/);
   });
 
-  it('fails if a question specifies points as an array an Homework-type assessment', async () => {
+  it('records an error if a question specifies points as an array an Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones.push({
       title: 'test zone',
       questions: [{
         id: util.QUESTION_ID,
+        maxPoints: 10,
         points: [1,2,3],
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Cannot specify/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Cannot specify "points" as a list for a question in a "Homework" assessment/);
   });
 
-  it('fails if an assessment directory is missing an infoAssessment.json file', async () => {
+  it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await fs.ensureDir(path.join(courseDir, 'courseInstances', 'Fa19', 'assessments', 'badAssessment'));
-    await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
+    await fs.ensureDir(path.join(courseDir, 'courseInstances', 'Fa19', 'assessments', 'fail'));
+    await util.syncCourseData(courseDir);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Error reading JSON file courseInstances\/Fa19\/assessments\/fail\/infoAssessment.json: ENOENT/);
   });
 
-  it('fails if a zone references an invalid QID', async () => {
+  it('records an error if a zone references an invalid QID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones.push({
@@ -293,8 +306,9 @@ describe('Assessment syncing', () => {
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /Invalid QID/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /The following questions do not exist in this course: i do not exist/);
   });
 
   it('fails if an assessment references a QID more than once', async () => {
@@ -311,16 +325,20 @@ describe('Assessment syncing', () => {
       }],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /more than once/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /The following questions are used more than once: test/);
   });
 
-  it('fails if the same UUID is used multiple times in one course instance', async () => {
+  it('records a warning if the same UUID is used multiple times in one course instance', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail1'] = assessment;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail2'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /used in other assessments/);
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment1 = await findSyncedAssessment('fail1');
+    assert.match(syncedAssessment1.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail2/);
+    const syncedAssessment2 = await findSyncedAssessment('fail2');
+    assert.match(syncedAssessment2.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail1/);
   });
 });
