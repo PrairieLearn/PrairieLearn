@@ -114,7 +114,7 @@ BEGIN
     -- that we loaded from disk. It is now safe to update all those rows with
     -- the new information from disk (if we have any).
     FOR valid_assessment IN (
-        SELECT tid, data
+        SELECT tid, data, warnings
         FROM disk_assessments AS da
         wHERE (da.errors IS NULL OR da.errors = '')
     ) LOOP
@@ -131,7 +131,9 @@ BEGIN
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
-            allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean
+            allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
+            sync_errors = NULL,
+            sync_warnings = valid_assessment.warnings
         FROM
             (
                 SELECT

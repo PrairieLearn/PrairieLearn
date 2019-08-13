@@ -20,6 +20,8 @@ SELECT
     a.number as assessment_number,
     a.title,
     a.assessment_set_id,
+    a.sync_errors,
+    a.sync_warnings,
     tstats.number,
     tstats.mean,
     tstats.std,
