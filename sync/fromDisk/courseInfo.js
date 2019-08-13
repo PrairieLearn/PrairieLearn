@@ -41,7 +41,7 @@ module.exports.sync = (courseInfo, course_id, callback) => {
 module.exports.syncNew = async function(courseData, courseId) {
     if (infofile.hasErrors(courseData.course)) {
         // Skip syncing
-        // TODO write errors
+        // TODO: write errors
         return;
     }
     await util.promisify(module.exports.sync)(courseData.course.data, courseId);

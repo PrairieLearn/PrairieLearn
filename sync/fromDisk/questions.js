@@ -1,8 +1,5 @@
 // @ts-check
-const _ = require('lodash');
-const { callbackify, promisify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const uuidv4 = require('uuid/v4');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
@@ -67,43 +64,6 @@ module.exports.syncSingleQuestion = async function(courseDir, questionInfo, jobL
         courseDir,
     ];
     await sqldb.callAsync('sync_single_question', params);
-}
-
-/**
- * @param {any} courseInfo
- * @param {any} questionDB
- * @param {any} jobLogger
- * @param {(err: Error | null | undefined) => void} callback
- */
-module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
-    callbackify(async () => {
-        // Check for duplicate UUIDs within this course's questions
-        _(questionDB)
-            .groupBy('uuid')
-            .each(function(questions, uuid) {
-                if (questions.length > 1) {
-                    const directories = questions.map(q => q.directory).join(', ');
-                    throw new Error(`UUID ${uuid} is used in multiple questions: ${directories}`);
-                }
-            });
-
-        const questionsParam = Object.values(questionDB).map(getParamsForQuestion);
-        const syncQuestionsParams = [
-            JSON.stringify(questionsParam),
-            courseInfo.courseId,
-        ];
-
-        perf.start('syncQuestionsSproc');
-        const syncQuestionsResult = await sqldb.callOneRowAsync('sync_questions', syncQuestionsParams);
-        perf.end('syncQuestionsSproc');
-
-        // Associate the new IDs with their respective questions; future
-        // states of the sync process will need these
-        const newQuestions = syncQuestionsResult.rows[0].new_questions_json;
-        newQuestions.forEach((idMapping) => {
-            questionDB[idMapping.qid].id = idMapping.id;
-        });
-    })(callback);
 }
 
 /**

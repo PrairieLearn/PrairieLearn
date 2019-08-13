@@ -1,3 +1,4 @@
+// @ts-check
 const scopedData = {};
 
 module.exports = function(scopeName) {
@@ -16,7 +17,7 @@ module.exports = function(scopeName) {
             return;
         }
         if (process.env.PROFILE_SYNC) {
-            console.log(`${name} took ${(new Date()) - scope[name]}ms`);
+            console.log(`${name} took ${(Date.now()) - scope[name]}ms`);
         }
     }
 
@@ -28,9 +29,27 @@ module.exports = function(scopeName) {
         });
     }
 
+    /**
+     * @template T
+     * @param {string} name 
+     * @param {() => Promise<T>} asyncFunc 
+     * @returns {Promise<T>}
+     */
+    async function timedAsync(name, asyncFunc) {
+        start(name);
+        let res;
+        try {
+            res = await asyncFunc();
+        } finally {
+            end(name);
+        }
+        return res;
+    }
+
     return {
         start,
         end,
         timedFunc,
+        timedAsync,
     }
 }

@@ -1,7 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const async = require('async');
 const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
@@ -11,7 +10,6 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
-const syncCourseStaff = require('./fromDisk/courseStaff');
 const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
@@ -32,20 +30,25 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json file from git repository');
-    const courseData = await courseDB.loadFullCourseNew(courseDir);
-    await syncCourseInfo.syncNew(courseData, courseId);
-    const courseInstanceIds = await syncCourseInstances.syncNew(courseId, courseData);
-    await syncTopics.syncNew(courseId, courseData);
-    const questionIds = await syncQuestions.syncNew(courseId, courseData);
-    await syncTags.syncNew(courseId, courseData, questionIds);
-    const assessmentSets = await syncAssessmentSets.syncNew(courseId, courseData);
+    perf.start('sync');
+    const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
+    await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.syncNew(courseData, courseId));
+    const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () => syncCourseInstances.syncNew(courseId, courseData));
+    await perf.timedAsync('syncTopics', () => syncTopics.syncNew(courseId, courseData));
+    const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.syncNew(courseId, courseData));
+    await perf.timedAsync('syncTags', () => syncTags.syncNew(courseId, courseData, questionIds));
+    const assessmentSets = await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.syncNew(courseId, courseData));
+    perf.start('syncAssessments');
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
-        await syncAssessments.syncNew(courseId, courseInstanceId, courseInstanceData.assessments, questionIds);
+        await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.syncNew(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
+    perf.end('syncAssessments');
    if (assessmentSets.deleteUnused) {
-       await syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds);
+       await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
    }
+   await freeformServer.reloadElementsForCourse(courseDir, courseId);
+   perf.end('sync');
 }
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
@@ -54,77 +57,6 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
         await syncDiskToSqlWithLock(courseDir, course_id, logger);
     })(callback);
     return;
-    logger.info("Starting sync of git repository to database for " + courseDir);
-    logger.info("Loading info.json files from git repository...");
-    perf.start("sync");
-    perf.start("loadFullCourse");
-    courseDB.loadFullCourse(courseDir, logger, function(err, course, newCourse) {
-        perf.end("loadFullCourse");
-        if (ERR(err, callback)) return;
-        logger.info("Successfully loaded all info.json files");
-        // We need to handle assessment sets in two stages: first we add new
-        // ones, then we sync assessments, then finally we remove all unused
-        // sets.
-        let usedAssessmentSetIds;
-        async.series([
-            function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncCourseInfo", syncCourseInfo.sync.bind(null, course.courseInfo, course_id)),
-            function(callback) {logger.info("Syncing courseInstances from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncCourseInstances", syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB)),
-            function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncTopics", syncTopics.sync.bind(null, course.courseInfo, course.questionDB)),
-            function(callback) {logger.info("Syncing questions from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncQuestions", syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger)),
-            function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncTags", syncTags.sync.bind(null, course.courseInfo, course.questionDB)),
-            function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncAssessmentSets", (callback) => {
-                syncAssessmentSets.sync(course.courseInfo, course.courseInstanceDB, (err, result) => {
-                    if (ERR(err, callback)) return;
-                    usedAssessmentSetIds = result;
-                    callback(null);
-                })
-            }),
-            (callback) => {
-                perf.start("syncCourseInstaces");
-                // TODO: is running these in parallel safe? Everything should be isolated by course instance.
-                async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                    perf.start(`syncCourseInstance${courseInstanceShortName}`);
-                    async.series([
-                        function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                        + " courseInstance from git repository to database..."); callback(null);},
-                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Staff`, syncCourseStaff.sync.bind(null, courseInstance)),
-                        function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                        + " assessments from git repository to database..."); callback(null);},
-                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Assessments`, syncAssessments.sync.bind(null, course.courseInfo, courseInstance, course.questionDB)),
-                    ], function(err) {
-                        perf.end(`syncCourseInstance${courseInstanceShortName}`);
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }, function(err) {
-                    perf.end("syncCourseInstances");
-                    if (ERR(err, callback)) return;
-                    logger.info("Completed sync of git repository to database");
-                    callback(null);
-                });
-            },
-            function(callback) {logger.info("Removing unused assessment sets from database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncAssessmentSetsDeleteUnused", (callback) => {
-                syncAssessmentSets.deleteUnused(course.courseInfo, usedAssessmentSetIds, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }),
-            function(callback) {logger.info("Reloading course elements..."); callback(null);},
-            freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
-        ], function(err) {
-            perf.end("sync");
-            if (ERR(err, callback)) return;
-            logger.info("Completed sync of git repository to database");
-            callback(null);
-        });
-    });
 };
 
 /**

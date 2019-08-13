@@ -176,52 +176,6 @@ function getParamsForAssessment(assessment, questionIds) {
 }
 
 /**
- * Builds the giant blob of JSON that will be shipped to the assessments syncing sproc.
- */
-function buildSyncData(courseInfo, courseInstance, questionDB) {
-    const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
-    });
-
-    return {
-        assessments,
-        course_instance_id: courseInstance.courseInstanceId,
-        course_id: courseInfo.courseId,
-        check_access_rules_exam_uuid: config.checkAccessRulesExamUuid,
-    }
-}
-
-module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
-    callbackify(async () => {
-        const { assessmentDB } = courseInstance;
-        // Assign an ordering to all assessments
-        const assessmentList = Object.values(assessmentDB);
-        assessmentList.sort((a, b) => naturalSort(String(a.number), String(b.number)));
-        assessmentList.forEach((assessment, index) => assessment.order_by = index);
-
-        // Check for duplicate UUIDs within the course instance's assessments
-        _(assessmentDB)
-            .groupBy('uuid')
-            .each(function(assessments, uuid) {
-                if (assessments.length > 1) {
-                    const directories = assessments.map(a => a.directory).join(', ');
-                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`)
-                }
-            });
-
-        const syncData = buildSyncData(courseInfo, courseInstance, questionDB);
-        const syncParams = [
-            JSON.stringify(syncData.assessments),
-            syncData.course_id,
-            syncData.course_instance_id,
-            syncData.check_access_rules_exam_uuid,
-        ];
-        perf.start(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
-        await sqldb.callOneRowAsync('sync_assessments', syncParams);
-        perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
-    })(callback);
-}
-
-/**
  * @param {any} courseId
  * @param {any} courseInstanceId
  * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
