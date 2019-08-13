@@ -129,7 +129,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRule} role
+ * @property {UserRole} role
  * @property {string[]} uids
  * @property {string} startDate
  * @property {string} endDate
@@ -171,7 +171,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  /**
   * @typedef {Object} QuestionAlternative
   * @property {number | number[]} points
-  * @property {numer | number[]} maxPoints
+  * @property {number | number[]} maxPoints
   * @property {string} id
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
@@ -181,9 +181,9 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
  * @property {number | []} maxPoints
- * @property {string} id
+ * @property {string} [id]
  * @property {boolean} forceMaxPoints
- * @property {QuestionAlternative[]} alternatives
+ * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
  */
@@ -192,7 +192,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @typedef {Object} Zone
  * @property {string} title
  * @property {number} maxPoints
- * @property {number} maxChoose
+ * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
  */
@@ -341,7 +341,7 @@ module.exports.loadFullCourseNew = async function(courseDir) {
     for (const courseInstanceId in courseInstanceInfos) {
         // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
         // If so, duplicate all that here
-        const assessments = await module.exports.loadAssessments(courseDir, courseInstanceId);
+        const assessments = await module.exports.loadAssessments(courseDir, courseInstanceId, questions);
         const courseInstance = {
             courseInstance: courseInstanceInfos[courseInstanceId],
             assessments,
@@ -708,9 +708,10 @@ async function validateQuestion(question) {
 
 /**
  * @param {Assessment} assessment 
+ * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
-async function validateAssessment(assessment) {
+async function validateAssessment(assessment, questions) {
     const warnings = [];
     const errors = [];
 
@@ -738,6 +739,73 @@ async function validateAssessment(assessment) {
                 errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
             }
         });
+    }
+
+    const foundQids = new Set();
+    const duplicateQids = new Set();
+    const missingQids = new Set();
+    /** @type {(qid: string) => void} */
+    const checkAndRecordQid = (qid) => {
+        if (!(qid in questions)) {
+            missingQids.add(qid);
+        }
+        if (!foundQids.has(qid)) {
+            foundQids.add(qid);
+        } else {
+            duplicateQids.add(qid);
+        }
+    }
+    (assessment.zones || []).forEach(zone => {
+        (zone.questions || []).map(zoneQuestion => {
+            // We'll normalize either single questions or alternative groups
+            // to make validation easier
+            /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+            let alternatives = [];
+            if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
+                errors.push('Cannot specify both "alternatives" and "id" in one question');
+            } else if ('alternatives' in zoneQuestion) {
+                zoneQuestion.alternatives.forEach(alternative => checkAndRecordQid(alternative.id));
+                alternatives = zoneQuestion.alternatives.map(alternative => ({
+                    points: alternative.points || zoneQuestion.points,
+                    maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+                }));
+            } else if ('id' in zoneQuestion) {
+                checkAndRecordQid(zoneQuestion.id);
+                alternatives = [{
+                    points: zoneQuestion.points,
+                    maxPoints: zoneQuestion.maxPoints,
+                }];
+            } else {
+                errors.push(`Zone question must specify either "alternatives" or "id"`);
+            }
+
+            alternatives.forEach(alternative => {
+                if (assessment.type === 'Exam') {
+                    if (alternative.maxPoints != undefined) {
+                        errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
+                    }
+                    if (alternative.points == undefined) {
+                        errors.push('Must specify "points" for a question in an "Exam" assessment');
+                    }
+                }
+                if (assessment.type === 'Homework') {
+                    if (alternative.maxPoints == undefined) {
+                        errors.push('Must specify "maxPoints" for a question in a "Homework" assessment');
+                    }
+                    if (alternative.points != undefined) {
+                        errors.push('Cannot specify "points" for a question in a "Homework" assessment');
+                    }
+                }
+            });
+        });
+    });
+
+    if (duplicateQids.size > 0) {
+        errors.push(`The following questions are used more than once: ${[...duplicateQids].join(', ')}`);
+    }
+
+    if (missingQids.size > 0) {
+        errors.push(`The following questions do not exist in this course: ${[...missingQids].join(', ')}`)
     }
 
     return { warnings, errors };
@@ -791,11 +859,14 @@ module.exports.loadCourseInstances = async function(courseDirectory) {
  * 
  * @param {string} courseDirectory
  * @param {string} courseInstance
+ * @param {{ [qid: string]: any }} questions
  */
-module.exports.loadAssessments = async function(courseDirectory, courseInstance) {
+module.exports.loadAssessments = async function(courseDirectory, courseInstance, questions) {
     const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
+    /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
+    const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
-    const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessment);
+    const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessmentWithQuestions);
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;
 }

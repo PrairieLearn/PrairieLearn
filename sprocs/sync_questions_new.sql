@@ -11,8 +11,6 @@ CREATE OR REPLACE FUNCTION
         OUT new_questions_json JSONB
     )
 AS $$
-DECLARE
-    new_question_ids bigint[];
 BEGIN
     -- Move all our data into a temporary table so it's easier to work with
     DROP TABLE IF EXISTS disk_questions;

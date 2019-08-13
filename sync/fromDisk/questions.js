@@ -122,6 +122,8 @@ module.exports.syncNew = async function(courseId, courseData) {
         ]);
     });
 
+    console.log(questionParams);
+
     const params = [
         questionParams,
         courseId,
