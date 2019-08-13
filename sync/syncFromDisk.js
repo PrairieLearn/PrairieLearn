@@ -33,41 +33,16 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json file from git repository');
     const courseData = await courseDB.loadFullCourseNew(courseDir);
-    /*
-    // TODO: Probably rip all this out
-    const missingUuids = await courseDB.getPathsWithMissingUuids(courseData);
-    if (missingUuids.length > 0) {
-        // If anything is missing UUIDs, error and abort sync immediately
-        console.log(missingUuids);
-        missingUuids.forEach(item => {
-            logger.info(`> ${item.path}`);
-            item.errors.forEach(line => logger.info(`* ${line}`));
-        });
-        logger.info('One or more UUIDs were missing or invalid; aborting sync.');
-        console.log('ERROR');
-        return;
-    }
-    */
-
-    // We can now begin syncing to the DB
     await syncCourseInfo.syncNew(courseData, courseId);
     const courseInstanceIds = await syncCourseInstances.syncNew(courseId, courseData);
     await syncTopics.syncNew(courseId, courseData);
     const questionIds = await syncQuestions.syncNew(courseId, courseData);
     await syncTags.syncNew(courseId, courseData, questionIds);
     const assessmentSets = await syncAssessmentSets.syncNew(courseId, courseData);
-    /*
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
-        const promises = [];
-        if (courseInstanceData.courseInstance.data) {
-            promises.push(syncCourseStaff.syncNew(courseInstanceId, courseInstanceData.courseInstance.data));
-        }
-        promises.push(syncAssessments.syncNew(courseInstanceId, courseInstanceData.assessments));
-        await Promise.all([
-        ])
+        await syncAssessments.syncNew(courseInstanceId, courseInstanceData.assessments);
     }));
-    */
    if (assessmentSets.deleteUnused) {
        await syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds);
    }

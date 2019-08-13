@@ -1,3 +1,4 @@
+// @ts-check
 const _ = require('lodash');
 const { callbackify } = require('util');
 const naturalSort = require('javascript-natural-sort');
@@ -237,4 +238,12 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         await sqldb.callOneRowAsync('sync_assessments', syncParams);
         perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     })(callback);
+}
+
+/**
+ * @param {any} courseInstanceId
+ * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
+ */
+module.exports.syncNew = async function(courseInstanceId, assessments) {
+
 }

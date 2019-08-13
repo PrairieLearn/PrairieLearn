@@ -71,12 +71,16 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         institution: _(accessRule).has('institution') ? accessRule.institution : 'UIUC',
     }));
 
+    const userRoles = Object.entries(courseInstance.userRoles || {})
+        .filter(([_uid, role]) => role === 'Instructor' || role === 'TA');
+
     return {
         uuid: courseInstance.uuid,
         long_name: courseInstance.longName,
         number: courseInstance.number,
         display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
         access_rules: accessRules,
+        user_roles: userRoles,
     };
 }
 
