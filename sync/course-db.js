@@ -789,7 +789,6 @@ async function validateAssessment(assessment, questions) {
                     }
                 }
                 if (assessment.type === 'Homework') {
-                    console.log(alternative);
                     if (alternative.maxPoints == undefined) {
                         errors.push('Must specify "maxPoints" for a question in a "Homework" assessment');
                     }

@@ -238,8 +238,6 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
         ]);
     });
 
-    console.log(assessmentParams);
-
     const params = [
         assessmentParams,
         courseId,
