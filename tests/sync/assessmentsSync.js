@@ -341,4 +341,52 @@ describe('Assessment syncing', () => {
     const syncedAssessment2 = await findSyncedAssessment('fail2');
     assert.match(syncedAssessment2.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail1/);
   });
+
+  it('creates entry in database in the case of a missing UUID', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    delete assessment.uuid;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('missinguuid');
+    assert.isOk(syncedAssessment);
+  });
+
+  it('updates old invalid data once a UUID is added', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    const oldUuid = assessment.uuid;
+    delete assessment.uuid;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    assessment.uuid = oldUuid;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessment = await findSyncedAssessment('missinguuid');
+    assert.equal(syncedAssessment.title, assessment.title);
+    assert.equal(syncedAssessment.uuid, oldUuid);
+  });
+
+  it.only('maintains identity via UUID when assessment is renamed', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const originalSyncedAssessment = await findSyncedAssessment('originalname');
+    delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newname'] = assessment;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedAssessment = await findSyncedAssessment('newname');
+    assert.equal(newSyncedAssessment.id, originalSyncedAssessment.id);
+  });
+
+  it.only('soft-deletes unused assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    delete courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'];
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessment = await findSyncedAssessment('unused');
+    assert.isNotNull(syncedAssessment.deleted_at);
+  });
 });
