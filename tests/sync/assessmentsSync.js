@@ -43,7 +43,7 @@ async function findSyncedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  // before('remove the template database', helperDb.dropTemplate);
+  before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -342,14 +342,30 @@ describe('Assessment syncing', () => {
     assert.match(syncedAssessment2.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail1/);
   });
 
+  it('creates entry in the database in the case of invalid JSON', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isOk(syncedAssessment);
+    assert.equal(syncedAssessment.assessment_set_id, unknownAssessmentSet.id);
+    assert.equal(syncedAssessment.number, '0');
+  });
+
   it('creates entry in database in the case of a missing UUID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     await util.writeAndSyncCourseData(courseData);
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
     const syncedAssessment = await findSyncedAssessment('missinguuid');
     assert.isOk(syncedAssessment);
+    assert.equal(syncedAssessment.assessment_set_id, unknownAssessmentSet.id);
+    assert.equal(syncedAssessment.number, '0');
   });
 
   it('updates old invalid data once a UUID is added', async () => {
@@ -366,7 +382,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedAssessment.uuid, oldUuid);
   });
 
-  it.only('maintains identity via UUID when assessment is renamed', async () => {
+  it('maintains identity via UUID when assessment is renamed', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['originalname'] = assessment;
@@ -379,7 +395,7 @@ describe('Assessment syncing', () => {
     assert.equal(newSyncedAssessment.id, originalSyncedAssessment.id);
   });
 
-  it.only('soft-deletes unused assessments', async () => {
+  it('soft-deletes unused assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['unused'] = assessment;

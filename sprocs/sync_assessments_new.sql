@@ -81,10 +81,18 @@ BEGIN
         EXCEPT
         SELECT tid FROM assessments WHERE deleted_at IS NULL AND course_instance_id = syncing_course_instance_id
     )
-    INSERT INTO assessments (tid, uuid, course_instance_id)
+    INSERT INTO assessments (
+        tid,
+        uuid,
+        assessment_set_id,
+        number,
+        course_instance_id
+    )
     SELECT
         ati.tid,
         da.uuid,
+        (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id),
+        '0',
         syncing_course_instance_id
     FROM
         tids_to_insert AS ati
@@ -96,8 +104,17 @@ BEGIN
         EXCEPT
         SELECT tid FROM assessments WHERE deleted_at IS NULL AND course_instance_id = syncing_course_instance_id
     )
-    INSERT INTO assessments (tid, course_instance_id)
-    SELECT tid, syncing_course_instance_id FROM tids_to_insert;
+    INSERT INTO assessments (
+        tid,
+        assessment_set_id,
+        number,
+        course_instance_id
+    )
+    SELECT
+        tid,
+        (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id),
+        '0',
+        syncing_course_instance_id FROM tids_to_insert;
 
     -- Finally, soft-delete rows with unwanted names
     WITH tids_to_delete AS (
@@ -160,8 +177,8 @@ BEGIN
                 END IF;
             END IF;
 
-            INSERT INTO assessment_access_rules
-                (assessment_id,
+            INSERT INTO assessment_access_rules (
+                assessment_id,
                 number,
                 mode,
                 role,
