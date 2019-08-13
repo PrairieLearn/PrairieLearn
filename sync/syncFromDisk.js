@@ -55,8 +55,8 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     await syncTopics.syncNew(courseId, courseData);
     const questionIds = await syncQuestions.syncNew(courseId, courseData);
     await syncTags.syncNew(courseId, courseData, questionIds);
+    const assessmentSets = await syncAssessmentSets.syncNew(courseId, courseData);
     /*
-    await syncAssessmentSets.syncNew(courseId, courseData);
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
         const promises = [];
@@ -68,6 +68,9 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
         ])
     }));
     */
+   if (assessmentSets.deleteUnused) {
+       await syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds);
+   }
 }
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {

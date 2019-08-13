@@ -155,6 +155,7 @@ module.exports = {
             'sync_course_tags_new.sql',
             'sync_question_tags_new.sql',
             'sync_topics_new.sql',
+            'sync_assessment_sets_new.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
