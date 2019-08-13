@@ -101,25 +101,11 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
  * @param {{ [wid: string]: any }} questionIds
  */
 module.exports.syncNew = async function(courseId, courseData, questionIds) {
-    // Tags syncing will have two cases:
-    // a) In the first case, we were able to load and validate infoCourse.json,
-    // and we have some list of tags to sync. Combined with any tags from questions
-    // that were not also listed in infoCourse.json, we know exactly what tags
-    // need to exist, in which case we can add any missing tags and safely delete
-    // the rest.
-    // b) In the second case, we were unable to load or validate infoCourse.json.
-    // We can still infer which tags are used by looking at all the tags used in
-    // questions, so we can add missing ones if necessary, but we want to avoid
-    // deleting any existing tags until we can successfully load/validate
-    // infoCourse.json in the future. 
-    // To make these work, we'll tell the syncing sproc if infoCourse.json could
-    // be loaded, a list of tags from infoCourse.json (if applicable), and a list
-    // of "missing" tags that are used by questions but not present in infoCourse.json.
-    // If infoCourse.json was loaded, we'll first sync all infoCourse.json tags,
-    // then add placeholders for all "missing" tags, then delete unused tags.
-    // If infoCourse.json was not loaded successfully, we'll only ensure that all
-    // the tags used in questions are present. If they already exist, we won't modify
-    // them. We also won't delete any tags in this case.
+    // We can only safely remove unused tags if both `infoCourse.json` and all
+    // question `info.json` files are valid.
+    const isInfoCourseValid = !infofile.hasErrors(courseData.course);
+    const areAllInfoQuestionsValid = Object.values(courseData.questions).every(q => !infofile.hasErrors(q));
+    const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
 
     /** @type {string[]} */
     let courseTags = [];
@@ -142,6 +128,7 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
 
     const params = [
         !infofile.hasErrors(courseData.course),
+        deleteUnused,
         courseTags,
         questionTagNames,
         courseId,

@@ -46,6 +46,12 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
  * @param {import('../course-db').CourseData} courseData
  */
 module.exports.syncNew = async function(courseId, courseData) {
+    // We can only safely remove unused topics if both `infoCourse.json` and all
+    // question `info.json` files are valid.
+    const isInfoCourseValid = !infofile.hasErrors(courseData.course);
+    const areAllInfoQuestionsValid = Object.values(courseData.questions).every(q => !infofile.hasErrors(q));
+    const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
+
     /** @type {string[]} */
     let courseTopics = [];
     if (!infofile.hasErrors(courseData.course)) {
@@ -67,6 +73,7 @@ module.exports.syncNew = async function(courseId, courseData) {
 
     const params = [
         !infofile.hasErrors(courseData.course),
+        deleteUnused,
         courseTopics,
         questionTopicNames,
         courseId,

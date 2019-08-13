@@ -1,6 +1,7 @@
 CREATE OR REPLACE FUNCTION
     sync_topics_new(
         IN valid_course_info boolean,
+        IN delete_unused boolean,
         IN course_info_topics JSONB[],
         IN question_topic_names text[],
         IN syncing_course_id bigint
@@ -63,7 +64,7 @@ BEGIN
     SELECT array_agg(id) INTO inserted_topic_ids FROM (SELECT id FROM new_topics) AS ids;
     keep_topic_ids := array_cat(keep_topic_ids, inserted_topic_ids);
 
-    IF valid_course_info THEN
+    IF delete_unused THEN
         DELETE FROM topics AS t
         WHERE
             t.course_id = syncing_course_id

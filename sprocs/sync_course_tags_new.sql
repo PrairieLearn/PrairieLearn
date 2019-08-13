@@ -3,6 +3,7 @@ DROP FUNCTION IF EXISTS sync_course_tags_new(boolean,jsonb[],text[],bigint);
 CREATE OR REPLACE FUNCTION
     sync_course_tags_new(
         IN valid_course_info boolean,
+        IN delete_unused boolean,
         IN course_info_tags JSONB[],
         IN question_tag_names text[],
         IN syncing_course_id bigint,
@@ -66,7 +67,7 @@ BEGIN
     SELECT array_agg(id) INTO inserted_tag_ids FROM (SELECT id FROM new_tags) AS ids;
     keep_tag_ids := array_cat(keep_tag_ids, inserted_tag_ids);
 
-    IF valid_course_info THEN
+    IF delete_unused THEN
         DELETE FROM tags AS t
         WHERE
             t.course_id = syncing_course_id
