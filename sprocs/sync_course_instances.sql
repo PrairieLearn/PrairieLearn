@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    sync_course_instances_new(
+    sync_course_instances(
         IN disk_course_instances_data JSONB[],
         IN syncing_course_id bigint,
         OUT course_instance_ids JSONB

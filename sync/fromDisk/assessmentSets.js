@@ -46,7 +46,7 @@ module.exports.syncNew = async function(courseId, courseData) {
         courseId,
     ];
 
-    const res = await sqldb.callOneRowAsync('sync_assessment_sets_new', params);
+    const res = await sqldb.callOneRowAsync('sync_assessment_sets', params);
     const usedAssessmentSetIds = res.rows[0].used_assessment_set_ids;
 
     return { deleteUnused, usedAssessmentSetIds }

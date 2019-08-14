@@ -198,5 +198,5 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
         config.checkAccessRulesExamUuid,
     ];
 
-    await sqldb.callAsync('sync_assessments_new', params);
+    await sqldb.callAsync('sync_assessments', params);
 }

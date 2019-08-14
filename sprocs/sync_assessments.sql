@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    sync_assessments_new(
+    sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
         IN syncing_course_instance_id bigint,

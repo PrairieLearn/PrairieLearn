@@ -88,7 +88,7 @@ module.exports.syncNew = async function(courseId, courseData) {
     ];
 
     perf.start('syncQuestionsSprocNew');
-    const result = await sqldb.callOneRowAsync('sync_questions_new', params);
+    const result = await sqldb.callOneRowAsync('sync_questions', params);
     perf.end('syncQuestionsSprocNew');
 
     /** @type {[string, any][]} */

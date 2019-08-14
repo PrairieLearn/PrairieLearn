@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    sync_topics_new(
+    sync_topics(
         IN valid_course_info boolean,
         IN delete_unused boolean,
         IN course_info_topics JSONB[],

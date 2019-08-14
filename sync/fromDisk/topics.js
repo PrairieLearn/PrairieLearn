@@ -40,5 +40,5 @@ module.exports.syncNew = async function(courseId, courseData) {
         courseId,
     ];
 
-    const res = await sqldb.callOneRowAsync('sync_topics_new', params);
+    const res = await sqldb.callOneRowAsync('sync_topics', params);
 }

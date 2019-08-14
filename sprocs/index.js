@@ -140,15 +140,15 @@ module.exports = {
             'access_tokens_delete.sql',
             'assessment_instances_points.sql',
             'lock_timeout_set.sql',
-            'sync_single_question.sql',
+            'sync_course_instances.sql',
+            'sync_topics.sql',
+            'sync_questions.sql',
+            'sync_course_tags.sql',
+            'sync_question_tags.sql',
+            'sync_assessment_sets.sql',
+            'sync_assessments.sql',
             'sync_assessment_sets_delete_unused.sql',
-            'sync_questions_new.sql',
-            'sync_course_instances_new.sql',
-            'sync_course_tags_new.sql',
-            'sync_question_tags_new.sql',
-            'sync_topics_new.sql',
-            'sync_assessment_sets_new.sql',
-            'sync_assessments_new.sql',
+            'sync_single_question.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

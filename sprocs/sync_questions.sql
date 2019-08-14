@@ -5,7 +5,7 @@
 
 DROP FUNCTION IF EXISTS sync_questions(JSONB, bigint);
 CREATE OR REPLACE FUNCTION
-    sync_questions_new(
+    sync_questions(
         IN disk_questions_data JSONB[],
         IN syncing_course_id bigint,
         OUT new_questions_json JSONB

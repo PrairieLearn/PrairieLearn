@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    sync_question_tags_new(
+    sync_question_tags(
         IN new_question_tags JSONB[]
     ) RETURNS void
 AS $$

@@ -42,7 +42,7 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
         courseId,
     ];
 
-    const res = await sqldb.callOneRowAsync('sync_course_tags_new', params);
+    const res = await sqldb.callOneRowAsync('sync_course_tags', params);
 
     /** @type {[string, any][]} */
     const newTags = res.rows[0].new_tags_json;
@@ -62,5 +62,5 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
         questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
     });
 
-    await sqldb.callAsync('sync_question_tags_new', [questionTagsParam]);
+    await sqldb.callAsync('sync_question_tags', [questionTagsParam]);
 }

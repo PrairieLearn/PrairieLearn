@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    sync_assessment_sets_new(
+    sync_assessment_sets(
         IN valid_course_info boolean,
         IN course_info_assessment_sets JSONB[],
         IN assessment_set_names text[],
