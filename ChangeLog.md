@@ -7,6 +7,8 @@
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
+  * Change syncing to be more resilient and to record errors/warnings encountered during sync (Nathan Walters).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
