@@ -111,7 +111,7 @@ individual_tests = lapply(seq_len(nrow(test_data)), # Individual build results f
 
 # Provide an overall concatentation of test data
 pl_per_test_output = function(i, x) {
-    condition = if(isTRUE(x$passed[i])) {
+    condition = if ( x$passed[i] >= 1 && isFALSE(x$error[i]) ) {
         "passed..."
     } else {
         "failed!"
