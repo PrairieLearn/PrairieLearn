@@ -12,8 +12,10 @@
   * Fix deadlock when syncing course staff (Nathan Walters).
 
   * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
-  
+
   * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
+
+  * Fix assessment password clearing cookie situations, issue #1579 (Dave Mussulman).
 
 * __3.2.0__ - 2019-08-05
 
