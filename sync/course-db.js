@@ -438,7 +438,7 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
             return infofile.makeError('UUID is missing');
         }
         if (!UUID_REGEX.test(json.uuid)) {
-            return infofile.makeError('UUID is not a valid v4 UUID');
+            return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
         }
 
         if (!schema) {
@@ -466,33 +466,32 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
             return infofile.makeError(err.message);
         }
     } catch (err) {
-        // The document was still valid JSON, but we may still be able to
-        // extract a UUID from the raw files contents with a regex.
-        const match = (contents || '').match(FILE_UUID_REGEX);
-        if (!match) {
-            return infofile.makeError('UUID not found in file');
-        }
-        if (match.length > 1) {
-            return infofile.makeError('More that one UUID found in file');
-        }
-
-        // Extract and store UUID
-        const uuid = match[0].match(UUID_REGEX)[0];
-
-        // If we found a UUID, let's re-parse with jju to generate a better
-        // error report for users.
+        // Invalid JSON; let's reparse with jju to get a better error message
+        // for the user.
+        /** @type {import('./infofile').InfoFile<T>} */
+        let result = {};
         try {
             // This should always throw
             jju.parse(contents, { mode: 'json' });
         } catch (e) {
-            const result = { uuid };
-            infofile.addError(result, `Error parsing JSON: ${e.message}`);
+            result = infofile.makeError(`Error parsing JSON: ${e.message}`);
+        }
+
+        // The document was still valid JSON, but we may still be able to
+        // extract a UUID from the raw files contents with a regex.
+        const match = (contents || '').match(FILE_UUID_REGEX);
+        if (!match) {
+            infofile.addError(result, 'UUID not found in file');
+            return result;
+        }
+        if (match.length > 1) {
+            infofile.addError(result, 'More than one UUID found in file');
             return result;
         }
 
-        // If we got here, we must not have caught an error above, which is
-        // completely unexpected. For safety, throw an error to abort sync.
-        throw new Error(`Expected file ${absolutePath} to have invalid JSON, but parsing succeeded.`);
+        // Extract and store UUID
+        result.uuid = match[0].match(UUID_REGEX)[0];
+        return result;
     }
 }
 
@@ -657,8 +656,8 @@ async function loadInfoForDirectory(coursePath, directory, infoFilename, default
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
     // First, create a map from UUIDs to questions that use them
     const uuids = Object.entries(infos).reduce((map, [id, info]) => {
-        if (!info.data) {
-            // Either missing or error validating; skip.
+        if (!info.uuid) {
+            // Couldn't find UUID in the file
             return map;
         }
         let ids = map.get(info.uuid);
@@ -838,7 +837,7 @@ async function validateCourseInstance(courseInstance) {
 module.exports.loadQuestions = async function(courseDirectory) {
     /** @type {{ [qid: string]: InfoFile<Question> }} */
     const questions = await loadInfoForDirectory(courseDirectory, 'questions', 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
-    checkDuplicateUUIDs(questions, (uuid, ids) => `UUID ${uuid} is used in other questions: ${ids.join(', ')}`);
+    checkDuplicateUUIDs(questions, (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`);
     return questions;
 }
 
@@ -850,7 +849,7 @@ module.exports.loadQuestions = async function(courseDirectory) {
 module.exports.loadCourseInstances = async function(courseDirectory) {
     /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
     const courseInstances = await loadInfoForDirectory(courseDirectory, 'courseInstances', 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
-    checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID ${uuid} is used in other course instances: ${ids.join(', ')}`);
+    checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
 }
 
@@ -867,6 +866,6 @@ module.exports.loadAssessments = async function(courseDirectory, courseInstance,
     const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
     const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessmentWithQuestions);
-    checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID ${uuid} is used in other assessments in this course instance: ${ids.join(', ')}`);
+    checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;
 }

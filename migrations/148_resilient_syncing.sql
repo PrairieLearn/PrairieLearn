@@ -6,12 +6,12 @@ ALTER TABLE questions
 
 CREATE UNIQUE INDEX questions_course_id_uuid_nondeleted_key
 ON questions (course_id, uuid)
-WHERE deleted_at IS NOT NULL;
+WHERE deleted_at IS NULL;
 ALTER TABLE questions DROP CONSTRAINT questions_course_id_uuid_key;
 
 CREATE UNIQUE INDEX questions_course_id_number_nondeleted_key
 ON questions (course_id, uuid)
-WHERE deleted_at IS NOT NULL;
+WHERE deleted_at IS NULL;
 ALTER TABLE questions DROP CONSTRAINT questions_course_id_number_key;
 
 ALTER TABLE course_instances
