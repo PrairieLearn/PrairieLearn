@@ -56,29 +56,21 @@ describe('Question syncing', () => {
     // Missing topics should be created
     const courseData = util.getCourseData();
     const missingTopicName = 'missing topic name';
-    const missingSecondaryTopicName = 'missing secondary topic name';
     const originalTopicName = courseData.questions[util.QUESTION_ID].topic;
     courseData.questions[util.QUESTION_ID].topic = missingTopicName;
-    courseData.questions[util.QUESTION_ID].secondaryTopics.push(missingSecondaryTopicName);
     const courseDir = await util.writeAndSyncCourseData(courseData);
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
     assert(syncedTopic.description && syncedTopic.description.length > 0, 'tag should not have empty description');
-    let syncedSecondaryTopic = syncedTopics.find(topic => topic.name === missingSecondaryTopicName);
-    assert.isOk(syncedSecondaryTopic);
-    assert(syncedSecondaryTopic.description && syncedSecondaryTopic.description.length > 0, 'tag should not have empty description');
 
     // When missing topics are no longer used in any questions, they should
     // be removed from the DB
     courseData.questions[util.QUESTION_ID].topic = originalTopicName;
-    courseData.questions[util.QUESTION_ID].secondaryTopics.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTopics = await util.dumpTable('topics');
     syncedTopic = syncedTopics.find(tag => tag.name === missingTopicName);
     assert.isUndefined(syncedTopic);
-    syncedSecondaryTopic = syncedTopics.find(tag => tag.name === missingSecondaryTopicName);
-    assert.isUndefined(syncedSecondaryTopic);
   });
 
   it('allows the same UUID to be used in different courses', async () => {
