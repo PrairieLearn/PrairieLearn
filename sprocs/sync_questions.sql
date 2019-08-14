@@ -1,8 +1,3 @@
--- Accepts a course ID and an array of question obects. Ensures that all
--- questions are present and up-to-date in the DB and soft-deletes any
--- questions that are no longer in use by the course. Returns an array
--- of IDs for each created or update question.
-
 DROP FUNCTION IF EXISTS sync_questions(JSONB, bigint);
 CREATE OR REPLACE FUNCTION
     sync_questions(

@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS sync_assessment_sets(JSONB, bigint);
 CREATE OR REPLACE FUNCTION
     sync_assessment_sets(
         IN valid_course_info boolean,

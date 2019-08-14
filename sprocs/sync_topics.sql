@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS sync_topics(JSONB, bigint);
 CREATE OR REPLACE FUNCTION
     sync_topics(
         IN valid_course_info boolean,

@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
 CREATE OR REPLACE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
