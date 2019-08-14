@@ -16,10 +16,10 @@ library("jsonlite")
 # |- data/
 # |- results/
 # |- run/                # <--- Working directory
-# |- serverFilesCourse/ 
+# |- serverFilesCourse/
 # |- shared/
 # |- student/
-# |- tests/ 
+# |- tests/
 
 ## Run Unit Tests ----
 
@@ -29,7 +29,7 @@ library("jsonlite")
 # issue ticket: https://github.com/r-lib/testthat/issues/659
 
 # Begin the process of grading each student's code
-# Add a capture statement to avoid allowing students to output 
+# Add a capture statement to avoid allowing students to output
 # content to console.
 log <- capture.output({
     test_data_as_list <- testthat::test_dir("../tests",
@@ -141,7 +141,7 @@ pl_output_format =
     "output" = paste0(
         "Running tests...\n", merge_per_test_output
     ),
-    "tests" = individual_tests 
+    "tests" = individual_tests
 )
 
 ## Export results into the standard output stream ----
