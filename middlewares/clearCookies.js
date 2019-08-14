@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-var cookies_to_ignore = ['pl_authn', 'pl_assessmentpw'];
+const cookies_to_ignore = ['pl_authn', 'pl_assessmentpw'];
 
 module.exports = function(req, res, next) {
     _(req.cookies).each(function(value, key) {
