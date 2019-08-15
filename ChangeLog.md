@@ -7,11 +7,9 @@
 
   * Add example docker grading images for externally graded questions (James Balamuta).
   
-  * Add R autograde framework for externally graded questions (James Balamuta).
-
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
-  * Change `centos-python` to be housed under `graders/`  (James Balamuta).
+  * Change `centos-python` to `grader-python` and place it under `graders/`  (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
