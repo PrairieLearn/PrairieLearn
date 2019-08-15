@@ -1,13 +1,14 @@
 // @ts-check
 const _ = require('lodash');
-const { callbackify } = require('util');
 const naturalSort = require('javascript-natural-sort');
-const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const config = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
  * SYNCING PROCESS:
@@ -187,6 +188,46 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
  * @param {{ [qid: string]: any }} questionIds
  */
 module.exports.syncNew = async function(courseId, courseInstanceId, assessments, questionIds) {
+    if (config.checkAccessRulesExamUuid) {
+        // UUID-based exam access rules are validated here instead of course-db.js
+        // because we need to hit the DB to check for them; we can't validate based
+        // solely on the data we're reading off disk.
+        // Instead of checking for `infofile.hasErrors`, we check if data is null
+        // so that we can still add errors for invalid access UUIDs even if something
+        // else produced an error
+        // To be efficient, we'll collect all UUIDs from all assessments and check for
+        // their existence in a single sproc call. We'll store a reverse mapping from UUID
+        // to exams to be able to efficiently add error information for missing UUIDs.
+        /** @type {Set<string>} */
+        const examUuids = new Set();
+        /** @type {Map<string, string[]>} */
+        const uuidAssessmentMap = new Map();
+        Object.entries(assessments).forEach(([tid, assessment]) => {
+            if (!assessment.data) return;
+            (assessment.data.allowAccess || []).forEach(allowAccess => {
+                const { examUuid } = allowAccess;
+                if (examUuid) {
+                    examUuids.add(examUuid);
+                    let tids = uuidAssessmentMap.get(examUuid);
+                    if (!tids) {
+                        tids = [];
+                        uuidAssessmentMap.set(examUuid, tids);
+                    }
+                    tids.push(tid);
+                }
+            });
+        });
+
+        const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]),};
+        const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
+        uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
+            if (!uuid_exists) {
+                uuidAssessmentMap.get(uuid).forEach(tid => {
+                    infofile.addError(assessments[tid], `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`);
+                });
+            }
+        });
+    }
     const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
         return JSON.stringify([
             tid,
@@ -201,7 +242,6 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
         assessmentParams,
         courseId,
         courseInstanceId,
-        config.checkAccessRulesExamUuid,
     ];
     perf.start('sproc:sync_assessments');
     await sqldb.callAsync('sync_assessments', params);

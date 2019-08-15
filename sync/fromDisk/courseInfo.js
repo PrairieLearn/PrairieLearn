@@ -14,7 +14,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 /**
  * @param {any} courseInfo
  * @param {any} course_id
- * @param {(err: Error | null | undefined) => void}
+ * @param {(err: Error | null | undefined) => void} callback
  */
 module.exports.sync = (courseInfo, course_id, callback) => {
     const params = {

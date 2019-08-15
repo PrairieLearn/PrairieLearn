@@ -1,10 +1,10 @@
 DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
+DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
 CREATE OR REPLACE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
-        IN syncing_course_instance_id bigint,
-        IN check_access_rules_exam_uuid boolean
+        IN syncing_course_instance_id bigint
     ) RETURNS void
 AS $$
 DECLARE
@@ -168,16 +168,6 @@ BEGIN
 
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'allowAccess') LOOP
-            -- If exam_uuid is specified, ensure that a corresponding PS exam exists
-            IF access_rule->'exam_uuid' != NULL AND check_access_rules_exam_uuid THEN
-                SELECT 1 FROM exams WHERE uuid = access_rule->>'exam_uuid';
-                IF NOT FOUND THEN
-                    -- TODO: this shouldn't be raised during the syncing process itself
-                    -- We should validate this before starting to flush data to the DB
-                    RAISE EXCEPTION 'Assessment % allowAccess: No such examUuid % found in database. Ensure you copied the correct UUID from the scheduler.', vadid_assessment.data->>'tid', access_rule->>'exam_uuid';
-                END IF;
-            END IF;
-
             INSERT INTO assessment_access_rules (
                 assessment_id,
                 number,
@@ -342,6 +332,18 @@ BEGIN
             AND aq.deleted_at IS NULL
             AND aq.id NOT IN (SELECT unnest(new_assessment_question_ids));
     END LOOP;
+
+    -- Now that all assessments have numbers, make a second pass over them to
+    -- assign every assessment an order_by attribute
+    UPDATE assessments AS a
+    SET order_by = assessments_with_ordinality.order_by
+    FROM (
+        SELECT
+            tid,
+            row_number() OVER (ORDER BY number ASC) AS order_by
+        FROM assessments
+    ) AS assessments_with_ordinality
+    WHERE a.tid = assessments_with_ordinality.tid;
 
     -- Second pass: add errors and warnings where needed
     UPDATE assessments AS a
