@@ -2,6 +2,7 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const infofile = require('../infofile');
+const perf = require('../performance')('tags');
 
 /**
  * @param {any} courseId
@@ -42,7 +43,9 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
         courseId,
     ];
 
+    perf.start('sproc:sync_course_tags');
     const res = await sqldb.callOneRowAsync('sync_course_tags', params);
+    perf.end('sproc:sync_course_tags');
 
     /** @type {[string, any][]} */
     const newTags = res.rows[0].new_tags_json;
@@ -62,5 +65,7 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
         questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
     });
 
+    perf.start('sproc:sync_question_tags');
     await sqldb.callAsync('sync_question_tags', [questionTagsParam]);
+    perf.end('sproc:sync_question_tags');
 }

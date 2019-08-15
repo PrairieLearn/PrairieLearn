@@ -2,6 +2,7 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const infofile = require('../infofile');
+const perf = require('../performance')('topics');
 
 /**
  * @param {import('../course-db').CourseData} courseData
@@ -40,5 +41,7 @@ module.exports.syncNew = async function(courseId, courseData) {
         courseId,
     ];
 
-    const res = await sqldb.callOneRowAsync('sync_topics', params);
+    perf.start('sproc:sync_topics');
+    await sqldb.callAsync('sync_topics', params);
+    perf.end('sproc:sync_topics');
 }

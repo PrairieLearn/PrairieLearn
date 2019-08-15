@@ -2,6 +2,7 @@
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const infofile = require('../infofile');
+const perf = require('../performance')('assessmentSets');
 
 /**
  * @param {any} courseId
@@ -46,7 +47,9 @@ module.exports.syncNew = async function(courseId, courseData) {
         courseId,
     ];
 
+    perf.start('sproc:sync_assessment_sets');
     const res = await sqldb.callOneRowAsync('sync_assessment_sets', params);
+    perf.end('sproc:sync_assessment_sets');
     const usedAssessmentSetIds = res.rows[0].used_assessment_set_ids;
 
     return { deleteUnused, usedAssessmentSetIds }

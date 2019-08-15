@@ -197,6 +197,7 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
         courseInstanceId,
         config.checkAccessRulesExamUuid,
     ];
-
+    perf.start('sproc:sync_assessments');
     await sqldb.callAsync('sync_assessments', params);
+    perf.end('sproc:sync_assessments');
 }
