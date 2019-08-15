@@ -39,7 +39,7 @@ const infofile = require('../infofile');
 
  /**
   * 
-  * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessment 
+  * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessmentInfoFile
   * @param {{ [qid: string]: any }} questionIds
   */
 function getParamsForAssessment(assessmentInfoFile, questionIds) {
@@ -119,25 +119,31 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                 }];
             }
 
-            for (let i = 0; i < alternatives.length; i++) {
-                const alternative = alternatives[i];
+            const normalizedAlternatives = alternatives.map(alternative => {
+                if (assessment.type === 'Exam') {
+                    const pointsList = Array.isArray(alternative.points) ? alternative.points : [alternative.points];
+                    const maxPoints = Math.max(...pointsList);
+                    return {
+                        ...alternative,
+                        // Exluce 'points' prop
+                        points: undefined,
+                        maxPoints,
+                        pointsList,
+                        initPoints: undefined,
+                    };
 
-                if (assessment.type == 'Exam') {
-                    if (_.isArray(alternative.points)) {
-                        alternative.pointsList = alternative.points;
-                    } else {
-                        alternative.pointsList = [alternative.points];
-                    }
-                    delete alternative.points;
-                    alternative.maxPoints = _.max(alternative.pointsList);
                 }
-                if (assessment.type == 'Homework') {
-                    if (alternative.maxPoints == undefined) {
-                        alternative.maxPoints = alternative.points;
-                    }
-                    alternative.initPoints = alternative.points;
+                if (assessment.type === 'Homework') {
+                    const maxPoints = alternative.maxPoints || alternative.points;
+                    const initPoints = alternatives.points;
+                    return {
+                        ...alternative,
+                        maxPoints,
+                        initPoints,
+                        pointsList: undefined,
+                    };
                 }
-            }
+            });
 
             alternativeGroupNumber++;
             const alternativeGroupParams = {
@@ -145,7 +151,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                 number_choose: question.numberChoose,
             };
 
-            alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
+            alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
                 assessmentQuestionNumber++;
                 // TODO: we used to validate that all questions are actually in the course
                 // and throw an error here if they weren't. This should be done in the earlier
