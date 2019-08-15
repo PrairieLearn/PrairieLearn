@@ -11,7 +11,7 @@ LABEL org.label-schema.license="GPL-2.0" \
 COPY r-requirements.R /
 
 # Modify the image to meet with PrairieLearn specifications
-RUN useradd ag && \                        # Enable autograde user for PrairieLearn
-    su root -c "Rscript /r-requirements.R" # Install the additional packages
+RUN useradd ag `# Enable autograde user for PrairieLearn` \                        
+    && su root -c "Rscript /r-requirements.R" `# Install the additional packages`
 
 # Rejoice! The docker image is built.
