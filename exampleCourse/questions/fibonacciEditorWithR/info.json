@@ -1,0 +1,16 @@
+{
+    "uuid": "8f3e0727-336b-4388-9410-565951b0beff",
+    "title": "Fibonacci Autograding with R",
+    "topic": "Functions",
+    "tags": ["code", "rstats", "v3", "balamut2", "Su19"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-r",
+        "serverFilesCourse": ["r_autograder/"],
+        "entrypoint": "/grade/serverFilesCourse/r_autograder/run.sh",
+        "timeout": 20
+    }
+}
