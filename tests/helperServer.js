@@ -122,7 +122,7 @@ module.exports = {
         // start() functions above
         async.series([
             function(callback) {
-            debug('after(): finish workers');
+                debug('after(): finish workers');
                 workers.finish(err => {
                     if (ERR(err, callback)) return;
                     callback(null);
