@@ -26,6 +26,7 @@
         "csv": "^5.1.1",
         "csvtojson": "^2.0.10",
         "debug": "^4.1.1",
+        "detect-mocha": "^0.1.0",
         "diff": "^4.0.1",
         "dockerode": "^2.5.8",
         "ejs": "^2.6.2",

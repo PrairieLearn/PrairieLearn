@@ -9,6 +9,8 @@
 
   * Add dev docs for interfacing async/await code (Matt West).
 
+  * Add integration tests for daily cron jobs (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Fix dead letter cron job for `async` v3 (Matt West).

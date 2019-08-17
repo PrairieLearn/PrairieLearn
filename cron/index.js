@@ -28,8 +28,8 @@ const jobTimeouts = {};
 
 module.exports = {
     init(callback) {
-       debug(`init()`);
-        const jobs = [
+        debug(`init()`);
+        module.exports.jobs = [
             {
                 name: 'sendUnfinishedCronWarnings',
                 module: require('./sendUnfinishedCronWarnings'),
@@ -38,12 +38,12 @@ module.exports = {
             {
                 name: 'autoFinishExams',
                 module: require('./autoFinishExams'),
-                intervalSec: config.cronIntervalAutoFinishExamsSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalAutoFinishExamsSec,
             },
             {
                 name: 'errorAbandonedJobs',
                 module: require('./errorAbandonedJobs'),
-                intervalSec: config.cronIntervalErrorAbandonedJobsSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
             },
             {
                 name: 'sendExternalGraderStats',
@@ -58,17 +58,17 @@ module.exports = {
             {
                 name: 'externalGraderLoad',
                 module: require('./externalGraderLoad'),
-                intervalSec: config.cronIntervalExternalGraderLoadSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
             },
-            {
+/*            {
                 name: 'serverLoad',
                 module: require('./serverLoad'),
-                intervalSec: config.cronIntervalServerLoadSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
             },
-            {
+*/            {
                 name: 'serverUsage',
                 module: require('./serverUsage'),
-                intervalSec: config.cronIntervalServerUsageSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerUsageSec,
             },
             {
                 name: 'calculateAssessmentQuestionStats',
@@ -81,9 +81,9 @@ module.exports = {
                 intervalSec: 'daily',
             },
         ];
-        logger.verbose('initializing cron', _.map(jobs, j => _.pick(j, ['name', 'intervalSec'])));
+        logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
 
-        const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
+        const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
         _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
             if (intervalSec == 'daily') {
                 this.queueDailyJobs(jobsList);
