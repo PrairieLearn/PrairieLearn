@@ -11,7 +11,9 @@
 
   * Add integration tests for daily cron jobs (Matt West).
 
-  * Add example docker grading images for externally graded questions (James Balamuta).
+  * Add example docker grading images for externally graded questions in `graders/` (James Balamuta).
+
+  * Add _R_ autograder example for externally graded questions (James Balamuta).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
