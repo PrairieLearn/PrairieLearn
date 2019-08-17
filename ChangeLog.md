@@ -9,7 +9,7 @@
   
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
-  * Change `centos-python` to `grader-python` and place it under `graders/`  (James Balamuta).
+  * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
