@@ -11,15 +11,25 @@
 
   * Add integration tests for daily cron jobs (Matt West).
 
+  * Add example docker grading images for externally graded questions (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
+
+  * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
 
   * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
-  
+
   * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
+
+  * Fix assessment password clearing cookie situations, issue #1579 (Dave Mussulman).
+
+  * Fix the syncing of missing tags and topics (Nathan Walters).
+
+  * Fix documentation formatting (Dave Mussulman).
 
 * __3.2.0__ - 2019-08-05
 

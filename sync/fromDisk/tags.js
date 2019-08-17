@@ -30,10 +30,15 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         // We'll create placeholder tags for tags that aren't specified in
         // infoCourse.json.
         const knownTagNames = new Set(tags.map(tag => tag.name));
-        const questionTagNames = [];
-        Object.values(questionDB).forEach(q => questionTagNames.push(...(q.tags || [])))
-        const missingTagNames = questionTagNames.filter(name => !knownTagNames.has(name));
-        tags.push(...missingTagNames.map(name => ({
+        const missingTagNames = new Set();
+        Object.values(questionDB).forEach(q => {
+            (q.tags || []).forEach(tag => {
+                if (!knownTagNames.has(tag)) {
+                    missingTagNames.add(tag);
+                }
+            });
+        });
+        tags.push(...[...missingTagNames].map(name => ({
             name,
             color: 'gray1',
             description: 'Auto-generated from use in a question; add this tag to your courseInfo.json file to customize',
