@@ -91,22 +91,30 @@ pl_test_list_format = function(i, x) {
             "No errors!"
         }
     }
-
-    pl_output_statement = function(passed) {
-        condition = if(passed == 1) {
-            "matched"
-        } else {
-            "did not match"
+    
+    pl_output_statement = function(x) {
+        condition = "matched"
+        check_statement = ""
+        if(x$passed == 0) {
+            condition = "did not match"
+            test_stack = unlist(x$result, recursive = FALSE)
+            
+            check_statement = if (!is.null(test_stack) && length(test_stack) != 0) {
+                format(x$result[[1]][[1]][["expectation_calls"]][[1]])
+            } else {
+                "Unable to recover the check statement."
+            }
         }
-        sprintf("Running test...\nYour output %s the expected output.", condition)
+        sprintf("Running test...\nYour output %s the expected output. \n%s", 
+                condition, check_statement)
     }
-
+    
     list("name" = paste("Test", i),
          "description" = x[i, "description"],
          "points" = x[i, "earned_points"],
          "max_points" = x[i, "max_points"],
-         "output" = pl_output_statement(x[i, "passed"])
          "message" =  pl_message_statement(x[i, , drop = FALSE]),
+         "output" = pl_output_statement(x[i, , drop = FALSE])
     )
 }
 
