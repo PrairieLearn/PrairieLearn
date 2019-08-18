@@ -75,11 +75,17 @@ test_data$description = stringr::str_replace(
 
 # Format the results of each inline test.
 pl_test_list_format = function(i, x) {
-
-    pl_message_statement = function(error, fail) {
-        if(isTRUE(error)) {
-            "Your code encounted an error. Please verify it works."
-        } else if(isTRUE(fail)) {
+    
+    pl_message_statement = function(x) {
+        if (isTRUE(x$error)) {
+            test_stack = unlist(x$result, recursive = FALSE)
+            error_message = if (!is.null(test_stack) && length(test_stack) != 0) {
+                format(test_stack[[1]])
+            } else {
+                "Error message was unrecoverable."
+            }
+            sprintf("Your code encounted an error.\n %s", error_message)
+        } else if (x$failed >= 1) {
             "The code ran but did not produce the correct result."
         } else {
             "No errors!"
@@ -99,8 +105,8 @@ pl_test_list_format = function(i, x) {
          "description" = x[i, "description"],
          "points" = x[i, "earned_points"],
          "max_points" = x[i, "max_points"],
-         "message" =  pl_message_statement(x[i, "error"], x[i, "failed"]),
          "output" = pl_output_statement(x[i, "passed"])
+         "message" =  pl_message_statement(x[i, , drop = FALSE]),
     )
 }
 
