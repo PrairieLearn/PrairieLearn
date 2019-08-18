@@ -135,14 +135,14 @@ score = sum(test_data$earned_points)/sum(test_data$max_points)
 # encasing `data.frame` objects within a JSON array.
 pl_output_format =
     list(
-    "succeeded" = TRUE,
-    "score" = score,
-    "message" = "Questions were externally graded",
-    "output" = paste0(
-        "Running tests...\n", merge_per_test_output
-    ),
-    "tests" = individual_tests
-)
+        "succeeded" = TRUE,
+        "score" = score,
+        "message" = "Questions were externally graded",
+        "output" = paste0(
+            "Running tests...\n", merge_per_test_output
+        ),
+        "tests" = individual_tests
+    )
 
 ## Export results into the standard output stream ----
 
