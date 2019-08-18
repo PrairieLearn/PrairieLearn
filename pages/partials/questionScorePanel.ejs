@@ -31,34 +31,96 @@
       <% } %>
     </tbody>
   </table>
-  <% if (assessment.allow_issue_reporting) { %>
-  <div class="card-footer">
-    <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-      Report an error in this question
-    </button>
-    <div class="collapse" id="issueCollapse">
-      <hr />
-      <form method="POST">
-        <p class="small">
-          This form is only for reporting errors in the question
-          itself. Do not use this form if you just don't know how to
-          answer the question.
-        </p>
-        <% if (/*authz_data.mode == 'Exam'*/ false) { %>
-        <p class="small">
-          Ask a proctor if you think there is a problem with your computer.
-        </p>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item">
+      <% if (file_list.length == 0) { %>
+        No attached files
+      <% } else { %>
+        Attached files:
+        <% for (let file of file_list) { %>
+          <br>
+          <a target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
+            <%- include('../partials/fileLabel', {type: file.type}) %>
+            <%= file.display_filename %>
+          </a>
         <% } %>
-        <div class="form-group">
-          <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
+      <% } %>
+      <!-- UPLOAD FILE -->
+        <br>
+        <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#uploadFileCollapse" aria-expanded="false" aria-controls="uploadFileCollapse">
+          Upload a file
+        </button>
+        <div class="collapse" id="uploadFileCollapse">
+          <hr />
+          <form name="upload-file-form" method="POST" enctype="multipart/form-data">
+            <p class="small">
+              Uploaded files will be saved with this question.
+            </p>
+            <div class="form-group">
+              <div class="custom-file">
+                <input type="file" name="file" class="custom-file-input" id="uploadFileInput">
+                <label class="custom-file-label" for="uploadFileInput">Choose file</label>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end">
+              <div class="form-group mb-0">
+                <input type="hidden" name="__action" value="upload_file">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="submit" class="btn btn-primary">Upload file</button>
+              </div>
+            </div>
+          </form>
+          <hr />
         </div>
-        <input type="hidden" name="__variant_id" value="<%= variant.id %>">
-        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-        <div class="form-group text-right">
-          <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report error
+      <!-- PASTE TEXT -->
+        <br>
+        <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#uploadTextCollapse" aria-expanded="false" aria-controls="uploadTextCollapse">
+          Upload text
+        </button>
+        <div class="collapse" id="uploadTextCollapse">
+          <hr />
+          <form method="POST">
+            <p class="small">
+              Type or paste text below and click "upload".
+              The text will be saved with this question.
+            </p>
+            <input name="filename" value="uploaded_info.txt">
+            <div class="form-group">
+              <textarea class="form-control" rows="5" name="contents" placeholder="Put text here"></textarea>
+            </div>
+            <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <div class="form-group text-right">
+              <button class="btn btn-small btn-primary" name="__action" value="upload_text">Upload text
+            </div>
+          </form>
         </div>
-      </form>
-    </div>
-  </div>
+      <!-- END OF FILES -->
+    </li>
+    <% if (assessment.allow_issue_reporting) { %>
+    <li class="list-group-item">
+        <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+          Report an error in this question
+        </button>
+        <div class="collapse" id="issueCollapse">
+          <hr />
+          <form method="POST">
+            <p class="small">
+              This form is only for reporting errors in the question
+              itself. Do not use this form if you just don't know how to
+              answer the question.
+            </p>
+            <div class="form-group">
+              <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
+            </div>
+            <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <div class="form-group text-right">
+              <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report error
+            </div>
+          </form>
+        </div>
+      </li>
   <% } %>
+  </ul>
 </div>

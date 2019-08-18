@@ -15,6 +15,13 @@ WITH instance_questions_info AS (
         ai.id IN (SELECT assessment_instance_id FROM instance_questions WHERE id = $instance_question_id)
     WINDOW
         w AS (ORDER BY qo.row_order)
+),
+file_list AS (
+    SELECT coalesce(jsonb_agg(f), '[]'::jsonb) AS list
+    FROM files AS f
+    WHERE
+        f.instance_question_id = $instance_question_id
+        AND f.deleted_at IS NULL
 )
 SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
@@ -46,7 +53,8 @@ SELECT
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
-    assessment_instance_label(ai, a, aset) AS assessment_instance_label
+    assessment_instance_label(ai, a, aset) AS assessment_instance_label,
+    fl.list AS file_list
 FROM
     instance_questions AS iq
     JOIN instance_questions_info AS iqi ON (iqi.id = iq.id)
@@ -60,6 +68,7 @@ FROM
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
+    CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
