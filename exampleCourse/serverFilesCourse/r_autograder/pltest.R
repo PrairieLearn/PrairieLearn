@@ -33,7 +33,7 @@ library("jsonlite")
 # content to console.
 log <- capture.output({
     test_data_as_list <- testthat::test_dir("../tests",
-                                           reporter = testthat::ListReporter)
+                                            reporter = testthat::ListReporter)
 })
 
 # Convert from list to a data.frame
