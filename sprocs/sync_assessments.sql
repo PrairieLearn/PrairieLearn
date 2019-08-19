@@ -340,10 +340,17 @@ BEGIN
     FROM (
         SELECT
             tid,
-            row_number() OVER (ORDER BY number ASC) AS order_by
-        FROM assessments
+            row_number() OVER (ORDER BY (
+                SELECT string_agg(convert_to(coalesce(r[2],
+                    length(length(r[1])::text) || length(r[1])::text || r[1]),
+                    'SQL_ASCII'),'\x00')
+                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r 
+            ) ASC) AS order_by
+        FROM assessments WHERE course_instance_id = syncing_course_instance_id AND 1 = 2
     ) AS assessments_with_ordinality
-    WHERE a.tid = assessments_with_ordinality.tid;
+    WHERE
+        a.tid = assessments_with_ordinality.tid
+        AND a.course_instance_id = syncing_course_instance_id;
 
     -- Second pass: add errors and warnings where needed
     UPDATE assessments AS a

@@ -12,6 +12,7 @@ const Ajv = require('ajv');
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
+const perf = require('./performance')('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ schemaId: 'auto' });
@@ -409,7 +410,9 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
     const absolutePath = path.join(coursePath, filePath);
     let contents;
     try {
+        perf.start(`readfile:${absolutePath}`);
         contents = await fs.readFile(absolutePath, 'utf-8');
+        perf.end(`readfile:${absolutePath}`);
     } catch (err) {
         if (err.code === 'ENOTDIR' && err.path === absolutePath) {
             // In a previous version of this code, we'd pre-filter
@@ -591,7 +594,9 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
  * @returns {Promise<InfoFile<T>>}
  */
 async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, validate) {
+    perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile(coursePath, filePath, schema);
+    perf.end(`loadandvalidate:${filePath}`);
     if (loadedJson === null) {
         // This should only occur if we looked for a file in a non-directory,
         // as would happen if there was a .DS_Store file.
@@ -639,7 +644,9 @@ async function loadInfoForDirectory(coursePath, directory, infoFilename, default
 
     await async.each(files, async function(dir) {
         const infoFile = path.join(directory, dir, infoFilename);
+        perf.start(`loadfile:${infoFile}`);
         const info = await loadAndValidateJsonNew(coursePath, infoFile, defaultInfo, schema, validate);
+        perf.end(`loadfile:${infoFile}`);
         if (info) {
             infos[dir] = info;
         }
