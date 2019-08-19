@@ -31,6 +31,8 @@
 
   * Fix documentation formatting (Dave Mussulman).
 
+  * Fix handling of duplicate topics in `infoCourse.json` (Nathan Walters).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
