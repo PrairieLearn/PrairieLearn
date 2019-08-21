@@ -334,7 +334,9 @@ BEGIN
     END LOOP;
 
     -- Now that all assessments have numbers, make a second pass over them to
-    -- assign every assessment an order_by attribute
+    -- assign every assessment an order_by attribute. This computes the natural
+    -- ordering over all assessments.
+    -- Source: http://www.rhodiumtoad.org.uk/junk/naturalsort.sql
     UPDATE assessments AS a
     SET order_by = assessments_with_ordinality.order_by
     FROM (
