@@ -1,6 +1,5 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const util = require('util');
 
 const error = require('@prairielearn/prairielib/error');
@@ -32,7 +31,7 @@ module.exports.sync = (courseInfo, course_id, callback) => {
         courseInfo.timezone = result.rows[0].display_timezone;
         callback(null);
     });
-}
+};
 
 /**
  * @param {import('../course-db').CourseData} courseData
@@ -45,4 +44,4 @@ module.exports.syncNew = async function(courseData, courseId) {
         return;
     }
     await util.promisify(module.exports.sync)(courseData.course.data, courseId);
-}
+};

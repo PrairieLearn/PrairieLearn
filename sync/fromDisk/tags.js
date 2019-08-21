@@ -68,4 +68,4 @@ module.exports.syncNew = async function(courseId, courseData, questionIds) {
     perf.start('sproc:sync_question_tags');
     await sqldb.callAsync('sync_question_tags', [questionTagsParam]);
     perf.end('sproc:sync_question_tags');
-}
+};

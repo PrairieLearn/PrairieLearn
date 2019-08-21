@@ -67,4 +67,4 @@ module.exports.syncNew = async function(courseId, courseData) {
         acc[shortName] = id;
         return acc;
     }, {});
-}
+};

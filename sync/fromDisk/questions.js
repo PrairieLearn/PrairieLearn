@@ -55,7 +55,7 @@ function getParamsForQuestion(q) {
  * round trips to the database and do everything (missing topic creation,
  * missing tag creation, and question updating) in a single sproc call.
  */
-module.exports.syncSingleQuestion = async function(courseDir, questionInfo, jobLogger) {
+module.exports.syncSingleQuestion = async function(courseDir, questionInfo) {
     const questionParam = getParamsForQuestion(questionInfo);
     // We need to add tags too - these are skipped for a normal full sync
     questionParam.tags = questionInfo.tags || [];
@@ -64,7 +64,7 @@ module.exports.syncSingleQuestion = async function(courseDir, questionInfo, jobL
         courseDir,
     ];
     await sqldb.callAsync('sync_single_question', params);
-}
+};
 
 /**
  * @param {any} courseId
@@ -97,4 +97,4 @@ module.exports.syncNew = async function(courseId, courseData) {
         acc[qid] = id;
         return acc;
     }, {});
-}
+};

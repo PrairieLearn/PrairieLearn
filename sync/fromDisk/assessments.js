@@ -1,6 +1,5 @@
 // @ts-check
 const _ = require('lodash');
-const naturalSort = require('javascript-natural-sort');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -80,7 +79,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             password: _(accessRule).has('password') ? accessRule.password : null,
             seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
             exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-        }
+        };
     });
 
     const zones = assessment.zones || [];
@@ -96,8 +95,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
     let alternativeGroupNumber = 0;
     let assessmentQuestionNumber = 0;
-    assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
-        return zone.questions.map((question, questionIndex) => {
+    assessmentParams.alternativeGroups = zones.map((zone) => {
+        return zone.questions.map((question) => {
             let alternatives;
             if (_(question).has('alternatives')) {
                 alternatives = _.map(question.alternatives, function(alternative) {
@@ -167,7 +166,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     tries_per_variant: alternative.triesPerVariant,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
-                }
+                };
 
             });
 
@@ -218,7 +217,7 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
             });
         });
 
-        const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]),};
+        const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]) };
         const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
         uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
             if (!uuid_exists) {
@@ -246,4 +245,4 @@ module.exports.syncNew = async function(courseId, courseInstanceId, assessments,
     perf.start('sproc:sync_assessments');
     await sqldb.callAsync('sync_assessments', params);
     perf.end('sproc:sync_assessments');
-}
+};

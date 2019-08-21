@@ -17,7 +17,7 @@
  */
 module.exports.hasUuid = function(either) {
     return !!either.uuid;
-}
+};
 
 /**
  * @template T
@@ -26,7 +26,7 @@ module.exports.hasUuid = function(either) {
  */
 module.exports.hasErrors = function(either) {
     return !!(either.errors && either.errors.length > 0);
-}
+};
 
 /**
  * @template T
@@ -35,7 +35,7 @@ module.exports.hasErrors = function(either) {
  */
 module.exports.hasWarnings = function(either) {
     return !!(either.warnings && either.warnings.length > 0);
-}
+};
 
 /**
  * @template T
@@ -44,7 +44,7 @@ module.exports.hasWarnings = function(either) {
 module.exports.stringifyErrors = function(either) {
     if (!this.hasErrors(either)) return '';
     return either.errors.join('\n');
-}
+};
 
 /**
  * @template T
@@ -53,7 +53,7 @@ module.exports.stringifyErrors = function(either) {
 module.exports.stringifyWarnings = function(either) {
     if (!this.hasWarnings(either)) return '';
     return either.warnings.join('\n');
-}
+};
 
 /**
  * @template T
@@ -65,7 +65,7 @@ module.exports.addError = function(either, error) {
         either.errors = [];
     }
     either.errors.push(error);
-}
+};
 
 /**
  * @template T
@@ -77,7 +77,7 @@ module.exports.addErrors = function(either, errors) {
         either.errors = [];
     }
     either.errors = either.errors.concat(errors);
-}
+};
 
 /**
  * @template T
@@ -89,7 +89,7 @@ module.exports.addWarning = function(either, warning) {
         either.warnings = [];
     }
     either.warnings.push(warning);
-}
+};
 
 /**
  * @template T
@@ -101,7 +101,7 @@ module.exports.addWarnings = function(either, warnings) {
         either.warnings = [];
     }
     either.warnings = either.warnings.concat(warnings);
-}
+};
 
 /**
  * @template T
@@ -110,7 +110,7 @@ module.exports.addWarnings = function(either, warnings) {
  */
 module.exports.makeError = function(error) {
     return { errors: [error] };
-}
+};
 
 /**
  * @template T
@@ -119,4 +119,4 @@ module.exports.makeError = function(error) {
  */
 module.exports.makeWarning = function(warning) {
     return { warnings: [warning] };
-}
+};

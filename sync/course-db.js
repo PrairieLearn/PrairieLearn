@@ -6,9 +6,10 @@ const fs = require('fs-extra');
 const fsPromises = require('fs').promises;
 const util = require('util');
 const async = require('async');
-const moment = require('moment');
+// const moment = require('moment');
 const jju = require('jju');
 const Ajv = require('ajv');
+const { isValid, parseISO, isAfter } = require('date-fns');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
@@ -356,8 +357,8 @@ module.exports.loadFullCourseNew = async function(courseDir) {
         course: courseInfo,
         questions,
         courseInstances,
-    }
-}
+    };
+};
 
 /**
  * @param {CourseData} courseData
@@ -394,10 +395,10 @@ module.exports.getPathsWithMissingUuids = async function(courseData) {
                     errors: info.errors,
                 });
             }
-        })
+        });
     });
     return paths;
-}
+};
 
 /**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
@@ -505,7 +506,7 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
         result.uuid = match[0].match(UUID_REGEX)[0];
         return result;
     }
-}
+};
 
 /**
  * @param {string} courseDirectory
@@ -591,7 +592,7 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
     loadedData.data = course;
     return loadedData;
-}
+};
 
 /**
  * @template T
@@ -739,18 +740,20 @@ async function validateAssessment(assessment, questions) {
         _(assessment.allowAccess).forEach(function(rule) {
             let startDate, endDate;
             if ('startDate' in rule) {
-                startDate = moment(rule.startDate, moment.ISO_8601);
-                if (startDate.isValid() == false) {
+                startDate = parseISO(rule.startDate);
+                if (!isValid(startDate)) {
+                    startDate = null;
                     errors.push(`Invalid allowAccess startDate: ${rule.startDate}`);
                 }
             }
             if ('endDate' in rule) {
-                endDate = moment(rule.endDate, moment.ISO_8601);
-                if (endDate.isValid() == false) {
+                endDate = parseISO(rule.endDate);
+                if (!isValid(endDate)) {
+                    endDate = null;
                     errors.push(`Invalid allowAccess endDate: ${rule.startDate}`);
                 }
             }
-            if (startDate && endDate && startDate.isAfter(endDate)) {
+            if (startDate && endDate && isAfter(startDate, endDate)) {
                 errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
             }
         });
@@ -769,7 +772,7 @@ async function validateAssessment(assessment, questions) {
         } else {
             duplicateQids.add(qid);
         }
-    }
+    };
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
             // We'll normalize either single questions or alternative groups
@@ -820,7 +823,7 @@ async function validateAssessment(assessment, questions) {
     }
 
     if (missingQids.size > 0) {
-        errors.push(`The following questions do not exist in this course: ${[...missingQids].join(', ')}`)
+        errors.push(`The following questions do not exist in this course: ${[...missingQids].join(', ')}`);
     }
 
     return { warnings, errors };
@@ -855,7 +858,7 @@ module.exports.loadQuestions = async function(courseDirectory) {
     const questions = await loadInfoForDirectory(courseDirectory, 'questions', 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`);
     return questions;
-}
+};
 
 /**
  * Loads all course instances in a course directory.
@@ -867,7 +870,7 @@ module.exports.loadCourseInstances = async function(courseDirectory) {
     const courseInstances = await loadInfoForDirectory(courseDirectory, 'courseInstances', 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
     checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
-}
+};
 
 /**
  * Loads all assessments in a course instance.
@@ -884,4 +887,4 @@ module.exports.loadAssessments = async function(courseDirectory, courseInstance,
     const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessmentWithQuestions);
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;
-}
+};

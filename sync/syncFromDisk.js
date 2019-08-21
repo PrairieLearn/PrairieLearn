@@ -1,6 +1,5 @@
 // @ts-check
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
@@ -137,7 +136,7 @@ module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
 
     await syncQuestions.syncSingleQuestion(courseDir, questionInfo, logger);
     return { fullSync: false };
-}
+};
 
 /**
  * @param {string} courseDir

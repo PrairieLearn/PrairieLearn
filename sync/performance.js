@@ -8,10 +8,16 @@ module.exports = function(scopeName) {
 
     const scope = scopedData[scopeName];
 
+    /**
+     * @param {string} name 
+     */
     function start(name) {
         scope[name] = new Date();
     }
 
+    /**
+     * @param {string} name 
+     */
     function end(name) {
         if (!(name in scope)) {
             return;
@@ -21,6 +27,11 @@ module.exports = function(scopeName) {
         }
     }
 
+    /**
+     * @param {string} name 
+     * @param {(callback: (err: Error | null | undefined) => void) => void} func 
+     * @param {*} callback 
+     */
     function timedFunc(name, func, callback) {
         start(name);
         func((err) => {
@@ -51,5 +62,5 @@ module.exports = function(scopeName) {
         end,
         timedFunc,
         timedAsync,
-    }
-}
+    };
+};

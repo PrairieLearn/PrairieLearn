@@ -52,8 +52,8 @@ module.exports.syncNew = async function(courseId, courseData) {
     perf.end('sproc:sync_assessment_sets');
     const usedAssessmentSetIds = res.rows[0].used_assessment_set_ids;
 
-    return { deleteUnused, usedAssessmentSetIds }
-}
+    return { deleteUnused, usedAssessmentSetIds };
+};
 
 /**
  * @param {any} courseId
@@ -62,4 +62,4 @@ module.exports.syncNew = async function(courseId, courseData) {
 module.exports.deleteUnusedNew = async function(courseId, usedAssessmentSetIds) {
     const params = [ usedAssessmentSetIds, courseId];
     await sqldb.callAsync('sync_assessment_sets_delete_unused', params);
-}
+};
