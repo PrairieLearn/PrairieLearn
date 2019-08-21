@@ -17,6 +17,8 @@
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
 
+  * Change blocked-event-loop detection to be more lightweight in production (Matt West).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).

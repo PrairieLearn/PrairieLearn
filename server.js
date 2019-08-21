@@ -9,7 +9,8 @@ const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const http = require('http');
 const https = require('https');
-const blocked = require('blocked-at');
+const blocked = require('blocked');
+const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
@@ -70,11 +71,17 @@ if (config.startServer) {
     }
 }
 
-if (config.blockedWarnEnable) {
-    blocked((time, stack) => {
+if (config.blockedAtWarnEnable) {
+    blockedAt((time, stack) => {
         const msg = `BLOCKED-AT: Blocked for ${time}ms`;
-        logger.verbose(msg, {stack});
+        logger.verbose(msg, {time, stack});
         console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+    }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
+} else if (config.blockedWarnEnable) {
+    blocked((time) => {
+        const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
+        logger.verbose(msg, {time});
+        console.log(msg); // eslint-disable-line no-console
     }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
 }
 
