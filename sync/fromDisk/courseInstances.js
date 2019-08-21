@@ -39,7 +39,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
  * @param {import('../course-db').CourseData} courseData
  * @returns {Promise<{ [ciid: string]: any }>}
  */
-module.exports.syncNew = async function(courseId, courseData) {
+module.exports.sync = async function(courseId, courseData) {
     const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
     const courseInstanceParams = Object.entries(courseData.courseInstances).map(([shortName, courseIntanceData]) => {
         const { courseInstance } = courseIntanceData;

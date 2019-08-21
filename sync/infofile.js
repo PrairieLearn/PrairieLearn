@@ -12,95 +12,104 @@
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasUuid = function(either) {
-    return !!either.uuid;
+module.exports.hasUuid = function(infoFile) {
+    return !!infoFile.uuid;
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasErrors = function(either) {
-    return !!(either.errors && either.errors.length > 0);
+module.exports.hasErrors = function(infoFile) {
+    return !!(infoFile.errors && infoFile.errors.length > 0);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasWarnings = function(either) {
-    return !!(either.warnings && either.warnings.length > 0);
+module.exports.hasWarnings = function(infoFile) {
+    return !!(infoFile.warnings && infoFile.warnings.length > 0);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
+ * @returns {boolean}
  */
-module.exports.stringifyErrors = function(either) {
-    if (!this.hasErrors(either)) return '';
-    return either.errors.join('\n');
+module.exports.hasErrorsOrWarnings = function(infoFile) {
+    return module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  */
-module.exports.stringifyWarnings = function(either) {
-    if (!this.hasWarnings(either)) return '';
-    return either.warnings.join('\n');
+module.exports.stringifyErrors = function(infoFile) {
+    if (!this.hasErrors(infoFile)) return '';
+    return infoFile.errors.join('\n');
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
+ */
+module.exports.stringifyWarnings = function(infoFile) {
+    if (!this.hasWarnings(infoFile)) return '';
+    return infoFile.warnings.join('\n');
+};
+
+/**
+ * @template T
+ * @param {InfoFile<T>} infoFile
  * @param {string} error
  */
-module.exports.addError = function(either, error) {
-    if (!this.hasErrors(either)) {
-        either.errors = [];
+module.exports.addError = function(infoFile, error) {
+    if (!this.hasErrors(infoFile)) {
+        infoFile.errors = [];
     }
-    either.errors.push(error);
+    infoFile.errors.push(error);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @param {string[]} errors
  */
-module.exports.addErrors = function(either, errors) {
-    if (!this.hasErrors(either)) {
-        either.errors = [];
+module.exports.addErrors = function(infoFile, errors) {
+    if (!this.hasErrors(infoFile)) {
+        infoFile.errors = [];
     }
-    either.errors = either.errors.concat(errors);
+    infoFile.errors = infoFile.errors.concat(errors);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @param {string} warning
  */
-module.exports.addWarning = function(either, warning) {
-    if (!this.hasWarnings(either)) {
-        either.warnings = [];
+module.exports.addWarning = function(infoFile, warning) {
+    if (!this.hasWarnings(infoFile)) {
+        infoFile.warnings = [];
     }
-    either.warnings.push(warning);
+    infoFile.warnings.push(warning);
 };
 
 /**
  * @template T
- * @param {InfoFile<T>} either
+ * @param {InfoFile<T>} infoFile
  * @param {string[]} warnings
  */
-module.exports.addWarnings = function(either, warnings) {
-    if (!this.hasWarnings(either)) {
-        either.warnings = [];
+module.exports.addWarnings = function(infoFile, warnings) {
+    if (!this.hasWarnings(infoFile)) {
+        infoFile.warnings = [];
     }
-    either.warnings = either.warnings.concat(warnings);
+    infoFile.warnings = infoFile.warnings.concat(warnings);
 };
 
 /**

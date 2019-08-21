@@ -71,7 +71,7 @@ module.exports.syncSingleQuestion = async function(courseDir, questionInfo) {
  * @param {import('../course-db').CourseData} courseData
  * @returns {Promise<{ [qid: string]: any }>}
  */
-module.exports.syncNew = async function(courseId, courseData) {
+module.exports.sync = async function(courseId, courseData) {
     const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
         return JSON.stringify([
             qid,

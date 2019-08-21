@@ -16,6 +16,7 @@ const syncAssessmentSets = require('./fromDisk/assessmentSets');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
+const { chalk, chalkDim } = require('../lib/chalk');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -28,34 +29,36 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  * @param {any} logger 
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
-    logger.info('Loading info.json file from git repository');
+    logger.info('Loading info.json files from course repository');
     perf.start('sync');
     const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
-    await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.syncNew(courseData, courseId));
-    const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () => syncCourseInstances.syncNew(courseId, courseData));
-    await perf.timedAsync('syncTopics', () => syncTopics.syncNew(courseId, courseData));
-    const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.syncNew(courseId, courseData));
-    await perf.timedAsync('syncTags', () => syncTags.syncNew(courseId, courseData, questionIds));
-    const assessmentSets = await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.syncNew(courseId, courseData));
+    // Write any errors and warnings to sync log
+    courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, line => logger.info(line || ''));
+    logger.info('Syncing info to database...');
+    await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
+    const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () => syncCourseInstances.sync(courseId, courseData));
+    await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
+    const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.sync(courseId, courseData));
+    await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
+    const assessmentSets = await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
     perf.start('syncAssessments');
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
-        await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.syncNew(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
+        await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
    if (assessmentSets.deleteUnused) {
        await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
    }
    await freeformServer.reloadElementsForCourse(courseDir, courseId);
+   logger.info('Course sync complete');
    perf.end('sync');
 }
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
-    // Uncomment to use new process
     util.callbackify(async () => {
         await syncDiskToSqlWithLock(courseDir, course_id, logger);
     })(callback);
-    return;
 };
 
 /**
@@ -146,19 +149,19 @@ module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
  */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
-    logger.verbose(`Trying lock ${lockName}`);
+    logger.verbose(chalkDim(`Trying lock ${lockName}`));
     namedLocks.tryLock(lockName, (err, lock) => {
         if (ERR(err, callback)) return;
         if (lock == null) {
-            logger.verbose(`Did not acquire lock ${lockName}`);
+            logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
             callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
         } else {
-            logger.verbose(`Acquired lock ${lockName}`);
+            logger.verbose(chalkDim(`Acquired lock ${lockName}`));
             module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
                 namedLocks.releaseLock(lock, (lockErr) => {
                     if (ERR(lockErr, callback)) return;
                     if (ERR(err, callback)) return;
-                    logger.verbose(`Released lock ${lockName}`);
+                    logger.verbose(chalkDim(`Released lock ${lockName}`));
                     callback(null);
                 });
             });

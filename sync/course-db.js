@@ -6,15 +6,17 @@ const fs = require('fs-extra');
 const fsPromises = require('fs').promises;
 const util = require('util');
 const async = require('async');
-// const moment = require('moment');
 const jju = require('jju');
 const Ajv = require('ajv');
 const { isValid, parseISO, isAfter } = require('date-fns');
+const { default: chalkDefault } = require('chalk');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
 const perf = require('./performance')('course-db');
+
+const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ schemaId: 'auto' });
@@ -361,6 +363,48 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 };
 
 /**
+ * @template T
+ * @param {any} courseId
+ * @param {string} filePath
+ * @param {InfoFile<T>} infoFile 
+ * @param {(line?: string) => void} writeLine 
+ */
+function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
+    if (!infofile.hasErrorsOrWarnings(infoFile)) return;
+    // TODO: if https://github.com/drudru/ansi_up/issues/58 is ever resolved,
+    // add a direct link to a file editor with `terminal-link` package
+    // const editorLink = `/pl/course/${courseId}/edit?file=${filePath}`;
+    writeLine(chalk.bold(`• ${filePath}`));
+    if (infofile.hasErrors(infoFile)) {
+        infoFile.errors.forEach(error => writeLine(chalk.red(`  ✖ ${error}`)));
+    }
+    if (infofile.hasWarnings(infoFile)) {
+        infoFile.warnings.forEach(warning => writeLine(chalk.yellow(`  ⚠ ${warning}`)));
+    }
+}
+
+/**
+ * @param {any} courseId
+ * @param {CourseData} courseData
+ * @param {(line?: string) => void} writeLine
+ */
+module.exports.writeErrorsAndWarningsForCourseData = function(courseId, courseData, writeLine) {
+    writeErrorsAndWarningsForInfoFileIfNeeded(courseId, 'infoCourse.json', courseData.course, writeLine);
+    Object.entries(courseData.questions).forEach(([qid, question]) => {
+        const questionPath = path.posix.join('questions', qid, 'info.json');
+        writeErrorsAndWarningsForInfoFileIfNeeded(courseId, questionPath, question, writeLine);
+    });
+    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceData]) => {
+        const courseInstancePath = path.posix.join('courseInstances', ciid, 'infoCourseInstance.json');
+        writeErrorsAndWarningsForInfoFileIfNeeded(courseId, courseInstancePath, courseInstanceData.courseInstance, writeLine);
+        Object.entries(courseInstanceData.assessments).forEach(([aid, assessment]) => {
+            const assessmentPath = path.posix.join('courseInstances', ciid, 'assessments', aid, 'infoAssessment.json');
+            writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
+        });
+    });
+};
+
+/**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
@@ -493,8 +537,11 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
         }
         knownAssessmentSets.set(aset.name, aset);
     });
-    const duplicateAssessmentSetNamesString = [...duplicateAssessmentSetNames.values()].join(', ');
-    infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateAssessmentSetNamesString}. Only the last of each duplicate will be synced.`);
+    if (duplicateAssessmentSetNames.size > 0) {
+        const quotedNames = [...duplicateAssessmentSetNames.values()].map(name => `"${name}"`);
+        const duplicateNamesString = quotedNames.join(', ');
+        infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
+    }
 
     // Add any default assessment sets that weren't also defined by the course
     DEFAULT_ASSESSMENT_SETS.forEach(aset => {
@@ -517,8 +564,11 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
         }
         knownTags.set(tag.name, tag);
     });
-    const duplicateTagNamesString = [...duplicateTagNames.values()].join(', ');
-    infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateTagNamesString}. Only the last of each duplicate will be synced.`);
+    if (duplicateTagNames.size > 0) {
+        const quotedNames = [...duplicateTagNames.values()].map(name => `"${name}"`);
+        const duplicateNamesString = quotedNames.join(', ');
+        infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
+    }
 
     // Add any default tags that weren't also defined by the course
     DEFAULT_TAGS.forEach(tag => {
@@ -531,6 +581,23 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
     // insertion order, so the order is preserved.
     const tags = [...knownTags.values()];
 
+    // Finally, handle duplicate topics
+    const knownTopics = new Map();
+    const duplicateTopicNames = new Set();
+    (info.topics || []).forEach(topic => {
+        if (knownTopics.has(topic.name)) {
+            duplicateTopicNames.add(topic.name);
+        }
+        knownTopics.set(topic.name, topic);
+    });
+    if (duplicateTopicNames.size > 0) {
+        const quotedNames = [...duplicateTopicNames.values()].map(name => `"${name}"`);
+        const duplicateNamesString = quotedNames.join(', ');
+        infofile.addWarning(loadedData, `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
+    }
+
+    const topics = [...knownTopics.values()];
+
     const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
         && info.name === 'XC 101';
@@ -541,9 +608,9 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
         name: info.name,
         title: info.title,
         timezone: info.timezone,
-        topics: info.topics,
         assessmentSets,
         tags,
+        topics,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
             isExampleCourse,

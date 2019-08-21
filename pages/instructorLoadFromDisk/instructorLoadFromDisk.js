@@ -8,6 +8,7 @@ var router = express.Router();
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
+const { chalk, chalkDim } = require('../../lib/chalk');
 
 var update = function(locals, callback) {
     var options = {
@@ -30,16 +31,18 @@ var update = function(locals, callback) {
             callback(null, job_sequence_id);
 
             // continue executing here to launch the actual job
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
+            async.eachOfSeries(config.courseDirs || [], function(courseDir, index, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
+                job.info(chalk.bold(courseDir));
                 var infoCourseFile = path.join(courseDir, 'infoCourse.json');
                 fs.access(infoCourseFile, function(err) {
                     if (err) {
-                        job.info('File not found: ' + infoCourseFile + ', skipping...');
+                        job.info(chalkDim(`infoCourse.json not found, skipping`));
+                        if (index !== config.courseDirs.length - 1) job.info('');
                         callback(null);
                     } else {
-                        job.info('Found file ' + infoCourseFile + ', loading...');
                         syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
+                            if (index !== config.courseDirs.length - 1) job.info('');
                             if (ERR(err, callback)) return;
                             callback(null);
                         });

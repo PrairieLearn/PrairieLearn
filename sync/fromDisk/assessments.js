@@ -53,8 +53,6 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         type: assessment.type,
         number: assessment.number,
         title: assessment.title,
-        // TODO: config is in DB, but options isn't in the schema
-        // config: assessment.options,
         multiple_instance: assessment.multipleInstance ? true : false,
         shuffle_questions: assessment.shuffleQuestions ? true : false,
         allow_issue_reporting: allowIssueReporting,
@@ -153,9 +151,6 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
                 assessmentQuestionNumber++;
-                // TODO: we used to validate that all questions are actually in the course
-                // and throw an error here if they weren't. This should be done in the earlier
-                // validation phase.
                 const questionId = questionIds[alternative.qid];
                 return {
                     number: assessmentQuestionNumber,
@@ -186,7 +181,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
  * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
  * @param {{ [qid: string]: any }} questionIds
  */
-module.exports.syncNew = async function(courseId, courseInstanceId, assessments, questionIds) {
+module.exports.sync = async function(courseId, courseInstanceId, assessments, questionIds) {
     if (config.checkAccessRulesExamUuid) {
         // UUID-based exam access rules are validated here instead of course-db.js
         // because we need to hit the DB to check for them; we can't validate based

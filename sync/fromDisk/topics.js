@@ -7,7 +7,7 @@ const perf = require('../performance')('topics');
 /**
  * @param {import('../course-db').CourseData} courseData
  */
-module.exports.syncNew = async function(courseId, courseData) {
+module.exports.sync = async function(courseId, courseData) {
     // We can only safely remove unused topics if both `infoCourse.json` and all
     // question `info.json` files are valid.
     const isInfoCourseValid = !infofile.hasErrors(courseData.course);

@@ -9,7 +9,7 @@ const perf = require('../performance')('tags');
  * @param {import('../course-db').CourseData} courseData
  * @param {{ [wid: string]: any }} questionIds
  */
-module.exports.syncNew = async function(courseId, courseData, questionIds) {
+module.exports.sync = async function(courseId, courseData, questionIds) {
     // We can only safely remove unused tags if both `infoCourse.json` and all
     // question `info.json` files are valid.
     const isInfoCourseValid = !infofile.hasErrors(courseData.course);
