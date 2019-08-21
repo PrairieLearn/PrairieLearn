@@ -134,6 +134,7 @@ const upload = multer({
     },
 });
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', upload.single('file'));
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));

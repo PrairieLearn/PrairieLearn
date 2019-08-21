@@ -1,3 +1,4 @@
+const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
@@ -7,6 +8,7 @@ const error = require('@prairielearn/prairielib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
+const fileStore = require('../../lib/file-store');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
@@ -51,6 +53,15 @@ function processSubmission(req, res, callback) {
             callback(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
         }
     });
+}
+
+function processFileUpload(req, res, callback) {
+    util.callbackify(async () => {
+        await fileStore.uploadFile(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
+        const variant_id = req.body.__variant_id;
+        await sqldb.callOneRowAsync('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id]);
+        return variant_id;
+    })(callback);
 }
 
 function processIssue(req, res, callback) {
@@ -100,6 +111,12 @@ router.post('/', function(req, res, next) {
         assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
+        });
+    } else if (req.body.__action == 'upload_file') {
+        processFileUpload(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
