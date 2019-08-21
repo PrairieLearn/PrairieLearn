@@ -48,12 +48,11 @@
       <!-- UPLOAD FILE -->
         <br>
         <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#uploadFileCollapse" aria-expanded="false" aria-controls="uploadFileCollapse">
-          Upload a file
+          Upload a file <i class="far fa-caret-square-down"></i>
         </button>
         <div class="collapse" id="uploadFileCollapse">
-          <hr />
-          <form name="upload-file-form" method="POST" enctype="multipart/form-data">
-            <p class="small">
+          <form name="upload-file-form" method="POST" enctype="multipart/form-data" class="mb-3">
+            <p class="small mt-3">
               Uploaded files will be saved with this question.
             </p>
             <div class="form-group">
@@ -70,28 +69,26 @@
               </div>
             </div>
           </form>
-          <hr />
         </div>
       <!-- PASTE TEXT -->
         <br>
         <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#uploadTextCollapse" aria-expanded="false" aria-controls="uploadTextCollapse">
-          Upload text
+          Upload text <i class="far fa-caret-square-down"></i>
         </button>
         <div class="collapse" id="uploadTextCollapse">
-          <hr />
           <form method="POST">
-            <p class="small">
+            <p class="small mt-3">
               Type or paste text below and click "upload".
-              The text will be saved with this question.
+              The text will be saved with this question for your reference.
             </p>
             <input name="filename" value="uploaded_info.txt">
             <div class="form-group">
-              <textarea class="form-control" rows="5" name="contents" placeholder="Put text here"></textarea>
+              <textarea class="form-control" rows="5" name="contents" placeholder="Type or paste text here"></textarea>
             </div>
             <input type="hidden" name="__variant_id" value="<%= variant.id %>">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <div class="form-group text-right">
-              <button class="btn btn-small btn-primary" name="__action" value="upload_text">Upload text
+              <button class="btn btn-small btn-primary" name="__action" value="upload_text">Upload text</button>
             </div>
           </form>
         </div>
@@ -100,12 +97,11 @@
     <% if (assessment.allow_issue_reporting) { %>
     <li class="list-group-item">
         <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-          Report an error in this question
+          Report an error in this question <i class="far fa-caret-square-down"></i>
         </button>
         <div class="collapse" id="issueCollapse">
-          <hr />
           <form method="POST">
-            <p class="small">
+            <p class="small mt-3">
               This form is only for reporting errors in the question
               itself. Do not use this form if you just don't know how to
               answer the question.
