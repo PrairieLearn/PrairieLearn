@@ -60,6 +60,18 @@
             "description": "The group of servers we belong to, used for load reporting and autoscaling.",
             "type": "string"
         },
+        "blockedWarnEnable": {
+            "description": "Whether to detect and warn on blockages in the event loop.",
+            "type": "boolean"
+        },
+        "blockedAtWarnEnable": {
+            "description": "Whether to use more expensive event-loop-blocking detection that includes stack traces (not for routine use in production).",
+            "type": "boolean"
+        },
+        "blockedWarnThresholdMS": {
+            "description": "The threshold (in milliseconds) for detecting event-loop blockages.",
+            "type": "integer"
+        },
         "checkAccessRulesExamUuid": {
             "description": "On sync, check if assessment access rules examUuid exists in database (default false)",
             "type": "boolean"
