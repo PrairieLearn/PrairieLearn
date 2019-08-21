@@ -3,6 +3,7 @@ const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs-extra');
+const fsPromises = require('fs').promises;
 const util = require('util');
 const async = require('async');
 const moment = require('moment');
@@ -336,7 +337,9 @@ module.exports.loadFullCourse = function(courseDir, logger, callback) {
  */
 module.exports.loadFullCourseNew = async function(courseDir) {
     const courseInfo = await module.exports.loadCourseInfo(courseDir);
+    perf.start('loadQuestions');
     const questions = await module.exports.loadQuestions(courseDir);
+    perf.end('loadQuestions');
     const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
     const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
     for (const courseInstanceId in courseInstanceInfos) {
@@ -410,10 +413,16 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
     const absolutePath = path.join(coursePath, filePath);
     let contents;
     try {
-        perf.start(`readfile:${absolutePath}`);
-        contents = await fs.readFile(absolutePath, 'utf-8');
-        perf.end(`readfile:${absolutePath}`);
+        // perf.start(`readfile:${absolutePath}`);
+        // fs-extra uses graceful-fs, which in turn will enqueue open operations.
+        // this slows us down an unnecessary amount. Avoiding this queueing means
+        // we could potentially hit an EMFILE error, but we haven't seen that in
+        // practice in years, so that's a risk we're willing to take. We explicitly
+        // use the native Node fs API here to opt out of this queueing behavior.
+        contents = await fsPromises.readFile(absolutePath, 'utf8');
+        // perf.end(`readfile:${absolutePath}`);
     } catch (err) {
+        // perf.end(`readfile:${absolutePath}`);
         if (err.code === 'ENOTDIR' && err.path === absolutePath) {
             // In a previous version of this code, we'd pre-filter
             // all files in the parent directory to remove anything
@@ -594,9 +603,9 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
  * @returns {Promise<InfoFile<T>>}
  */
 async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, validate) {
-    perf.start(`loadandvalidate:${filePath}`);
+    // perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile(coursePath, filePath, schema);
-    perf.end(`loadandvalidate:${filePath}`);
+    // perf.end(`loadandvalidate:${filePath}`);
     if (loadedJson === null) {
         // This should only occur if we looked for a file in a non-directory,
         // as would happen if there was a .DS_Store file.
@@ -641,12 +650,12 @@ async function loadInfoForDirectory(coursePath, directory, infoFilename, default
         // Some other error, permissions perhaps. Throw to abort sync.
         throw e;
     }
-
     await async.each(files, async function(dir) {
         const infoFile = path.join(directory, dir, infoFilename);
-        perf.start(`loadfile:${infoFile}`);
+        // console.log(`readfile: ${infoFile}`);
+        // perf.start(`loadfile:${infoFile}`);
         const info = await loadAndValidateJsonNew(coursePath, infoFile, defaultInfo, schema, validate);
-        perf.end(`loadfile:${infoFile}`);
+        // perf.end(`loadfile:${infoFile}`);
         if (info) {
             infos[dir] = info;
         }
