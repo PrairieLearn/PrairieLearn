@@ -361,46 +361,6 @@ module.exports.loadFullCourseNew = async function(courseDir) {
 };
 
 /**
- * @param {CourseData} courseData
- * @returns {Promise<{ path: string, errors: string[] }[]>}
- */
-module.exports.getPathsWithMissingUuids = async function(courseData) {
-    // TODO: this is probably unused, remove later if that ends up being the case
-    const paths = [];
-    if (!infofile.hasUuid(courseData.course)) {
-        paths.push({
-            path: 'infoCourse.json',
-            errors: courseData.course.errors,
-        });
-    }
-    Object.entries(courseData.questions).forEach(([qid, questionInfo]) => {
-        if (!infofile.hasUuid(questionInfo)) {
-            paths.push({
-                path: path.join('questions', qid, 'info.json'),
-                errors: questionInfo.errors,
-            });
-        }
-    });
-    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceInfo]) => {
-        if (!infofile.hasUuid(courseInstanceInfo.courseInstance)) {
-            paths.push({
-                path: path.join('courseInstances', ciid, 'infoCourseInstance.json'),
-                errors: courseInstanceInfo.courseInstance.errors,
-            });
-        }
-        Object.entries(courseInstanceInfo.assessments).forEach(([tid, info]) => {
-            if (!infofile.hasUuid(info)) {
-                paths.push({
-                    path: path.join('courseInstance', ciid, 'assessments', tid, 'infoAssessment.json'),
-                    errors: info.errors,
-                });
-            }
-        });
-    });
-    return paths;
-};
-
-/**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
@@ -731,33 +691,27 @@ async function validateAssessment(assessment, questions) {
     const warnings = [];
     const errors = [];
 
-    // TODO: we previously validated that all assessment sets listed in assessments
-    // were also present in infoCourse.json. I removed that check for now, but we
-    // still need to treat assessment sets like we do topics and tags and create them
-    // on the fly for courses
-    // check assessment access rules
-    if (_(assessment).has('allowAccess')) {
-        _(assessment.allowAccess).forEach(function(rule) {
-            let startDate, endDate;
-            if ('startDate' in rule) {
-                startDate = parseISO(rule.startDate);
-                if (!isValid(startDate)) {
-                    startDate = null;
-                    errors.push(`Invalid allowAccess startDate: ${rule.startDate}`);
-                }
+    // Check assessment access rules
+    (assessment.allowAccess || []).forEach(rule => {
+        let startDate, endDate;
+        if ('startDate' in rule) {
+            startDate = parseISO(rule.startDate);
+            if (!isValid(startDate)) {
+                startDate = null;
+                errors.push(`Invalid allowAccess startDate: ${rule.startDate}`);
             }
-            if ('endDate' in rule) {
-                endDate = parseISO(rule.endDate);
-                if (!isValid(endDate)) {
-                    endDate = null;
-                    errors.push(`Invalid allowAccess endDate: ${rule.startDate}`);
-                }
+        }
+        if ('endDate' in rule) {
+            endDate = parseISO(rule.endDate);
+            if (!isValid(endDate)) {
+                endDate = null;
+                errors.push(`Invalid allowAccess endDate: ${rule.startDate}`);
             }
-            if (startDate && endDate && isAfter(startDate, endDate)) {
-                errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
-            }
-        });
-    }
+        }
+        if (startDate && endDate && isAfter(startDate, endDate)) {
+            errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
+        }
+    });
 
     const foundQids = new Set();
     const duplicateQids = new Set();
