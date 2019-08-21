@@ -51,7 +51,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
        await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
    }
    await freeformServer.reloadElementsForCourse(courseDir, courseId);
-   logger.info('Course sync complete');
+   logger.info(chalk.green('✓ Course sync successful'));
    perf.end('sync');
 }
 
