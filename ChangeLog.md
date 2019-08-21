@@ -5,7 +5,19 @@
 
   * Add UUIDs to cron job logs for better debugging (Matt West).
 
+  * Add report of unsuccessful cron jobs (Matt West).
+
+  * Add dev docs for interfacing async/await code (Matt West).
+
+  * Add integration tests for daily cron jobs (Matt West).
+
+  * Add example docker grading images for externally graded questions (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
+
+  * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
+
+  * Change blocked-event-loop detection to be more lightweight in production (Matt West).
 
   * Change syncing to be more resilient and to record errors/warnings encountered during sync (Nathan Walters).
 
@@ -14,8 +26,16 @@
   * Fix deadlock when syncing course staff (Nathan Walters).
 
   * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
-  
+
   * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
+
+  * Fix assessment password clearing cookie situations, issue #1579 (Dave Mussulman).
+
+  * Fix the syncing of missing tags and topics (Nathan Walters).
+
+  * Fix documentation formatting (Dave Mussulman).
+
+  * Fix handling of duplicate topics in `infoCourse.json` (Nathan Walters).
 
 * __3.2.0__ - 2019-08-05
 
