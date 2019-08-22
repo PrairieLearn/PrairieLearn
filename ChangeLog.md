@@ -19,6 +19,8 @@
 
   * Change blocked-event-loop detection to be more lightweight in production (Matt West).
 
+  * Change file editing access to `Editor`, down from `Owner` (Matt West).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
