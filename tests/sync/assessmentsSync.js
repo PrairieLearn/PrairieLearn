@@ -107,7 +107,7 @@ describe('Assessment syncing', () => {
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
-  it.only('syncs alternatives in a Homework zone', async () => {
+  it('syncs alternatives in a Homework zone', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones.push({
