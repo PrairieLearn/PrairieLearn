@@ -339,7 +339,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(syncedAssessment.sync_errors, /Must specify "maxPoints" for a question in a "Homework" assessment/);
+    assert.match(syncedAssessment.sync_errors, /Must specify "points" for a question in a "Homework" assessment/);
   });
 
   it('records an error if a question specifies points as an array an Homework-type assessment', async () => {
