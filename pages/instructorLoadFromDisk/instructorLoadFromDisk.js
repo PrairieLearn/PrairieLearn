@@ -30,6 +30,8 @@ var update = function(locals, callback) {
             if (ERR(err, callback)) return;
             callback(null, job_sequence_id);
 
+            let anyCourseHadJsonErrors = false;
+
             // continue executing here to launch the actual job
             async.eachOfSeries(config.courseDirs || [], function(courseDir, index, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
@@ -41,9 +43,10 @@ var update = function(locals, callback) {
                         if (index !== config.courseDirs.length - 1) job.info('');
                         callback(null);
                     } else {
-                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
+                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err, result) {
                             if (index !== config.courseDirs.length - 1) job.info('');
                             if (ERR(err, callback)) return;
+                            if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             callback(null);
                         });
                     }
@@ -51,6 +54,8 @@ var update = function(locals, callback) {
             }, function(err) {
                 if (err) {
                     job.fail(err);
+                } else if (anyCourseHadJsonErrors) {
+                    job.fail('One or more courses had JSON files that contained errors and were unable to be synced');
                 } else {
                     job.succeed();
                 }

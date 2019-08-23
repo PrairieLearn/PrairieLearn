@@ -865,9 +865,11 @@ function saveAndSync(fileEdit, locals, callback) {
                     _finishWithFailure();
                     return;
                 }
-                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err, result) => {
                     if (err) {
                         job.fail(err);
+                    } else if (result.hadJsonErrors) {
+                        job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
                         job.succeed();
                     }

@@ -27,6 +27,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  * @param {string} courseDir 
  * @param {any} courseId 
  * @param {any} logger 
+ * @returns {{ hadJsonErrors: boolean }}
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json files from course repository');
@@ -34,7 +35,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
     // Write any errors and warnings to sync log
     courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, line => logger.info(line || ''));
-    logger.info('Syncing info to database...');
+    logger.info('Syncing info to database');
     await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
     const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () => syncCourseInstances.sync(courseId, courseData));
     await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
@@ -47,17 +48,31 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
         await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
-   if (assessmentSets.deleteUnused) {
-       await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
-   }
-   await freeformServer.reloadElementsForCourse(courseDir, courseId);
-   logger.info(chalk.green('✓ Course sync successful'));
-   perf.end('sync');
+    if (assessmentSets.deleteUnused) {
+        await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
+    }
+    await freeformServer.reloadElementsForCourse(courseDir, courseId);
+    const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+    if (courseDataHasErrors) {
+        logger.info(chalk.yellow('⚠ Some JSON files contained errors and were unable to be synced'));
+    } else {
+        logger.info(chalk.green('✓ Course sync successful'));
+    }
+    perf.end('sync');
+    return {
+        hadJsonErrors: courseDataHasErrors,
+    };
 }
 
+/**
+ * @param {string} courseDir
+ * @param {any} course_id
+ * @param {any} logger
+ * @param {(err: Error | null | undefined, result: { hadJsonErrors: boolean }) => void} callback
+ */
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     util.callbackify(async () => {
-        await syncDiskToSqlWithLock(courseDir, course_id, logger);
+        return await syncDiskToSqlWithLock(courseDir, course_id, logger);
     })(callback);
 };
 
@@ -145,7 +160,7 @@ module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
  * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
- * @param {(err: Error | null | undefined) => void} callback
+ * @param {(err: Error | null | undefined, result?: { hadJsonErrors: boolean }) => void} callback
  */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
@@ -157,25 +172,30 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
             callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
         } else {
             logger.verbose(chalkDim(`Acquired lock ${lockName}`));
-            module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+            module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
                 namedLocks.releaseLock(lock, (lockErr) => {
                     if (ERR(lockErr, callback)) return;
                     if (ERR(err, callback)) return;
                     logger.verbose(chalkDim(`Released lock ${lockName}`));
-                    callback(null);
+                    callback(null, result);
                 });
             });
         }
     });
 };
 
+/**
+ * @param {string} courseDir
+ * @param {any} logger
+ * @param {(err: Error | null | undefined, result?: { hadJsonErrors: boolean }) => void} callback
+ */
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
         if (ERR(err, callback)) return;
         const course_id = result.rows[0].course_id;
-        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err) {
+        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err, result) {
             if (ERR(err, callback)) return;
-            callback(null);
+            callback(null, result);
         });
     });
 };
