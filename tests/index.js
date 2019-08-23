@@ -13,7 +13,6 @@ before('drop the template database, just in case', helperDb.dropTemplate);
 after('drop the template database', helperDb.dropTemplate);
 
 require('./testDatabase');
-require('./testLoadCourse');
 require('./testSyncCourseInfo');
 require('./testFileEditor');
 require('./testGetHomepage');
