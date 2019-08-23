@@ -186,7 +186,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | []} maxPoints
+ * @property {number | number[]} maxPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
@@ -828,8 +828,8 @@ async function validateAssessment(assessment, questions) {
                     }
                 }
                 if (assessment.type === 'Homework') {
-                    if (alternative.maxPoints == undefined) {
-                        errors.push('Must specify "maxPoints" for a question in a "Homework" assessment');
+                    if (alternative.points == undefined) {
+                        errors.push('Must specify "points" for a question in a "Homework" assessment');
                     }
                     if (Array.isArray(alternative.points)) {
                         errors.push('Cannot specify "points" as a list for a question in a "Homework" assessment');

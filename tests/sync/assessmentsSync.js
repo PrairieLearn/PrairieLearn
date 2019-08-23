@@ -75,9 +75,9 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
   });
 
-  it('syncs a zone with alternatives', async () => {
+  it('syncs alternatives in an Exam zone', async () => {
     const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
+    const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones.push({
       title: 'zone 1',
       questions: [{
@@ -105,6 +105,40 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
     assert.equal(secondAssessmentQuestion.max_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
+  });
+
+  it.only('syncs alternatives in a Homework zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [{
+        maxPoints: 20,
+        points: 10,
+        alternatives: [{
+          id: util.QUESTION_ID,
+        }, {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          maxPoints: 15,
+          points: 5,
+        }],
+      }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 1);
+    assert.lengthOf(syncedData.assessment_questions, 2);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    assert.equal(firstAssessmentQuestion.init_points, 10);
+    assert.equal(firstAssessmentQuestion.max_points, 20);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    assert.equal(secondAssessmentQuestion.init_points, 5);
+    assert.equal(secondAssessmentQuestion.max_points, 15);
   });
 
   it('reuses assessment questions when questions are removed and added again', async () => {

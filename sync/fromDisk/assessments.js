@@ -95,6 +95,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     let assessmentQuestionNumber = 0;
     assessmentParams.alternativeGroups = zones.map((zone) => {
         return zone.questions.map((question) => {
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number }[]} */
             let alternatives;
             if (_(question).has('alternatives')) {
                 alternatives = _.map(question.alternatives, function(alternative) {
@@ -123,7 +124,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     const maxPoints = Math.max(...pointsList);
                     return {
                         ...alternative,
-                        // Exluce 'points' prop
+                        // Exlude 'points' prop
                         points: undefined,
                         maxPoints,
                         pointsList,
@@ -133,7 +134,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                 }
                 if (assessment.type === 'Homework') {
                     const maxPoints = alternative.maxPoints || alternative.points;
-                    const initPoints = alternatives.points;
+                    const initPoints = alternative.points;
                     return {
                         ...alternative,
                         maxPoints,
