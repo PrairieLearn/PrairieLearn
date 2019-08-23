@@ -765,14 +765,14 @@ async function validateAssessment(assessment, questions) {
             startDate = parseISO(rule.startDate);
             if (!isValid(startDate)) {
                 startDate = null;
-                errors.push(`Invalid allowAccess startDate: ${rule.startDate}`);
+                errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
             }
         }
         if ('endDate' in rule) {
             endDate = parseISO(rule.endDate);
             if (!isValid(endDate)) {
                 endDate = null;
-                errors.push(`Invalid allowAccess endDate: ${rule.startDate}`);
+                errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
             }
         }
         if (startDate && endDate && isAfter(startDate, endDate)) {

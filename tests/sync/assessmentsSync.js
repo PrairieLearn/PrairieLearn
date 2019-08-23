@@ -43,7 +43,7 @@ async function findSyncedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  before('remove the template database', helperDb.dropTemplate);
+  // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
@@ -207,6 +207,45 @@ describe('Assessment syncing', () => {
     syncedAssessmentSets = await util.dumpTable('assessment_sets');
     syncedAssessmentSet = syncedAssessmentSets.find(aset => aset.name === missingAssessmentSetName);
     assert.isUndefined(syncedAssessmentSet);
+  });
+
+  it('records an error if an access rule end date is before the start date', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess.push({
+      startDate: '2020-01-01T11:11:11',
+      endDate: '2019-01-01T00:00:00',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: startDate \(2020-01-01T11:11:11\) must not be after endDate \(2019-01-01T00:00:00\)/);
+  });
+
+  it('records an error if an access rule start date is invalid', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess.push({
+      startDate: 'not a valid date',
+      endDate: '2019-01-01T00:00:00',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: startDate \(not a valid date\) is not valid/);
+  });
+
+  it('records an error if an access rule end date is invalid', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess.push({
+      startDate: '2020-01-01T11:11:11',
+      endDate: 'not a valid date',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: endDate \(not a valid date\) is not valid/);
   });
 
   it('records an error if a question specifies neither an ID nor an alternative', async () => {
