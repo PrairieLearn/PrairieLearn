@@ -1,3 +1,4 @@
+const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
@@ -6,6 +7,8 @@ const router = express.Router();
 const error = require('@prairielearn/prairielib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
+const studentInstanceQuestionAttachFiles = require('../shared/studentInstanceQuestionAttachFiles');
+const studentInstanceQuestionIssues = require('../shared/studentInstanceQuestionIssues');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
@@ -50,37 +53,6 @@ function processSubmission(req, res, callback) {
     });
 }
 
-function processIssue(req, res, callback) {
-    if (!res.locals.assessment.allow_issue_reporting) return callback(new Error('Issue reporting not permitted for this assessment'));
-    const description = req.body.description;
-    if (!_.isString(description) || description.length == 0) {
-        return callback(new Error('A description of the issue must be provided'));
-    }
-
-    const variant_id = req.body.__variant_id;
-    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, _result) => {
-        if (ERR(err, callback)) return;
-
-        const course_data = _.pick(res.locals, ['variant', 'instance_question',
-                                                'question', 'assessment_instance',
-                                                'assessment', 'course_instance', 'course']);
-        const params = [
-            variant_id,
-            description, // student message
-            'student-reported issue', // instructor message
-            true, // manually_reported
-            true, // course_caused
-            course_data,
-            {}, // system_data
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('issues_insert_for_variant', params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, variant_id);
-        });
-    });
-}
-
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
@@ -90,8 +62,26 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);
         });
+    } else if (req.body.__action == 'attach_file') {
+        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionFileUpload)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'attach_text') {
+        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionTextUpload)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'delete_file') {
+        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionDeleteFile)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
+        });
     } else if (req.body.__action == 'report_issue') {
-        processIssue(req, res, function(err, variant_id) {
+        studentInstanceQuestionIssues.processIssue(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);

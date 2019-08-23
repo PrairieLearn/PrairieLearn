@@ -116,6 +116,7 @@ module.exports = {
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
             'files_insert.sql',
+            'files_delete.sql',
             'issues_insert_for_variant.sql',
             'issues_insert_for_assessment.sql',
             'issues_update_open.sql',

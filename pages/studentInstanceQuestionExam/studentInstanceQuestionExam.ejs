@@ -72,13 +72,16 @@
             <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
             <% } %>
           </p>
-          <p class="text-center">
+          <p class="text-center mb-4">
             <% if (instance_question_info.next_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
             <% } else { %>
             <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
             <% } %>
           </p>
+
+          <%- include('../partials/attachFilePanel') %>
+
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
             <div class="modal-dialog" style="width: 620px">

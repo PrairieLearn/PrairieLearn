@@ -88,6 +88,9 @@
                 <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
+                <% if (question.file_count > 0) { %>
+                  <i class="far fa-file-alt"></i>
+                <% } %>
               </td>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
               <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
