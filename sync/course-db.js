@@ -376,10 +376,16 @@ function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile,
     // const editorLink = `/pl/course/${courseId}/edit?file=${filePath}`;
     writeLine(chalk.bold(`• ${filePath}`));
     if (infofile.hasErrors(infoFile)) {
-        infoFile.errors.forEach(error => writeLine(chalk.red(`  ✖ ${error}`)));
+        infoFile.errors.forEach(error => {
+            const indentedError = error.replace(/\n/g, '\n    ');
+            writeLine(chalk.red(`  ✖ ${indentedError}`));
+        });
     }
     if (infofile.hasWarnings(infoFile)) {
-        infoFile.warnings.forEach(warning => writeLine(chalk.yellow(`  ⚠ ${warning}`)));
+        infoFile.warnings.forEach(warning => {
+            const indentedWarning = warning.replace(/\n/g, '\n    ');
+            writeLine(chalk.yellow(`  ⚠ ${indentedWarning}`));
+        });
     }
 }
 

@@ -107,7 +107,7 @@ router.get('/', (req, res, next) => {
                 callback(null);
             } else {
                 debug('Read job sequence');
-                serverJobs.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
+                serverJobs.getJobSequenceWithFormattedOutput(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
                     if (ERR(err, callback)) return;
                     fileEdit.jobSequence = job_sequence;
                     callback(null);
