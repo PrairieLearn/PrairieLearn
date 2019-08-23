@@ -376,9 +376,9 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail2'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment1 = await findSyncedAssessment('fail1');
-    assert.match(syncedAssessment1.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail2/);
+    assert.match(syncedAssessment1.sync_warnings, /UUID "1e0724c3-47af-4ca3-9188-5227ef0c5549" is used in other assessments in this course instance: fail2/);
     const syncedAssessment2 = await findSyncedAssessment('fail2');
-    assert.match(syncedAssessment2.sync_warnings, /UUID 1e0724c3-47af-4ca3-9188-5227ef0c5549 is used in other assessments in this course instance: fail1/);
+    assert.match(syncedAssessment2.sync_warnings, /UUID "1e0724c3-47af-4ca3-9188-5227ef0c5549" is used in other assessments in this course instance: fail1/);
   });
 
   it('creates entry in the database in the case of invalid JSON', async () => {

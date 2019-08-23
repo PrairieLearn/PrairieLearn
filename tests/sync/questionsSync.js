@@ -186,9 +186,9 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');
     const firstSyncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(firstSyncedQuestion.sync_warnings, /UUID f4ff2429-926e-4358-9e1f-d2f377e2036a is used in other questions: test2/);
+    assert.match(firstSyncedQuestion.sync_warnings, /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/);
     const secondSyncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(secondSyncedQuestion.sync_warnings, new RegExp(`UUID f4ff2429-926e-4358-9e1f-d2f377e2036a is used in other questions: ${util.QUESTION_ID}`));
+    assert.match(secondSyncedQuestion.sync_warnings, new RegExp(`UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`));
   });
 
   it('records an error if a question directory is missing an info.json file', async () => {
