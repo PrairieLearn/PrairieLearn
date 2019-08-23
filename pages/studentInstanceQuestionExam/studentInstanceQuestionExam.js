@@ -57,7 +57,16 @@ function processSubmission(req, res, callback) {
 
 function processFileUpload(req, res, callback) {
     util.callbackify(async () => {
-        await fileStore.uploadFile(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
+        await fileStore.uploadFile(req.file.originalname, req.file.buffer, 'student_upload_file', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
+        const variant_id = req.body.__variant_id;
+        await sqldb.callOneRowAsync('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id]);
+        return variant_id;
+    })(callback);
+}
+
+function processTextUpload(req, res, callback) {
+    util.callbackify(async () => {
+        await fileStore.uploadFile(req.body.filename, Buffer.from(req.body.contents), 'student_upload_text', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
         const variant_id = req.body.__variant_id;
         await sqldb.callOneRowAsync('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id]);
         return variant_id;
@@ -114,6 +123,12 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'upload_file') {
         processFileUpload(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'upload_text') {
+        processTextUpload(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);
