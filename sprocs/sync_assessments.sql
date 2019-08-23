@@ -348,7 +348,7 @@ BEGIN
                     'SQL_ASCII'),'\x00')
                 FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r 
             ) ASC) AS order_by
-        FROM assessments WHERE course_instance_id = syncing_course_instance_id AND 1 = 2
+        FROM assessments WHERE course_instance_id = syncing_course_instance_id
     ) AS assessments_with_ordinality
     WHERE
         a.tid = assessments_with_ordinality.tid
