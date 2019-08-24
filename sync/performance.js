@@ -29,7 +29,7 @@ module.exports = function(scopeName) {
 
     /**
      * @param {string} name 
-     * @param {(callback: (err: Error | null | undefined) => void) => void} func 
+     * @param {(callback: (err: Error | null) => void) => void} func 
      * @param {*} callback 
      */
     function timedFunc(name, func, callback) {

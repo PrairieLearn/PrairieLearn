@@ -68,7 +68,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
  * @param {string} courseDir
  * @param {any} course_id
  * @param {any} logger
- * @param {(err: Error | null | undefined, result: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result: { hadJsonErrors: boolean }) => void} callback
  */
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     util.callbackify(async () => {
@@ -160,7 +160,7 @@ module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
  * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
- * @param {(err: Error | null | undefined, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
  */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
@@ -187,7 +187,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
 /**
  * @param {string} courseDir
  * @param {any} logger
- * @param {(err: Error | null | undefined, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
  */
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {

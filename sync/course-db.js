@@ -281,7 +281,7 @@ module.exports.loadSingleQuestion = async function(courseDir, qid) {
 /**
  * TODO: Remove `logger` param when we do later refactoring.
  * @param {string} courseDir
- * @param {(err: Error | null | undefined, course?: any, newCourse?: CourseData) => void} callback
+ * @param {(err: Error | null, course?: any, newCourse?: CourseData) => void} callback
  */
 module.exports.loadFullCourse = function(courseDir, logger, callback) {
     util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
