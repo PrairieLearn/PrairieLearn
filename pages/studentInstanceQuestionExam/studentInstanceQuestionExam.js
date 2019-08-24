@@ -8,8 +8,7 @@ const error = require('@prairielearn/prairielib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
-const studentInstanceQuestionAttachFiles = require('../shared/studentInstanceQuestionAttachFiles');
-const studentInstanceQuestionIssues = require('../shared/studentInstanceQuestionIssues');
+const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
@@ -63,7 +62,7 @@ router.post('/', function(req, res, next) {
         if (res.locals.authz_result.time_limit_expired) {
             return next(new Error('time limit is expired, please go back and finish your assessment'));
         }
-        return processSubmission(req, res, function(err) {
+        processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -74,28 +73,28 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
     } else if (req.body.__action == 'attach_file') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionFileUpload)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processFileUpload)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'attach_text') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionTextUpload)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processTextUpload)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'delete_file') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionDeleteFile)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processDeleteFile)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
-        studentInstanceQuestionIssues.processIssue(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processIssue)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

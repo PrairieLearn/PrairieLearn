@@ -1,9 +1,11 @@
 <div class="card mb-4" id="attach-file-panel">
   <div class="card-header bg-secondary text-white">Attached files</div>
-  <% if (file_list.length > 0) { %>
   <table class="table table-sm">
     <tbody>
-    <% file_list.forEach(function(file, iFile) { %>
+    <% if (file_list.length == 0) { %>
+    <tr><td><i>No attached files</i></td></tr>
+    <% } else { %>
+      <% file_list.forEach(function(file, iFile) { %>
       <tr>
         <td style="word-break:break-all;">
           <i class="far fa-file-alt"></i>
@@ -19,17 +21,19 @@
              data-html="true" data-placement="auto" title="Confirm delete"
              data-content="<%= include('attachFileDeleteForm',
                            {id: 'attachFileDeleteButton' + iFile,
-                           variant, file}); %>"
+                           variant: (typeof variant != 'undefined') ? variant : null,
+                           file}); %>"
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="far fa-trash-alt"></i>
           </a>
           <% } %>
         </td>
       </tr>
-    <% }); %>
+      <% }); %>
+    <% } %>
     </tbody>
   </table>
-  <% } %>
+
   <div class="card-footer">
     <!-- UPLOAD FILE -->
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachFileCollapse" aria-expanded="false" aria-controls="attachFileCollapse">
@@ -38,7 +42,7 @@
     <div class="collapse" id="attachFileCollapse">
       <form name="attach-file-form" method="POST" enctype="multipart/form-data" class="mb-3">
         <p class="small mt-3">
-          Attached files will be saved with this question.
+          Attached files will be saved here for your reference.
         </p>
         <div class="form-group">
           <div class="custom-file">
@@ -49,14 +53,17 @@
         <div class="d-flex justify-content-end">
           <div class="form-group mb-0">
             <input type="hidden" name="__action" value="attach_file">
+            <% if (typeof variant != 'undefined') { %>
             <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+            <% } %>
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <button type="submit" class="btn btn-primary">Attach file</button>
           </div>
         </div>
       </form>
     </div>
-    <!-- PASTE TEXT -->
+
+    <!-- UPLOAD TEXT -->
     <br>
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachTextCollapse" aria-expanded="false" aria-controls="attachTextCollapse">
       Attach text <i class="far fa-caret-square-down"></i>
@@ -64,14 +71,15 @@
     <div class="collapse" id="attachTextCollapse">
       <form method="POST">
         <p class="small mt-3">
-          Type or paste text below and click "attach".
-          The text will be saved with this question for your reference.
+          Attached text will be saved here for your reference.
         </p>
         <input name="filename" value="notes.txt">
         <div class="form-group">
           <textarea class="form-control" rows="5" name="contents" placeholder="Type or paste text here"></textarea>
         </div>
+        <% if (typeof variant != 'undefined') { %>
         <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+        <% } %>
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
         <div class="form-group text-right">
           <button class="btn btn-small btn-primary" name="__action" value="attach_text">Attach text</button>

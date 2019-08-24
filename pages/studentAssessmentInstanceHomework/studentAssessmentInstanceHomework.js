@@ -1,16 +1,18 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
-var path = require('path');
-var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const util = require('util');
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var assessment = require('../../lib/assessment');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const assessment = require('../../lib/assessment');
+const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var ensureUpToDate = (locals, callback) => {
+const ensureUpToDate = (locals, callback) => {
     debug('ensureUpToDate()');
     assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) => {
         if (ERR(err, callback)) return;
@@ -56,6 +58,30 @@ router.get('/', function(req, res, next) {
             });
         });
     });
+});
+
+router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+
+    if (req.body.__action == 'attach_file') {
+        util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'attach_text') {
+        util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'delete_file') {
+        util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else {
+        next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+    }
 });
 
 module.exports = router;

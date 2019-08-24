@@ -1,220 +1,212 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <%- include('../partials/head'); %>
-</head>
-<body>
-  <script>
-    $(function () {
-      $('[data-toggle="popover"]').popover({sanitize: false})
-    });
-  </script>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
+      });
+  
+      // make the file inputs display the file name
+      $(document).on('change', '.custom-file-input', function () {
+          let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+          $(this).parent('.custom-file').find('.custom-file-label').text(filename);
+      });
+    </script>
 
-  <div id="confirmFinishModal" class="modal fade">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">All done?</h4>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        </div>
-        <div class="modal-body">
-          <% if (assessment_instance.all_questions_answered) { %>
-          <div class="alert alert-warning">There are still unanswered questions.</div>
-          <% } %>
-          <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
-          <p>Are you sure you want to finish, complete, and close out the assessment?</p>
-        </div>
-        <div class="modal-footer">
-          <form name="finish-form" method="POST">
-            <input type="hidden" name="__action" value="finish">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button type="submit" class="btn btn-danger">Finish assessment</button>
-            <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <% if (showTimeLimitExpiredModal) { %>
-    <div id="timeLimitExpiredModal" class="modal fade">
+    <div id="confirmFinishModal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
+            <h4 class="modal-title">All done?</h4>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title">Time limit expired</h4>
           </div>
           <div class="modal-body">
-            <p>Your time limit expired and your assessment is now finished.</p>
+            <% if (assessment_instance.all_questions_answered) { %>
+            <div class="alert alert-warning">There are still unanswered questions.</div>
+            <% } %>
+            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
+            <p>Are you sure you want to finish, complete, and close out the assessment?</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            <form name="finish-form" method="POST">
+              <input type="hidden" name="__action" value="finish">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-danger">Finish assessment</button>
+              <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+            </form>
           </div>
         </div>
       </div>
     </div>
-    <script>
-      $(function() {$('#timeLimitExpiredModal').modal({})})
-    </script>
-  <% } // showTimeLimitExpiredModal %>
-
-  <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
-  <div id="content" class="container">
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+  
+    <% if (showTimeLimitExpiredModal) { %>
+      <div id="timeLimitExpiredModal" class="modal fade">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title">Time limit expired</h4>
+            </div>
+            <div class="modal-body">
+              <p>Your time limit expired and your assessment is now finished.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col-md-3 col-sm-6">
-            <% include('../partials/pointsFormatter'); %>
-            Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
-          </div>
-          <div class="col-md-3 col-sm-6">
-            <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
-          </div>
-          <div class="col-md-6 col-sm-12">
-              <% if (assessment_instance.open) { %>
-                  Assessment is <strong>open</strong> and you can answer questions.
-                  <p>
-                  Available credit: <%= authz_result.credit_date_string %>
-                  <%- include('../partials/studentAccessRulesPopover', {
-                    accessRules: authz_result.access_rules,
-                    assessmentSetName: assessment_set.name,
-                    assessmentNumber: assessment.number,
-                  }); %>
-              <% } else { %>
-                  Assessment is <strong>closed</strong> and you cannot answer questions.
-              <% } %>
-          </div>
+      <script>
+        $(function() {$('#timeLimitExpiredModal').modal({})})
+      </script>
+    <% } // showTimeLimitExpiredModal %>
+  
+    <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
+    <div id="content" class="container">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
         </div>
-
-        <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
-        <div class="alert alert-secondary mt-4" role="alert">
-          <div class="row">
-            <div class="col-md-2 col-sm-12 col-xs-12">
-              <div id="countdownProgress"></div>
+  
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-3 col-sm-6">
+              <% include('../partials/pointsFormatter'); %>
+              Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
             </div>
-            <div class="col-md-10 col-sm-12 col-xs-12">
-              Time remaining: <span id="countdownDisplay"></span>
+            <div class="col-md-3 col-sm-6">
+              <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <% if (assessment_instance.open) { %>
+                    Assessment is <strong>open</strong> and you can answer questions.
+                    <p>
+                    Available credit: <%= authz_result.credit_date_string %>
+                    <%- include('../partials/studentAccessRulesPopover', {
+                      accessRules: authz_result.access_rules,
+                      assessmentSetName: assessment_set.name,
+                      assessmentNumber: assessment.number,
+                    }); %>
+                <% } else { %>
+                    Assessment is <strong>closed</strong> and you cannot answer questions.
+                <% } %>
             </div>
           </div>
-          <%- include('../partials/countdown', {
-            serverTimeLimitMS: assessment_instance_time_limit_ms,
-            serverRemainingMS: assessment_instance_remaining_ms,
-            progressSelector: '#countdownProgress',
-            displaySelector: '#countdownDisplay',
-          }) %>
-        </div>
-        <% } %>
-
-        <% if (assessment_text_templated) { %>
-        <div class="card bg-light mb-0 mt-4">
-          <div class="card-body">
-            <%- assessment_text_templated %>
+  
+          <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
+          <div class="alert alert-secondary mt-4" role="alert">
+            <div class="row">
+              <div class="col-md-2 col-sm-12 col-xs-12">
+                <div id="countdownProgress"></div>
+              </div>
+              <div class="col-md-10 col-sm-12 col-xs-12">
+                Time remaining: <span id="countdownDisplay"></span>
+              </div>
+            </div>
+            <%- include('../partials/countdown', {
+              serverTimeLimitMS: assessment_instance_time_limit_ms,
+              serverRemainingMS: assessment_instance_remaining_ms,
+              progressSelector: '#countdownProgress',
+              displaySelector: '#countdownDisplay',
+            }) %>
           </div>
+          <% } %>
+  
+          <% if (assessment_text_templated) { %>
+          <div class="card bg-light mb-0 mt-4">
+            <div class="card-body">
+              <%- assessment_text_templated %>
+            </div>
+          </div>
+          <% } %>
         </div>
-        <% } %>
-
-        <% if (file_list.length > 0) { %>
-        <div class="card mb-0 mt-4">
-          <ul class="list-group list-group-flush">
-            <% for (let file of file_list) { %>
-            <li class="list-group-item">
-              <a target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
-                <%- include('../partials/fileLabel', {type: file.type}) %>
-                <%= file.display_filename %>
-              </a>
-            </li>
+  
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th class="text-center">
+                Best submission
+                <%- include('../partials/examQuestionHelpBestSubmission'); %>
+              </th>
+              <th class="text-center">
+                Available points
+                <%- include('../partials/examQuestionHelpAvailablePoints'); %>
+              </th>
+              <th class="text-center">
+                Awarded points
+                <%- include('../partials/examQuestionHelpAwardedPoints'); %>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+          <% instance_questions.forEach(function(instance_question) { %>
+            <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
+            <tr>
+              <th colspan="5">
+                <%= instance_question.zone_title %>
+                <% if (instance_question.zone_has_max_points) { %>
+                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                    data-toggle="popover" data-trigger="focus" data-container="body"
+                    data-html="true"
+                    data-content="Of the points that you are awarded for answering these questions, at most <%= instance_question.zone_max_points %> will count toward your total points."><span class="badge badge-secondary align-top">maximum <%= instance_question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                <% } %>
+                <% if (instance_question.zone_has_best_questions) { %>
+                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                    data-toggle="popover" data-trigger="focus" data-container="body"
+                    data-html="true"
+                    data-content="Of these questions, only the <%= instance_question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><span class="badge badge-secondary align-top">best <%= instance_question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                <% } %>
+              </th>
+            </tr>
             <% } %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
+                  Question <%= instance_question.question_number %>
+                </a>
+                <% if (instance_question.file_count > 0) { %>
+                  <i class="far fa-file-alt"></i>
+                <% } %>
+              </td>
+              <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+              <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+              <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
+            </tr>
+          <% }); %>
+          </tbody>
+        </table>
+  
+        <div class="card-footer">
+          <form name="grade-form" method="POST" class="form-inline">
+              <input type="hidden" name="__action" value="grade">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <% if (savedAnswers > 0) { %>
+                <button type="submit" class="btn btn-info">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
+              <% } else { %>
+                <button type="submit" class="btn btn-info disabled" disabled>No saved answers to grade</button>
+              <% } %>
+              </form>
+          <p>
+          <ul>
+              <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
+              <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+                  <li>After you have answered all the questions completely, click here:
+                      <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                  </li>
+              <% } else { %>
+                  <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
+              <% } %>
           </ul>
         </div>
-        <% } %>
-
       </div>
 
-      <table class="table table-sm table-hover">
-        <thead>
-          <tr>
-            <th>Question</th>
-            <th class="text-center">
-              Best submission
-              <%- include('../partials/examQuestionHelpBestSubmission'); %>
-            </th>
-            <th class="text-center">
-              Available points
-              <%- include('../partials/examQuestionHelpAvailablePoints'); %>
-            </th>
-            <th class="text-center">
-              Awarded points
-              <%- include('../partials/examQuestionHelpAwardedPoints'); %>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-        <% instance_questions.forEach(function(instance_question) { %>
-          <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
-          <tr>
-            <th colspan="5">
-              <%= instance_question.zone_title %>
-              <% if (instance_question.zone_has_max_points) { %>
-               &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                  data-toggle="popover" data-trigger="focus" data-container="body"
-                  data-html="true"
-                  data-content="Of the points that you are awarded for answering these questions, at most <%= instance_question.zone_max_points %> will count toward your total points."><span class="badge badge-secondary align-top">maximum <%= instance_question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
-              <% } %>
-              <% if (instance_question.zone_has_best_questions) { %>
-               &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                  data-toggle="popover" data-trigger="focus" data-container="body"
-                  data-html="true"
-                  data-content="Of these questions, only the <%= instance_question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><span class="badge badge-secondary align-top">best <%= instance_question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
-              <% } %>
-            </th>
-          </tr>
-          <% } %>
-          <tr>
-            <td>
-              <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
-                Question <%= instance_question.question_number %>
-              </a>
-              <% if (instance_question.file_count > 0) { %>
-                <i class="far fa-file-alt"></i>
-              <% } %>
-            </td>
-            <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-            <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
-            <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
-          </tr>
-        <% }); %>
-        </tbody>
-      </table>
-
-      <div class="card-footer">
-        <form name="grade-form" method="POST" class="form-inline">
-            <input type="hidden" name="__action" value="grade">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <% if (savedAnswers > 0) { %>
-              <button type="submit" class="btn btn-info">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
-            <% } else { %>
-              <button type="submit" class="btn btn-info disabled" disabled>No saved answers to grade</button>
-            <% } %>
-            </form>
-        <p>
-        <ul>
-            <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
-            <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
-            <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                <li>After you have answered all the questions completely, click here:
-                    <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-                </li>
-            <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
-            <% } %>
-        </ul>
-      </div>
+      <%- include('../partials/attachFilePanel') %>
+      <%- include('../partials/instructorInfoPanel') %>
     </div>
-    <%- include('../partials/instructorInfoPanel') %>
-  </div>
-</body>
+  </body>
 </html>

@@ -17,7 +17,7 @@ WITH instance_questions_info AS (
         w AS (ORDER BY qo.row_order)
 ),
 file_list AS (
-    SELECT coalesce(jsonb_agg(f), '[]'::jsonb) AS list
+    SELECT coalesce(jsonb_agg(f ORDER BY f.created_at), '[]'::jsonb) AS list
     FROM files AS f
     WHERE
         f.instance_question_id = $instance_question_id

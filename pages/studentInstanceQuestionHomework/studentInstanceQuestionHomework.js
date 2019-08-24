@@ -7,8 +7,7 @@ const router = express.Router();
 const error = require('@prairielearn/prairielib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
-const studentInstanceQuestionAttachFiles = require('../shared/studentInstanceQuestionAttachFiles');
-const studentInstanceQuestionIssues = require('../shared/studentInstanceQuestionIssues');
+const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
@@ -60,28 +59,28 @@ router.post('/', function(req, res, next) {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'attach_file') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionFileUpload)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processFileUpload)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'attach_text') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionTextUpload)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processTextUpload)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'delete_file') {
-        util.callbackify(studentInstanceQuestionAttachFiles.processQuestionDeleteFile)(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processDeleteFile)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
-        studentInstanceQuestionIssues.processIssue(req, res, function(err, variant_id) {
+        util.callbackify(studentInstanceQuestion.processIssue)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);

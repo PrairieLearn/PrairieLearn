@@ -6,6 +6,18 @@
   <body>
     <script>
       $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
+      });
+  
+      // make the file inputs display the file name
+      $(document).on('change', '.custom-file-input', function () {
+          let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+          $(this).parent('.custom-file').find('.custom-file-label').text(filename);
+      });
+    </script>
+
+    <script>
+      $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false})
       });
     </script>
@@ -99,8 +111,9 @@
             <% }); %>
           </tbody>
         </table>
-
       </div>
+
+      <%- include('../partials/attachFilePanel') %>
       <%- include('../partials/instructorInfoPanel') %>
     </div>
   </body>
