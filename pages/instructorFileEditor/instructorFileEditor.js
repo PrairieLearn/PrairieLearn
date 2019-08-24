@@ -29,7 +29,7 @@ router.get('/instructorFileEditorClient.js', (req, res) => {
 });
 
 router.get('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
 
     if (_.isEmpty(req.query)) {
         return next(error.make(400, 'no query', {
@@ -155,7 +155,7 @@ router.get('/', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
 
     let fileEdit = {
         userID: res.locals.user.user_id,
