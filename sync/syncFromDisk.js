@@ -27,7 +27,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  * @param {string} courseDir 
  * @param {any} courseId 
  * @param {any} logger 
- * @returns {{ hadJsonErrors: boolean }}
+ * @returns Promise<{{ hadJsonErrors: boolean }}>
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json files from course repository');
@@ -152,7 +152,7 @@ module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
         return { fullSync: true };
     }
 
-    await syncQuestions.syncSingleQuestion(courseDir, questionInfo, logger);
+    await syncQuestions.syncSingleQuestion(courseDir, questionInfo);
     return { fullSync: false };
 };
 
