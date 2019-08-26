@@ -121,5 +121,8 @@
             "public",
             "tests"
         ]
+    },
+    "nodemonConfig": {
+        "ignore": "exampleCourse/*"
     }
 }
