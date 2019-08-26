@@ -64,6 +64,42 @@ describe('Course instance syncing', () => {
     assert.match(secondCourseInstance.sync_warnings, new RegExp(`UUID "a17b1abd-eaf6-45dc-99bc-9890a7fb345e" is used in other course instances: ${util.COURSE_INSTANCE_ID}`));
   });
 
+  it('records an error if an allowAccess rule has a start date after the end date', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.push({
+      startDate: '2020-01-01T11:11:11',
+      endDate: '2019-01-01T00:00:00',
+    });
+    await util.writeAndSyncCourseData(courseData);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
+    assert.match(syncedCourseInstance.sync_errors, /Invalid allowAccess rule: startDate \(2020-01-01T11:11:11\) must not be after endDate \(2019-01-01T00:00:00\)/);
+  });
+
+  it('records an error if an allowAccess rule has an invalid start date', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.push({
+      startDate: 'not a valid date',
+      endDate: '2019-01-01T00:00:00',
+    });
+    await util.writeAndSyncCourseData(courseData);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
+    assert.match(syncedCourseInstance.sync_errors, /Invalid allowAccess rule: startDate \(not a valid date\) is not valid/);
+  });
+
+  it('records an error if an allowAccess rule has an invalid end date', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.push({
+      startDate: '2020-01-01T11:11:11',
+      endDate: 'not a valid date',
+    });
+    await util.writeAndSyncCourseData(courseData);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
+    assert.match(syncedCourseInstance.sync_errors, /Invalid allowAccess rule: endDate \(not a valid date\) is not valid/);
+  });
+
   it('records an error if a course instance directory is missing an infoCourseInstance.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);

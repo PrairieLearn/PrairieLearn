@@ -8,7 +8,7 @@ const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv');
-const { isValid, parseISO, isAfter } = require('date-fns');
+const { parseISO, isValid, isAfter } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
 const schemas = require('../schemas');
@@ -734,6 +734,34 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 }
 
 /**
+ * Checks that dates, if present, are valid and sequenced correctly.
+ * @param {{ startDate?: string, endDate?: string }} rule
+ * @returns {string[]} A list of errors, if any
+ */
+function checkAllowAccessDates(rule) {
+    const errors = [];
+    let startDate, endDate;
+    if ('startDate' in rule) {
+        startDate = parseISO(rule.startDate);
+        if (!isValid(startDate)) {
+            startDate = null;
+            errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
+        }
+    }
+    if ('endDate' in rule) {
+        endDate = parseISO(rule.endDate);
+        if (!isValid(endDate)) {
+            endDate = null;
+            errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
+        }
+    }
+    if (startDate && endDate && isAfter(startDate, endDate)) {
+        errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
+    }
+    return errors;
+}
+
+/**
  * @param {Question} question 
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
@@ -765,24 +793,8 @@ async function validateAssessment(assessment, questions) {
 
     // Check assessment access rules
     (assessment.allowAccess || []).forEach(rule => {
-        let startDate, endDate;
-        if ('startDate' in rule) {
-            startDate = parseISO(rule.startDate);
-            if (!isValid(startDate)) {
-                startDate = null;
-                errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
-            }
-        }
-        if ('endDate' in rule) {
-            endDate = parseISO(rule.endDate);
-            if (!isValid(endDate)) {
-                endDate = null;
-                errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
-            }
-        }
-        if (startDate && endDate && isAfter(startDate, endDate)) {
-            errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
-        }
+        const allowAccessErrors = checkAllowAccessDates(rule);
+        errors.push(...allowAccessErrors);
     });
 
     const foundQids = new Set();
@@ -870,6 +882,11 @@ async function validateCourseInstance(courseInstance) {
             errors.push('"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.');
         }
     }
+
+    (courseInstance.allowAccess || []).forEach(rule => {
+        const allowAccessErrors = checkAllowAccessDates(rule);
+        errors.push(...allowAccessErrors);
+    });
 
     return { warnings, errors };
 }

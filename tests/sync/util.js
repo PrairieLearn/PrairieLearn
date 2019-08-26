@@ -51,11 +51,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRule} role
- * @property {string[]} uids
- * @property {string} startDate
- * @property {string} endDate
- * @property {Institution} institution
+ * @property {UserRule=} role
+ * @property {string[]=} uids
+ * @property {string=} startDate
+ * @property {string=} endDate
+ * @property {Institution=} institution
  */
 
 /**
