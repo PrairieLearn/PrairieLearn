@@ -54,7 +54,7 @@ module.exports.sync = async function(courseId, courseData, questionIds) {
         return acc;
     }, /** @type {Map<String, any>} */ (new Map()));
 
-    /** @tyle {} */
+    /** @type {string[]} */
     const questionTagsParam = [];
     Object.entries(courseData.questions).forEach(([qid, question]) => {
         if (infofile.hasErrors(question)) return;
