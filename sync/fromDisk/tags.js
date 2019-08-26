@@ -5,7 +5,7 @@ function getDuplicates(arr) {
     const seen = new Set();
     return arr.filter(v => {
         const present = seen.has(v);
-        seen.add(v)
+        seen.add(v);
         return present;
     });
 }
