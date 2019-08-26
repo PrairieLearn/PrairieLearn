@@ -148,7 +148,6 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_assessments.sql',
             'sync_assessment_sets_delete_unused.sql',
-            'sync_single_question.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
