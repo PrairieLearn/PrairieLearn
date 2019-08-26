@@ -18,8 +18,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
+const editorUtil = require('../../lib/editorUtil');
 const AWS = require('aws-sdk');
 const sha256 = require('crypto-js/sha256');
+const util = require('util');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -113,6 +115,15 @@ router.get('/', (req, res, next) => {
                     callback(null);
                 });
             }
+        },
+        (callback) => {
+            const promisified = util.callbackify(editorUtil.getErrorsAndWarningsForFilePath);
+            promisified(res.locals.course.id, req.query.file, (err, data) => {
+                if (ERR(err, callback)) return;
+                fileEdit.sync_errors = data.errors;
+                fileEdit.sync_warnings = data.warnings;
+                callback(null);
+            });
         },
     ], (err) => {
         if (ERR(err, next)) return;
