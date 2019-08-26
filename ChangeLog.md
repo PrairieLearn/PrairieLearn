@@ -39,7 +39,6 @@
 
   * Fix tags/topics duplicates checking when tag/topic is a builtin JS object property, like `toString` (Nathan Walters).
 
-  * .:w
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
