@@ -43,6 +43,7 @@ async function findSyncedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
+  // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
