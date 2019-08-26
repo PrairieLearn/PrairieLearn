@@ -137,27 +137,6 @@ async function isQuestionIncrementalSyncSafe(courseId, qid, questionInfo) {
 
 /**
  * @param {string} courseDir
- * @param {string} qid
- * @param {any} logger
- * @returns {Promise.<{ fullSync: boolean }>} Indicates if a full sync was performed
- */
-module.exports.syncSingleQuestion = async function(courseDir, qid, logger) {
-    const [courseId, questionInfo] = await Promise.all([
-        getCourseId(courseDir),
-        courseDB.loadSingleQuestion(courseDir, qid),
-    ]);
-    if (!(await isQuestionIncrementalSyncSafe(courseId, qid, questionInfo))) {
-        // Fall back to full sync
-        await (util.promisify(module.exports.syncDiskToSql))(courseDir, courseId, logger);
-        return { fullSync: true };
-    }
-
-    await syncQuestions.syncSingleQuestion(courseDir, questionInfo);
-    return { fullSync: false };
-};
-
-/**
- * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
  * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback

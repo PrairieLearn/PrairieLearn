@@ -264,21 +264,6 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  */
 
 /**
- * @param {string} courseDir The directory of the course
- * @param {string} qid The QID of the question to load
- */
-module.exports.loadSingleQuestion = async function(courseDir, qid) {
-    const infoQuestionPath = path.join(courseDir, 'questions', qid, 'info.json');
-    const result = await loadAndValidateJsonNew(courseDir, infoQuestionPath, DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
-    // TODO: once we have error/warning handling elsewhere in the stack,
-    // rewrite to just propagate the Either directly instead of throwing here.
-    if (infofile.hasErrors(result)) {
-        throw new Error(infofile.stringifyErrors(result));
-    }
-    return result.data;
-};
-
-/**
  * TODO: Remove `logger` param when we do later refactoring.
  * @param {string} courseDir
  * @param {(err: Error | null, course?: any, newCourse?: CourseData) => void} callback
