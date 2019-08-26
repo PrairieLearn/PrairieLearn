@@ -75,19 +75,18 @@ describe('Question syncing', () => {
     assert.isUndefined(syncedTopic);
   });
 
-  it('allows the same UUID to be used in different courses', async () => {
+  it.only('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
     // separate courses.
-    // TODO: we should actually assert that two independent copies of all data exist.
-    // While developing, I found some cases where data wasn't correctly scoped to one course/course instance.
     const courseData = util.getCourseData();
     const firstDirectory = await util.writeCourseToTempDirectory(courseData);
     const secondDirectory = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(firstDirectory);
     await util.syncCourseData(secondDirectory);
-    // No need for assertions - either sync succeeds, or it'll fail and throw
-    // an error, thus failing the test.
+    const syncedQuestions = await util.dumpTable('questions');
+    const questions = syncedQuestions.filter(q => q.qid === util.QUESTION_ID);
+    assert.equal(questions.length, 2);
   });
 
   // TODO: Incremental syncing is now broken after altering the UNIQUE
@@ -164,20 +163,6 @@ describe('Question syncing', () => {
     const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
     assert.match(syncedQuestion.sync_errors, /data should have required property 'incorrectAnswers'/);
   });
-
-  // TODO: add this back in once we have new tags syncing code.
-  // Do we even want to enforce this behavior? Or just add a warning?
-  /*
-  it('records an error if a question has duplicate tags', async () => {
-    const courseData = util.getCourseData();
-    courseData.questions[util.QUESTION_ID].tags.push(courseData.questions[util.QUESTION_ID].tags[0]);
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-    const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(syncedQuestion.sync_errors, /data should have required property 'incorrectAnswers'/);
-  });
-  */
 
   it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
