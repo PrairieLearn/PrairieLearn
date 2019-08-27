@@ -13,6 +13,10 @@
 
   * Add example docker grading images for externally graded questions (James Balamuta).
 
+  * Add `min-lines`, `max-lines`, and `auto-resize` to change the number of lines displayed in the `pl-file-editor` (James Balamuta).
+
+  * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
