@@ -31,16 +31,16 @@ window.PLFileEditor = function(uuid, options) {
     }
 
     if (options.minLines) {
-        this.editor.setOption("minLines", options.minLines);
+        this.editor.setOption('minLines', options.minLines);
     } 
 
     if (options.maxLines) {
-        this.editor.setOption("maxLines", options.maxLines);
+        this.editor.setOption('maxLines', options.maxLines);
     } 
 
     if (options.autoResize) {
         this.editor.setAutoScrollEditorIntoView(true);
-        this.editor.setOption("maxLines", Infinity);
+        this.editor.setOption('maxLines', Infinity);
     }
 
     var currentContents = '';
