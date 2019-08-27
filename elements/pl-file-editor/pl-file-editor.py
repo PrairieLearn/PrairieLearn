@@ -19,7 +19,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
@@ -44,6 +44,9 @@ def render(element_html, data):
     ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    min_lines = pl.get_integer_attrib(element, 'min-lines', None)
+    max_lines = pl.get_integer_attrib(element, 'max-lines', None)
+    auto_resize = pl.get_string_attrib(element, 'auto-resize', "false")
 
     html_params = {
         'name': answer_name,
@@ -51,6 +54,9 @@ def render(element_html, data):
         'ace_mode': ace_mode,
         'ace_theme': ace_theme,
         'editor_config_function': editor_config_function,
+        'min_lines': min_lines,
+        'max_lines': max_lines,
+        'auto_resize': auto_resize,
         'uuid': uuid
     }
 
