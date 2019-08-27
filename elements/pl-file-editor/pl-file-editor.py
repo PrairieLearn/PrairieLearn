@@ -46,7 +46,7 @@ def render(element_html, data):
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
     min_lines = pl.get_integer_attrib(element, 'min-lines', None)
     max_lines = pl.get_integer_attrib(element, 'max-lines', None)
-    auto_resize = pl.get_string_attrib(element, 'auto-resize', "false")
+    auto_resize = pl.get_string_attrib(element, 'auto-resize', 'false')
 
     html_params = {
         'name': answer_name,
