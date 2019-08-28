@@ -3,14 +3,5 @@
     "title": "In browser file editor input with pl-file-editor",
     "topic": "Test",
     "tags": ["balamut2", "code", "v3"],
-    "type": "v3",
-    "singleVariant": true,
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "enabled": true,
-        "image": "prairielearn/grader-python",
-        "serverFilesCourse": ["python_autograder/"],
-        "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
-        "timeout": 20
-    }
+    "type": "v3"
 }
