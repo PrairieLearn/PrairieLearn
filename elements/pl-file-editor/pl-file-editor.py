@@ -48,6 +48,13 @@ def render(element_html, data):
     max_lines = pl.get_integer_attrib(element, 'max-lines', None)
     auto_resize = pl.get_string_attrib(element, 'auto-resize', 'false')
 
+    # If auto_resize is set but min_lines isn't, the height of the
+    # file editor area will be set to 1 line. Thus, we need to set 
+    # a default of about 18 lines to match an editor window without
+    # the auto resizing enabled.
+    if min_lines is None and auto_resize == 'true':
+       min_lines = 18
+
     html_params = {
         'name': answer_name,
         'file_name': file_name,
