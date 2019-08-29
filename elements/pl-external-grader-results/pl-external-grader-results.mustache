@@ -3,16 +3,16 @@
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{message}}</code></pre>
+      <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="output text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3 class="mt-2">
       Score:
-      <span style="color: {{results_color}}"
+      <span style="color: {{results_color}}">
       {{#points}}
       <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
       {{/points}}
@@ -25,13 +25,13 @@
       {{#has_message}}
         <div class="card mb-4">
           <div class="card-header">Message</div>
-          <pre class="bg-dark text-white p-3 mb-0"><code>{{message}}</code></pre>
+          <pre class="output text-white p-3 mb-0"><code>{{{message}}}</code></pre>
         </div>
       {{/has_message}}
       {{#has_output}}
         <div class="card mb-4">
           <div class="card-header">Output</div>
-          <pre class="bg-dark text-white p-3 mb-0"><code>{{output}}</code></pre>
+          <pre class="output text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
       {{/has_output}}
     {{/has_message_or_output}}
@@ -71,13 +71,13 @@
               {{#has_message}}
                 <li class="list-group-item">
                   <div><strong>Message</strong></div>
-                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px"><code style="color: white; font-family: monospace;">{{message}}</code></pre>
+                  <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
                 </li>
               {{/has_message}}
               {{#has_output}}
                 <li class="list-group-item">
                   <div><strong>Output</strong></div>
-                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px;"><code style="color: white; font-family: monospace;">{{output}}</code></pre>
+                  <pre class="output text-white rounded p-3 mb-0"><code>{{{output}}}</code></pre>
                 </li>
               {{/has_output}}
             </ul>
