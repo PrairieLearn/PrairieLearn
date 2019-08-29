@@ -43,6 +43,8 @@
 
   * Fix tags/topics duplicates checking when tag/topic is a builtin JS object property, like `toString` (Nathan Walters).
 
+  * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
