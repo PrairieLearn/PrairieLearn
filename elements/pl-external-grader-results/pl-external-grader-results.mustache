@@ -3,16 +3,16 @@
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{message}}</code></pre>
+      <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="output text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3 class="mt-2">
       Score:
-      <span style="color: {{results_color}}"
+      <span style="color: {{results_color}}">
       {{#points}}
       <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
       {{/points}}

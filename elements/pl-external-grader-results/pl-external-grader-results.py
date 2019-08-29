@@ -27,7 +27,7 @@ def render(element_html, data):
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
         if not grading_succeeded:
-            html_params['message'] = feedback.get('message', None)
+            html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:
             results = feedback.get('results', None)
             if grading_succeeded and results:
