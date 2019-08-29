@@ -13,6 +13,8 @@
 
   * Add example docker grading images for externally graded questions (James Balamuta).
 
+  * Add ANSI color support to `pl-external-grader-results` element (Nathan Walters).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
