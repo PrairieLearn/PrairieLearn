@@ -2,9 +2,21 @@ import prairielearn as pl
 import lxml.html
 import chevron
 from ansi2html import Ansi2HTMLConverter
+import ansi2html.style as ansi2html_style
 
 
-conv = Ansi2HTMLConverter(inline=True, scheme='mint-terminal')
+# No built-in support for custom schemes, so we'll monkey-patch our own colors
+# into the module
+# order: black red green yellow blue magenta cyan white
+# first set of 8 is normal, second set of 8 is bright
+ansi2html_style.SCHEME['iterm'] = (
+    '#000000', '#c91b00', '#00c200', '#c7c400',
+    '#0037da', '#c930c7', '#00c5c7', '#c7c7c7',
+    '#676767', '#ff6d67', '#5ff967', '#fefb67',
+    '#6871ff', '#ff76ff', '#5ffdff', '#feffff',
+) * 2
+conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
+
 def ansi_to_html(output):
     if output is None:
         return None
