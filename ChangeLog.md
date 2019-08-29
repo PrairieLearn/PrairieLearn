@@ -43,6 +43,8 @@
 
   * Fix tags/topics duplicates checking when tag/topic is a builtin JS object property, like `toString` (Nathan Walters).
 
+  * Fix `Makefile` for documentation to build correctly (James Balamuta).
+
   * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
 
 * __3.2.0__ - 2019-08-05
