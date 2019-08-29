@@ -1,6 +1,14 @@
 import prairielearn as pl
 import lxml.html
 import chevron
+from ansi2html import Ansi2HTMLConverter
+
+
+conv = Ansi2HTMLConverter(inline=True, scheme='mint-terminal')
+def ansi_to_html(output):
+    if output is None:
+        return None
+    return conv.convert(output, full=False)
 
 
 def prepare(element_html, data):
@@ -28,9 +36,9 @@ def render(element_html, data):
                 html_params['achieved_max_points'] = (results.get('score', 0) >= 1.0)
                 html_params['results_color'] = '#4CAF50' if (results.get('score', 0) >= 1.0) else '#F44336'
                 html_params['has_message'] = bool(results.get('message', False))
-                html_params['message'] = results.get('message', None)
+                html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
-                html_params['output'] = results.get('output', None)
+                html_params['output'] = ansi_to_html(results.get('output', None))
                 html_params['has_message_or_output'] = bool(html_params['has_message'] or html_params['has_output'])
 
                 results_tests = results.get('tests', None)
@@ -58,9 +66,9 @@ def render(element_html, data):
                         test['index'] = index
                         test['name'] = results_test.get('name', '')
                         test['has_message'] = bool(results_test.get('message', None))
-                        test['message'] = results_test.get('message', None)
+                        test['message'] = ansi_to_html(results_test.get('message', None))
                         test['has_output'] = bool(results_test.get('output', None))
-                        test['output'] = results_test.get('output', None)
+                        test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
                         if not tests_missing_points:
