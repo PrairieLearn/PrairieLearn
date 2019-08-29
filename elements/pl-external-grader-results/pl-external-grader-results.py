@@ -18,6 +18,7 @@ ansi2html_style.SCHEME['iterm'] = (
 ) * 2
 conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
 
+
 def ansi_to_html(output):
     if output is None:
         return None
