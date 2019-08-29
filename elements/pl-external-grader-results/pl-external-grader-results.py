@@ -6,7 +6,8 @@ import ansi2html.style as ansi2html_style
 
 
 # No built-in support for custom schemes, so we'll monkey-patch our own colors
-# into the module
+# into the module. Colors borrowed from the "Dark Background" color preset in
+# iTerm2; blue tweaked a bit for better legibility on black.
 # order: black red green yellow blue magenta cyan white
 # first set of 8 is normal, second set of 8 is bright
 ansi2html_style.SCHEME['iterm'] = (
