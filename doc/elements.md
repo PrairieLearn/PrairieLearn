@@ -492,9 +492,18 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`min-lines` | integer | None | Minimum number of lines the editor should show initially.
+`max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
+`auto-resize` | boolean | True | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+
+#### Details
+
+When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
+This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
 
 #### Example implementations
 
+- [`examplesFileEditor`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesFileEditor)
 - [`fibonacciEditor`: Receive code written in a web browser and automatically grade it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
 
 #### See also

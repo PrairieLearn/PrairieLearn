@@ -102,8 +102,8 @@
                 </td>
                 <td>
                   Total points for each student, formatted by username
-                  for upload into LMS gradebooks. Points range from 0 to
-                  100 (or higher if bonus credit was given).
+                  for upload into LMS gradebooks. Points range from 0 
+                  to the maximum for this assessment.
                 </td>
               </tr>
               <% if (assessment.multiple_instance) { %>
@@ -114,8 +114,7 @@
                 <td>
                   Total points for each assessment instance, formatted
                   by username for upload into LMS gradebooks. Points
-                  range from 0 to 100 (or higher if bonus credit was
-                  given).
+                  range from 0 to the maximum for this assessment.
                 </td>
               </tr>
               <% } // assessment.multiple_instance %>
