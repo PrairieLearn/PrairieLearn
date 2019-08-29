@@ -13,6 +13,10 @@
 
   * Add example docker grading images for externally graded questions (James Balamuta).
 
+  * Add `min-lines`, `max-lines`, and `auto-resize` to change the number of lines displayed in the `pl-file-editor` (James Balamuta).
+
+  * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -40,6 +44,8 @@
   * Fix tags/topics duplicates checking when tag/topic is a builtin JS object property, like `toString` (Nathan Walters).
 
   * Fix `Makefile` for documentation to build correctly (James Balamuta).
+
+  * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
 
 * __3.2.0__ - 2019-08-05
 
