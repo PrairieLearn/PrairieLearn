@@ -3,6 +3,7 @@ import lxml.html
 import chevron
 import os
 
+WIDTH_DEFAULT = None
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -41,7 +42,7 @@ def render(element_html, data):
     file_url = os.path.join(base_url, file_name)
 
     # Get width (optional)
-    width = pl.get_string_attrib(element, 'width', None)
+    width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
 
     # Create and return html
     html_params = {'src': file_url, 'width': width}
