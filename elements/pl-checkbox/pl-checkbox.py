@@ -6,6 +6,8 @@ import chevron
 
 
 WEIGHT_DEFAULT = 1
+PARTIAL_CREDIT_DEFAULT = False
+PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -15,8 +17,8 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
     if not partial_credit and partial_credit_method is not None:
         raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
 
@@ -96,8 +98,8 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
@@ -334,10 +336,10 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     number_answers = len(data['params'][name])
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -367,9 +369,9 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
