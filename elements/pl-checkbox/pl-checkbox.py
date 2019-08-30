@@ -8,6 +8,7 @@ import chevron
 WEIGHT_DEFAULT = 1
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
+DETAILED_HELP_TEXT_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -153,7 +154,7 @@ def render(element_html, data):
         hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', False)
         if not hide_help_text:
             # Should we reveal the depth of the choice?
-            detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', False)
+            detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
             min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             if detailed_help_text:
@@ -324,7 +325,7 @@ def parse(element_html, data):
         return
 
     # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
-    if pl.get_boolean_attrib(element, 'detailed-help-text', False):
+    if pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
         min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
         max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
         n_submitted = len(submitted_key)
@@ -395,7 +396,7 @@ def test(element_html, data):
             # break and use this choice if it isn't correct
             if (len(ans) >= 1):
                 if set(ans) != set(correct_keys):
-                    if not pl.get_boolean_attrib(element, 'detailed-help-text', False):
+                    if not pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
                         break
                     else:
                         min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
