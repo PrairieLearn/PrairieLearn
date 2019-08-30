@@ -10,6 +10,7 @@ FIXED_ORDER_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 HIDE_ANSWER_PANEL_DEFAULT = False
+HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -153,7 +154,7 @@ def render(element_html, data):
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
-        hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', False)
+        hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', HIDE_HELP_TEXT_DEFAULT)
         if not hide_help_text:
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
