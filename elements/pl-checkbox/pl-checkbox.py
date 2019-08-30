@@ -7,11 +7,13 @@ import chevron
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
+INLINE_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -113,7 +115,7 @@ def render(element_html, data):
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
-    inline = pl.get_boolean_attrib(element, 'inline', False)
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     submitted_keys = data['submitted_answers'].get(name, [])
 
     # if there is only one key then it is passed as a string,
