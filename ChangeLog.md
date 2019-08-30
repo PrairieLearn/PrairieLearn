@@ -27,6 +27,8 @@
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
 
+  * Change element default setup to be top-down instead of inline (James Balamuta).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
