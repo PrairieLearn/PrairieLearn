@@ -5,6 +5,7 @@ import math
 import chevron
 
 
+WEIGHT_DEFAULT = 1
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -333,8 +334,8 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     number_answers = len(data['params'][name])
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
@@ -366,9 +367,9 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
