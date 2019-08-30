@@ -9,6 +9,7 @@ WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
+HIDE_ANSWER_PANEL_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -271,7 +272,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'answer':
 
-        if not pl.get_boolean_attrib(element, 'hide-answer-panel', False):
+        if not pl.get_boolean_attrib(element, 'hide-answer-panel', HIDE_ANSWER_PANEL_DEFAULT):
             correct_answer_list = data['correct_answers'].get(name, [])
             if len(correct_answer_list) == 0:
                 raise ValueError('At least one option must be true.')
