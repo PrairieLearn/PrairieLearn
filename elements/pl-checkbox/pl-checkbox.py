@@ -6,6 +6,7 @@ import chevron
 
 
 WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 DETAILED_HELP_TEXT_DEFAULT = False
@@ -74,7 +75,7 @@ def prepare(element_html, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
