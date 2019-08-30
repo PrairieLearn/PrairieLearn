@@ -4,6 +4,7 @@ import chevron
 import os
 
 WIDTH_DEFAULT = None
+TYPE_DEFAULT = 'static'
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -17,7 +18,7 @@ def render(element_html, data):
     file_name = pl.get_string_attrib(element, 'file-name')
 
     # Get type (default is static)
-    file_type = pl.get_string_attrib(element, 'type', 'static')
+    file_type = pl.get_string_attrib(element, 'type', TYPE_DEFAULT)
 
     # Get directory (default is clientFilesQuestion)
     file_directory = pl.get_string_attrib(element, 'directory', 'clientFilesQuestion')
