@@ -13,6 +13,7 @@
             <%= file.display_filename %>
           </a>
         </td>
+        <% if (assessment_instance.open) { %>
         <td style="width:1%; text-align:right;">
           <% if (file.type == 'student_upload') { %>
           <a id="attachFileDeleteButton<%= iFile %>"
@@ -28,6 +29,7 @@
           </a>
           <% } %>
         </td>
+        <% } %>
       </tr>
       <% }); %>
     <% } %>
@@ -35,6 +37,11 @@
   </table>
 
   <div class="card-footer">
+    <% if (!assessment_instance.open) { %>
+    <p class="small mb-0">
+      Attachments can't be added or deleted because the assessment is closed.
+    </p>
+    <% } else { /* assessment_instance is open */ %>
     <!-- UPLOAD FILE -->
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachFileCollapse" aria-expanded="false" aria-controls="attachFileCollapse">
       Attach a file <i class="far fa-caret-square-down"></i>
@@ -87,5 +94,6 @@
       </form>
     </div>
     <!-- END OF FILES -->
+    <% } %>
   </div>
 </div>
