@@ -13,6 +13,9 @@ COMPARISON_DEFAULT = 'relab'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
+ALLOW_COMPLEX_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -56,7 +59,7 @@ def render(element_html, data):
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
+        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
@@ -191,7 +194,7 @@ def parse(element_html, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
