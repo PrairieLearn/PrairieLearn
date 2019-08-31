@@ -9,6 +9,7 @@ import pyquaternion
 import math
 
 
+BODY_POSITION_DEFAULT = [0, 0, 0]
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -122,13 +123,13 @@ def render(element_html, data):
 
     uuid = pl.get_uuid()
 
-    body_position = get_position(element, 'body-position', default=[0, 0, 0])
     body_orientation = get_orientation(element, 'body-orientation', 'body-pose-format')
     camera_position = get_position(element, 'camera-position', default=[5, 2, 2], must_be_nonzero=True)
     body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', True)
     body_canrotate = pl.get_boolean_attrib(element, 'body-canrotate', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera-canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text-pose-format', 'matrix')
+    body_position = get_position(element, 'body-position', default=BODY_POSITION_DEFAULT)
     if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
         raise Exception('attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
