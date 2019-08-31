@@ -4,6 +4,7 @@ import chevron
 import os
 
 
+PARAM_NAMES_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['script-name']
@@ -22,7 +23,7 @@ def render(element_html, data):
     width = pl.get_string_attrib(element, 'width', '500')
     height = pl.get_string_attrib(element, 'height', '300')
 
-    params_names = pl.get_string_attrib(element, 'param-names', None)
+    params_names = pl.get_string_attrib(element, 'param-names', PARAM_NAMES_DEFAULT)
     if params_names is None:
         client_params = {}
     else:
