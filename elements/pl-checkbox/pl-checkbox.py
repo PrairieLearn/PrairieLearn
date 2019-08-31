@@ -25,7 +25,7 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
     if not partial_credit and partial_credit_method is not None:
         raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
 
