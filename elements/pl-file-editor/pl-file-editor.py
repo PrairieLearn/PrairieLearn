@@ -7,6 +7,7 @@ import os
 
 
 EDITOR_CONFIG_FUNCTION_DEFAULT = None
+ACE_MODE_DEFAULT = None
 def get_answer_name(file_name):
     return '_file_editor_{0}'.format(hashlib.sha1(file_name.encode('utf-8')).hexdigest())
 
@@ -40,9 +41,9 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
-    ace_mode = pl.get_string_attrib(element, 'ace-mode', None)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
     editor_config_function = pl.get_string_attrib(element, 'editor-config-function', EDITOR_CONFIG_FUNCTION_DEFAULT)
+    ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
     min_lines = pl.get_integer_attrib(element, 'min-lines', None)
