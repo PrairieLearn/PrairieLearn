@@ -11,6 +11,7 @@ ACE_MODE_DEFAULT = None
 ACE_THEME_DEFAULT = None 
 SOURCE_FILE_NAME_DEFAULT = None
 MIN_LINES_DEFAULT = None
+MAX_LINES_DEFAULT = None
 def get_answer_name(file_name):
     return '_file_editor_{0}'.format(hashlib.sha1(file_name.encode('utf-8')).hexdigest())
 
@@ -48,10 +49,10 @@ def render(element_html, data):
     ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
     uuid = pl.get_uuid()
-    max_lines = pl.get_integer_attrib(element, 'max-lines', None)
     auto_resize = pl.get_string_attrib(element, 'auto-resize', 'false')
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     min_lines = pl.get_integer_attrib(element, 'min-lines', MIN_LINES_DEFAULT)
+    max_lines = pl.get_integer_attrib(element, 'max-lines', MAX_LINES_DEFAULT)
 
     # If auto_resize is set but min_lines isn't, the height of the
     # file editor area will be set to 1 line. Thus, we need to set
