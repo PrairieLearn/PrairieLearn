@@ -5,6 +5,7 @@ import chevron
 import os
 
 LANGUAGE_DEFAULT = None
+NO_HIGHLIGHT_DEFAULT = False
 allowed_languages = [
     'armasm',
     'bash',
@@ -121,8 +122,8 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
+    no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
     prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
