@@ -12,6 +12,7 @@ import math
 BODY_POSITION_DEFAULT = [0, 0, 0]
 BODY_ORIENTATION_DEFAULT = 'body-pose-format'
 CAMERA_POSITION_DEFAULT = [5, 2, 2]
+BODY_CANTRANSLATE_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -125,13 +126,13 @@ def render(element_html, data):
 
     uuid = pl.get_uuid()
 
-    body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', True)
     body_canrotate = pl.get_boolean_attrib(element, 'body-canrotate', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera-canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text-pose-format', 'matrix')
     body_position = get_position(element, 'body-position', default=BODY_POSITION_DEFAULT)
     body_orientation = get_orientation(element, 'body-orientation', BODY_ORIENTATION_DEFAULT)
     camera_position = get_position(element, 'camera-position', default=CAMERA_POSITION_DEFAULT, must_be_nonzero=True)
+    body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', BODY_CANTRANSLATE_DEFAULT)
     if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
         raise Exception('attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
