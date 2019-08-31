@@ -4,6 +4,7 @@ import os
 
 
 TYPE_DEFAULT = 'static'
+DIRECTORY_DEFAULT = 'clientFilesQuestion'
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label', 'force-download'])
@@ -19,7 +20,7 @@ def render(element_html, data):
     file_type = pl.get_string_attrib(element, 'type', TYPE_DEFAULT)
 
     # Get directory (default is clientFilesQuestion)
-    file_directory = pl.get_string_attrib(element, 'directory', 'clientFilesQuestion')
+    file_directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
 
     # Get label (default is file_name)
     file_label = pl.get_string_attrib(element, 'label', file_name)
