@@ -12,6 +12,7 @@ LABEL_DEFAULT = None
 COMPARISON_DEFAULT = 'relabs'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
+DIGITS_DEFAULT = 2 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -58,12 +59,12 @@ def render(element_html, data):
                 raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
             info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
@@ -175,10 +176,10 @@ def render(element_html, data):
                 # FIXME: render correctly with respect to rtol and atol
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='g', digits=12) + '$'
             elif comparison == 'sigfig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='sigfig', digits=digits) + '$'
             elif comparison == 'decdig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='f', digits=digits) + '$'
             else:
                 raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
@@ -267,9 +268,9 @@ def grade(element_html, data):
         rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
     elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     elif comparison == 'decdig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
 
