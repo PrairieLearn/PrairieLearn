@@ -8,6 +8,7 @@ import chevron
 
 
 WEIGHT_DEFAULT = 1
+LABEL_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -18,7 +19,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
 
     if '_pl_matrix_input_format' in data['submitted_answers']:
         format_type = data['submitted_answers']['_pl_matrix_input_format'].get(name, 'matlab')
