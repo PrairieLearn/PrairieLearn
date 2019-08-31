@@ -5,6 +5,7 @@ import os
 
 
 PARAM_NAMES_DEFAULT = None
+WIDTH_DEFAULT = '500'
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['script-name']
@@ -20,8 +21,8 @@ def render(element_html, data):
     with open(os.path.join(data['options']['question_path'], script_name)) as f:
         script = f.read()
 
-    width = pl.get_string_attrib(element, 'width', '500')
     height = pl.get_string_attrib(element, 'height', '300')
+    width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
 
     params_names = pl.get_string_attrib(element, 'param-names', PARAM_NAMES_DEFAULT)
     if params_names is None:
