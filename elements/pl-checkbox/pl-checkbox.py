@@ -14,6 +14,7 @@ HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 

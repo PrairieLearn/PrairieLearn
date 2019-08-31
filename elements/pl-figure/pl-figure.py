@@ -3,9 +3,11 @@ import lxml.html
 import chevron
 import os
 
+
 WIDTH_DEFAULT = None
 TYPE_DEFAULT = 'static'
 DIRECTORY_DEFAULT = 'clientFilesQuestion'
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
