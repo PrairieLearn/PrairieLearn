@@ -13,6 +13,7 @@ CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
 LABEL_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
+ALLOW_COMPLEX_DEFAULT = False
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -45,9 +46,9 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
     variables = get_variables_list(variables_string)
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -180,9 +181,9 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -286,8 +287,8 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
