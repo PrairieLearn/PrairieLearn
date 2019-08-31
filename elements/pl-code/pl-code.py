@@ -6,6 +6,7 @@ import os
 
 LANGUAGE_DEFAULT = None
 NO_HIGHLIGHT_DEFAULT = False
+SOURCE_FILE_NAME_DEFAULT = None
 allowed_languages = [
     'armasm',
     'bash',
@@ -109,7 +110,7 @@ def prepare(element_html, data):
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
 
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     if source_file_name is not None:
         if element.text is not None and not str(element.text).isspace():
             raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
@@ -125,10 +126,10 @@ def render(element_html, data):
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
     prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
     highlight_lines = pl.get_string_attrib(element, 'highlight-lines', None)
     highlight_lines_color = pl.get_string_attrib(element, 'highlight-lines-color', '#b3d7ff')
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
     if source_file_name is not None:
         base_path = data['options']['question_path']
