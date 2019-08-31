@@ -13,6 +13,9 @@ COMPARISON_DEFAULT = 'relabs'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2 
+ALLOW_PARTIAL_CREDIT_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -24,8 +27,8 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
     allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
 
     if data['panel'] == 'question':
@@ -257,7 +260,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -329,8 +332,8 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
