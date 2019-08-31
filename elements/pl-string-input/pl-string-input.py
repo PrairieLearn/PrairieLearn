@@ -7,6 +7,7 @@ import random
 
 
 WEIGHT_DEFAULT = 1
+CORRECT_ANSWER_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -14,7 +15,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
-    correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
 
     if correct_answer is not None:
         if name in data['correct_answers']:
