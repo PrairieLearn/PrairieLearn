@@ -11,6 +11,7 @@ CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
+REMOVE_LEADING_TRAILING_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -29,12 +30,12 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
     placeholder = pl.get_string_attrib(element, 'placeholder', None)
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -172,7 +173,7 @@ def grade(element_html, data):
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
 
     # Get remove-leading-trailing option
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
 
     # Get string case sensitivity option
     ignore_case = pl.get_string_attrib(element, 'ignore-case', False)
