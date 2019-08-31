@@ -7,6 +7,7 @@ TYPE_DEFAULT = 'static'
 DIRECTORY_DEFAULT = 'clientFilesQuestion'
 FORCE_DOWNLOAD_DEFAULT = True
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label', 'force-download'])
