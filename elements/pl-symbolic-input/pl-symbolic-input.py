@@ -8,6 +8,7 @@ import math
 import python_helper_sympy as phs
 
 
+WEIGHT_DEFAULT = 1
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -283,7 +284,7 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -323,7 +324,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if result == 'correct':
