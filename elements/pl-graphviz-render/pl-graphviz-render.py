@@ -4,6 +4,9 @@ import chevron
 import json
 
 
+ENGINE_DEFAULT = 'dot'
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=['engine'])
@@ -11,7 +14,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    engine = pl.get_string_attrib(element, 'engine', 'dot')
+    engine = pl.get_string_attrib(element, 'engine', ENGINE_DEFAULT)
 
     # Read the contents of this element as the data to render
     # we dump the string to json to ensure that newlines are
