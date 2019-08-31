@@ -8,6 +8,7 @@ import random
 
 
 WEIGHT_DEFAULT = 1
+LABEL_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -19,8 +20,8 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
     allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
 
     if data['panel'] == 'question':
