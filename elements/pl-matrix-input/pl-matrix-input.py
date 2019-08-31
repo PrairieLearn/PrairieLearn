@@ -12,6 +12,7 @@ LABEL_DEFAULT = None
 COMPARISON_DEFAULT = 'relab'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
+DIGITS_DEFAULT = 2
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -44,12 +45,12 @@ def render(element_html, data):
                 raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
             info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
@@ -152,11 +153,11 @@ def render(element_html, data):
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=12, presentation_type='g')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=12, presentation_type='g')
             elif comparison == 'sigfig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=digits, presentation_type='sigfig')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='sigfig')
             elif comparison == 'decdig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=digits, presentation_type='f')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='f')
             else:
@@ -258,10 +259,10 @@ def grade(element_html, data):
         atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
         correct = pl.is_correct_ndarray2D_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_sf(a_sub, a_tru, digits)
     elif comparison == 'decdig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
