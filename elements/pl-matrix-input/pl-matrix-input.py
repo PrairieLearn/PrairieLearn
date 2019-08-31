@@ -10,6 +10,7 @@ import chevron
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
 COMPARISON_DEFAULT = 'relab'
+RTOL_DEFAULT = 1e-2
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -34,8 +35,8 @@ def render(element_html, data):
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
             if (rtol < 0):
                 raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
             if (atol < 0):
@@ -144,8 +145,8 @@ def render(element_html, data):
             # Get comparison parameters
             comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
+                rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=12, presentation_type='g')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=12, presentation_type='g')
@@ -252,8 +253,8 @@ def grade(element_html, data):
 
     # Compare submitted answer with true answer
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
         atol = pl.get_float_attrib(element, 'atol', 1e-8)
+        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
         correct = pl.is_correct_ndarray2D_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
