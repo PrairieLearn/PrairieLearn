@@ -10,6 +10,7 @@ import random
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+SUFFIX_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -27,9 +28,9 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', 'inline')
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
