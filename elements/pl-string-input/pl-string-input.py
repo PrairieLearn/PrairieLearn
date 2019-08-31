@@ -13,6 +13,7 @@ SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
+PLACEHOLDER_DEFAULT = None
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -31,12 +32,12 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    placeholder = pl.get_string_attrib(element, 'placeholder', None)
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
     remove_spaces = pl.get_string_attrib(element, 'remove-spaces', REMOVE_SPACES_DEFAULT)
+    placeholder = pl.get_string_attrib(element, 'placeholder', PLACEHOLDER_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
