@@ -12,6 +12,7 @@ WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
 LABEL_DEFAULT = None
+DISPLAY_DEFAULT = 'inline'
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -44,9 +45,9 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
     variables = get_variables_list(variables_string)
-    display = pl.get_string_attrib(element, 'display', 'inline')
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
+    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
