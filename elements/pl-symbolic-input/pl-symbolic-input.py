@@ -11,6 +11,7 @@ import python_helper_sympy as phs
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
+LABEL_DEFAULT = None
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -40,7 +41,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
     variables = get_variables_list(variables_string)
     display = pl.get_string_attrib(element, 'display', 'inline')
