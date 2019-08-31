@@ -15,6 +15,9 @@ REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
+IGNORE_CASE_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -179,7 +182,7 @@ def grade(element_html, data):
     remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
 
     # Get string case sensitivity option
-    ignore_case = pl.get_string_attrib(element, 'ignore-case', False)
+    ignore_case = pl.get_string_attrib(element, 'ignore-case', IGNORE_CASE_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
