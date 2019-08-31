@@ -3,6 +3,8 @@
 
 **NOTE:** Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might need to generate a new variant of a question to run new Python code.
 
+**NOTE:** New-style PrairieLearn questions are marked with `"type": "v3"`. This documentation only describes new-style questions, although old-style v2 questions are still supported in the code.
+
 ## Directory structure
 
 Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `id`) for that question. For example, here are two different questions:
@@ -45,22 +47,23 @@ The `info.json` file for each question defines properties of the question. For e
     "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "title": "Addition of vectors in Cartesian coordinates",
     "topic": "Vectors",
-    "tags": ["Cartesian", "graphical"],
+    "tags": ["secret", "graphical"],
     "type": "v3"
 }
 ```
 
-- `title` gives a student-visible title for the question.
-- `topic` is the part of the course that this question belongs to (like the chapter in a textbook).
-- `tags` (optional) stores any other aspects of the questions, for sorting and searching (these can be anything).
-- `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
-- `type` specifies the question format and should be `"v3"` for the current PrairieLearn question format.
+* [Format specification for assessment `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
-## Partial credit
-
-By default all v3 questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
-
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct.
+Property | Type | Required | Default | Description
+`uuid` | string | yes | - | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net
+`type` | enum | yes | - | Type of the test. Must be `"v3"` for new-style questions.
+`title` | string | yes | - | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`).
+`topic` | string | yes | - | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook.
+`tags` | array | yes | - | Optional extra tags associated with the question (e.g., `["secret", "concept"]`).
+`gradingMethod` | enum | no | `Internal` | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`.
+`singleVariant` | boolean | no | `false` | Whether the question is not randomized and only generates a single variant.
+`partialCredit` | boolean | no | `true` | Whether the question will give partial points for fractional scores.
+`externalGradingOptions` | object | yes | - | Options for externally graded questions. See the [external grading docs](externalGrading.md).
 
 ## Question `server.py`
 
@@ -97,13 +100,28 @@ The `question.html` is a template used to render the question to the student. A 
 <p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 ```
 
-The `question.html` is regular HTML, with three special features:
+The `question.html` is regular HTML, with four special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
    
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
+
+4. LaTeX equations are available by putting `$y = x^2$` or `\[ y = \int_0^1 x^2\ dx \]` into the HTML.
+
+## The `singleVariant` option for non-randomized questions
+
+While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
+
+* On Homeworks, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
+* On Exams, the `singleVariant` option has no effect and the question is treated like any other.
+
+## The `partialCredit` option
+
+By default all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
+
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct.
 
 ## Using Markdown in questions
 
