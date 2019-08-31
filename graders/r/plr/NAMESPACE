@@ -1,0 +1,3 @@
+importFrom(unix, eval_safe, user_info)
+
+export(source_and_eval_safe)
