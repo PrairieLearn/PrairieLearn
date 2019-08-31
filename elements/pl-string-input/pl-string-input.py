@@ -14,6 +14,7 @@ DISPLAY_DEFAULT = 'inline'
 REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -148,7 +149,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     # Get allow-blank option
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -218,8 +219,8 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
