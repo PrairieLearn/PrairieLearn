@@ -7,6 +7,7 @@ import chevron
 DIGITS_DEFAULT = 2
 SHOW_MATLAB_DEFAULT = True
 SHOW_MATHEMATICA_DEFAULT = True
+SHOW_PYTHON_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
@@ -16,11 +17,11 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    show_python = pl.get_boolean_attrib(element, 'show-python', True)
     default_tab = pl.get_string_attrib(element, 'default-tab', 'matlab')
     digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     show_matlab = pl.get_boolean_attrib(element, 'show-matlab', SHOW_MATLAB_DEFAULT)
     show_mathematica = pl.get_boolean_attrib(element, 'show-mathematica', SHOW_MATHEMATICA_DEFAULT)
+    show_python = pl.get_boolean_attrib(element, 'show-python', SHOW_PYTHON_DEFAULT)
 
     tab_list = ['matlab', 'mathematica', 'python']
     if default_tab not in tab_list:
