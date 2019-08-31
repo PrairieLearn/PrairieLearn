@@ -30,8 +30,12 @@ source_and_eval_safe <- function(file, expr, uid) {
 
     if (!file.exists(file)) return(invisible(NULL))
 
+    oldmode <- file.mode(file)
     Sys.chmod(file, mode="0664")
     source(file)
 
     res <- eval_safe(expr, uid)
+    Sys.chmod(file, mode=oldmode)
+
+    res
 }
