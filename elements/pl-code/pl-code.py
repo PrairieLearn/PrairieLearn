@@ -7,6 +7,7 @@ import os
 LANGUAGE_DEFAULT = None
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
+PREVENT_SELECT_DEFAULT = False
 allowed_languages = [
     'armasm',
     'bash',
@@ -126,10 +127,10 @@ def render(element_html, data):
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
-    prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
     highlight_lines = pl.get_string_attrib(element, 'highlight-lines', None)
     highlight_lines_color = pl.get_string_attrib(element, 'highlight-lines-color', '#b3d7ff')
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    prevent_select = pl.get_boolean_attrib(element, 'prevent-select', PREVENT_SELECT_DEFAULT)
 
     if source_file_name is not None:
         base_path = data['options']['question_path']
