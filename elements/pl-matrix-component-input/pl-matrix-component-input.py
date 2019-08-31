@@ -10,6 +10,7 @@ import random
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
 COMPARISON_DEFAULT = 'relabs'
+RTOL_DEFAULT = 1e-2
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -48,8 +49,8 @@ def render(element_html, data):
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
             if (rtol < 0):
                 raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
             if (atol < 0):
@@ -168,8 +169,8 @@ def render(element_html, data):
             # Get comparison parameters and create the display data
             comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
+                rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='g', digits=12) + '$'
             elif comparison == 'sigfig':
@@ -262,8 +263,8 @@ def grade(element_html, data):
     # Get method of comparison, with relabs as default
     comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
         atol = pl.get_float_attrib(element, 'atol', 1e-8)
+        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
     elif comparison == 'decdig':
