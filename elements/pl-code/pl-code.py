@@ -4,6 +4,7 @@ from html import escape
 import chevron
 import os
 
+LANGUAGE_DEFAULT = None
 allowed_languages = [
     'armasm',
     'bash',
@@ -102,7 +103,7 @@ def prepare(element_html, data):
     optional_attribs = ['language', 'no-highlight', 'source-file-name', 'prevent-select', 'highlight-lines', 'highlight-lines-color']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    language = pl.get_string_attrib(element, 'language', None)
+    language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
@@ -120,8 +121,8 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    language = pl.get_string_attrib(element, 'language', None)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
+    language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
     prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
