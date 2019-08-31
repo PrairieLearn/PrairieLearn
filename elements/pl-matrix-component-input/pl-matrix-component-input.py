@@ -9,6 +9,7 @@ import random
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
+COMPARISON_DEFAULT = 'relabs'
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -45,7 +46,7 @@ def render(element_html, data):
         input_array = createTableForHTMLDisplay(m, n, name, label, data, 'input')
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
             rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
@@ -165,7 +166,7 @@ def render(element_html, data):
             a_tru = np.array(a_tru)
 
             # Get comparison parameters and create the display data
-            comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+            comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
             if comparison == 'relabs':
                 rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
@@ -259,7 +260,7 @@ def grade(element_html, data):
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
     if comparison == 'relabs':
         rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
         atol = pl.get_float_attrib(element, 'atol', 1e-8)
