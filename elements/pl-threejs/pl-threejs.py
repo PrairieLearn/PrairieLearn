@@ -19,6 +19,7 @@ ANSWER_POSE_FORMAT_DEFAULT = 'rpy'
 TEXT_POSE_FORMAT_DEFAULT = 'matrix'
 SHOW_POSE_IN_QUESTION_DEFAULT = True
 SHOW_POSE_IN_CORRECT_ANSWER_DEFAULT = True
+SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -200,7 +201,7 @@ def render(element_html, data):
         if not will_be_graded:
             return ''
 
-        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-submitted-answer', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-submitted-answer', SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT)
 
         # Get submitted answer
         pose = data['submitted_answers'].get(answer_name)
