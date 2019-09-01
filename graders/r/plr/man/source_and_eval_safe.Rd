@@ -2,9 +2,12 @@
 % Please edit documentation in R/source_eval.R
 \name{source_and_eval_safe}
 \alias{source_and_eval_safe}
+\alias{eval_safe_as}
 \title{Wrapper to source a file and safely evaluate an expression}
 \usage{
 source_and_eval_safe(file, expr, uid)
+
+eval_safe_as(expr, uid)
 }
 \arguments{
 \item{file}{A filename with an R file to be source, typically containing
@@ -29,5 +32,16 @@ is to just set all files within the evaluation directories to \code{root:root}
 removing group and others the rights to read (or write or execute). We therefore
 also \code{chmod} the supplied file back to mode \dQuote{0644} ensuring that
 the file can be read so that the expression can be evaluated---but nothing else
-should be in reach,
+should be in reach.
+}
+\details{
+The \code{eval_safe_as} convenience function fetches the (numeric) user id
+before calling \code{unix::eval_safe}; it is equivalent to \code{source_and_eval_safe}
+but does not involve a file.
+}
+\examples{
+\dontrun{
+n <- sample(3:20, 1)         # random payload
+res <- source_and_eval_safe("code/fib.R", fib(n), "ag")
+}
 }

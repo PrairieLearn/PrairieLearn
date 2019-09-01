@@ -1,3 +1,15 @@
+2019-09-01  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Release 0.0.2
+
+	* R/source_eval.R (source_and_eval_safe): Set the uid argument to
+	NULL so that non-root user can run this (without a uid change, of
+	course). Otherwise the functions are limited to root use.
+	
+	* R/source_eval.R (eval_safe_as): New helper function without file
+
+	* inst/tinytest/test_eval.R: Adjusted tests to not require uid
+
 2019-08-31  Dirk Eddelbuettel  <edd@debian.org>
 
 	* DESCRIPTION (Date, Version): Initial version 0.0.1
