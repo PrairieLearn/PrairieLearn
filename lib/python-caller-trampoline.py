@@ -15,7 +15,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import sys, os, json, importlib, copy, base64, io, matplotlib, signal
+import sys, os, json, importlib, copy, base64, io, matplotlib, signal, sklearn, nltk
 from inspect import signature
 
 saved_path = copy.copy(sys.path)
