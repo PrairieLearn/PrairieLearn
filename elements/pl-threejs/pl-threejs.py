@@ -15,6 +15,7 @@ CAMERA_POSITION_DEFAULT = [5, 2, 2]
 BODY_CANTRANSLATE_DEFAULT = True
 BODY_CANROTATE_DEFAULT = True
 CAMERA_CANMOVE_DEFAULT = True
+ANSWER_POSE_FORMAT_DEFAULT = 'rpy'
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -268,7 +269,7 @@ def render(element_html, data):
             return ''
 
         # Convert correct answer to Quaternion, then to [x, y, z, w]
-        f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
+        f = pl.get_string_attrib(element, 'answer-pose-format', ANSWER_POSE_FORMAT_DEFAULT)
         p, q = parse_correct_answer(f, a)
         p = p.tolist()
         q = np.roll(q.elements, -1).tolist()
