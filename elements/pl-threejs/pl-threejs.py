@@ -374,7 +374,7 @@ def grade(element_html, data):
     q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
 
     # Get format of correct answer
-    f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
+    f = pl.get_string_attrib(element, 'answer-pose-format', ANSWER_POSE_FORMAT_DEFAULT)
 
     # Get correct position (as np.array([x, y, z])) and orientation (as Quaternion)
     p_tru, q_tru = parse_correct_answer(f, a)
