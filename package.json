@@ -55,7 +55,7 @@
         "parse5": "^5.0.0",
         "passport": "^0.4.0",
         "passport-azure-ad": "^4.1.0",
-        "pg": "^7.12.0",
+        "pg": "^7.12.1",
         "plist": "^3.0.0",
         "popper.js": "^1.15.0",
         "qrcode-svg": "^1.0.0",
