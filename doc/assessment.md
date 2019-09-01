@@ -3,9 +3,9 @@
 
 **NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
-## Overview
+## `infoAssessment.json` file
 
-Each assessment is a single directory in the `assessments` folder. The directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
+Each assessment is a single directory in the `assessments/` folder. The directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
 ```json
 {
@@ -18,8 +18,6 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "zones": []
 }
 ```
-
-[Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
 Property | Type | Description
 --- | --- | ---
@@ -37,6 +35,8 @@ Property | Type | Description
 `autoClose` | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only).  (Optional; default: `true`)
 `allowIssueReporting` | boolean | Whether to allow students to report question issues. (Optional; default: `true`)
 `constantQuestionValue` | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)
+
+For more details, see the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
 ## `type`: Assessment types
 
@@ -84,24 +84,17 @@ An assessment is broken down in to a list of zones, each of which contains a lis
     {
         "title": "Easy questions",
         "questions": [
-            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
+            {"id": "anEasyQ", "points": [10]},
+            {"id": "aSlightlyHarderQ", "points": [5, 2]}
         ]
     },
     {
         "title": "Hard questions",
         "questions": [
-            {"id": "hardQV1", "points": 10},
-            {"id": "reallyHardQ", "points": [10, 10, 10]},
-            {
-                "numberChoose": 1,
-                "points": [5, 3, 1],
-                "alternatives": [
-                    {"id": "FirstAltQ"},
-                    {"id": "SecondAltQ"}
-                ]
-            }
-        ]
+            {"id": "hardQV1", "points": [5]},
+            {"id": "reallyHardQ", "points": [5, 5, 5]},
+            {“id”: “hardestQV3”, “points”: [3, 2, 1, 0.5, 0.2]}
+       ]
     }
 ],
 ```
@@ -113,6 +106,8 @@ Zone Property | Type | Description
 `numberChoose` | integer | Number of questions to select for each student from this zone. (Optional; default: select all)
 `maxPoints` | number | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)
 `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions)
+
+Zone specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
 ## `questions`: Slots for questions and question alternatives
 
@@ -145,6 +140,8 @@ Slot property | Type | Description
 `triesPerVariant` | integer | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)
 `forceMaxPoints` | boolean | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)
 
+Slot specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+
 ## Question alternative lists
 
 
@@ -172,11 +169,13 @@ Slot property | Type | Description
 FIXME
 
 
+Question alternative list specification details are in the [format specification for `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+
 Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
 ## Assessment instances, question selection, and question order
 
-PrairieLearn distinguishes between *assessments* and *assessment instances*. An *assessment* is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance.
+PrairieLearn distinguishes between *assessments* and *assessment instances*. An *assessment* is determined by the code in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance.
 
 Choosing the selection of questions for each student proceeds in three steps:
 
@@ -186,7 +185,7 @@ Choosing the selection of questions for each student proceeds in three steps:
 
 3. Concatenate the *zone questions* from each zone to form the total set of *assessment questions* for the student. This set of questions forms the *assessment instance* for this student.
 
-Each zone appears in the given order in the assessment (this is not randomized for each student). Within each zone the question order is randomized per-student for Exams, but not randomized for Homeworks (but see the `shuffleQuestions` option).
+Each zone appears in the given order in the assessment (this is not randomized for each student). Within each zone the question order is randomized per-student for Exams, but not randomized for Homeworks (but see the [`shuffleQuestions` option](#shufflequestions-question-order-randomization)).
 
 ## Computing the points for each question
 
@@ -250,9 +249,9 @@ FIXME
 
 ## Changing assessments while students are working on them
 
-While it is simplest to not change an assessment while students are working on it, we know that there are sometimes good reason that changes are needed. For example, a question might need to be removed because it contains an error, new questions might be added, or the points might be changed.
+While it is simplest to not change an assessment while students are working on it, we know that there are sometimes good reasons that changes are needed. For example, a question might need to be removed because it contains an error, new questions might be added, or the points might be changed.
 
-PrairieLearn’s general philosophy is to try and do the right thing in these situations. It will never automatically reduce a student’s total assessment “points” or “percentage score” due to assessment changes. Points that have been given to a student will not be taken away (unless the instructor explicitly edits the student points).
+PrairieLearn’s general philosophy is to try and do the right thing in these situations. It will never automatically reduce a student’s total assessment "points" or "percentage score" due to assessment changes. Points that have been given to a student will not be taken away (unless the instructor explicitly edits the student points).
 
 The precise rules for updating assessment instances differ between `Homework` and `Exam` assessments.
 
