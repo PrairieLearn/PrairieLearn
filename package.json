@@ -46,7 +46,7 @@
         "mersenne": "0.0.4",
         "moment": "^2.24.0",
         "multer": "^1.4.2",
-        "mustache": "^3.0.1",
+        "mustache": "^3.0.3",
         "ncp": "^2.0.0",
         "nodemon": "^1.19.1",
         "numeric": "^1.2.6",
