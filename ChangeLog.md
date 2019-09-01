@@ -27,6 +27,8 @@
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
 
+  * Change `type: "Exam"` under `mode: "Public"` to not display "waiting for proctor..." message (James Balamuta).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
