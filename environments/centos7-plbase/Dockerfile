@@ -7,8 +7,6 @@ ENV PYTHONIOENCODING=UTF-8
 # r-requirements.R        - list of R packages that should be installed from the Rstudio CRAN mirror
 COPY python-requirements.txt r-requirements.R /
 
-# Dummy change to test rebuild
-
 RUN yum -y install \
         epel-release \
         https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
