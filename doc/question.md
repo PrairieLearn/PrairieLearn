@@ -52,18 +52,19 @@ The `info.json` file for each question defines properties of the question. For e
 }
 ```
 
-* [Format specification for assessment `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
+* [Format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
-Property | Type | Required | Default | Description
-`uuid` | string | yes | - | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net
-`type` | enum | yes | - | Type of the test. Must be `"v3"` for new-style questions.
-`title` | string | yes | - | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`).
-`topic` | string | yes | - | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook.
-`tags` | array | yes | - | Optional extra tags associated with the question (e.g., `["secret", "concept"]`).
-`gradingMethod` | enum | no | `Internal` | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`.
-`singleVariant` | boolean | no | `false` | Whether the question is not randomized and only generates a single variant.
-`partialCredit` | boolean | no | `true` | Whether the question will give partial points for fractional scores.
-`externalGradingOptions` | object | yes | - | Options for externally graded questions. See the [external grading docs](externalGrading.md).
+Property | Type | Description
+--- | --- | ---
+`uuid` | string | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net (Required: no default)
+`type` | enum | Type of the test. Must be `"v3"` for new-style questions. (Required: no default)
+`title` | string | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required: no default)
+`topic` | string | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required: no default)
+`tags` | array | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional: default: no tags)
+`gradingMethod` | enum | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional: default: `Internal`)
+`singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional: default: `false`)
+`partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional: default: `true`)
+`externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional: default: none)
 
 ## Question `server.py`
 
