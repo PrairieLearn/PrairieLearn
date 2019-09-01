@@ -232,10 +232,7 @@
                     "type": "number",
                     "default": 1
                 }
-            },
-            "required": [
-                "points"
-            ]
+            }
         },
         "questionAlternative": {
             "type": "object",
