@@ -17,6 +17,7 @@ BODY_CANROTATE_DEFAULT = True
 CAMERA_CANMOVE_DEFAULT = True
 ANSWER_POSE_FORMAT_DEFAULT = 'rpy'
 TEXT_POSE_FORMAT_DEFAULT = 'matrix'
+SHOW_POSE_IN_QUESTION_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -143,7 +144,7 @@ def render(element_html, data):
 
     if data['panel'] == 'question':
         will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
-        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', SHOW_POSE_IN_QUESTION_DEFAULT)
 
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
