@@ -20,6 +20,7 @@ TEXT_POSE_FORMAT_DEFAULT = 'matrix'
 SHOW_POSE_IN_QUESTION_DEFAULT = True
 SHOW_POSE_IN_CORRECT_ANSWER_DEFAULT = True
 SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT = True
+TOL_TRANSLATION_DEFAULT = 0.5
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -381,8 +382,8 @@ def grade(element_html, data):
     error_in_rotation = np.abs((q_tru.inverse * q_sub).degrees)
 
     # Get tolerances
-    tol_translation = pl.get_float_attrib(element, 'tol-translation', 0.5)
     tol_rotation = pl.get_float_attrib(element, 'tol-rotation', 5)
+    tol_translation = pl.get_float_attrib(element, 'tol-translation', TOL_TRANSLATION_DEFAULT)
     if (tol_translation <= 0):
         raise Exception('tol_translation must be a positive real number: {:g}'.format(tol_translation))
     if (tol_rotation <= 0):
