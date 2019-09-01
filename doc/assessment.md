@@ -1,7 +1,8 @@
 
-# Assessments
+# 
+Assessments
 
-**NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
+**NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the "Load from disk" button in the header so that the local PrairieLearn server reloads the changes.
 
 ## `infoAssessment.json` file
 
@@ -22,10 +23,10 @@ Each assessment is a single directory in the `assessments/` folder. The director
 Property | Type | Description
 --- | --- | ---
 `uuid` | string | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net (Required; no default)
-`type` | string | Either `”Homework”` or `”Exam”`.  (Required; no default)
-`title` | string | The title of the assessment (e.g., `”Derivatives and integrals”`). (Required; no default)
-`set` | string | Which assessment set this belongs to (e.g., `”Quiz”`, `”Practice Quiz”`). (Required; no default)
-`number` | string | The number of the assessment within the set (e.g., `”1”`, `”2B”`). (Required; no default)
+`type` | string | Either `"Homework"` or `"Exam"`.  (Required; no default)
+`title` | string | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)
+`set` | string | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)
+`number` | string | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)
 `allowAccess` | array | List of access rules. (Optional; default: no student access)
 `zones` | array | Specification of zones and questions. (Optional; default: none)
 `text` | string | HTML text shown on the assessment overview page. (Optional; default: none)
@@ -40,7 +41,7 @@ For more details, see the [format specification for `infoAssessment.json`](https
 
 ## `type`: Assessment types
 
-Each assessment has a `type`, which must be either `”Homework”` or `”Exam”`. Broadly speaking, Homeworks are designed for formative learning and allow students to infinitely retry different random variants of questions. Exams, on the other hand, are designed for measuring student knowledge and give each student just one variant of each question, with limited retries.
+Each assessment has a `type`, which must be either `"Homework"` or `"Exam"`. Broadly speaking, Homeworks are designed for formative learning and allow students to infinitely retry different random variants of questions. Exams, on the other hand, are designed for measuring student knowledge and give each student just one variant of each question, with limited retries.
 
 Type        | Description
 ---         | ---
@@ -49,11 +50,126 @@ Type        | Description
 
 ## Example Homework assessment
 
-FIXME
+Below is an example of "Homework 1". The access rules make it always visible by TAs, and it is visible to students for full credit for 11 days (the 18th to 28th inclusive), and then is available to view and practice but for zero credit thereafter. This homework has six questions, each of which can be repeated until `maxPoints` is reached. Because it is `"type": "Homework"`, all students will see all six questions, and they can attempt them without limit. All questions are worth the same number of points because there is no advantage in using a complex point distribution on Homeworks. Students have access to a formula sheet which is the same as the one they will see on the exam, allowing them to get used to it.
+
+```json
+{
+    "uuid": "13c12b31-ca94-492a-bf69-a8f383cbc582",
+    "type": "Homework",
+    "title": "Vector algebra",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2019-01-18T00:00:01",
+            "endDate": "2019-01-28T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2019-01-28T23:59:59"
+      }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
+                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
+                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
+                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}
+```
 
 ## Example Exam assessment
 
-FIXME
+Below is an example of "Quiz 1" on the same topic as "Homework 1" above. The access rules always allow TAs access, and allow students access for full credit in the CBTF with a link to the given `examUuid`.
+
+The question list for exams is more complicated than for homeworks because we want to randomize question selection. Each student taking this exam will get four questions, organized into two zones ("Fundamental questions" and "Advanced questions"). These zones are configured so that students get two easier questions first, and then two harder questions, which helps build student confidence. The points are set so that **the easier questions are worth more points than the harder questions**. This way most students will be able to get at least 20/30 = 66% by doing the easier questions, so the class exam scores will be roughly between 60% and 100%, as students typically expect. The harder questions serve as the differentiators between the 60%-students and the 100%-students.
+
+The first question slot gives each student either `addVectors1` or `addVectors2`. These questions were both on "Homework1" so students should fine them very easy. There is no need to have more than two question alternatives in this slot, because the students will have seen both of them on the homework in any case.
+
+The second question slot gives students one of `addVectors3`, `addVectors4`, or `addVectors5`. These are questions that the students haven't seen before, so we select from three question alternatives to minimize the risk of information transfer between students. Data shows that three or four question alternatives are normally sufficient ([Chen et al., 2018](http://lagrange.mechse.illinois.edu/pubs/ChWeZi2018a/)).
+
+The third and fourth questions test concepts that the students practiced on "Homework 1", but using different questions that were not on the homework. For this reason we again provide three question alternatives for each slot.
+
+```json
+{
+    "uuid": "424f3380-8e6d-42a2-8e72-f3c479f2711b",
+    "type": "Exam",
+    "title": "Vector algebra",
+    "set": "Quiz",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "examUuid": "fa5e28c2-6733-47b7-a73f-5b58a21c8fb3",
+       }
+    ],
+    "zones": [
+        {
+            "title": "Fundamental questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "addVectors1"},
+                        {"id": "addVectors2"}
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "addVectors3"},
+                        {"id": "addVectors4"},
+                        {"id": "addVectors5"}
+                },
+            ]
+        }
+        {
+            "title": "Advanced questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [5, 4, 4, 3, 3],
+                    "alternatives": [
+                        {"id": "dotProduct3"},
+                        {"id": "dotProduct4"},
+                        {"id": "dotProduct5"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [5, 4, 4, 3, 3],
+                    "alternatives": [
+                        {"id": "crossProduct3"},
+                        {"id": "crossProduct4"},
+                        {"id": "crossProduct5"}
+                   ]
+                }
+            ]
+        }
+    },
+    "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}
+```
 
 ## `title`, `set`, and `number`: Assessment naming
 
@@ -67,7 +183,7 @@ Each assessment has a `title` describing its topic. Additionally, assessments ar
 
 The allowable set names are specified in the [`courseInfo.json`](course.md#assessment-sets) file.
 
-The `type` of an assessment does not have to correspond to the `set` it is in, but these are generally compatible. For example, `”type”: “Homework”` assessments normally have `”set”: “Homework”` or `”set”: “Machine Problem”`. On the other hand, `”type”: “Exam”` assessments normally have `”set”: “Quiz”`, `”set”: “Exam”`, or similar.
+The `type` of an assessment does not have to correspond to the `set` it is in, but these are generally compatible. For example, `"type": "Homework"` assessments normally have `"set": "Homework"` or `"set": "Machine Problem"`. On the other hand, `"type": "Exam"` assessments normally have `"set": "Quiz"`, `"set": "Exam"`, or similar.
 
 ## `allowAccess`: Access control
 
@@ -93,7 +209,7 @@ An assessment is broken down in to a list of zones, each of which contains a lis
         "questions": [
             {"id": "hardQV1", "points": [5]},
             {"id": "reallyHardQ", "points": [5, 5, 5]},
-            {“id”: “hardestQV3”, “points”: [3, 2, 1, 0.5, 0.2]}
+            {"id": "hardestQV3", "points": [3, 2, 1, 0.5, 0.2]}
        ]
     }
 ],
@@ -223,7 +339,7 @@ FIXME
 
 ## `shuffleQuestions`: Question order randomization
 
-To make `Homework` assessments randomize the question order for each student, set the `"shuffleQuestions": true` option in the `infoAssessment.json` file. This will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+To make `Homework` assessments randomize the question order for each student, set the `"shuffleQuestions": true` option in the `infoAssessment.json` file. This will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
 There is currently no way to disable question order randomization for `Exam` assessments. However, the order of `zones` is fixed, which can be used to control question order. In the limiting case, each zone can contain one questions, which will force an ordering of questions.
 
@@ -255,6 +371,6 @@ PrairieLearn’s general philosophy is to try and do the right thing in these si
 
 The precise rules for updating assessment instances differ between `Homework` and `Exam` assessments.
 
-**`Exam` assessment updates:** Exam assessment instances are generated when the student starts the exam, and they are never automatically deleted, regenerated, or updated, even when the original assessment is changed in some way. This is a safety mechanism to avoid having students' assessments changed during an exam. However, if you want to force the regeneration of assessment instances then you can do so with the “reset” button on the instructor view of the assessment. While writing and testing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don’t do it on a production server once a student is working on an assessment).
+**`Exam` assessment updates:** Exam assessment instances are generated when the student starts the exam, and they are never automatically deleted, regenerated, or updated, even when the original assessment is changed in some way. This is a safety mechanism to avoid having students' assessments changed during an exam. However, if you want to force the regeneration of assessment instances then you can do so with the "reset" button on the instructor view of the assessment. While writing and testing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don’t do it on a production server once a student is working on an assessment).
 
 **`Homework` assessment updates:** New questions added to Homeworks will be automatically integrated into student homeworks that are currently in progress, and removed questions will be removed from students. Updates to `maxPoints` will take effect the next time a student grades a question.
