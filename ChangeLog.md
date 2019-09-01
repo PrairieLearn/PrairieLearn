@@ -29,6 +29,8 @@
 
   * Change element default setup to be top-down instead of inline (James Balamuta).
 
+  * Change `type: "Exam"` under `mode: "Public"` to not display "waiting for proctor..." message (James Balamuta).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
