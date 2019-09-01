@@ -228,11 +228,14 @@
                     "default": 1
                 },
                 "triesPerVariant": {
-                    "description": "The maximum number of graded submissions allowed for each question instance.",
+                    "description": "The maximum number of graded submissions allowed for each question variant.",
                     "type": "number",
                     "default": 1
                 }
-            }
+            },
+            "required": [
+                "points",
+            ]
         },
         "questionAlternative": {
             "type": "object",
@@ -241,7 +244,7 @@
                     "$ref": "#/definitions/points"
                 },
                 "maxPoints": {
-                    "$ref": "#/definitions/points"
+                    "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
                     "$ref": "#/definitions/questionId"

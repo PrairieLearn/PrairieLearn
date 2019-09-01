@@ -18,6 +18,8 @@
   * Add `min-lines`, `max-lines`, and `auto-resize` to change the number of lines displayed in the `pl-file-editor` (James Balamuta).
 
   * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
+  
+  * Add more documentation for assessments (Matt West).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
