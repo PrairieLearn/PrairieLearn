@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add python libraries sklearn and nltk to plbase, and preload them in python trampoline (Binglin Chen).
+
   * Add UUIDs to cron job logs for better debugging (Matt West).
 
   * Add report of unsuccessful cron jobs (Matt West).
