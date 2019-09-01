@@ -50,6 +50,7 @@ RUN yum -y install \
         && ln -s /usr/bin/python3.6 /usr/bin/python3 \
         && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
     && echo "installing R packages..." \
+        && echo "MAKE='make -j`nproc`'" >> /usr/lib64/R/Renviron `# Ensure native code is compiled in parallel` \
         && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
         && mkdir -p /usr/share/doc/R-3.4.3/html/ \
         && touch /usr/share/doc/R-3.4.3/html/packages.html \
