@@ -234,7 +234,7 @@
                 }
             },
             "required": [
-                "points",
+                "points"
             ]
         },
         "questionAlternative": {
