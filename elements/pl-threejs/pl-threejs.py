@@ -22,6 +22,9 @@ SHOW_POSE_IN_CORRECT_ANSWER_DEFAULT = True
 SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT = True
 TOL_TRANSLATION_DEFAULT = 0.5
 TOL_ROTATION_DEFAULT = 5
+GRADE_DEFAULT = True
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -147,7 +150,7 @@ def render(element_html, data):
     objects = get_objects(element, data)
 
     if data['panel'] == 'question':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
         show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', SHOW_POSE_IN_QUESTION_DEFAULT)
 
         # Restore pose of body and camera, if available - otherwise use values
@@ -199,7 +202,7 @@ def render(element_html, data):
         with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
         if not will_be_graded:
             return ''
 
@@ -252,7 +255,7 @@ def render(element_html, data):
         with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
         if not will_be_graded:
             return ''
 
@@ -344,7 +347,7 @@ def grade(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answer-name')
 
     # Check if this element is intended to produce a grade
-    will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+    will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
     if not will_be_graded:
         return
 
