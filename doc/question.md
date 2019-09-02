@@ -52,19 +52,19 @@ The `info.json` file for each question defines properties of the question. For e
 }
 ```
 
-* [Format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
-
 Property | Type | Description
 --- | --- | ---
-`uuid` | string | Unique identifier (UUID v4). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from https://www.uuidgenerator.net (Required: no default)
-`type` | enum | Type of the test. Must be `"v3"` for new-style questions. (Required: no default)
-`title` | string | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required: no default)
-`topic` | string | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required: no default)
-`tags` | array | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional: default: no tags)
-`gradingMethod` | enum | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional: default: `Internal`)
-`singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional: default: `false`)
-`partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional: default: `true`)
-`externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional: default: none)
+`uuid` | string | [Unique identifier](uuid.md). (Required; no default)
+`type` | enum | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)
+`title` | string | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)
+`topic` | string | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)
+`tags` | array | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)
+`gradingMethod` | enum | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`)
+`singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
+`partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
+`externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
+
+For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
 ## Question `server.py`
 
@@ -103,26 +103,28 @@ The `question.html` is a template used to render the question to the student. A 
 
 The `question.html` is regular HTML, with four special features:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
    
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
-4. LaTeX equations are available by putting `$y = x^2$` or `\[ y = \int_0^1 x^2\ dx \]` into the HTML.
+4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
 
 ## The `singleVariant` option for non-randomized questions
 
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
 
-* On Homeworks, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-* On Exams, the `singleVariant` option has no effect and the question is treated like any other.
+* On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
+* On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
 
 ## The `partialCredit` option
 
-By default all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
+By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
 
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct.
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](elements.md) also provide more fine-grained control over partial credit.
+
+In general, it is strongly recommended to leave partial credit enabled for all questions.
 
 ## Using Markdown in questions
 
