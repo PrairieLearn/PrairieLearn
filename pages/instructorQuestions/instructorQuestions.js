@@ -1,6 +1,8 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
+const error = require('@prairielearn/prairielib/error');
+const debug = require('debug')('prairielearn:instructorFileEditor');
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -34,6 +36,29 @@ router.get('/', function(req, res, next) {
             });
         });
     });
+});
+
+router.post('/', (req, res, next) => {
+    debug(`Responding to post with action ${req.body.__action}`);
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
+
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.options.isExampleCourse) {
+        return next(error.make(400, `attempting to add question to example course`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
+
+    if (req.body.__action == 'questions_insert') {
+        debug(`Add question\n title: ${req.body.questions_insert_title}\n id: ${req.body.questions_insert_id}`);
+        res.redirect(req.originalUrl);
+    } else {
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
 });
 
 module.exports = router;
