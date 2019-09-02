@@ -1,5 +1,5 @@
 
-# Assessments
+# Assessment configuration
 
 **NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the "Load from disk" button in the header so that the local PrairieLearn server reloads the changes.
 
