@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 const error = require('@prairielearn/prairielib/error');
-const debug = require('debug')('prairielearn:instructorFileEditor');
+const debug = require('debug')('prairielearn:instructorQuestions');
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
