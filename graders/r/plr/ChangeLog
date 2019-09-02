@@ -1,3 +1,8 @@
+2019-09-02  Dirk Eddelbuettel  <edd@debian.org>
+
+	* R/questions.R (get_question_details): New function
+	* man/get_question_details.Rd: Documentation
+
 2019-09-01  Dirk Eddelbuettel  <edd@debian.org>
 
 	* DESCRIPTION (Date, Version): Release 0.0.2

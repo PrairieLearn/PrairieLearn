@@ -5,25 +5,26 @@
 \alias{eval_safe_as}
 \title{Wrapper to source a file and safely evaluate an expression}
 \usage{
-source_and_eval_safe(file, expr, uid)
+source_and_eval_safe(file, expr, uid = NULL)
 
-eval_safe_as(expr, uid)
+eval_safe_as(expr, uid = NULL)
 }
 \arguments{
 \item{file}{A filename with an R file to be source, typically containing
-the student code to be evaluated safely}
+the student code to be evaluated safely.}
 
 \item{expr}{An expression to be evaluate by \code{\link[unix]{eval_safe}},
 typically the name of the sane of the function containing the student code
-plus the argument supplied from the test runner}
+plus the argument supplied from the test runner.}
 
-\item{uid}{Numeric or character user id identifying the user id with (presumably
-ower #' privileges) as which the code is running; the numeric uid is obtained
-via \code{\link[unix]{user_info}} is a character is supplied}
+\item{uid}{Optional numeric or character user id identifying the user id with
+(presumably lower) privileges as which the code is running; the numeric uid
+is obtained via \code{\link[unix]{user_info}} is a character is supplied.
+Note that using this argument requires being the \sQuote{root} user.}
 }
 \value{
 A value of the \code{expr} sourced from \code{file} and evaluated by
-\code{uid}, or NULL in case of error
+\code{uid}, or NULL in case of error.
 }
 \description{
 We assume all files surrounding the to be evaluated files have different user ids
@@ -38,6 +39,9 @@ should be in reach.
 The \code{eval_safe_as} convenience function fetches the (numeric) user id
 before calling \code{unix::eval_safe}; it is equivalent to \code{source_and_eval_safe}
 but does not involve a file.
+
+Note that you must run these functions as the \sQuote{root} user in order to set the
+uid.
 }
 \examples{
 \dontrun{
