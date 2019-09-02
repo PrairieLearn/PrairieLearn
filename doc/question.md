@@ -37,17 +37,16 @@ PrairieLearn assumes independent questions; nothing ties them together. However,
 
 Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
 
-
 ## Question `info.json`
 
-The `info.json` file for each question defines properties of the question. For example, for the `addVectors` question:
+The `info.json` file for each question defines properties of the question. For example:
 
 ```json
 {
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "title": "Addition of vectors in Cartesian coordinates",
-    "topic": "Vectors",
-    "tags": ["secret", "graphical"],
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "title": "Newton's third law",
+    "topic": "Forces",
+    "tags": ["secret", "Fa18"],
     "type": "v3"
 }
 ```
@@ -145,9 +144,9 @@ That question would be rendered like this:
 <p>This is some <strong>Markdown</strong> text.</p>
 ```
 
-A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem.
+A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
-### Code blocks
+## Markdown code blocks
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
@@ -162,7 +161,7 @@ int m = 4;
 </markdown>
 `````
 
-This will be renderd to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
+This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
 
 ```html
 <pl-code language="cpp" highlight-lines="1-2,4">
@@ -173,7 +172,7 @@ int m = 4;
 </pl-code>
 ```
 
-### Escaping `<markdown>` tags
+## Escaping `<markdown>` tags
 
 Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
