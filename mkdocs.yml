@@ -14,6 +14,7 @@ pages:
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
   - 'Assessment configuration': 'assessment.md'
+  - 'Assessment design': 'assessment-design.md'
   - 'Question configuration': 'question.md'
   - 'Elements for Writing Questions': 'elements.md'
   - 'Access control': 'accessControl.md'
