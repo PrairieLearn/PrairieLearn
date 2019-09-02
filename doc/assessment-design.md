@@ -26,7 +26,7 @@ Below is an example of "Homework 1". The access rules make it always visible by 
             "mode": "Public",
             "credit": 0,
             "startDate": "2019-01-28T23:59:59"
-      }
+        }
     ],
     "zones": [
         {
@@ -84,6 +84,7 @@ The third and fourth questions test concepts that the students practiced on "Hom
                     "alternatives": [
                         {"id": "addVectors1"},
                         {"id": "addVectors2"}
+                    ]
                 },
                 {
                     "numberChoose": 1,
@@ -92,7 +93,8 @@ The third and fourth questions test concepts that the students practiced on "Hom
                         {"id": "addVectors3"},
                         {"id": "addVectors4"},
                         {"id": "addVectors5"}
-                },
+                    ]
+                }
             ]
         }
         {
