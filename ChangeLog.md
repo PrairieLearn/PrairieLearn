@@ -21,6 +21,8 @@
 
   * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
 
+  * Add docs for `singleVariant` question option (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

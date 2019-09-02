@@ -3,6 +3,8 @@
 
 **NOTE:** Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might need to generate a new variant of a question to run new Python code.
 
+**NOTE:** New-style PrairieLearn questions are marked with `"type": "v3"`. This documentation only describes new-style questions, although old-style v2 questions are still supported in the code.
+
 ## Directory structure
 
 Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `id`) for that question. For example, here are two different questions:
@@ -35,32 +37,33 @@ PrairieLearn assumes independent questions; nothing ties them together. However,
 
 Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
 
-
 ## Question `info.json`
 
-The `info.json` file for each question defines properties of the question. For example, for the `addVectors` question:
+The `info.json` file for each question defines properties of the question. For example:
 
 ```json
 {
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "title": "Addition of vectors in Cartesian coordinates",
-    "topic": "Vectors",
-    "tags": ["Cartesian", "graphical"],
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "title": "Newton's third law",
+    "topic": "Forces",
+    "tags": ["secret", "Fa18"],
     "type": "v3"
 }
 ```
 
-- `title` gives a student-visible title for the question.
-- `topic` is the part of the course that this question belongs to (like the chapter in a textbook).
-- `tags` (optional) stores any other aspects of the questions, for sorting and searching (these can be anything).
-- `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
-- `type` specifies the question format and should be `"v3"` for the current PrairieLearn question format.
+Property | Type | Description
+--- | --- | ---
+`uuid` | string | [Unique identifier](uuid.md). (Required; no default)
+`type` | enum | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)
+`title` | string | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)
+`topic` | string | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)
+`tags` | array | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)
+`gradingMethod` | enum | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`)
+`singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
+`partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
+`externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
 
-## Partial credit
-
-By default all v3 questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
-
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct.
+For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
 ## Question `server.py`
 
@@ -97,13 +100,30 @@ The `question.html` is a template used to render the question to the student. A 
 <p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 ```
 
-The `question.html` is regular HTML, with three special features:
+The `question.html` is regular HTML, with four special features:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
    
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
+
+4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+
+## The `singleVariant` option for non-randomized questions
+
+While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
+
+* On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
+* On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
+
+## The `partialCredit` option
+
+By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
+
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](elements.md) also provide more fine-grained control over partial credit.
+
+In general, it is strongly recommended to leave partial credit enabled for all questions.
 
 ## Using Markdown in questions
 
@@ -124,9 +144,9 @@ That question would be rendered like this:
 <p>This is some <strong>Markdown</strong> text.</p>
 ```
 
-A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem.
+A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
-### Code blocks
+## Markdown code blocks
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
@@ -141,7 +161,7 @@ int m = 4;
 </markdown>
 `````
 
-This will be renderd to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
+This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
 
 ```html
 <pl-code language="cpp" highlight-lines="1-2,4">
@@ -152,7 +172,7 @@ int m = 4;
 </pl-code>
 ```
 
-### Escaping `<markdown>` tags
+## Escaping `<markdown>` tags
 
 Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
