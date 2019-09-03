@@ -4,21 +4,27 @@ This page gives opinionated advice about good practices when designing assessmen
 
 ## Formative and summative assessments
 
-* **Formative assessments** are primarily designed for helping students to learn. We want to provide lots of opportunity to practice and re-practice, and we want to reward persistence. We are generally not concerned with cheating, because students who don't learn here will in any case fail the exams. For formative assessments we set `"type": "Homework"` in PrairieLearn.
+It is convenient to separate assessments into two distinct types:
 
-* **Summative assessments** are primarily designed to measure how much a student knows, and to motivate the student to study before and after. We want to minimize opportunities for collaborative cheating, where students tell each other information about the assessment. For summative assessments we set `"type": "Exam"` in PrairieLearn.
+* **Formative assessments** are primarily designed for helping students to learn. We want to provide lots of opportunity to practice and re-practice, and we want to reward persistence so all students can eventually get full points. We are generally not concerned with cheating, because students who don't learn here will in any case fail the exams. For formative assessments we use `"type": "Homework"`. See the [Example Homework](#example-homework) below.
+
+* **Summative assessments** are primarily designed to measure how much individual students know, and to motivate students to study before and after. We want to minimize opportunities for collaborative cheating, where students tell each other information about the assessment, so we will heavily use random question selection and parameterization. For summative assessments we use `"type": "Exam"`. See the [Example Exam](#example-exam) below.
 
 ## Managing cheating
 
-We want to provide a supportive learning environment in the class, while also accurately assessing individual student knowledge to assign grades. This can be a difficult balance to strike. We recommend clearly telling students:
+We want to provide a supportive learning environment in the class, while also accurately assessing individual student knowledge to assign grades. This can be a difficult balance to strike. We recommend ignoring issues with cheating on formative assessments and designing them so all students can eventually get 100%, and focusing all cheating-prevention efforts on summative assessments.
 
-> We aim to provide a supportive learning environment for every individual, while also making sure that we are being fair in how exams are run and course grades are determined. For this reason, we divide class activities as follows.
+To explain this to students, we recommend telling them:
+
+> We aim to provide a supportive learning environment for every individual, while also making sure that we are being fair in how exams are run and course grades are determined. For this reason, we divide class activities into two categories:
 
 > **Learning time** is when you should be focused on acquiring new knowledge and skills. This includes lectures, homeworks, and study time. During this time you can collaborate and get help as much as you want, and there is no such thing as "cheating". However, it is your responsibility to actually learn the material, not just copy answers to get the points, and success in the course exams will depend on you learning effectively.
 
 > **Testing time** is when you need to perform as an individual. This is only during exams and quizzes. During this time you must not collaborate with anyone else or get any outside help. We will strictly enforce these rules out of fairness to all students.
 
-This division into learning and testing times is student-friendly language for formative and summative assessments. We find that it's helpful for both students and instructors to have a very clear division between the two types of activity, and to only be concerned with "cheating" on summative assessments during testing time. Emphasizing "fairness" is a good way to explain this to students.
+This division into learning and testing times is student-friendly language for formative and summative assessments. Emphasizing "fairness" is a good way to explain these policies to students.
+
+By removing cheating concerns from "learning time", we avoid ambiguities around statements like "you can work with friends on homework, but you must submit your own work". Students and instructors frequently have different understandings of what this means, leading to friction and lots of instructor effort. By emphasizing that it is the responsibility of students to learn effectively during "learning time", we also encourage the development of metacognition, as discussed below.
 
 ## Developing metacognition
 
@@ -36,9 +42,55 @@ Within a course, a recommended grading scheme is:
 
 We recommend using this with a traditional 10-point grading scale: 90-100: A, 80-90: B, 70-80: C, 60-70: D, 0-60: F. Using this scale, the above grading scheme will give a median total score around 85%, so about 2/3 of the class will get an A or B grade.
 
-## Example formative "Homework" assessment
+## Curving exam scores
 
-Below is an example of "Homework 1". The access rules make it always visible by TAs, and it is visible to students for full credit for 11 days (the 18th to 28th inclusive), and then is available to view and practice but for zero credit thereafter. This homework has six questions, each of which can be repeated until `maxPoints` is reached. Because it is `"type": "Homework"`, all students will see all six questions, and they can attempt them without limit. All questions are worth the same number of points because there is no advantage in using a complex point distribution on Homeworks. Students have access to a formula sheet which is the same as the one they will see on the exam, allowing them to get used to it.
+While we should aim for a median exam score around 80%, it is sometimes difficult to achieve this when using new questions for which we haven't yet collected statistics.
+
+If an exam has median score below about 70% then it is generally a good idea to curve it. A simple and robust curving method is:
+
+```
+if S0 <= M0:
+    S1 = 100 - (100 - S0)*(100 - M1)/(100 - M0)
+else:
+    S1 = S0 + M1 - M0
+```
+
+The variables here are:
+
+* `S0` is the old raw score for a student exam (in range 0 to 100).
+* `S1` is the new curved score for the student (in range 0 to 100).
+* `M0` is the median of the raw score distribution.
+* `M1` is the new desired median of the curved scores. A good choice is `M1 = 80`, so half the students are in the A/B range.
+
+![Score curving function](score_curving.svg)
+
+The benefits of this simple curving rule are:
+
+1. There is only one parameter to choose (`M1`, which we normally fix at 80) and it's simple to implement.
+2. Every student's score is guaranteed to increase, but the ordering of students is strictly maintained.
+3. All students below the median get the same score boost, and lower-scoring students always get at least as much boost as higher-scoring students.
+4. A perfect score of 100 maps to 100.
+5. Using the median makes the curing insensitive to outliers, and lets us easily control the proportion of the class in the A/B range.
+
+## Example Homework
+
+Below is an example of a formative assessment using `"type": "Homework"`. This is also in `"set": "Homework"`, in which it is `"number": "1"`, and so it will be displayed as `Homework 1: Vector algebra`.
+
+There are four access rules for this homework, which mean:
+
+* TAs get full access at any time with no restrictions. This allows them to see the homework before it is released to students.
+
+* Students can only access the homework in `"mode": "Public"`, which means that it is not visible to them inside an exam environment like the CBTF.
+
+* We always use times that are one second before or after midnight, to avoid any confusion about which day is which. It also means we can say "released on Monday" or "due on Wednesday" with no extra confusion about _when_ on these days.
+
+* We use a declining `credit` scale, where the homework is worth full credit until the initial due date of Jan 28, then there is a 2-day "late period" when it's worth half credit.
+
+* After the homework is due, we leave it accessible to students for zero credit, so they can continue to use the questions for exam study.
+
+
+
+This homework has six questions, each of which can be repeated until `maxPoints` is reached. Because it is `"type": "Homework"`, all students will see all six questions, and they can attempt them without limit. All questions are worth the same number of points because there is no advantage in using a complex point distribution on Homeworks. Students have access to a formula sheet which is the same as the one they will see on the exam, allowing them to get used to it.
 
 ```json
 {
@@ -72,6 +124,29 @@ Below is an example of "Homework 1". The access rules make it always visible by 
     ],
     "zones": [
         {
+            "title": "Fundamental questions",
+            "questions": [
+                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
+                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
+                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
+                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+            ]
+        },
+        {
+            "title": "Intermediate questions",
+            "questions": [
+                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
+                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
+                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
+                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
+                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+            ]
+        },
+        {
+            "title": "Advanced questions",
             "questions": [
                 {"id": "addVectors1",   "points": 1, "maxPoints": 5},
                 {"id": "addVectors2",   "points": 1, "maxPoints": 5},

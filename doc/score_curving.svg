@@ -382,30 +382,5 @@
        id="path4774"
        inkscape:connector-curvature="0"
        transform="translate(0,612.99213)" />
-    <path
-       transform="matrix(1.0298751,0,0,1.0298735,-530.82242,774.76429)"
-       d="m 574.01572,159.44879 a 3.5433071,3.5433071 0 1 1 -7.08661,0 3.5433071,3.5433071 0 1 1 7.08661,0 z"
-       sodipodi:ry="3.5433071"
-       sodipodi:rx="3.5433071"
-       sodipodi:cy="159.44879"
-       sodipodi:cx="570.47241"
-       id="path5296"
-       style="fill:#0000ff;fill-opacity:1;stroke:#0000ff;stroke-width:1.45648837;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
-       sodipodi:type="arc" />
-    <text
-       sodipodi:linespacing="125%"
-       id="text5298"
-       y="957.1496"
-       x="61.771957"
-       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Helvetica;-inkscape-font-specification:Helvetica"
-       xml:space="preserve"><tspan
-         y="957.1496"
-         x="61.771957"
-         id="tspan5300"
-         sodipodi:role="line"><tspan
-           id="tspan5302"
-           style="font-size:14px;font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Helvetica;-inkscape-font-specification:Helvetica Italic">Z</tspan><tspan
-           id="tspan5304"
-           style="font-size:65.00091553%;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;baseline-shift:sub;font-family:Helvetica;-inkscape-font-specification:Helvetica">1</tspan></tspan></text>
   </g>
 </svg>
