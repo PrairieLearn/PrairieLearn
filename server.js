@@ -35,7 +35,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 const hostfiles = require('./lib/hostfiles');
-const { cleanupMountDirectories } = require('./lib/code-caller-docker');
+const { cleanupMountDirectories, setExecutorImageVersion } = require('./lib/code-caller-docker');
 
 
 // If there is only one argument, legacy it into the config option
@@ -740,6 +740,24 @@ if (config.startServer) {
             load.initEstimator('python_worker_idle', 1, false);
             load.initEstimator('python_callback_waiting', 1);
             callback(null);
+        },
+        function(callback) {
+            // Important: this should happen before `workers.init` below
+            if (config.workersExecutionMode === 'internal') {
+                // Executor image will not be used
+                callback(null);
+                return;
+            }
+            fs.readFile('EXECUTOR_VERSION', 'utf-8', (err, data) => {
+                if (ERR(err, callback)) return;
+                const version = data.trim();
+                // Sanity check: should only be one line
+                if (version.indexOf('\n') !== -1) {
+                    callback(new Error(''));
+                }
+                setExecutorImageVersion(version);
+                callback(null);
+            });
         },
         function(callback) {
             util.callbackify(cleanupMountDirectories)(callback);
