@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
@@ -128,6 +128,8 @@ router.post('/', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
+    var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
+    debug(`variant_seed ${variant_seed}`);
     async.series([
         (callback) => {
             debug('set filenames');
@@ -154,7 +156,7 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
-            question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+            question.getAndRenderVariant(req.query.variant_id, variant_seed, res.locals, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

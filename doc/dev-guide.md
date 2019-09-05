@@ -47,7 +47,6 @@ PrairieLearn
 |   +-- localscripts   # all local site-wide JS
 |   `-- stylesheets    # all CSS, both external and local
 +-- question-servers   # one file per question type
-+-- schemas            # JSON schemas for input file formats
 +-- server.js          # top-level program
 +-- sprocs             # DB stored procedures, one per file
 |   +-- index.js       # entry point for all sproc initialization
@@ -459,11 +458,124 @@ SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 ```
 
 
-## Error handling and control flow in JavaScript
+## Asynchronous control flow in JavaScript
 
-* Use tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+* New code in PrairieLearn should use async/await whenever possible.
 
-* Use the [async library](http://caolan.github.io/async/) for control flow.
+* Older code in PrairieLearn uses the tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+
+* Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
+
+
+## Interfacing between callback-style and async/await-style functions
+
+* To write a callback-style function that internally uses async/await code, use this pattern:
+
+```javascript
+util = require('util');
+function oldFunction(x1, x2, callback) {
+    util.callbackify(() => {
+        # here we can use async/await code
+        y1 = await f(x1);
+        y2 = await f(x2);
+        return y1 + y2;
+    })(callback);
+}
+```
+
+* To write a multi-return-value callback-style function that internally uses async/await code, we don't currently have an established pattern.
+
+* To call our own library functions from async/await code, we should provide a version of them with "Async" appended to the name:
+
+```
+const util = require('util');
+module.exports.existingLibFun = (x1, x2, callback) => {
+    callback(null, x1*x2);
+};
+module.exports.existingLibFunAsync = util.promisify(module.exports.myFun);
+
+# in `async` code we can now call existingLibFunAsync() directly with `await`:
+async function newFun(x1, x2) {
+    let y = await existingLibFunAsync(x1, x2);
+    return 3*y;
+}
+```
+
+* If our own library functions use multiple return values, then the async version of them should return an object:
+
+```
+const util = require('util');
+module.exports.existingMultiFun = (x, callback) => {
+    const y1 = x*x;
+    const y2 = x*x*x;
+    callback(null, y1, y2); # note the two return values here
+};
+module.exports.existingMultiFunAsync = util.promisify((x, callback) =>
+    module.exports.existingMultiFun(x, (err, y1, y2) => callback(err, {y1, y2}))
+);
+
+async function newFun(x) {
+    let {y1, y2} = await existingMultiFunAsync(x); # must use y1,y2 names here
+    return y1*y2;
+}
+```
+
+* To call a callback-style function in an external library from within an async/await function, use this pattern:
+
+```javascript
+util = require('util');
+async function g(x) {
+    x1 = await f(x + 2);
+    x2 = await f(x + 4);
+    z = await util.promisify(oldFunction)(x1, x2);
+    return z;
+}
+```
+
+* As of 2019-08-15 we are not calling any multi-return-value callback-style functions in external libraries from within async/await functions, but if we need to do this then we could include the `bluebird` package and use the pattern:
+
+```javascript
+bluebird = require('bluebird');
+function oldMultiFunction(x, callback) {
+    return callback(null, x*x, x*x*x);
+}
+async function g(x) {
+    let [y1, y2] = await bluebird.promisify(oldMultiFunction, {multiArgs: true})(x); # note array destructuring with y1,y2
+    return y1*y2;
+}
+```
+
+* To call an async/await function from within a callback-style function, use this pattern:
+
+```javascript
+util = require('util');
+function oldFunction(x, callback) {
+    util.callbackify(g)(x, (err, y) => {
+        if (ERR(err, callback)) return;
+        callback(null, y);
+    });
+}
+```
+
+* To call an multi-return-value async/await function from within a callback-style function, use this pattern:
+
+```javascript
+util = require('util');
+async function gMulti(x) {
+    y1 = x*x;
+    y2 = x*x*x;
+    return {y1, y2};
+}
+function oldFunction(x, callback) {
+    util.callbackify(gMulti)(x, (err, {y1, y2}]) => {
+        if (ERR(err, callback)) return;
+        callback(null, y1*y2);
+    });
+}
+```
+
+
+## Stack traces with callback-style functions
 
 * Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
@@ -529,10 +641,6 @@ function foo(p, callback) {
     callback(null, result);
 }
 ```
-
-* Don't use promises.
-
-* We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) once it is stable and widely supported in Node.js and the libraries we use. As of 2017-08-04 the internal Node.js support for async/await is still under development.
 
 
 ## Security model

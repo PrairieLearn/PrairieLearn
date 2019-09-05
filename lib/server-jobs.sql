@@ -16,15 +16,7 @@ WHERE
     js.id = $job_sequence_id;
 
 -- BLOCK insert_job
-WITH max_over_jobs_with_same_course AS (
-    SELECT
-        coalesce(max(j.number) + 1, 1) AS new_number
-    FROM
-        jobs AS j
-    WHERE
-        j.course_id IS NOT DISTINCT FROM $course_id
-),
-max_over_jobs_with_same_sequence AS (
+WITH max_over_jobs_with_same_sequence AS (
     SELECT
         coalesce(max(j.number_in_sequence) + 1, 1) AS new_number_in_sequence
     FROM
@@ -35,13 +27,12 @@ max_over_jobs_with_same_sequence AS (
         AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
+    (course_id,  course_instance_id,  assessment_id,  job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
      user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory,  env)
 SELECT
-    $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
+    $course_id, $course_instance_id, $assessment_id, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
     $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory, $env
 FROM
-    max_over_jobs_with_same_course,
     max_over_jobs_with_same_sequence
 RETURNING jobs.id;
 
@@ -82,6 +73,7 @@ job_sequence_updates AS (
     SELECT
         j.*,
         CASE
+            WHEN j.no_job_sequence_update THEN FALSE
             WHEN j.status = 'Error' THEN TRUE
             WHEN j.last_in_sequence THEN TRUE
             ELSE FALSE
@@ -119,15 +111,26 @@ WITH updated_jobs AS (
         j.id = $job_id
     RETURNING
         j.*
+),
+job_sequence_updates AS (
+    SELECT
+        j.*,
+        CASE
+            WHEN j.no_job_sequence_update THEN FALSE
+            ELSE TRUE
+        END AS update_job_sequence
+    FROM
+        updated_jobs AS j
 )
 UPDATE job_sequences AS js
 SET
     finish_date = j.finish_date,
     status = j.status
 FROM
-    updated_jobs AS j
+    job_sequence_updates AS j
 WHERE
-    js.id = j.job_sequence_id;
+    js.id = j.job_sequence_id
+    AND j.update_job_sequence;
 
 -- BLOCK select_running_jobs
 SELECT
@@ -162,3 +165,46 @@ SET
     status = 'Error'
 WHERE
     js.id = $job_sequence_id;
+
+-- BLOCK select_job_sequence_with_course_id_as_json
+WITH member_jobs AS (
+    SELECT
+        j.*,
+        format_date_full_compact(j.start_date, coalesce(c.display_timezone, 'UTC')) AS start_date_formatted,
+        format_date_full_compact(j.finish_date, coalesce(c.display_timezone, 'UTC')) AS finish_date_formatted,
+        u.uid AS user_uid,
+        authn_u.uid AS authn_user_uid
+    FROM
+        jobs AS j
+        LEFT JOIN pl_courses AS c ON (c.id = j.course_id)
+        LEFT JOIN users AS u ON (u.user_id = j.user_id)
+        LEFT JOIN users AS authn_u ON (authn_u.user_id = j.authn_user_id)
+    WHERE
+        j.job_sequence_id = $job_sequence_id
+        AND j.course_id IS NOT DISTINCT FROM $course_id
+    ORDER BY
+        j.number_in_sequence, j.id
+),
+aggregated_member_jobs AS (
+    SELECT
+        count(*) AS job_count,
+        coalesce(array_agg(to_jsonb(j.*)), ARRAY[]::JSONB[]) AS jobs
+    FROM
+        member_jobs AS j
+)
+SELECT
+    js.*,
+    format_date_full_compact(js.start_date, coalesce(c.display_timezone, 'UTC')) AS start_date_formatted,
+    format_date_full_compact(js.finish_date, coalesce(c.display_timezone, 'UTC')) AS finish_date_formatted,
+    u.uid AS user_uid,
+    authn_u.uid AS authn_user_uid,
+    aggregated_member_jobs.*
+FROM
+    job_sequences AS js
+    LEFT JOIN pl_courses AS c ON (c.id = js.course_id)
+    LEFT JOIN users AS u ON (u.user_id = js.user_id)
+    LEFT JOIN users AS authn_u ON (authn_u.user_id = js.authn_user_id),
+    aggregated_member_jobs
+WHERE
+    js.id = $job_sequence_id
+    AND js.course_id IS NOT DISTINCT FROM $course_id;

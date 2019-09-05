@@ -1,92 +1,98 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var async = require('async');
+const { callbackify } = require('util');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
-var logger = require('../../lib/logger');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var config = require('../../lib/config');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+function getDuplicates(arr) {
+    const seen = new Set();
+    return arr.filter(v => {
+        const present = seen.has(v);
+        seen.add(v);
+        return present;
+    });
+}
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+function getDuplicatesByKey(arr, key) {
+    return getDuplicates(arr.map(v => v[key]));
+}
 
-module.exports = {
-    sync: function(courseInfo, questionDB, callback) {
-        async.series([
-            function(callback) {
-                courseInfo.tags = courseInfo.tags || [];
-                var tagIds = [];
-                async.forEachOfSeries(courseInfo.tags, function(tag, i, callback) {
-                    logger.debug('Syncing tag ', tag.name);
-                    var params = {
-                        name: tag.name,
-                        number: i + 1,
-                        color: tag.color,
-                        description: tag.description,
-                        course_id: courseInfo.courseId,
-                    };
-                    sqldb.query(sql.insert_tag, params, function(err, result) {
-                        if (ERR(err, callback)) return;
-                        tag.id = result.rows[0].id;
-                        tagIds.push(tag.id);
-                        callback(null);
-                    });
-                }, function(err) {
-                    if (ERR(err, callback)) return;
+module.exports.sync = function(courseInfo, questionDB, callback) {
+    callbackify(async () => {
+        const tags = courseInfo.tags || [];
 
-                    // delete topics from the DB that aren't on disk
-                    var params = {
-                        course_id: courseInfo.courseId,
-                        keep_tag_ids: tagIds,
-                    };
-                    sqldb.query(sql.delete_unused_tags, params, function(err, _result) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                });
-            },
-            function(callback) {
-                logger.debug('Syncing question_tags');
-                var tagsByName = _.keyBy(courseInfo.tags, 'name');
-                async.forEachOfSeries(questionDB, function(q, qid, callback) {
-                    logger.debug('Syncing tags for question ' + qid);
-                    q.tags = q.tags || [];
-                    var questionTagIds = [];
-                    async.forEachOfSeries(q.tags, function(tagName, i, callback) {
-                        if (!_(tagsByName).has(tagName)) {
-                            return callback(new Error('Question ' + qid + ', unknown tag: ' + tagName));
-                        }
-                        var params = {
-                            question_id: q.id,
-                            tag_id: tagsByName[tagName].id,
-                            number: i + 1,
-                        };
-                        sqldb.query(sql.insert_question_tag, params, function(err, result) {
-                            if (ERR(err, callback)) return;
-                            questionTagIds.push(result.rows[0].id);
-                            callback(null);
-                        });
-                    }, function(err) {
-                        if (ERR(err, callback)) return;
+        // First, do a sanity check for duplicate tag names. Because of how the
+        // syncing sproc is structured, there's no meaningful error message if
+        // duplicates are present.
+        const duplicateNames = getDuplicatesByKey(tags, 'name');
+        if (duplicateNames.length > 0) {
+            const duplicateNamesJoined = duplicateNames.join(', ')
+            throw new Error(`Duplicate tag names found: ${duplicateNamesJoined}. Tag names must be unique within the course.`);
+        }
 
-                        // delete topics from the DB that aren't on disk
-                        logger.debug('Deleting unused tags');
-                        var params = {
-                            question_id: q.id,
-                            keep_question_tag_ids: questionTagIds,
-                        };
-                        sqldb.query(sql.delete_unused_question_tags, params, function(err, _result) {
-                            if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    });
-                }, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-        ], function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
+        // We'll create placeholder tags for tags that aren't specified in
+        // infoCourse.json.
+        const knownTagNames = new Set(tags.map(tag => tag.name));
+        const missingTagNames = new Set();
+        Object.values(questionDB).forEach(q => {
+            (q.tags || []).forEach(tag => {
+                if (!knownTagNames.has(tag)) {
+                    missingTagNames.add(tag);
+                }
+            });
         });
-    },
-};
+        tags.push(...[...missingTagNames].map(name => ({
+            name,
+            color: 'gray1',
+            description: 'Auto-generated from use in a question; add this tag to your courseInfo.json file to customize',
+        })));
+
+        // Aggregate all tags into a form that we can pass in one go to our sproc
+        // Since all this data will be sent over the wire, we'll send it in a
+        // compact form of an array of arrays, where each array will correspond to
+        // one tag: [tag_name, tag_color_description]. This saves bytes over JSON's
+        // typical verbose objects.
+        const paramTags = tags.map(tag => ([
+            tag.name,
+            tag.color,
+            tag.description,
+        ]));
+
+        const tagParams = [
+            // node-postgres will try to convert to postgres arrays, so we
+            // need to explicitly serialize ourselves: see
+            // https://github.com/brianc/node-postgres/issues/442
+            JSON.stringify(paramTags),
+            courseInfo.courseId,
+        ];
+        const res = await sqldb.callAsync('sync_course_tags', tagParams);
+
+        // We'll get back a single row containing an array of IDs of the tags
+        // in order.
+        const tagIdsByName = res.rows[0].new_tag_ids.reduce((acc, id, index) => {
+            acc[paramTags[index][0]] = id;
+            return acc;
+        }, {});
+
+        // Ensure that all question tags are valid. As we go, build
+        // up an array of all the information that we'll need at the DB.
+        // As above, we'll use a compact representation to send this information
+        // to the DB. We'll have an array of arrays, which each array
+        // containing info for one question in the form
+        // [question_id, [tag_1_id, tag_2_id, ...]].
+        const paramQuestionTags = [];
+
+        for (const qid in questionDB) {
+            const question = questionDB[qid];
+            const tags = question.tags || [];
+            const unknownTags = tags.filter(tag => !(tag in tagIdsByName));
+            if (unknownTags.length > 0) {
+                throw new Error(`Question ${qid} has unknown tags: ${unknownTags.join(', ')}`);
+            }
+            const duplicateTags = getDuplicates(tags);
+            if (duplicateTags.length > 0) {
+                throw new Error(`Question ${qid} has duplicate tags: ${duplicateTags.join(', ')}`);
+            }
+            paramQuestionTags.push([question.id, tags.map(tag => tagIdsByName[tag])]);
+        }
+
+        await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
+    })(callback);
+}

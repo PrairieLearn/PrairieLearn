@@ -49,7 +49,7 @@ const zoneGradingTests = [
 describe('Zone grading exam assessment', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var startAssessment = function() {
@@ -139,10 +139,6 @@ describe('Zone grading exam assessment', function() {
             });
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
-            });
-            it('should contain "Please wait"', function() {
-                elemList = locals.$('p.lead:contains("Please wait")');
-                assert.lengthOf(elemList, 1);
             });
             it('should contain "Exam 5"', function() {
                 elemList = locals.$('p.lead strong:contains("Exam 5")');
@@ -262,7 +258,7 @@ describe('Zone grading exam assessment', function() {
                 it('should start up', function(callback) {
                     var that = this;
                     // pass "this" explicitly to enable this.timeout() calls
-                    helperServer.before.call(that, function(err) {
+                    helperServer.before().call(that, function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });

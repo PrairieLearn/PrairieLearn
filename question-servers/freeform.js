@@ -9,12 +9,14 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const schemas = require('../schemas');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
+const markdown = require('../lib/markdown');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -49,23 +51,17 @@ module.exports = {
         let elementSchema;
         async.waterfall([
             (callback) => {
-                // Load the element schema
-                let schemaName;
                 switch (elementType) {
                     case 'core':
-                        schemaName = 'infoElementCore.json';
+                        elementSchema = schemas.infoElementCore;
                         break;
                     case 'course':
-                        schemaName = 'infoElementCourse.json';
+                        elementSchema = schemas.infoElementCourse;
                         break;
                     default:
                         return callback(new Error(`Unknown element type ${elementType}`));
                 }
-                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', schemaName), (err, schema) => {
-                    if (ERR(err, callback)) return;
-                    elementSchema = schema;
-                    callback(null);
-                });
+                callback(null);
             },
             (callback) => {
                 // Read all files in the given path
@@ -165,7 +161,16 @@ module.exports = {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-            const pythonArgs = [elementHtml, data];
+
+            let dataCopy = _.cloneDeep(data);
+            /* The options field will be empty unless in the 'render' stage, so check
+               if it is populated before adding the element url */
+            if ('base_url' in data.options) {
+                /* Join the URL using Posix join to avoid generating a path with backslashes,
+                   as would be the case when running on Windows */
+                dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
+            }
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
@@ -284,6 +289,12 @@ module.exports = {
                 err = e;
             }
             if (ERR(err, callback)) return;
+            try {
+                html = markdown.processQuestion(html);
+            } catch (e) {
+                err = e;
+            }
+            if (ERR(err, callback)) return;
             let $;
             try {
                 $ = cheerio.load(html, {
@@ -363,7 +374,7 @@ module.exports = {
         return null;
     },
 
-    travserseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
+    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
         const courseIssues = [];
@@ -423,7 +434,8 @@ module.exports = {
                         }
                     }
                 } else {
-                    data = ret_val;
+                    // the following line is safe because we can't be in multiple copies of this function simultaneously
+                    data = ret_val; // eslint-disable-line require-atomic-updates
                     const checkErr = module.exports.checkData(data, origData, phase);
                     if (checkErr) {
                         const courseIssue = new Error(`${elementFile}: Invalid state after ${phase}(): ${checkErr}`);
@@ -443,7 +455,8 @@ module.exports = {
                     }
                 }
             }
-            node.childNodes = newChildren;
+            // the following line is safe because we can't be in multiple copies of this function simultaneously
+            node.childNodes = newChildren; // eslint-disable-line require-atomic-updates
             return node;
         };
         let questionHtml = '';
@@ -563,7 +576,7 @@ module.exports = {
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {
-                processFunction = module.exports.travserseQuestionAndExecuteFunctions;
+                processFunction = module.exports.traverseQuestionAndExecuteFunctions;
                 args = [phase, pc, data, context, html];
             } else {
                 processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
@@ -795,6 +808,7 @@ module.exports = {
             data.options.client_files_question_url = locals.clientFilesQuestionUrl;
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+            data.options.base_url = locals.baseUrl;
 
             // Put key paths in data.options
             data.options.question_path = context.question_dir;

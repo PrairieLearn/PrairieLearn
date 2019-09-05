@@ -14,7 +14,7 @@ columns
     id: bigint not null default nextval('jobs_id_seq'::regclass)
     job_sequence_id: bigint
     last_in_sequence: boolean
-    number: integer
+    no_job_sequence_update: boolean default false
     number_in_sequence: integer
     output: text
     start_date: timestamp with time zone default CURRENT_TIMESTAMP
@@ -28,7 +28,6 @@ columns
 
 indexes
     jobs_pkey: PRIMARY KEY (id) USING btree (id)
-    jobs_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
     jobs_job_sequence_id_number_in_sequence_key: UNIQUE (job_sequence_id, number_in_sequence) USING btree (job_sequence_id, number_in_sequence)
 
 foreign-key constraints

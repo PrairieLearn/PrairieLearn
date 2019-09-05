@@ -29,7 +29,7 @@ const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform
 describe('Instructor questions', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     var page, elemList;

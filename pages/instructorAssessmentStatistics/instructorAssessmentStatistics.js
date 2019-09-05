@@ -3,7 +3,7 @@ const _ = require('lodash');
 const async = require('async');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('csv').stringify;
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
@@ -75,7 +75,7 @@ router.get('/:filename', function(req, res, next) {
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStat = result.rows[0];
-            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID', 'NStudents', 'Mean',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'AID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];
             var csvData = [
                 res.locals.course.short_name,
@@ -112,7 +112,7 @@ router.get('/:filename', function(req, res, next) {
         sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var durationStat = result.rows[0];
-            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'AID',
                               'Mean duration (min)', 'Median duration (min)', 'Min duration (min)', 'Max duration (min)'];
             var csvData = [
                 res.locals.course.short_name,
