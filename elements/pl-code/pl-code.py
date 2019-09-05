@@ -4,6 +4,13 @@ from html import escape
 import chevron
 import os
 
+LANGUAGE_DEFAULT = None
+NO_HIGHLIGHT_DEFAULT = False
+SOURCE_FILE_NAME_DEFAULT = None
+PREVENT_SELECT_DEFAULT = False
+HIGHLIGHT_LINES_DEFAULT = None
+HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
+
 allowed_languages = [
     'armasm',
     'bash',
@@ -102,17 +109,17 @@ def prepare(element_html, data):
     optional_attribs = ['language', 'no-highlight', 'source-file-name', 'prevent-select', 'highlight-lines', 'highlight-lines-color']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    language = pl.get_string_attrib(element, 'language', None)
+    language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
 
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     if source_file_name is not None:
         if element.text is not None and not str(element.text).isspace():
             raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
 
-    highlight_lines = pl.get_string_attrib(element, 'highlight-lines', None)
+    highlight_lines = pl.get_string_attrib(element, 'highlight-lines', HIGHLIGHT_LINES_DEFAULT)
     if highlight_lines is not None:
         if parse_highlight_lines(highlight_lines) is None:
             raise Exception('Could not parse highlight-lines attribute; check your syntax')
@@ -120,13 +127,13 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    language = pl.get_string_attrib(element, 'language', None)
-    no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
+    language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
+    no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
-    prevent_select = pl.get_boolean_attrib(element, 'prevent-select', False)
-    highlight_lines = pl.get_string_attrib(element, 'highlight-lines', None)
-    highlight_lines_color = pl.get_string_attrib(element, 'highlight-lines-color', '#b3d7ff')
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    prevent_select = pl.get_boolean_attrib(element, 'prevent-select', PREVENT_SELECT_DEFAULT)
+    highlight_lines = pl.get_string_attrib(element, 'highlight-lines', HIGHLIGHT_LINES_DEFAULT)
+    highlight_lines_color = pl.get_string_attrib(element, 'highlight-lines-color', HIGHLIGHT_LINES_COLOR_DEFAULT)
 
     if source_file_name is not None:
         base_path = data['options']['question_path']

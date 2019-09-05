@@ -31,6 +31,8 @@
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
 
+  * Change element default setup to be top-down instead of inline (James Balamuta).
+
   * Change `type: "Exam"` under `mode: "Public"` to not display "waiting for proctor..." message (James Balamuta).
 
   * Change Travis script to rebuild `prairielearn/centos7-plbase` if any relevant files have changed (Nathan Walters).
