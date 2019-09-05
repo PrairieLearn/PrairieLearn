@@ -20,6 +20,8 @@
   * Add `min-lines`, `max-lines`, and `auto-resize` to change the number of lines displayed in the `pl-file-editor` (James Balamuta).
 
   * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
+  
+  * Add more documentation for assessments (Matt West).
 
   * Add docs for `singleVariant` question option (Matt West).
 

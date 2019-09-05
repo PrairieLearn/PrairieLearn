@@ -19,6 +19,7 @@ pages:
   - 'Access control': 'accessControl.md'
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
+  - 'Designing good assessments': 'assessment-design.md'
   - 'Regrading assessments': 'regrading.md'
   - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Externally graded questions': 'externalGrading.md'
