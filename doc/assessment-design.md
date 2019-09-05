@@ -1,6 +1,6 @@
 # Designing good assessments
 
-This page gives opinionated advice about good practices when designing assessments. This is from the viewpoint of undergraduate U.S. university courses.
+This page gives opinionated advice about good practices when designing assessments. This is from the viewpoint of undergraduate U.S. university STEM courses. We do not expect anyone to exactly follow this advice, but we hope it is nonetheless useful.
 
 ## Formative and summative assessments
 
@@ -28,7 +28,27 @@ By removing cheating concerns from "learning time", we avoid ambiguities around 
 
 ## Developing metacognition
 
-FIXME
+While it is important for students to learn specific knowledge and skills in a course, it is even more important that they _learn how to learn_. That is, that they develop _metacognition_, the ability to understand their own cognitive processes. In the context of learning, students should be able to answer questions like:
+
+* "Do I understand this topic well enough to take an exam on it?"
+* "What score do I think I will get on the exam?"
+* "What is the most effective way for me to learn this material?"
+* "When I'm stuck, how do I to find helpful resources?"
+* "How do I effectively manage time and stress?"
+
+Many incoming university students have very poor metacognition about their own learning. One of the primary goals of an undergraduate education is to help them develop metacognitive skills, so they can be _lifelong learners_.
+
+We can design assessments to help students improve their metacognition. Some strategies for this include:
+
+1. Provide explicit information about metacognition to students. This could involve asking them to think about how they are learning, and what they could change to be more effective.
+
+2. Provide a large pool of resources for learning, and allow students to choose how they use it. For example, provide optional extra homework questions that students can use for exam study if they want.
+
+3. Provide frequent, rapid feedback on whether the student is succeeding in their learning. For example, have a rigorous short exam every two weeks so that students can quickly realize whether their study strategies are working for them.
+
+4. Provide opportunities for students to experiment with learning strategies. For example, frequent small exams let students try out different study methods, and second-chance exams let them recover when something is not working.
+
+5. Provide less structure for more advanced courses, so that the "scaffolding" around the student is gradually removed as their metacognition improves. For example, introductory courses might require weekly homeworks with bi-weekly exams, while advanced courses might have optional homeworks and three exams in total.
 
 ## Course grading scheme
 
@@ -41,6 +61,10 @@ Within a course, a recommended grading scheme is:
 * End-of-course final exam: 30% of total grade. The median score should be around 80%.
 
 We recommend using this with a traditional 10-point grading scale: 90-100: A, 80-90: B, 70-80: C, 60-70: D, 0-60: F. Using this scale, the above grading scheme will give a median total score around 85%, so about 2/3 of the class will get an A or B grade.
+
+## Should all assessments be in PrairieLearn?
+
+FIXME
 
 ## Curving exam scores
 
@@ -72,6 +96,32 @@ The benefits of this simple curving rule are:
 4. A perfect score of 100 maps to 100.
 5. Using the median makes the curing insensitive to outliers, and lets us easily control the proportion of the class in the A/B range.
 
+## Retries on Exams
+
+FIXME — explain about (lack of) partial credit and how retries are a (partial) substitute
+
+FIXME — explain about mastery grading somewhere
+
+There are two different levels of "retries" that are in common usage for exams:
+
+1. On every quiz, students receive immediate feedback about whether their answers are correct, and if they are incorrect then they can attempt that exact question again for (reduced) points. This is the setting in `infoAssessment.json` like `"points": [10, 9, 7, 4, 2]` (five attempts, 10 points if it’s correct on the first attempt, 9 on the second, etc). Essentially all courses use this "retry questions immediately" feature in PrairieLearn, because it helps students a lot if they make a small error, and it’s very easy to allow this.
+
+2. Some courses choose to let students take second-chance exams ("second chance", "retry", or "retake" exams). These are completely separate quizzes, scheduled as a second different quiz, typically taking place in a separate block of days about 1 week after the first-chance quiz. These second-chance quizzes typically use different questions to the first-chance quizzes, but on the same topic. Because they need more questions, only some courses use second-chance quizzes.
+
+## Second-chance Exam grading
+
+Two simple schemes are:
+
+```
+total1 = max(first, 0.3*first + 0.7*second)
+
+OR
+
+total2 = 0.7*max(first,second) + 0.3*min(first,second)
+```
+
+FIXME
+
 ## Example Homework
 
 Below is an example of a formative assessment using `"type": "Homework"`. This is also in `"set": "Homework"`, in which it is `"number": "1"`, and so it will be displayed as `Homework 1: Vector algebra`.
@@ -88,9 +138,17 @@ There are four access rules for this homework, which mean:
 
 * After the homework is due, we leave it accessible to students for zero credit, so they can continue to use the questions for exam study.
 
+This homework has a total of 18 questions, divided into 3 zones. These are structured as follows:
 
+* The three zones (Fundamental/Intermediate/Advanced) mirror the question division on the [example Exam](#example-exam) and they have the same names as on the Exam. This helps students understand the structure.
 
-This homework has six questions, each of which can be repeated until `maxPoints` is reached. Because it is `"type": "Homework"`, all students will see all six questions, and they can attempt them without limit. All questions are worth the same number of points because there is no advantage in using a complex point distribution on Homeworks. Students have access to a formula sheet which is the same as the one they will see on the exam, allowing them to get used to it.
+* In each zone, only 3 questions will count towards the total score. This allows us to put many questions on the homework without overwhelming students with work, and provides them with the chance to structure their own exam study and develop metacognition. Adding more optional questions to the homework is always good.
+
+* Each question can be repeated multiple times for more points. Students will receive at least 1 point for each correct attempt, and possibly more points with [value boosting](), up to a maximum of 5 points. This encourages thinking about the general method of solution for a question. This is only appropriate for questions that are highly parameterized. For questions without parameterization, `maxPoints` can be unspecified, which will make it equal to `points`.
+
+* All questions are worth the same number of points. Given that nearly all students will repeatedly attempt questions until they get 100%, there is no advantage to variable point values, and so it's better to keep things simple.
+
+At the end of the Homework configuration, the `"text"` property is used to provide access to a formula sheet. This is identical to the formula sheet on the [example Exam](#example-exam), and is provided on the homework so that students can become acquainted with it before the exam.
 
 ```json
 {
@@ -125,35 +183,38 @@ This homework has six questions, each of which can be repeated until `maxPoints`
     "zones": [
         {
             "title": "Fundamental questions",
+            "bestQuestions": 3,
             "questions": [
-                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
-                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
-                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
-                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+                {"id": "addVectors1",      "points": 1, "maxPoints": 5},
+                {"id": "addVectors2",      "points": 1, "maxPoints": 5},
+                {"id": "subtractVectors1", "points": 1, "maxPoints": 5},
+                {"id": "subtractVectors2", "points": 1, "maxPoints": 5},
+                {"id": "addManyVectors1",  "points": 1, "maxPoints": 5},
+                {"id": "addManyVectors2",  "points": 1, "maxPoints": 5}
             ]
         },
         {
             "title": "Intermediate questions",
+            "bestQuestions": 3,
             "questions": [
-                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
-                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
-                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
-                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+                {"id": "dotProduct1",      "points": 1, "maxPoints": 5},
+                {"id": "dotProduct2",      "points": 1, "maxPoints": 5},
+                {"id": "dotProduct3",      "points": 1, "maxPoints": 5},
+                {"id": "crossProduct1",    "points": 1, "maxPoints": 5},
+                {"id": "crossProduct2",    "points": 1, "maxPoints": 5}
+                {"id": "crossProduct3",    "points": 1, "maxPoints": 5}
             ]
         },
         {
             "title": "Advanced questions",
+            "bestQuestions": 3,
             "questions": [
-                {"id": "addVectors1",   "points": 1, "maxPoints": 5},
-                {"id": "addVectors2",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct1",   "points": 1, "maxPoints": 5},
-                {"id": "dotProduct2",   "points": 1, "maxPoints": 5},
-                {"id": "crossProduct1", "points": 1, "maxPoints": 5},
-                {"id": "crossProduct2", "points": 1, "maxPoints": 5}
+                {"id": "projection1",      "points": 1, "maxPoints": 5},
+                {"id": "projection2",      "points": 1, "maxPoints": 5},
+                {"id": "projection3",      "points": 1, "maxPoints": 5},
+                {"id": "tripleProduct1",   "points": 1, "maxPoints": 5},
+                {"id": "tripleProduct1",   "points": 1, "maxPoints": 5},
+                {"id": "tripleProduct2",   "points": 1, "maxPoints": 5}
             ]
         }
     ],
@@ -163,7 +224,11 @@ This homework has six questions, each of which can be repeated until `maxPoints`
 
 ## Example summative "Exam" assessment
 
-Below is an example of "Exam 1" on the same topic as "Homework 1" above. The access rules always allow TAs access, and allow students access for full credit in the CBTF with a link to the given `examUuid`.
+Below is an example of "Exam 1" on the same topic as the [example Homework](#example-homework).
+
+FIXME
+
+The access rules always allow TAs access, and allow students access for full credit in the CBTF with a link to the given `examUuid`.
 
 The question list for exams is more complicated than for homeworks because we want to randomize question selection. Each student taking this exam will get four questions, organized into two zones ("Fundamental questions" and "Advanced questions"). These zones are configured so that students get two easier questions first, and then two harder questions, which helps build student confidence. The points are set so that **the easier questions are worth more points than the harder questions**. This way most students will be able to get at least 20/30 = 66% by doing the easier questions, so the class exam scores will be roughly between 60% and 100%, as students typically expect. The harder questions serve as the differentiators between the 60%-students and the 100%-students.
 
