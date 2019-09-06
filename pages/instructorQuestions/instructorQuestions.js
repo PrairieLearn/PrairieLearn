@@ -7,6 +7,7 @@ const debug = require('debug')('prairielearn:instructorQuestions');
 const fs = require('fs-extra');
 const path = require('path');
 const uuidv4 = require('uuid/v4');
+const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
@@ -75,9 +76,12 @@ router.post('/', (req, res, next) => {
     if (req.body.__action == 'questions_insert') {
         debug(`Add question\n title: ${req.body.questions_insert_title}\n id: ${req.body.questions_insert_id}`);
 
-        insertQuestion(edit, res.locals, (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+        insertQuestion(edit, res.locals, (err, job_sequence_id) => {
+            if (ERR(err, (err) => logger.info(err))) {
+                res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+            } else {
+                res.redirect(req.originalUrl);
+            }
         });
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {
@@ -457,8 +461,7 @@ function insertQuestion(edit, locals, callback) {
         const _finishWithFailure = () => {
             debug(`${job_sequence_id}: _finishWithFailure`);
             serverJobs.failJobSequence(job_sequence_id);
-            // callback(null, job_sequence_id);
-            callback(new Error('failed!'), job_sequence_id);
+            callback(new Error('failed to insertQuestion'), job_sequence_id);
         };
 
         _lock();
