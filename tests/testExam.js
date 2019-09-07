@@ -120,22 +120,22 @@ describe('Exam assessment', function() {
 
     helperExam.startExam(locals);
 
-    describe('6. save text file', function() {
-        helperAssessment.saveTextFile(locals);
-        helperAssessment.checkSavedFile(locals);
+    describe('6. attach text file', function() {
+        helperAssessment.attachFile(locals, textFile=true);
+        helperAssessment.downloadSavedFile(locals);
     });
 
-    describe('7. delete saved text file', function() {
+    describe('7. delete attached text file', function() {
         helperAssessment.deleteSavedFile(locals);
         helperAssessment.checkNoSavedFiles(locals);
     });
 
-    describe('8. save uploaded file', function() {
-        helperAssessment.saveUploadedFile(locals);
-        helperAssessment.checkSavedFile(locals);
+    describe('8. attach uploaded file', function() {
+        helperAssessment.attachFile(locals, textFile=true);
+        helperAssessment.downloadSavedFile(locals);
     });
 
-    describe('9. delete saved uploaded file', function() {
+    describe('9. delete attached uploaded file', function() {
         helperAssessment.deleteSavedFile(locals);
         helperAssessment.checkNoSavedFiles(locals);
     });

@@ -13,8 +13,8 @@ let res, page, elemList;
 
 module.exports = {
 
-    saveTextFile(locals) {
-        describe('saveTextFile-1. GET to assessment_instance URL', function() {
+    attachFile(locals, textFile) {
+        describe('attachFile-1. GET to assessment_instance URL', function() {
             it('should load successfully', function(callback) {
                 request(locals.assessmentInstanceUrl, function (error, response, body) {
                     if (error) {
@@ -32,14 +32,16 @@ module.exports = {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = locals.$('.attach-text-form input[name="__csrf_token"]');
+                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
+                elemList = locals.$(`.${formName} input[name="__csrf_token"]`);
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
                 assert.isString(locals.__csrf_token);
             });
             it('should have an action', function() {
-                elemList = locals.$('.attach-text-form button[name="__action"]');
+                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
+                elemList = locals.$(`.${formName} button[name="__action"]`);
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__action = elemList[0].attribs.value;
@@ -47,14 +49,24 @@ module.exports = {
             });
         });
 
-        describe('saveTextFile-2. POST to assessment_instance URL', function() {
+        describe('attachFile-2. POST to assessment_instance URL', function() {
             it('should load successfully', function(callback) {
                 const form = {
                     __action: locals.__action,
                     __csrf_token: locals.__csrf_token,
-                    filename: 'testtext.txt',
-                    contents: 'This is the test text',
                 };
+                if (textFile) {
+                    form.filename = 'testfile.txt';
+                    form.contents = 'This is the test text';
+                } else {
+                    form.file = {
+                        value: 'This is the test text',
+                        options: {
+                            filename: 'testfile.txt',
+                            contentType: 'text/plain',
+                        },
+                    };
+                }
                 request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -77,7 +89,7 @@ module.exports = {
                 locals.file = result.rows[0];
             });
             it('should have the correct file.display_filename', function() {
-                assert.equal(locals.file.display_filename, 'testtext.txt');
+                assert.equal(locals.file.display_filename, 'testfile.txt');
             });
             it('should have the correct file.assessment_instance_id', function() {
                 assert.equal(locals.file.assessment_instance_id, 1);
@@ -85,10 +97,7 @@ module.exports = {
         });
     },
 
-    saveUploadedFile(locals) {
-    },
-
-    checkSavedFile(locals) {
+    downloadSavedFile(locals) {
     },
 
     deleteSavedFile(locals) {
