@@ -1,16 +1,17 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('chai').assert;
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const assert = require('chai').assert;
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var helperServer = require('./helperServer');
-var helperQuestion = require('./helperQuestion');
-var helperExam = require('./helperExam');
+const helperServer = require('./helperServer');
+const helperQuestion = require('./helperQuestion');
+const helperExam = require('./helperExam');
+const helperAssessment = require('./helperAssessment');
 
 const locals = {};
 
@@ -119,7 +120,27 @@ describe('Exam assessment', function() {
 
     helperExam.startExam(locals);
 
-    describe('6. save correct answer to question addVectors', function() {
+    describe('6. save text file', function() {
+        helperAssessment.saveTextFile(locals);
+        helperAssessment.checkSavedFile(locals);
+    });
+
+    describe('7. delete saved text file', function() {
+        helperAssessment.deleteSavedFile(locals);
+        helperAssessment.checkNoSavedFiles(locals);
+    });
+
+    describe('8. save uploaded file', function() {
+        helperAssessment.saveUploadedFile(locals);
+        helperAssessment.checkSavedFile(locals);
+    });
+
+    describe('9. delete saved uploaded file', function() {
+        helperAssessment.deleteSavedFile(locals);
+        helperAssessment.checkNoSavedFiles(locals);
+    });
+
+    describe('10. save correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -147,7 +168,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('7. grade incorrect answer to question addVectors', function() {
+    describe('11. grade incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -175,7 +196,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('8. grade incorrect answer to question addNumbers', function() {
+    describe('12. grade incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -202,7 +223,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('9. grade incorrect answer to question fossilFuelsRadio', function() {
+    describe('13. grade incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -229,7 +250,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('10. grade invalid answer to question addNumbers', function() {
+    describe('14. grade invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -272,7 +293,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('11. save incorrect answer to question addNumbers', function() {
+    describe('15. save incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -291,7 +312,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('12. the brokenGeneration question', function() {
+    describe('16. the brokenGeneration question', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['tryAgain'];
@@ -354,7 +375,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('13. load question addNumbers page and save data for later submission', function() {
+    describe('17. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -370,7 +391,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('14. grade correct answer to question addNumbers', function() {
+    describe('18. grade correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -397,7 +418,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('15. save correct answer to saved question addNumbers page', function() {
+    describe('19. save correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = helperExam.questions.addNumbers;
@@ -418,7 +439,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('16. save incorrect answer to question fossilFuelsRadio', function() {
+    describe('20. save incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -445,7 +466,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('17. load question addVectors page and save data for later submission', function() {
+    describe('21. load question addVectors page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -461,7 +482,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('18. grade incorrect answer to question addVectors', function() {
+    describe('22. grade incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -489,7 +510,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('19. submit correct answer to saved question addVectors page', function() {
+    describe('23. submit correct answer to saved question addVectors page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = helperExam.questions.addVectors;
@@ -511,7 +532,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('20. load question fossilFuelsRadio page and save data for later submission', function() {
+    describe('24. load question fossilFuelsRadio page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -527,7 +548,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('21. close exam', function() {
+    describe('25. close exam', function() {
         it('should succeed', function(callback) {
             sqldb.queryOneRow(sql.close_all_assessment_instances, [], function(err, _result) {
                 if (ERR(err, callback)) return;
@@ -536,7 +557,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('22. save correct answer to saved question fossilFuelsRadio page', function() {
+    describe('26. save correct answer to saved question fossilFuelsRadio page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = helperExam.questions.fossilFuelsRadio;
@@ -557,7 +578,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('23. regrading', function() {
+    describe('27. regrading', function() {
         describe('set forceMaxPoints = true for question addVectors', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_addVectors_force_max_points, [], function(err, _result) {
@@ -616,7 +637,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('24. instance question score_perc uploads', function() {
+    describe('28. instance question score_perc uploads', function() {
         let csvData = 'uid,instance,qid,score_perc\ndev@illinois.edu,1,addNumbers,40\ndev@illinois.edu,1,addVectors,50\n';
         helperQuestion.uploadInstanceQuestionScores(locals, csvData);
         describe('check the instance question score upload succeeded', function() {
@@ -662,7 +683,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('25. instance question points uploads', function() {
+    describe('29. instance question points uploads', function() {
         let csvData = 'uid,instance,qid,points\ndev@illinois.edu,1,addNumbers,4.7\ndev@illinois.edu,1,addVectors,1.2\n';
         helperQuestion.uploadInstanceQuestionScores(locals, csvData);
         describe('check the instance question score upload succeeded', function() {
@@ -708,7 +729,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('26. assessment instance score_perc uploads', function() {
+    describe('30. assessment instance score_perc uploads', function() {
         let csvData = 'uid,instance,score_perc\ndev@illinois.edu,1,43.7\n';
         helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
         describe('check the assessment instance score upload succeeded', function() {
@@ -754,7 +775,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('27. assessment instance points uploads', function() {
+    describe('31. assessment instance points uploads', function() {
         let csvData = 'uid,instance,points\ndev@illinois.edu,1,29.6\n';
         helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
         describe('check the assessment instance score upload succeeded', function() {
