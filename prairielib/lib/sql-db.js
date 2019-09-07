@@ -262,6 +262,7 @@ module.exports.queryWithClientOneRowAsync = promisify(module.exports.queryWithCl
  * @param { import("pg").PoolClient } client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
+ * @param {ResultsCallback} callback
  */
 module.exports.queryWithClientZeroOrOneRow = function(client, sql, params, callback) {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
