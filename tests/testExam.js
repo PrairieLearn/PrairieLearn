@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
 const helperExam = require('./helperExam');
-const helperAssessment = require('./helperAssessment');
+const helperAttachFiles = require('./helperAttachFiles');
 
 const locals = {};
 
@@ -120,26 +120,44 @@ describe('Exam assessment', function() {
 
     helperExam.startExam(locals);
 
-    describe('6. attach text file', function() {
+    describe('6. assessment_instance: attach text file', function() {
+        const assessmentInstance = true;
         const textFile = true;
-        helperAssessment.attachFile(locals, textFile);
-        helperAssessment.downloadAttachedFile(locals);
+        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
+        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
     });
 
-    describe('7. delete attached text file', function() {
-        helperAssessment.deleteAttachedFile(locals);
-        helperAssessment.checkNoAttachedFiles(locals);
+    describe('7. assessment_instance: delete attached text file', function() {
+        const assessmentInstance = true;
+        helperAttachFiles.deleteAttachedFile(locals, assessmentInstance);
+        helperAttachFiles.checkNoAttachedFiles(locals, assessmentInstance);
     });
 
-    describe('8. attach uploaded file', function() {
+    describe('8. assessment_instance: attach uploaded file', function() {
+        const assessmentInstance = true;
         const textFile = false;
-        helperAssessment.attachFile(locals, textFile);
-        helperAssessment.downloadAttachedFile(locals);
+        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
+        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
     });
 
-    describe('9. delete attached uploaded file', function() {
-        helperAssessment.deleteAttachedFile(locals);
-        helperAssessment.checkNoAttachedFiles(locals);
+    describe('9. assessment_instance: delete attached uploaded file', function() {
+        const assessmentInstance = true;
+        helperAttachFiles.deleteAttachedFile(locals, assessmentInstance);
+        helperAttachFiles.checkNoAttachedFiles(locals, assessmentInstance);
+    });
+
+    describe('10. instance_question: attach text file', function() {
+        describe('setting up the question data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.question = helperExam.questions.addVectors;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        const assessmentInstance = true;
+        const textFile = true;
+        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
+        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
     });
 
     describe('10. save correct answer to question addVectors', function() {

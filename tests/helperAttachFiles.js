@@ -13,10 +13,15 @@ let res, page, elemList;
 
 module.exports = {
 
-    attachFile(locals, textFile) {
+    attachFile(locals, assessmentInstance, textFile) {
         describe('attachFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                page = await requestp(locals.assessmentInstanceUrl);
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
+                page = await requestp(url);
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', () => {
@@ -45,8 +50,13 @@ module.exports = {
 
         describe('attachFile-2. POST to assessment_instance URL', () => {
             it('should load successfully', async () => {
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
                 const options = {
-                    url: locals.assessmentInstanceUrl,
+                    url,
                     followAllRedirects: true,
                 };
                 if (textFile) {
@@ -86,10 +96,15 @@ module.exports = {
         });
     },
 
-    downloadAttachedFile(locals) {
+    downloadAttachedFile(locals, assessmentInstance) {
         describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                page = await requestp(locals.assessmentInstanceUrl);
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
+                page = await requestp(url);
                 locals.$ = cheerio.load(page);
             });
             it('should have a file URL', () => {
@@ -111,10 +126,15 @@ module.exports = {
         });
     },
 
-    deleteAttachedFile(locals) {
+    deleteAttachedFile(locals, assessmentInstance) {
         describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                page = await requestp(locals.assessmentInstanceUrl);
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
+                page = await requestp(url);
                 locals.$ = cheerio.load(page);
             });
         });
@@ -154,15 +174,19 @@ module.exports = {
 
         describe('deleteAttachedFile-3. POST to delete attached file', () => {
             it('should load successfully', async () => {
-                const form = {
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
+                const options = {
+                    url,
+                    followAllRedirects: true,
+                };
+                options.form = {
                     __action: locals.__action,
                     __csrf_token: locals.__csrf_token,
                     file_id: locals.file_id,
-                };
-                const options = {
-                    url: locals.assessmentInstanceUrl,
-                    form: form,
-                    followAllRedirects: true,
                 };
                 page = await requestp.post(options);
                 locals.$ = cheerio.load(page);
@@ -174,10 +198,15 @@ module.exports = {
         });
     },
 
-    checkNoAttachedFiles(locals) {
+    checkNoAttachedFiles(locals, assessmentInstance) {
         describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                page = await requestp(locals.assessmentInstanceUrl);
+                if (assessmentInstance) {
+                    url = locals.assessmentInstanceUrl;
+                } else {
+                    url = locals.questionBaseUrl + '/' + locals.question.id;
+                }
+                page = await requestp(url);
                 locals.$ = cheerio.load(page);
             });
             it('should not have a file URL', () => {
@@ -187,5 +216,4 @@ module.exports = {
         });
 
     },
-
 };
