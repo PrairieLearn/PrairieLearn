@@ -347,6 +347,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
 
 // course instance - course admin pages
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [

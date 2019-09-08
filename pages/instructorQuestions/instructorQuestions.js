@@ -78,7 +78,7 @@ router.post('/', (req, res, next) => {
 
         insertQuestion(edit, res.locals, (err, job_sequence_id) => {
             if (ERR(err, (err) => logger.info(err))) {
-                res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
                 res.redirect(req.originalUrl);
             }
