@@ -122,22 +122,22 @@ describe('Exam assessment', function() {
 
     describe('6. attach text file', function() {
         helperAssessment.attachFile(locals, textFile=true);
-        helperAssessment.downloadSavedFile(locals);
+        helperAssessment.downloadAttachedFile(locals);
     });
 
     describe('7. delete attached text file', function() {
-        helperAssessment.deleteSavedFile(locals);
-        helperAssessment.checkNoSavedFiles(locals);
+        helperAssessment.deleteAttachedFile(locals);
+        helperAssessment.checkNoAttachedFiles(locals);
     });
 
     describe('8. attach uploaded file', function() {
         helperAssessment.attachFile(locals, textFile=true);
-        helperAssessment.downloadSavedFile(locals);
+        helperAssessment.downloadAttachedFile(locals);
     });
 
     describe('9. delete attached uploaded file', function() {
-        helperAssessment.deleteSavedFile(locals);
-        helperAssessment.checkNoSavedFiles(locals);
+        helperAssessment.deleteAttachedFile(locals);
+        helperAssessment.checkNoAttachedFiles(locals);
     });
 
     describe('10. save correct answer to question addVectors', function() {

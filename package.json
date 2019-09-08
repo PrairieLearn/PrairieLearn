@@ -65,6 +65,7 @@
         "rehype-stringify": "^6.0.0",
         "remark-parse": "^7.0.1",
         "remark-rehype": "^5.0.0",
+        "request-promise": "^4.2.4",
         "request-promise-native": "^1.0.7",
         "requirejs": "^2.3.5",
         "rimraf": "^3.0.0",
