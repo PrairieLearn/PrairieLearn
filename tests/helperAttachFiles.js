@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
-const requestp = require('request-promise');
+const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
