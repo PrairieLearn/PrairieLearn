@@ -1,15 +1,12 @@
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const assert = require('chai').assert;
 const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
 
-const config = require('../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-let res, page, elemList;
+let page, elemList;
 
 module.exports = {
 
@@ -17,7 +14,7 @@ module.exports = {
         describe('attachFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
                 page = await requestp(locals.attachFilesUrl);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
             it('should have a CSRF token', () => {
                 if (textFile) {
@@ -86,7 +83,7 @@ module.exports = {
                     }
                 }
                 page = await requestp.post(options);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
             it('should create an attached file', async () => {
                 const result = await sqldb.queryAsync(sql.select_files, []);
@@ -106,7 +103,7 @@ module.exports = {
         describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
                 page = await requestp(locals.attachFilesUrl);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
             it('should have a file URL', () => {
                 elemList = locals.$('#attach-file-panel a.attached-file');
@@ -131,7 +128,7 @@ module.exports = {
         describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
                 page = await requestp(locals.attachFilesUrl);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
         });
 
@@ -189,7 +186,7 @@ module.exports = {
                     file_id: locals.file_id,
                 };
                 page = await requestp.post(options);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
             it('should result in no attached files', async () => {
                 const result = await sqldb.queryAsync(sql.select_files, []);
@@ -202,7 +199,7 @@ module.exports = {
         describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
                 page = await requestp(locals.attachFilesUrl);
-                locals.$ = cheerio.load(page);
+                locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
             });
             it('should not have a file URL', () => {
                 elemList = locals.$('#attach-file-panel a.attached-file');

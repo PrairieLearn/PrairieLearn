@@ -7,6 +7,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
+const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
