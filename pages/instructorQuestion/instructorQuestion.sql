@@ -24,3 +24,12 @@ GROUP BY
     ci.id
 ORDER BY
     admin_assessment_question_number(aq.id);
+
+-- BLOCK qids
+SELECT
+    array_agg(q.qid) AS qids
+FROM
+    questions AS q
+WHERE
+    q.course_id = $course_id
+    AND q.deleted_at IS NULL;

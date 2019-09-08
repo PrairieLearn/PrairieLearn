@@ -11,6 +11,9 @@ const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const debug = require('debug')('prairielearn:instructorQuestion');
+const fs = require('fs-extra');
+const path = require('path');
+const editHelpers = require('../shared/editHelpers');
 
 const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
 
@@ -91,6 +94,24 @@ function processIssue(req, res, callback) {
     });
 }
 
+function write(edit, job) {
+    job.verbose(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
+    const oldPath = path.join(edit.coursePath, 'questions', edit.qid_old);
+    const newPath = path.join(edit.coursePath, 'questions', edit.qid_new);
+    fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+        if (err) {
+            job.fail(err);
+        } else {
+            edit.pathsToAdd = [
+                oldPath,
+                newPath,
+            ];
+            edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
+            job.succeed();
+        }
+    });
+}
+
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'grade' || req.body.__action == 'save') {
         processSubmission(req, res, function(err, variant_id) {
@@ -122,6 +143,42 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
                          + '/?variant_id=' + variant_id);
         });
+    } else if (req.body.__action == 'change_id') {
+        debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
+        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+
+        // Do not allow users to edit the exampleCourse
+        if (res.locals.course.options.isExampleCourse) {
+            return next(error.make(400, `attempting to edit the example course`, {
+                locals: res.locals,
+                body: req.body,
+            }));
+        }
+
+        if (res.locals.question.qid == req.body.id) {
+            debug('The new qid is the same as the old qid - do nothing')
+            res.redirect(req.originalUrl);
+        } else {
+            let edit = {
+                userID: res.locals.user.user_id,
+                courseID: res.locals.course.id,
+                coursePath: res.locals.course.path,
+                uid: res.locals.user.uid,
+                user_name: res.locals.user.name,
+                qid_old: res.locals.question.qid,
+                qid_new: req.body.id,
+            };
+
+            edit.description = 'Change question ID in browser and sync';
+            edit.write = write;
+            editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
+                if (ERR(err, (err) => logger.info(err))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    res.redirect(req.originalUrl);
+                }
+            });
+        }
     } else {
         return next(new Error('unknown __action: ' + req.body.__action));
     }
@@ -178,6 +235,13 @@ router.get('/', function(req, res, next) {
                 res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);
+        },
+        (callback) => {
+            sqldb.queryOneRow(sql.qids, {course_id: res.locals.course.id}, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.qids = result.rows[0].qids;
+                callback(null);
+            });
         },
     ], (err) => {
         if (ERR(err, next)) return;

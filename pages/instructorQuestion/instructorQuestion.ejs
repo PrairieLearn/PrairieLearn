@@ -21,6 +21,13 @@
     <%- extraHeadersHtml %>
   </head>
   <body>
+    <script>
+      $(function() {
+        $('[data-toggle="popover"]').popover({
+          sanitize: false
+        });
+      });
+    </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="card mb-4">
@@ -37,6 +44,10 @@
                 <th>QID</th>
                 <td><%= question.qid %>
                     <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+                    <button id="changeQidButton" tabindex="0" class="btn btn-sm btn-outline-primary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change QID" data-content="<%= include('../partials/changeIdForm', {id_label: 'QID', buttonID: 'changeQidButton', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                        <i class="fa fa-edit"></i>
+                        <span class="d-none d-sm-inline">Change QID</span>
+                    </button>
                 </td>
               </tr>
               <tr>
