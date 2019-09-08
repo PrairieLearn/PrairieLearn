@@ -27,9 +27,51 @@ In production, we currently run PrairieLearn outside of Docker directly on an EC
 
 To account for the variety of contexts in which PrairieLearn is executed, there are three related but distinct ways that PrairieLearn can execute question and element code: `internal`, `native`, and `container`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
 
-## `internal` execution mode
+### `internal` execution mode
 
 This is how PrairieLearn functioned historically. PrairieLearn would directly execute Python code with limited isolation from the rest of the system. This is largely the process described again, with a pool of Python trampolines.
 
 This is still how PrairieLearn functions by default for local development. The `priairelearn/prairielearn` Docker image that is distributed to users includes all of the Python and R dependencies needed by question and element code, and said code is executed in the same container that PrairieLearn executes in. This is obviously bad for security, but doesn't matter much for local development.
+
+### `native` execution mode
+
+The `native` execution mode is currently used when PrairieLearn is running in production. It uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
+
+Instead of using a pool of Python trampolines as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script, which in turn runs a Python trampoline. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the trampoline as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
+
+This mode also allows us to isolate one course from another so that course A cannot see content from course B, and vice versa. To achieve this, we take advantage of bind mounts. When creating a container, PrairieLearn also creates a special directory on the host, and then mounts that directory to `/course` in the container. To execute content for course A, PrairieLearn first bind mounts that course's directory to the container's host directory. This is transitive to the container, which will now see that course's content at `/course`. In the future, when a different course's code needs to be executed in that container, PrairieLearn will simply update the bind mount to point to the other course.
+
+### `container` execution mode
+
+The `container` execution mode is similar to the `native` mode in that code is executed in a container, but is used where PrairieLearn is *also* running in a container. This is primarily useful for when you're running PrairieLearn locally but want to test running course code in isolated containers.
+
+In this case, we can't use the bind mount trick above, as PrairieLearn can't create mounts on the host from inside its container. Instead, we'll need a couple of things:
+
+* In `config.json`, the user must specify the host post for any courses they're mounting into PrairieLearn in `courseDirsHost`.
+* The user must mount the Docker socket into PrairieLearn's container, similarly to what they must do when running external grading locally.
+* The user must create a "scratch" directory on the host, specify it with the `HOSTFILES_DIR` environment variable, and mount the directory to `/hostfiles` in the PrairieLearn container. PriaireLearn will use this directory to communicate its internal files, including element implementations and the Python trampoline, to the host so that they can be mounted into executor containers.
+
+PrairieLearn will then maintain a pool of workers, one per course, with the corresponding host course directory mounted into each container. It will also begin watching the `elements/`, `python/`, and `exampleCourse/` directories and copying their files to `HOSTFILES_DIR` so that they can be accessible to the executor containers. Most of the time, this copy will only take place one time when PrairieLearn boots up, but the continuous copying can be useful if you're running the PrairieLearn container with your own copy of the PrairieLearn code mounted to `/PrairieLearn`. When you edit files in your own copy, they'll magically be copied back to the right place on the host and things will Just Work(tm).
+
+That was a lot of words; let's look at some concrete configs and Docker commands.
+
+Let's assume you have some PrairieLearn course on your machine at `/Users/nathan/git/pl-cs225`. Here's your corresponding config file.
+
+```json
+{
+  "courseDirs": [
+    "/course"
+  ],
+  "courseDirsHost": {
+    "/course": "/Users/nathan/git/pl-cs225"
+  },
+  "workersExecutionMode": "container"
+}
+```
+
+Now, we're ready to run PrairieLearn. Say you saved the above config file in `/Users/nathan/config.json`. You can now run the following Docker command:
+
+```sh
+docker run --rm -it -p 3000:3000 -v /Users/nathan/git/pl-cs225:/course -v /Users/nathan/config.json:/PrairieLearn/config.json -v /Users/nathan/.plhostfiles:/hostfiles -e HOST_JOBS_DIR=/Users/nathan/.pl_ag_jobs -e HOSTFILES_DIR=/Users/nathan/.plhostfiles -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
+```
 
