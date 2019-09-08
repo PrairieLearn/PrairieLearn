@@ -120,33 +120,35 @@ describe('Exam assessment', function() {
 
     helperExam.startExam(locals);
 
+    describe('6. assessment_instance: set attach files page URL', function() {
+        it('should succeed', function() {
+            locals.attachFilesUrl = locals.assessmentInstanceUrl;
+        });
+    });
+
     describe('6. assessment_instance: attach text file', function() {
-        const assessmentInstance = true;
         const textFile = true;
-        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
-        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
+        helperAttachFiles.attachFile(locals, textFile);
+        helperAttachFiles.downloadAttachedFile(locals);
     });
 
     describe('7. assessment_instance: delete attached text file', function() {
-        const assessmentInstance = true;
-        helperAttachFiles.deleteAttachedFile(locals, assessmentInstance);
-        helperAttachFiles.checkNoAttachedFiles(locals, assessmentInstance);
+        helperAttachFiles.deleteAttachedFile(locals);
+        helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
     describe('8. assessment_instance: attach uploaded file', function() {
-        const assessmentInstance = true;
         const textFile = false;
-        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
-        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
+        helperAttachFiles.attachFile(locals, textFile);
+        helperAttachFiles.downloadAttachedFile(locals);
     });
 
     describe('9. assessment_instance: delete attached uploaded file', function() {
-        const assessmentInstance = true;
-        helperAttachFiles.deleteAttachedFile(locals, assessmentInstance);
-        helperAttachFiles.checkNoAttachedFiles(locals, assessmentInstance);
+        helperAttachFiles.deleteAttachedFile(locals);
+        helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('10. instance_question: attach text file', function() {
+    describe('10. instance_question: attach files setup', function() {
         describe('setting up the question data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -154,11 +156,25 @@ describe('Exam assessment', function() {
             });
         });
         helperQuestion.getInstanceQuestion(locals);
-        const assessmentInstance = true;
-        const textFile = true;
-        helperAttachFiles.attachFile(locals, assessmentInstance, textFile);
-        helperAttachFiles.downloadAttachedFile(locals, assessmentInstance);
+        describe('set attach files page URL', function() {
+            it('should succeed', function() {
+                locals.attachFilesUrl = locals.questionBaseUrl + '/' + locals.question.id;
+            });
+        });
     });
+
+    describe('11. instance_question: attach text file', function() {
+        const textFile = true;
+        helperAttachFiles.attachFile(locals, textFile);
+        helperAttachFiles.downloadAttachedFile(locals);
+    });
+
+
+
+
+
+
+
 
     describe('10. save correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {

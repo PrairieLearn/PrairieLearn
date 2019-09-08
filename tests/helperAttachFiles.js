@@ -13,15 +13,10 @@ let res, page, elemList;
 
 module.exports = {
 
-    attachFile(locals, assessmentInstance, textFile) {
+    attachFile(locals, textFile) {
         describe('attachFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
-                page = await requestp(url);
+                page = await requestp(locals.attachFilesUrl);
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', () => {
@@ -46,23 +41,31 @@ module.exports = {
                 locals.__action = elemList[0].attribs.value;
                 assert.isString(locals.__action);
             });
+            it('might have a variant', () => {
+                if (textFile) {
+                    elemList = locals.$('.attach-text-form input[name="__variant_id"]');
+                } else {
+                    elemList = locals.$('.attach-file-form input[name="__variant_id"]');
+                }
+                delete locals.__variant_id;
+                if (elemList.length == 0) return; // assessment_instance page does not have variant_id
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.__variant_id = elemList[0].attribs.value;
+            });
         });
 
         describe('attachFile-2. POST to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
                 const options = {
-                    url,
+                    url: locals.attachFilesUrl,
                     followAllRedirects: true,
                 };
                 if (textFile) {
                     options.form = {
                         __action: locals.__action,
                         __csrf_token: locals.__csrf_token,
+                        __variant_id: locals.__variant_id,
                         filename: 'testfile.txt',
                         contents: 'This is the test text',
                     };
@@ -78,6 +81,9 @@ module.exports = {
                             },
                         },
                     };
+                    if (locals.__variant_id) {
+                        options.formData.__variant_id = locals.__variant_id;
+                    }
                 }
                 page = await requestp.post(options);
                 locals.$ = cheerio.load(page);
@@ -96,15 +102,10 @@ module.exports = {
         });
     },
 
-    downloadAttachedFile(locals, assessmentInstance) {
+    downloadAttachedFile(locals) {
         describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
-                page = await requestp(url);
+                page = await requestp(locals.attachFilesUrl);
                 locals.$ = cheerio.load(page);
             });
             it('should have a file URL', () => {
@@ -126,15 +127,10 @@ module.exports = {
         });
     },
 
-    deleteAttachedFile(locals, assessmentInstance) {
+    deleteAttachedFile(locals) {
         describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
-                page = await requestp(url);
+                page = await requestp(locals.attachFilesUrl);
                 locals.$ = cheerio.load(page);
             });
         });
@@ -170,22 +166,26 @@ module.exports = {
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.file_id = Number.parseInt(elemList[0].attribs.value);
             });
+            it('data-content might have a variant', () => {
+                elemList = locals.data$('form input[name="__variant_id"]');
+                delete locals.__variant_id;
+                if (elemList.length == 0) return; // assessment_instance page does not have variant_id
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.__variant_id = elemList[0].attribs.value;
+            });
         });
 
         describe('deleteAttachedFile-3. POST to delete attached file', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
                 const options = {
-                    url,
+                    url: locals.attachFilesUrl,
                     followAllRedirects: true,
                 };
                 options.form = {
                     __action: locals.__action,
                     __csrf_token: locals.__csrf_token,
+                    __variant_id: locals.__variant_id,
                     file_id: locals.file_id,
                 };
                 page = await requestp.post(options);
@@ -198,15 +198,10 @@ module.exports = {
         });
     },
 
-    checkNoAttachedFiles(locals, assessmentInstance) {
+    checkNoAttachedFiles(locals) {
         describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                if (assessmentInstance) {
-                    url = locals.assessmentInstanceUrl;
-                } else {
-                    url = locals.questionBaseUrl + '/' + locals.question.id;
-                }
-                page = await requestp(url);
+                page = await requestp(locals.attachFilesUrl);
                 locals.$ = cheerio.load(page);
             });
             it('should not have a file URL', () => {
