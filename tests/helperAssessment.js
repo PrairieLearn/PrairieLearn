@@ -185,6 +185,17 @@ module.exports = {
     },
 
     checkNoAttachedFiles(locals) {
+        describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
+            it('should load successfully', async () => {
+                page = await requestp(locals.assessmentInstanceUrl);
+                locals.$ = cheerio.load(page);
+            });
+            it('should not have a file URL', () => {
+                elemList = locals.$('#attach-file-panel a.attached-file');
+                assert.lengthOf(elemList, 0);
+            });
+        });
+
     },
 
 };
