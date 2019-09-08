@@ -80,7 +80,11 @@ router.post('/', (req, res, next) => {
             if (ERR(err, (err) => logger.info(err))) {
                 res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
-                res.redirect(req.originalUrl);
+                debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
+                sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                });
             }
         });
     } else {

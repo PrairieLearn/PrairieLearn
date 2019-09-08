@@ -43,3 +43,12 @@ JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE a.course_instance_id = $course_instance_id
 AND a.deleted_at IS NULL
 ORDER BY aset.number,a.number;
+
+-- BLOCK select_question_id_from_qid
+SELECT
+    q.id AS question_id
+FROM
+    questions AS q
+WHERE
+    q.qid = $qid
+    AND q.course_id = $course_id;
