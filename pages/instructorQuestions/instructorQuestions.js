@@ -55,18 +55,6 @@ router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
 
-    // let edit = {
-    //     userID: res.locals.user.user_id,
-    //     courseID: res.locals.course.id,
-    //     title: req.body.questions_insert_title,
-    //     qid: req.body.questions_insert_id,
-    //     coursePath: res.locals.course.path,
-    //     uid: res.locals.user.uid,
-    //     user_name: res.locals.user.name,
-    //     templatePath: path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'addNumbers'),
-    //     questionPath: path.join(res.locals.course.path, 'questions', req.body.questions_insert_id),
-    // };
-
     let edit = {
         userID: res.locals.user.user_id,
         courseID: res.locals.course.id,
