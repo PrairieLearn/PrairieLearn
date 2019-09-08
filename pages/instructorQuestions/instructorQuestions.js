@@ -97,7 +97,7 @@ function insertQuestion(edit, locals, callback) {
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'sync',
-        description: 'Save and sync an in-browser question insert',
+        description: 'Add question in browser and sync',
         courseDir: locals.course.path,
     };
 
