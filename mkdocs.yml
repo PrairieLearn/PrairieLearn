@@ -31,6 +31,7 @@ pages:
   - 'Installing with local source': 'installingLocal.md'
   - 'Installing natively': 'installingNative.md'
   - 'Question element writing': 'devElements.md'
+  - 'Code execution': 'codeExecution.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
   - 'Old v1/v2 question format': 'oldQuestion.md'
