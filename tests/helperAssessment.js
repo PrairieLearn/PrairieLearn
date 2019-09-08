@@ -20,16 +20,22 @@ module.exports = {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', () => {
-                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
-                elemList = locals.$(`.${formName} input[name="__csrf_token"]`);
+                if (textFile) {
+                    elemList = locals.$('.attach-text-form input[name="__csrf_token"]');
+                } else {
+                    elemList = locals.$('.attach-file-form input[name="__csrf_token"]');
+                }
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
                 assert.isString(locals.__csrf_token);
             });
             it('should have an action', () => {
-                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
-                elemList = locals.$(`.${formName} button[name="__action"]`);
+                if (textFile) {
+                    elemList = locals.$('.attach-text-form button[name="__action"]');
+                } else {
+                    elemList = locals.$('.attach-file-form input[name="__action"]');
+                }
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__action = elemList[0].attribs.value;
@@ -39,27 +45,30 @@ module.exports = {
 
         describe('attachFile-2. POST to assessment_instance URL', () => {
             it('should load successfully', async () => {
-                const form = {
-                    __action: locals.__action,
-                    __csrf_token: locals.__csrf_token,
+                const options = {
+                    url: locals.assessmentInstanceUrl,
+                    followAllRedirects: true,
                 };
                 if (textFile) {
-                    form.filename = 'testfile.txt';
-                    form.contents = 'This is the test text';
+                    options.form = {
+                        __action: locals.__action,
+                        __csrf_token: locals.__csrf_token,
+                        filename: 'testfile.txt',
+                        contents: 'This is the test text',
+                    };
                 } else {
-                    form.file = {
-                        value: 'This is the test text',
-                        options: {
-                            filename: 'testfile.txt',
-                            contentType: 'text/plain',
+                    options.formData = {
+                        __action: locals.__action,
+                        __csrf_token: locals.__csrf_token,
+                        file: {
+                            value: 'This is the test text',
+                            options: {
+                                filename: 'testfile.txt',
+                                contentType: 'text/plain',
+                            },
                         },
                     };
                 }
-                const options = {
-                    url: locals.assessmentInstanceUrl,
-                    form: form,
-                    followAllRedirects: true,
-                };
                 page = await requestp.post(options);
                 locals.$ = cheerio.load(page);
             });
@@ -110,26 +119,7 @@ module.exports = {
             });
         });
 
-        describe('deleteAttachedFile-2. the file delete button', () => {
-            it('should have a CSRF token', () => {
-                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
-                elemList = locals.$(`.${formName} input[name="__csrf_token"]`);
-                assert.lengthOf(elemList, 1);
-                assert.nestedProperty(elemList[0], 'attribs.value');
-                locals.__csrf_token = elemList[0].attribs.value;
-                assert.isString(locals.__csrf_token);
-            });
-            it('should have an action', () => {
-                const formName = textFile ? 'attach-text-form' : 'attach-file-form';
-                elemList = locals.$(`.${formName} button[name="__action"]`);
-                assert.lengthOf(elemList, 1);
-                assert.nestedProperty(elemList[0], 'attribs.value');
-                locals.__action = elemList[0].attribs.value;
-                assert.isString(locals.__action);
-            });
-        });
-
-        describe('deleteAttachedFile-3. the delete-file form', () => {
+        describe('deleteAttachedFile-2. the delete-file form', () => {
             it('should exist', () => {
                 elemList = locals.$('.attachFileDeleteButton');
                 assert.lengthOf(elemList, 1);
@@ -162,7 +152,7 @@ module.exports = {
             });
         });
 
-        describe('deleteAttachedFile-4. POST to delete attached file', () => {
+        describe('deleteAttachedFile-3. POST to delete attached file', () => {
             it('should load successfully', async () => {
                 const form = {
                     __action: locals.__action,

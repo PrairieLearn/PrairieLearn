@@ -121,7 +121,8 @@ describe('Exam assessment', function() {
     helperExam.startExam(locals);
 
     describe('6. attach text file', function() {
-        helperAssessment.attachFile(locals, textFile=true);
+        const textFile = true;
+        helperAssessment.attachFile(locals, textFile);
         helperAssessment.downloadAttachedFile(locals);
     });
 
@@ -131,7 +132,8 @@ describe('Exam assessment', function() {
     });
 
     describe('8. attach uploaded file', function() {
-        helperAssessment.attachFile(locals, textFile=true);
+        const textFile = false;
+        helperAssessment.attachFile(locals, textFile);
         helperAssessment.downloadAttachedFile(locals);
     });
 

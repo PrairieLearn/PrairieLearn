@@ -300,7 +300,8 @@ describe('Homework assessment', function() {
     startAssessment();
 
     describe('1. attach text file', function() {
-        helperAssessment.attachFile(locals, textFile=true);
+        const textFile = true;
+        helperAssessment.attachFile(locals, textFile);
         helperAssessment.downloadAttachedFile(locals);
     });
 
@@ -310,7 +311,8 @@ describe('Homework assessment', function() {
     });
 
     describe('3. attach uploaded file', function() {
-        helperAssessment.attachFile(locals, textFile=true);
+        const textFile = false;
+        helperAssessment.attachFile(locals, textFile);
         helperAssessment.downloadAttachedFile(locals);
     });
 
