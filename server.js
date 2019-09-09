@@ -14,7 +14,8 @@ const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
-const multer  = require('multer');
+const multer = require('multer');
+const filesize = require('filesize');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -91,6 +92,7 @@ app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
 
+app.use(function(req, res, next) {res.locals.config = {}; next();});
 app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
@@ -128,11 +130,14 @@ if (config.hasAzure) {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fieldSize: 1e7, // max in bytes
-        fileSize: 1e7, // max in bytes
-        parts: 100, // max number of fields + files
+        fieldSize: config.fileUploadMaxBytes,
+        fileSize: config.fileUploadMaxBytes,
+        parts: config.fileUploadMaxParts,
     },
 });
+config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {base: 10, round: 0});
+app.use(function(req, res, next) {res.locals.config.fileUploadMaxBytes = config.fileUploadMaxBytes; next();});
+app.use(function(req, res, next) {res.locals.config.fileUploadMaxBytesFormatted = config.fileUploadMaxBytesFormatted; next();});
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
