@@ -1,3 +1,7 @@
-importFrom(unix, eval_safe, user_info)
+importFrom("unix", "eval_safe", "user_info")
+importFrom("jsonlite", "write_json")
 
-export(source_and_eval_safe, eval_safe_as, get_question_details)
+export("source_and_eval_safe",
+       "eval_safe_as",
+       "get_question_details",
+       "test_question")

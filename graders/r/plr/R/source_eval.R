@@ -50,6 +50,6 @@ source_and_eval_safe <- function(file, expr, uid=NULL) {
 
 #' @rdname source_and_eval_safe
 eval_safe_as <- function(expr, uid=NULL) {
-     if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
+    if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
     res <- eval_safe(expr, uid=uid)
 }
