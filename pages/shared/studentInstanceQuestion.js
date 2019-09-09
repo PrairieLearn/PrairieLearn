@@ -3,27 +3,40 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const fileStore = require('../../lib/file-store');
 
-module.exports.getVariantId = async (req, res) => {
+/*
+ * Get a validated variant_id from a request, or throw an exception.
+ *
+ * This function assumes req.body.__variant_id has been sent by the client, but
+ * it is currently untrusted. We check that it is a valid variant_id and
+ * belongs to the authorized res.locals.instance_question_id and return it if
+ * everything is ok. If anything is invalid or unauthorized, we throw an
+ * exception.
+ */
+module.exports.getValidVariantId = async (req, res) => {
     const variant_id = req.body.__variant_id;
     const params = [
         variant_id,
         res.locals.instance_question.id,
     ];
-    await sqldb.callOneRowAsync('variants_ensure_instance_question', params);
+    try {
+        await sqldb.callOneRowAsync('variants_ensure_instance_question', params);
+    } catch (e) {
+        throw new Error(`Client-provided __variant_id "${req.body.__variant_id}" does not belong to the authorized instance_question_id "${res.locals.instance_question_id}"`);
+    }
     return variant_id;
 }
 
 module.exports.processFileUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
     await fileStore.upload(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
-    const variant_id = await module.exports.getVariantId(req, res);
+    const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
 }
 
 module.exports.processTextUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
     await fileStore.upload(req.body.filename, Buffer.from(req.body.contents), 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
-    const variant_id = await module.exports.getVariantId(req, res);
+    const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
 }
 
@@ -39,7 +52,7 @@ module.exports.processDeleteFile = async (req, res) => {
 
     await fileStore.delete(file.id, res.locals.authn_user.user_id);
 
-    const variant_id = await module.exports.getVariantId(req, res);
+    const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
 }
 
@@ -52,7 +65,7 @@ module.exports.processIssue = async (req, res) => {
         throw new Error('A description of the issue must be provided');
     }
 
-    const variant_id = await module.exports.getVariantId(req, res);
+    const variant_id = await module.exports.getValidVariantId(req, res);
 
     const course_data = _.pick(res.locals, ['variant', 'instance_question',
         'question', 'assessment_instance',
