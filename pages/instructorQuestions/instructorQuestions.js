@@ -96,10 +96,10 @@ router.post('/', (req, res, next) => {
     }
 });
 
-function add_write(edit, job) {
+function add_write(edit, callback) {
     async.waterfall([
         (callback) => {
-            job.verbose(`Generate unique QID`);
+            debug(`Generate unique QID`);
             fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
                 if (ERR(err, callback)) return;
 
@@ -124,21 +124,21 @@ function add_write(edit, job) {
             });
         },
         (callback) => {
-            job.verbose(`Copy template from ${edit.templatePath} to ${edit.questionPath}`);
+            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
             fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            job.verbose(`Read info.json`);
+            debug(`Read info.json`);
             fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
                 if (ERR(err, callback)) return;
                 callback(null, infoJson);
             });
         },
         (infoJson, callback) => {
-            job.verbose(`Write info.json with new title and uuid`);
+            debug(`Write info.json with new title and uuid`);
             infoJson.title = 'Replace this title';
             infoJson.uuid = uuidv4();
             fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
@@ -147,12 +147,8 @@ function add_write(edit, job) {
             });
         },
     ], (err) => {
-        if (err) {
-            job.fail(err);
-        } else {
-            debug(`Wrote question:\n from ${edit.templatePath}\n to ${edit.questionPath}`);
-            job.succeed();
-        }
+        if (ERR(err, callback)) return;
+        callback(null);
     });
 }
 

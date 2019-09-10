@@ -113,7 +113,13 @@ function doEdit(edit, locals, callback) {
                     return;
                 }
 
-                edit.write(edit, job);
+                edit.write(edit, (err) => {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.succeed();
+                    }
+                })
             });
         };
 

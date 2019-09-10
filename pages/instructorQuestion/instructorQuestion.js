@@ -95,28 +95,25 @@ function processIssue(req, res, callback) {
     });
 }
 
-function write(edit, job) {
-    job.verbose(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
+function change_qid_write(edit, callback) {
+    debug(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
     const oldPath = path.join(edit.coursePath, 'questions', edit.qid_old);
     const newPath = path.join(edit.coursePath, 'questions', edit.qid_new);
     fs.move(oldPath, newPath, {overwrite: false}, (err) => {
-        if (err) {
-            job.fail(err);
-        } else {
-            edit.pathsToAdd = [
-                oldPath,
-                newPath,
-            ];
-            edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
-            job.succeed();
-        }
+        if (ERR(err, callback)) return;
+        edit.pathsToAdd = [
+            oldPath,
+            newPath,
+        ];
+        edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
+        callback(null);
     });
 }
 
-function copy_write(edit, job) {
+function copy_write(edit, callback) {
     async.waterfall([
         (callback) => {
-            job.verbose(`Generate unique QID`);
+            debug(`Generate unique QID`);
             fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
                 if (ERR(err, callback)) return;
 
@@ -141,21 +138,21 @@ function copy_write(edit, job) {
             });
         },
         (callback) => {
-            job.verbose(`Copy template from ${edit.templatePath} to ${edit.questionPath}`);
+            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
             fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            job.verbose(`Read info.json`);
+            debug(`Read info.json`);
             fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
                 if (ERR(err, callback)) return;
                 callback(null, infoJson);
             });
         },
         (infoJson, callback) => {
-            job.verbose(`Write info.json with new title and uuid`);
+            debug(`Write info.json with new title and uuid`);
             infoJson.title = 'Replace this title';
             infoJson.uuid = uuidv4();
             fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
@@ -164,12 +161,8 @@ function copy_write(edit, job) {
             });
         },
     ], (err) => {
-        if (err) {
-            job.fail(err);
-        } else {
-            debug(`Wrote question:\n from ${edit.templatePath}\n to ${edit.questionPath}`);
-            job.succeed();
-        }
+        if (ERR(err, callback)) return;
+        callback(null);
     });
 }
 
@@ -231,7 +224,7 @@ router.post('/', function(req, res, next) {
             };
 
             edit.description = 'Change question ID in browser and sync';
-            edit.write = write;
+            edit.write = change_qid_write;
             editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
                 if (ERR(err, (err) => logger.info(err))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
