@@ -113,9 +113,42 @@
           </table>
         </div>
         <div class="card-footer">
-          <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-            Report an issue with this question
-          </button>
+          <div class="row">
+            <div class="col-auto">
+              <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+                Report an issue with this question
+              </button>
+            </div>
+            <div class="col-auto">
+              <form class="form-inline" method="POST">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button name="__action" value="copy_question" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Duplicate this question</button>
+              </form>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteQuestionModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this question</button>
+            </div>
+            <div class="modal fade" id="deleteQuestionModal" tabindex="-1" role="dialog" aria-labelledby="deleteQuestion">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h4 class="modal-title" id="deleteQuestionModalLabel">Delete question</h4>
+                  </div>
+                  <div class="modal-body">
+                    Are you sure you want to delete question <strong><%= question.qid %></strong>?
+                  </div>
+                  <div class="modal-footer">
+                    <form name="delete-form" method="POST">
+                      <input type="hidden" name="__action" value="delete_question">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="collapse" id="issueCollapse">
             <hr />
             <form method="POST">

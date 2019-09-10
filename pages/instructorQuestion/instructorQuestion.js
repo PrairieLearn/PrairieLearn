@@ -179,6 +179,12 @@ router.post('/', function(req, res, next) {
                 }
             });
         }
+    } else if (req.body.__action == 'copy_question') {
+        debug('Copy question');
+        res.redirect(req.originalUrl);
+    } else if (req.body.__action == 'delete_question') {
+        debug('Delete question');
+        res.redirect(req.originalUrl);
     } else {
         return next(new Error('unknown __action: ' + req.body.__action));
     }
