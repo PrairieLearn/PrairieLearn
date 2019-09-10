@@ -15,7 +15,7 @@ const config = require('../../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-module.exports.doEdit = function(edit, locals, callback) {
+function doEdit(edit, locals, callback) {
     const options = {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
@@ -343,3 +343,7 @@ module.exports.doEdit = function(edit, locals, callback) {
         _lock();
     });
 }
+
+module.exports = {
+    doEdit,
+};
