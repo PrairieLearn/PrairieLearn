@@ -101,7 +101,7 @@
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
                 <% if (question.file_count > 0) { %>
-                  <i class="far fa-file-alt"></i>
+                  <i class="fas fa-paperclip"></i>
                 <% } %>
               </td>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
