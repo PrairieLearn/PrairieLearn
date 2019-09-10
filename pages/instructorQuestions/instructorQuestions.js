@@ -53,29 +53,30 @@ router.get('/', function(req, res, next) {
 
 router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
-
-    let edit = {
-        userID: res.locals.user.user_id,
-        courseID: res.locals.course.id,
-        coursePath: res.locals.course.path,
-        uid: res.locals.user.uid,
-        user_name: res.locals.user.name,
-        templatePath: path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'addNumbers'),
-    };
-
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to add question to example course`, {
-            locals: res.locals,
-            body: req.body,
-        }));
-    }
-
     if (req.body.__action == 'add_question') {
         debug(`Responding to action add_question`);
+
+        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+
+        // Do not allow users to edit the exampleCourse
+        if (res.locals.course.options.isExampleCourse) {
+            return next(error.make(400, `attempting to edit example course`, {
+                locals: res.locals,
+                body: req.body,
+            }));
+        }
+
+        let edit = {
+            userID: res.locals.user.user_id,
+            courseID: res.locals.course.id,
+            coursePath: res.locals.course.path,
+            uid: res.locals.user.uid,
+            user_name: res.locals.user.name,
+            templatePath: path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'addNumbers'),
+        };
+
         edit.description = 'Add question in browser and sync';
-        edit.write = write;
+        edit.write = add_write;
         editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
             if (ERR(err, (err) => logger.info(err))) {
                 res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
@@ -95,7 +96,7 @@ router.post('/', (req, res, next) => {
     }
 });
 
-function write(edit, job) {
+function add_write(edit, job) {
     async.waterfall([
         (callback) => {
             job.verbose(`Generate unique QID`);
