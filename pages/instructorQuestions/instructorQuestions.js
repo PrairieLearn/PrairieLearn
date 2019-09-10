@@ -78,7 +78,7 @@ router.post('/', (req, res, next) => {
         edit.description = 'Add question in browser and sync';
         edit.write = add_write;
         editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-            if (ERR(err, (err) => logger.info(err))) {
+            if (ERR(err, (e) => logger.error(e))) {
                 res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
                 debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);

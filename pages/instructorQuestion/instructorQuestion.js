@@ -14,6 +14,7 @@ const debug = require('debug')('prairielearn:instructorQuestion');
 const fs = require('fs-extra');
 const path = require('path');
 const uuidv4 = require('uuid/v4');
+const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 
 const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
@@ -106,6 +107,20 @@ function change_qid_write(edit, callback) {
             newPath,
         ];
         edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
+        callback(null);
+    });
+}
+
+function delete_write(edit, callback) {
+    debug(`Delete questions/${edit.qid}`);
+    const questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+    // This will silently do nothing if questionPath no longer exists.
+    fs.remove(questionPath, (err) => {
+        if (ERR(err, callback)) return;
+        edit.pathsToAdd = [
+            questionPath,
+        ];
+        edit.commitMessage = `in-browser edit: delete question ${edit.qid}`;
         callback(null);
     });
 }
@@ -226,7 +241,7 @@ router.post('/', function(req, res, next) {
             edit.description = 'Change question ID in browser and sync';
             edit.write = change_qid_write;
             editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
                     res.redirect(req.originalUrl);
@@ -258,7 +273,7 @@ router.post('/', function(req, res, next) {
         edit.description = 'Copy question in browser and sync';
         edit.write = copy_write;
         editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-            if (ERR(err, (err) => logger.info(err))) {
+            if (ERR(err, (e) => logger.error(e))) {
                 res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
                 debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
@@ -270,7 +285,35 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'delete_question') {
         debug('Delete question');
-        res.redirect(req.originalUrl);
+
+        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+
+        // Do not allow users to edit the exampleCourse
+        if (res.locals.course.options.isExampleCourse) {
+            return next(error.make(400, `attempting to edit example course`, {
+                locals: res.locals,
+                body: req.body,
+            }));
+        }
+
+        let edit = {
+            userID: res.locals.user.user_id,
+            courseID: res.locals.course.id,
+            coursePath: res.locals.course.path,
+            uid: res.locals.user.uid,
+            user_name: res.locals.user.name,
+            qid: res.locals.question.qid,
+        };
+
+        edit.description = 'Delete question in browser and sync';
+        edit.write = delete_write;
+        editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
+            if (ERR(err, (e) => logger.error(e))) {
+                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+            } else {
+                res.redirect(res.locals.urlPrefix + '/questions');
+            }
+        });
     } else {
         return next(new Error('unknown __action: ' + req.body.__action));
     }
