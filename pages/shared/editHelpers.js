@@ -51,7 +51,7 @@ function doEdit(edit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
@@ -59,7 +59,7 @@ function doEdit(edit, locals, callback) {
                 const lockName = 'coursedir:' + options.courseDir;
                 job.verbose(`Trying lock ${lockName}`);
                 namedLocks.waitLock(lockName, {timeout: 5000}, (err, lock) => {
-                    if (err) {
+                    if (ERR(err, (e) => logger.error(e))) {
                         job.fail(err);
                     } else if (lock == null) {
                         job.verbose(`Did not acquire lock ${lockName}`);
@@ -108,13 +108,13 @@ function doEdit(edit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
 
                 edit.write(edit, (err) => {
-                    if (err) {
+                    if (ERR(err, (e) => logger.error(e))) {
                         job.fail(err);
                     } else {
                         job.succeed();
@@ -201,13 +201,13 @@ function doEdit(edit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
 
                 namedLocks.releaseLock(courseLock, (err) => {
-                    if (err) {
+                    if (ERR(err, (e) => logger.error(e))) {
                         job.fail(err);
                     } else {
                         job.verbose(`Released lock`);
@@ -239,12 +239,12 @@ function doEdit(edit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
-                    if (err) {
+                    if (ERR(err, (e) => logger.error(e))) {
                         job.fail(err);
                     } else {
                         job.succeed();
@@ -267,13 +267,13 @@ function doEdit(edit, locals, callback) {
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
                 const coursePath = locals.course.path;
                 requireFrontend.undefQuestionServers(coursePath, job, (err) => {
-                    if (err) {
+                    if (ERR(err, (e) => logger.error(e))) {
                         job.fail(err);
                     } else {
                         job.succeed();
@@ -329,7 +329,7 @@ function doEdit(edit, locals, callback) {
                 last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (err) => logger.info(err))) {
+                if (ERR(err, (e) => logger.error(e))) {
                     _finishWithFailure();
                     return;
                 }
