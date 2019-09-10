@@ -41,4 +41,5 @@ FROM
     questions AS q
 WHERE
     q.qid = $qid
-    AND q.course_id = $course_id;
+    AND q.course_id = $course_id
+    AND q.deleted_at IS NULL;
