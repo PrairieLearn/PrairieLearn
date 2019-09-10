@@ -13,6 +13,7 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const debug = require('debug')('prairielearn:instructorQuestion');
 const fs = require('fs-extra');
 const path = require('path');
+const uuidv4 = require('uuid/v4');
 const editHelpers = require('../shared/editHelpers');
 
 const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
@@ -112,6 +113,66 @@ function write(edit, job) {
     });
 }
 
+function copy_write(edit, job) {
+    async.waterfall([
+        (callback) => {
+            job.verbose(`Generate unique QID`);
+            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
+                if (ERR(err, callback)) return;
+
+                let number = 1;
+                filenames.forEach((filename) => {
+                    let found = filename.match(/^question-([0-9]+)$/);
+                    if (found) {
+                        const foundNumber = parseInt(found[1]);
+                        if (foundNumber >= number) {
+                            number = foundNumber + 1;
+                        }
+                    }
+                });
+
+                edit.qid = `question-${number}`;
+                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+                edit.pathsToAdd = [
+                    edit.questionPath,
+                ];
+                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
+                callback(null);
+            });
+        },
+        (callback) => {
+            job.verbose(`Copy template from ${edit.templatePath} to ${edit.questionPath}`);
+            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            job.verbose(`Read info.json`);
+            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
+                if (ERR(err, callback)) return;
+                callback(null, infoJson);
+            });
+        },
+        (infoJson, callback) => {
+            job.verbose(`Write info.json with new title and uuid`);
+            infoJson.title = 'Replace this title';
+            infoJson.uuid = uuidv4();
+            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (err) {
+            job.fail(err);
+        } else {
+            debug(`Wrote question:\n from ${edit.templatePath}\n to ${edit.questionPath}`);
+            job.succeed();
+        }
+    });
+}
+
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'grade' || req.body.__action == 'save') {
         processSubmission(req, res, function(err, variant_id) {
@@ -181,7 +242,39 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action == 'copy_question') {
         debug('Copy question');
-        res.redirect(req.originalUrl);
+
+        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+
+        // Do not allow users to edit the exampleCourse
+        if (res.locals.course.options.isExampleCourse) {
+            return next(error.make(400, `attempting to edit example course`, {
+                locals: res.locals,
+                body: req.body,
+            }));
+        }
+
+        let edit = {
+            userID: res.locals.user.user_id,
+            courseID: res.locals.course.id,
+            coursePath: res.locals.course.path,
+            uid: res.locals.user.uid,
+            user_name: res.locals.user.name,
+            templatePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+        };
+
+        edit.description = 'Copy question in browser and sync';
+        edit.write = copy_write;
+        editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
+            if (ERR(err, (err) => logger.info(err))) {
+                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+            } else {
+                debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
+                sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                });
+            }
+        });
     } else if (req.body.__action == 'delete_question') {
         debug('Delete question');
         res.redirect(req.originalUrl);
