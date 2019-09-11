@@ -37,6 +37,8 @@
 
   * Add python library `tzlocal` (James Balamuta).
 
+  * Add console stack traces on Node warnings (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
