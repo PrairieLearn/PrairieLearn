@@ -60,15 +60,13 @@
             <small id="emailHelp" class="form-text text-muted">Max file size: <%= config.fileUploadMaxBytesFormatted %></small>
           </div>
         </div>
-        <div class="d-flex justify-content-end">
-          <div class="form-group mb-0">
-            <input type="hidden" name="__action" value="attach_file">
-            <% if (typeof variant != 'undefined') { %>
-            <input type="hidden" name="__variant_id" value="<%= variant.id %>">
-            <% } %>
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button type="submit" class="btn btn-primary">Attach file</button>
-          </div>
+        <div class="form-group mb-0">
+          <input type="hidden" name="__action" value="attach_file">
+          <% if (typeof variant != 'undefined') { %>
+          <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+          <% } %>
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <button type="submit" class="btn btn-primary">Attach file</button>
         </div>
       </form>
     </div>
@@ -91,9 +89,7 @@
         <input type="hidden" name="__variant_id" value="<%= variant.id %>">
         <% } %>
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-        <div class="form-group text-right">
-          <button class="btn btn-small btn-primary" name="__action" value="attach_text">Attach text</button>
-        </div>
+        <button class="btn btn-small btn-primary" name="__action" value="attach_text">Attach text</button>
       </form>
     </div>
     <!-- END OF FILES -->
