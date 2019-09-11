@@ -88,7 +88,6 @@ if (config.blockedAtWarnEnable) {
 const app = express();
 app.set('views', path.join(__dirname, 'pages'));
 app.set('view engine', 'ejs');
-app.set('trust proxy', 'loopback');
 
 config.devMode = (app.get('env') == 'development');
 
