@@ -23,6 +23,8 @@
 
   * Add docs for `singleVariant` question option (Matt West).
 
+  * Add connecting IP address report in instructor effective user page (Dave Mussulman).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

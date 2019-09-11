@@ -17,6 +17,7 @@
           <p><strong>Authenticated name:</strong> <%= authz_data.authn_user.name %></p>
           <p><strong>Authenticated role:</strong> <%= authz_data.authn_role %></p>
           <p><strong>Authenticated mode:</strong> <%= authz_data.authn_mode %></p>
+          <p>Connecting from IP: <%= ipaddress %></p>
 
           <form id="resetForm" method="POST">
             <input type="hidden" name="__action" value="reset">
