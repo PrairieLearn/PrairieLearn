@@ -24,21 +24,21 @@ module.exports.getValidVariantId = async (req, res) => {
         throw new Error(`Client-provided __variant_id "${req.body.__variant_id}" does not belong to the authorized instance_question_id "${res.locals.instance_question_id}"`);
     }
     return variant_id;
-}
+};
 
 module.exports.processFileUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
     await fileStore.upload(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
     const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
-}
+};
 
 module.exports.processTextUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
     await fileStore.upload(req.body.filename, Buffer.from(req.body.contents), 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
     const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
-}
+};
 
 module.exports.processDeleteFile = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
@@ -54,7 +54,7 @@ module.exports.processDeleteFile = async (req, res) => {
 
     const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
-}
+};
 
 module.exports.processIssue = async (req, res) => {
     if (!res.locals.assessment.allow_issue_reporting) {
@@ -82,4 +82,4 @@ module.exports.processIssue = async (req, res) => {
     ];
     await sqldb.callAsync('issues_insert_for_variant', params);
     return variant_id;
-}
+};

@@ -95,7 +95,7 @@ module.exports.attachFile = (locals, textFile) => {
             assert.equal(locals.file.assessment_instance_id, 1);
         });
     });
-}
+};
 
 module.exports.downloadAttachedFile = (locals) => {
     describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
@@ -120,7 +120,7 @@ module.exports.downloadAttachedFile = (locals) => {
             assert.equal(page, 'This is the test text');
         });
     });
-}
+};
 
 module.exports.deleteAttachedFile = (locals) => {
     describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
@@ -191,7 +191,7 @@ module.exports.deleteAttachedFile = (locals) => {
             assert.equal(result.rowCount, 0);
         });
     });
-}
+};
 
 module.exports.checkNoAttachedFiles = (locals) => {
     describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
@@ -204,5 +204,4 @@ module.exports.checkNoAttachedFiles = (locals) => {
             assert.lengthOf(elemList, 0);
         });
     });
-
-}
+};
