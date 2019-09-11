@@ -92,7 +92,6 @@ app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {res.locals.config = {}; next();});
 app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
@@ -136,8 +135,6 @@ const upload = multer({
     },
 });
 config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {base: 10, round: 0});
-app.use(function(req, res, next) {res.locals.config.fileUploadMaxBytes = config.fileUploadMaxBytes; next();});
-app.use(function(req, res, next) {res.locals.config.fileUploadMaxBytesFormatted = config.fileUploadMaxBytesFormatted; next();});
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
