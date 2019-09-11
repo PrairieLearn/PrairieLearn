@@ -81,9 +81,9 @@
         <p class="small mt-3">
           Attached text will be saved here for your reference.
         </p>
-        <input class="form-control" name="filename" value="notes.txt">
+        <input class="form-control" aria-label="Text filename" name="filename" value="notes.txt">
         <div class="form-group">
-          <textarea class="form-control" rows="5" name="contents" placeholder="Type or paste text here"></textarea>
+          <textarea class="form-control" rows="5" aria-label="Text contents" name="contents" placeholder="Type or paste text here"></textarea>
         </div>
         <% if (typeof variant != 'undefined') { %>
         <input type="hidden" name="__variant_id" value="<%= variant.id %>">
