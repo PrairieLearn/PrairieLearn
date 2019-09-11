@@ -1,5 +1,8 @@
 <div class="card mb-4" id="attach-file-panel">
-  <div class="card-header bg-secondary text-white">Attached files</div>
+  <div class="card-header bg-secondary text-white">
+    <i class="fas fa-paperclip"></i>
+    Attached files
+  </div>
   <table class="table table-sm">
     <tbody>
     <% if (file_list.length == 0) { %>
@@ -8,7 +11,6 @@
       <% file_list.forEach(function(file, iFile) { %>
       <tr>
         <td style="word-break:break-all;">
-          <i class="fas fa-paperclip"></i>
           <a class="attached-file" target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
             <%= file.display_filename %>
           </a>
