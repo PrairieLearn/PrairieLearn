@@ -36,8 +36,8 @@ describe('Cron', function() {
                 callback(null);
             });
         });
-        it('should wait for 5 seconds', (callback) => {
-            setTimeout(callback, 5000);
+        it('should wait for 20 seconds', (callback) => {
+            setTimeout(callback, 20000);
         });
         it('should all have started', async () => {
             const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
