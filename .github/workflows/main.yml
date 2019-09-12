@@ -14,4 +14,4 @@ jobs:
     - name: Start the container
       run: docker run -td --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
-      run: docker exec -it test_container /PrairieLearn/docker/lint_js.sh
+      run: docker exec test_container /PrairieLearn/docker/lint_js.sh
