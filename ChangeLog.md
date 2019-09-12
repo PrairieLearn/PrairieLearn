@@ -63,6 +63,8 @@
 
   * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
 
+  * Fix LTI callback URL (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
