@@ -12,6 +12,12 @@ jobs:
     - name: Build the docker image
       run: docker build -t pltest .
     - name: Start the container
-      run: docker run -td --name=test_container pltest /bin/bash
+      run: docker run -d --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
+    - name: Run the Python linter
+      run: docker exec test_container /PrairieLearn/docker/lint_python.sh
+    - name: Run the JavaScript tests
+      run: docker exec test_container /PrairieLearn/docker/test_js.sh
+    - name: Run the Python tests
+      run: docker exec test_container /PrairieLearn/docker/test_python.sh
