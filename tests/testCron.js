@@ -43,6 +43,10 @@ describe('Cron', function() {
             const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
             const runJobs = _.map(result.rows, row => row.name);
             const cronJobs = _.map(cron.jobs, row => row.name);
+            console.log('runJobs', runJobs);
+            console.log('cronJobs', cronJobs);
+            console.log('diff1', _.difference(runJobs, cronJobs));
+            console.log('diff2', _.difference(cronJobs, runJobs));
             assert.lengthOf(_.difference(runJobs, cronJobs), 0);
             assert.lengthOf(_.difference(cronJobs, runJobs), 0);
         });
