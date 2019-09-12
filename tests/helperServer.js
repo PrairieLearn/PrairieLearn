@@ -1,26 +1,28 @@
-var ERR = require('async-stacktrace');
-var async = require('async');
-var path = require('path');
+const util = require('util');
+const ERR = require('async-stacktrace');
+const async = require('async');
+const tmp = require('tmp-promise');
+const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var config = require('../lib/config');
-var load = require('../lib/load');
-var cron = require('../cron');
-var socketServer = require('../lib/socket-server');
-var serverJobs = require('../lib/server-jobs');
-var syncFromDisk = require('../sync/syncFromDisk');
-var freeformServer = require('../question-servers/freeform');
-var cache = require('../lib/cache');
+const config = require('../lib/config');
+const load = require('../lib/load');
+const cron = require('../cron');
+const socketServer = require('../lib/socket-server');
+const serverJobs = require('../lib/server-jobs');
+const syncFromDisk = require('../sync/syncFromDisk');
+const freeformServer = require('../question-servers/freeform');
+const cache = require('../lib/cache');
 const workers = require('../lib/workers');
 
 config.startServer = false;
 config.serverPort = 3007;
-var server = require('../server');
+const server = require('../server');
 
-var logger = require('./dummyLogger');
-var helperDb = require('./helperDb');
+const logger = require('./dummyLogger');
+const helperDb = require('./helperDb');
 
-var courseDirDefault = path.join(__dirname, '..', 'exampleCourse');
+const courseDirDefault = path.join(__dirname, '..', 'exampleCourse');
 
 module.exports = {
     before: (courseDir) => {
@@ -39,6 +41,11 @@ module.exports = {
                         callback(null);
                     });
                 },
+                util.callbackify(async () => {
+                    debug('before(): create tmp dir for config.filesRoot');
+                    const tmpDir = await tmp.dir({ unsafeCleanup: true });
+                    config.filesRoot = tmpDir.path;
+                }),
                 function(callback) {
                     debug('before(): initializing cron');
                     cron.init(function(err) {
