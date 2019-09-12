@@ -16,7 +16,7 @@ describe('Cron', function() {
     after('shut down testing server', helperServer.after);
 
     describe('1. cron jobs', () => {
-        it('should be configured to all run within the next 5 seconds', () => {
+        it('should be configured to all run within the next 15 seconds', () => {
             // set config.cronDailyMS so that daily cron jobs will execute soon
             const now = new Date();
             const midnight = (new Date(now)).setHours(0,0,0,0);
