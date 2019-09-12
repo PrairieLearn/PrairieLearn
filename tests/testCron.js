@@ -22,7 +22,7 @@ describe('Cron', function() {
             const midnight = (new Date(now)).setHours(0,0,0,0);
             const sinceMidnightMS = now - midnight;
             const dayMS = 24 * 60 * 60 * 1000;
-            const timeToNextMS = 2 * 1000;
+            const timeToNextMS = 15 * 1000;
             const cronDailyMS = (timeToNextMS + sinceMidnightMS) % dayMS;
             config.cronDailySec = cronDailyMS / 1000;
 
