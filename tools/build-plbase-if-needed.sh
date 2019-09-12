@@ -1,7 +1,5 @@
 #!/bin/bash
 
-git branch -a -vvv
-
 if git diff --exit-code master -- environments/centos7-plbase; then
   echo "prairielearn/centos7-plbase files not modified; no rebuild required"
 else
