@@ -9,7 +9,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Build the docker image
+    - name: Build the plbase docker image if needed
+      run: sh ./tools/build-plbase-if-needed.sh
+    - name: Build the testing docker image
       run: docker build -t pltest .
     - name: Start the container
       run: docker run -td --name=test_container pltest /bin/bash
