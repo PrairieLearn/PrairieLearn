@@ -135,7 +135,20 @@
                     <h4 class="modal-title" id="deleteQuestionModalLabel">Delete question</h4>
                   </div>
                   <div class="modal-body">
-                    Are you sure you want to delete question <strong><%= question.qid %></strong>?
+                    <p>
+                      Are you sure you want to delete the question <strong><%= question.qid %></strong>?
+                    </p>
+                    <% if (assessments) { %>
+                    <p>
+                      It is included by these assessments:
+                    </p>
+                    <div class="m-4">
+                          <%- include('../partials/assessments', {assessments: assessments}); %>
+                    </div>
+                    <p>
+                      So, if you delete it, you will be unable to sync your course content to the database until you either remove the question from these assessments or create a new question with the same QID.
+                    </p>
+                    <% } %>
                   </div>
                   <div class="modal-footer">
                     <form name="delete-form" method="POST">
