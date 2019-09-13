@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const debug = require('debug')('prairielearn:editError');
 const serverJobs = require('../../lib/server-jobs');
 const syncHelpers = require('../shared/syncHelpers');
 
@@ -16,8 +17,21 @@ router.get('/:job_sequence_id', function(req, res, next) {
         if (job_sequence.status == 'Running') return next(new Error('Edit is still in progress (job sequence is still running)'));
 
         res.locals.failedPush = false;
-        job_errors = [];
+        res.locals.failedSync = false;
+
+        let job_errors = [];
+        let didWrite = false;
+
+        // Loop through jobs in sequential order (we rely on this).
         job_sequence.jobs.forEach((item) => {
+            if ((item.type == 'unlock') && (didWrite) && (job_errors.length == 0)) {
+                // We know that one of the jobs resulted in an error. If we reach
+                // 'unlock' without having found the error yet, then we know that
+                // the edit was written and was not rolled back, and that all we
+                // failed to do was sync.
+                res.locals.failedSync = true;
+            }
+
             if (item.status == 'Error') {
                 job_errors.push({
                     'description': item.description,
@@ -25,6 +39,8 @@ router.get('/:job_sequence_id', function(req, res, next) {
                 });
 
                 if (item.type == 'git_push') res.locals.failedPush = true;
+            } else if (item.type == 'write') {
+                didWrite = true;
             }
         });
 
