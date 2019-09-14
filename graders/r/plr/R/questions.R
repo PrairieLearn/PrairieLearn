@@ -26,6 +26,19 @@ get_question_details <- function(dir) {
     res
 }
 
+#' Helper function to format result object returned to PL
+#'
+#' @param msg Character variable with the error or warning received
+#' @param max_pts Optional numeric variable with maximal attainable points, usuall 100
+#'
+#' @return A data.frame object with four elements as expected by PL
+message_to_test_result <- function(msg, max_pts=100) {
+    data.frame(name = "Error",
+               max_points = max_pts,
+               points = 0,
+               output = msg$message)
+}
+
 #' Run a whole question and report aggregate results
 #'
 #' This function is the equivalent of the \code{pltest.R} script which, given a directory
@@ -62,8 +75,8 @@ test_question <- function(tests_dir = "/grade/tests/tests", results_file = "resu
         ## output
         list(tests = res, score = score, succeeded = TRUE)
     },
-    warning = function(w) list(score = 0, succeeded = FALSE, output = w),
-    error = function(e) list(score = 0, succeeded = FALSE, output = e) )
+    warning = function(w) list(tests = message_to_test_result(w), score = 0, succeeded = FALSE),
+    error = function(e) list(tests = message_to_test_result(e), score = 0, succeeded = FALSE) )
 
     ## Record results as the required JSON object
     jsonlite::write_json(result, path = results_file, auto_unbox = TRUE, force = TRUE)
