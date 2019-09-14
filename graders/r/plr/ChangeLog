@@ -1,4 +1,13 @@
+2019-09-14  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
+
+	* R/questions.R (message_to_test_result): New helper function
+	* man/message_to_test_result.Rd: Documentation
+
 2019-09-08  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
 
 	* R/questions.R (test_question): New function
 	* man/test_question.Rd: Documentation
