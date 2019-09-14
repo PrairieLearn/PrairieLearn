@@ -97,16 +97,83 @@ function processIssue(req, res, callback) {
 }
 
 function change_qid_write(edit, callback) {
-    debug(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
-    const oldPath = path.join(edit.coursePath, 'questions', edit.qid_old);
-    const newPath = path.join(edit.coursePath, 'questions', edit.qid_new);
-    fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+    async.waterfall([
+        (callback) => {
+            debug(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
+            const oldPath = path.join(edit.coursePath, 'questions', edit.qid_old);
+            const newPath = path.join(edit.coursePath, 'questions', edit.qid_new);
+            fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+                if (ERR(err, callback)) return;
+                edit.pathsToAdd = [
+                    oldPath,
+                    newPath,
+                ];
+                edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`Find all assessments (in all course instances) that contain ${edit.qid_old}`);
+            sqldb.query(sql.select_assessments_with_question, {question_id: edit.question_id}, function(err, result) {
+                if (ERR(err, callback)) return;
+                callback(null, result.rows);
+            });
+        },
+        (assessments, callback) => {
+            debug(`For each assessment, read/write infoAssessment.json to replace ${edit.qid_old} with ${edit.qid_new}`);
+            // TODO: is it safe to run in parallel given that all modify the single array edit.pathsToAdd?
+            async.eachSeries(assessments, (assessment, callback) => {
+                let infoPath = path.join(edit.coursePath,
+                                         'courseInstances',
+                                         assessment.course_instance_directory,
+                                         'assessments',
+                                         assessment.assessment_directory,
+                                         'infoAssessment.json');
+                edit.pathsToAdd.push(infoPath);
+                async.waterfall([
+                    (callback) => {
+                        debug(`Read ${infoPath}`);
+                        fs.readJson(infoPath, (err, infoJson) => {
+                            if (ERR(err, callback)) return;
+                            callback(null, infoJson);
+                        });
+                    },
+                    (infoJson, callback) => {
+                        debug(`Find/replace QID in ${infoPath}`);
+                        let found = false;
+                        infoJson.zones.forEach((zone) => {
+                            zone.questions.forEach((question) => {
+                                if (question.alternatives) {
+                                    question.alternatives.forEach((alternative) => {
+                                        if (alternative.id == edit.qid_old) {
+                                            alternative.id = edit.qid_new;
+                                            found = true;
+                                        }
+                                    })
+                                } else if (question.id == edit.qid_old) {
+                                    question.id = edit.qid_new
+                                    found = true;
+                                }
+                            });
+                        });
+                        if (! found) logger.info(`Should have but did not find ${edit.qid_old} in ${infoPath}`);
+                        debug(`Write ${infoPath}`);
+                        fs.writeJson(infoPath, infoJson, {spaces: 4}, (err) => {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
+                    },
+                ], (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
         if (ERR(err, callback)) return;
-        edit.pathsToAdd = [
-            oldPath,
-            newPath,
-        ];
-        edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
         callback(null);
     });
 }
@@ -236,6 +303,7 @@ router.post('/', function(req, res, next) {
                 user_name: res.locals.user.name,
                 qid_old: res.locals.question.qid,
                 qid_new: req.body.id,
+                question_id: res.locals.question.id,
             };
 
             edit.description = 'Change question ID in browser and sync';
@@ -379,7 +447,7 @@ router.get('/', function(req, res, next) {
             });
         },
         (callback) => {
-            sqldb.query(sql.select_assessments_from_question_id, {question_id: res.locals.question.id}, (err, result) => {
+            sqldb.query(sql.select_assessments_with_question_for_display, {question_id: res.locals.question.id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
                 callback(null);
