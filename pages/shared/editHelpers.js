@@ -46,7 +46,7 @@ function doEdit(edit, locals, callback) {
                 type: 'lock',
                 description: 'Lock',
                 job_sequence_id: job_sequence_id,
-                on_success: (config.fileEditorUseGit ? () => {_cleanGitRepo(_write, _unlock)} : _write),
+                on_success: (config.fileEditorUseGit ? () => {_clean(_write, _unlock)} : _write),
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -74,8 +74,8 @@ function doEdit(edit, locals, callback) {
             });
         };
 
-        const _cleanGitRepo = (on_success, on_failure) => {
-            debug(`${job_sequence_id}: _cleanGitRepo`);
+        const _clean = (on_success, on_failure) => {
+            debug(`${job_sequence_id}: _clean`);
             const jobOptions = {
                 course_id: options.course_id,
                 user_id: options.user_id,
@@ -85,6 +85,26 @@ function doEdit(edit, locals, callback) {
                 description: 'Clean local files not in remote git repository',
                 command: 'git',
                 arguments: ['clean', '-fdx'],
+                working_directory: edit.coursePath,
+                env: gitEnv,
+                on_success: () => {_reset(on_success, on_failure)},
+                on_error: on_failure,
+                no_job_sequence_update: true,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const _reset = (on_success, on_failure) => {
+            debug(`${job_sequence_id}: _reset`);
+            const jobOptions = {
+                course_id: options.course_id,
+                user_id: options.user_id,
+                authn_user_id: options.authn_user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'reset_from_git',
+                description: 'Reset state to remote git repository',
+                command: 'git',
+                arguments: ['reset', '--hard', 'origin/master'],
                 working_directory: edit.coursePath,
                 env: gitEnv,
                 on_success: on_success,
@@ -104,7 +124,7 @@ function doEdit(edit, locals, callback) {
                 description: 'Write to disk',
                 job_sequence_id: job_sequence_id,
                 on_success: (config.fileEditorUseGit ? _add : _unlock),
-                on_error: _cleanup,
+                on_error: (config.fileEditorUseGit ? _cleanupAfterWrite : _cleanup),
                 no_job_sequence_update: true,
             };
             serverJobs.createJob(jobOptions, (err, job) => {
@@ -307,7 +327,7 @@ function doEdit(edit, locals, callback) {
         const _cleanupAfterWrite = (id) => {
             debug(`Job id ${id} has failed (after write)`);
             jobSequenceHasFailed = true;
-            _cleanGitRepo(_unlock, _finishWithFailure);
+            _clean(_unlock, _finishWithFailure);
         };
 
         const _cleanup = (id) => {
