@@ -138,13 +138,22 @@
                     <p>
                       Are you sure you want to delete the question <strong><%= question.qid %></strong>?
                     </p>
-                    <% if (assessments) { %>
+                    <% if (a_with_q_for_all_ci) { %>
                     <p>
                       It is included by these assessments:
                     </p>
-                    <div class="m-4">
-                          <%- include('../partials/assessments', {assessments: assessments}); %>
-                    </div>
+                    <ul class="list-group my-4">
+                      <% a_with_q_for_all_ci.forEach(function(a_with_q) {%>
+                      <li class="list-group-item">
+                        <h6><%= a_with_q.title %></h6>
+                        <% a_with_q.assessments.forEach(function(a) {%>
+                          <a href="/pl/course_instance/<%= a_with_q.course_instance_id %>/instructor/assessment/<%= a.assessment_id %>" class="badge color-<%= a.color %> color-hover">
+                            <%= a.label %>
+                          </a>
+                        <% }); %>
+                      </li>
+                      <% }); %>
+                    </ul>
                     <p>
                       So, if you delete it, you will be unable to sync your course content to the database until you either remove the question from these assessments or create a new question with the same QID.
                     </p>

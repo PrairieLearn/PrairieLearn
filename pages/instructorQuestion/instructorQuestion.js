@@ -372,9 +372,16 @@ router.get('/', function(req, res, next) {
             callback(null);
         },
         (callback) => {
-            sqldb.queryOneRow(sql.qids, {course_id: res.locals.course.id}, function(err, result) {
+            sqldb.queryOneRow(sql.qids, {course_id: res.locals.course.id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.qids = result.rows[0].qids;
+                callback(null);
+            });
+        },
+        (callback) => {
+            sqldb.query(sql.select_assessments_from_question_id, {question_id: res.locals.question.id}, (err, result) => {
+                if (ERR(err, callback)) return;
+                res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
                 callback(null);
             });
         },
