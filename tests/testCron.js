@@ -16,13 +16,13 @@ describe('Cron', function() {
     after('shut down testing server', helperServer.after);
 
     describe('1. cron jobs', () => {
-        it('should be configured to all run within the next 5 seconds', () => {
+        it('should be configured to all run within the next 15 seconds', () => {
             // set config.cronDailyMS so that daily cron jobs will execute soon
             const now = new Date();
             const midnight = (new Date(now)).setHours(0,0,0,0);
             const sinceMidnightMS = now - midnight;
             const dayMS = 24 * 60 * 60 * 1000;
-            const timeToNextMS = 2 * 1000;
+            const timeToNextMS = 15 * 1000;
             const cronDailyMS = (timeToNextMS + sinceMidnightMS) % dayMS;
             config.cronDailySec = cronDailyMS / 1000;
 
@@ -36,8 +36,8 @@ describe('Cron', function() {
                 callback(null);
             });
         });
-        it('should wait for 5 seconds', (callback) => {
-            setTimeout(callback, 5000);
+        it('should wait for 20 seconds', (callback) => {
+            setTimeout(callback, 20000);
         });
         it('should all have started', async () => {
             const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
