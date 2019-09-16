@@ -67,6 +67,8 @@
 
   * Fix vulnerability in external grading that allows arbitrary files on the server to be overwritten (Nathan Walters).
 
+  * Fix bug in unicode encode/decode in file editor (Tim Bretl).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
@@ -340,8 +342,6 @@
   * Fix CSRF checking for external grading live updates (Nathan Walters).
 
   * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
-
-  * Fix bug in unicode encode/decode in file editor (Tim Bretl).
 
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
