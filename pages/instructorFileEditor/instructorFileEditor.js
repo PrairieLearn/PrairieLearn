@@ -20,6 +20,7 @@ const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 const AWS = require('aws-sdk');
 const sha256 = require('crypto-js/sha256');
+const b64Util = require('../../lib/base64-util');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -97,7 +98,7 @@ router.get('/', (req, res, next) => {
             debug('Read from disk');
             fs.readFile(fullPath, 'utf8', (err, contents) => {
                 if (ERR(err, callback)) return;
-                fileEdit.diskContents = b64EncodeUnicode(contents);
+                fileEdit.diskContents = b64Util.b64EncodeUnicode(contents);
                 fileEdit.diskHash = getHash(fileEdit.diskContents);
                 callback(null);
             });
@@ -236,24 +237,8 @@ router.post('/', (req, res, next) => {
     }
 });
 
-function b64EncodeUnicode(str) {
-    // (1) use encodeURIComponent to get percent-encoded UTF-8
-    // (2) convert percent encodings to raw bytes
-    // (3) convert raw bytes to Base64
-    return Buffer.from(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode('0x' + p1);
-    })).toString('base64');
-}
-
-function b64DecodeUnicode(str) {
-    // Going backwards: from bytestream, to percent-encoding, to original string.
-    return decodeURIComponent(Buffer.from(str, 'base64').toString().split('').map((c) => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-}
-
 function getHash(contents) {
-    return b64EncodeUnicode(sha256(contents).toString());
+    return b64Util.b64EncodeUnicode(sha256(contents).toString());
 }
 
 function getS3Key(editID, fileName) {
@@ -321,7 +306,7 @@ function readEdit(fileEdit, callback) {
                     const s3 = new AWS.S3();
                     s3.getObject(params, (err, data) => {
                         if (ERR(err, callback)) return;
-                        fileEdit.editContents = b64EncodeUnicode(data.Body);
+                        fileEdit.editContents = b64Util.b64EncodeUnicode(data.Body);
                         fileEdit.editHash = getHash(fileEdit.editContents);
                         callback(null);
                     });
@@ -330,7 +315,7 @@ function readEdit(fileEdit, callback) {
                     fs.readFile(fullPath, 'utf8', (err, contents) => {
                         if (ERR(err, callback)) return;
                         debug(`Got contents from ${fullPath}`);
-                        fileEdit.editContents = b64EncodeUnicode(contents);
+                        fileEdit.editContents = b64Util.b64EncodeUnicode(contents);
                         fileEdit.editHash = getHash(fileEdit.editContents);
                         callback(null);
                     });
@@ -440,7 +425,7 @@ function writeEdit(fileEdit, contents, callback) {
         const params = {
             Bucket: fileEdit.s3_bucket,
             Key: getS3Key(fileEdit.editID, fileEdit.fileName),
-            Body: b64DecodeUnicode(contents),
+            Body: b64Util.b64DecodeUnicode(contents),
         };
         const s3 = new AWS.S3();
         s3.putObject(params, (err) => {
@@ -452,7 +437,7 @@ function writeEdit(fileEdit, contents, callback) {
         });
     } else {
         const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-        fs.writeFile(fullPath, b64DecodeUnicode(contents), 'utf8', (err) => {
+        fs.writeFile(fullPath, b64Util.b64DecodeUnicode(contents), 'utf8', (err) => {
             if (ERR(err, callback)) return;
             debug(`Wrote file edit to ${fullPath}`);
             fileEdit.editContents = contents;
@@ -645,7 +630,7 @@ function saveAndSync(fileEdit, locals, callback) {
                     if (err) {
                         job.fail(err);
                     } else {
-                        fileEdit.diskHash = getHash(b64EncodeUnicode(contents));
+                        fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
                         if (fileEdit.origHash != fileEdit.diskHash) {
                             job.fail(new Error(`Another user made changes to the file you were editing.`));
                         } else {
@@ -678,7 +663,7 @@ function saveAndSync(fileEdit, locals, callback) {
 
                 job.verbose('Trying to write file');
                 const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
-                fs.writeFile(fullPath, b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
+                fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
                     if (err) {
                         job.fail(err);
                     } else {
