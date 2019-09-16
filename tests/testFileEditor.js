@@ -15,7 +15,6 @@ const helperServer = require('./helperServer');
 const {
     exec,
 } = require('child_process');
-const b64Util = require('../lib/base64-util');
 
 const locals = {};
 let page, elemList;
@@ -83,8 +82,6 @@ const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
 const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
 const badExampleCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
-
-const challenging_string = '析';
 
 const findEditUrlData = [
     {
@@ -214,20 +211,6 @@ const verifyEditData = [
 
 describe('test file editor', function() {
     this.timeout(20000);
-
-    describe('test base64-util lib, on which file editor depends', function() {
-        it('should encode a challenging string without crashing', function() {
-            locals.encoded_string = b64Util.b64EncodeUnicode(challenging_string);
-        });
-
-        it('should re-decode the challenging string without crashing', function() {
-            locals.decoded_string = b64Util.b64DecodeUnicode(locals.encoded_string);
-        });
-
-        it('should have produced the original string', function() {
-            assert(locals.decoded_string == challenging_string);
-        });
-    });
 
     describe('not the example course', function() {
         before('create test course files', function(callback) {
