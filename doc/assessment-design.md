@@ -199,19 +199,19 @@ At the end of the Homework configuration, the `"text"` property is used to provi
             "questions": [
                 {"id": "dotProduct1",      "points": 1, "maxPoints": 5},
                 {"id": "dotProduct2",      "points": 1, "maxPoints": 5},
-                {"id": "dotProduct3",      "points": 1, "maxPoints": 5},
                 {"id": "crossProduct1",    "points": 1, "maxPoints": 5},
-                {"id": "crossProduct2",    "points": 1, "maxPoints": 5}
-                {"id": "crossProduct3",    "points": 1, "maxPoints": 5}
-            ]
+                {"id": "crossProduct2",    "points": 1, "maxPoints": 5},
+                {"id": "projection1",      "points": 1, "maxPoints": 5},
+                {"id": "projection2",      "points": 1, "maxPoints": 5}
+           ]
         },
         {
             "title": "Advanced questions",
             "bestQuestions": 3,
             "questions": [
-                {"id": "projection1",      "points": 1, "maxPoints": 5},
-                {"id": "projection2",      "points": 1, "maxPoints": 5},
-                {"id": "projection3",      "points": 1, "maxPoints": 5},
+                {"id": "hardProjection1",  "points": 1, "maxPoints": 5},
+                {"id": "hardProjection2",  "points": 1, "maxPoints": 5},
+                {"id": "hardProjection3",  "points": 1, "maxPoints": 5},
                 {"id": "tripleProduct1",   "points": 1, "maxPoints": 5},
                 {"id": "tripleProduct1",   "points": 1, "maxPoints": 5},
                 {"id": "tripleProduct2",   "points": 1, "maxPoints": 5}
@@ -226,15 +226,29 @@ At the end of the Homework configuration, the `"text"` property is used to provi
 
 Below is an example of "Exam 1" on the same topic as the [example Homework](#example-homework).
 
-FIXME
+There are two access rules for this homework, which mean:
 
-The access rules always allow TAs access, and allow students access for full credit in the CBTF with a link to the given `examUuid`.
+* TAs get full access at any time with no restrictions. This allows them to see the exam before it is released to students.
 
-The question list for exams is more complicated than for homeworks because we want to randomize question selection. Each student taking this exam will get four questions, organized into two zones ("Fundamental questions" and "Advanced questions"). These zones are configured so that students get two easier questions first, and then two harder questions, which helps build student confidence. The points are set so that **the easier questions are worth more points than the harder questions**. This way most students will be able to get at least 20/30 = 66% by doing the easier questions, so the class exam scores will be roughly between 60% and 100%, as students typically expect. The harder questions serve as the differentiators between the 60%-students and the 100%-students.
+* Students can only access the homework in `"mode": "Exam"`, which means that it is only visible to them inside the CBTF, and they get full credit.
 
-The first question slot gives each student either `addVectors1` or `addVectors2`. These questions were both on "Homework1" so students should fine them very easy. There is no need to have more than two question alternatives in this slot, because the students will have seen both of them on the homework in any case.
+* The CBTF access rule is linked to a particular CBTF exam via the `ExamUuid`. This makes it so that students can only see this Exam if they've made a reservation and checked in for the linked exam in the CBTF.
 
-The second question slot gives students one of `addVectors3`, `addVectors4`, or `addVectors5`. These are questions that the students haven't seen before, so we select from three question alternatives to minimize the risk of information transfer between students. Data shows that three or four question alternatives are normally sufficient ([Chen et al., 2018](http://lagrange.mechse.illinois.edu/pubs/ChWeZi2018a/)).
+The question list for exams is more complicated than for homeworks because we want to randomize question selection. The question selection was designed so that:
+
+* Each student taking this exam will get four questions, organized into three zones (Fundamental, Intermediate, and Advanced). These zones are in order of difficulty to help build student confidence and manage time.
+
+* The points are set so that **the easier questions are worth more points than the harder questions**. This is done so that the score distribution of the exam is concentrated between 50% to 100%, but where there is still good separation between the stronger students.
+
+* The "Fundamental" questions should be easy enough that nearly all students can get them correct, giving a baseline score of about `2*25 = 50` points. The "Intermediate" questions should have an average correct rate of around 70%, giving an average of about `4*10*0.7 = 28` points. The "Advanced" questions should have an average correct rate of 20%, giving an average of `2*5*0.2 = 2` points, and differentiating between the stronger students. This gives a total average of `80/100 = 80%`, a good baseline score of 50%, and good discrimination at the upper end.
+
+* This example Exam has a total of 100 points, but we only chose this for convenience of explanation. In practice there is no need to have any particular total.
+
+* The first question slot gives each student a question from "Homework 1" (one of the `addVectors` or `subtractVectors` questions). We give 4 alternatives to ensure that students can't easily tell their friends exactly which Homework question is on the exam.
+
+* The questions in one alternatives list do not all have to be on exactly the same topic. For example, we have put `addVectors` and `subtractVectors` together, so that each student will get one or the other. This is fine, so long as they are of the same difficulty and equally appropriate.
+
+* The second question slot gives students one of `addManyVectors3`, `addManyVectors4`, or `addManyVectors5`. These are questions that are similar to Homework questions, but that the students haven't seen before. We select from three question alternatives to minimize the risk of information transfer between students. Data shows that three or four question alternatives are normally sufficient ([Chen et al., 2018](http://lagrange.mechse.illinois.edu/pubs/ChWeZi2018a/)).
 
 The third and fourth questions test concepts that the students practiced on "Homework 1", but using different questions that were not on the homework. For this reason we again provide three question alternatives for each slot.
 
@@ -262,43 +276,87 @@ The third and fourth questions test concepts that the students practiced on "Hom
             "questions": [
                 {
                     "numberChoose": 1,
-                    "points": [10, 9, 8, 7, 6],
+                    "points": [25, 24, 23, 22, 21, 20],
                     "alternatives": [
                         {"id": "addVectors1"},
-                        {"id": "addVectors2"}
+                        {"id": "addVectors2"},
+                        {"id": "subtractVectors1"},
+                        {"id": "subtractVectors2"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [25, 24, 23, 22, 21, 20],
+                    "alternatives": [
+                        {"id": "addManyVectors3"},
+                        {"id": "addManyVectors4"},
+                        {"id": "addManyVectors5"}
+                    ]
+                }
+           ]
+        },
+        {
+            "title": "Intermediate questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "dotProduct1"},
+                        {"id": "dotProduct2"},
+                        {"id": "dotProduct3"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
                     "alternatives": [
-                        {"id": "addVectors3"},
-                        {"id": "addVectors4"},
-                        {"id": "addVectors5"}
+                        {"id": "crossProduct3"},
+                        {"id": "crossProduct4"},
+                        {"id": "crossProduct5"},
+                        {"id": "crossProduct6"}
                     ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "dotOrCross1"},
+                        {"id": "dotOrCross2"},
+                        {"id": "dotOrCross3"}
+                   ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "dotAdd1"},
+                        {"id": "dotAdd2"},
+                        {"id": "dotAdd3"}
+                   ]
                 }
             ]
-        }
+        },
         {
             "title": "Advanced questions",
             "questions": [
                 {
                     "numberChoose": 1,
-                    "points": [5, 4, 4, 3, 3],
+                    "points": [5, 4, 3, 2, 1],
                     "alternatives": [
-                        {"id": "dotProduct3"},
+                        {"id": "vector3"},
                         {"id": "dotProduct4"},
                         {"id": "dotProduct5"}
                     ]
                 },
                 {
                     "numberChoose": 1,
-                    "points": [5, 4, 4, 3, 3],
+                    "points": [5, 4, 3, 2, 1],
                     "alternatives": [
-                        {"id": "crossProduct3"},
-                        {"id": "crossProduct4"},
-                        {"id": "crossProduct5"}
-                   ]
+                        {"id": "vector3"},
+                        {"id": "dotProduct4"},
+                        {"id": "dotProduct5"}
+                    ]
                 }
             ]
         }
