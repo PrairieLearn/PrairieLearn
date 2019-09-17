@@ -17,13 +17,15 @@ BEGIN
     -- ######################################################################
     -- get the variant
 
-    SELECT ai.assessment_id
-    INTO assessment_id
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
+    IF assessment_instance_id IS NOT NULL THEN
+        SELECT ai.assessment_id
+        INTO assessment_id
+        FROM assessment_instances AS ai
+        WHERE ai.id = assessment_instance_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'invalid assessment_instance_id = %', assessment_instance_id; END IF;
-    
+        IF NOT FOUND THEN RAISE EXCEPTION 'invalid assessment_instance_id = %', assessment_instance_id; END IF;
+    END IF;
+
     -- ######################################################################
     -- insert the file
 
