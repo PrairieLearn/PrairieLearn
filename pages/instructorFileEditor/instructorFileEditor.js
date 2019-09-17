@@ -306,7 +306,7 @@ function readEdit(fileEdit, callback) {
                     const s3 = new AWS.S3();
                     s3.getObject(params, (err, data) => {
                         if (ERR(err, callback)) return;
-                        fileEdit.editContents = b64Util.b64EncodeUnicode(data.Body);
+                        fileEdit.editContents = b64Util.b64EncodeUnicode(data.Body.toString('utf8'));
                         fileEdit.editHash = getHash(fileEdit.editContents);
                         callback(null);
                     });
@@ -425,7 +425,7 @@ function writeEdit(fileEdit, contents, callback) {
         const params = {
             Bucket: fileEdit.s3_bucket,
             Key: getS3Key(fileEdit.editID, fileEdit.fileName),
-            Body: b64Util.b64DecodeUnicode(contents),
+            Body: Buffer.from(b64Util.b64DecodeUnicode(contents), 'utf8'),
         };
         const s3 = new AWS.S3();
         s3.putObject(params, (err) => {
