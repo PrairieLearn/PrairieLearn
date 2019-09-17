@@ -63,6 +63,7 @@ The following **Conditional** elements are available:
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
+- [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
@@ -1042,6 +1043,7 @@ then it will be displayed alongside or answer.
 
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 -----
 
@@ -1070,7 +1072,9 @@ may be correct, incorrect, or invalid.
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 -----
@@ -1104,7 +1108,53 @@ Common reasons that trigger the display of this element are:
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+
+-----
+
+
+## `pl-hide-in-panel` element
+
+Hide the contents in any of the panels ("question", "submission", or "answer").
+
+#### Sample Element
+
+```html
+<pl-hide-in-panel submission="True" answer="True">
+  This text will be hidden in the submission panel and answer panel.
+</pl-hide-in-panel>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`question` | boolean | False | Whether to hide the element contents in the question panel.
+`submission` | boolean | False | Whether to hide the element contents in the submission panel.
+`answer` | boolean | False | Whether to hide the element contents in the answer panel.
+
+### Details
+
+Hide the element contents in those panels for which the corresponding
+attribute is `True`. This is the reverse of
+[`pl-question-panel`](#pl-question-panel-element),
+[`pl-submission-panel`](#pl-submission-panel-element), or
+[`pl-answer-panel`](#pl-answer-panel-element), all of which explicitly show the
+element contents only in a specific panel.
+
+#### Example implementations
+
+- [`examplesPanels`: Showing and hiding text in different panels.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPanels)
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 
