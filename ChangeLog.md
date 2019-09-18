@@ -69,6 +69,8 @@
 
   * Fix vulnerability in external grading that allows arbitrary files on the server to be overwritten (Nathan Walters).
 
+  * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
