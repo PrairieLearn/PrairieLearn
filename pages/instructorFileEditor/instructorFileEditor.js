@@ -167,6 +167,7 @@ router.post('/', (req, res, next) => {
         coursePath: res.locals.course.path,
         uid: res.locals.user.uid,
         user_name: res.locals.user.name,
+        editContents: req.body.file_edit_contents,
     };
 
     // Do not allow users to edit the exampleCourse
@@ -194,7 +195,7 @@ router.post('/', (req, res, next) => {
         // The "Save and Sync" button is enabled only when changes have been made
         // to the file, so - in principle - it should never be the case that editHash
         // and origHash are the same. We will treat this is a catastrophic error.
-        fileEdit.editHash = getHash(req.body.file_edit_contents);
+        fileEdit.editHash = getHash(fileEdit.editContents);
         if (fileEdit.editHash == fileEdit.origHash) {
             return next(error.make(400, `attempting to save a file without having made any changes: ${req.query.file}`, {
                 locals: res.locals,
@@ -208,7 +209,7 @@ router.post('/', (req, res, next) => {
         async.series([
             (callback) => {
                 debug('Write edit to db');
-                createEdit(fileEdit, req.body.file_edit_contents, (err) => {
+                createEdit(fileEdit, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -290,11 +291,12 @@ function readEdit(fileEdit, callback) {
         (callback) => {
             if ('editID' in fileEdit) {
                 debug('Read contents of file edit');
-                callbackify(async () => {
-                    const contentsBuffer = await fileStore.get(fileEdit.fileID);
-                    fileEdit.editContents = b64Util.b64EncodeUnicode(contentsBuffer.toString('utf8'));
-                    fileEdit.editHash = getHash(fileEdit.editContents)
-                })(callback);
+                readEditContents(fileEdit, (err, contents) => {
+                    if (ERR(err, callback)) return;
+                    fileEdit.editContents = contents;
+                    fileEdit.editHash = getHash(fileEdit.editContents);
+                    callback(null);
+                });
             } else {
                 callback(null);
             }
@@ -303,6 +305,13 @@ function readEdit(fileEdit, callback) {
         if (ERR(err, callback)) return;
         callback(null);
     });
+}
+
+function readEditContents(fileEdit, callback) {
+    callbackify(async () => {
+        const contentsBuffer = await fileStore.get(fileEdit.fileID);
+        return b64Util.b64EncodeUnicode(contentsBuffer.toString('utf8'));
+    })(callback);
 }
 
 function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
@@ -336,7 +345,7 @@ function updateDidSync(fileEdit, callback) {
     });
 }
 
-function createEdit(fileEdit, contents, callback) {
+function createEdit(fileEdit, callback) {
     async.series([
         (callback) => {
             const params = {
@@ -353,8 +362,10 @@ function createEdit(fileEdit, contents, callback) {
         },
         (callback) => {
             debug('Write contents to file edit');
-            writeEdit(fileEdit, contents, (err) => {
+            writeEdit(fileEdit, (err, fileID) => {
                 if (ERR(err, callback)) return;
+                fileEdit.fileID = fileID;
+                fileEdit.didWriteEdit = true;
                 callback(null);
             });
         },
@@ -381,21 +392,19 @@ function createEdit(fileEdit, contents, callback) {
     });
 }
 
-function writeEdit(fileEdit, contents, callback) {
+function writeEdit(fileEdit, callback) {
     callbackify(async () => {
-        fileEdit.fileID = await fileStore.upload(
+        const fileID = await fileStore.upload(
             fileEdit.fileName,
-            Buffer.from(b64Util.b64DecodeUnicode(contents), 'utf8'),
+            Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
             'instructor_file_edit',
             null,
             null,
             fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
             fileEdit.userID,    //       although I don't think there's any need to do so
         );
-
-        debug(`writeEdit(): wrote file edit to file store with file_id=${fileEdit.fileID}`);
-        fileEdit.editContents = contents;
-        fileEdit.didWriteEdit = true;
+        debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
+        return fileID;
     })(callback);
 }
 
