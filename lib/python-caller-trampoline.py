@@ -159,6 +159,7 @@ def terminate_worker(signum, stack):
     sys.exit(0)
 
 signal.signal(signal.SIGTERM, terminate_worker)
+signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
 
 while True:
     worker_pid = os.fork()
