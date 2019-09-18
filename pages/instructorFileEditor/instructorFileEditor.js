@@ -13,14 +13,14 @@ const debug = require('debug')('prairielearn:instructorFileEditor');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
-const tmp = require('tmp');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
-const AWS = require('aws-sdk');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
+const fileStore = require('../../lib/file-store');
+const { callbackify } = require('util');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -238,11 +238,7 @@ router.post('/', (req, res, next) => {
 });
 
 function getHash(contents) {
-    return b64Util.b64EncodeUnicode(sha256(contents).toString());
-}
-
-function getS3Key(editID, fileName) {
-    return `edit_${editID}/${fileName}`;
+    return sha256(contents).toString();
 }
 
 function readEdit(fileEdit, callback) {
@@ -265,11 +261,7 @@ function readEdit(fileEdit, callback) {
                         fileEdit.didSave = result.rows[0].did_save;
                         fileEdit.didSync = result.rows[0].did_sync;
                         fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
-                        if (config.fileEditorUseAws) {
-                            fileEdit.s3_bucket = result.rows[0].s3_bucket;
-                        } else {
-                            fileEdit.localTmpDir = result.rows[0].local_tmp_dir;
-                        }
+                        fileEdit.fileID = result.rows[0].file_id;
                         debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
                     } else {
                         debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
@@ -298,28 +290,11 @@ function readEdit(fileEdit, callback) {
         (callback) => {
             if ('editID' in fileEdit) {
                 debug('Read contents of file edit');
-                if (config.fileEditorUseAws) {
-                    const params = {
-                        Bucket: config.fileEditorS3Bucket,
-                        Key: getS3Key(fileEdit.editID, fileEdit.fileName),
-                    };
-                    const s3 = new AWS.S3();
-                    s3.getObject(params, (err, data) => {
-                        if (ERR(err, callback)) return;
-                        fileEdit.editContents = b64Util.b64EncodeUnicode(data.Body.toString('utf8'));
-                        fileEdit.editHash = getHash(fileEdit.editContents);
-                        callback(null);
-                    });
-                } else {
-                    const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-                    fs.readFile(fullPath, 'utf8', (err, contents) => {
-                        if (ERR(err, callback)) return;
-                        debug(`Got contents from ${fullPath}`);
-                        fileEdit.editContents = b64Util.b64EncodeUnicode(contents);
-                        fileEdit.editHash = getHash(fileEdit.editContents);
-                        callback(null);
-                    });
-                }
+                callbackify(async () => {
+                    const contentsBuffer = await fileStore.get(fileEdit.fileID);
+                    fileEdit.editContents = b64Util.b64EncodeUnicode(contentsBuffer.toString('utf8'));
+                    fileEdit.editHash = getHash(fileEdit.editContents)
+                })(callback);
             } else {
                 callback(null);
             }
@@ -364,19 +339,6 @@ function updateDidSync(fileEdit, callback) {
 function createEdit(fileEdit, contents, callback) {
     async.series([
         (callback) => {
-            if (config.fileEditorUseAws) {
-                fileEdit.s3_bucket = config.fileEditorS3Bucket;
-                callback(null);
-            } else {
-                tmp.dir((err, path) => {
-                    if (ERR(err, callback)) return;
-                    debug(`Created temporary directory at ${path}`);
-                    fileEdit.localTmpDir = path;
-                    callback(null);
-                });
-            }
-        },
-        (callback) => {
             const params = {
                 user_id: fileEdit.userID,
                 course_id: fileEdit.courseID,
@@ -390,27 +352,26 @@ function createEdit(fileEdit, contents, callback) {
             });
         },
         (callback) => {
+            debug('Write contents to file edit');
+            writeEdit(fileEdit, contents, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
             const params = {
                 user_id: fileEdit.userID,
                 course_id: fileEdit.courseID,
                 dir_name: fileEdit.dirName,
                 file_name: fileEdit.fileName,
                 orig_hash: fileEdit.origHash,
-                local_tmp_dir: fileEdit.localTmpDir || null,
-                s3_bucket: fileEdit.s3_bucket || null,
+                file_id: fileEdit.fileID,
             };
             debug(`Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`);
             sqldb.queryOneRow(sql.insert_file_edit, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 fileEdit.editID = result.rows[0].id;
                 debug(`Created file edit in database with id ${fileEdit.editID}`);
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug('Write contents to file edit');
-            writeEdit(fileEdit, contents, (err) => {
-                if (ERR(err, callback)) return;
                 callback(null);
             });
         },
@@ -421,30 +382,21 @@ function createEdit(fileEdit, contents, callback) {
 }
 
 function writeEdit(fileEdit, contents, callback) {
-    if (config.fileEditorUseAws) {
-        const params = {
-            Bucket: fileEdit.s3_bucket,
-            Key: getS3Key(fileEdit.editID, fileEdit.fileName),
-            Body: Buffer.from(b64Util.b64DecodeUnicode(contents), 'utf8'),
-        };
-        const s3 = new AWS.S3();
-        s3.putObject(params, (err) => {
-            if (ERR(err, callback)) return;
-            debug(`Wrote file edit to bucket ${params.Bucket} at key ${params.Key} on S3`);
-            fileEdit.editContents = contents;
-            fileEdit.didWriteEdit = true;
-            callback(null);
-        });
-    } else {
-        const fullPath = path.join(fileEdit.localTmpDir, fileEdit.fileName);
-        fs.writeFile(fullPath, b64Util.b64DecodeUnicode(contents), 'utf8', (err) => {
-            if (ERR(err, callback)) return;
-            debug(`Wrote file edit to ${fullPath}`);
-            fileEdit.editContents = contents;
-            fileEdit.didWriteEdit = true;
-            callback(null);
-        });
-    }
+    callbackify(async () => {
+        fileEdit.fileID = await fileStore.upload(
+            fileEdit.fileName,
+            Buffer.from(b64Util.b64DecodeUnicode(contents), 'utf8'),
+            'instructor_file_edit',
+            null,
+            null,
+            fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
+            fileEdit.userID,    //       although I don't think there's any need to do so
+        );
+
+        debug(`writeEdit(): wrote file edit to file store with file_id=${fileEdit.fileID}`);
+        fileEdit.editContents = contents;
+        fileEdit.didWriteEdit = true;
+    })(callback);
 }
 
 function saveAndSync(fileEdit, locals, callback) {
