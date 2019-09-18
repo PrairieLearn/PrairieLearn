@@ -1119,7 +1119,7 @@ Common reasons that trigger the display of this element are:
 
 ## `pl-hide-in-panel` element
 
-Hide the contents in any of the panels ("question", "submission", or "answer").
+Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
 
 #### Sample Element
 
