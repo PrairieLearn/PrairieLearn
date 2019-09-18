@@ -33,7 +33,9 @@ WHERE
     AND fe.course_id = $course_id
     AND fe.dir_name = $dir_name
     AND fe.file_name = $file_name
-    AND fe.deleted_at IS NULL;
+    AND fe.deleted_at IS NULL
+RETURNING
+    fe.file_id;
 
 -- BLOCK update_did_save
 UPDATE file_edits AS fe

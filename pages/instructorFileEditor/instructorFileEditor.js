@@ -267,6 +267,8 @@ function readEdit(fileEdit, callback) {
                     } else {
                         debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
                     }
+                } else {
+                    debug(`Found no saved drafts`);
                 }
                 callback(null);
             });
@@ -282,9 +284,21 @@ function readEdit(fileEdit, callback) {
                 dir_name: fileEdit.dirName,
                 file_name: fileEdit.fileName,
             };
-            sqldb.query(sql.soft_delete_file_edit, params, (err) => {
+            sqldb.query(sql.soft_delete_file_edit, params, (err, result) => {
                 if (ERR(err, callback)) return;
-                debug('Deleted all previously saved drafts');
+                debug(`Deleted ${result.rowCount} previously saved drafts`);
+                if (result.rowCount > 0) {
+                    result.rows.forEach((row) => {
+                        if (row.file_id == fileEdit.fileID) {
+                            debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
+                        } else {
+                            debug(`Remove file_id=${row.file_id} from file store`);
+                            deleteEditFromFileStore(row.file_id, fileEdit.userID, (err) => {
+                                if (ERR(err, callback)) return;
+                            });
+                        }
+                    });
+                }
                 callback(null);
             });
         },
@@ -295,6 +309,17 @@ function readEdit(fileEdit, callback) {
                     if (ERR(err, callback)) return;
                     fileEdit.editContents = contents;
                     fileEdit.editHash = getHash(fileEdit.editContents);
+                    callback(null);
+                });
+            } else {
+                callback(null);
+            }
+        },
+        (callback) => {
+            if ('fileID' in fileEdit) {
+                debug(`Remove file_id=${fileEdit.fileID} from file store`);
+                deleteEditFromFileStore(fileEdit.fileID, fileEdit.userID, (err) => {
+                    if (ERR(err, callback)) return;
                     callback(null);
                 });
             } else {
@@ -345,6 +370,12 @@ function updateDidSync(fileEdit, callback) {
     });
 }
 
+function deleteEditFromFileStore(file_id, authn_user_id, callback) {
+    callbackify(async() => {
+        await fileStore.delete(file_id, authn_user_id);
+    })(callback);
+}
+
 function createEdit(fileEdit, callback) {
     async.series([
         (callback) => {
@@ -354,9 +385,17 @@ function createEdit(fileEdit, callback) {
                 dir_name: fileEdit.dirName,
                 file_name: fileEdit.fileName,
             };
-            sqldb.query(sql.soft_delete_file_edit, params, (err) => {
+            sqldb.query(sql.soft_delete_file_edit, params, (err, result) => {
                 if (ERR(err, callback)) return;
-                debug('Deleted all previously saved drafts');
+                debug(`Deleted ${result.rowCount} previously saved drafts`);
+                if (result.rowCount > 0) {
+                    result.rows.forEach((row) => {
+                        debug(`Remove file_id=${row.file_id} from file store`);
+                        deleteEditFromFileStore(row.file_id, fileEdit.userID, (err) => {
+                            if (ERR(err, callback)) return;
+                        });
+                    });
+                }
                 callback(null);
             });
         },
