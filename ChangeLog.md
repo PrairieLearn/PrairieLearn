@@ -71,6 +71,8 @@
 
   * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
 
+  * Fix disabled server load reporting to CloudWatch (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
