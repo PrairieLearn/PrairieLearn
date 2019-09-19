@@ -88,16 +88,15 @@ npm run lint-js -s
 npm run lint-python -s
 ```
 
-* If you want to use the in-browser file editor while running natively, set `config.filesRoot` in `PrairieLearn/lib/config.js` to a convenient, existing directory. Temporary files will be saved there. Note that it is not necessary to set `config.filesRoot` to use `npm run test` - a separate directory will be assigned during testing.
-
-* Create the file `PrairieLearn/config.json` with the path of your local course repository (edit the path as needed):
+* Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):
 
 ```json
 {
     "courseDirs": [
         "/Users/mwest/git/pl-tam212",
         "exampleCourse"
-    ]
+    ],
+    "filesRoot": "../filesRoot"
 }
 ```
 
