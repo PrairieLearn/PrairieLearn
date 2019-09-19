@@ -33,6 +33,7 @@
     "zones": [
         {
             "questions": [
+                {"id": "examplesPanels",                   "points": 2, "maxPoints": 10},
                 {"id": "examplesElementCodeDocumentation", "points": 2, "maxPoints": 10},
                 {"id": "examplesCheckbox",                 "points": 2, "maxPoints": 10},
                 {"id": "examplesNumberInput",              "points": 2, "maxPoints": 10},

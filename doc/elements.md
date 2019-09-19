@@ -63,6 +63,7 @@ The following **Conditional** elements are available:
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
+- [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
@@ -211,11 +212,11 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
-`show-help-text` | boolean | True | Show the question mark at the end of the input displaying required input parameters.
-`show-placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
+`allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+`show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
-`show-correct-answer` | boolean | True | Whether to show the correct answer in the submitted answers panel.
+`show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
 
 #### Example implementations
 
@@ -291,7 +292,7 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
-`allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
+`allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 
 #### Details
@@ -345,10 +346,10 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
-`remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
-`remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
-`allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`ignore-case` | boolean | False | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO"). 
+`remove-leading-trailing` | boolean | false | Whether or not to remove leading and trailing blank spaces from the input string.
+`remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
+`allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO"). 
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 #### Example implementations
@@ -388,7 +389,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
+`allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 
 #### Details
@@ -432,7 +433,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
 
 #### Details
 
@@ -494,7 +495,7 @@ Attribute | Type | Default | description
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
-`auto-resize` | boolean | True | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
 
 #### Details
 
@@ -837,9 +838,9 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `digits` | integer | — | Number of digits to display after the decimal.
 `default-tab` | string | 'matlab' | Select the active tab.
-`show-matlab` | boolean | True | Toggles the display of the Matlab tab.
-`show-mathematica` | boolean | True | Toggles the display of the Mathematica tab.
-`show-python` | boolean | True | Toggles the display of the Python tab.
+`show-matlab` | boolean | true | Toggles the display of the Matlab tab.
+`show-mathematica` | boolean | true | Toggles the display of the Mathematica tab.
+`show-python` | boolean | true | Toggles the display of the Python tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
@@ -1042,6 +1043,7 @@ then it will be displayed alongside or answer.
 
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 -----
 
@@ -1070,7 +1072,9 @@ may be correct, incorrect, or invalid.
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 -----
@@ -1104,7 +1108,53 @@ Common reasons that trigger the display of this element are:
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+
+-----
+
+
+## `pl-hide-in-panel` element
+
+Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
+
+#### Sample Element
+
+```html
+<pl-hide-in-panel submission="true" answer="true">
+  This text will be hidden in the submission panel and answer panel.
+</pl-hide-in-panel>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`question` | boolean | false | Whether to hide the element contents in the question panel.
+`submission` | boolean | false | Whether to hide the element contents in the submission panel.
+`answer` | boolean | false | Whether to hide the element contents in the answer panel.
+
+### Details
+
+Hide the element contents in those panels for which the corresponding
+attribute is `true`. This is the reverse of
+[`pl-question-panel`](#pl-question-panel-element),
+[`pl-submission-panel`](#pl-submission-panel-element), or
+[`pl-answer-panel`](#pl-answer-panel-element), all of which explicitly show the
+element contents only in a specific panel.
+
+#### Example implementations
+
+- [`examplesPanels`: Showing and hiding text in different panels.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPanels)
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 
