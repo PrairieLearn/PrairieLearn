@@ -43,6 +43,8 @@
 
   * Change Travis script to rebuild `prairielearn/centos7-plbase` if any relevant files have changed (Nathan Walters).
 
+  * Change location of draft files for file editor from S3 (prod) / local (dev) to `file-store` (Tim Bretl).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
@@ -68,6 +70,8 @@
   * Fix LTI callback URL (Matt West).
 
   * Fix vulnerability in external grading that allows arbitrary files on the server to be overwritten (Nathan Walters).
+
+  * Fix bug in unicode encode/decode in file editor (Tim Bretl).
 
   * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
 
