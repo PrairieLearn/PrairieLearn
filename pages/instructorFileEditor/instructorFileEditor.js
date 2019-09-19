@@ -334,8 +334,8 @@ function readEdit(fileEdit, callback) {
 
 function readEditContents(fileEdit, callback) {
     callbackify(async () => {
-        const contentsBuffer = await fileStore.get(fileEdit.fileID);
-        return b64Util.b64EncodeUnicode(contentsBuffer.toString('utf8'));
+        const result = await fileStore.get(fileEdit.fileID);
+        return b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
     })(callback);
 }
 
