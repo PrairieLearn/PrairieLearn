@@ -1,0 +1,18 @@
+{
+    "controller": "pl-drawing.py",
+    "dependencies": {
+        "coreScripts": [
+            "sylvester.js",
+            "sha1.js",
+            "underscore.js"
+        ],
+        "elementScripts": [
+            "fabric.require.js",
+            "mechanicsObjects.js",
+            "pl-drawing.js"
+        ],
+        "elementStyles": [
+            "pl-drawing.css"
+        ]
+    }
+}

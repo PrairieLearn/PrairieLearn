@@ -1,0 +1,14 @@
+.pl-drawing-button {
+    width: 49.1px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.pl-drawing-container {
+    display: flex;
+}
+
+.pl-drawing-sidebar {
+    margin-left: 20px;
+    flex-grow: 1;
+}

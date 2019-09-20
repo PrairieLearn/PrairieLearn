@@ -1,0 +1,38 @@
+{
+    "uuid": "7A6CFC5A-75AF-49E8-BFBD-035E21EE4F8E",
+    "type": "Homework",
+    "title": "PrairieLearn drawing element gallery",
+    "set": "Homework",
+    "number": "7",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "example-pl-drawing-simple-tutorial",               "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-grade-vector",               "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-Centroid",               "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-Pulley",               "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-graphs",               "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-LshapeRod-InclinedPlane",                   "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-LiftingMechanism",                   "points": 2, "maxPoints": 6},
+                {"id": "example-pl-drawing-VM-diagrams",                   "points": 2, "maxPoints": 6}
+
+
+
+            ]
+        }
+    ]
+}
