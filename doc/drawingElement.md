@@ -1015,7 +1015,7 @@ Attribute | Type | Default | Description
 The final version of a question should not have the attribute `draw-error-box`. However this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
-# `pl-controls` element
+## `pl-controls` element
 
 The element `pl-controls` will add the buttons that allows students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
 
@@ -1030,17 +1030,17 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
-# `pl-drawing-buttons` element
+## `pl-drawing-buttons` element
 
-<img src="elements/all-buttons.png" width=100%>
-
-(NOTE: still waiting on a PR review to be able to display the icons correctly).
 
 The question QID `Example-pl-drawing-simple-tutorial` illustrates all the buttons
 that are currently implemented.
 
+<img src="elements/all-buttons.png" width=100%>
 
-## `pl-point` element
+(NOTE: icons are still not all displayed correctly using different images).
+
+#### To insert a point:
 
 ```html
 <pl-drawing-button type="pl-point"></pl-drawing-button>
@@ -1050,7 +1050,7 @@ This button adds a point to the canvas. The grading algorithm will check if the 
 
 <img src="elements/pl-point-error-box.png" width=30%>
 
-## `pl-vector` element
+#### To insert a vector:
 
 ```html
 <pl-drawing-button type="pl-vector"></pl-drawing-button>
@@ -1066,7 +1066,7 @@ If the orientation of the vector is not important, so that vectors `p` and `-p` 
 If a vector is expected as a correct answer, but the author does not want to assign a grade to it, the attribute `optional-grading` can be set to `true`. In this case, the grading algorithm will not assign points to the vector, but will not penalize students either by considering it as extra objects.
 
 
-## `pl-arc-vector` element
+#### To insert an arc vector:
 
 ```html
 <pl-drawing-button type="pl-arc-vector-CWW"></pl-drawing-button>
@@ -1078,7 +1078,7 @@ By default, the error box for `pl-arc-vector` is a square centered at the anchor
 
 If the orientation of the arc vector is not important (both clockwise and counter-clockwise orientations are accepted), the attribute `disregard-sense` should be set to `true`.
 
-## `pl-distributed-load` element
+#### To insert a distributed load:
 
 ```html
 <pl-drawing-button type="pl-distributed-load" w1="20"  anchor_is_tail="true"></pl-drawing-button>
@@ -1090,14 +1090,14 @@ This button adds a distributed load to the canvas. A distributed load is marked 
 The error box for `pl-distributed-load` is  defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
 
 
-## `help-line` element
+#### To insert a "help" line:
 
 ```html
 <pl-drawing-button type="help-line"></pl-drawing-button>
 ```
 This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
 
-## `delete`
+#### To delete any object previously placed in the canvas
 
 ```html
 <pl-drawing-button type="delete"></pl-drawing-button>

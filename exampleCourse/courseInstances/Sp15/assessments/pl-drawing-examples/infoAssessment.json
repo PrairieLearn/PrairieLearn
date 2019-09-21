@@ -27,7 +27,6 @@
                 {"id": "example-pl-drawing-Pulley",               "points": 2, "maxPoints": 6},
                 {"id": "example-pl-drawing-graphs",               "points": 2, "maxPoints": 6},
                 {"id": "example-pl-drawing-LshapeRod-InclinedPlane",                   "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-LiftingMechanism",                   "points": 2, "maxPoints": 6},
                 {"id": "example-pl-drawing-VM-diagrams",                   "points": 2, "maxPoints": 6}
 
 

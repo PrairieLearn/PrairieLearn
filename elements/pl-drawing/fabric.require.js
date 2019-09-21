@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 var fabric = fabric || {
     version: "1.6.4"
 };

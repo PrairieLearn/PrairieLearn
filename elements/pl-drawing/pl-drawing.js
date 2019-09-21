@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 (function() {
     window.DrawingInterface = function(root_elem_name, elem_options, submitted_answer) {
         let root_elem = $('#' + root_elem_name);
@@ -8,15 +10,7 @@
 
         /* Set all button icons */
         let drawing_btns = $(root_elem).find("button");
-
-        let image_base_url = "";
-        if ('client_files' in elem_options) {
-            image_base_url = elem_options['client_files'] + '/';
-        } else if ('base_url' in elem_options) {
-            image_base_url = elem_options['base_url'] + '/elements/pl-drawing/clientFilesElement/';
-        } else {
-            /* cry */
-        }
+        let image_base_url = elem_options['client_files'];
 
         drawing_btns.each(function(i, btn) {
             let img = btn.children[0];

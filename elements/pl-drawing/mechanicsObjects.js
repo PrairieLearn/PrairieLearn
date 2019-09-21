@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 var sylvester = window.Sylvester;
 var $V = Sylvester.Vector.create;
 

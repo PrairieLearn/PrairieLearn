@@ -1,24 +1,24 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides 
+When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
-split into three distinct groups: **submission**, **decorative**, and 
+split into three distinct groups: **submission**, **decorative**, and
 **conditional**. Within this document, all of PrairieLearn's elements are
 displayed alongside links to sample elements within the example course. To
 build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
 documentation.
 
 **Submission** elements act as a way to receive a response or input from the
-student. These elements are traditionally referred to as form input fields. 
+student. These elements are traditionally referred to as form input fields.
 PrairieLearn presently provides the following templated **input field** elements:
 
-- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only 
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value 
+- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value 
+- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
@@ -40,26 +40,28 @@ students. Elements under this category include ways to specify question markup,
 images, files, and code display. The following **decorative** elements are available:
 
 - [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
-  syntax highlighting. 
+  syntax highlighting.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
-- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in 
+- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
   code form for supported programming languages.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
-- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
+- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT
   figure.
-  
+- [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
+collection of graphic objects
+
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
 The following **Conditional** elements are available:
 
 - [`pl-question-panel`](#pl-question-panel-element): Displays the text of a
   question.
-- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer 
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
@@ -80,7 +82,7 @@ will be removed at a future date.
 
 ## `pl-multiple-choice` element
 
-A `pl-multiple-choice` element selects **one** correct answer and zero or more 
+A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
 
 #### Sample Element
@@ -105,7 +107,7 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 
-Inside the `pl-multiple-choice` element, each choice must be specified with 
+Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -124,7 +126,7 @@ Attribute | Type | Default | Description
 
 ## `pl-checkbox` element
 
-A `pl-checkbox` element displays a subset of the answers in a random order 
+A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
 
 #### Sample Element
@@ -159,7 +161,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
-Inside the `pl-checkbox` element, each choice must be specified with 
+Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -349,7 +351,7 @@ Attribute | Type | Default | Description
 `remove-leading-trailing` | boolean | false | Whether or not to remove leading and trailing blank spaces from the input string.
 `remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO"). 
+`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 #### Example implementations
@@ -366,8 +368,8 @@ Attribute | Type | Default | Description
 
 ## `pl-matrix-component-input` element
 
-A `pl-matrix-component-input` element displays a grid of input fields with 
-the same shape of the variable stored in `answers-name` 
+A `pl-matrix-component-input` element displays a grid of input fields with
+the same shape of the variable stored in `answers-name`
 (only 2D arrays of real numbers can be stored in `answers-name`).
 
 #### Sample Element
@@ -400,7 +402,7 @@ The question will only be graded when all matrix components are entered.
 
 - [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
 
-#### See also 
+#### See also
 
 - [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
@@ -981,7 +983,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 ## `pl-graphviz-render` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations .
 
 #### Sample Element
@@ -1014,6 +1016,48 @@ Attribute | Type | Default | Description
 
 -----
 
+## `pl-drawing` element
+
+Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
+Users can also add drawing objects to the canvas for grading.
+The system of coordinates of the canvas is located at the top/left corner.
+
+#### Sample Element
+
+```html
+<pl-drawing answers-name="fbd">
+</pl-drawing>
+```
+<img src="elements/pl-drawing.png" width=70%>
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`preview` | boolean | false | `preview = true` is used when canvas is used for display only. `preview = false` expects objects to be placed in the canvas for grading.
+`answers-name` | string | — | Variable name to store data in. This variable is required when `preview = false`.
+`width` | integer | 580 | Horizontal width of the canvas.
+`height` | integer | 320 | Vertical height of the canvas.
+`grid-size` | integer | 20 | Size of the square grid for the canvas background. If `grid-size = 0`, then the background is white.
+`snap-to-grid` | boolen | true | Objects placed in the canvas snap to closest grid point.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
+`tol` | float | `0.5*grid-size` | Tolerance to check the position of objects. The error is calculated as the absolute difference between expected position and submitted one.
+`angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
+`show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `preview = false`
+`tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
+
+
+#### Example implementations
+
+<!-- - [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https:) -->
+
+#### See also
+
+- [pl-drawing documentation](drawingElement.md)
+
+-----
+
+
 ## Conditional Elements
 
 ## `pl-question-panel` element
@@ -1031,8 +1075,8 @@ Displays the contents of question directions.
 ### Details
 
 Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information 
-between these tags is hidden. If content exists outside of a question panel, 
+either makes a submission or receives the correct answer, the information
+between these tags is hidden. If content exists outside of a question panel,
 then it will be displayed alongside or answer.
 
 #### Example implementations
@@ -1095,7 +1139,7 @@ receive further answers for grading.
 
 ### Details
 
-Contents are only displayed when the answer panel is requested. 
+Contents are only displayed when the answer panel is requested.
 Common reasons that trigger the display of this element are:
 
 - The question is fully correct
@@ -1163,7 +1207,7 @@ element contents only in a specific panel.
 
 ## `pl-external-grader-results` element
 
-Displays results from externally-graded questions. 
+Displays results from externally-graded questions.
 
 #### Sample Element
 

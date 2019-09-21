@@ -1529,10 +1529,9 @@ def render(element_html, data):
         'snap_to_grid': pl.get_boolean_attrib(element, 'snap-to-grid', False),
         'grid_size': grid_size,
         'editable': (data['panel'] == 'question' and not preview_mode),
-        'base_url': data['options']['base_url']
+        'base_url': data['options']['base_url'],
+        'client_files': "/pl/static/elements/pl-drawing/clientFilesElement/"
     }
-    if 'client_files_element' in data['options']:
-        js_options['client_files'] = data['options']['client_files_element']
 
     show_btn = (data['panel'] == 'question' and not preview_mode)
 
