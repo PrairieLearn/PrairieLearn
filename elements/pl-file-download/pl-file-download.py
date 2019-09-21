@@ -3,6 +3,11 @@ import lxml.html
 import os
 
 
+TYPE_DEFAULT = 'static'
+DIRECTORY_DEFAULT = 'clientFilesQuestion'
+FORCE_DOWNLOAD_DEFAULT = True
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['type', 'directory', 'label', 'force-download'])
@@ -15,16 +20,16 @@ def render(element_html, data):
     file_name = pl.get_string_attrib(element, 'file-name')
 
     # Get type (default is static)
-    file_type = pl.get_string_attrib(element, 'type', 'static')
+    file_type = pl.get_string_attrib(element, 'type', TYPE_DEFAULT)
 
     # Get directory (default is clientFilesQuestion)
-    file_directory = pl.get_string_attrib(element, 'directory', 'clientFilesQuestion')
+    file_directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
 
     # Get label (default is file_name)
     file_label = pl.get_string_attrib(element, 'label', file_name)
 
     # Get whether to force a download or open in-browser
-    force_download = pl.get_boolean_attrib(element, 'force-download', True)
+    force_download = pl.get_boolean_attrib(element, 'force-download', FORCE_DOWNLOAD_DEFAULT)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':

@@ -6,6 +6,15 @@ import hashlib
 import os
 
 
+EDITOR_CONFIG_FUNCTION_DEFAULT = None
+ACE_MODE_DEFAULT = None
+ACE_THEME_DEFAULT = None
+SOURCE_FILE_NAME_DEFAULT = None
+MIN_LINES_DEFAULT = None
+MAX_LINES_DEFAULT = None
+AUTO_RESIZE_DEFAULT = 'true'
+
+
 def get_answer_name(file_name):
     return '_file_editor_{0}'.format(hashlib.sha1(file_name.encode('utf-8')).hexdigest())
 
@@ -21,7 +30,7 @@ def prepare(element_html, data):
     required_attribs = ['file-name']
     optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
@@ -39,14 +48,14 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
-    editor_config_function = pl.get_string_attrib(element, 'editor-config-function', None)
-    ace_mode = pl.get_string_attrib(element, 'ace-mode', None)
-    ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
+    editor_config_function = pl.get_string_attrib(element, 'editor-config-function', EDITOR_CONFIG_FUNCTION_DEFAULT)
+    ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
+    ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
     uuid = pl.get_uuid()
-    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
-    min_lines = pl.get_integer_attrib(element, 'min-lines', None)
-    max_lines = pl.get_integer_attrib(element, 'max-lines', None)
-    auto_resize = pl.get_string_attrib(element, 'auto-resize', 'false')
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    min_lines = pl.get_integer_attrib(element, 'min-lines', MIN_LINES_DEFAULT)
+    max_lines = pl.get_integer_attrib(element, 'max-lines', MAX_LINES_DEFAULT)
+    auto_resize = pl.get_string_attrib(element, 'auto-resize', AUTO_RESIZE_DEFAULT)
 
     # If auto_resize is set but min_lines isn't, the height of the
     # file editor area will be set to 1 line. Thus, we need to set

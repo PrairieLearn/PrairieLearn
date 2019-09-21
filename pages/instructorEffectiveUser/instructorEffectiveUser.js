@@ -19,6 +19,12 @@ router.get('/', function(req, res, next) {
     sqldb.queryOneRow(sql.select, params, function(err, result) {
         if (ERR(err, next)) return;
         _.assign(res.locals, result.rows[0]);
+        
+        res.locals.ipaddress = req.headers['x-forwarded-for'] || req.ip;
+        // Trim out IPv6 wrapper on IPv4 addresses
+        if (res.locals.ipaddress.substr(0, 7) == '::ffff:') {
+              res.locals.ipaddress = res.locals.ipaddress.substr(7);
+        }
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
