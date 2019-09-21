@@ -4,6 +4,8 @@ import pandas as pd
 
 VARIABLE_TYPE_DEFAULT = 'text'
 NO_HIGHLIGHT_DEFAULT = False
+VARIABLE_PREFIX_DEFAULT = ''
+VARIABLE_SUFFIX_DEFAULT = ''
 
 
 def prepare(element_html, data):
@@ -28,8 +30,8 @@ def render(element_html, data):
         html += varout.to_html(classes=['pl-code-output-table']) + '<p class="pl-code-output-table-dimensions">{} rows x {} columns</p><br>'.format(str(varout.shape[0]), str(varout.shape[1]))
     elif vartype == 'text':
         no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
-        prefix = pl.get_string_attrib(element, 'variable-prefix', '')
-        suffix = pl.get_string_attrib(element, 'variable-suffix', '')
+        prefix = pl.get_string_attrib(element, 'variable-prefix', VARIABLE_PREFIX_DEFAULT)
+        suffix = pl.get_string_attrib(element, 'variable-suffix', VARIABLE_SUFFIX_DEFAULT)
 
         varout = pl.from_json(varout)
         text = prefix + repr(varout) + suffix
