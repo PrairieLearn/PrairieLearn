@@ -23,6 +23,8 @@
 
   * Add docs for `singleVariant` question option (Matt West).
 
+  * Add `pl-code-output` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

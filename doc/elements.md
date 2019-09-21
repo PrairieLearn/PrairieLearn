@@ -708,6 +708,50 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 -----
 
+## `pl-code-output` element
+
+Displays the value of a variable or parameter in python representation.
+
+#### Sample Element 1
+
+![](elements/pl-code-output.png)
+
+`server.py`
+
+```python
+data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
+```
+
+---
+
+`question.html`
+
+```html
+<pl-code-output variable-name="variable"></pl-code-output>
+```
+
+#### Sample Element 2
+
+```html
+<pl-code-output variable-name="df" variable-type="dataframe"></pl-code-output>
+```
+
+![](elements/pl-code-output2.png)
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`variable-name` | string | — | The name of the key in `data['params']` to get a value from
+`variable-type` | string | `text` | The type of variable that should be shown.  Either `text` for a textual representation as defined by `repr(var)`, or `dataframe` for a pandas dataframe.
+`variable-prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
+`variable-suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
+`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+
+#### Details
+
+As of right now, the element supports displaying either Pandas dataframes as an HTML table or Python objects via `repr()`.  When setting a parameter to a dataframe, use Pandas' built in `dataframe.to_json()`.
+
 ## `pl-figure` element
 
 Display a statically or dynamically generated image.

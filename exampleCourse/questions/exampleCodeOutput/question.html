@@ -1,0 +1,19 @@
+<pl-question-panel>
+  <p>
+    The <code>pl-code-output</code> element allows you to easily format the values of parameters.
+  </p>
+  <p>
+    Here is an example with <code>variable-type</code> set to <code>dataframe</code>.
+  </p>
+  <pl-code source-file-name="test.py"></pl-code>
+  <pl-code-output variable-name="df" variable-type="dataframe"></pl-code-output>
+
+  <p>
+    Here is a randomly generated matrix created by calling <code>np.random.random((3, 3))</code>.  Any variables will be converted using <code>repr()</code> if they are being shown as <code>text</code>.
+  </p>
+  <pl-code-output variable-name="matrix"></pl-code-output>
+
+  <p>Here is an example displaying a dictionary.  You can add additional text to the output by using the <code>variable-prefix</code> and <code>variable-suffix</code> attributes.</p>
+  <pl-code-output variable-name="my_dictionary" variable-prefix="my_dictionary = "></pl-code-output>
+  
+</pl-question-panel>
