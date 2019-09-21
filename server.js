@@ -14,7 +14,8 @@ const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
-const multer  = require('multer');
+const multer = require('multer');
+const filesize = require('filesize');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -128,12 +129,15 @@ if (config.hasAzure) {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fieldSize: 1e7, // max in bytes
-        fileSize: 1e7, // max in bytes
-        parts: 100, // max number of fields + files
+        fieldSize: config.fileUploadMaxBytes,
+        fileSize: config.fileUploadMaxBytes,
+        parts: config.fileUploadMaxParts,
     },
 });
+config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {base: 10, round: 0});
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));

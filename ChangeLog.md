@@ -23,6 +23,14 @@
 
   * Add docs for `singleVariant` question option (Matt West).
 
+  * Add file attachments to student assessments and questions (Matt West).
+
+  * Add connecting IP address report in instructor effective user page (Dave Mussulman).
+
+  * Add SSL https support inside the Docker container (Dave Mussulman).
+
+  * Add `pl-hide-in-panel` element (Matt West).
+
   * Add `pl-code-output` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
@@ -33,9 +41,13 @@
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
 
+  * Change element default setup to be top-down instead of inline (James Balamuta).
+
   * Change `type: "Exam"` under `mode: "Public"` to not display "waiting for proctor..." message (James Balamuta).
 
   * Change Travis script to rebuild `prairielearn/centos7-plbase` if any relevant files have changed (Nathan Walters).
+
+  * Change location of draft files for file editor from S3 (prod) / local (dev) to `file-store` (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -58,6 +70,16 @@
   * Fix `Makefile` for documentation to build correctly (James Balamuta).
 
   * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
+
+  * Fix LTI callback URL (Matt West).
+
+  * Fix vulnerability in external grading that allows arbitrary files on the server to be overwritten (Nathan Walters).
+
+  * Fix bug in unicode encode/decode in file editor (Tim Bretl).
+
+  * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
+
+  * Fix disabled server load reporting to CloudWatch (Matt West).
 
 * __3.2.0__ - 2019-08-05
 

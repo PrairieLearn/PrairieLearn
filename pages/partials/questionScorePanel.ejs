@@ -31,24 +31,19 @@
       <% } %>
     </tbody>
   </table>
+
   <% if (assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-      Report an error in this question
+      Report an error in this question <i class="far fa-caret-square-down"></i>
     </button>
     <div class="collapse" id="issueCollapse">
-      <hr />
       <form method="POST">
-        <p class="small">
+        <p class="small mt-3">
           This form is only for reporting errors in the question
           itself. Do not use this form if you just don't know how to
           answer the question.
         </p>
-        <% if (/*authz_data.mode == 'Exam'*/ false) { %>
-        <p class="small">
-          Ask a proctor if you think there is a problem with your computer.
-        </p>
-        <% } %>
         <div class="form-group">
           <textarea class="form-control" rows="5" name="description" placeholder="Describe the error in this question"></textarea>
         </div>

@@ -4,6 +4,9 @@ import numpy as np
 import chevron
 
 
+DIGITS_DEFAULT = 2
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=['digits'])
@@ -11,7 +14,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    digits = pl.get_integer_attrib(element, 'digits', 2)
+    digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
 
     matlab_data = ''
     python_data = 'import numpy as np\n\n'
