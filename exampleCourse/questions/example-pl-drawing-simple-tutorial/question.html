@@ -5,7 +5,7 @@
 
 </pl-question-panel>
 <p>
-<pl-drawing grid-size="20" answers-name="point" hide-answer-panel="false" height={{params.canvas_height}} width={{params.canvas_width}}>
+<pl-drawing grid-size="20"  answers-name="point" hide-answer-panel="false" height={{params.canvas_height}} width={{params.canvas_width}}>
 
     <pl-drawing-answer draw-error-box="true">
 
@@ -38,14 +38,16 @@
 
     <pl-drawing-initial >
       <pl-drawing-group visible={{params.visible1}}>
-          <pl-coordinates x1={{params.x0}} y1={{params.y0}} label="O"> </pl-coordinates>
+          <pl-coordinates x1={{params.x0}} y1={{params.y0}} label="O" offsetx="-10" offsety="5"> </pl-coordinates>
       </pl-drawing-group>
 
       <pl-drawing-group visible={{params.visible0}}>
-        <pl-rod x1={{params.xA}} y1={{params.y}} x2={{params.xD}} y2={{params.y}} label1="A" label2="D"> </pl-rod>
-        <pl-point x1={{params.xB}} y1={{params.y}} label="B" ></pl-point>
-        <pl-point x1={{params.xC}} y1={{params.y}} label="C" ></pl-point>
-        <pl-coordinates x1={{params.x0}} y1={{params.y0}} label="O"> </pl-coordinates>
+        <pl-rod x1={{params.xA}} y1={{params.y}} x2={{params.xD}} y2={{params.y}}
+                label1="A"  offsetx1="-10"  offsety1="10"
+                label2="D"  offsetx2="-10"  offsety2="10" > </pl-rod>
+        <pl-point x1={{params.xB}} y1={{params.y}} label="B" offsetx="-10"  offsety="10"></pl-point>
+        <pl-point x1={{params.xC}} y1={{params.y}} label="C" offsetx="-10"  offsety="10"></pl-point>
+        <pl-coordinates x1={{params.x0}} y1={{params.y0}} label="O" offsetx="-10" offsety="5"> </pl-coordinates>
       </pl-drawing-group>
     </pl-drawing-initial>
 
