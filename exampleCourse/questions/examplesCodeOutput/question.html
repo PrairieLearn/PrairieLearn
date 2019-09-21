@@ -1,0 +1,32 @@
+<pl-question-panel>
+  <p>
+    The following examples below were created to show the capabilities of the <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-output"><code>pl-code-output</code></a> element, which allows formatting and rendering various Python variables defined in the <code>server.py</code> on a question page.  For example, Pandas dataframes can be set to a parameter and then rendered on the page a la Jupyter Notebook, or ordinary Python variables can be displayed in text format.
+  </p>
+</pl-question-panel>
+
+<div class="card my-2">
+  <div class="card-body">
+  <p>
+    Here is an example with the <code>variable-type</code> attribute set to <code>dataframe</code>.  Note that if you are setting a value in <code>data['params']</code> to a dataframe, you should use Pandas' built-in <code>dataframe.to_json()</code> function.
+  </p>
+  <pl-code source-file-name="test.py"></pl-code>
+  <pl-code-output variable-name="df" variable-type="dataframe"></pl-code-output>
+  </div>
+</div>
+
+
+<div class="card my-2">
+  <div class="card-body">
+  <p>
+    Here is a randomly generated matrix created by calling <code>np.random.random((3, 3))</code>.  Any variables will be converted using <code>repr()</code> if they are being shown as <code>text</code>.
+  </p>
+  <pl-code-output variable-name="matrix"></pl-code-output>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+  <p>Here is an example displaying a dictionary.  You can add additional text to the output by using the <code>variable-prefix</code> and <code>variable-suffix</code> attributes.</p>
+  <pl-code-output variable-name="my_dictionary" variable-prefix="my_dictionary = "></pl-code-output>
+  </div>
+</div>

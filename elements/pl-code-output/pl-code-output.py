@@ -2,6 +2,8 @@ import prairielearn as pl
 import lxml.html
 import pandas as pd
 
+VARIABLE_TYPE_DEFAULT = "text"
+NO_HIGHLIGHT_DEFAULT = False
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -10,7 +12,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    vartype = pl.get_string_attrib(element, 'variable-type', 'text')
+    vartype = pl.get_string_attrib(element, 'variable-type', VARIABLE_TYPE_DEFAULT)
     varname = pl.get_string_attrib(element, 'variable-name')
 
     if varname not in data['params']:
@@ -22,9 +24,9 @@ def render(element_html, data):
     # render the output variable
     if vartype == 'dataframe':
         varout = pd.read_json(varout)
-        html += varout.to_html(classes=['pl-code-output-table']) + '<p class="pl-code-output-table-dimensions">' + str(varout.shape[0]) + ' rows x ' + str(varout.shape[1]) + ' columns</p><br>'
+        html += varout.to_html(classes=['pl-code-output-table']) + '<p class="pl-code-output-table-dimensions">{} rows x {} columns</p><br>'.format(str(varout.shape[0]), str(varout.shape[1]))
     elif vartype == 'text':
-        no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
+        no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
         prefix = pl.get_string_attrib(element, 'variable-prefix', '')
         suffix = pl.get_string_attrib(element, 'variable-suffix', '')
 

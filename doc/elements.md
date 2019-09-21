@@ -753,6 +753,15 @@ Attribute | Type | Default | Description
 
 As of right now, the element supports displaying either Pandas dataframes as an HTML table or Python objects via `repr()`.  When setting a parameter to a dataframe, use Pandas' built in `dataframe.to_json()`.
 
+#### Example implementations
+
+- [`examplesCodeOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesCodeOutput)
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+
 ## `pl-figure` element
 
 Display a statically or dynamically generated image.
