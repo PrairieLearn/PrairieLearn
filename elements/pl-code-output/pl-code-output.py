@@ -2,8 +2,9 @@ import prairielearn as pl
 import lxml.html
 import pandas as pd
 
-VARIABLE_TYPE_DEFAULT = "text"
+VARIABLE_TYPE_DEFAULT = 'text'
 NO_HIGHLIGHT_DEFAULT = False
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
