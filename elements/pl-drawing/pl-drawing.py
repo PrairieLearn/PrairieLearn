@@ -3,8 +3,6 @@ import lxml.html
 import lxml.etree
 import chevron
 import json
-import re
-import json
 import warnings
 import math
 import numpy as np
@@ -48,8 +46,8 @@ element_attributes = {
                       "stroke-color", "stroke-width"],
     "pl-fixed-pin": ["x1", "y1", "height", "width", "angle", "draw-pin", "draw-ground", "label", "offsetx", "offsety",
                      "color", "stroke-color", "stroke-width"],
-    "pl-roller": ["x1", "y1", "height", "width", "angle", "draw-pin", "draw-ground", "label", "offsetx", "offsety"
-                  , "color", "stroke-color", "stroke-width"],
+    "pl-roller": ["x1", "y1", "height", "width", "angle", "draw-pin", "draw-ground", "label", "offsetx", "offsety",
+                     "color", "stroke-color", "stroke-width"],
     "pl-clamped": ["x1", "y1", "height", "width", "angle", "label", "offsetx", "offsety", "color", "stroke-width"],
     "pl-spring": ["x1", "y1", "width", "angle", "height", "interval", "x2", "y2", "stroke-color", "stroke-width",
                   "draw-pin"],
@@ -65,8 +63,8 @@ element_attributes = {
                   "stroke-width", "arrow-head-width", "arrow-head-length", "disregard-sense", "draw-error-box",
                   "offset-forward", "offset-backward", "optional-grading"],
     "pl-double-headed-vector": ["x1", "y1", "anchor-is-tail", "width", "angle", "label", "offsetx", "offsety", "color",
-                  "stroke-width", "arrow-head-width", "arrow-head-length", "disregard-sense", "draw-error-box",
-                  "offset-forward", "offset-backward", "optional-grading"],
+                                "stroke-width", "arrow-head-width", "arrow-head-length", "disregard-sense", "draw-error-box",
+                                "offset-forward", "offset-backward", "optional-grading"],
     "pl-arc-vector": ["x1", "y1", "radius", "start-angle", "end-angle", "draw-center", "clockwise-direction", "label",
                       "offsetx", "offsety", "color", "stroke-width", "arrow-head-width", "arrow-head-length",
                       "disregard-sense", "draw-error-box", "optional-grading"],
@@ -76,12 +74,11 @@ element_attributes = {
                             "graded", "optional-grading", "anchor-is-tail"],
     "pl-text": ["label", "latex", "font-size", "x1", "y1", "offsetx", "offsety"],
     "pl-drawing-answer": ["draw-error-box"],
-    "pl-axes": ["origin", "xneg", "xpos", "yneg", "ypos", "grid-label", "supporting-lines",  "label-x", "offsetx-label-x",
-                               "offsety-label-x", "label-y", "offsetx-label-y", "offsety-label-y", "color", "stroke-width"],
-    "pl-graph-line": ["origin", "end-points", "end-gradients" , "draw-error-box", "offset-tol-x", "offset-tol-y", "offset-control-tol-x", "offset-control-tol-y", "color" , "stroke-width"]
+    "pl-axes": ["origin", "xneg", "xpos", "yneg", "ypos", "grid-label", "supporting-lines", "label-x", "offsetx-label-x",
+                "offsety-label-x", "label-y", "offsetx-label-y", "offsety-label-y", "color", "stroke-width"],
+    "pl-graph-line": ["origin", "end-points", "end-gradients", "draw-error-box", "offset-tol-x", "offset-tol-y",
+                        "offset-control-tol-x", "offset-control-tol-y", "color", "stroke-width"]
 }
-
-
 
 graded_elements = [
     'pl-controlled-line',
@@ -94,29 +91,32 @@ graded_elements = [
     'pl-graph-line'
 ]
 
-#some default values that are used in different functions
+# some default values that are used in different functions
 width_obj = 60
 stroke_width = 2
 point_size = 4
 
-def get_error_box(x1,y1,theta,tol,offset_forward,offset_backward):
+
+def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1,y1])
     # Defining the direction of the vector
-    dir = np.array([ math.cos(theta), math.sin(theta) ])
+    dir = np.array([math.cos(theta), math.sin(theta)])
     # Defining the error box limit in the direction of the vector
     max_forward = offset_forward + tol
     max_backward = offset_backward + tol
     wbox = max_backward + max_forward
     # Defining the error box limit in the direction perpendicular to the vector
     max_perp = tol
-    hbox = 2*max_perp
-    pc = rpos - (wbox/2 - max_forward)*dir
-    return (pc,hbox,wbox,max_forward,max_backward)
+    hbox = 2 * max_perp
+    pc = rpos - (wbox/2 - max_forward) * dir
+    return (pc, hbox, wbox, max_forward, max_backward)
+
 
 def format_attrib_name(name):
     spl = name.split("-")
     return reduce(lambda acc, x: acc + x.capitalize(), spl[1:], spl[0])
+
 
 def union_drawing_items(e1, e2):
     '''
@@ -149,7 +149,7 @@ def union_drawing_items(e1, e2):
     for item in obj2:
         newobj.append(item)
 
-    return { 'objects': newobj }
+    return {'objects': newobj}
 
 
 def check_attributes_rec(element):
@@ -177,7 +177,6 @@ def check_graded(element, graded=True):
             continue
 
         if not child.tag in graded_elements:
-            #print(str(child.tag))
             raise Exception("Element " + child.tag + " should not be graded!  Put it inside pl-drawing-initial.")
         check_graded(child, graded)
 
@@ -1874,18 +1873,14 @@ def grade(element_html, data):
     # Loop through and check everything
     for element in student['objects']:
 
-        if 'offset_control_tol' in element:
-            print (element['gradingName'])
-
         if (not 'gradingName' in element or
             not element['gradingName'] in comp or
-            not element['graded'] ):
+            not element['graded']):
             continue
         # total number of objects inserted by students (using buttons)
         # this disregard the initial objects placed by question authors
         num_total_st += 1
         found_match = False
-
 
         for ref_element in reference['objects']:
 
@@ -1908,39 +1903,25 @@ def grade(element_html, data):
                     num_correct += 1
                 break
 
-    # # Find missing objects
-    # # Removing this feedback feature for now
-    # missing = {}
-    # for ref_element in reference['objects']:
-    #     if (ref_element['gradingName'] in comp and
-    #         getgrd(ref_element) == 'required' and
-    #         matches[ref_element['id']] == False):
-    #         el = ref_element['gradingName']
-    #         if el in missing:
-    #             missing[el] = missing[el] + 1
-    #         else:
-    #             missing[el] = 1
-
     extra_not_optional = num_total_st - (num_optional + num_correct)
 
     if num_total_ref == 0:
         score = 1
     else:
-        percent_correct = num_correct/num_total_ref
-        if percent_correct == 1: # if all the expected objects are matched
+        percent_correct = num_correct / num_total_ref
+        if percent_correct == 1:
+            # if all the expected objects are matched
             # penalize extra objects
-            score = max(0 , percent_correct - extra_not_optional/num_total_ref)
+            score = max(0, percent_correct - extra_not_optional / num_total_ref)
         else:
             score = percent_correct
 
     data['partial_scores'][name] = {
-            'score': score,
-            'weight': 1,
-            'feedback': {
+        'score': score,
+        'weight': 1,
+        'feedback': {
             'correct': (score == 1),
             'missing': {},
-            'matches': matches
-        }
-    }
+            'matches': matches}}
 
     return data

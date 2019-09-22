@@ -1,5 +1,5 @@
 
-colors = {  'red1': '#ffccbc',
+colors = {'red1': '#ffccbc',
             'red2': '#ff6c5c',
             'red3': '#b71c0c',
             'pink1': '#ffbcd8',
@@ -29,9 +29,9 @@ colors = {  'red1': '#ffccbc',
             'brown': '#8e5c3b',
             'gray1': '#e0e0e0',
             'gray2': '#909090',
-            'gray':  '#909090',
-            'gray3': '#505050',
-            }
+            'gray': '#909090',
+            'gray3': '#505050'}
+
 
 def get_color_definition(name):
     if name in colors:

@@ -764,33 +764,45 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     gen_text: function(str, options) {
         let ref = this;
         let div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-
-        /* Can't set 'display: none' otherwise MathJax won't pick up the element for rendering,
-           so... just move it off screen a bit */
-        div.style.position = "absolute";
-        div.style.top = "-500px";
-        div.style.left = "-500px";
-        if (options.fontSize) {
-            if (typeof options.fontSize == "string") {
-                div.style.fontSize = options.fontSize.toString();
-            } else {
-                div.style.fontSize = options.fontSize + "px";
+        let contents = null;
+        let populateDiv = function() {
+            let child = div.lastChild;
+            while (child) {
+                div.removeChild(child);
+                child = div.lastChild;
             }
+            
+            /* Can't set 'display: none' otherwise MathJax won't pick up the element for rendering,
+               so... just move it off screen a bit */
+            div.style.position = "absolute";
+            div.style.top = "-500px";
+            div.style.left = "-500px";
+            if (options.fontSize) {
+                if (typeof options.fontSize == "string") {
+                    div.style.fontSize = options.fontSize.toString();
+                } else {
+                    div.style.fontSize = options.fontSize + "px";
+                }
+            }
+
+            contents = document.createElement("script");
+            contents.setAttribute('type', 'math/tex');
+            contents.innerHTML = str;
+
+            div.appendChild(contents);
         }
-
-        let contents = document.createElement("script");
-        contents.setAttribute('type', 'math/tex');
-        contents.innerHTML = str;
-
-        div.appendChild(contents);
+        populateDiv();
         document.body.appendChild(div);
 
         var callback = function() {
             /* Get the frame where the current Math is displayed */
             var frame = div.getElementsByClassName("MathJax_SVG")[0];
             if(!frame) {
-                console.log("frame not ready");
-                setTimeout(callback, 100);
+                /* This is probably not the cleanest solution, but if
+                   we can't get a rendered equation just re-try */
+                populateDiv();
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, contents],
+                                  [callback]);
                 return;
             }
 

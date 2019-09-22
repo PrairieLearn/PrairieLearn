@@ -8,13 +8,48 @@
         let canvas_height = canvas_elem.clientHeight;
         let html_input = root_elem.find('input');
 
+        let parseElemOptions = function(elem) {
+            let opts = JSON.parse(elem.getAttribute("opts"));
+
+            /* Parse any numerical options from string to floating point */
+            for (let key in opts) {
+                let parsed = Number(opts[key]);
+                if (!isNaN(parsed)) {
+                    opts[key] = parsed;
+                }
+            }
+            return opts;
+        }
+        
         /* Set all button icons */
         let drawing_btns = $(root_elem).find("button");
         let image_base_url = elem_options['client_files'];
-
         drawing_btns.each(function(i, btn) {
             let img = btn.children[0];
             let file_name = img.parentNode.name;
+
+            /* Have special cases for the 'pl-distributed-load' icon, which
+               can take different icons based on the width parameters */
+            if (file_name.toLowerCase() === "pl-distributed-load") {
+                let wdef = {w1: 60, w2: 60, anchor_is_tail: false};
+                let opts = parseElemOptions(img.parentNode);
+                opts = _.defaults(opts, wdef);
+                let w1 = opts['w1'];
+                let w2 = opts['w2'];
+                let anchor = opts['anchor_is_tail'];
+                
+                if (w1 == w2) {
+                    file_name = "DUD";
+                } else if ((w1 < w2) && (anchor === 'true')) {
+                    file_name = "DTDA";
+                } else if ((w1 < w2)) {
+                    file_name = "DTUD";
+                } else if ((w1 > w2) && (anchor === 'true')) {
+                    file_name = "DTUA";
+                } else {
+                    file_name = "DTDD";
+                }
+            }
             img.setAttribute("src", image_base_url + file_name + ".png");
         });
         // ================================================================================
@@ -172,7 +207,7 @@
                 fill: 'blue',
                 stroke: 'blue',
                 strokeWidth: 1,
-    	          originX:'center',
+    	        originX:'center',
                 originY: 'center',
                 padding: 12,
                 gradingName: 'point',
@@ -274,21 +309,12 @@
       	    } else {
       	        canvas.remove(canvas.getActiveObject());
       	    }
-        }
-
+        };
+                          
         /* Attach click handlers */
         drawing_btns.each(function(i, btn) {
             let id = btn.name;
-            let opts = JSON.parse(btn.getAttribute("opts"));
-
-            /* Parse any numerical options from string to floating point */
-            for (let key in opts) {
-                let parsed = Number(opts[key]);
-                if (!isNaN(parsed)) {
-                    opts[key] = parsed;
-                }
-            }
-
+            let opts = parseElemOptions(btn);
             if (id in handlers) {
                 $(btn).click(() => handlers[id](_.clone(opts)));
             }
