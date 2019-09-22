@@ -79,6 +79,8 @@
 
   * Fix disabled server load reporting to CloudWatch (Matt West).
 
+  * Fix legacy Ace editor assets (Nathan Walters).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
