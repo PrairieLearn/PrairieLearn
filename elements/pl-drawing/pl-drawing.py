@@ -297,9 +297,7 @@ def format_attrib_name(name):
 
 
 def union_drawing_items(e1, e2):
-    '''
-    Union two sets of drawing items, prioritizing e2 in cases of duplicates.
-    '''
+    # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
 
     if 'objects' in e1:
         obj1 = e1['objects']
@@ -331,9 +329,8 @@ def union_drawing_items(e1, e2):
 
 
 def check_attributes_rec(element):
-    '''
-    Recursively check attributes for a tree of elements
-    '''
+    # Recursively check attributes for a tree of elements
+
     name = element.tag
     if name in element_attributes:
         try:
@@ -346,10 +343,9 @@ def check_attributes_rec(element):
 
 
 def check_graded(element, graded=True):
-    '''
-    Recursively check if all of an element's children are correctly graded/ungraded
-    Will throw an error if e.g. an ungraded element is put in pl-drawing-answer
-    '''
+    # Recursively check if all of an element's children are correctly graded/ungraded
+    # Will throw an error if e.g. an ungraded element is put in pl-drawing-answer
+
     for child in element:
         if child.tag is lxml.etree.Comment or child.tag == 'pl-drawing-group':
             continue
@@ -463,18 +459,14 @@ def render_controls(template, elem):
 
 
 def render_drawing_items(elem, curid=1, defaults={}):
-    '''
-    Convert a set of drawing items defined as html elements into an array of
-    objects that can be sent to mechanicsObjects.js
-    '''
-    '''
-    Some helpers to get attributes from elements.  If there is no default argument passed in,
-    it is assumed that the attribute must be present or else an error will be raised.  If a
-    default is passed, the attribute is optional.
-    '''
+    # Convert a set of drawing items defined as html elements into an array of
+    # objects that can be sent to mechanicsObjects.js
+    # Some helpers to get attributes from elements.  If there is no default argument passed in,
+    # it is assumed that the attribute must be present or else an error will be raised.  If a
+    # default is passed, the attribute is optional.
 
     def attrgetter(cast):
-        ''' Cast is the data type that should be returned '''
+        # Cast is the data type that should be returned
 
         def f(el, attrib, default=None):
             # Partial function application, thanks Mattox!
@@ -501,9 +493,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
     st_attrib = attrgetter(str)
     bool_attrib = attrgetter(parsebool)
 
-    '''
-    Generate element representations
-    '''
+    # Generate element representations
 
     def gen_controlledLine(el):
         nonlocal curid
