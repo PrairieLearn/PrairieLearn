@@ -82,6 +82,9 @@
   * Fix disabled server load reporting to CloudWatch (Matt West).
 
   * Fix legacy Ace editor assets (Nathan Walters).
+  * Fix stack trace error printing for externally graded question errors (Dave Mussulman).
+
+  * Fix ssl generation to happen at docker build instead of on each run (Dave Mussulman).
 
 * __3.2.0__ - 2019-08-05
 
