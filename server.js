@@ -155,7 +155,8 @@ app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Support legacy use of ace by v2 questions
-app.use('/public/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+app.use('/javascripts/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
 
 
 // Middleware for all requests
