@@ -31,6 +31,8 @@
 
   * Add `pl-hide-in-panel` element (Matt West).
 
+  * Add student Gradebook page (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
