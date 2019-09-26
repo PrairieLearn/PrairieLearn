@@ -15,6 +15,11 @@ router.get('/', function(req, res, next) {
         force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
         req_date: res.locals.req_date,
     };
+    // Handle the default devMode case to auto-login
+    if (config.authType == 'none') {
+        res.redirect('/pl/devlogin');
+        return;
+    }
     sqldb.query(sql.get_mode, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.mode = result.rows[0].mode;

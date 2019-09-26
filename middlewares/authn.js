@@ -60,42 +60,6 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    // bypass auth for local /pl/ serving
-    if (config.authType === 'none') {
-        var authUid = config.authUid;
-        var authName = config.authName;
-        var authUin = config.authUin;
-        if (req.cookies.pl_test_user == 'test_student') {
-            authUid = 'student@illinois.edu';
-            authName = 'Student User';
-            authUin = '000000001';
-        }
-        let params = [
-            authUid,
-            authName,
-            authUin,
-            'dev',
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
-            if (ERR(err, next)) return;
-
-            let params = {
-                user_id: result.rows[0].user_id,
-            };
-            sqldb.query(sql.select_user, params, (err, result) => {
-                if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
-                res.locals.authn_user = result.rows[0].user;
-                res.locals.authn_institution = result.rows[0].institution;
-                res.locals.authn_provider_name = 'Local';
-                res.locals.is_administrator = result.rows[0].is_administrator;
-                res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
-                next();
-            });
-        });
-        return;
-    }
-
     // otherwise look for auth cookies
     if (req.cookies.pl_authn == null) {
         // if no authn cookie then redirect to the login page
