@@ -26,7 +26,7 @@ def render(element_html, data):
 
     # render the output variable
     if vartype == 'dataframe':
-        varout = pd.read_json(varout)
+        varout = pl.from_json(varout)
         html += varout.to_html(classes=['pl-code-output-table']) + '<p class="pl-code-output-table-dimensions">{} rows x {} columns</p><br>'.format(str(varout.shape[0]), str(varout.shape[1]))
     elif vartype == 'text':
         no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
