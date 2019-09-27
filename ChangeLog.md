@@ -33,6 +33,8 @@
 
   * Add `pl-code-output` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
 
+  * Add student Gradebook page (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -80,6 +82,8 @@
   * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
 
   * Fix disabled server load reporting to CloudWatch (Matt West).
+
+  * Fix legacy Ace editor assets (Nathan Walters).
 
 * __3.2.0__ - 2019-08-05
 
