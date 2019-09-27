@@ -16,9 +16,6 @@ RUN yum -y install \
         postgresql11-server \
         postgresql11-contrib \
         redis \
-        python36u \
-        python36u-pip \
-        python36u-devel \
         gcc \
         make \
         openssl \
@@ -49,7 +46,6 @@ RUN yum -y install \
         && mkdir /var/postgres && chown postgres:postgres /var/postgres \
         && su postgres -c "/usr/pgsql-11/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
     && echo "setting up python3..." \
-        && ln -s /usr/bin/python3.6 /usr/bin/python3 \
         && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
     && echo "installing R packages..." \
         && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
