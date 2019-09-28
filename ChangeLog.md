@@ -87,7 +87,9 @@
 
   * Fix stack trace error printing for externally graded question errors (Dave Mussulman).
 
-  * Fix ssl generation to happen at docker build instead of on each run (Dave Mussulman).
+  * Fix SSL generation to happen at docker build instead of on each run (Dave Mussulman).
+
+  * Fix external grading results containing NULL bytes (Matt West).
 
 * __3.2.0__ - 2019-08-05
 
