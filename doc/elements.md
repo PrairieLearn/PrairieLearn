@@ -711,7 +711,7 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 ## `pl-code-output` element
 
-Displays the value of a variable or parameter in python representation.
+Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
 #### Sample Element 1
 
