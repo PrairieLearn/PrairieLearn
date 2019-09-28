@@ -751,7 +751,7 @@ Attribute | Type | Default | Description
 
 #### Details
 
-As of right now, the element supports displaying either Pandas dataframes as an HTML table or Python objects via `repr()`.  When setting a parameter to a dataframe, use PrairieLearn's built in `pl.to_json()`.
+As of right now, the element supports displaying either Pandas DataFrames as an HTML table or Python objects via `repr()`.  When setting a parameter to a DataFrame, use PrairieLearn's built in `pl.to_json()`.
 
 #### Example implementations
 
