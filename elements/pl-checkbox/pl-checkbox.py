@@ -5,6 +5,16 @@ import math
 import chevron
 
 
+WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
+INLINE_DEFAULT = False
+PARTIAL_CREDIT_DEFAULT = False
+PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
+HIDE_ANSWER_PANEL_DEFAULT = False
+HIDE_HELP_TEXT_DEFAULT = False
+DETAILED_HELP_TEXT_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -14,7 +24,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
     if not partial_credit and partial_credit_method is not None:
         raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
@@ -70,7 +80,7 @@ def prepare(element_html, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
@@ -95,8 +105,8 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
@@ -106,7 +116,7 @@ def render(element_html, data):
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
-    inline = pl.get_boolean_attrib(element, 'inline', False)
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     submitted_keys = data['submitted_answers'].get(name, [])
 
     # if there is only one key then it is passed as a string,
@@ -147,10 +157,10 @@ def render(element_html, data):
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
-        hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', False)
+        hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', HIDE_HELP_TEXT_DEFAULT)
         if not hide_help_text:
             # Should we reveal the depth of the choice?
-            detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', False)
+            detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
             min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             if detailed_help_text:
@@ -266,7 +276,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'answer':
 
-        if not pl.get_boolean_attrib(element, 'hide-answer-panel', False):
+        if not pl.get_boolean_attrib(element, 'hide-answer-panel', HIDE_ANSWER_PANEL_DEFAULT):
             correct_answer_list = data['correct_answers'].get(name, [])
             if len(correct_answer_list) == 0:
                 raise ValueError('At least one option must be true.')
@@ -321,7 +331,7 @@ def parse(element_html, data):
         return
 
     # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
-    if pl.get_boolean_attrib(element, 'detailed-help-text', False):
+    if pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
         min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
         max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
         n_submitted = len(submitted_key)
@@ -333,10 +343,10 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     number_answers = len(data['params'][name])
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -366,9 +376,9 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
@@ -392,7 +402,7 @@ def test(element_html, data):
             # break and use this choice if it isn't correct
             if (len(ans) >= 1):
                 if set(ans) != set(correct_keys):
-                    if not pl.get_boolean_attrib(element, 'detailed-help-text', False):
+                    if not pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
                         break
                     else:
                         min_correct = pl.get_integer_attrib(element, 'min-correct', 1)

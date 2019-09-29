@@ -1,6 +1,28 @@
 import prairielearn as pl
 import lxml.html
 import chevron
+from ansi2html import Ansi2HTMLConverter
+import ansi2html.style as ansi2html_style
+
+
+# No built-in support for custom schemes, so we'll monkey-patch our own colors
+# into the module. Colors borrowed from the "Dark Background" color preset in
+# iTerm2; blue tweaked a bit for better legibility on black.
+# order: black red green yellow blue magenta cyan white
+# first set of 8 is normal, second set of 8 is bright
+ansi2html_style.SCHEME['iterm'] = (
+    '#000000', '#c91b00', '#00c200', '#c7c400',
+    '#0037da', '#c930c7', '#00c5c7', '#c7c7c7',
+    '#676767', '#ff6d67', '#5ff967', '#fefb67',
+    '#6871ff', '#ff76ff', '#5ffdff', '#feffff',
+) * 2
+conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
+
+
+def ansi_to_html(output):
+    if output is None:
+        return None
+    return conv.convert(output, full=False)
 
 
 def prepare(element_html, data):
@@ -19,7 +41,7 @@ def render(element_html, data):
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
         if not grading_succeeded:
-            html_params['message'] = feedback.get('message', None)
+            html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:
             results = feedback.get('results', None)
             if grading_succeeded and results:
@@ -28,9 +50,9 @@ def render(element_html, data):
                 html_params['achieved_max_points'] = (results.get('score', 0) >= 1.0)
                 html_params['results_color'] = '#4CAF50' if (results.get('score', 0) >= 1.0) else '#F44336'
                 html_params['has_message'] = bool(results.get('message', False))
-                html_params['message'] = results.get('message', None)
+                html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
-                html_params['output'] = results.get('output', None)
+                html_params['output'] = ansi_to_html(results.get('output', None))
                 html_params['has_message_or_output'] = bool(html_params['has_message'] or html_params['has_output'])
 
                 results_tests = results.get('tests', None)
@@ -58,9 +80,9 @@ def render(element_html, data):
                         test['index'] = index
                         test['name'] = results_test.get('name', '')
                         test['has_message'] = bool(results_test.get('message', None))
-                        test['message'] = results_test.get('message', None)
+                        test['message'] = ansi_to_html(results_test.get('message', None))
                         test['has_output'] = bool(results_test.get('output', None))
-                        test['output'] = results_test.get('output', None)
+                        test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
                         if not tests_missing_points:

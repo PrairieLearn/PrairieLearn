@@ -30,6 +30,19 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setTheme('ace/theme/chrome');
     }
 
+    if (options.minLines) {
+        this.editor.setOption('minLines', options.minLines);
+    } 
+
+    if (options.maxLines) {
+        this.editor.setOption('maxLines', options.maxLines);
+    } 
+
+    if (options.autoResize) {
+        this.editor.setAutoScrollEditorIntoView(true);
+        this.editor.setOption('maxLines', Infinity);
+    }
+
     var currentContents = '';
     if (options.currentContents) {
         currentContents = this.b64DecodeUnicode(options.currentContents);
