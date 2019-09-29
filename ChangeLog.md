@@ -31,7 +31,7 @@
 
   * Add `pl-hide-in-panel` element (Matt West).
 
-  * Add `pl-code-output` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
+  * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
 
   * Add student Gradebook page (Matt West).
 
