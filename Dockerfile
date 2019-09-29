@@ -19,7 +19,8 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && node server.js --migrate-and-exit \
     && su postgres -c "createuser root" \
     && su postgres -c 'psql -c "alter user root with superuser;"' \
-    && /PrairieLearn/docker/start_postgres.sh stop
+    && /PrairieLearn/docker/start_postgres.sh stop \
+    && /PrairieLearn/docker/gen_ssl.sh
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD /PrairieLearn/docker/init.sh
