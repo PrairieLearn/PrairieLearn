@@ -6,6 +6,18 @@ import prairielearn as pl
 import random
 
 
+WEIGHT_DEFAULT = 1
+CORRECT_ANSWER_DEFAULT = None
+LABEL_DEFAULT = None
+SUFFIX_DEFAULT = None
+DISPLAY_DEFAULT = 'inline'
+REMOVE_LEADING_TRAILING_DEFAULT = False
+REMOVE_SPACES_DEFAULT = False
+PLACEHOLDER_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
+IGNORE_CASE_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -13,7 +25,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
-    correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
 
     if correct_answer is not None:
         if name in data['correct_answers']:
@@ -24,12 +36,12 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
-    suffix = pl.get_string_attrib(element, 'suffix', None)
-    display = pl.get_string_attrib(element, 'display', 'inline')
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
-    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
-    placeholder = pl.get_string_attrib(element, 'placeholder', None)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
+    suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
+    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
+    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', REMOVE_SPACES_DEFAULT)
+    placeholder = pl.get_string_attrib(element, 'placeholder', PLACEHOLDER_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -140,7 +152,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     # Get allow-blank option
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -161,16 +173,16 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get remove-spaces option
-    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
+    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', REMOVE_SPACES_DEFAULT)
 
     # Get remove-leading-trailing option
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', REMOVE_LEADING_TRAILING_DEFAULT)
 
     # Get string case sensitivity option
-    ignore_case = pl.get_string_attrib(element, 'ignore-case', False)
+    ignore_case = pl.get_string_attrib(element, 'ignore-case', IGNORE_CASE_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -210,8 +222,8 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]

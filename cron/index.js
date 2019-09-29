@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
+const uuidv4 = require('uuid/v4');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');
@@ -27,17 +28,22 @@ const jobTimeouts = {};
 
 module.exports = {
     init(callback) {
-       debug(`init()`);
-        const jobs = [
+        debug(`init()`);
+        module.exports.jobs = [
+            {
+                name: 'sendUnfinishedCronWarnings',
+                module: require('./sendUnfinishedCronWarnings'),
+                intervalSec: 'daily',
+            },
             {
                 name: 'autoFinishExams',
                 module: require('./autoFinishExams'),
-                intervalSec: config.cronIntervalAutoFinishExamsSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalAutoFinishExamsSec,
             },
             {
                 name: 'errorAbandonedJobs',
                 module: require('./errorAbandonedJobs'),
-                intervalSec: config.cronIntervalErrorAbandonedJobsSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
             },
             {
                 name: 'sendExternalGraderStats',
@@ -52,17 +58,17 @@ module.exports = {
             {
                 name: 'externalGraderLoad',
                 module: require('./externalGraderLoad'),
-                intervalSec: config.cronIntervalExternalGraderLoadSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
             },
             {
                 name: 'serverLoad',
                 module: require('./serverLoad'),
-                intervalSec: config.cronIntervalServerLoadSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
             },
             {
                 name: 'serverUsage',
                 module: require('./serverUsage'),
-                intervalSec: config.cronIntervalServerUsageSec,
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerUsageSec,
             },
             {
                 name: 'calculateAssessmentQuestionStats',
@@ -75,9 +81,9 @@ module.exports = {
                 intervalSec: 'daily',
             },
         ];
-        logger.verbose('initializing cron', _.map(jobs, j => _.pick(j, ['name', 'intervalSec'])));
+        logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
 
-        const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
+        const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
         _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
             if (intervalSec == 'daily') {
                 this.queueDailyJobs(jobsList);
@@ -173,14 +179,15 @@ module.exports = {
     // run a list of jobs
     runJobs(jobsList, callback) {
         debug(`runJobs()`);
-        logger.verbose('cron: jobs starting');
+        const cronUuid = uuidv4();
+        logger.verbose('cron: jobs starting', {cronUuid});
         async.eachSeries(jobsList, (job, callback) => {
             debug(`runJobs(): running ${job.name}`);
-            this.tryJobWithLock(job, (err) => {
+            this.tryJobWithLock(job, cronUuid, (err) => {
                 if (ERR(err, () => {})) {
                     debug(`runJobs(): error running ${job.name}: ${err}`);
                     logger.error('cron: ' + job.name + ' failure: ' + String(err),
-                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
+                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data), cronUuid});
                 }
                 // return null even on error so that we run all jobs even if one fails
                 debug(`runJobs(): completed ${job.name}`);
@@ -188,30 +195,30 @@ module.exports = {
             });
         }, () => {
             debug(`runJobs(): done`);
-            logger.verbose('cron: jobs finished');
+            logger.verbose('cron: jobs finished', {cronUuid});
             callback(null);
         });
     },
 
     // try and get the job lock, and run the job if we get it
-    tryJobWithLock(job, callback) {
+    tryJobWithLock(job, cronUuid, callback) {
         debug(`tryJobWithLock(): ${job.name}`);
         const lockName = 'cron:' + job.name;
         namedLocks.tryLock(lockName, (err, lock) => {
             if (ERR(err, callback)) return;
             if (lock == null) {
                 debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
-                logger.verbose('cron: ' + job.name + ' did not acquire lock');
+                logger.verbose('cron: ' + job.name + ' did not acquire lock', {cronUuid});
                 callback(null);
             } else {
                 debug(`tryJobWithLock(): ${job.name}: acquired lock`);
-                logger.verbose('cron: ' + job.name + ' acquired lock');
-                this.tryJobWithTime(job, (err) => {
+                logger.verbose('cron: ' + job.name + ' acquired lock', {cronUuid});
+                this.tryJobWithTime(job, cronUuid, (err) => {
                     namedLocks.releaseLock(lock, (lockErr) => {
                         if (ERR(lockErr, callback)) return;
                         if (ERR(err, callback)) return;
                         debug(`tryJobWithLock(): ${job.name}: released lock`);
-                        logger.verbose('cron: ' + job.name + ' released lock');
+                        logger.verbose('cron: ' + job.name + ' released lock', {cronUuid});
                         callback(null);
                     });
                 });
@@ -222,7 +229,7 @@ module.exports = {
     // See how long it is since we last ran the job and only run it if
     // enough time has elapsed. We are protected by a lock here so we
     // have exclusive access.
-    tryJobWithTime(job, callback) {
+    tryJobWithTime(job, cronUuid, callback) {
         debug(`tryJobWithTime(): ${job.name}`);
         var interval_secs;
         if (Number.isInteger(job.intervalSec)) {
@@ -240,20 +247,25 @@ module.exports = {
             if (ERR(err, callback)) return;
             if (result.rowCount > 0) {
                 debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
-                logger.verbose('cron: ' + job.name + ' job was recently run, skipping');
+                logger.verbose('cron: ' + job.name + ' job was recently run, skipping', {cronUuid});
                 callback(null);
             } else {
                 debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
-                logger.verbose('cron: ' + job.name + ' job was not recently run');
+                logger.verbose('cron: ' + job.name + ' job was not recently run', {cronUuid});
                 const params = {name: job.name};
                 sqldb.query(sql.update_cron_job_time, params, (err, _result) => {
                     if (ERR(err, callback)) return;
                     debug(`tryJobWithTime(): ${job.name}: updated run time`);
-                    logger.verbose('cron: ' + job.name + ' updated date');
-                    this.runJob(job, (err) => {
+                    logger.verbose('cron: ' + job.name + ' updated date', {cronUuid});
+                    this.runJob(job, cronUuid, (err) => {
                         if (ERR(err, callback)) return;
                         debug(`tryJobWithTime(): ${job.name}: done`);
-                        callback(null);
+                        const params = {name: job.name};
+                        sqldb.query(sql.update_succeeded_at, params, (err, _result) => {
+                            if (ERR(err, callback)) return;
+                            debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
+                            callback(null);
+                        });
                     });
                 });
             }
@@ -261,16 +273,16 @@ module.exports = {
     },
 
     // actually run the job
-    runJob(job, callback) {
+    runJob(job, cronUuid, callback) {
         debug(`runJob(): ${job.name}`);
-        logger.verbose('cron: starting ' + job.name);
+        logger.verbose('cron: starting ' + job.name, {cronUuid});
         var startTime = new Date();
         job.module.run((err) => {
             if (ERR(err, callback)) return;
             var endTime = new Date();
             var elapsedTimeMS = endTime - startTime;
             debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
-            logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
+            logger.verbose('cron: ' + job.name + ' success', {cronUuid, elapsedTimeMS});
             callback(null);
         });
     },

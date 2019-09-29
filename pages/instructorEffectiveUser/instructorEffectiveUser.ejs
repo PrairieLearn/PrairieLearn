@@ -18,11 +18,13 @@
           <p><strong>Authenticated role:</strong> <%= authz_data.authn_role %></p>
           <p><strong>Authenticated mode:</strong> <%= authz_data.authn_mode %></p>
 
-          <form id="resetForm" method="POST">
+          <p><form id="resetForm" method="POST">
             <input type="hidden" name="__action" value="reset">
             <button type="submit" class="btn btn-info">Reset to these values</button>
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-          </form>
+        </form></p>
+
+          <p><strong>Connecting from IP:</strong> <%= ipaddress %></p>
         </div>
 
         <div class="card-footer">

@@ -33,6 +33,7 @@
     "zones": [
         {
             "questions": [
+                {"id": "examplesPanels",                   "points": 2, "maxPoints": 10},
                 {"id": "examplesElementCodeDocumentation", "points": 2, "maxPoints": 10},
                 {"id": "examplesCheckbox",                 "points": 2, "maxPoints": 10},
                 {"id": "examplesNumberInput",              "points": 2, "maxPoints": 10},
@@ -42,7 +43,8 @@
                 {"id": "examplesMatrixComponentInput",     "points": 2, "maxPoints": 10},
                 {"id": "examplesMatrixLatex",              "points": 2, "maxPoints": 10},
                 {"id": "examplesPrairieDrawFigure",        "points": 2, "maxPoints": 10},
-                {"id": "examplesVariableOutput",           "points": 2, "maxPoints": 10}
+                {"id": "examplesVariableOutput",           "points": 2, "maxPoints": 10},
+                {"id": "examplesFileEditor",               "points": 2, "maxPoints": 10}
             ]
         }
     ]

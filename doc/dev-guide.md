@@ -483,7 +483,44 @@ function oldFunction(x1, x2, callback) {
 }
 ```
 
-* To call a callback-style function from within an async/await function, use this pattern:
+* To write a multi-return-value callback-style function that internally uses async/await code, we don't currently have an established pattern.
+
+* To call our own library functions from async/await code, we should provide a version of them with "Async" appended to the name:
+
+```
+const util = require('util');
+module.exports.existingLibFun = (x1, x2, callback) => {
+    callback(null, x1*x2);
+};
+module.exports.existingLibFunAsync = util.promisify(module.exports.myFun);
+
+# in `async` code we can now call existingLibFunAsync() directly with `await`:
+async function newFun(x1, x2) {
+    let y = await existingLibFunAsync(x1, x2);
+    return 3*y;
+}
+```
+
+* If our own library functions use multiple return values, then the async version of them should return an object:
+
+```
+const util = require('util');
+module.exports.existingMultiFun = (x, callback) => {
+    const y1 = x*x;
+    const y2 = x*x*x;
+    callback(null, y1, y2); # note the two return values here
+};
+module.exports.existingMultiFunAsync = util.promisify((x, callback) =>
+    module.exports.existingMultiFun(x, (err, y1, y2) => callback(err, {y1, y2}))
+);
+
+async function newFun(x) {
+    let {y1, y2} = await existingMultiFunAsync(x); # must use y1,y2 names here
+    return y1*y2;
+}
+```
+
+* To call a callback-style function in an external library from within an async/await function, use this pattern:
 
 ```javascript
 util = require('util');
@@ -495,15 +532,44 @@ async function g(x) {
 }
 ```
 
+* As of 2019-08-15 we are not calling any multi-return-value callback-style functions in external libraries from within async/await functions, but if we need to do this then we could include the `bluebird` package and use the pattern:
+
+```javascript
+bluebird = require('bluebird');
+function oldMultiFunction(x, callback) {
+    return callback(null, x*x, x*x*x);
+}
+async function g(x) {
+    let [y1, y2] = await bluebird.promisify(oldMultiFunction, {multiArgs: true})(x); # note array destructuring with y1,y2
+    return y1*y2;
+}
+```
+
 * To call an async/await function from within a callback-style function, use this pattern:
 
 ```javascript
 util = require('util');
-function oldFunction(v, callback) {
-    x = 2 * v;
-    util.callbackify(g)(x, (err, z) => {
+function oldFunction(x, callback) {
+    util.callbackify(g)(x, (err, y) => {
         if (ERR(err, callback)) return;
-        callback(null, z);
+        callback(null, y);
+    });
+}
+```
+
+* To call an multi-return-value async/await function from within a callback-style function, use this pattern:
+
+```javascript
+util = require('util');
+async function gMulti(x) {
+    y1 = x*x;
+    y2 = x*x*x;
+    return {y1, y2};
+}
+function oldFunction(x, callback) {
+    util.callbackify(gMulti)(x, (err, {y1, y2}]) => {
+        if (ERR(err, callback)) return;
+        callback(null, y1*y2);
     });
 }
 ```
