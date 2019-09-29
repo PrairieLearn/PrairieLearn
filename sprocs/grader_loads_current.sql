@@ -59,7 +59,7 @@ BEGIN
         count(*) FILTER (WHERE gl.lifecycle_state = 'AbandoningLaunch'),
         count(*) FILTER (WHERE NOT gl.healthy),
         coalesce(sum(gl.average_jobs), 0),
-        coalesce(sum(gl.max_jobs), 0)
+        coalesce(sum(gl.max_jobs) FILTER (WHERE gl.healthy AND gl.lifecycle_state = 'InService'), 0)
     INTO
         instance_count,
         instance_count_launching,
