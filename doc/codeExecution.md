@@ -47,7 +47,7 @@ The `container` execution mode is similar to the `native` mode in that code is e
 
 In this case, we can't use the bind mount trick above, as PrairieLearn can't create mounts on the host from inside its container. Instead, we'll need a couple of things:
 
-* In `config.json`, the user must specify the host post for any courses they're mounting into PrairieLearn in `courseDirsHost`.
+* In `config.json`, the user must specify the host path for any courses they're mounting into PrairieLearn in `courseDirsHost`.
 * The user must mount the Docker socket into PrairieLearn's container, similarly to what they must do when running external grading locally.
 * The user must create a "scratch" directory on the host, specify it with the `HOSTFILES_DIR` environment variable, and mount the directory to `/hostfiles` in the PrairieLearn container. PriaireLearn will use this directory to communicate its internal files, including element implementations and the Python trampoline, to the host so that they can be mounted into executor containers.
 
