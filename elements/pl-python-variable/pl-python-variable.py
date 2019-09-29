@@ -1,6 +1,5 @@
 import prairielearn as pl
 import lxml.html
-import pandas as pd
 
 NO_HIGHLIGHT_DEFAULT = False
 PREFIX_DEFAULT = ''

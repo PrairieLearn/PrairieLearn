@@ -45,7 +45,7 @@
                 {"id": "examplesPrairieDrawFigure",        "points": 2, "maxPoints": 10},
                 {"id": "examplesVariableOutput",           "points": 2, "maxPoints": 10},
                 {"id": "examplesFileEditor",               "points": 2, "maxPoints": 10},
-                {"id": "examplesCodeOutput",               "points": 2, "maxPoints": 10}
+                {"id": "examplesPythonVariable",           "points": 2, "maxPoints": 10}
             ]
         }
     ]
