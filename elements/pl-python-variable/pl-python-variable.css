@@ -1,4 +1,4 @@
-.pl-code-output-table {
+.pl-python-variable-table {
     display: block;
     overflow-x: scroll;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -10,7 +10,7 @@
     border-spacing: 0;
 }
 
-.pl-code-output-table thead {
+.pl-python-variable-table thead {
     border-bottom-color: black;
     border-bottom-style: solid;
     border-bottom-width: 0.55px;
@@ -20,14 +20,14 @@
     vertical-align: bottom;
 }
 
-.pl-code-output-table th,
-.pl-code-output-table tr,
-.pl-code-output-table td {
+.pl-python-variable-table th,
+.pl-python-variable-table tr,
+.pl-python-variable-table td {
     border: none;
 }
 
-.pl-code-output-table td,
-.pl-code-output-table tbody th {
+.pl-python-variable-table td,
+.pl-python-variable-table tbody th {
     padding: 0.5em 0.5em;
     text-align: right;
     vertical-align: middle;
@@ -38,15 +38,15 @@
 }
 
 
-.pl-code-output-table tbody tr:nth-child(2n+1) {
+.pl-python-variable-table tbody tr:nth-child(2n+1) {
     background: #f5f5f5;
 }
 
-.pl-code-output-table tbody tr:hover {
+.pl-python-variable-table tbody tr:hover {
     background: rgba(66, 165, 245, 0.2)
 }
 
-.pl-code-output-table-dimensions {
+.pl-python-variable-table-dimensions {
     box-sizing: border-box;
     color: rgb(0, 0, 0);
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;

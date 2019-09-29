@@ -709,13 +709,13 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 -----
 
-## `pl-code-output` element
+## `pl-python-variable` element
 
 Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
 #### Sample Element 1
 
-![](elements/pl-code-output.png)
+![](elements/pl-python-variable.png)
 
 `server.py`
 
@@ -728,25 +728,34 @@ data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
 `question.html`
 
 ```html
-<pl-code-output variable-name="variable"></pl-code-output>
+<pl-python-variable params-name="variable"></pl-python-variable>
 ```
 
 #### Sample Element 2
 
-```html
-<pl-code-output variable-name="df" variable-type="dataframe"></pl-code-output>
+`server.py`
+
+```python
+df = pd.io.parsers.read_csv("breast-cancer-train.dat", header=None)
+data['params']['df'] = pl.to_json(df.head(15))
 ```
 
-![](elements/pl-code-output2.png)
+`question.html`
+
+```html
+<pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+```
+
+![](elements/pl-python-variable2.png)
 
 #### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`variable-name` | string | — | The name of the key in `data['params']` to get a value from
-`variable-type` | string | `text` | The type of variable that should be shown.  Either `text` for a textual representation as defined by `repr(var)`, or `dataframe` for a pandas dataframe.
-`variable-prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
-`variable-suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
+`params-name` | string | — | The name of the key in `data['params']` to get a value from
+`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
+`suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
 `no-highlight` | string | False | Disable syntax highlighting in `text` mode.
 
 #### Details
@@ -755,7 +764,7 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 
 #### Example implementations
 
-- [`examplesCodeOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesCodeOutput)
+- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
 
 #### See also
 
