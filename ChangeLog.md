@@ -33,6 +33,8 @@
 
   * Add student Gradebook page (Matt West).
 
+  * Add python library `tzlocal` (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
