@@ -4,7 +4,7 @@ import lxml.html
 NO_HIGHLIGHT_DEFAULT = False
 PREFIX_DEFAULT = ''
 SUFFIX_DEFAULT = ''
-FORCE_TEXT_DEFAULT = False
+TEXT_DEFAULT = False
 
 
 def prepare(element_html, data):
@@ -14,7 +14,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    force_text = pl.get_boolean_attrib(element, 'text', FORCE_TEXT_DEFAULT)
+    force_text = pl.get_boolean_attrib(element, 'text', TEXT_DEFAULT)
     varname = pl.get_string_attrib(element, 'params-name')
 
     if varname not in data['params']:
