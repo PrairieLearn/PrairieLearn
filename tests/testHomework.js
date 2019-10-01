@@ -1175,6 +1175,30 @@ describe('Homework assessment', function() {
         });
     });
 
+    describe('36. student gradebook page', function() {
+        it('should load successfully', function(callback) {
+            const gradebookUrl = locals.courseInstanceBaseUrl + '/gradebook';
+            request(gradebookUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should contain HW1', function() {
+            elemList = locals.$('td:contains("Homework for automatic test suite")');
+            assert.lengthOf(elemList, 1);
+        });
+    });
+
     partialCreditTests.forEach(function(partialCreditTest, iPartialCreditTest) {
 
         describe(`partial credit test #${iPartialCreditTest+1}`, function() {
