@@ -1,13 +1,15 @@
 {
     "controller": "pl-drawing.py",
     "dependencies": {
+        "nodeModulesScripts": [
+           "fabric/dist/fabric.js"
+        ],
         "coreScripts": [
             "sylvester.js",
             "sha1.js",
             "underscore.js"
         ],
         "elementScripts": [
-            "fabric.require.js",
             "mechanicsObjects.js",
             "pl-drawing.js"
         ],
