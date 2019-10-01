@@ -155,7 +155,8 @@ app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Support legacy use of ace by v2 questions
-app.use('/public/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+app.use('/javascripts/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
 
 
 // Middleware for all requests
@@ -443,6 +444,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
+app.use('/pl/course_instance/:course_instance_id/gradebook', [
+    require('./middlewares/logPageView')('studentGradebook'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/studentGradebook/studentGradebook'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessments', [
     require('./middlewares/logPageView')('studentAssessments'),
     require('./middlewares/studentAssessmentAccess'),
