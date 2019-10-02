@@ -5,12 +5,11 @@ columns
     did_save: boolean default false
     did_sync: boolean default false
     dir_name: text not null
+    file_id: bigint
     file_name: text not null
     id: bigint not null default nextval('file_edits_id_seq'::regclass)
     job_sequence_id: bigint
-    local_tmp_dir: text
     orig_hash: text not null
-    s3_bucket: text
     user_id: bigint not null
 
 indexes

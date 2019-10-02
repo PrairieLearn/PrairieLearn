@@ -29,6 +29,7 @@ const qids = [
     'multiplyTwoComplexMatrices',
     'examplesStringInput',
     'examplesMatrixComponentInput',
+    'examplesPanels',
     // FIXME: 'rotateObject',
 ];
 

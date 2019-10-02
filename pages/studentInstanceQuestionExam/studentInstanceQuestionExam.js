@@ -1,3 +1,4 @@
+const util = require('util');
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
@@ -7,6 +8,7 @@ const error = require('@prairielearn/prairielib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
+const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
@@ -53,37 +55,6 @@ function processSubmission(req, res, callback) {
     });
 }
 
-function processIssue(req, res, callback) {
-    if (!res.locals.assessment.allow_issue_reporting) return callback(new Error('Issue reporting not permitted for this assessment'));
-    const description = req.body.description;
-    if (!_.isString(description) || description.length == 0) {
-        return callback(new Error('A description of the issue must be provided'));
-    }
-
-    const variant_id = req.body.__variant_id;
-    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, _result) => {
-        if (ERR(err, callback)) return;
-
-        const course_data = _.pick(res.locals, ['variant', 'instance_question',
-                                                'question', 'assessment_instance',
-                                                'assessment', 'course_instance', 'course']);
-        const params = [
-            variant_id,
-            description, // student message
-            'student-reported issue', // instructor message
-            true, // manually_reported
-            true, // course_caused
-            course_data,
-            {}, // system_data
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('issues_insert_for_variant', params, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, variant_id);
-        });
-    });
-}
-
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
@@ -91,7 +62,7 @@ router.post('/', function(req, res, next) {
         if (res.locals.authz_result.time_limit_expired) {
             return next(new Error('time limit is expired, please go back and finish your assessment'));
         }
-        return processSubmission(req, res, function(err) {
+        processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -101,11 +72,29 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
-    } else if (req.body.__action == 'report_issue') {
-        processIssue(req, res, function(err, variant_id) {
+    } else if (req.body.__action == 'attach_file') {
+        util.callbackify(studentInstanceQuestion.processFileUpload)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                         + '/?variant_id=' + variant_id);
+                + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'attach_text') {
+        util.callbackify(studentInstanceQuestion.processTextUpload)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'delete_file') {
+        util.callbackify(studentInstanceQuestion.processDeleteFile)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'report_issue') {
+        util.callbackify(studentInstanceQuestion.processIssue)(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                + '/?variant_id=' + variant_id);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
