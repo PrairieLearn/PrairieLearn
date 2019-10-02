@@ -11,6 +11,10 @@ CREATE OR REPLACE FUNCTION
         IN history_capacity_factor double precision, -- how much capacity based on historical load
         IN seconds_per_submission_per_user double precision, -- predicted time between submissions for each user
         OUT instance_count integer,         -- current number of graders
+        OUT instance_count_launching integer, -- number of healthy graders in process of launching
+        OUT instance_count_in_service integer, -- number of healthy, in-service graders
+        OUT instance_count_abandoning_launch integer, -- number of graders in process of abandoning launch
+        OUT instance_count_unhealthy integer, -- number of unhealthy graders
         OUT current_jobs double precision,  -- current number of grading jobs in grading
         OUT max_jobs double precision,      -- current grading job capacity (max simultaneous jobs)
         OUT load_perc double precision,     -- current percentage load (0 to 100)
@@ -50,10 +54,18 @@ BEGIN
 
     SELECT
         count(*),
+        count(*) FILTER (WHERE gl.healthy AND gl.lifecycle_state = 'Launching'),
+        count(*) FILTER (WHERE gl.healthy AND gl.lifecycle_state = 'InService'),
+        count(*) FILTER (WHERE gl.lifecycle_state = 'AbandoningLaunch'),
+        count(*) FILTER (WHERE NOT gl.healthy),
         coalesce(sum(gl.average_jobs), 0),
-        coalesce(sum(gl.max_jobs), 0)
+        coalesce(sum(gl.max_jobs) FILTER (WHERE gl.healthy AND gl.lifecycle_state = 'InService'), 0)
     INTO
         instance_count,
+        instance_count_launching,
+        instance_count_in_service,
+        instance_count_abandoning_launch,
+        instance_count_unhealthy,
         current_jobs,
         max_jobs
     FROM
