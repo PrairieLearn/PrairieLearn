@@ -35,6 +35,8 @@
 
   * Add CloudWatch statistics for external grader lifecycles (Matt West).
 
+  * Add python library `tzlocal` (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -50,6 +52,8 @@
   * Change Travis script to rebuild `prairielearn/centos7-plbase` if any relevant files have changed (Nathan Walters).
 
   * Change location of draft files for file editor from S3 (prod) / local (dev) to `file-store` (Tim Bretl).
+
+  * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -84,6 +88,10 @@
   * Fix disabled server load reporting to CloudWatch (Matt West).
 
   * Fix legacy Ace editor assets (Nathan Walters).
+
+  * Fix stack trace error printing for externally graded question errors (Dave Mussulman).
+
+  * Fix SSL generation to happen at docker build instead of on each run (Dave Mussulman).
 
   * Fix external grading results containing NULL bytes (Matt West).
 
