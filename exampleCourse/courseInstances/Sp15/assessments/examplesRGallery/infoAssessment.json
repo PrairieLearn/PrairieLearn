@@ -1,0 +1,23 @@
+{
+    "uuid": "83730033-d2da-4361-bf29-95b3b8e8468f",
+    "type": "Homework",
+    "title": "Gallery of R Augmented Questions",
+    "set": "Homework",
+    "number": "7",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "examplesRGetData",   "points": 2, "maxPoints": 10},
+                {"id": "examplesRRNGSample", "points": 2, "maxPoints": 10}
+            ]
+        }
+    ]
+}
