@@ -33,7 +33,7 @@
 
   * Add student Gradebook page (Matt West).
 
-  * Add example questions using R for graphing and data generation (James Balamuta).
+  * Add example questions using R for data generation (James Balamuta).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
