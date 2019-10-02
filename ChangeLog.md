@@ -33,6 +33,8 @@
 
   * Add student Gradebook page (Matt West).
 
+  * Add CloudWatch statistics for external grader lifecycles (Matt West).
+
   * Add python library `tzlocal` (James Balamuta).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
