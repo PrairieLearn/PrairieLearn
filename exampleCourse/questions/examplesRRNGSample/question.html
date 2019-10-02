@@ -1,0 +1,31 @@
+<pl-question-panel>
+  <p>
+    With the seed of <b>{{params.seed}}</b>, generate a sample under replacement of size <b>{{params.sample_size}}</b> from a set of <b>{{params.set_size}}</b> integers.
+  </p>
+</pl-question-panel>
+
+<pl-question-panel>
+  <hr />
+</pl-question-panel>
+
+<pl-question-panel>
+  <p>
+    How often does <b>{{params.n_obs_num}}</b> appear in the sample? 
+  </p>
+</pl-question-panel>
+
+<pl-integer-input answers-name="x_count" label = "Number of times {{params.n_obs_num}} appeared:"></pl-integer-input>
+
+<pl-question-panel>
+  <hr/>
+</pl-question-panel>
+
+<pl-question-panel>
+  <p>
+    What is the proportion of how often <b>{{params.n_obs_num}}</b> appears? 
+  </p>
+  <p><i>Hint:</i> Should this number exceed 1?</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="x_prop" label = "Proportion associated with {{params.n_obs_num}} occurring:"></pl-number-input>
+
