@@ -15,6 +15,7 @@
     "zones": [
         {
             "questions": [
+                {"id": "examplesRAddTwoNumbers",   "points": 2, "maxPoints": 10},
                 {"id": "examplesRGetData",   "points": 2, "maxPoints": 10},
                 {"id": "examplesRRNGSample", "points": 2, "maxPoints": 10}
             ]
