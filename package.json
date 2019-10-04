@@ -115,7 +115,8 @@
         "exclude": [
             "node_modules",
             "public",
-            "tests"
+            "tests",
+            "ChangeLog.md"
         ]
     }
 }
