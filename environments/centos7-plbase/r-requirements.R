@@ -16,13 +16,39 @@ if(Ncpus > 4) {
 # during package installation/updation and set the default mirror
 options(Ncpus = Ncpus, repos = c("CRAN" = "https://cran.rstudio.com"))
 
-
-# The following are packages used in STAT 385
-pkg_list = c('tidyverse', 'RcppArmadillo', 'rmarkdown',
-             'RSQLite', 'nycflights13', 'fueleconomy', 'babynames',
-             'rbenchmark', 'microbenchmark', 
-             'maps', 'maptools', 'mapproj', 'mapdata', 'ggmap',
-             'fivethirtyeight')
+# The following are packages used in STAT 385 and STAT 432
+pkg_list = c(
+  'tidyverse',
+  'RcppArmadillo',
+  'rmarkdown',
+  'RSQLite',
+  'nycflights13',
+  'fueleconomy',
+  'babynames',
+  'rbenchmark',
+  'microbenchmark',
+  'maps',
+  'maptools',
+  'mapproj',
+  'mapdata',
+  'ggmap',
+  'fivethirtyeight',
+  'caret',
+  'e1071',
+  'factoextra',
+  'gbm',
+  'glmnet',
+  'ISLR',
+  'kernlab',
+  'klaR',
+  'mlbench',
+  'nnet',
+  'pROC',
+  'randomForest',
+  'rpart',
+  'rpart.plot',
+  'rsample'
+)
 
 # Determine what packages are NOT installed already.
 to_install_pkgs = pkg_list[!(pkg_list %in% installed.packages()[,"Package"])]
