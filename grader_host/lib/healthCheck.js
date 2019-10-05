@@ -3,6 +3,7 @@ const Docker = require('dockerode');
 
 const globalLogger = require('./logger');
 const config = require('./config').config;
+const lifecycle = require('./lifecycle');
 
 /**
  * Stores our current status. Once we transition to an unhealthy state, there's
@@ -66,6 +67,7 @@ module.exports.flagUnhealthy = function(reason) {
     globalLogger.error(`A health check failed: ${reason}`);
     healthy = false;
     unhealthyReason = reason;
+    lifecycle.abandonLaunch();
 };
 
 module.exports.isHealthy = function() {

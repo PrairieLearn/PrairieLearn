@@ -4,7 +4,7 @@ const Docker = require('dockerode');
 const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 
 const logger = require('./logger');
-const util = require('./util');
+const dockerUtil = require('./dockerUtil');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(callback) {
@@ -29,7 +29,7 @@ module.exports = function(callback) {
             logger.info(`Need to pull ${images.length} images`);
             async.each(images, (image, callback) => {
                 logger.info(`Pulling latest version of "${image}" image`);
-                const repository = util.parseRepositoryTag(image);
+                const repository = dockerUtil.parseRepositoryTag(image);
                 const params = {
                     fromImage: repository.repository,
                     tag: repository.tag || 'latest'
@@ -42,7 +42,7 @@ module.exports = function(callback) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     }, (output) => {
-                        logger.info(output);
+                        logger.info('docker output:', output);
                     });
                 });
             }, (err) => {

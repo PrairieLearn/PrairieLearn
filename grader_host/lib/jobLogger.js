@@ -30,8 +30,7 @@ module.exports = function(options) {
     const logger = winston.createLogger({ transports });
 
     logger.on('error', (err) => {
-        globalLogger.error(`Error sending logs to ${bucket}/${rootKey}/output.log`);
-        globalLogger.error(err);
+        globalLogger.error(`Error sending logs to ${bucket}/${rootKey}/output.log:`, err);
     });
 
     return logger;

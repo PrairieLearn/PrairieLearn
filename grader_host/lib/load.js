@@ -1,6 +1,8 @@
 const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 const logger = require('./logger');
 const config = require('./config').config;
+const lifecycle = require('./lifecycle');
+const healthCheck = require('./healthCheck');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 var initialized = false;
@@ -17,6 +19,7 @@ module.exports = {
         maxJobs = newMaxJobs;
         initialized = true;
         this._reportLoad();
+        this._reportConfig();
     },
 
     startJob() {
@@ -60,10 +63,25 @@ module.exports = {
             queue_name: config.jobsQueueName,
             average_jobs: this._getAndResetLoadEstimate(),
             max_jobs: maxJobs,
+            lifecycle_state: lifecycle.getState(),
+            healthy: healthCheck.isHealthy(),
         };
         sqldb.query(sql.insert_load, params, (err) => {
-            if (err) logger.error('Error reporting load: ' + String(err));
+            if (err) logger.error('Error reporting load:', err);
             setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
+        });
+    },
+
+    _reportConfig() {
+        var params = {
+            instance_id: config.instanceId,
+            queue_name: config.jobsQueueName,
+            average_jobs: 0,
+            max_jobs: 0,
+            config: config,
+        };
+        sqldb.query(sql.insert_config, params, (err) => {
+            if (err) logger.error('Error reporting config:', err);
         });
     },
 };
