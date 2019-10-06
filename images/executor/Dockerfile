@@ -1,4 +1,4 @@
-FROM node:12-alpine AS builder
+FROM prairielearn/centos7-plbase
 WORKDIR /app
 COPY package* ./
 RUN npm install
