@@ -134,7 +134,7 @@ BEGIN
     -- calculate the desired number of graders, using several methodologies
 
     load_perc := current_jobs / greatest(max_jobs, 1) * 100;
-    jobs_per_instance := greatest(max_jobs / greatest(instance_count, 1), 1);
+    jobs_per_instance := greatest(max_jobs / greatest(instance_count_in_service, 1), 1);
     desired_instances_by_ungraded_jobs := ungraded_jobs / jobs_per_instance;
     desired_instances_by_current_jobs := current_jobs * current_capacity_factor / jobs_per_instance;
     desired_instances_by_history_jobs := history_jobs * history_capacity_factor / jobs_per_instance;
