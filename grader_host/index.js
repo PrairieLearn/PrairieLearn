@@ -23,6 +23,17 @@ const timeReporter = require('./lib/timeReporter');
 const dockerUtil = require('./lib/dockerUtil');
 const load = require('./lib/load');
 
+// catch SIGTERM and exit after waiting for all current jobs to finish
+let processTerminating = false;
+process.on('SIGTERM', () => { 
+    globalLogger.info('caught SIGTERM, draining jobs to exit...');
+    processTerminating = true;
+    (function tryToExit() {
+        if (load.getCurrentJobs() == 0) process.exit(0);
+        setTimeout(tryToExit, 1000);
+    })();
+});
+
 async.series([
     (callback) => {
         configManager.loadConfig((err) => {
@@ -82,7 +93,7 @@ async.series([
         const sqs = new AWS.SQS();
         for (let i = 0; i < config.maxConcurrentJobs; i++) {
           async.forever((next) => {
-              if (!healthCheck.isHealthy()) return;
+              if (!healthCheck.isHealthy() || processTerminating) return;
               receiveFromQueue(sqs, config.jobsQueueUrl, (job, fail, success) => {
                   globalLogger.info(`received ${job.jobId} from queue`);
                   handleJob(job, (err) => {

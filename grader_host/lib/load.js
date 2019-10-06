@@ -33,7 +33,11 @@ module.exports = {
         if (!initialized) return;
         this._addIntegratedLoad();
         currentJobs--;
-        if (currentJobs < 0) throw new Error('startJob(): currentJobs < 0');
+        if (currentJobs < 0) throw new Error('endJob(): currentJobs < 0');
+    },
+
+    getCurrentJobs() {
+        return currentJobs;
     },
 
     _getAndResetLoadEstimate() {
