@@ -283,8 +283,8 @@ class PythonCaller {
     activeCallers[this.uuid] = this;
 
     const cmd = "python3";
-    const pythonTrampoline = "/python/trampoline.py";
-    const args = ["-B", pythonTrampoline];
+    const pythonZygote = "/python/zygote.py";
+    const args = ["-B", pythonZygote];
     const env = _.clone(process.env);
     // PYTHONIOENCODING might not be needed once we switch to Python 3.7
     // https://www.python.org/dev/peps/pep-0538/
