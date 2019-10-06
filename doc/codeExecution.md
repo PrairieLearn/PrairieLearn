@@ -31,7 +31,7 @@ To account for the variety of contexts in which PrairieLearn is executed, there 
 
 This is how PrairieLearn functioned historically. PrairieLearn would directly execute Python code with limited isolation from the rest of the system. This is largely the process described again, with a pool of Python trampolines.
 
-This is still how PrairieLearn functions by default for local development. The `priairelearn/prairielearn` Docker image that is distributed to users includes all of the Python and R dependencies needed by question and element code, and said code is executed in the same container that PrairieLearn executes in. This is obviously bad for security, but doesn't matter much for local development.
+This is still how PrairieLearn functions by default for local development. The `priairelearn/prairielearn` Docker image that is distributed to users includes all of the Python and R dependencies needed by question and element code, and said code is executed in the same container that PrairieLearn executes in. This is obviously bad for security, but doesn't matter for local development.
 
 ### `native` execution mode
 
@@ -49,7 +49,7 @@ In this case, we can't use the bind mount trick above, as PrairieLearn can't cre
 
 * In `config.json`, the user must specify the host path for any courses they're mounting into PrairieLearn in `courseDirsHost`.
 * The user must mount the Docker socket into PrairieLearn's container, similarly to what they must do when running external grading locally.
-* The user must create a "scratch" directory on the host, specify it with the `HOSTFILES_DIR` environment variable, and mount the directory to `/hostfiles` in the PrairieLearn container. PriaireLearn will use this directory to communicate its internal files, including element implementations and the Python trampoline, to the host so that they can be mounted into executor containers.
+* The user must create a "scratch" directory on the host, specify it with the `HOSTFILES_DIR` environment variable, and mount the directory to `/hostfiles` in the PrairieLearn container. PrairieLearn will use this directory to communicate its internal files, including element implementations and the Python trampoline, to the host so that they can be mounted into executor containers.
 
 PrairieLearn will then maintain a pool of workers, one per course, with the corresponding host course directory mounted into each container. It will also begin watching the `elements/`, `python/`, and `exampleCourse/` directories and copying their files to `HOSTFILES_DIR` so that they can be accessible to the executor containers. Most of the time, this copy will only take place one time when PrairieLearn boots up, but the continuous copying can be useful if you're running the PrairieLearn container with your own copy of the PrairieLearn code mounted to `/PrairieLearn`. When you edit files in your own copy, they'll magically be copied back to the right place on the host and things will Just Work(tm).
 
