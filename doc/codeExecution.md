@@ -11,7 +11,7 @@ Externally-graded questions and how they are executed is covered in more detail 
 
 Every time we want to execute code for a question, we want to use a fresh Python environment that could not have been modified or broken by previous code. However, starting up a new Python interpreter is relatively expensive, taking on the order of hundreds of milliseconds. Compared to external grading code execution, the primary concern of question and element code execution (in addition to security) is speed.
 
-To solve this, we've borrowed Android's concept of a [zygote process](https://developer.android.com/topic/performance/memory-overview#SharingRAM). Instead of starting a new Python process for every request, we start a special zygote process that starts a Python interpreter, preloads commonly-used libraries like `numpy` and `lxml`, and forks itself. The fork inherits the file descriptors from the parent, which we use to communicate with the forked process. The forked process will use [copy-on-write](https://en.wikipedia.org/wiki/Copy-on-write), which is essentially free. When we want to execute code, we send commands to the forked process over `stdin` and receive the results of executing code over `stdout`. Many commands may be sent during a single use of the forked process. When a question is done being rendered/graded/etc., we send a special `restart` message to the forked process, which will in turn exit with status 0. The zygote will detect that the child exited normally and immediately refork itself, and the fork will again begin listening for commands. This way, each request will get a fresh Python environment with almost zero overhead.
+To solve this, we've borrowed Android's concept of a [zygote process](https://developer.android.com/topic/performance/memory-overview#SharingRAM). Instead of starting a new Python process for every request, we start a special zygote process that starts a Python interpreter, preloads commonly-used libraries like `numpy` and `lxml`, and forks itself. The fork inherits the file descriptors from the parent, which we use to communicate with the forked process. The forked process will use [copy-on-write](https://en.wikipedia.org/wiki/Copy-on-write), which is essentially free. When we want to execute code, we send commands to the forked process over `stdin` and receive the results of executing code over file descriptor 3. Many commands may be sent during a single use of the forked process. When a question is done being rendered/graded/etc., we send a special `restart` message to the forked process, which will in turn exit with status 0. The zygote will detect that the child exited normally and immediately refork itself, and the fork will again begin listening for commands. This way, each request will get a fresh Python environment with almost zero overhead.
 
 ## The worker pool
 
@@ -75,3 +75,41 @@ Now, we're ready to run PrairieLearn. Say you saved the above config file in `/U
 docker run --rm -it -p 3000:3000 -v /Users/nathan/git/pl-cs225:/course -v /Users/nathan/config.json:/PrairieLearn/config.json -v /Users/nathan/.plhostfiles:/hostfiles -e HOST_JOBS_DIR=/Users/nathan/.pl_ag_jobs -e HOSTFILES_DIR=/Users/nathan/.plhostfiles -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
 ```
 
+## Code execution in practice
+
+So far, this discussion has been pretty abstract. But what about all the actual code that underpins this stuff? Fear not, dear reader, we haven't forgotten about that!
+
+### Code callers
+
+A *code caller* serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
+
+* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` and `native` execution modes.
+* `lib/code-caller-python` handles executing Python processes directly, as required by the `internal` execution mode.
+
+The primary external interface of these callers is the `call()` function, which takes five arguments:
+
+* `type`: the type of code being executed (either `question`, `course-element`, or `core-element`).
+* `directory`: the directory containing the file whose code will be executed.
+  * For questions, this is an item in a course's `questions` directory.
+  * For course elements, this is an item in a course's `elements` directory.
+  * For core elements, this is an item in PrairieLearn's `elements` directory.
+* `file`: the name of the file whose code will be executed (e.g. `server.py`)
+* `fcn`: the name of the function in `file` that will be executed (e.g. `grade` or `render`).
+* `args`: an array of JSON-encodeable arguments to the function being called.
+
+The piece of code to execute is specified by (`type`, `directory`, `file`) instead of an absolute path because the location of each file on disk may change between each type of code caller; allowing the code caller to construct the path from that information keeps the code that uses a caller agnostic to the underlying caller being used.
+
+### A full request cycle
+
+Let's walk through a typical request to view a question that requires a function in a corresponding `server.py` file to run.
+
+1. The page request is handled by `pages/studentInstanceQuestionHomework` or similar.
+2. That handler calls `getAndRenderVariant` in `lib/question` (a different function would be called if the user were submittin an answer).
+3. That function calls an internal function that calls `render` in `question-servers/freeform.js`.
+4. That function calls `getPythonCaller` in `lib/workers`. Depending on the active execution mode
+   1. If running in `container` mode, a `lib/code-caller-docker` caller for the appropriate course will be returned.
+   2. If running in `native` mode, a `lib/code-caller-docker` caller will be "prepared" for the current course (which sets up necessary bind mounts) and returned.
+   3. If running in `internal` mode, any available `lib/code-caller-python` caller will be returned.
+5. `call(...)` is then repeatedly invoked on the code caller with the appropriate pieces of code to be executed.
+6. Once the code caller is no longer needed during this request, `done()` is invoked on it. The forked worker is sent a `restart` message, which will cause the worker to exit and return control to the zygote. The zygote will then fork itself again, and the forked worker will wait until it receives more instructions.
+7. Page render completes and the response is sent, thus finishing the request cycle.
