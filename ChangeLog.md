@@ -95,6 +95,10 @@
 
   * Fix external grading results containing NULL bytes (Matt West).
 
+  * Fix `MaxListenersExceededWarning` (Dave Mussulman).
+
+  * Fix jobsPerInstance grader statistic (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
