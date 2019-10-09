@@ -43,8 +43,8 @@
     {{/show_buttons}}
 </div>
 <script>
- $(function() {
-     let elem_name = "drawing-interface-{{uuid}}";
+ (function() {
+     let element = document.currentScript.previousElementSibling;
      let options = JSON.parse(`{{{options_json}}}`);
      {{^input_answer}}
      let submitted_answer = null;
@@ -52,7 +52,9 @@
      {{#input_answer}}
      let submitted_answer = JSON.parse(`{{{input_answer}}}`);
      {{/input_answer}}
-     window.DrawingInterface(elem_name, options, submitted_answer);
+     $(function() {
+         window.DrawingInterface(element, options, submitted_answer);
+     });
  });
 </script>
 {{/parse_error}}

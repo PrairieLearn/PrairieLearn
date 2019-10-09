@@ -1,12 +1,11 @@
 /* eslint-disable */
 
 (function() {
-    window.DrawingInterface = function(root_elem_name, elem_options, submitted_answer) {
-        let root_elem = $('#' + root_elem_name);
-        let canvas_elem = root_elem.find('canvas')[0];
+    window.DrawingInterface = function(root_elem, elem_options, submitted_answer) {
+        let canvas_elem = $(root_elem).find('canvas')[0];
         let canvas_width = canvas_elem.clientWidth;
         let canvas_height = canvas_elem.clientHeight;
-        let html_input = root_elem.find('input');
+        let html_input = $(root_elem).find('input');
 
         let parseElemOptions = function(elem) {
             let opts = JSON.parse(elem.getAttribute("opts"));
