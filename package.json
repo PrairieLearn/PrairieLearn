@@ -64,6 +64,7 @@
         "redis-lru": "^0.6.0",
         "rehype-raw": "^4.0.1",
         "rehype-stringify": "^6.0.0",
+        "remark-math": "^2.0.0",
         "remark-parse": "^7.0.1",
         "remark-rehype": "^5.0.0",
         "request-promise-native": "^1.0.7",
