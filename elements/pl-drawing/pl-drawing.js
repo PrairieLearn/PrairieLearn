@@ -65,9 +65,27 @@
         }
         canvas.selection = false; // disable group selection
         if (elem_options.grid_size != 0) {
-          mechanicsObjects.addCanvasBackground(canvas, elem_options.grid_size);
+            mechanicsObjects.addCanvasBackground(canvas, elem_options.grid_size);
         }
 
+        /*
+          -- rendering bounding rectangles, debugging purposes --
+        canvas.on('after:render', function() {
+            canvas.contextContainer.strokeStyle = '#555';
+
+            canvas.forEachObject(function(obj) {
+                var bound = obj.getBoundingRect();
+
+                canvas.contextContainer.strokeRect(
+                    bound.left + 0.5,
+                    bound.top + 0.5,
+                    bound.width,
+                    bound.height
+                );
+            })
+        });
+        */
+        
         // Restrict objects from being able to be dragged off-canvas
         // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
         canvas.on('object:moving', function (e) {
@@ -300,6 +318,7 @@
         }
 
         handlers["delete"] = function(options) {
+            /*
       	    if(canvas.getActiveGroup()){
       	        canvas.getActiveGroup().forEachObject(function(o){
                           canvas.remove(o)
@@ -307,7 +326,8 @@
       	        canvas.discardActiveGroup().renderAll();
       	    } else {
       	        canvas.remove(canvas.getActiveObject());
-      	    }
+      	        }*/
+            canvas.remove(canvas.getActiveObject());
         };
                           
         /* Attach click handlers */

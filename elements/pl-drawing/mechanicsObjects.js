@@ -85,14 +85,17 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
         this.left = this.x1;
         this.top = this.y1;
         this.originY = 'center';
+        this.originX = 'center';
         this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+        this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2))
+        this.width = this.length * 2;
     },
     _render: function(ctx) {
-        var rPx = this.height/2;
-        let len = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2))
+        var rPx = this.height / 2;
+        let len = this.length;
 
         ctx.beginPath();
-        ctx.moveTo(0, this.height/2);
+        ctx.moveTo(0, rPx);
         ctx.arcTo(len + rPx, 0 + rPx, len + rPx, 0      , rPx);
         ctx.arcTo(len + rPx, 0 - rPx, len      , 0 - rPx, rPx);
         ctx.arcTo(-rPx     , -rPx   , -rPx     , 0      , rPx);
@@ -123,8 +126,8 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
 mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
     type: 'rod',
     initialize: function(options) {
-	      options = options || {};
-	      this.callSuper("initialize", options);
+	options = options || {};
+	this.callSuper("initialize", options);
         this.left = this.x1;
         this.top = this.y1;
         this.originY = 'center';
@@ -979,15 +982,15 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
         ctx.fill();
     },
     _render: function(ctx) {
-        var nSpaces = Math.ceil(this.getWidth() / this.spacing);
-        var dx = this.getWidth() / nSpaces;
+        var nSpaces = Math.ceil(this.getScaledWidth() / this.spacing);
+        var dx = this.getScaledWidth() / nSpaces;
 
         /* Undo Fabric's scale transformation. */
         ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
 
         /* Centered coordinates */
-        let cx = this.getWidth() / 2;
-        let cy = this.getHeight() / 2;
+        let cx = this.getScaledWidth() / 2;
+        let cy = this.getScaledHeight() / 2;
 
         /* Draw all the force arrows */
         for (i=0;i<=nSpaces;i++) {
@@ -1692,8 +1695,7 @@ mechanicsObjects.byType['line'] = mechanicsObjects.addLine;
 
 // ======================================================================================
 mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, answerName) {
-
-    let obj = new this.makeCoordinates(options);
+    let obj = mechanicsObjects.makeCoordinates(options);
     if (!obj.id) {
          obj.id = this.newID();
     }
@@ -1728,7 +1730,6 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
         textAlign: "left"
     });
     canvas.add(textObj3);
-
 
     return obj;
 };
