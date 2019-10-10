@@ -99,6 +99,8 @@
 
   * Fix jobsPerInstance grader statistic (Matt West).
 
+  * Fix null filenames from missing files in downloads (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
