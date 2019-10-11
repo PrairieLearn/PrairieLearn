@@ -8,6 +8,7 @@ WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
 FIXED_ORDER_DEFAULT = False
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -187,9 +188,9 @@ def render(element_html, data):
             try:
                 score = float(score)
                 if score >= 1:
-                    html += chevron.render(template_file, { 'correct_feedback': True })
+                    html += chevron.render(template_file, {'correct_feedback': True})
                 else:
-                    html += chevron.render(template_file, { 'incorrect_feedback': True })
+                    html += chevron.render(template_file, {'incorrect_feedback': True})
             except Exception:
                 raise ValueError('invalid score ' + score)
         html = '<ul class="multiple-choice-group">' + html + '</ul>'
@@ -208,15 +209,15 @@ def render(element_html, data):
                     'answer_display': True
                 }
                 html = chevron.render(template_file, html_params)
-                partial_score = data['partial_scores'].get(name, { 'score': None })
+                partial_score = data['partial_scores'].get(name, {'score': None})
                 score = partial_score.get('score', None)
                 if score is not None:
                     try:
                         score = float(score)
                         if score >= 1:
-                            html += chevron.render(template_file, { 'correct_feedback': True })
+                            html += chevron.render(template_file, {'correct_feedback': True})
                         else:
-                            html += chevron.render(template_file, { 'incorrect_feedback': True })
+                            html += chevron.render(template_file, {'incorrect_feedback': True})
                     except Exception:
                         raise ValueError('invalid score' + score)
                 html = '<ul class="multiple-choice-group">' + html + '</ul>'
