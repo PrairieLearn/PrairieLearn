@@ -1,9 +1,10 @@
 -- BLOCK select_and_auth
 WITH file_list AS (
-    SELECT coalesce(jsonb_agg(f), '[]'::jsonb) AS list
+    SELECT coalesce(jsonb_agg(f ORDER BY f.created_at), '[]'::jsonb) AS list
     FROM files AS f
     WHERE
         f.assessment_instance_id = $assessment_instance_id
+        AND f.instance_question_id IS NULL
         AND f.deleted_at IS NULL
 )
 SELECT

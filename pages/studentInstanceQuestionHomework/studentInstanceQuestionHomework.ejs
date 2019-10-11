@@ -17,6 +17,18 @@
     <%- extraHeadersHtml %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
+      });
+
+      // make the file inputs display the file name
+      $(document).on('change', '.custom-file-input', function () {
+          let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+          $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
+      });
+    </script>
+
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="row">
@@ -38,13 +50,16 @@
             <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
             <% } %>
           </p>
-          <p class="text-center">
+          <p class="text-center mb-4">
             <% if (instance_question_info.next_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
             <% } else { %>
             <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
             <% } %>
           </p>
+
+          <%- include('../partials/attachFilePanel') %>
+
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
             <div class="modal-dialog" style="width: 620px">

@@ -2,8 +2,7 @@
 SELECT
     fe.id,
     fe.orig_hash,
-    fe.local_tmp_dir,
-    fe.s3_bucket,
+    fe.file_id,
     fe.did_save,
     fe.did_sync,
     floor(EXTRACT(epoch FROM CURRENT_TIMESTAMP - fe.created_at) / 3600) AS age,
@@ -19,9 +18,9 @@ WHERE
 
 -- BLOCK insert_file_edit
 INSERT INTO file_edits
-    (user_id, course_id, dir_name, file_name, orig_hash, local_tmp_dir, s3_bucket)
+    (user_id, course_id, dir_name, file_name, orig_hash, file_id)
 SELECT
-    $user_id, $course_id, $dir_name, $file_name, $orig_hash, $local_tmp_dir, $s3_bucket
+    $user_id, $course_id, $dir_name, $file_name, $orig_hash, $file_id
 RETURNING
     file_edits.id;
 
@@ -34,7 +33,9 @@ WHERE
     AND fe.course_id = $course_id
     AND fe.dir_name = $dir_name
     AND fe.file_name = $file_name
-    AND fe.deleted_at IS NULL;
+    AND fe.deleted_at IS NULL
+RETURNING
+    fe.file_id;
 
 -- BLOCK update_did_save
 UPDATE file_edits AS fe

@@ -9,6 +9,7 @@ if [[ -f /efs/container/config.json ]] ; then
 else
     # we are running in local development mode
     docker/start_postgres.sh
+    docker/gen_ssl.sh
 
     # Uncomment to start redis to test message passing
     # redis-server --daemonize yes

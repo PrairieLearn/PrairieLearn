@@ -4,6 +4,9 @@ import chevron
 import random
 import math
 
+WEIGHT_DEFAULT = 1
+INLINE_DEFAULT = False
+FIXED_ORDER_DEFAULT = False
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -48,7 +51,7 @@ def prepare(element_html, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
@@ -150,7 +153,7 @@ def render_inline(element, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    inline = pl.get_boolean_attrib(element, 'inline', False)
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     if inline:
         return render_inline(element, data)
 
@@ -158,7 +161,6 @@ def render(element_html, data):
     answers = data['params'].get(name, [])
 
     submitted_key = data['submitted_answers'].get(name, None)
-    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
     with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
         template_file = f.read()
@@ -254,7 +256,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
@@ -269,7 +271,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
     if correct_key is None:
