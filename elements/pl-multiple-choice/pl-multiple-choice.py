@@ -77,6 +77,7 @@ def render_inline(element, data):
     name = pl.get_string_attrib(element, 'answers-name')
     answers = data['params'].get(name, [])
 
+    inline = True
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
