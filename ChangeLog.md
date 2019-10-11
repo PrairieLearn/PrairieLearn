@@ -112,6 +112,7 @@
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
   * Fix git merge during CI (Matt West).
+  * Fix to prevent instructor testing of externally-graded questions (Matt West).
 
 * __3.2.0__ - 2019-08-05
 
