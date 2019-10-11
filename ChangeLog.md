@@ -57,6 +57,8 @@
 
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
+  * Change SSL file paths to be configurable (Dave Mussulman).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
