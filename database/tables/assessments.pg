@@ -28,7 +28,7 @@ indexes
     assessments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
-    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by

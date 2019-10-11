@@ -37,6 +37,8 @@
 
   * Add python library `tzlocal` (James Balamuta).
 
+  * Add support for Latex in `<markdown>` tags (Nathan Walters).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -100,6 +102,8 @@
   * Fix jobsPerInstance grader statistic (Matt West).
 
   * Fix null filenames from missing files in downloads (Matt West).
+
+  * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
 * __3.2.0__ - 2019-08-05
 
