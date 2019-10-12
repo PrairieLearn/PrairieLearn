@@ -21,15 +21,15 @@ def prepare(element_html, data):
 
 def graphviz_from_matrix(mat, label, engine, element):
     # Get the matrix specific attributes
-    
-    show_weights = pl.get_boolean_attrib(element, 'weights', WEIGHTS_DEFAULT) # by default display weights for stochastic matrices
-    digits = pl.get_integer_attrib(element, 'weights-digits', WEIGHTS_DIGITS_DEFAULT) # if displaying weights how many digits to round to
+
+    show_weights = pl.get_boolean_attrib(element, 'weights', WEIGHTS_DEFAULT)  # by default display weights for stochastic matrices
+    digits = pl.get_integer_attrib(element, 'weights-digits', WEIGHTS_DIGITS_DEFAULT)  # if displaying weights how many digits to round to
     presentation_type = pl.get_string_attrib(element, 'weights-presentation-type', WEIGHTS_PRESENTATION_TYPE_DEFAULT).lower()
 
     # Sanity checking
-    
+
     if (mat.shape[0] != mat.shape[1]):
-        raise Exception("Non-square adjacency matrix of size (%s,%s) given as input." % (mat.shape[0], mat.shape[1]))
+        raise Exception('Non-square adjacency matrix of size (%s,%s) given as input.' % (mat.shape[0], mat.shape[1]))
 
     if label is not None:
         mat_label = label
@@ -39,8 +39,8 @@ def graphviz_from_matrix(mat, label, engine, element):
         mat_label = range(mat.shape[1])
 
     # Auto detect showing weights if any of the weights are not 1 or 0
-    
-    if show_weights == None:
+
+    if show_weights is None:
         all_ones = True
         for x in mat.flatten():
             if x != 1 and x != 0:
@@ -48,7 +48,7 @@ def graphviz_from_matrix(mat, label, engine, element):
         show_weights = not all_ones
 
     # Create pygraphviz graph representation
-    
+
     G = pygraphviz.AGraph(directed=True)
 
     for node in mat_label:
@@ -69,15 +69,15 @@ def graphviz_from_matrix(mat, label, engine, element):
 
 def render(element_html, data):
     # Get attribs
-    
+
     element = lxml.html.fragment_fromstring(element_html)
     engine = pl.get_string_attrib(element, 'engine', ENGINE_DEFAULT)
     input_param = pl.get_string_attrib(element, 'params-name-matrix', PARAMS_NAME_MATRIX_DEFAULT)
     input_label = pl.get_string_attrib(element, 'params-name-labels', PARAMS_NAME_LABELS_DEFAULT)
 
-    if len(str(element.text)) == 0 and input_param == None:
+    if len(str(element.text)) == 0 and input_param is None:
         raise Exception("No graph source given! Must either define graph in HTML or provide source in params.")
-    
+
     graphviz_data = None
 
     if input_param is not None:
