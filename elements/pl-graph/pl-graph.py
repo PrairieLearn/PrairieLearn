@@ -28,7 +28,7 @@ def render(element_html, data):
         'engine': engine,
     }
 
-    with open('pl-graphviz-render.mustache') as f:
+    with open('pl-graph.mustache') as f:
         html = chevron.render(f, html_params).strip()
 
     return html
