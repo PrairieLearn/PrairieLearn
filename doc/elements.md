@@ -709,6 +709,68 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 -----
 
+## `pl-python-variable` element
+
+Displays the value of a Python variable, with formatted display of Pandas DataFrames.
+
+#### Sample Element 1
+
+![](elements/pl-python-variable.png)
+
+`server.py`
+
+```python
+data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
+```
+
+---
+
+`question.html`
+
+```html
+<pl-python-variable params-name="variable"></pl-python-variable>
+```
+
+#### Sample Element 2
+
+`server.py`
+
+```python
+df = pd.io.parsers.read_csv("breast-cancer-train.dat", header=None)
+data['params']['df'] = pl.to_json(df.head(15))
+```
+
+`question.html`
+
+```html
+<pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+```
+
+![](elements/pl-python-variable2.png)
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | The name of the key in `data['params']` to get a value from
+`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
+`suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
+`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+
+#### Details
+
+As of right now, the element supports displaying either Pandas DataFrames as an HTML table or Python objects via `repr()`.  When setting a parameter to a DataFrame, use PrairieLearn's built in `pl.to_json()`.
+
+#### Example implementations
+
+- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+
 ## `pl-figure` element
 
 Display a statically or dynamically generated image.
