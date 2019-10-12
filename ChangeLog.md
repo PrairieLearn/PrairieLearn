@@ -31,6 +31,8 @@
 
   * Add `pl-hide-in-panel` element (Matt West).
 
+  * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
+
   * Add student Gradebook page (Matt West).
 
   * Add CloudWatch statistics for external grader lifecycles (Matt West).
