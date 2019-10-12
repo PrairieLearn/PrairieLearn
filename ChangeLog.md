@@ -103,6 +103,8 @@
 
   * Fix jobsPerInstance grader statistic (Matt West).
 
+  * Fix null filenames from missing files in downloads (Matt West).
+
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
 * __3.2.0__ - 2019-08-05
