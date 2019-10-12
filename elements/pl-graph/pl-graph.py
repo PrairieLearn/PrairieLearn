@@ -34,7 +34,7 @@ def graphviz_from_matrix(mat, label, engine, element):
     if label is not None:
         mat_label = label
         if (mat_label.shape[0] != mat.shape[0]):
-            raise Exception("Dimension of the label is not consistent with the dimension of matrix" % (mat_label.shape[0], mat.shape[0]))
+            raise Exception('Dimension of the label is not consistent with the dimension of matrix' % (mat_label.shape[0], mat.shape[0]))
     else:
         mat_label = range(mat.shape[1])
 
@@ -76,7 +76,7 @@ def render(element_html, data):
     input_label = pl.get_string_attrib(element, 'params-name-labels', PARAMS_NAME_LABELS_DEFAULT)
 
     if len(str(element.text)) == 0 and input_param is None:
-        raise Exception("No graph source given! Must either define graph in HTML or provide source in params.")
+        raise Exception('No graph source given! Must either define graph in HTML or provide source in params.')
 
     graphviz_data = None
 
