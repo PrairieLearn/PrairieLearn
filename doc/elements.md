@@ -51,7 +51,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
-  or by an adjacency matrix.
+  or with an adjacency matrix.
   
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
