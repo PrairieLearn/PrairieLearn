@@ -3,7 +3,7 @@
     "title": "Element Info",
     "description": "Info files for v3 elements.",
     "type": "object",
-    "additionalProperties": true,
+    "additionalProperties": false,
     "required": [
         "controller"
     ],
