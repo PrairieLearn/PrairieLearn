@@ -42,6 +42,8 @@
   * Add console stack traces on Node warnings (Matt West).
 
   * Add support for Latex in `<markdown>` tags (Nathan Walters).
+  
+  * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
