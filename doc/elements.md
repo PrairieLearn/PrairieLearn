@@ -53,7 +53,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT
   figure.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
-collection of graphic objects
+  collection of graphic objects
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1053,7 +1053,7 @@ Attribute | Type | Default | Description
 
 #### See also
 
-- [pl-drawing documentation](drawingElement.md)
+- [`pl-drawing` documentation](drawingElement.md)
 
 -----
 
