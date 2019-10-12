@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Merge with master
+      run: git merge origin/master
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-plbase-if-needed.sh
     - name: Build the testing docker image
