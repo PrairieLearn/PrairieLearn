@@ -26,7 +26,7 @@ Attribute | Type | Default | Description
 `grid-size` | integer | 20 | Size of the square grid for the canvas background. If `grid-size = 0`, then the background is white.
 `snap-to-grid` | boolean | true | Objects placed in the canvas snap to closest grid point.
 `correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
-`tol` | float | `0.5*grid-size` | Tolerance to check the position of objects. The error is calculated as the absolute difference between expected position and submitted one.
+`tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `preview = false`.
 `tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
