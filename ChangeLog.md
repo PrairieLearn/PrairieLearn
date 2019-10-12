@@ -111,6 +111,8 @@
 
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
+  * Fix git merge during CI (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
