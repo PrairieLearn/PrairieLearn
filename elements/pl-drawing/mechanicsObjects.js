@@ -883,6 +883,35 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     }
 });
 
+mechanicsObjects.Group = fabric.util.createClass(fabric.Object, {
+    type: 'group',
+    initialize: function(objs, options) {
+        this.callSuper("initialize", options);
+        this.left = 0;
+        this.top = 0;
+        this.objects = objs;
+        this.on('added', function() {
+            this.width = this.canvas.width * 2;
+            this.height = this.canvas.height * 2;
+        });
+        this.originX = 'center';
+        this.originY = 'center';
+    },
+    add: function(object) {
+        this.objects.push(object);
+        this.dirty = true;
+    },
+    addWithUpdate: function(object) {
+        this.add(object);
+        if ('canvas' in this) {
+            this['canvas'].renderAll();
+        }
+    },
+    _render: function(ctx) {
+        this.objects.forEach(o => o.render(ctx));
+    }
+});
+
 // ======================================================================================
 mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     type: 'dist-force',
@@ -1154,7 +1183,7 @@ mechanicsObjects.makeDistTrianLoad = function(options) {
 // ======================================================================================
 mechanicsObjects.makeCoordinates = function(options) {
 
-    var group = new fabric.Group([ ], { left: 0, top: 0 , name: 'coords'});
+    var group = new mechanicsObjects.Group([ ], { left: 0, top: 0 , name: 'coordinates'});
 
     let obj1 = new mechanicsObjects.Arrow(options);
     group.add(obj1);
