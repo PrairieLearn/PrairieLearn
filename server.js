@@ -37,6 +37,8 @@ const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 
 
+process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
+
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
     argv['config'] = argv['_'][0];

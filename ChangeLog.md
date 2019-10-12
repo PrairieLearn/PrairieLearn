@@ -39,6 +39,8 @@
 
   * Add python library `tzlocal` (James Balamuta).
 
+  * Add console stack traces on Node warnings (Matt West).
+
   * Add support for Latex in `<markdown>` tags (Nathan Walters).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
