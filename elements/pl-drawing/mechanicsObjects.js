@@ -1033,35 +1033,39 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     type: 'arc',
     initialize: function(options) {
-        	options = options || {};
-        	this.callSuper("initialize", options);
-          this.set('arrowheadOffsetRatio', options.arrowheadOffsetRatio || 1);
-          this.set('arrowheadWidthRatio', options.arrowheadWidthRatio || 1);
-          this.set('strokeWidth', options.strokeWidth || 3);
-          this.set('stroke', options.stroke || 'black');
-          this.set('fill', options.stroke || 'black');
-          this.set('height', options.height || 3*this.strokeWidth);
-          this.setControlVisible('bl',false);
-          this.setControlVisible('tl',false);
-          this.setControlVisible('br',false);
-          this.setControlVisible('tr',false);
-          this.setControlVisible('mt',false);
-          this.setControlVisible('mb',false);
-          this.setControlVisible('ml',false);
-          this.setControlVisible('mr',false);
-          this.setControlVisible('mtr',false);
-          if(options.hasOwnProperty('trueHandles')) {
-              for (var i = 0; i < options.trueHandles.length; i++) {
-                    this.setControlVisible(options.trueHandles[i],true);
-              }
-          }
+        options = options || {};
+        this.callSuper("initialize", options);
+        this.set('arrowheadOffsetRatio', options.arrowheadOffsetRatio || 1);
+        this.set('arrowheadWidthRatio', options.arrowheadWidthRatio || 1);
+        this.set('strokeWidth', options.strokeWidth || 3);
+        this.set('stroke', options.stroke || 'black');
+        this.set('fill', options.stroke || 'black');
+        this.set('height', this.radius * 2);
+        this.set('width', this.radius * 2);
+        this.set('originX', 'center');
+        this.set('originY', 'center');
+        
+        this.setControlVisible('bl',false);
+        this.setControlVisible('tl',false);
+        this.setControlVisible('br',false);
+        this.setControlVisible('tr',false);
+        this.setControlVisible('mt',false);
+        this.setControlVisible('mb',false);
+        this.setControlVisible('ml',false);
+        this.setControlVisible('mr',false);
+        this.setControlVisible('mtr',false);
+        if(options.hasOwnProperty('trueHandles')) {
+            for (var i = 0; i < options.trueHandles.length; i++) {
+                this.setControlVisible(options.trueHandles[i],true);
+            }
+        }
     },
     toObject: function() {
-	     return fabric.util.object.extend(this.callSuper('toObject'), {
+	return fabric.util.object.extend(this.callSuper('toObject'), {
             name: this.get('name')
             /* should write here the properties that were added in initialize
-             and that should appear on the server */
-	          });
+               and that should appear on the server */
+	});
     },
     get_point_arc: function(alpha,er,et,r) {
         var uvec = er.multiply(-r*(1-Math.cos(alpha)));
@@ -1094,50 +1098,49 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
         ctx.closePath();
         return (uD);
     },
-    _render: function(ctx) {
+    _render: function(ctx) {        
+        var w = this.strokeWidth;
+        var l = 7*w*this.arrowheadOffsetRatio;
+        var h = 0.5*l*this.arrowheadWidthRatio;
+        var c = 0.6*l;
+        var e = 0.9*l;
+        var r = this.radius;
+        var thetai = (this.startAngle)*Math.PI/180;
+        var thetaf = (this.endAngle)*Math.PI/180;
+        
+        if (this.drawStartArrow) {
+            var alpha = Math.acos( 1 - e*e/(2*r*r) );
+            var beta  = Math.acos( 1 - (c*c)/(2*r*r) );
+            start_line = this.make_arrow_head(ctx,thetai,alpha,beta,r,l,c,h);
+            start_line_angle = Math.atan2(start_line.e(2),start_line.e(1));
+        }
+        else {
+            start_line_angle = thetai;
+        }
 
-          var w = this.strokeWidth;
-          var l = 7*w*this.arrowheadOffsetRatio;
-          var h = 0.5*l*this.arrowheadWidthRatio;
-          var c = 0.6*l;
-          var e = 0.9*l;
-          var r = this.radius;
-          var thetai = (this.startAngle)*Math.PI/180;
-          var thetaf = (this.endAngle)*Math.PI/180;
+        if (this.drawEndArrow) {
+            var alpha = -Math.acos( 1 - e*e/(2*r*r) );
+            var beta  = -Math.acos( 1 - (c*c)/(2*r*r) );
+            end_line = this.make_arrow_head(ctx,thetaf,alpha,beta,r,l,c,h);
+            end_line_angle = Math.atan2(end_line.e(2),end_line.e(1));
+        }
+        else {
+            end_line_angle = thetaf;
+        }
 
-          if (this.drawStartArrow) {
-              var alpha = Math.acos( 1 - e*e/(2*r*r) );
-              var beta  = Math.acos( 1 - (c*c)/(2*r*r) );
-              start_line = this.make_arrow_head(ctx,thetai,alpha,beta,r,l,c,h);
-              start_line_angle = Math.atan2(start_line.e(2),start_line.e(1));
-          }
-          else {
-              start_line_angle = thetai;
-          }
+        if (this.drawCenterPoint) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+            ctx.lineWidth = this.strokeWidth;
+            this._renderStroke(ctx);
+            ctx.closePath();
+        }
 
-          if (this.drawEndArrow) {
-              var alpha = -Math.acos( 1 - e*e/(2*r*r) );
-              var beta  = -Math.acos( 1 - (c*c)/(2*r*r) );
-              end_line = this.make_arrow_head(ctx,thetaf,alpha,beta,r,l,c,h);
-              end_line_angle = Math.atan2(end_line.e(2),end_line.e(1));
-          }
-          else {
-              end_line_angle = thetaf;
-          }
-
-          if (this.drawCenterPoint) {
-              ctx.beginPath();
-              ctx.arc(0, 0, 4, 0, 2 * Math.PI);
-              ctx.lineWidth = this.strokeWidth;
-              this._renderStroke(ctx);
-              ctx.closePath();
-          }
-
-          ctx.beginPath();
-          ctx.lineWidth = this.strokeWidth;
-          ctx.arc(0, 0, this.radius, start_line_angle , end_line_angle);
-          this._renderStroke(ctx);
-          ctx.closePath();
+        ctx.beginPath();
+        ctx.lineWidth = this.strokeWidth;
+        ctx.arc(0, 0, this.radius, start_line_angle , end_line_angle);
+        this._renderStroke(ctx);
+        ctx.closePath();
 
      },
 });
