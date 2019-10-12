@@ -23,7 +23,7 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to store data in. This variable is required when `preview = false`.
 `width` | integer | 580 | Horizontal width of the canvas.
 `height` | integer | 320 | Vertical height of the canvas.
-`grid-size` | integer | 20 | Size of the square grid for the canvas background. If `grid-size = 0`, then the background is white.
+`grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
 `snap-to-grid` | boolean | true | Objects placed in the canvas snap to closest grid point.
 `correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
