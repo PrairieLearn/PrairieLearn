@@ -80,11 +80,10 @@
                 <th>Assessments</th>
                 <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               </tr>
-              <% if (question.type == 'Freeform') { %>
+              <% if (question.type == 'Freeform' && question.grading_method != 'External') { %>
               <tr>
                 <th class="align-middle">Tests</th>
                 <td>
-                  <% if (question.grading_method !== 'External') { %>
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
@@ -94,7 +93,6 @@
                       Test 100 times with only results
                     </button>
                   </form>
-                  <% } %>
                 </td>
               </tr>
               <% } %>
