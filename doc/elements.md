@@ -1046,7 +1046,7 @@ The provided `script-name` corresponds to a file located within the director for
 Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
 Graphviz DOT visualizations.
 
-#### Sample Element 1
+#### Sample Elements
 
 ![](elements/pl-graph1.png)
 
@@ -1058,7 +1058,7 @@ digraph G {
 </pl-graph>
 ```
 
-#### Sample Element 2
+---
 
 ![](elements/pl-graph2.png)
 
