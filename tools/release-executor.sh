@@ -21,4 +21,4 @@ fi
 
 echo "Pushing prairielearn/executor:$VERSION to image repository"
 
-docker push "prairielearn/executor$VERSION"
+docker push "prairielearn/executor:$VERSION"
