@@ -57,7 +57,7 @@
                     <%= assessment_label %>
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
-                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "overview" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/overview"><i class="far fa-file-alt"></i> Overview</a>
+                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "overview" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/overview"><i class="fa fa-edit"></i> Overview</a>
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "questions" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
                     <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "assessmentStatistics" && navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
