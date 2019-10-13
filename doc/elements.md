@@ -1087,7 +1087,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
+- [`examplesGraph`: Sample creation of graphs](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesGraph)
 
 #### See also
 
