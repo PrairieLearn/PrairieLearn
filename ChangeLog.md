@@ -31,11 +31,17 @@
 
   * Add `pl-hide-in-panel` element (Matt West).
 
+  * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
+
   * Add student Gradebook page (Matt West).
 
   * Add CloudWatch statistics for external grader lifecycles (Matt West).
 
   * Add python library `tzlocal` (James Balamuta).
+
+  * Add console stack traces on Node warnings (Matt West).
+
+  * Add support for Latex in `<markdown>` tags (Nathan Walters).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -54,6 +60,8 @@
   * Change location of draft files for file editor from S3 (prod) / local (dev) to `file-store` (Tim Bretl).
 
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
+
+  * Change SSL file paths to be configurable (Dave Mussulman).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -96,6 +104,15 @@
   * Fix external grading results containing NULL bytes (Matt West).
 
   * Fix `MaxListenersExceededWarning` (Dave Mussulman).
+
+  * Fix jobsPerInstance grader statistic (Matt West).
+
+  * Fix null filenames from missing files in downloads (Matt West).
+
+  * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
+
+  * Fix git merge during CI (Matt West).
+  * Fix to prevent instructor testing of externally-graded questions (Matt West).
 
 * __3.2.0__ - 2019-08-05
 

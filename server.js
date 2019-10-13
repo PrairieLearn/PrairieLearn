@@ -40,6 +40,8 @@ const hostfiles = require('./lib/hostfiles');
 const { cleanupMountDirectories, setExecutorImageVersion } = require('./lib/code-caller-docker');
 
 
+process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
+
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
     argv['config'] = argv['_'][0];
@@ -614,9 +616,9 @@ var server;
 module.exports.startServer = function(callback) {
     if (config.serverType === 'https') {
         var options = {
-            key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
-            cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
-            ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')],
+            key: fs.readFileSync(config.sslKeyFile),
+            cert: fs.readFileSync(config.sslCertificateFile),
+            ca: [fs.readFileSync(config.sslCAFile)],
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);

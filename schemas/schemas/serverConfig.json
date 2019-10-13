@@ -52,6 +52,18 @@
                 "https"
             ]
         },
+        "sslCertificateFile": {
+            "description": "Path to SSL certificate",
+            "type": "string"
+        },
+        "sslKeyFile": {
+            "description": "Path to SSL certificate key file",
+            "type": "string"
+        },
+        "sslCAFile": {
+            "description": "Path to SSL CA chain file",
+            "type": "string"
+        },
         "serverPort": {
             "description": "The TCP port number for the server.",
             "type": "string"

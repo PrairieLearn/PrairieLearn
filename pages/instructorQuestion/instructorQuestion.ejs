@@ -80,7 +80,7 @@
                 <th>Assessments</th>
                 <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               </tr>
-              <% if (question.type == 'Freeform') { %>
+              <% if (question.type == 'Freeform' && question.grading_method != 'External') { %>
               <tr>
                 <th class="align-middle">Tests</th>
                 <td>
@@ -89,11 +89,9 @@
                     <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
                       Test once with full details
                     </button>
-                    <% if (question.grading_method !== 'External') { %>
                     <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
                       Test 100 times with only results
                     </button>
-                    <% } %>
                   </form>
                 </td>
               </tr>
