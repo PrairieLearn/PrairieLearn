@@ -1,7 +1,7 @@
 /* eslint-disable */
 (function(){
-  window.GraphRender = function(options) {
-    var elementId = '#graph-render-' + options.uuid;
+  window.PLGraphRender = function(options) {
+    var elementId = '#pl-graph-' + options.uuid;
     var container = document.querySelector(elementId);
 
     var viz = new Viz({
