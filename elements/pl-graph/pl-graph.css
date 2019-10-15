@@ -1,4 +1,4 @@
-.graphviz-render {
+.pl-graph {
   display: flex;
   flex-direction: column;
   overflow-x: scroll;
@@ -6,22 +6,22 @@
   margin-bottom: 1rem;
 }
 
-.graphviz-render > * {
+.pl-graph > * {
   margin: auto;
 }
 
-.graphviz-render .render-label {
+.pl-graph .render-label {
   color: #999;
 }
 
-.graphviz-render .spinner {
+.pl-graph .spinner {
   width: 40px;
   height: 40px;
 
   position: relative;
 }
 
-.graphviz-render .double-bounce1, .graphviz-render .double-bounce2 {
+.pl-graph .double-bounce1, .pl-graph .double-bounce2 {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -35,7 +35,7 @@
   animation: sk-bounce 2.0s infinite ease-in-out;
 }
 
-.graphviz-render .double-bounce2 {
+.pl-graph .double-bounce2 {
   -webkit-animation-delay: -1.0s;
   animation-delay: -1.0s;
 }
