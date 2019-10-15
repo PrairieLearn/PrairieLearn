@@ -106,6 +106,13 @@ module.exports = {
                             // TODO remove once everyone is using the new version
                             if (elementType === 'core') {
                                 elements[elementName.replace(/-/g, '_')] = info;
+                                
+                                if ('additionalNames' in info) {
+                                    info.additionalNames.forEach(name => {
+                                        elements[name] = info;
+                                        elements[name.replace(/-/g, '_')] = info;
+                                    });
+                                }
                             }
                             callback(null);
                         });
