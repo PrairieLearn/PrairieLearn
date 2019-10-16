@@ -1,7 +1,8 @@
 <pl-question-panel>
-  <p>
-    With the seed of <b>{{params.seed}}</b>, generate a sample under replacement of size <b>{{params.sample_size}}</b> from a set of <b>{{params.set_size}}</b> integers.
-  </p>
+<markdown>
+With the seed of **{{params.seed}}**, generate a sample of size **{{params.sample_size}}** 
+by sampling with replacement from a set of **{{params.set_size}}** integers.
+</markdown>
 </pl-question-panel>
 
 <pl-question-panel>
@@ -9,9 +10,9 @@
 </pl-question-panel>
 
 <pl-question-panel>
-  <p>
-    How often does <b>{{params.n_obs_num}}</b> appear in the sample? 
-  </p>
+<markdown>
+How often does **{{params.n_obs_num}}** appear in the sample? 
+</markdown>
 </pl-question-panel>
 
 <pl-integer-input answers-name="x_count" label = "Number of times {{params.n_obs_num}} appeared:"></pl-integer-input>
@@ -21,11 +22,11 @@
 </pl-question-panel>
 
 <pl-question-panel>
-  <p>
-    What is the proportion of how often <b>{{params.n_obs_num}}</b> appears? 
-  </p>
-  <p><i>Hint:</i> Should this number exceed 1?</p>
+<markdown>
+What is the proportion of how often **{{params.n_obs_num}}** appears? 
+
+_Hint:_ Should this number exceed 1?
+</markdown>
 </pl-question-panel>
 
 <pl-number-input answers-name="x_prop" label = "Proportion associated with {{params.n_obs_num}} occurring:"></pl-number-input>
-
