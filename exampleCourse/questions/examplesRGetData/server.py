@@ -1,62 +1,55 @@
-import io
-import numpy
-import random
+# Enable R computation
 import rpy2.robjects as robjects
-from pandas import DataFrame
 
 def generate(data):
     
-    # Get list of data sets in base R
-    # val = robjects.r('d = data(package = "datasets")$results[,"Item"]; d[!grepl("[[:space:]]", d)]')
+    # Get list of data sets in base R  
+   
+    values = robjects.r('''
+    # Get list of data sets in base R  
+    datasets = c('CO2', 'attitude', 'USJudgeRatings', 'pressure', 'warpbreaks', 'esoph', 'ToothGrowth')
     
-    r_datasets = ['CO2', 'attitude', 'USJudgeRatings', 'pressure', 'warpbreaks', 'esoph', 'ToothGrowth']
-    
-    # Pick data set
-    ds_id = random.randint(0, len(r_datasets) - 1)
-    
-    # Get the Data Set Name
-    ds_name = r_datasets[ds_id]
-    
-    # Find dimensions
-    ds_dim = robjects.r("dim(get('%s'))" % (ds_name))
-    
-    # Retrieve individual dimensions
-    ds_nrow = ds_dim[0]
-    ds_ncol = ds_dim[1]
-    
-    if ds_nrow > 15:
-       ds_nrow = random.randint(6, 15)
-       
-    # Simulate a location
-    #loc_row = random.randint(1, ds_nrow)
-    #loc_col = random.randint(1, ds_ncol)
-    
-    # Retrieve location value
-    #loc_value = robjects.r("get('%s')[%s, %s]" % (ds_name, loc_row, loc_col))
-    #data['correct_answers']['ds_loc_val'] = loc_value
-    
-    # Output Data Table
-    data['params']['display_data'] = str(robjects.r(f"knitr::kable(head(get('{dn_name}'), n = {ds_nrow}), align = rep('c', {ds_ncol}), format = 'html', row.names = FALSE)"))
-                                                    (ds_name, ds_nrow, ds_ncol)))
+    # Choose a data set
+    ds_name = sample(datasets, size = 1)
 
-    # Provide data set name
-    data['params']['ds_name'] = ds_name
+    # Retrieve the data set
+    df_picked = get(ds_name)
 
-    # Provide data set name
-    #data['params']['loc_row'] = loc_row
-    #data['params']['loc_col'] = loc_col
+    # Obtain the dimensions
+    df_dim = dim(df_picked)
+
+    ds_nrow = df_dim[1]
+    ds_ncol = df_dim[2]
+
+    # Cap observation number
+    if(ds_nrow > 15) {
+       ds_nrow = 15
+    }
+
+    df = knitr::kable(head(df_picked, ds_nrow),
+                 align = rep('c', ds_ncol), format = 'html', row.names = FALSE)
+
+    list(params = list(display_data = df, 
+                       bad_row_low = ds_nrow + sample(-8:-1, 1),
+                       bad_row_medium = ds_nrow + sample(1:3, 1),
+                       bad_row_high = ds_nrow + sample(4:6, 1),
+                       bad_row_highest = ds_nrow + sample(6:9, 1),
+                       bad_col_low = ds_ncol + sample(-2:-1, 1), 
+                       bad_col_medium = ds_ncol + sample(1:3, 1),
+                       bad_col_high = ds_ncol + sample(4:7, 1), 
+                       bad_col_highest = ds_ncol + sample(7:10, 1)),
+         ans    = list(ds_nrow = ds_nrow, ds_ncol = ds_ncol))
+    ''')
+
+    # Extract parameter and answer lists
+    par = values[0]
+    ans = values[1]
+
+    # Convert from R lists to python dictionaries
+    par = { key : par.rx2(key)[0] for key in par.names }
+    ans = { key : ans.rx2(key)[0] for key in ans.names }
+
+    # Setup output dictionaries
+    data['params'] = par
+    data['correct_answers'] = ans
     
-    # Simulate some noise
-    data['params']['bad_row_lo'] = ds_nrow + random.randint(-8, -1)
-    data['params']['bad_row_medium'] = ds_nrow + random.randint(1, 3)
-    data['params']['bad_row_high'] = ds_nrow + random.randint(4, 6)
-    data['params']['bad_row_highest'] = ds_nrow + random.randint(6, 9)
-    
-    data['params']['bad_col_lo'] = ds_ncol + random.randint(-2, -1)
-    data['params']['bad_col_medium'] = ds_ncol + random.randint(1, 3)
-    data['params']['bad_col_high'] = ds_ncol + random.randint(4, 7)
-    data['params']['bad_col_highest'] = ds_ncol + random.randint(7, 10)
-    
-    # Correct dimensions
-    data['correct_answers']['ds_nrow'] = ds_nrow
-    data['correct_answers']['ds_ncol'] = ds_ncol

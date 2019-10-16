@@ -1,54 +1,62 @@
 <pl-question-panel>
-    <p>Oh no! The scientist in charge of checking the data forgot to include the data's dimensions. Instead, they provided in their report the entire <code>data.frame</code>! Help the scientist out by figuring out the <b>data's dimensions</b>.
-        
-        {{{params.display_data}}}
-    </p>
-    </pl-question-panel>
+<markdown>
+  Oh no! The scientist in charge of checking the data forgot to include the data's dimensions. 
+  Instead, they provided in their report the entire `data.frame`! Help the scientist 
+  out by figuring out the **data's dimensions**.
+
+</markdown>
+
+{{{params.display_data}}}
+
+</pl-question-panel>
+
+<pl-question-panel><hr></pl-question-panel>
+
+<pl-question-panel> 
+<markdown>
+1. How many observations, $n$, does the data set contain?
+</markdown>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="num_obs" weight="1">
+  <pl-answer correct="true">
+    $n = {{correct_answers.ds_nrow}}$
+  </pl-answer>
+  <pl-answer correct="false">
+    $n = {{params.bad_row_low}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $n = {{params.bad_row_medium}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $n = {{params.bad_row_high}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $n = {{params.bad_row_highest}}$
+  </pl-answer>
+</pl-multiple-choice>
     
-    <pl-question-panel><hr></pl-question-panel>
-    
-    <pl-question-panel> 
-    <p> 1. How many observations, $n$, does the data set contain? </p>
-    </pl-question-panel>
-    <pl-multiple-choice answers-name="num_obs" weight="1">
-      <pl-answer correct="true">
-        $n = {{correct_answers.ds_nrow}}$
-      </pl-answer>
-      <pl-answer correct="false">
-        $n = {{params.bad_row_lo}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $n = {{params.bad_row_medium}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $n = {{params.bad_row_high}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $n = {{params.bad_row_highest}}$
-      </pl-answer>
-    </pl-multiple-choice>
-    <pl-variable-score answers-name="num_obs" />
-    
-    <pl-question-panel><hr></pl-question-panel>
-    
-    <pl-question-panel>
-    <p> 2. How many variables, $p$, does the data set contain? </p>
-    </pl-question-panel>
-    <pl-multiple-choice answers-name="num_vars" weight="1">
-      <pl-answer correct="true">
-        $p = {{correct_answers.ds_ncol}}$
-      </pl-answer>
-      <pl-answer correct="false">
-        $p = {{params.bad_col_lo}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $p = {{params.bad_col_medium}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $p = {{params.bad_col_high}}$
-      </pl-answer>	  
-      <pl-answer correct="false">
-        $p = {{params.bad_col_highest}}$
-      </pl-answer>
-    </pl-multiple-choice>
-    <pl-variable-score answers-name="num_vars" />
+<pl-question-panel><hr></pl-question-panel>
+
+<pl-question-panel>
+<markdown>
+2. How many variables, $p$, does the data set contain? 
+</markdown> 
+</pl-question-panel>
+<pl-multiple-choice answers-name="num_vars" weight="1">
+  <pl-answer correct="true">
+    $p = {{correct_answers.ds_ncol}}$
+  </pl-answer>
+  <pl-answer correct="false">
+    $p = {{params.bad_col_low}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $p = {{params.bad_col_medium}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $p = {{params.bad_col_high}}$
+  </pl-answer>	  
+  <pl-answer correct="false">
+    $p = {{params.bad_col_highest}}$
+  </pl-answer>
+</pl-multiple-choice>
