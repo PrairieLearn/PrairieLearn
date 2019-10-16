@@ -12,8 +12,8 @@ def generate(data):
       '''
     )
     # Cast to R
-    a = values[0] + 0
-    b = values[1] + 0
+    a = values[0]
+    b = values[1]
 
     # Put these two integers into data['params']
     data['params']['a'] = a
