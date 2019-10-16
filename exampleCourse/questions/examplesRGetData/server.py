@@ -36,7 +36,7 @@ def generate(data):
     #data['correct_answers']['ds_loc_val'] = loc_value
     
     # Output Data Table
-    data['params']['display_data'] = str(robjects.r("knitr::kable(head(get('%s'), n = %s), align = rep('c', %s), format = 'html', row.names = FALSE)" % 
+    data['params']['display_data'] = str(robjects.r(f"knitr::kable(head(get('{dn_name}'), n = {ds_nrow}), align = rep('c', {ds_ncol}), format = 'html', row.names = FALSE)"))
                                                     (ds_name, ds_nrow, ds_ncol)))
 
     # Provide data set name
