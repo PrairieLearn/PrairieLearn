@@ -15,28 +15,26 @@ def generate(data):
   # Pick number of obs to generate
   sample_size = random.randint(101, 250)
   
-  # Find dimensions
-  robjects.r("set.seed(%s); x = sample(%s, size = %s, replace = TRUE); " % (seed_val, set_size, sample_size))
-  
-  n_occurrence = robjects.r("n_hits = sum(x == %s)" % (n_obs_num))
-  n_prop = robjects.r("n_hits / %s" % (sample_size))
+  # Constructing an _R_ function with the sampling procedure
+  robjects.r('''
+          sample_r <- function(sample_size, set_size, seed, n_obs_num) {
+              set.seed(seed)
+              x = sample(set_size, size = sample_size, replace = TRUE)
+              n_hits = sum(x == n_obs_num)
+              n_prop = n_hits / sample_size
+              return(c(n_hits, n_prop))
+          }
+          ''')
 
-  # Alternatively, we can construct the above in an _R_ function and then call it. 
-  #robjects.r('''
-  #        sample_r <- function(sample_size, set_size, seed, observed_val) {
-  #            set.seed(seed)
-  #            x = sample(set_size, size = sample_size, replace = TRUE)
-  #            n_hits = sum(x == observed_val)
-  #            n_prop = n_hits / sample_size
-  #            return(c(n_hits, n_prop))
-  #        }
-  #        ''')
-  # sample_py = robjects.r("sample_r") # Retrieve function
-  # vals = sample_py(sample_size, set_size, seed, observed_val)
-  #
-  # # Unpack data
-  # n_occurrence = vals[0]
-  # n_prop = vals[1]
+  # Retrieve function
+  sample_py = robjects.r("sample_r") 
+  
+  # Calling the function and obtained results
+  vals = sample_py(sample_size, set_size, seed_val, n_obs_num)
+  
+  # Unpack data
+  n_occurrence = vals[0]
+  n_prop = vals[1]
   
   # Release data to question
   data["params"]["seed"] = seed_val
@@ -45,6 +43,5 @@ def generate(data):
   data["params"]["n_obs_num"] = n_obs_num
   
   # Show the correct answers
-  # Need to subset to a scalar vector for JSON conversion
-  data["correct_answers"]["x_count"] = n_occurrence[0] + 0
-  data["correct_answers"]["x_prop"] = n_prop[0] + 0
+  data["correct_answers"]["x_count"] = n_occurrence
+  data["correct_answers"]["x_prop"] = n_prop
