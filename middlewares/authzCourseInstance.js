@@ -14,8 +14,8 @@ module.exports = function(req, res, next) {
         course_instance_id: req.params.course_instance_id,
         is_administrator: res.locals.is_administrator,
         req_date: res.locals.req_date,
-        ip: req.ip,
-        force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
+        ip: req.headers['x-forwarded-for'] || req.ip,
+        force_mode: (['none', 'testrun'].includes(config.authType) && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
     };
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;

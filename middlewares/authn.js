@@ -60,6 +60,32 @@ module.exports = function(req, res, next) {
         return;
     }
 
+    // bypass auth for test suite
+    if (config.authType === 'testrun') {
+        var authUid = 'dev@illinois.edu';
+        var authName = 'Dev User';
+        var authUin = '000000000';
+
+        if (req.cookies.pl_test_user == 'test_student') {
+            authUid = 'student@illinois.edu';
+            authName = 'Student User';
+            authUin = '000000001';
+        }
+        let params = {
+            uid: authUid,
+            name: authName,
+            uin: authUin,
+            provider: 'dev',
+        };
+        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.authn_user = result.rows[0].user;
+            res.locals.is_administrator = result.rows[0].is_administrator;
+            next();
+        });
+        return;
+    }
+
     // otherwise look for auth cookies
     if (req.cookies.pl_authn == null) {
         // if no authn cookie then redirect to the login page
