@@ -397,10 +397,14 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/edit', 
 
 // course instance - instance admin pages
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/instance_admin)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/access`);
+    res.redirect(`${req.params[0]}/overview`);
 });
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin', function(req, res, next) {res.locals.navPage = 'instance_admin'; next();});
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/overview', [
+    function(req, res, next) {res.locals.navSubPage = 'overview'; next();},
+    require('./pages/instructorInstanceAdminOverview/instructorInstanceAdminOverview'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess'),

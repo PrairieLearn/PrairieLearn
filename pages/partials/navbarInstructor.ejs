@@ -31,11 +31,9 @@
                 <%= course_instance.short_name %>
             </a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
+                <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "overview" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/overview"><i class="fa fa-edit"></i> Overview</a>
                 <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "access" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
                 <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
-                <% if (!locals.course.options.isExampleCourse) { %>
-                    <a class="dropdown-item <% if (typeof navSubPage !== 'undefined' && navSubPage == "edit" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"><i class="fa fa-edit"></i> Edit</a>
-                <% } %>
             </div>
         </li>
 
