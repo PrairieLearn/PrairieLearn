@@ -286,6 +286,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/selectAssessments'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/overview`);
