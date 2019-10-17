@@ -1,6 +1,6 @@
 <script>
 $(function() {
-  window.GraphvizRender({
+  window.PLGraphRender({
     uuid: "{{uuid}}",
     workerURL: "{{workerURL}}",
     data: {{{ data }}},
@@ -9,7 +9,7 @@ $(function() {
 })
 </script>
 
-<div id="graphviz-render-{{uuid}}" class="graphviz-render">
+<div id="pl-graph-{{uuid}}" class="pl-graph">
   <!-- pure css loading spinner, nice -->
   <div class="spinner">
     <div class="double-bounce1"></div>
