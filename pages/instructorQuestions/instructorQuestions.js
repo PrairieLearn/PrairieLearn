@@ -8,12 +8,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const uuidv4 = require('uuid/v4');
 const logger = require('../../lib/logger');
-const serverJobs = require('../../lib/server-jobs');
-const namedLocks = require('../../lib/named-locks');
-const syncFromDisk = require('../../sync/syncFromDisk');
-const courseUtil = require('../../lib/courseUtil');
-const requireFrontend = require('../../lib/require-frontend');
-const config = require('../../lib/config');
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');

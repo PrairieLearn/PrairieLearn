@@ -149,9 +149,9 @@ function change_qid_write(edit, callback) {
                                             alternative.id = edit.qid_new;
                                             found = true;
                                         }
-                                    })
+                                    });
                                 } else if (question.id == edit.qid_old) {
-                                    question.id = edit.qid_new
+                                    question.id = edit.qid_new;
                                     found = true;
                                 }
                             });
@@ -292,7 +292,7 @@ router.post('/', function(req, res, next) {
         }
 
         if (res.locals.question.qid == req.body.id) {
-            debug('The new qid is the same as the old qid - do nothing')
+            debug('The new qid is the same as the old qid - do nothing');
             res.redirect(req.originalUrl);
         } else {
             let edit = {

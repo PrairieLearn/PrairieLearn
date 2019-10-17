@@ -127,7 +127,7 @@ router.post('/', function(req, res, next) {
         }
 
         if (res.locals.course_instance.short_name == req.body.id) {
-            debug('The new short_name is the same as the old short_name - do nothing')
+            debug('The new short_name is the same as the old short_name - do nothing');
             res.redirect(req.originalUrl);
         } else {
             let edit = {
@@ -176,8 +176,8 @@ function getNextNameShort(name) {
         const seasons = ['Sp', 'Su', 'Fa'];
         for (let i = 0; i < 3; i++) {
             if (found[1] == seasons[i]) {
-                if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, "0")}`;
-                else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, "0")}`;
+                if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, '0')}`;
+                else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, '0')}`;
             }
         }
     }
@@ -191,8 +191,8 @@ function getNextNameLong(name) {
         const seasons = ['Spring', 'Summer', 'Fall'];
         for (let i = 0; i < 3; i++) {
             if (found[1] == seasons[i]) {
-                if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, "0")}`;
-                else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, "0")}`;
+                if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, '0')}`;
+                else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, '0')}`;
             }
         }
     }
@@ -206,7 +206,7 @@ function getPrefixAndNumber(name) {
         return {
             'prefix': found.groups.prefix,
             'number': parseInt(found.groups.number),
-        }
+        };
     } else {
         return null;
     }

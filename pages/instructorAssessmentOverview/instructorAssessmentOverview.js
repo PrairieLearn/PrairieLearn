@@ -1,13 +1,10 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const async = require('async');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -21,7 +18,7 @@ const editHelpers = require('../shared/editHelpers');
 
 const getAssessmentPath = function(coursePath, courseInstanceShortName, assessmentTid) {
     return path.join(coursePath, 'courseInstances', courseInstanceShortName, 'assessments', assessmentTid);
-}
+};
 
 router.get('/', function(req, res, next) {
     debug('GET /');
@@ -147,7 +144,7 @@ router.post('/', function(req, res, next) {
         }
 
         if (res.locals.assessment.tid == req.body.id) {
-            debug('The new tid is the same as the old tid - do nothing')
+            debug('The new tid is the same as the old tid - do nothing');
             res.redirect(req.originalUrl);
         } else {
             let edit = {
@@ -200,7 +197,7 @@ function copy_write(edit, callback) {
 
                 let number = 1;
                 filenames.forEach((filename) => {
-                    const regex = new RegExp(`^${edit.assessmentSetAbbreviation}([0-9]+)$`)
+                    const regex = new RegExp(`^${edit.assessmentSetAbbreviation}([0-9]+)$`);
                     let found = filename.match(regex);
                     if (found) {
                         const foundNumber = parseInt(found[1]);

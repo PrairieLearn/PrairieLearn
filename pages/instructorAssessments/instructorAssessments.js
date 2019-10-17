@@ -200,7 +200,7 @@ function add_write(edit, callback) {
             // "number" may not be unique - that's ok, the user can change it later -
             // what's important is that "tid" is unique (see above), because that's a
             // directory name
-            infoJson = {
+            let infoJson = {
                 uuid: uuidv4(),
                 type: 'Homework',
                 title: 'Replace this title',

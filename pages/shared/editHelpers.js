@@ -1,10 +1,5 @@
 const ERR = require('async-stacktrace');
-const async = require('async');
-const error = require('@prairielearn/prairielib/error');
 const debug = require('debug')('prairielearn:editHelpers');
-const fs = require('fs-extra');
-const path = require('path');
-const uuidv4 = require('uuid/v4');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
@@ -12,8 +7,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 function doEdit(edit, locals, callback) {
     const options = {
@@ -46,7 +39,7 @@ function doEdit(edit, locals, callback) {
                 type: 'lock',
                 description: 'Lock',
                 job_sequence_id: job_sequence_id,
-                on_success: (config.fileEditorUseGit ? () => {_clean(_write, _unlock)} : _write),
+                on_success: (config.fileEditorUseGit ? () => {_clean(_write, _unlock);} : _write),
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -87,7 +80,7 @@ function doEdit(edit, locals, callback) {
                 arguments: ['clean', '-fdx'],
                 working_directory: edit.coursePath,
                 env: gitEnv,
-                on_success: () => {_reset(on_success, on_failure)},
+                on_success: () => {_reset(on_success, on_failure);},
                 on_error: on_failure,
                 no_job_sequence_update: true,
             };
@@ -139,7 +132,7 @@ function doEdit(edit, locals, callback) {
                     } else {
                         job.succeed();
                     }
-                })
+                });
             });
         };
 
