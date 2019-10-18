@@ -42,7 +42,7 @@
   * Add console stack traces on Node warnings (Matt West).
 
   * Add support for Latex in `<markdown>` tags (Nathan Walters).
-  
+
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
@@ -116,8 +116,10 @@
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
   * Fix git merge during CI (Matt West).
-  
+
   * Fix to prevent instructor testing of externally-graded questions (Matt West).
+  
+  * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
 
 * __3.2.0__ - 2019-08-05
 
