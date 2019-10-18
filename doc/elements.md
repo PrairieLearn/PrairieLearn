@@ -1072,10 +1072,14 @@ digraph G {
 ![](elements/pl-graph2.png)
 
 ```python
-mat = np.random.random((3, 3))
-mat = mat / la.norm(mat, 1, axis=0)
-data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
-data['params']['matrix'] = pl.to_json(mat)
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  mat = np.random.random((3, 3))
+  mat = mat / np.linalg.norm(mat, 1, axis=0)
+  data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
+  data['params']['matrix'] = pl.to_json(mat)
 ```
 
 ```html
