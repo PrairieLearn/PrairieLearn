@@ -269,11 +269,38 @@ element_attributes = {
 
 graded_elements = ['pl-controlled-line', 'pl-controlled-curved-line', 'pl-vector', 'pl-arc-vector', 'pl-distributed-load', 'pl-point', 'pl-double-headed-vector', 'pl-graph-line']
 
-# some default values that are used in different functions
-width_obj = 60
-stroke_width = 2
-point_size = 4
+element_defaults = {
+    'preview': False,
+    'answers-name': '',
+    'draw-error-box': False,
+    'grid-size': 20,
+    'angle-tol': 10,
+    'snap-to-grid': False,
+    'width': 580,
+    'height': 320,
+    'show-tolerance-hint': True
+}
 
+drawing_defaults = {
+    'x1': 20,
+    'y1': 20,
+    'x2': 80,
+    'y2': 20,
+    'offsetx': 2,
+    'offsety': 2,
+    'width': 30,
+    'width-rod': 20,
+    'height': 40,
+    'label': '',
+    'angle': 0,
+    'end-angle': 60,
+    'radius': 20,
+    'stroke-width': 2,
+    'selectable': False,
+    'font-size': 16,
+    'point-size': 4,
+    'force-width': 60
+}
 
 def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
@@ -361,7 +388,7 @@ def prepare(element_html, data):
 
     w_button = None
 
-    prev = pl.get_boolean_attrib(element, 'preview', False)
+    prev = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
 
     # Some preparation for elements with grading componenet
     if not prev:
@@ -378,7 +405,7 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-answer
             if child.tag == 'pl-drawing-answer':
                 check_graded(child)
-                draw_error_box = pl.get_boolean_attrib(child, 'draw-error-box', False)
+                draw_error_box = pl.get_boolean_attrib(child, 'draw-error-box', element_defaults['draw-error-box'])
                 ans, n_id = render_drawing_items(child, n_id)
                 n_ans_elements += 1
             # Get all the objects in pl-drawing-initial
@@ -420,7 +447,7 @@ def prepare(element_html, data):
             # Check to see if consistent width for pl-vector is used for correct answer
             # and submitted answers that are added using the buttons
             if obj['gradingName'] == 'vector':
-                if (w_button is None and obj['width'] == width_obj) or obj['width'] == float(w_button):
+                if (w_button is None and obj['width'] == drawing_defaults['force-width']) or obj['width'] == float(w_button):
                     continue
                 else:
                     raise Exception('Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button.')
@@ -483,11 +510,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def parsebool(string):
         if isinstance(string, bool):
             return string
-
-        string = string.lower()
-        if string == 't' or string == 'true':
-            return True
-        return False
+        return json.loads(string)
 
     fl_attrib = attrgetter(float)
     st_attrib = attrgetter(str)
@@ -586,20 +609,20 @@ def render_drawing_items(elem, curid=1, defaults={}):
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'x1': fl_attrib(el, 'x1', 20),
-            'y1': fl_attrib(el, 'y1', 20),
-            'height': fl_attrib(el, 'height', 40),
-            'width': fl_attrib(el, 'width', 30),
-            'angle': fl_attrib(el, 'angle', 0),
-            'label': st_attrib(el, 'label', ''),
-            'offsetx': fl_attrib(el, 'offsetx', 2),
-            'offsety': fl_attrib(el, 'offsety', 2),
+            'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'y1': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'height': fl_attrib(el, 'height', drawing_defaults['height']),
+            'width': fl_attrib(el, 'width', drawing_defaults['width']),
+            'angle': fl_attrib(el, 'angle', drawing_defaults['angle']),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
+            'offsetx': fl_attrib(el, 'offsetx', drawing_defaults['offsetx']),
+            'offsety': fl_attrib(el, 'offsety', drawing_defaults['offsety']),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(st_attrib(el, 'draw-ground', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'roller',
             'gradingName': 'roller',
         }
@@ -611,18 +634,18 @@ def render_drawing_items(elem, curid=1, defaults={}):
         color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
         obj = {
             'id': curid,
-            'x1': fl_attrib(el, 'x1', 20),
-            'y1': fl_attrib(el, 'y1', 20),
-            'height': fl_attrib(el, 'height', 40),
-            'width': fl_attrib(el, 'width', 20),
-            'angle': fl_attrib(el, 'angle', 0),
-            'label': st_attrib(el, 'label', ''),
-            'offsetx': fl_attrib(el, 'offsetx', 2),
-            'offsety': fl_attrib(el, 'offsety', 2),
+            'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'y1': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'height': fl_attrib(el, 'height', drawing_defaults['height']),
+            'width': fl_attrib(el, 'width', drawing_defaults['width']),
+            'angle': fl_attrib(el, 'angle', drawing_defaults['angle']),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
+            'offsetx': fl_attrib(el, 'offsetx', drawing_defaults['offsetx']),
+            'offsety': fl_attrib(el, 'offsety', drawing_defaults['offsety']),
             'color': color,
             'stroke': st_attrib(el, 'stroke-color', 'black'),
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
-            'selectable': False,
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
+            'selectable': drawing_defaults['selectable'],
             'type': 'clamped',
             'gradingName': 'clamped',
         }
@@ -635,20 +658,20 @@ def render_drawing_items(elem, curid=1, defaults={}):
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'x1': fl_attrib(el, 'x1', 20),
-            'y1': fl_attrib(el, 'y1', 20),
-            'height': fl_attrib(el, 'height', 40),
-            'width': fl_attrib(el, 'width', 30),
-            'angle': fl_attrib(el, 'angle', 0),
-            'label': st_attrib(el, 'label', ''),
-            'offsetx': fl_attrib(el, 'offsetx', 2),
-            'offsety': fl_attrib(el, 'offsety', 2),
+            'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'y1': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'height': fl_attrib(el, 'height', drawing_defaults['height']),
+            'width': fl_attrib(el, 'width', drawing_defaults['width']),
+            'angle': fl_attrib(el, 'angle', drawing_defaults['angle']),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
+            'offsetx': fl_attrib(el, 'offsetx', drawing_defaults['offsetx']),
+            'offsety': fl_attrib(el, 'offsety', drawing_defaults['offsety']),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(st_attrib(el, 'draw-ground', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'fixed-pin',
             'gradingName': 'fixed-pin',
         }
@@ -661,22 +684,22 @@ def render_drawing_items(elem, curid=1, defaults={}):
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'height': fl_attrib(el, 'width', 20),
-            'x1': fl_attrib(el, 'x1', 40),
-            'y1': fl_attrib(el, 'y1', 20),
-            'label1': st_attrib(el, 'label1', ''),
-            'offsetx1': fl_attrib(el, 'offsetx1', 2),
-            'offsety1': fl_attrib(el, 'offsety1', 2),
-            'x2': fl_attrib(el, 'x2', 80),
-            'y2': fl_attrib(el, 'y2', 20),
-            'label2': st_attrib(el, 'label2', ''),
-            'offsetx2': fl_attrib(el, 'offsetx2', 2),
-            'offsety2': fl_attrib(el, 'offsety2', 2),
+            'height': fl_attrib(el, 'width', drawing_defaults['width-rod']),
+            'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'y1': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'label1': st_attrib(el, 'label1', drawing_defaults['label']),
+            'offsetx1': fl_attrib(el, 'offsetx1', drawing_defaults['offsetx']),
+            'offsety1': fl_attrib(el, 'offsety1', drawing_defaults['offsety']),
+            'x2': fl_attrib(el, 'x2', drawing_defaults['x2']),
+            'y2': fl_attrib(el, 'y2', drawing_defaults['y2']),
+            'label2': st_attrib(el, 'label2', drawing_defaults['label']),
+            'offsetx2': fl_attrib(el, 'offsetx2', drawing_defaults['offsetx']),
+            'offsety2': fl_attrib(el, 'offsety2', drawing_defaults['offsety']),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'rod',
             'gradingName': 'rod',
         }
@@ -709,9 +732,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsety2': fl_attrib(el, 'offsety2', 2),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'collarrod',
             'gradingName': 'collarrod',
         }
@@ -765,9 +788,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsety3': fl_attrib(el, 'offsety3', -20),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'Lshaperod',
             'gradingName': 'Lshaperod',
         }
@@ -848,9 +871,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsety4': fl_attrib(el, 'offsety4', -20),
             'color': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'Tshaperod',
             'gradingName': 'Tshaperod',
         }
@@ -915,7 +938,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsetx': fl_attrib(el, 'offsetx', 2),
             'offsety': fl_attrib(el, 'offsety', 2),
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'fill': color,
             'type': 'pulley',
             'gradingName': 'pulley',
@@ -933,7 +956,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
         # This is the end point used for plotting
         left = x1
         top = y1
-        w = fl_attrib(el, 'width', width_obj)
+        w = fl_attrib(el, 'width', drawing_defaults['force-width'])
         angle = fl_attrib(el, 'angle', 0)
         theta = angle * math.pi / 180
         if not anchor_is_tail:
@@ -985,7 +1008,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'heightErrorBox': hbox,
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'arrow',
             'gradingName': 'vector',
         }
@@ -1054,7 +1077,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'originY': 'center',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'arc_vector',
             'gradingName': 'arc_vector',
         }
@@ -1071,9 +1094,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
         # This is the end point used for plotting
         left = x1
         top = y1
-        w = fl_attrib(el, 'width', width_obj)
-        w1 = fl_attrib(el, 'w1', width_obj)
-        w2 = fl_attrib(el, 'w2', width_obj)
+        w = fl_attrib(el, 'width', drawing_defaults['force-width'])
+        w1 = fl_attrib(el, 'w1', drawing_defaults['force-width'])
+        w2 = fl_attrib(el, 'w2', drawing_defaults['force-width'])
         wmax = max(w1, w2)
         angle = fl_attrib(el, 'angle', 0)
         theta = angle * math.pi / 180
@@ -1135,7 +1158,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'heightErrorBox': hbox,
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'distTrianLoad',
             'gradingName': 'distTrianLoad',
         }
@@ -1165,7 +1188,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'id': curid,
             'left': fl_attrib(el, 'x1', 20),
             'top': fl_attrib(el, 'y1', 20),
-            'radius': fl_attrib(el, 'radius', point_size),
+            'radius': fl_attrib(el, 'radius', drawing_defaults['point-size']),
             'objectDrawErrorBox': obj_draw,
             'XcenterErrorBox': pc[0] if pc is not None else pc,
             'YcenterErrorBox': pc[1] if pc is not None else pc,
@@ -1173,13 +1196,13 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'heightErrorBox': hbox,
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
-            'label': st_attrib(el, 'label', ''),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
             'offsetx': fl_attrib(el, 'offsetx', 5),
             'offsety': fl_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
             'fill': color,
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'circle',
             'gradingName': 'point',
         }
@@ -1191,9 +1214,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
         color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 40),
-            'top': fl_attrib(el, 'y1', 40),
-            'width': fl_attrib(el, 'width', 40),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'width': fl_attrib(el, 'width', drawing_defaults['width']),
             'label': st_attrib(el, 'label', ''),
             'offsetx': fl_attrib(el, 'offsetx', -16),
             'offsety': fl_attrib(el, 'offsety', -10),
@@ -1204,14 +1227,14 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsetx_label_y': fl_attrib(el, 'offsetx-label-y', -20),
             'offsety_label_y': fl_attrib(el, 'offsety-label-y', -10),
             'stroke': color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'angle': fl_attrib(el, 'angle', 0),
             'arrowheadWidthRatio': fl_attrib(el, 'arrow-head-width', 1),
             'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 1),
             'drawStartArrow': False,
             'drawEndArrow': True,
             'originY': 'center',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'coordinates',
             'gradingName': 'coordinates',
         }
@@ -1222,11 +1245,11 @@ def render_drawing_items(elem, curid=1, defaults={}):
         nonlocal curid
         color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         offset = fl_attrib(el, 'dim-offset', 0)
-        x1 = fl_attrib(el, 'x1', 10)
-        y1 = fl_attrib(el, 'y1', 10)
+        x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
+        y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
         if 'x2' not in el.attrib:
-            w = fl_attrib(el, 'width', width_obj / 2)
-            ang = fl_attrib(el, 'angle', 0)
+            w = fl_attrib(el, 'width', drawing_defaults['force-width'] / 2)
+            ang = fl_attrib(el, 'angle', drawing_defaults['angle'])
             ang_rad = ang * math.pi / 180
             x2 = x1 + w * math.cos(ang_rad)
             y2 = y1 + w * math.sin(ang_rad)
@@ -1260,7 +1283,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'x2d': float(r2d[0]),
             'y2d': float(r2d[1]),
             'stroke': color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width / 2),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'arrowheadWidthRatio': fl_attrib(el, 'arrow-head-width', 1.5),
             'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 1.5),
             'label': st_attrib(el, 'label', ''),
@@ -1273,7 +1296,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'startSupportLine': bool_attrib(el, 'start-support-line', False),
             'endSupportLine': bool_attrib(el, 'end-support-line', False),
             'originY': 'center',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'dimension',
             'gradingName': 'dimension',
         }
@@ -1285,27 +1308,27 @@ def render_drawing_items(elem, curid=1, defaults={}):
         color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 20),
-            'top': fl_attrib(el, 'y1', 20),
-            'angle': fl_attrib(el, 'angle', 0),
-            'radius': fl_attrib(el, 'radius', width_obj / 2),
-            'startAngle': fl_attrib(el, 'start-angle', 0),
-            'endAngle': fl_attrib(el, 'end-angle', 60),
-            'drawCenterPoint': json.loads(st_attrib(el, 'draw-center', 'false')),
-            'drawStartArrow': json.loads(st_attrib(el, 'draw-start-arrow', 'false')),
-            'drawEndArrow': json.loads(st_attrib(el, 'draw-end-arrow', 'true')),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'angle': fl_attrib(el, 'angle', drawing_defaults['angle']),
+            'radius': fl_attrib(el, 'radius', drawing_defaults['radius']),
+            'startAngle': fl_attrib(el, 'start-angle', drawing_defaults['angle']),
+            'endAngle': fl_attrib(el, 'end-angle', drawing_defaults['end-angle']),
+            'drawCenterPoint': bool_attrib(el, 'draw-center', False),
+            'drawStartArrow': bool_attrib(el, 'draw-start-arrow', False),
+            'drawEndArrow': bool_attrib(el, 'draw-end-arrow', True),
             'startSupportLine': bool_attrib(el, 'start-support-line', False),
             'endSupportLine': bool_attrib(el, 'end-support-line', False),
-            'label': st_attrib(el, 'label', ''),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
             'offsetx': fl_attrib(el, 'offsetx', 0),
             'offsety': fl_attrib(el, 'offsety', 0),
             'stroke': color,
             'fill': color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width / 2),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'arrowheadWidthRatio': fl_attrib(el, 'arrow-head-width', 1),
             'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 1),
             'originY': 'center',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'arc-dimension',
             'gradingName': 'arc_dimension',
         }
@@ -1318,16 +1341,16 @@ def render_drawing_items(elem, curid=1, defaults={}):
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 20),
-            'top': fl_attrib(el, 'y1', 20),
-            'width': fl_attrib(el, 'width', 20),
-            'height': fl_attrib(el, 'height', 20),
-            'angle': fl_attrib(el, 'angle', 0),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'width': fl_attrib(el, 'width', drawing_defaults['width']),
+            'height': fl_attrib(el, 'height', drawing_defaults['height']),
+            'angle': fl_attrib(el, 'angle', drawing_defaults['angle']),
             'originX': 'center',
             'originY': 'center',
             'fill': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width / 2),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'type': 'rectangle',
             'gradingName': 'rectangle',
         }
@@ -1345,7 +1368,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'p3': {'x': fl_attrib(el, 'x3', 40), 'y': fl_attrib(el, 'y3', 20)},
             'fill': color,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width / 2),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'type': 'triangle',
             'gradingName': 'triangle',
         }
@@ -1358,18 +1381,18 @@ def render_drawing_items(elem, curid=1, defaults={}):
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 20),
-            'top': fl_attrib(el, 'y1', 20),
-            'radius': fl_attrib(el, 'radius', 20),
-            'label': st_attrib(el, 'label', ''),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'radius': fl_attrib(el, 'radius', drawing_defaults['radius']),
+            'label': st_attrib(el, 'label', drawing_defaults['label']),
             'offsetx': fl_attrib(el, 'offsetx', 5),
             'offsety': fl_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
             'stroke': stroke_color,
             'fill': color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width / 2),
-            'selectable': False,
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
+            'selectable': drawing_defaults['selectable'],
             'type': 'circle',
             'gradingName': 'circle',
         }
@@ -1389,8 +1412,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', 1),
             'type': 'polygon',
             'gradingName': 'polygon',
-            'selectable': bool_attrib(el, 'selectable', False),
-            'evented': bool_attrib(el, 'selectable', False),
+            'selectable': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
         }
         curid += 1
         return obj
@@ -1398,14 +1421,14 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_spring(el):
         nonlocal curid
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
-        x1 = fl_attrib(el, 'x1', 20)
-        y1 = fl_attrib(el, 'y1', 20)
+        x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
+        y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
         if 'x2' in el.attrib and 'y2' in el.attrib:
             x2 = fl_attrib(el, 'x2')
             y2 = fl_attrib(el, 'y2')
         else:
-            w = fl_attrib(el, 'width', width_obj)
-            angle = fl_attrib(el, 'angle', 0)
+            w = fl_attrib(el, 'width', drawing_defaults['force-width'])
+            angle = fl_attrib(el, 'angle', drawing_defaults['angle'])
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         obj = {
@@ -1414,14 +1437,14 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'y1': y1,
             'x2': x2,
             'y2': y2,
-            'height': fl_attrib(el, 'height', 40),
+            'height': fl_attrib(el, 'height', drawing_defaults['height']),
             'dx': fl_attrib(el, 'interval', 10),
             'originX': 'center',
             'originY': 'center',
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
-            'drawPin': json.loads(st_attrib(el, 'draw-pin', 'false')),
-            'selectable': False,
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
+            'drawPin': bool_attrib(el, 'draw-pin', False),
+            'selectable': drawing_defaults['selectable'],
             'type': 'spring',
             'gradingName': 'spring',
         }
@@ -1431,13 +1454,13 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_line(el):
         nonlocal curid
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
-        x1 = fl_attrib(el, 'x1', 10)
-        y1 = fl_attrib(el, 'y1', 10)
+        x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
+        y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
         if 'x2' in el.attrib and 'y2' in el.attrib:
             x2 = fl_attrib(el, 'x2')
             y2 = fl_attrib(el, 'y2')
         else:
-            w = fl_attrib(el, 'width', width_obj)
+            w = fl_attrib(el, 'width', drawing_defaults['force-width'])
             angle = fl_attrib(el, 'angle', 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
@@ -1454,9 +1477,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'originX': 'center',
             'originY': 'center',
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'line',
             'gradingName': 'line',
         }
@@ -1466,24 +1489,24 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_arc(el):
         nonlocal curid
         stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
-        theta1 = fl_attrib(el, 'start-angle', 0) * math.pi / 180
-        theta2 = fl_attrib(el, 'end-angle', 90) * math.pi / 180
+        theta1 = fl_attrib(el, 'start-angle', drawing_defaults['angle']) * math.pi / 180
+        theta2 = fl_attrib(el, 'end-angle', drawing_defaults['end-angle']) * math.pi / 180
         if 'dashed-size' in el.attrib:
             dashed_array = [fl_attrib(el, 'dashed-size'), fl_attrib(el, 'dashed-size')]
         else:
             dashed_array = None
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 40),
-            'top': fl_attrib(el, 'y1', 40),
-            'radius': fl_attrib(el, 'radius', 20),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
+            'radius': fl_attrib(el, 'radius', drawing_defaults['radius']),
             'startAngle': theta1,
             'endAngle': theta2,
             'stroke': stroke_color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
             'fill': '',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'originX': 'center',
             'originY': 'center',
             'type': 'simple-arc',
@@ -1496,13 +1519,13 @@ def render_drawing_items(elem, curid=1, defaults={}):
         nonlocal curid
         obj = {
             'id': curid,
-            'left': fl_attrib(el, 'x1', 20),
-            'top': fl_attrib(el, 'y1', 20),
+            'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
+            'top': fl_attrib(el, 'y1', drawing_defaults['y1']),
             'label': st_attrib(el, 'label', ' Text '),
             'offsetx': fl_attrib(el, 'offsetx', 0),
             'offsety': fl_attrib(el, 'offsety', 0),
-            'fontSize': fl_attrib(el, 'font-size', 16),
-            'latex': json.loads(st_attrib(el, 'latex', 'true')),
+            'fontSize': fl_attrib(el, 'font-size', drawing_defaults['font-size']),
+            'latex': bool_attrib(el, 'latex', True),
             'type': 'text',
             'gradingName': 'text',
         }
@@ -1536,9 +1559,9 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsetx_label_y': fl_attrib(el, 'offsetx-label-y', -30),
             'offsety_label_y': fl_attrib(el, 'offsety-label-y', -10),
             'stroke': color,
-            'strokeWidth': fl_attrib(el, 'stroke-width', stroke_width),
+            'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'originY': 'center',
-            'selectable': False,
+            'selectable': drawing_defaults['selectable'],
             'type': 'axes',
             'gradingName': 'axes',
         }
@@ -1694,7 +1717,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', '')
-    preview_mode = pl.get_boolean_attrib(element, 'preview', False)
+    preview_mode = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
     with open('pl-drawing.mustache') as f:
         template = f.read()
 
@@ -1708,7 +1731,7 @@ def render(element_html, data):
             btn_markup = render_controls(template, el)
         elif el.tag == 'pl-drawing-initial':
             init, _ = render_drawing_items(el)
-            draw_error_box = pl.get_boolean_attrib(el, 'draw-error-box', False)
+            draw_error_box = pl.get_boolean_attrib(el, 'draw-error-box', element_defaults['draw-error-box'])
 
     for obj in init['objects']:
         obj['graded'] = False
@@ -1717,13 +1740,13 @@ def render(element_html, data):
             if obj['objectDrawErrorBox'] is not None:
                 obj['drawErrorBox'] = obj['objectDrawErrorBox']
 
-    grid_size = pl.get_integer_attrib(element, 'grid-size', 20)
+    grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
-    angle_tol = pl.get_float_attrib(element, 'angle-tol', 10)
+    angle_tol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
     tol_percent = round(tol / grid_size, 2) if grid_size != 0 else 1
 
     js_options = {
-        'snap_to_grid': pl.get_boolean_attrib(element, 'snap-to-grid', False),
+        'snap_to_grid': pl.get_boolean_attrib(element, 'snap-to-grid', element_defaults['snap-to-grid']),
         'grid_size': grid_size,
         'editable': (data['panel'] == 'question' and not preview_mode),
         'base_url': data['options']['base_url'],
@@ -1739,14 +1762,14 @@ def render(element_html, data):
 
     html_params = {
         'uuid': pl.get_uuid(),
-        'width': pl.get_string_attrib(element, 'width', 580),
-        'height': pl.get_string_attrib(element, 'height', 320),
+        'width': pl.get_string_attrib(element, 'width', element_defaults['width']),
+        'height': pl.get_string_attrib(element, 'height', element_defaults['height']),
         'options_json': json.dumps(js_options),
         'show_buttons': show_btn,
         'name': name,
         'render_element': True,
         'btn_markup': btn_markup,
-        'show_tolerance': show_btn and pl.get_boolean_attrib(element, 'show-tolerance-hint', True),
+        'show_tolerance': show_btn and pl.get_boolean_attrib(element, 'show-tolerance-hint', element_defaults['show-tolerance-hint']),
         'tolerance': pl.get_string_attrib(element, 'tolerance-hint', message_default),
     }
 
@@ -1791,8 +1814,8 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name', '')
-    preview_mode = pl.get_boolean_attrib(element, 'preview', False)
+    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
+    preview_mode = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
 
     if preview_mode:
         return data
@@ -1812,14 +1835,14 @@ def parse(element_html, data):
 def grade(element_html, data):
 
     element = lxml.html.fragment_fromstring(element_html)
-    prev = pl.get_boolean_attrib(element, 'preview', False)
+    prev = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
     if prev:
         return
 
-    grid_size = pl.get_integer_attrib(element, 'grid-size', 20)
+    grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
 
-    name = pl.get_string_attrib(element, 'answers-name', '')
+    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
     reference = data['correct_answers'][name]
 
