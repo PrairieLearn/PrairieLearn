@@ -64,6 +64,8 @@
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
   * Change SSL file paths to be configurable (Dave Mussulman).
+  
+  * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
