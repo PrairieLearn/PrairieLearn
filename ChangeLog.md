@@ -64,6 +64,8 @@
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
   * Change SSL file paths to be configurable (Dave Mussulman).
+  
+  * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -114,6 +116,7 @@
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
   * Fix git merge during CI (Matt West).
+  
   * Fix to prevent instructor testing of externally-graded questions (Matt West).
 
 * __3.2.0__ - 2019-08-05
