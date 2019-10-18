@@ -2304,8 +2304,8 @@ mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer, 
         subObj.y1 = c1.top;
     },
     function() { /* Removed */
-        c2.remove();
-        line.remove();
+        canvas.remove(c2);
+        canvas.remove(line);
     });
     c1.on('moving',function() {
         line.set({ 'x1': c1.left, 'y1': c1.top });
@@ -2318,8 +2318,8 @@ mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer, 
         subObj.y2 = c2.top;
     },
     function() { /* Removed */
-        c1.remove();
-        line.remove();
+        canvas.remove(c1);
+        canvas.remove(line);
     });
     c2.on('moving',function() {
         line.set({ 'x2': c2.left, 'y2': c2.top });
@@ -2426,9 +2426,9 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
         subObj.y1 = c1.top;
     },
     function() { /* Removed */
-        c2.remove();
-        c3.remove();
-        line.remove();
+        canvas.remove(c2);
+        canvas.remove(c3);
+        canvas.remove(line);
     });
     c1.on('moving', function() {
         line.path[0][1] = c1.left;
@@ -2442,9 +2442,9 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
         subObj.y2 = c2.top;
     },
     function() { /* Removed */
-        c1.remove();
-        c3.remove();
-        line.remove();
+        canvas.remove(c1);
+        canvas.remove(c3);
+        canvas.remove(line);
     });
     c2.on('moving', function() {
         line.path[1][1] = c2.left;
@@ -2458,9 +2458,9 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
         subObj.y3 = c3.top;
     },
     function() { /* Removed */
-        c1.remove();
-        c2.remove();
-        line.remove();
+        canvas.remove(c1);
+        canvas.remove(c2);
+        canvas.remove(line);
     });
     c3.on('moving', function() {
         line.path[1][3] = c3.left;
