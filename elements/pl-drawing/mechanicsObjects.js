@@ -26,6 +26,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
         this.top = this.y1;
         this.originY = 'center';
         this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+        this.objectCaching = false;
     },
     _render: function(ctx) {
         let len = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
@@ -89,6 +90,7 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
         this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
         this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2))
         this.width = this.length * 2;
+        this.objectCaching = false;
     },
     _render: function(ctx) {
         var rPx = this.height / 2;
@@ -132,6 +134,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
         this.top = this.y1;
         this.originY = 'center';
         this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+        this.objectCaching = false;
     },
     _render: function(ctx) {
         var d = this.height/2;
@@ -224,6 +227,7 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
         this.callSuper("initialize", options);
         this.left = this.x1;
         this.top = this.y1;
+        this.objectCaching = false;
     },
 
     _render: function(ctx) {
@@ -301,6 +305,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
         this.callSuper("initialize", options);
         this.left = this.x1;
         this.top = this.y1;
+        this.objectCaching = false;
     },
     get_distance: function(angle,d) {
         if (Math.abs(angle) < 1e-4 ) {
@@ -424,6 +429,7 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
         this.originY = 'center';
         this.left = this.x1;
         this.top = this.y1;
+        this.objectCaching = false;
     },
     _render: function(ctx) {
 
@@ -461,6 +467,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
         this.originY = 'center';
         this.left = this.x1;
         this.top = this.y1;
+        this.objectCaching = false;
     },
     _render: function(ctx) {
 
@@ -516,6 +523,7 @@ mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
         this.originY = 'center';
         this.left = this.x1;
         this.top = this.y1;
+        this.objectCaching = false;
     },
     _render: function(ctx) {
 
@@ -2364,6 +2372,7 @@ mechanicsObjects.byType['controlledLine'] = mechanicsObjects.addControlledLine;
 
 mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAnswer, answerName) {
     var line = mechanicsObjects.makeControlCurvedLine(options.x1, options.y1, options.x2, options.y2, options.x3, options.y3, options);
+    line.objectCaching = false;
     var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, options.handleRadius, options.strokeWidth/2);
     var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, options.handleRadius, options.strokeWidth/2);
     var c3 = mechanicsObjects.makeControlHandle(options.x3, options.y3, options.handleRadius, options.strokeWidth/2);
