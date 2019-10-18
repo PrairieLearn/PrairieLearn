@@ -715,17 +715,19 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
-#### Sample Element 1
+#### Sample Elements
 
 ![](elements/pl-python-variable.png)
 
 `server.py`
 
 ```python
-data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
-```
+import prairielearn as pl
 
----
+def generate(data):
+  data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
+  data['params']['variable'] = pl.to_json(data_dictionary)
+```
 
 `question.html`
 
@@ -733,22 +735,27 @@ data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
 <pl-python-variable params-name="variable"></pl-python-variable>
 ```
 
-#### Sample Element 2
+---
+
+![](elements/pl-python-variable2.png)
 
 `server.py`
 
 ```python
-df = pd.io.parsers.read_csv("breast-cancer-train.dat", header=None)
-data['params']['df'] = pl.to_json(df.head(15))
+import pandas as pd
+
+def generate(data):
+  d = {'col1': [1, 2], 'col2': [3, 4]}
+  df = pd.DataFrame(data=d)
+  data['params']['df'] = pl.to_json(df)
 ```
 
 `question.html`
 
 ```html
-<pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
 ```
 
-![](elements/pl-python-variable2.png)
 
 #### Customizations
 
