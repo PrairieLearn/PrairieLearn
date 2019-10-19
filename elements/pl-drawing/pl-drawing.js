@@ -103,21 +103,22 @@
         canvas.on('object:moving', function (e) {
             var obj = e.target;
             // if object is too big ignore,
-            if (obj.currentHeight > obj.canvas.height ||
-                obj.currentWidth > obj.canvas.width) {
+            if (obj.currentHeight > canvas_width ||
+                obj.currentWidth > canvas_height) {
                 return;
             }
-            obj.setCoords();
+            let rect = obj.getBoundingRect(true, true);
+            
             // top-left  corner
-            if (obj.getBoundingRect().top < 0 || obj.getBoundingRect().left < 0) {
-                obj.top = Math.max(obj.top, obj.top-obj.getBoundingRect().top);
-                obj.left = Math.max(obj.left, obj.left-obj.getBoundingRect().left);
+            if (rect.top < 0 || rect.left < 0) {
+                obj.top = Math.max(obj.top, obj.top - rect.top);
+                obj.left = Math.max(obj.left, obj.left-rect.left);
             }
             // bot-right corner
-            if (obj.getBoundingRect().top+obj.getBoundingRect().height > obj.canvas.height ||
-                obj.getBoundingRect().left+obj.getBoundingRect().width > obj.canvas.width) {
-                obj.top = Math.min(obj.top, obj.canvas.height-obj.getBoundingRect().height+obj.top-obj.getBoundingRect().top);
-                obj.left = Math.min(obj.left, obj.canvas.width-obj.getBoundingRect().width+obj.left-obj.getBoundingRect().left);
+            if (rect.top+rect.height > canvas_height ||
+                rect.left+rect.width > canvas_width) {
+                obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top-rect.top);
+                obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left-rect.left);
             }
 
             /* snap the element to the grid if enabled */
@@ -125,6 +126,8 @@
                 obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
                 obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
             }
+
+            obj.setCoords();
         });
 
         let answerData = {};
