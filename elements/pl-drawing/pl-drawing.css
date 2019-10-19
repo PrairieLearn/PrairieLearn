@@ -1,7 +1,12 @@
 .pl-drawing-button {
-    width: 49.1px;
+    padding: 3px;
+    margin-top: 2px;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+.pl-drawing-button img {
+    filter: invert(100%);
 }
 
 .pl-drawing-container {

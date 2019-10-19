@@ -827,8 +827,8 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
             let width = svg.parentNode.offsetWidth;
             svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
             svg.setAttribute("version", "1.1");
-            svg.setAttribute("height", height);
-            svg.setAttribute("width", width);
+            svg.setAttribute("height", height * ref.scale);
+            svg.setAttribute("width", width * ref.scale);
             svg.removeAttribute("style");
 
             ref.width = width;
@@ -853,8 +853,8 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
             document.body.removeChild(div);
 
             fabric.Image.fromURL(base64svg, function(img) {
-                img.height = height;
-                img.width = width;
+                img.height = height * ref.scale;
+                img.width = width * ref.scale;
                 ref.image = img;
                 ref.dirty = true;
 
@@ -879,13 +879,15 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         this.callSuper("initialize", options)
         this.image = null;
         this.text = text;
-
+        this.scale = 1;
+        
         if (text != "") {
             this.gen_text(this.text, options);
         }
     },
     _render: function(ctx) {
         if (this.image != null) {
+            ctx.scale(1.0 / this.scale, 1.0 / this.scale);
             this.image._render(ctx);
         }
     }

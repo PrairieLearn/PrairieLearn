@@ -278,7 +278,8 @@ element_defaults = {
     'snap-to-grid': False,
     'width': 580,
     'height': 320,
-    'show-tolerance-hint': True
+    'show-tolerance-hint': True,
+    'render-scale': 2
 }
 
 drawing_defaults = {
@@ -301,6 +302,7 @@ drawing_defaults = {
     'point-size': 4,
     'force-width': 60
 }
+
 
 def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
@@ -1751,6 +1753,7 @@ def render(element_html, data):
         'editable': (data['panel'] == 'question' and not preview_mode),
         'base_url': data['options']['base_url'],
         'client_files': '/pl/static/elements/pl-drawing/clientFilesElement/',
+        'render_scale': pl.get_float_attrib(element, 'render-scale', element_defaults['render-scale'])
     }
 
     show_btn = data['panel'] == 'question' and not preview_mode

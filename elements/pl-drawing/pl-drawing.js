@@ -19,6 +19,17 @@
             }
             return opts;
         }
+
+        const button_tooltips = {
+            "pl-point": "Add point",
+            "pl-vector": "Add vector",
+            "pl-double-headed-vector": "Add double headed vector",
+            "pl-arc-vector-CW": "Add clockwise arc vector",
+            "pl-arc-vector-CCW": "Add counter-clockwise arc vector",
+            "pl-distributed-load": "Add distributed load",
+            "delete": "Delete selected object",
+            "help-line": "Add help line"
+        };
         
         /* Set all button icons */
         let drawing_btns = $(root_elem).find("button");
@@ -49,7 +60,11 @@
                     file_name = "DTDD";
                 }
             }
-            img.setAttribute("src", image_base_url + file_name + ".png");
+            
+            img.setAttribute("src", image_base_url + file_name + ".svg");
+            if (file_name in button_tooltips) {
+                btn.setAttribute('title', button_tooltips[file_name]);
+            }
         });
         // ================================================================================
         // ================================================================================
@@ -58,33 +73,30 @@
         // First we draw all the fixed objects
 
         var answerName = 'objects';
+        const renderScale = elem_options['render_scale'];
+
+        /* Render at a higher resolution if requested */
+        canvas_elem.width = canvas_width * renderScale;
+        canvas_elem.height = canvas_height * renderScale;
+        
         if (elem_options.editable) {
             var canvas = new fabric.Canvas(canvas_elem);
         } else {
             var canvas = new fabric.StaticCanvas(canvas_elem);
         }
         canvas.selection = false; // disable group selection
+
+        /* Re-scale the html elements */
+        canvas.viewportTransform[0] = renderScale;
+        canvas.viewportTransform[3] = renderScale;
+        canvas_elem.parentElement.style.width = canvas_width + "px";
+        canvas_elem.parentElement.style.height = canvas_height + "px";
+        $(canvas_elem.parentElement).children("canvas").width(canvas_width);
+        $(canvas_elem.parentElement).children("canvas").height(canvas_height);
+        
         if (elem_options.grid_size != 0) {
             mechanicsObjects.addCanvasBackground(canvas, elem_options.grid_size);
         }
-
-        /*
-          -- rendering bounding rectangles, debugging purposes --
-        canvas.on('after:render', function() {
-            canvas.contextContainer.strokeStyle = '#555';
-
-            canvas.forEachObject(function(obj) {
-                var bound = obj.getBoundingRect();
-
-                canvas.contextContainer.strokeRect(
-                    bound.left + 0.5,
-                    bound.top + 0.5,
-                    bound.width,
-                    bound.height
-                );
-            })
-        });
-        */
         
         // Restrict objects from being able to be dragged off-canvas
         // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit

@@ -1045,6 +1045,7 @@ Attribute | Type | Default | Description
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `preview = false`
 `tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
+`render-scale` | float | `2` | Scale at which to render the canvas at.  Values greater than 1 will render at a higher resolution than the actual canvas element and will offer more crisp graphics.
 
 
 #### Example implementations
