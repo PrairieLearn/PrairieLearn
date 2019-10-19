@@ -320,7 +320,7 @@ def get_color_attrib(element, name, *args):
         'gray': '#909090',
         'gray3': '#505050'
     }
-    
+
     match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
     if match:
         return val
