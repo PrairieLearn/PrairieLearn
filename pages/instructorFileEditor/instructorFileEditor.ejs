@@ -75,7 +75,7 @@
                     </div>
                 </div>
                 <div class="card-body row collapse" id="help-<%= fileEdit.uuid %>">
-                    <div class="container">
+                    <div class="container-fluid">
                         <p>
                             You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong>.
                             <% if (config.fileEditorUseGit) { %>
@@ -88,7 +88,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0 row">
-                    <div class="container">
+                    <div class="container-fluid">
                         <% if (fileEdit.alertResults) { %>
                         <div class="alert <% if (fileEdit.didSave && fileEdit.didSync) { %>alert-success<% } else { %>alert-danger<% } %> alert-dismissible fade show m-2" role="alert">
                             <div class="row align-items-center">
