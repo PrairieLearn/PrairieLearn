@@ -168,8 +168,8 @@
         handlers["pl-arc-vector-CCW"] = function(options) {
             let options2 = _.defaults(options, arc_vec_options);
             let def = {
-                left: 0.1*canvas.width,
-                top: 0.2*canvas.width,
+                left: 0.1*canvas_width,
+                top: 0.2*canvas_width,
                 drawStartArrow: true,
                 drawEndArrow: false,
             };
@@ -180,8 +180,8 @@
         handlers["pl-arc-vector-CW"] = function(options) {
             let options2 = _.defaults(options, arc_vec_options);
             let def = {
-              left: 0.2*canvas.width,
-              top: 0.2*canvas.width,
+              left: 0.2*canvas_width,
+              top: 0.2*canvas_width,
               drawStartArrow: false,
               drawEndArrow: true,
             };
@@ -191,8 +191,8 @@
 
         handlers["pl-vector"] = function(options) {
             let def = {
-                left: 80, //0.8*canvas.width,
-                top: 80, //0.9*canvas.height,
+                left: 80, //0.8*canvas_width,
+                top: 80, //0.9*canvas_height,
                 width: 60,
                 stroke: '#b71c0c',
                 strokeWidth: 3,
@@ -233,8 +233,8 @@
 
         handlers["pl-point"] = function(options) {
             let def = {
-                left: 40, //0.8*canvas.width,
-                top: 40, //0.9*canvas.height,
+                left: 40, //0.8*canvas_width,
+                top: 40, //0.9*canvas_height,
                 radius: 4,
                 fill: 'blue',
                 stroke: 'blue',
@@ -252,8 +252,8 @@
         handlers["pl-distributed-load"] = function(options) {
             var width  = 80;
             let def = {
-                left: 0.8*canvas.width,
-                top: 0.8*canvas.height,
+                left: 0.8*canvas_width,
+                top: 0.8*canvas_height,
                 width: width,
                 range: width,
                 stroke: '#0057a0',
@@ -280,10 +280,10 @@
         var etc = 0; // an easter egg...?
         handlers["pl-controlled-line"] = function(options) {
             let def = {
-                x1: 0.5*canvas.width - (etc==1 ? 50 : -50),
-                y1: 0.5*canvas.height - 25,
-                x2: 0.5*canvas.width - (etc==1 ? 50 : -50),
-                y2: 0.5*canvas.height + 25,
+                x1: 0.5*canvas_width - (etc==1 ? 50 : -50),
+                y1: 0.5*canvas_height - 25,
+                x2: 0.5*canvas_width - (etc==1 ? 50 : -50),
+                y2: 0.5*canvas_height + 25,
                 handleRadius: 6,
                 strokeWidth: 4,
                 stroke: 'red',
@@ -297,12 +297,12 @@
 
         handlers["pl-controlled-curved-line"] = function(options) {
             var def = {
-                x1: 0.5*canvas.width - 70,
-                y1: 0.5*canvas.height + 50,
-                x2: 0.5*canvas.width,
-                y2: 0.5*canvas.height + 120,
-                x3: 0.5*canvas.width + 70,
-                y3: 0.5*canvas.height + 50,
+                x1: 0.5*canvas_width - 70,
+                y1: 0.5*canvas_height + 50,
+                x2: 0.5*canvas_width,
+                y2: 0.5*canvas_height + 120,
+                x3: 0.5*canvas_width + 70,
+                y3: 0.5*canvas_height + 50,
                 handleRadius: 6,
                 strokeWidth: 4,
                 stroke: "red",
@@ -333,15 +333,6 @@
         }
 
         handlers["delete"] = function(options) {
-            /*
-      	    if(canvas.getActiveGroup()){
-      	        canvas.getActiveGroup().forEachObject(function(o){
-                          canvas.remove(o)
-                      });
-      	        canvas.discardActiveGroup().renderAll();
-      	    } else {
-      	        canvas.remove(canvas.getActiveObject());
-      	        }*/
             canvas.remove(canvas.getActiveObject());
         };
                           

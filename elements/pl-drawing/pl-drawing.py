@@ -7,7 +7,6 @@ import warnings
 import math
 import numpy as np
 import numpy.linalg as la
-import colors as cl
 from functools import reduce
 
 # Used for giving user feedback on wrong answers
@@ -544,7 +543,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'y1': fl_attrib(el, 'y1', 40),
             'y2': fl_attrib(el, 'y2', 40),
             'type': 'controlledLine',
-            'stroke': cl.get_color_definition(st_attrib(el, 'color', 'red')),
+            'stroke': pl.get_color_attrib(el, 'color', 'red'),
             'gradingName': 'controlledLine',
             'strokeWidth': fl_attrib(el, 'stroke-width', 4),
             'handleRadius': fl_attrib(el, 'handle-radius', 6),
@@ -588,7 +587,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'x2': fl_attrib(el, 'x3', 40),
             'y2': fl_attrib(el, 'y3', 60),
             'type': 'controlledCurvedLine',
-            'stroke': cl.get_color_definition(st_attrib(el, 'color', 'red')),
+            'stroke': pl.get_color_attrib(el, 'color', 'red'),
             'gradingName': 'controlledCurvedLine',
             'strokeWidth': fl_attrib(el, 'stroke-width', 4),
             'handleRadius': fl_attrib(el, 'handle-radius', 6),
@@ -607,8 +606,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_roller(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'brown1'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'brown1')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -633,7 +632,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_clamped(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'black')
         obj = {
             'id': curid,
             'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -656,8 +655,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_fixed_pin(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'brown1'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'brown1')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'x1': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -682,8 +681,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_rod(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'white'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'white')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'height': fl_attrib(el, 'width', drawing_defaults['width-rod']),
@@ -711,8 +710,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_collarrod(el):
         nonlocal curid
         w = fl_attrib(el, 'width', 20)
-        color = cl.get_color_definition(st_attrib(el, 'color', 'white'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'white')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'height': w,
@@ -745,8 +744,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_3pointrod(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'white'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'white')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = fl_attrib(el, 'x1', 40)
         y1 = fl_attrib(el, 'y1', 100)
         x2 = fl_attrib(el, 'x2', 100)
@@ -801,8 +800,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_4pointrod(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'white'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'white')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = fl_attrib(el, 'x1', 40)
         y1 = fl_attrib(el, 'y1', 100)
         x2 = fl_attrib(el, 'x2', 100)
@@ -884,8 +883,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_pulley(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'gray'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'gray')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         r = fl_attrib(el, 'radius', 20)
         x1 = fl_attrib(el, 'x1', 100)
         y1 = fl_attrib(el, 'y1', 100)
@@ -950,7 +949,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_vector(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'red3'))
+        color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = bool_attrib(el, 'anchor-is-tail', True)
         # This is the anchor point for Grading
         x1 = fl_attrib(el, 'x1', 30)
@@ -1026,7 +1025,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_arc_vector(el):
         nonlocal curid
         disregard_sense = bool_attrib(el, 'disregard-sense', False)
-        color = cl.get_color_definition(st_attrib(el, 'color', 'purple'))
+        color = pl.get_color_attrib(el, 'color', 'purple')
         clockwise_direction = bool_attrib(el, 'clockwise-direction', True)
         if clockwise_direction:
             drawStartArrow = False
@@ -1088,7 +1087,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_distributed_force(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'red3'))
+        color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = bool_attrib(el, 'anchor-is-tail', True)
         # This is the anchor point for Grading
         x1 = fl_attrib(el, 'x1', 30)
@@ -1169,7 +1168,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_point(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'black')
         # Error box for grading
         x1 = fl_attrib(el, 'x1', 40)
         y1 = fl_attrib(el, 'y1', 40)
@@ -1213,7 +1212,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_coordinates(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'black')
         obj = {
             'id': curid,
             'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -1245,7 +1244,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_dimensions(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'stroke-color', 'black')
         offset = fl_attrib(el, 'dim-offset', 0)
         x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
         y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
@@ -1307,7 +1306,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_arc_dimension(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -1339,8 +1338,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_rectangle(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'green1'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'green1')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -1361,8 +1360,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_triangle(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'red1'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'red1')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'p1': {'x': fl_attrib(el, 'x1', 40), 'y': fl_attrib(el, 'y1', 40)},
@@ -1379,8 +1378,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_circle(el):
         nonlocal curid
-        color = cl.get_color_definition(st_attrib(el, 'color', 'gray1'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'gray1')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'left': fl_attrib(el, 'x1', drawing_defaults['x1']),
@@ -1404,8 +1403,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
     def gen_polygon(el):
         nonlocal curid
         pointlist = json.loads(st_attrib(el, 'plist', '{}'))
-        color = cl.get_color_definition(st_attrib(el, 'color', 'white'))
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'white')
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,
             'pointlist': pointlist,
@@ -1422,7 +1421,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_spring(el):
         nonlocal curid
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
         y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
         if 'x2' in el.attrib and 'y2' in el.attrib:
@@ -1455,7 +1454,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_line(el):
         nonlocal curid
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = fl_attrib(el, 'x1', drawing_defaults['x1'])
         y1 = fl_attrib(el, 'y1', drawing_defaults['y1'])
         if 'x2' in el.attrib and 'y2' in el.attrib:
@@ -1490,7 +1489,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_arc(el):
         nonlocal curid
-        stroke_color = cl.get_color_definition(st_attrib(el, 'stroke-color', 'black'))
+        stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         theta1 = fl_attrib(el, 'start-angle', drawing_defaults['angle']) * math.pi / 180
         theta2 = fl_attrib(el, 'end-angle', drawing_defaults['end-angle']) * math.pi / 180
         if 'dashed-size' in el.attrib:
@@ -1543,7 +1542,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
         else:
             origin_x = origin_y = 0
 
-        color = cl.get_color_definition(st_attrib(el, 'color', 'black'))
+        color = pl.get_color_attrib(el, 'color', 'black')
         obj = {
             'id': curid,
             'left': origin_x,
@@ -1642,7 +1641,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'id': curid,
             'x1': x0 + x1,
             'y1': y0 - y1,
-            'stroke': cl.get_color_definition(st_attrib(el, 'color', 'red')),
+            'stroke': pl.get_color_attrib(el, 'color', 'red'),
             'strokeWidth': fl_attrib(el, 'stroke-width', 4),
             'handleRadius': 6,
             'objectDrawErrorBox': obj_draw,

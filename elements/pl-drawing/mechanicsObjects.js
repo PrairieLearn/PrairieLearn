@@ -940,7 +940,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
         this.left = options.left;
         this.top = options.top;
         this.originX = 'center';
-        this.objectCaching = false;
+        this.objectCaching = true;
         this.flipped = options.flipped || false;
         this.flipX = this.flipped;
 
