@@ -893,35 +893,6 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     }
 });
 
-mechanicsObjects.Group = fabric.util.createClass(fabric.Object, {
-    type: 'group',
-    initialize: function(objs, options) {
-        this.callSuper("initialize", options);
-        this.left = 0;
-        this.top = 0;
-        this.objects = objs;
-        this.on('added', function() {
-            this.width = this.canvas.width * 2;
-            this.height = this.canvas.height * 2;
-        });
-        this.originX = 'center';
-        this.originY = 'center';
-    },
-    add: function(object) {
-        this.objects.push(object);
-        this.dirty = true;
-    },
-    addWithUpdate: function(object) {
-        this.add(object);
-        if ('canvas' in this) {
-            this['canvas'].renderAll();
-        }
-    },
-    _render: function(ctx) {
-        this.objects.forEach(o => o.render(ctx));
-    }
-});
-
 // ======================================================================================
 mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     type: 'dist-force',
@@ -1193,17 +1164,17 @@ mechanicsObjects.makeDistTrianLoad = function(options) {
 // ======================================================================================
 mechanicsObjects.makeCoordinates = function(options) {
 
-    var group = new mechanicsObjects.Group([ ], { left: 0, top: 0 , name: 'coordinates'});
-
+    var group = new fabric.Group([ ], { left: 0, top: 0 , name: 'coordinates'});
+    
     let obj1 = new mechanicsObjects.Arrow(options);
-    group.add(obj1);
+    group.addWithUpdate(obj1);
 
     var options2 = _.defaults({
         angle:options.angle - 90,
     }, options);
 
     let obj2 = new mechanicsObjects.Arrow(options2);
-    group.add(obj2);
+    group.addWithUpdate(obj2);
 
     var options3 = _.defaults({
         radius: 4,
@@ -1213,7 +1184,7 @@ mechanicsObjects.makeCoordinates = function(options) {
     }, options);
 
     let obj3 = new fabric.Circle(options3);
-    group.add(obj3);
+    group.addWithUpdate(obj3);
 
     return group;
 };
@@ -1223,7 +1194,6 @@ mechanicsObjects.makeCoordinates = function(options) {
 mechanicsObjects.makePulley = function(options) {
 
     var group = new fabric.Group([ ], { left: 0, top: 0 , name: 'pulley'});
-
     var circle_pulley = new fabric.Circle({
         radius: options.radius,
         fill: options.fill,
@@ -1325,7 +1295,7 @@ mechanicsObjects.restoreSubmittedAnswer = function(canvas, submittedAnswer, answ
 // ======================================================================================
 // Background drawing function
 
-mechanicsObjects.addCanvasBackground = function(canvas, gridsize) {
+mechanicsObjects.addCanvasBackground = function(canvas, w, h, gridsize) {
     canvas.backgroundColor = '#FFFFF0';
     var options = {
         stroke: "#D3D3D3",
@@ -1334,11 +1304,11 @@ mechanicsObjects.addCanvasBackground = function(canvas, gridsize) {
         evented: false
     };
 
-    for (var i = 1; i < (canvas.width/gridsize); i++){
-        canvas.add(new fabric.Line([gridsize*i, 0, gridsize*i, canvas.height], options));
+    for (var i = 1; i < (w/gridsize); i++){
+        canvas.add(new fabric.Line([gridsize*i, 0, gridsize*i, h], options));
     }
-    for (var i = 1; i < (canvas.height/gridsize); i++){
-        canvas.add(new fabric.Line([0, gridsize*i, canvas.width, gridsize*i], options));
+    for (var i = 1; i < (h/gridsize); i++){
+        canvas.add(new fabric.Line([0, gridsize*i, w, gridsize*i], options));
     }
 }
 
@@ -1782,6 +1752,8 @@ mechanicsObjects.byType['coordinates'] = mechanicsObjects.addCoordinates;
 mechanicsObjects.addAxes = function(canvas, options, submittedAnswer, answerName) {
 
     var obj = new fabric.Group([ ], { left: 0, top: 0 });
+    obj.evented = false;
+    obj.selectable = false;
 
     // Adding x-axis
     var options_axis_1 = _.defaults({

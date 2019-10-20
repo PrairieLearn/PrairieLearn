@@ -94,8 +94,13 @@
         $(canvas_elem.parentElement).children("canvas").width(canvas_width);
         $(canvas_elem.parentElement).children("canvas").height(canvas_height);
 
+        canvas.on("object:added", (ev) => {
+            ev.target.cornerSize *= renderScale;
+            ev.target.borderColor = 'rgba(102,153,255,1.0)';
+        });
+        
         if (elem_options.grid_size != 0) {
-            mechanicsObjects.addCanvasBackground(canvas, elem_options.grid_size);
+            mechanicsObjects.addCanvasBackground(canvas, canvas_width, canvas_height, elem_options.grid_size);
         }
 
         // Restrict objects from being able to be dragged off-canvas

@@ -8,6 +8,7 @@ from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
+import colors
 
 
 def to_json(v):
@@ -284,49 +285,19 @@ def get_color_attrib(element, name, *args):
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
-        return val
-
-    colors = {
-        'red1': '#ffccbc',
-        'red2': '#ff6c5c',
-        'red3': '#b71c0c',
-        'pink1': '#ffbcd8',
-        'pink2': '#fa5c98',
-        'pink3': '#ba1c58',
-        'purple1': '#dcc6e0',
-        'purple2': '#9b59b6',
-        'purple3': '#5e147d',
-        'blue1': '#39d5ff',
-        'blue2': '#1297e0',
-        'blue3': '#0057a0',
-        'turquoise1': '#5efaf7',
-        'turquoise2': '#27cbc0',
-        'turquoise3': '#008b80',
-        'green1': '#8effc1',
-        'green2': '#2ecc71',
-        'green3': '#008c31',
-        'yellow1': '#fde3a7',
-        'yellow2': '#f5ab35',
-        'yellow3': '#d87400',
-        'orange1': '#ffdcb5',
-        'orange2': '#ff926b',
-        'orange3': '#f3825b',
-        'brown1': '#f6c4a3',
-        'brown2': '#ce9c7b',
-        'brown3': '#8e5c3b',
-        'brown': '#8e5c3b',
-        'gray1': '#e0e0e0',
-        'gray2': '#909090',
-        'gray': '#909090',
-        'gray3': '#505050'
-    }
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            return val
 
     match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
     if match:
         return val
     else:
-        if val in colors:
-            return colors[val]
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
         else:
             raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 

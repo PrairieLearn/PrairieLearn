@@ -278,7 +278,7 @@ element_defaults = {
     'width': 580,
     'height': 320,
     'show-tolerance-hint': True,
-    'render-scale': 1
+    'render-scale': 1.5
 }
 
 drawing_defaults = {
@@ -624,6 +624,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(st_attrib(el, 'draw-ground', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'roller',
             'gradingName': 'roller',
         }
@@ -647,6 +648,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'stroke': st_attrib(el, 'stroke-color', 'black'),
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'clamped',
             'gradingName': 'clamped',
         }
@@ -673,6 +675,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(st_attrib(el, 'draw-ground', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'fixed-pin',
             'gradingName': 'fixed-pin',
         }
@@ -701,6 +704,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'rod',
             'gradingName': 'rod',
         }
@@ -736,6 +740,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'collarrod',
             'gradingName': 'collarrod',
         }
@@ -792,6 +797,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'Lshaperod',
             'gradingName': 'Lshaperod',
         }
@@ -875,6 +881,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(st_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'Tshaperod',
             'gradingName': 'Tshaperod',
         }
@@ -1330,6 +1337,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 1),
             'originY': 'center',
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'arc-dimension',
             'gradingName': 'arc_dimension',
         }
@@ -1354,6 +1362,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'type': 'rectangle',
             'gradingName': 'rectangle',
+            'selectable': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
         }
         curid += 1
         return obj
@@ -1372,6 +1382,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'type': 'triangle',
             'gradingName': 'triangle',
+            'selectable': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
         }
         curid += 1
         return obj
@@ -1393,7 +1405,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'stroke': stroke_color,
             'fill': color,
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
-            'selectable': drawing_defaults['selectable'],
+            'selectable': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': bool_attrib(el, 'selectable', drawing_defaults['selectable']),
             'type': 'circle',
             'gradingName': 'circle',
         }
@@ -1446,6 +1459,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': bool_attrib(el, 'draw-pin', False),
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'spring',
             'gradingName': 'spring',
         }
@@ -1481,6 +1495,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'line',
             'gradingName': 'line',
         }
@@ -1508,6 +1523,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeDashArray': dashed_array,
             'fill': '',
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'originX': 'center',
             'originY': 'center',
             'type': 'simple-arc',
@@ -1563,6 +1579,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'strokeWidth': fl_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'originY': 'center',
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'axes',
             'gradingName': 'axes',
         }
