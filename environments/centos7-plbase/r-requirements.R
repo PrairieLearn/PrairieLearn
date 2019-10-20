@@ -47,7 +47,8 @@ pkg_list = c(
   'randomForest',
   'rpart',
   'rpart.plot',
-  'rsample'
+  'rsample',
+  'kableExtra'
 )
 
 # Determine what packages are NOT installed already.
