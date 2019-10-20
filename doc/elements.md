@@ -395,8 +395,17 @@ Fill in the blank field that allows for **string** value input.
 
 ![](elements/pl-string-input.png)
 
+**question.html**
 ```html
-<pl-string-input answers-name="x"></pl-string-input>
+<pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
+```
+
+**server.py**
+```python
+def generate(data):
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations

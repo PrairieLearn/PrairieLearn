@@ -22,7 +22,7 @@ def generate(data):
     data["correct_answers"]["ans_rtol"] = x
     data["correct_answers"]["ans_sig"] = round(x, 2)
     data["correct_answers"]["int_value"] = 42
-    data["correct_answers"]["stringvalue"] = "PrairieLearn"
+    data["correct_answers"]["string_value"] = "Learn"
     
     # Symbolic
     sympy.var('x y')
