@@ -782,7 +782,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
                 div.removeChild(child);
                 child = div.lastChild;
             }
-            
+
             /* Can't set 'display: none' otherwise MathJax won't pick up the element for rendering,
                so... just move it off screen a bit */
             div.style.position = "absolute";
@@ -875,12 +875,12 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         if (!options.selectable) {
             options.evented = false;
         }
-        
+
         this.callSuper("initialize", options)
         this.image = null;
         this.text = text;
         this.scale = 1;
-        
+
         if (text != "") {
             this.gen_text(this.text, options);
         }
@@ -954,8 +954,8 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
         this.label1obj = new mechanicsObjects.LatexText(this.label1, {});
         this.label2obj = new mechanicsObjects.LatexText(this.label2, {});
 
-        this.arrowheadOffsetRatio = options.arrowheadOffsetRatio || 1;
-        this.arrowheadWidthRatio = options.arrowheadWidthRatio || 1;
+        this.arrowheadOffsetRatio = options.arrowheadOffsetRatio || 3;
+        this.arrowheadWidthRatio = options.arrowheadWidthRatio || 2;
 
         this.setControlVisible('bl',false);
       	this.setControlVisible('tl',false);
@@ -1083,7 +1083,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
         this.set('width', this.radius * 2);
         this.set('originX', 'center');
         this.set('originY', 'center');
-        
+
         this.setControlVisible('bl',false);
         this.setControlVisible('tl',false);
         this.setControlVisible('br',false);
@@ -1137,7 +1137,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
         ctx.closePath();
         return (uD);
     },
-    _render: function(ctx) {        
+    _render: function(ctx) {
         var w = this.strokeWidth;
         var l = 7*w*this.arrowheadOffsetRatio;
         var h = 0.5*l*this.arrowheadWidthRatio;
@@ -1146,7 +1146,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
         var r = this.radius;
         var thetai = (this.startAngle)*Math.PI/180;
         var thetaf = (this.endAngle)*Math.PI/180;
-        
+
         if (this.drawStartArrow) {
             var alpha = Math.acos( 1 - e*e/(2*r*r) );
             var beta  = Math.acos( 1 - (c*c)/(2*r*r) );

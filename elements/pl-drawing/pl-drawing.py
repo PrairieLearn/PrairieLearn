@@ -278,7 +278,7 @@ element_defaults = {
     'width': 580,
     'height': 320,
     'show-tolerance-hint': True,
-    'render-scale': 2
+    'render-scale': 1
 }
 
 drawing_defaults = {
@@ -1144,8 +1144,8 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offsety': fl_attrib(el, 'offsety', 2),
             'stroke': color,
             'strokeWidth': fl_attrib(el, 'stroke-width', 3),
-            'arrowheadWidthRatio': fl_attrib(el, 'arrow-head-width', 1),
-            'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 1),
+            'arrowheadWidthRatio': fl_attrib(el, 'arrow-head-width', 2),
+            'arrowheadOffsetRatio': fl_attrib(el, 'arrow-head-length', 3),
             'drawStartArrow': False,
             'drawEndArrow': True,
             'anchor_is_tail': st_attrib(el, 'anchor-is-tail', 'true'),

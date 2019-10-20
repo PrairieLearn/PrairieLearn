@@ -30,7 +30,7 @@
             "delete": "Delete selected object",
             "help-line": "Add help line"
         };
-        
+
         /* Set all button icons */
         let drawing_btns = $(root_elem).find("button");
         let image_base_url = elem_options['client_files'];
@@ -47,7 +47,7 @@
                 let w1 = opts['w1'];
                 let w2 = opts['w2'];
                 let anchor = opts['anchor_is_tail'];
-                
+
                 if (w1 == w2) {
                     file_name = "DUD";
                 } else if ((w1 < w2) && (anchor === 'true')) {
@@ -60,7 +60,7 @@
                     file_name = "DTDD";
                 }
             }
-            
+
             img.setAttribute("src", image_base_url + file_name + ".svg");
             if (file_name in button_tooltips) {
                 btn.setAttribute('title', button_tooltips[file_name]);
@@ -78,7 +78,7 @@
         /* Render at a higher resolution if requested */
         canvas_elem.width = canvas_width * renderScale;
         canvas_elem.height = canvas_height * renderScale;
-        
+
         if (elem_options.editable) {
             var canvas = new fabric.Canvas(canvas_elem);
         } else {
@@ -93,11 +93,11 @@
         canvas_elem.parentElement.style.height = canvas_height + "px";
         $(canvas_elem.parentElement).children("canvas").width(canvas_width);
         $(canvas_elem.parentElement).children("canvas").height(canvas_height);
-        
+
         if (elem_options.grid_size != 0) {
             mechanicsObjects.addCanvasBackground(canvas, elem_options.grid_size);
         }
-        
+
         // Restrict objects from being able to be dragged off-canvas
         // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
         canvas.on('object:moving', function (e) {
@@ -108,7 +108,7 @@
                 return;
             }
             let rect = obj.getBoundingRect(true, true);
-            
+
             // top-left  corner
             if (rect.top < 0 || rect.left < 0) {
                 obj.top = Math.max(obj.top, obj.top - rect.top);
@@ -335,7 +335,7 @@
         handlers["delete"] = function(options) {
             canvas.remove(canvas.getActiveObject());
         };
-                          
+
         /* Attach click handlers */
         drawing_btns.each(function(i, btn) {
             let id = btn.name;
