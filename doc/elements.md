@@ -332,8 +332,26 @@ Fill in the blank field that allows for mathematical symbol input.
 
 ![](elements/pl-symbolic-input.png)
 
+**question.html**
 ```html
-<pl-symbolic-input answers-name="ans"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+  
+  # Declare math symbols
+  sympy.var('x y')
+
+  # Describe the equation
+  z = x + y + 1
+
+  # Export the answer.
+  data['correct_answer']['symbolic_math'] = pl.to_json(z)
 ```
 
 #### Customizations
@@ -351,16 +369,7 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using:
-
-```python
-import prairielearn as pl
-import sympy
-
-def generate(data):
-    sympy.var('x y')
-    data['correct_answer']['ans'] = pl.to_json(x + y + 1)
-```
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
 
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
