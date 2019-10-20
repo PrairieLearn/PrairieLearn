@@ -1540,7 +1540,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             origin_x = origin['x']
             origin_y = origin['y']
         else:
-            origin_x = origin_y = 0
+            origin_x = origin_y = 60
 
         color = pl.get_color_attrib(el, 'color', 'black')
         obj = {

@@ -1793,7 +1793,7 @@ mechanicsObjects.addAxes = function(canvas, options, submittedAnswer, answerName
         arrowheadOffsetRatio: 1.5,
     }, options);
     let obj1 = new mechanicsObjects.Arrow(options_axis_1);
-    obj.add(obj1);
+    obj.addWithUpdate(obj1);
 
     // Adding y-axis
     var options_axis_2 = _.defaults({
@@ -1806,7 +1806,7 @@ mechanicsObjects.addAxes = function(canvas, options, submittedAnswer, answerName
         arrowheadOffsetRatio: 1.5,
     }, options);
     let obj2 = new mechanicsObjects.Arrow(options_axis_2);
-    obj.add(obj2);
+    obj.addWithUpdate(obj2);
 
     if (!obj.id) {
          obj.id = this.newID();
