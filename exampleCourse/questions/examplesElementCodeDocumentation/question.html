@@ -65,10 +65,11 @@
         
         <pl-question-panel>
           Example of a fill in the blank element that accepts <b>numeric</b> values.
-         <p> Correct Input: <code>3.14</code> </p>
+         <p> Correct Input: <code>{{correct_answers.ans_rtol}}</code> </p>
         </pl-question-panel>
         
-        <pl-number-input answers-name="numericvalue" comparison="sigfig" digits="2"></pl-number-input>
+        <pl-number-input answers-name="ans_rtol" label="$x =$">
+        </pl-number-input>
 
     </div>
 </div>

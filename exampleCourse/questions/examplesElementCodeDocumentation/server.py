@@ -11,9 +11,12 @@ import pandas as pd
 
 def generate(data):
 
+    # Generate a random value
+    x = random.uniform(1, 2)
+
     # Fill in the Blank Inputs
-    data["correct_answers"]["numericvalue"] = 3.14
     data["correct_answers"]["integervalue"] = 42
+    data["correct_answers"]["ans_rtol"] = x
     data["correct_answers"]["stringvalue"] = "PrairieLearn"
     
     # Symbolic

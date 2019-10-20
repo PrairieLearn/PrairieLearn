@@ -194,10 +194,27 @@ tolerances.
 
 #### Sample Element
 
-![](elements/pl-number-input.png)
+![](elements/pl-number-input-rtol.png)
 
+**question.html**
 ```html
-<pl-number-input answers-name="v_avg" comparison="sigfig" digits="2"></pl-number-input>
+<pl-number-input answers-name="ans_rtol" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Fill in the Blank Inputs
+  data["correct_answers"]["ans_rtol"] = x
+```
+
 ```
 
 #### Customizations
