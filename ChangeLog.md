@@ -116,6 +116,8 @@
   * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
 
   * Fix git merge during CI (Matt West).
+
+  * Fix to prevent instructor testing of externally-graded questions (Matt West).
   
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
   
