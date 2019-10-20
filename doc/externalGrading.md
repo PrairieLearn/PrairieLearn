@@ -107,6 +107,32 @@ All question and student-submitted code will be present in various subdirectorie
 * Files submitted by the student will be copied to `/grade/student`
 * The `data` object that would normally be provided to the `grade` method of your question's server file will be serialized to JSON at `/grade/data/data.json`
 
+In particular, the file system structure of the grader looks like: 
+
+```text
+/grade                         # Root directory of the grading job
++-- /data                      # JSON dump of the data object from server.py
+|   `-- data.json   
+|
++-- /results                   # Report of test output formatted for PrairieLearn
+|   `-- results.json   
+|
++-- /serverFilesCourse         # Files from serverFilesCourse/ in the course directory
+|   +-- /my_testing_framework 
+|   |   +-- testfile           # Test framework configuration
+|   |   `-- run.sh             # Entrypoint called in the container
+|
++-- /student                   # Files submitted by student
+|   +-- studentfile1
+|   `-- studentfile2
+|
++-- /tests                     # Files found in the question's tests/ directory
+|   +-- test1
+|   `-- test2
+|
++-- /...                       # Additional directories and files as needed.
+```
+
 When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
 
 ## Directory layout
