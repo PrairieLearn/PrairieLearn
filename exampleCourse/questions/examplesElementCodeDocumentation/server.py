@@ -1,3 +1,4 @@
+# Required to export values
 import prairielearn as pl
 
 # Required for symbolic input
