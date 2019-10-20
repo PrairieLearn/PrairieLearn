@@ -1378,7 +1378,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 
     def gen_circle(el):
         nonlocal curid
-        color = pl.get_color_attrib(el, 'color', 'gray1')
+        color = pl.get_color_attrib(el, 'color', 'grey')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
             'id': curid,

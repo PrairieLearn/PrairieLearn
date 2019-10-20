@@ -21,6 +21,7 @@
     "zones": [
         {
             "questions": [
+                {"id": "examplePLDrawingGallery",                 "points": 2, "maxPoints": 6},
                 {"id": "examplePLDrawingSimpleTutorial",          "points": 2, "maxPoints": 6},
                 {"id": "examplePLDrawingGradeVector",             "points": 2, "maxPoints": 6},
                 {"id": "examplePLDrawingCentroid",                "points": 2, "maxPoints": 6},
