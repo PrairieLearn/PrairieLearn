@@ -211,7 +211,7 @@ def generate(data):
   # Generate a random value
   x = random.uniform(1, 2)
 
-  # Fill in the Blank Inputs
+  # Answer to fill in the blank input
   data["correct_answers"]["ans_rtol"] = x
 ```
 
@@ -234,7 +234,7 @@ def generate(data):
   # Generate a random value
   x = random.uniform(1, 2)
 
-  # Fill in the Blank Input
+  # Answer to fill in the blank input
   data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
@@ -296,7 +296,7 @@ def generate(data):
   # Generate a random whole number
   x = random.randint(1, 10)
 
-  # Fill in the Blank Inputs
+  # Answer to fill in the blank input
   data["correct_answers"]["int_value"] = x
 ```
 
@@ -350,7 +350,7 @@ def generate(data):
   # Describe the equation
   z = x + y + 1
 
-  # Export the answer.
+  # Answer to fill in the blank input stored as JSON.
   data['correct_answer']['symbolic_math'] = pl.to_json(z)
 ```
 
