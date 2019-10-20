@@ -211,25 +211,27 @@ Running PrairieLearn locally with externally graded question support looks somet
 
 1. Create an empty directory to use to share job data between containers. This can live anywhere, but
 needs to be created first and referenced in the docker launch command.
-    * i.e. `mkdir $HOME/pl_ag_jobs`
+    * i.e. `mkdir ${HOME}/pl_ag_jobs`
 1. Modify your PL docker run call to look something like:
 ```sh
 docker run -it --rm -p 3000:3000 \
-    -v $PWD:/course \                # Map your current directly in as course content
-    -v $HOME/pl_ag_jobs:/jobs \      # Map jobs directory into /jobs
+    -v ${PWD}:/course `# Map your current directly in as course content` \
+    -v ${HOME}/pl_ag_jobs:/jobs `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock \ # Mount docker into itself so container can spawn others
-    prairielearn/prairielearn        # PL docker image itself
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \ 
+    prairielearn/prairielearn   `# PL docker image itself`
 ```
 
 Note: The sequence above works on Windows 10 as well as MacOS and Linux docker. Windows users might see problems running grading jobs:
 
-* A `standard_init_linux.go:207: exec user process caused "no such file or directory"` error when
-grading likely means a OS new-line incompatibility with the `entrypoint` script in the externally
-graded question.
-    * One solution for this is to make a `.gitattributes` files in your PL repository with the line
+##### Common issues
+
+A `standard_init_linux.go:207: exec user process caused "no such file or directory"` error when
+grading likely means an OS new-line incompatibility with the `entrypoint` script in the externally
+graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
-format instead of converting them for Windows (which breaks mapping them back into docker). This mimics the [.gitattributes file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
+format instead of converting them for Windows (which breaks mapping them back into docker). 
+This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
 #### Running locally (native, not on Docker)
 
