@@ -215,6 +215,27 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
+---- 
+
+![](elements/pl-number-input-sigfig.png)
+
+**question.html**
+```html
+<pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Fill in the Blank Input
+  data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
