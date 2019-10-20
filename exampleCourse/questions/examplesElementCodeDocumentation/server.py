@@ -9,6 +9,9 @@ import numpy as np
 # Requried for python variable
 import pandas as pd
 
+# Required to generate random numbers
+import random 
+
 def generate(data):
 
     # Generate a random value
