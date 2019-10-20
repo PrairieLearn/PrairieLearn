@@ -45,6 +45,8 @@
 
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
+  * Add FAQ item on escaping math mode in questions (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -66,6 +68,8 @@
   * Change SSL file paths to be configurable (Dave Mussulman).
   
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
+
+  * Change documentation examples to be self-contained (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -121,8 +125,6 @@
   
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
   
-  * Fix documentation examples to be self-contained (James Balamuta).
-
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
