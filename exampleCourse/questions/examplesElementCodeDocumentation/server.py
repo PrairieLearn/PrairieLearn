@@ -18,9 +18,9 @@ def generate(data):
     x = random.uniform(1, 2)
 
     # Fill in the Blank Inputs
-    data["correct_answers"]["integervalue"] = 42
     data["correct_answers"]["ans_rtol"] = x
     data["correct_answers"]["ans_sig"] = round(x, 2)
+    data["correct_answers"]["int_value"] = 42
     data["correct_answers"]["stringvalue"] = "PrairieLearn"
     
     # Symbolic

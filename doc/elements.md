@@ -282,8 +282,22 @@ Fill in the blank field that requires an **integer** input.
 
 ![](elements/pl-integer-input.png)
 
+**question.html**
 ```html
-<pl-integer-input answers-name="x"></pl-integer-input>
+<pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random whole number
+  x = random.randint(1, 10)
+
+  # Fill in the Blank Inputs
+  data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
