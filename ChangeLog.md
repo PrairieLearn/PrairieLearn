@@ -42,7 +42,7 @@
   * Add console stack traces on Node warnings (Matt West).
 
   * Add support for Latex in `<markdown>` tags (Nathan Walters).
-  
+
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
@@ -64,6 +64,8 @@
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
   * Change SSL file paths to be configurable (Dave Mussulman).
+  
+  * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -115,7 +117,7 @@
 
   * Fix git merge during CI (Matt West).
   
-  * Fix to prevent instructor testing of externally-graded questions (Matt West).
+  * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
   
   * Fix documentation examples to be self-contained (James Balamuta).
 
