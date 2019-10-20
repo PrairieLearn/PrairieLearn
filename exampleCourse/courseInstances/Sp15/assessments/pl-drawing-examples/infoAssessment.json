@@ -21,13 +21,13 @@
     "zones": [
         {
             "questions": [
-                {"id": "example-pl-drawing-simple-tutorial",               "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-grade-vector",               "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-Centroid",               "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-Pulley",               "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-graphs",               "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-LshapeRod-InclinedPlane",                   "points": 2, "maxPoints": 6},
-                {"id": "example-pl-drawing-VM-diagrams",                   "points": 2, "maxPoints": 6}
+                {"id": "examplePLDrawingSimpleTutorial",          "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingGradeVector",             "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingCentroid",                "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingPulley",                  "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingGraphs",                  "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingInclinedPlane",           "points": 2, "maxPoints": 6},
+                {"id": "examplePLDrawingVMDiagrams",              "points": 2, "maxPoints": 6}
 
 
 
