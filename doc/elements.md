@@ -506,8 +506,22 @@ format (e.g. MATLAB or Python's numpy).
 
 ![](elements/pl-matrix-input.png)
 
+**question.html**
 ```html
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  # Randomly generate a 2x2 matrix
+  matrixB = np.random.random((2, 2))
+
+  # Answer exported to question.
+  data['correct_answers']['matrixB'] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -525,17 +539,20 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Here is an example of valid MATLAB format:
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
+The following are valid input format options: 
+
+**MATLAB format:**
 ```
 [1.23; 4.56]
 ```
 
-Here is an example of valid Python format:
+**Python format:**
 ```
 [[1.23], [4.56]]
 ```
 
-A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
+**Note:** A scalar will be accepted either as a matrix of size 1 x 1 (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
 
 In the answer panel, a `pl-matrix-input` element displays the correct answer, allowing the user to switch between matlab and python format.
 
