@@ -238,6 +238,17 @@ can Mary get?
 </div>
 ```
 
+## What steps do I have to take to access the parameter object in an external grader?
+
+By default, the external grader will receive a JSON dump of all values inside of the `data` object called
+ `data.json`. This file is located at:
+
+```sh
+/grader/data/data.json
+```
+
+To access the JSON data, read in the file within the testing framework.
+
 ## Why can't I launch PrairieLearn with docker?
 
 When previewing content within a local copy of PrairieLearn, the web version

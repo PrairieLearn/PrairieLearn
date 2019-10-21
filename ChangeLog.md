@@ -45,7 +45,7 @@
 
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
-  * Add FAQ item on escaping math mode in questions (James Balamuta).
+  * Add FAQ entries for escaping math mode in questions and accessing the `data` object on an external grader (James Balamuta).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
