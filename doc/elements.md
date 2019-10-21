@@ -1052,7 +1052,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 ## `pl-matrix-latex` element
 
-Displays a matrix written in latex using mathjax.
+Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
 #### Customizations
 
@@ -1071,23 +1071,24 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers. If the variable is a ... 
 
-If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
-
-If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
+- **scalar**: a string containing the scalar not wrapped in brackets.
+- **numpy 2D array**: a string with the formatting of
     ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
 
-For example, if we want to display the following matrix operations
+For example, if we want to display the following matrix operations:
+
 ```
 x = [A][b] + [c]
 ```
-we write
+
+we would write
 
 ```html
 ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 <pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
-+ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
++ <pl-matrix-latex params-name="c" digits="1"></pl-matrix-latex>$
 ```
 
 #### Example implementations
