@@ -50,8 +50,8 @@ images, files, and code display. The following **decorative** elements are avail
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
-- [`pl-python-variable`](#pl-python-variable): Display output of a Python 
-  dictionaries and pandas data frames.
+- [`pl-python-variable`](#pl-python-variable): Display formatted output of Python 
+  variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
   
@@ -803,6 +803,8 @@ Displays the value of a Python variable, with formatted display of Pandas DataFr
 
 #### Sample Elements
 
+**Display Python variable value**
+
 ![](elements/pl-python-variable.png)
 
 **question.html**
@@ -820,6 +822,8 @@ def generate(data):
 ```
 
 ---
+
+**Display of a Pandas DataFrame**
 
 ![](elements/pl-python-variable2.png)
 
