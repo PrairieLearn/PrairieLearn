@@ -238,6 +238,9 @@ can Mary get?
 </div>
 ```
 
+See [Using Markdown in questions](question.md#using-markdown-in-questions) for more details on
+how `markdown` is implemented in PrairieLearn.
+
 ## What steps do I have to take to access the parameter object in an external grader?
 
 By default, the external grader will receive a JSON dump of all values inside of the `data` object called
@@ -248,6 +251,8 @@ By default, the external grader will receive a JSON dump of all values inside of
 ```
 
 To access the JSON data, read in the file within the testing framework.
+
+See [The Grading Process section in Externally graded questions](externalGrading.md#the-grading-process) for more details on the default external grader file system.
 
 ## Why can't I launch PrairieLearn with docker?
 
