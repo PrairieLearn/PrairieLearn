@@ -830,6 +830,7 @@ def generate(data):
 
 **server.py**
 ```python
+import prairielearn as pl
 import pandas as pd
 
 def generate(data):
