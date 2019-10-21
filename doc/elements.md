@@ -999,7 +999,7 @@ def generate(data):
   matrixC = np.matrix('5 6; 7 8')
   matrixD = np.matrix('-1 4; 3 2')
   # Random matrices can be generated with:
-  # mat = np.random.random((3, 3))
+  # mat = np.random.random((2, 2))
   
   # Export each matrix as a JSON object for the question view.
   data['params']['matrixC'] = pl.to_json(matrixC)
