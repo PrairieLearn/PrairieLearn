@@ -1054,13 +1054,30 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
-#### Customizations
+#### Sample Element
 
 ![](elements/pl-matrix-latex.png)
 
+**question.html**
 ```html
-<pl-matrix-latex params-name="A"></pl-matrix-latex>
+$$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
 ```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  
+  # Construct a matrix
+  mat = np.matrix('1 2; 3 4')
+  
+  # Export matrix to be displayed in question.html
+  data['params']['matrixC'] = pl.to_json(mat)
+```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -1071,19 +1088,27 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers. If the variable is a ... 
+Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
+one of the following will be returned. 
 
-- **scalar**: a string containing the scalar not wrapped in brackets.
-- **numpy 2D array**: a string with the formatting of
-    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+- **scalar**
+    - a string containing the scalar not wrapped in brackets.
+- **numpy 2D array**
+    - a string formatted using the `bmatrix` LaTeX style.
 
-For example, if we want to display the following matrix operations:
+Sample LaTeX formatting: 
+
+```latex
+\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
+```
+
+As an example, consider the need to display the following matrix operations:
 
 ```
 x = [A][b] + [c]
 ```
 
-we would write
+In this case, we would write:
 
 ```html
 ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
