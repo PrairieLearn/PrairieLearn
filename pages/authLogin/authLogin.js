@@ -12,7 +12,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     var params = {
         ip: req.ip,
-        force_mode: (['none', 'testrun'].includes(config.authType) && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
+        force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
         req_date: res.locals.req_date,
     };
     sqldb.query(sql.get_mode, params, function(err, result) {
@@ -23,12 +23,6 @@ router.get('/', function(req, res, next) {
         // this will also need to depend on which institution we have
         // detected (e.g., UIUC doesn't want Azure during exams, but
         // ZJUI does want it).
-
-        // Handle the default devMode case to auto-login
-        if (config.authType == 'none') {
-            res.redirect('/pl/devlogin');
-            return;
-        }
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

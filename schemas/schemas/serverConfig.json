@@ -42,8 +42,7 @@
                 "none",
                 "x-auth",
                 "eppn",
-                "x-trust-auth",
-                "testrun"
+                "x-trust-auth"
             ]
         },
         "serverType": {
