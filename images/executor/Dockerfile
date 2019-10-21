@@ -1,4 +1,4 @@
-FROM prairielearn/centos7-plbase
+FROM prairielearn/centos7-plbase AS builder
 WORKDIR /app
 COPY package* ./
 RUN npm install
