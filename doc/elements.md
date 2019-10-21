@@ -980,11 +980,30 @@ supported programming languages (e.g. MATLAB, Mathematica, or Python).
 
 ![](elements/pl-variable-output.png)
 
+**question.html**
 ```html
 <pl-variable-output digits="3">
     <variable params-name="matrixC">C</variable>
     <variable params-name="matrixD">D</variable>
 </pl-variable-output>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+
+  # Create fixed matrix
+  matrixC = np.matrix('5 6; 7 8')
+  matrixD = np.matrix('-1 4; 3 2')
+  # Random matrices can be generated with:
+  # mat = np.random.random((3, 3))
+  
+  # Export each matrix as a JSON object for the question view.
+  data['params']['matrixC'] = pl.to_json(matrixC)
+  data['params']['matrixD'] = pl.to_json(matrixD)
 ```
 
 #### Customizations
