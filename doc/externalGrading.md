@@ -235,25 +235,34 @@ We have to do a couple interesting things to run external grading jobs when Prai
 
 Running PrairieLearn locally with externally graded question support looks something like this:
 
-1. Create an empty directory to use to share job data between containers. This can live anywhere, but
-needs to be created first and referenced in the docker launch command.
-    * i.e. `mkdir ${HOME}/pl_ag_jobs`
-1. Modify your PL docker run call to look something like:
+- Create an empty directory to use to share job data between containers. 
+    - This can live anywhere, but needs to be created first and referenced in 
+      the docker launch command.
+```bash
+mkdir ${HOME}/pl_ag_jobs
+```
+
+- Modify your PL docker run call to look something like:
 ```sh
 docker run -it --rm -p 3000:3000 \
     -v ${PWD}:/course `# Map your current directly in as course content` \
     -v ${HOME}/pl_ag_jobs:/jobs `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \ 
-    prairielearn/prairielearn   `# PL docker image itself`
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    prairielearn/prairielearn 
 ```
 
-Note: The sequence above works on Windows 10 as well as MacOS and Linux docker. Windows users might see problems running grading jobs:
+**Note:** The sequence above is verified to work on Windows 10 as well as MacOS and Linux docker. 
 
 ##### Common issues
 
-A `standard_init_linux.go:207: exec user process caused "no such file or directory"` error when
-grading likely means an OS new-line incompatibility with the `entrypoint` script in the externally
+Windows users might see problems running grading jobs. The most common issue is the:
+
+```bash
+standard_init_linux.go:207: exec user process caused "no such file or directory"
+```
+
+The error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
 graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
 format instead of converting them for Windows (which breaks mapping them back into docker). 
