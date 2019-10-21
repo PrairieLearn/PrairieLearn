@@ -805,8 +805,12 @@ Displays the value of a Python variable, with formatted display of Pandas DataFr
 
 ![](elements/pl-python-variable.png)
 
-`server.py`
+**question.html**
+```html
+<pl-python-variable params-name="variable"></pl-python-variable>
+```
 
+**server.py**
 ```python
 import prairielearn as pl
 
@@ -815,18 +819,16 @@ def generate(data):
   data['params']['variable'] = pl.to_json(data_dictionary)
 ```
 
-`question.html`
-
-```html
-<pl-python-variable params-name="variable"></pl-python-variable>
-```
-
 ---
 
 ![](elements/pl-python-variable2.png)
 
-`server.py`
+**question.html**
+```html
+<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
+```
 
+**server.py**
 ```python
 import pandas as pd
 
@@ -835,13 +837,6 @@ def generate(data):
   df = pd.DataFrame(data=d)
   data['params']['df'] = pl.to_json(df)
 ```
-
-`question.html`
-
-```html
-<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
-```
-
 
 #### Customizations
 
