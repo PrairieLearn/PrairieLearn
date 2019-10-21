@@ -50,9 +50,11 @@
         <% } %>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-            <li class="nav-item dropdown <% if (navPage == "assessment") { %>active<% } %>">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <li class="nav-item btn-group <% if (navPage == "assessment") { %>active<% } %>">
+                <a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %><% if (typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>" role="button">
                     <%= assessment_label %>
+                </a>
+                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 </a>
                 <% if (typeof assessments != 'undefined') { %>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
