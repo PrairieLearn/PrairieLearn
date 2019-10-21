@@ -994,21 +994,25 @@ Attribute | Type | Default | Description
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into
+either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be
+either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
+text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Below
+are samples of the format displayed under each language tab.
 
-Here is an example of MATLAB format:
+**MATLAB format:**
 
 ```
 A = [1.23; 4.56]; % matrix
 ```
 
-Here is an example of the Mathematica format:
+**Mathematica format:**
 
 ```
 A = [1.23; 4.56]; (* matrix *)
 ```
 
-Here is an example of Python format:
+**Python format:**
 
 ```
 import numpy as np
