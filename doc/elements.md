@@ -1194,6 +1194,7 @@ Graphviz DOT visualizations.
 
 ![](elements/pl-graph1.png)
 
+**question.html**
 ```html
 <pl-graph>
 digraph G {
@@ -1206,6 +1207,12 @@ digraph G {
 
 ![](elements/pl-graph2.png)
 
+**question.html**
+```html
+<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+```
+
+**server.py**
 ```python
 import prairielearn as pl
 import numpy as np
@@ -1215,10 +1222,6 @@ def generate(data):
   mat = mat / np.linalg.norm(mat, 1, axis=0)
   data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
   data['params']['matrix'] = pl.to_json(mat)
-```
-
-```html
-<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
 ```
 
 #### Customizations
