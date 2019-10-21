@@ -182,10 +182,10 @@ colors = {
 
 
 def get_css_color(name):
-    '''
+    """
     Tries to look up a hex code value from a named css color, otherwise will
     return None if not a valid color.
-    '''
+    """
 
     name = name.lower()
     if name in colors:
