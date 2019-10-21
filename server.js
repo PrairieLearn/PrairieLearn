@@ -305,11 +305,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_statistics', [
-    function(req, res, next) {res.locals.navSubPage = 'assessmentStatistics'; next();},
+    function(req, res, next) {res.locals.navSubPage = 'assessment_statistics'; next();},
     require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics', [
-    function(req, res, next) {res.locals.navSubPage = 'questionStatistics'; next();},
+    function(req, res, next) {res.locals.navSubPage = 'question_statistics'; next();},
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
