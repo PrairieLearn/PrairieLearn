@@ -1,0 +1,22 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: Merge with master
+      run: git -c user.name=dev -c user.email=dev@example.com merge origin/master
+    - name: Install the npm packages
+      run: npm ci
+    - name: Run the JavaScript linter
+      run: npm run lint -s
+    - name: Run the JavaScript tests
+      run: npm test
