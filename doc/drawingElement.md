@@ -1,11 +1,14 @@
 
+
 # Elements to setup canvas (drawing space)
 
 ## `pl-drawing` element
 
 A `pl-drawing` element displays a canvas, which can be used to display initial drawing objects or expect drawing objects for grading.
 
-The system of coordinates of the canvas is located at the top/left corner.
+The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
+
+<img src="elements/pl-origin-canvas.png" width=70%>
 
 #### Sample Element
 
@@ -21,8 +24,8 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `preview` | boolean | false | `preview = true` is used when canvas is used for display only. `preview = false` expects objects to be placed in the canvas for grading.
 `answers-name` | string | — | Variable name to store data in. This variable is required when `preview = false`.
-`width` | integer | 580 | Horizontal width of the canvas.
-`height` | integer | 320 | Vertical height of the canvas.
+`width` | integer | 580 | Horizontal width of the canvas (in pixels).
+`height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
 `snap-to-grid` | boolean | true | Objects placed in the canvas snap to closest grid point.
 `correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.

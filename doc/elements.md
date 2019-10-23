@@ -1020,41 +1020,8 @@ Attribute | Type | Default | Description
 
 Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
 Users can also add drawing objects to the canvas for grading.
-The system of coordinates of the canvas is located at the top/left corner.
 
-#### Sample Element
-
-```html
-<pl-drawing answers-name="fbd">
-</pl-drawing>
-```
-<img src="elements/pl-drawing.png" width=70%>
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`preview` | boolean | false | `preview = true` is used when canvas is used for display only. `preview = false` expects objects to be placed in the canvas for grading.
-`answers-name` | string | — | Variable name to store data in. This variable is required when `preview = false`.
-`width` | integer | 580 | Horizontal width of the canvas.
-`height` | integer | 320 | Vertical height of the canvas.
-`grid-size` | integer | 20 | Size of the square grid for the canvas background. If `grid-size = 0`, then the background is white.
-`snap-to-grid` | boolen | true | Objects placed in the canvas snap to closest grid point.
-`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
-`tol` | float | `0.5*grid-size` | Tolerance to check the position of objects. The error is calculated as the absolute difference between expected position and submitted one.
-`angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
-`show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `preview = false`
-`tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
-`render-scale` | float | `1.5` | Scale at which to render the canvas at.  Values greater than 1 will render at a higher resolution than the actual canvas element and will offer more crisp graphics.
-
-
-#### Example implementations
-
-<!-- - [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https:) -->
-
-#### See also
-
-- [`pl-drawing` documentation](drawingElement.md)
+See the [`pl-drawing` documentation](drawingElement.md) for details.
 
 -----
 
