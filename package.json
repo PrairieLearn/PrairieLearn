@@ -29,7 +29,7 @@
         "debug": "^4.1.1",
         "detect-mocha": "^0.1.0",
         "diff": "^4.0.1",
-        "dockerode": "^2.5.8",
+        "dockerode": "^3.0.2",
         "ejs": "^2.7.1",
         "express": "^4.17.1",
         "filesize": "^5.0.3",
