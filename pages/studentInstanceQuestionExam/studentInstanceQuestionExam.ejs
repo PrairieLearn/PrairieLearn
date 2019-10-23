@@ -2,8 +2,8 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
-    <script src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <%- include('../partials/mathjax'); %>
+        
     <script src="/javascripts/socket.io.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
