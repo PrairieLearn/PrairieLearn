@@ -55,19 +55,30 @@ select_question_render_cache_stats AS (
         page_view_logs AS pvl
     WHERE
         pvl.date > now() - interval '1 day'
+),
+select_institutions AS (
+    SELECT
+        coalesce(
+            jsonb_agg(to_json(i) ORDER BY i.institution),
+            '[]'::jsonb
+        ) AS institutions
+    FROM
+        institutions AS i
 )
 SELECT
     administrator_users,
     courses,
     networks,
     configs,
-    question_render_cache_stats
+    question_render_cache_stats,
+    institutions
 FROM
     select_administrator_users,
     select_courses,
     select_networks,
     select_config,
-    select_question_render_cache_stats;
+    select_question_render_cache_stats,
+    select_institutions;
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
