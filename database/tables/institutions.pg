@@ -1,0 +1,8 @@
+columns
+    id: bigint not null default nextval('institutions_id_seq'::regclass)
+    institution: text not null
+    uid_pattern: text
+
+indexes
+    institutions_pkey: PRIMARY KEY (id) USING btree (id)
+    institutions_institution_idx: USING btree (institution)
