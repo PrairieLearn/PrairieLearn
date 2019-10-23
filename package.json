@@ -98,7 +98,7 @@
         "eslint": "^6.5.1",
         "jsdoc": "^3.6.3",
         "json-stable-stringify": "^1.0.1",
-        "mocha": "^6.2.0",
+        "mocha": "^6.2.2",
         "nyc": "^14.1.1",
         "request": "^2.87.0",
         "sinon": "^7.5.0",
