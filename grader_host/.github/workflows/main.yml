@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v1
     - uses: actions/setup-node@v1
       with:
-        node-version: '10.x'
+        node-version: '12.x'
     - name: Merge with master
       run: git -c user.name=dev -c user.email=dev@example.com merge origin/master
     - name: Install the npm packages
