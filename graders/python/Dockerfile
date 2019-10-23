@@ -1,4 +1,4 @@
-FROM centos:7
+FROM centos:8
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
