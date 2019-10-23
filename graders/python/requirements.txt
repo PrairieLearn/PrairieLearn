@@ -1,7 +1,7 @@
 matplotlib==2.1.2
 networkx==2.1
 numpy==1.14.0
-pandas==0.22.0
+pandas==0.25.2
 scipy==1.0.0
 sympy==1.1.1
 Pillow==6.2.0
