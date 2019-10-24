@@ -350,7 +350,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 app.use('/pl/course_instance/:course_instance_id/instructor/issues', require('./pages/instructorIssues/instructorIssues'));
 app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', require('./pages/instructorGradingJob/instructorGradingJob'));
@@ -413,6 +412,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/acces
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/assessments', [
     function(req, res, next) {res.locals.navSubPage = 'assessments'; next();},
     require('./pages/instructorAssessments/instructorAssessments'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/gradebook', [
+    function(req, res, next) {res.locals.navSubPage = 'gradebook'; next();},
+    require('./pages/instructorGradebook/instructorGradebook'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
     function(req, res, next) {res.locals.navSubPage = 'lti'; next();},

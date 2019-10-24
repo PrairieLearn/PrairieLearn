@@ -26,7 +26,7 @@
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
-        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && navSubPage == "assessments")) { %>active<% } %>">
+        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
             <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin<% if (typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>" role="button">
                 <%= course_instance.short_name %>
             </a>
@@ -47,7 +47,7 @@
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/assessments">Assessments</a></li>
         <li class="nav-item <% if (navPage == "questions")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/questions">Questions</a></li>
         <li class="nav-item <% if (navPage == "issues")      { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
-        <li class="nav-item <% if (navPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+        <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
         <% if (!devMode && authz_data.has_course_permission_edit) { %>
             <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>

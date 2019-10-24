@@ -9,6 +9,9 @@
     <a class="nav-link <% if (navSubPage == "assessments" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/assessments"><i class="fa fa-list"></i> Assessments</a>
   </li>
   <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "gradebook" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/gradebook"><i class="fas fa-balance-scale"></i> Gradebook</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
   </li>
 </ul>
