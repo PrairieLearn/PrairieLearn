@@ -353,7 +353,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', require('./pages/instructorGradingJob/instructorGradingJob'));
-app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
@@ -385,6 +384,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instanc
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/syncs', [
+    function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},
+    require('./pages/courseSyncs/courseSyncs'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
@@ -591,6 +594,10 @@ app.use('/pl/course/:course_id/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
 ]);
+app.use('/pl/course/:course_id/course_admin/syncs', [
+    function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},
+    require('./pages/courseSyncs/courseSyncs'),
+]);
 app.use('/pl/course/:course_id/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
     require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
@@ -609,7 +616,6 @@ app.use('/pl/course/:course_id/course_admin/edit', [
 ]);
 
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 
 //////////////////////////////////////////////////////////////////////

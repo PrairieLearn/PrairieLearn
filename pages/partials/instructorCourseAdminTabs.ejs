@@ -16,6 +16,11 @@
     <li class="nav-item">
         <a class="nav-link <% if (navSubPage == "issues") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/issues"><i class="fas fa-bug"></i> Issues</a>
     </li>
+    <% if (!devMode && authz_data.has_course_permission_edit) { %>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "syncs") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/syncs"><i class="fas fa-sync-alt"></i> Sync</a>
+    </li>
+    <% } %>
     <li class="nav-item">
         <a class="nav-link <% if (navSubPage == "topics") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/topics"><i class="fas fa-quote-right"></i> Topics</a>
     </li>
