@@ -236,7 +236,7 @@ app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res
 // but before instructor authz so we still get a chance to enforce that.
 app.use(/^\/pl\/course_instance\/[0-9]+\/?$/, function(req, res, _next) {
     if (res.locals.authz_data.has_instructor_view) {
-        res.redirect(res.locals.urlPrefix + '/instructor/assessments');
+        res.redirect(res.locals.urlPrefix + '/instructor/instance_admin/assessments');
     } else {
         res.redirect(res.locals.urlPrefix + '/assessments');
     }
@@ -278,9 +278,6 @@ app.use('/pl/api/v1', require('./api/v1'));
 
 app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
     require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
-    require('./pages/instructorAssessments/instructorAssessments'),
 ]);
 
 // single assessment
@@ -412,6 +409,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/overv
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/assessments', [
+    function(req, res, next) {res.locals.navSubPage = 'assessments'; next();},
+    require('./pages/instructorAssessments/instructorAssessments'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti', [
     function(req, res, next) {res.locals.navSubPage = 'lti'; next();},
