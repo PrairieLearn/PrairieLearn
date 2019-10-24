@@ -558,6 +558,7 @@ app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set r
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
+app.use('/pl/course/:course_id', require('./middlewares/selectCourses'));
 
 app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/overview`);
