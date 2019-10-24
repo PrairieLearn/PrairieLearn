@@ -352,7 +352,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-app.use('/pl/course_instance/:course_instance_id/instructor/issues', require('./pages/instructorIssues/instructorIssues'));
 app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', require('./pages/instructorGradingJob/instructorGradingJob'));
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
@@ -382,6 +381,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', 
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instances', [
     function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
     require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/issues', [
+    function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
+    require('./pages/instructorIssues/instructorIssues'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
@@ -583,6 +586,10 @@ app.use('/pl/course/:course_id/course_admin/sets', [
 app.use('/pl/course/:course_id/course_admin/instances', [
     function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
     require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+]);
+app.use('/pl/course/:course_id/course_admin/issues', [
+    function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
+    require('./pages/instructorIssues/instructorIssues'),
 ]);
 app.use('/pl/course/:course_id/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
