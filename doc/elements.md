@@ -877,6 +877,7 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 #### Example implementations
 
 - [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
+- [`probabilityMassFunction`: Display the results of Probability Mass Function as a Table](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/probabilityMassFunction)
 
 #### See also
 
