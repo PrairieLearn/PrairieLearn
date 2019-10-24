@@ -283,7 +283,7 @@ function copy_write(edit, callback) {
             });
         },
         (infoJson, callback) => {
-            debug(`Write infoAssessment.json with new title, uuid, and number`);
+            debug(`Write infoCourseInstance.json with new title, uuid, and number`);
             infoJson.longName = `Replace this long name (${edit.short_name})`;
             infoJson.uuid = uuidv4();
             fs.writeJson(path.join(edit.courseInstancePath, 'infoCourseInstance.json'), infoJson, {spaces: 4}, (err) => {
