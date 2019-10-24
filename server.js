@@ -379,6 +379,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', 
     function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
     require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instances', [
+    function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},
     require('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics'),
@@ -575,6 +579,10 @@ app.use('/pl/course/:course_id/course_admin/access', [
 app.use('/pl/course/:course_id/course_admin/sets', [
     function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
     require('./pages/instructorCourseAdminSets/instructorCourseAdminSets'),
+]);
+app.use('/pl/course/:course_id/course_admin/instances', [
+    function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
+    require('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances'),
 ]);
 app.use('/pl/course/:course_id/course_admin/topics', [
     function(req, res, next) {res.locals.navSubPage = 'topics'; next();},

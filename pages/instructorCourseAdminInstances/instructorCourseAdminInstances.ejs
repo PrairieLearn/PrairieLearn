@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <%- include('../partials/head'); %>
+        <script src="/javascripts/lodash.min.js"></script>
+        <script src="/javascripts/d3.min.js"></script>
+        <script src="/localscripts/histmini.js"></script>
+    </head>
+    <body>
+        <%- include('../partials/navbar'); %>
+        <div id="content" class="container-fluid">
+            <%- include('../partials/navtabs'); %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Course instances</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Long Name</th>
+                                <th>CIID</th>
+                                <th>Students</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% rows.forEach(function(row) { %>
+                                <tr>
+                                    <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                    <td class="align-left"><%= row.short_name %></td>
+                                    <td class="align-middle"><%= row.number %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
