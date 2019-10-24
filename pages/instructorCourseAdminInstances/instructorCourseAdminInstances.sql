@@ -16,3 +16,13 @@ GROUP BY
     ci.id
 ORDER BY
     ci.number DESC, ci.id;
+
+-- BLOCK select_course_instance_id_from_short_name
+SELECT
+    ci.id AS course_instance_id
+FROM
+    course_instances AS ci
+WHERE
+    ci.short_name = $short_name
+    AND ci.course_id = $course_id
+    AND ci.deleted_at IS NULL;
