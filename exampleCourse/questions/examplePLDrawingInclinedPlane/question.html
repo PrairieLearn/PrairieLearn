@@ -37,9 +37,7 @@
 
     <pl-drawing-initial>
       <pl-3pointrod x1={{params.x1}} y1={{params.y1}}  x2={{params.x2}} y2={{params.y2}} x3={{params.x3}} y3={{params.y3}} label1="A" offsetx1="20" label2="B" offsety2="10" label3="C" offsety3="10"></pl-3pointrod>
-      <pl-line x1={{params.x3}} y1={{params.y3}} width="80" dashed-size="4" stroke-width="1"></pl-line>
-      <pl-line x1={{params.x3}} y1={{params.y3}} angle={{params.theta}} width="80" dashed-size="4" stroke-width="1"></pl-line>
-      <pl-arc-dimensions x1={{params.x3}} y1={{params.y3}} end-angle=0 start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10"> </pl-arc-dimensions>
+      <pl-arc-dimensions x1={{params.x3}} y1={{params.y3}} end-angle=0 start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10" radius=60 start-support-line="true" end-support-line="true"> </pl-arc-dimensions>
     </pl-drawing-initial>
 
     <pl-controls>

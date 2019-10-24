@@ -102,10 +102,17 @@ Attribute | Type | Default | Description
 `label-y` | string | y | Text to label the vertical arrow vector (y-axis)
 `offsetx-label-y` | float | -20 | Horizontal distance of `label-y` from the origin of the coordinate system.
 `offsety-label-y` | float | -10 | Vertical distance of `label-y` from the origin of the coordinate system.
-`color` | string | black | Set the color of the coordinate system (https://htmlcolorcodes.com/color-chart/)
+`color` | string | black | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )
 `stroke-width` | float | 2 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
+
+### Example Implementations
+
+- [`examplePLDrawingInclinedPlan`: Example that uses a system of coordinates](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlan)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+
 
 ## `pl-line` element
 
@@ -130,10 +137,15 @@ Attribute | Type | Default | Description
 `angle` | float | 0 | Angle of rotation around the start point of the line. Angles are measured from the horizontal axis and are positive clockwise.
 `x2` | float | - | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.
 `y2` | float | - | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.
-`stroke-color` | string | black | Set the color of the line (https://htmlcolorcodes.com/color-chart/)
+`stroke-color` | string | black | Set the color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
 
+### Example Implementations
+
+- [`examplePLDrawingLiftingMechanism`: Example that uses lines](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-arc` element
 
@@ -159,9 +171,14 @@ Attribute | Type | Default | Description
 `radius` | float | 20 | Radius of the circle.
 `start-angle` | float | 0 | Start angle of the arc.  Angles are measured from the horizontal axis and are positive clockwise.
 `end-angle` | float | 90 | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation.
-`stroke-color` | string | black | Set the stroke color of the line (https://htmlcolorcodes.com/color-chart/).
+`stroke-color` | string | black | Set the stroke color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
+
+### Example Implementations
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+
 
 ## `pl-point` element
 
@@ -187,7 +204,13 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the point.
 `offsetx` | float | 5 | Horizontal distance of `label` from the point.
 `offsety` | float | 5 | Vertical distance of `label` from the point.
-`color` | string | black | Set the fill color of the point (https://htmlcolorcodes.com/color-chart/).
+`color` | string | black | Set the fill color of the point ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
+
+### Example Implementations
+
+- [`examplePLDrawingPulley`: Example that includes a point in the canvas](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-triangle` element
@@ -213,9 +236,15 @@ Attribute | Type | Default | Description
 `y2` | float | 20 | `y` position for vertex 2, i.e., the vertical distance from the top border of the canvas.
 `x3` | float | 20 | `x` position for vertex 3, i.e., the horizontal distance from the left border of the canvas.
 `y3` | float | 20 | `y` position for vertex 3, i.e., the vertical distance from the top border of the canvas.
-`color` | string | red1 | Set the fill color of the triangle.
+`color` | string | red1 | Set the fill color of the triangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the triangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingPulley`: Example that includes a triangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-rectangle` element
 
@@ -240,9 +269,15 @@ Attribute | Type | Default | Description
 `height` | float | 20 | Height of the rectangle.
 `width`  | float | 20 | Width of the rectangle.
 `angle` | float | 0 | Angle of rotation around the center of the rectangle. Angles are measured from the horizontal axis and are positive clockwise.
-`color` | string | green1 | Set the fill color of the rectangle.
+`color` | string | green1 | Set the fill color of the rectangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the rectangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingPulley`: Example that includes a rectangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-circle` element
 
@@ -266,12 +301,18 @@ Attribute | Type | Default | Description
 `x1` | float | 20 | `x` position for the center of the circle, i.e., the horizontal distance from the left border of the canvas.
 `y1` | float | 20 | `y` position for the center of the circle, i.e., the vertical distance from the top border of the canvas.
 `radius` | float | 20 | Radius of the circle.
-`color` | string | gray1 | Set the fill color of the circle.
+`color` | string | gray1 | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the circle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 `label` | string | - | Text to label the center of the circle.
 `offsetx` | float | 5 | Horizontal distance of `label` from the center of the circle.
 `offsety` | float | 5 | Vertical distance of `label1` from the center of the circle
+
+### Example Implementations
+
+- [`examplePLDrawingLiftingMechanism`: Example that uses circles](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-polygon` element
 
@@ -292,7 +333,7 @@ Attribute | Type | Default | Description
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `plist` | string | '' | List of the vertices that form the polygon.
-`color` | string | gray1 | Set the fill color of the circle.
+`color` | string | gray1 | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the circle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 
@@ -301,6 +342,10 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
  `plist = '[{"x": x1, "y": y1}, {"x": x2,"y": x2},  ... , {"x": xn,"y": yn}]' `
 
  For an example that uses `server.py` to generate `plist` refer to QID: `Example-pl-drawing-beam-cross-section`
+
+### Example Implementations
+
+ - [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-rod` element
 
@@ -331,9 +376,15 @@ Attribute | Type | Default | Description
 `label2` | string | - | Text to label the first end of the rod.
 `offsetx2` | float | 2 | Horizontal distance of `label2` from the first end of the rod.
 `offsety2` | float | 2 | Vertical distance of `label2` from the first end of the rod.
-`color` | string | white | Set the fill color of the rod.
+`color` | string | white | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingVMDiagrams`: Example that includes a rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-3pointrod` element
 
@@ -369,9 +420,15 @@ Attribute | Type | Default | Description
 `label3` | string | - | Text to label the second end of the rod.
 `offsetx3` | float | 0 | Horizontal distance of `label3` from the first end of the rod.
 `offsety3` | float | -20 | Vertical distance of `label3` from the first end of the rod.
-`color` | string | white | Set the fill color of the rod.
+`color` | string | white | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingInclinedPlane`: Example that includes a 3-point rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-4pointrod` element
 
@@ -412,9 +469,16 @@ Attribute | Type | Default | Description
 `label4` | string | - | Text to label the third end of the rod.
 `offsetx4` | float | 0 | Horizontal distance of `label4` from the first end of the rod.
 `offsety4` | float | -20 | Vertical distance of `label4` from the first end of the rod.
-`color` | string | white | Set the fill color of the rod.
+`color` | string | white | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingLiftingMechanism`: Example that uses 4-point rods](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+
 
 ## `pl-collar-rod` element
 
@@ -451,9 +515,15 @@ Attribute | Type | Default | Description
 `draw-collar-end2` | boolean | false | Draw a collar end at `(x2,y2)`.
 `w2` | float | 1.5*width | The width of the collar at end 2.
 `h2` | float | 2*width | The height of the collar at end 2.
-`color` | string | white | Set the fill color of the rod.
+`color` | string | white | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingCollarRod`: Example that uses a collar rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-fixed-pin` element
@@ -483,9 +553,15 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the pin support.
 `offsetx` | float | 2 | Horizontal distance of `label` from the center of the pin.
 `offsety` | float | 2 | Vertical distance of `label` from the center of the pin.
-`color` | string | brown1 | Set the fill color of the pin support.
+`color` | string | brown1 | Set the fill color of the pin support ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the pin support.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingVMDiagrams`: Example that uses a fixed pin as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-roller` element
@@ -516,9 +592,15 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the roller support.
 `offsetx` | float | 2 | Horizontal distance of `label` from the center of the pin.
 `offsety` | float | 2 | Vertical distance of `label` from the center of the pin.
-`color` | string | brown1 | Set the fill color of the roller support.
+`color` | string | brown1 | Set the fill color of the roller support ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the roller.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingVMDiagrams`: Example that uses a roller as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-clamped` element
 
@@ -547,8 +629,14 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the pin support.
 `offsetx` | float | 2 | Horizontal distance of `label` from the center of the pin.
 `offsety` | float | 2 | Vertical distance of `label` from the center of the pin.
-`color` | string | black | Fill color for the clamped support is a gradient from white to `color`.
+`color` | string | black | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingCollarRod`: Example that uses a clamped end as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-spring` element
 
@@ -577,11 +665,13 @@ Attribute | Type | Default | Description
 `interval` | float | 10 | Interval between each angled line. This interval is recalculated if the spring width is too short.
 `x2` | float | - | `x` position for the end point for the spring, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.
 `y2` | float | - | `y` position for the end point for the spring, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.
-`stroke-color` | string | black | Set the color of the spring.
+`stroke-color` | string | black | Set the color of the spring ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 `draw-pin` | boolean | false | Draw points at the spring ends.
 
+### Example Implementations
 
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-pulley` element
 
@@ -612,9 +702,15 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the pulley.
 `offsetx` | float | 2 | Horizontal distance of `label` from the center of the pulley.
 `offsety` | float | 2 | Vertical distance of `label` from the center of the pulley.
-`color` | string | gray | Set the fill color of the pulley.
+`color` | string | gray | Set the fill color of the pulley ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-color` | string | black | Set the stroke color of the pulley.
 `stroke-width` | float | 2 | Set the width of the stroke.
+
+### Example Implementations
+
+- [`examplePLDrawingPulley`: Example that includes a pulley system](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-dimensions` element
@@ -652,12 +748,18 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the dimension.
 `offsetx` | float | 0 | Horizontal distance of `label` from the center of the dimension line.
 `offsety` | float | 0 | Vertical distance of `label` from the center of the dimension line.
-`stroke-color` | string | black | Set the color of the line.
+`stroke-color` | string | black | Set the color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 1 | Set the width of the stroke.
 `draw-start-arrow` | boolean | true | Draw an arrow head at the start point of the line.
 `draw-end-arrow` | boolean | true | Draw an arrow head at the end point of the line.
 `arrow-head-width` | float | 1.5 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1.5 | Scale factor for the length of the arrow head.
+
+### Example Implementations
+
+- [`examplePLDrawingLiftingMechanism`: Example that includes dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-arc-dimensions` element
@@ -690,10 +792,18 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the arc angle.
 `offsetx` | float | 0 | Horizontal distance of `label` from the center of the arc.
 `offsety` | float | 0 | Vertical distance of `label` from the center of the arc.
-`stroke-color` | string | black | Set the stroke color of the arc.
+`stroke-color` | string | black | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 1 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
+
+### Example Implementations
+
+- [`examplePLDrawingLiftingMechanism`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingInclinedPlane`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-vector` element
@@ -724,7 +834,7 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the vector.
 `offsetx` | float | 2 | Horizontal distance of `label` from the head of the vector.
 `offsety` | float | 2 | Vertical distance of `label` from the head of the vector.
-`color` | string | red3 | Set the color of the vector.
+`color` | string | red3 | Set the color of the vector ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 3 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
@@ -736,6 +846,15 @@ Attribute | Type | Default | Description
 
 More information about the grading attributes in the Grading section below.
 
+### Example Implementations
+
+- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+
+- [`examplePLDrawingLiftingMechanism`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingInclinedPlane`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-double-headed-vector` element
@@ -763,7 +882,7 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the vector.
 `offsetx` | float | 2 | Horizontal distance of `label` from the head of the vector.
 `offsety` | float | 2 | Vertical distance of `label` from the head of the vector.
-`color` | string | red3 | Set the color of the vector.
+`color` | string | red3 | Set the color of the vector ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 3 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
@@ -772,6 +891,16 @@ Attribute | Type | Default | Description
 `offset-forward` | float | 0 | Length of the bounding box measured from the anchor point in the same orientation of the vector.
 `offset-backward` | float | width | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.
 `optional-grading` | boolean | false | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.
+
+### Example Implementations
+
+- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+
+- [`examplePLDrawingLiftingMechanism`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+
+- [`examplePLDrawingInclinedPlane`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 
@@ -802,12 +931,20 @@ Attribute | Type | Default | Description
 `label` | string | - | Text to label the arc vector angle.
 `offsetx` | float | 0 | Horizontal distance of `label` from the center of the arc vector.
 `offsety` | float | 0 | Vertical distance of `label` from the center of the arc vector.
-`color` | string | purple | Set the stroke color of the arc.
+`color` | string | purple | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 3 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
 `disregard-sense` | boolean| false | When `disregard-sense=true`, the correctness of the arc vector only considers the position of the anchor point.
 `draw-error-box` | boolean | - | Draw the error bounding box, where the location of the anchor point is accepted as correct.
+
+### Example Implementations
+
+- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+
+- [`examplePLDrawingCollarRod`: Example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-distributed-load` element
@@ -843,7 +980,7 @@ Attribute | Type | Default | Description
 `label2` | string | - | Text to label the height of the vectors at the start of the range.
 `offsetx2` | float | 2 | Horizontal distance of `label2` from the vector at the start of the range.
 `offsety2` | float | 2 | Vertical distance of `label2` from the vector at the start of the range.
-`color` | string | blue | Set the stroke color of the arc.
+`color` | string | blue | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 3 | Set the width of the stroke.
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
@@ -851,6 +988,12 @@ Attribute | Type | Default | Description
 `draw-error-box` | boolean | - | Draw the error bounding box, where the location of the anchor point is accepted as correct.
 `offset-forward` | float | 0 | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.
 `offset-backward` | float | max(w1,w2) | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.
+
+### Example Implementations
+
+- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes distributed loads ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 
 ## `pl-controlled-line` element
@@ -878,9 +1021,17 @@ Attribute | Type | Default | Description
 `draw-error-box` | boolean | - | Draw the error bounding box, where the location of the end points and control point are accepted as correct.
 `offset-tol-x` | float | 0 | Tolerance offset in the horizontal direction. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.
 `offset-tol-y` | float | 0 | Tolerance offset in the vertical direction. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.
-`color` | string | red | Set the color of the coordinate system (https://htmlcolorcodes.com/color-chart/)
+`color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
+
+### Example Implementations
+
+- [`examplePLDrawingGraphs`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+
+- [`examplePLDrawingVMDiagrams`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-controlled-curved-line` element
 
@@ -910,9 +1061,17 @@ Attribute | Type | Default | Description
 `offset-tol-y` | float | 0 | Tolerance offset in the vertical direction for the end points. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.
 `offset-control-tol-x` | float | 0 | Tolerance offset in the horizontal direction for the control point. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box.
 `offset-control-tol-y` | float | 0 | Tolerance offset in the vertical direction for the control point. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box.
-`color` | string | red | Set the color of the coordinate system (https://htmlcolorcodes.com/color-chart/)
+`color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
+
+### Example Implementations
+
+- [`examplePLDrawingGraphs`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+
+- [`examplePLDrawingVMDiagrams`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
 
 ## `pl-text` element
 
@@ -940,6 +1099,10 @@ Attribute | Type | Default | Description
 `offsetx` | float | 0 | Offset in x direction from `x1`
 `offsety` | float | 0 | Offset in y direction from `y1`
 
+### Example Implementations
+
+- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+
 
 # Creating group of elements
 
@@ -958,7 +1121,11 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
       </pl-drawing-group>
 </pl-drawing>
 ```
-For an example where the attribute `visible` is set in server.py, see `	Example-pl-drawing-simple-tutorial`
+
+### Example Implementations
+
+- [`examplePLDrawingSimpleTutorial`: Example where the attribute `visible` is set in server.py](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+
 
 # Elements to set up a grading canvas
 
@@ -1033,15 +1200,14 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
-## `pl-drawing-buttons` element
+### Example Implementations
 
-
-The question QID `Example-pl-drawing-simple-tutorial` illustrates all the buttons
+The example [`QID: examplePLDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGradeVector) illustrates all the `pl-drawing-button`
 that are currently implemented.
 
-<img src="elements/all-buttons.png" width=100%>
+<img src="elements/pl-all-buttons.png" width=70%>
 
-(NOTE: icons are still not all displayed correctly using different images).
+## `pl-drawing-buttons` element
 
 #### To insert a point:
 
@@ -1088,7 +1254,7 @@ If the orientation of the arc vector is not important (both clockwise and counte
 <pl-drawing-button type="pl-distributed-load" w1="20"  anchor_is_tail="false"></pl-drawing-button>
 <pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
 ```
-This button adds a distributed load to the canvas. A distributed load is marked as correct when the position of the anchor point (center of the baseline) is within the error bounding box, the absolute error of the angle is less than `angle-tol`, when the absolute error of the range (interval) is less than `tol`, and the expected distribution is matched (if uniform, `w1 = w2` and for triangular load, `w1>w2` or `w2>w1` from submitted answer match the correct answer).
+This button adds a distributed load to the canvas. A distributed load is marked as correct when the position of the anchor point (center of the baseline) is within the error bounding box, the absolute error of the angle is less than `angle-tol`, the absolute error of the range (interval) is less than `tol`, and the expected distribution is matched (if uniform, `w1 = w2` and for triangular load, `w1>w2` or `w2>w1` from submitted answer match the correct answer).
 
 The error box for `pl-distributed-load` is  defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
 
@@ -1145,6 +1311,10 @@ This button deletes objects that were previously placed on the canvas.
 </pl-drawing-initial>
 ```
 
+### Example Implementations
+
+- [`examplePLDrawingGraphs`: Example that highlights graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+
 ## `pl-axes` element
 
 A `pl-axes` element adds two axes to define the coordinate plane for sketching plots.
@@ -1166,7 +1336,7 @@ Attribute | Type | Default | Description
 `offsety-label-y` | float | -10 | Vertical offset distance of `label-y`.
 `supporting-lines` | string | | Add additional grid lines to help with the sketching. For example, '[{"x":80},{"y":40}]' adds a vertical line passing through position `x=80` with respect to `origin`, i.e., the origin of the coordinate system defined by the plot axes. It also adds a horizontal line passing through `y=40` with respect to `origin`.
 `grid-label` | string | | Add labels to specified grid points. For example, '[ {"axis": "x", "pos": 80,  "lab": "4" } ]' adds the label `4` at position `x=80` with respect to `origin`. If additional adjustment of the position of the label is needed, this attribute can have two additional optional keys: `offsetx` and `offsety`, i.e., '[ {"axis": "x", "pos": 80,  "lab": "4", "offsetx": 10, "offsety":20 } ]'
-`color` | string | black | Set the color of the coordinate system (https://htmlcolorcodes.com/color-chart/)
+`color` | string | black | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 
 ## `pl-graph-line` element
@@ -1185,5 +1355,5 @@ Attribute | Type | Default | Description
 `offset-tol-y` | float | 0 | Half the length of the bounding box in the y-direction. The end point is at the center of the bounding box.
 `offset-control-tol-x` | float | 0 | Half the length of the bounding box in the x-direction. The control point is at the center of the bounding box.
 `offset-control-tol-y` | float | 0 | Half the length of the bounding box in the y-direction. The control point is at the center of the bounding box.
-`color` | string | red | Set the color of the coordinate system (https://htmlcolorcodes.com/color-chart/)
+`color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 4 | Set the width of the stroke.
