@@ -47,6 +47,8 @@
 
   * Add FAQ entries for escaping math mode in questions and accessing the `data` object on an external grader (James Balamuta).
 
+  * Add a new example question showing a probability mass function with `pl-python-variable` (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
