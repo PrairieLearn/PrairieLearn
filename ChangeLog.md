@@ -128,7 +128,7 @@
   * Fix to prevent instructor testing of externally-graded questions (Matt West).
   
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
-  
+ 
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
