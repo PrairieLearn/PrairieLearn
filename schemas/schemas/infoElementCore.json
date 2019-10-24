@@ -66,6 +66,14 @@
                     }
                 }
             }
+        },
+        "additionalNames": {
+            "description": "Any additional names to give this element, i.e. for backwards compatibility.",
+            "type": "array",
+            "items": {
+                "description": "A name for this element to be used in question HTML files.",
+                "type": "string"
+            }
         }
     }
 }

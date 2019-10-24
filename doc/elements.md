@@ -50,11 +50,12 @@ images, files, and code display. The following **decorative** elements are avail
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
-- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT
-  figure.
+- [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
+  or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
-
+  
+>>>>>>> master
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
 The following **Conditional** elements are available:
@@ -711,6 +712,68 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 -----
 
+## `pl-python-variable` element
+
+Displays the value of a Python variable, with formatted display of Pandas DataFrames.
+
+#### Sample Element 1
+
+![](elements/pl-python-variable.png)
+
+`server.py`
+
+```python
+data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
+```
+
+---
+
+`question.html`
+
+```html
+<pl-python-variable params-name="variable"></pl-python-variable>
+```
+
+#### Sample Element 2
+
+`server.py`
+
+```python
+df = pd.io.parsers.read_csv("breast-cancer-train.dat", header=None)
+data['params']['df'] = pl.to_json(df.head(15))
+```
+
+`question.html`
+
+```html
+<pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+```
+
+![](elements/pl-python-variable2.png)
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | The name of the key in `data['params']` to get a value from
+`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
+`suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
+`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+
+#### Details
+
+As of right now, the element supports displaying either Pandas DataFrames as an HTML table or Python objects via `repr()`.  When setting a parameter to a DataFrame, use PrairieLearn's built in `pl.to_json()`.
+
+#### Example implementations
+
+- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+
 ## `pl-figure` element
 
 Display a statically or dynamically generated image.
@@ -981,21 +1044,36 @@ The provided `script-name` corresponds to a file located within the director for
 
 -----
 
-## `pl-graphviz-render` element
+## `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
-Graphviz DOT visualizations .
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Graphviz DOT visualizations.
 
-#### Sample Element
+#### Sample Elements
 
-![](elements/pl-graphviz-render.png)
+![](elements/pl-graph1.png)
 
 ```html
-<pl-graphviz-render>
+<pl-graph>
 digraph G {
   A -> B
 }
-</pl-graphviz-render>
+</pl-graph>
+```
+
+---
+
+![](elements/pl-graph2.png)
+
+```python
+mat = np.random.random((3, 3))
+mat = mat / la.norm(mat, 1, axis=0)
+data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
+data['params']['matrix'] = pl.to_json(mat)
+```
+
+```html
+<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
 ```
 
 #### Customizations
@@ -1003,10 +1081,16 @@ digraph G {
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
+`params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
+`params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
+`weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
+`weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
+
 
 #### Example implementations
 
-- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
+- [`examplesGraph`: Sample creation of graphs](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesGraph)
 
 #### See also
 

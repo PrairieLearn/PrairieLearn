@@ -194,6 +194,9 @@ SELECT
     decode(contents, 'base64') AS contents
 FROM
     all_files
+WHERE
+    filename IS NOT NULL
+    AND contents IS NOT NULL
 ORDER BY
     uid, assessment_instance_number, qid, variant_number, date
 LIMIT

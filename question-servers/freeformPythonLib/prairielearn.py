@@ -4,6 +4,7 @@ import to_precision
 import numpy as np
 import uuid
 import sympy
+import pandas
 from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
@@ -51,6 +52,8 @@ def to_json(v):
                 row.append(str(v[i, j]))
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
+    elif isinstance(v, pandas.DataFrame):
+        return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
     else:
         return v
 
@@ -113,6 +116,12 @@ def from_json(v):
                     return M
                 else:
                     raise Exception('variable of type sympy_matrix should have value, variables, and shape')
+            elif v['_type'] == 'dataframe':
+                if ('_value' in v) and ('index' in v['_value']) and ('columns' in v['_value']) and ('data' in v['_value']):
+                    val = v['_value']
+                    return pandas.DataFrame(index=val['index'], columns=val['columns'], data=val['data'])
+                else:
+                    raise Exception('variable of type dataframe should have value with index, columns, and data')
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
     return v
@@ -321,9 +330,9 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
-                if i < m - 1:
-                    A_str += ', '
+            A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:
@@ -487,12 +496,12 @@ def numpy_to_matlab_sf(A, ndigits=2):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                if np.iscomplexobj(A[i]):
-                    A_str += _string_from_complex_sigfig(A[i], ndigits)
-                else:
-                    A_str += to_precision.to_precision(A[i], ndigits)
-                if i < m - 1:
-                    A_str += ', '
+            if np.iscomplexobj(A[i]):
+                A_str += _string_from_complex_sigfig(A[i], ndigits)
+            else:
+                A_str += to_precision.to_precision(A[i], ndigits)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:
