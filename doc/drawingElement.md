@@ -22,8 +22,8 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`preview` | boolean | false | `preview = true` is used when canvas is used for display only. `preview = false` expects objects to be placed in the canvas for grading.
-`answers-name` | string | — | Variable name to store student-input data in. This variable is required when `preview = false`. The input data will be stored in `data[“submitted_answers”][answers-name]`.
+`gradable` | boolean | false | `gradable = true` expects objects to be placed in the canvas for grading, when `gradable = false` the canvas will be used for display only, i.e. for plotting figures.
+`answers-name` | string | — | Variable name to store student-input data in. This variable is required when `gradable = true`. The input data will be stored in `data[“submitted_answers”][answers-name]`.
 `width` | integer | 580 | Horizontal width of the canvas (in pixels).
 `height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
@@ -31,7 +31,7 @@ Attribute | Type | Default | Description
 `correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
-`show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `preview = false`.
+`show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
 `tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
 
 
@@ -42,7 +42,7 @@ A `pl-drawing-initial` will group objects that will be displayed in the canvas d
 For example, `pl-drawing-initial` can be used to create figures that are displayed as part of the question body:
 
 ```html
-<pl-drawing preview=true grid-size="0">
+<pl-drawing grid-size="0">
     <pl-drawing-initial>
         <!-- create the image here -->
     </pl-drawing-initial>
@@ -54,7 +54,7 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are  graded.
 
 ```html
-<pl-drawing answers-name="add-objects">
+<pl-drawing gradable="true" answers-name="add-objects">
 
     <pl-drawing-initial>
     <!-- objects that define the correct answer are placed here -->
@@ -77,7 +77,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-coordinates x1="60" y1="80" label="0" angle="30"></pl-coordinates>
     </pl-drawing-initial>
@@ -119,7 +119,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-line x1="60" y1="80" x2="140" y2="120"></pl-line>
     </pl-drawing-initial>
@@ -152,7 +152,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-line x1="0" y1="80" x2="60" y2="80" stroke-color="red"></pl-line>
         <pl-arc  x1="60" y1="120" radius="40" start-angle="270" end-angle="0" stroke-color="green"></pl-arc>
@@ -185,7 +185,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-point x1="60" y1="120" label="A"></pl-point>
         <pl-point x1="160" y1="60" label="B"></pl-point>
@@ -218,7 +218,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-triangle  x1="40" y1="180" x2="160" y2="180" x3="160" y3="40"></pl-triangle>
     </pl-drawing-initial>
@@ -251,7 +251,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-rectangle  x1="80" y1="50" width="100" height="40"></pl-rectangle>
         <pl-rectangle  x1="120" y1="140" width="120" height="20" angle="30" color="pink1"></pl-rectangle>
@@ -284,7 +284,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-circle  x1="40" y1="100" radius="30" color="#95A5A6" stroke-width="3"></pl-circle>
         <pl-circle  x1="120" y1="100" radius="50" color="#D0D3D4"></pl-circle>
@@ -319,7 +319,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-polygon plist='[{"x": 40, "y": 40}, {"x": 140,"y": 80}, {"x": 60,"y": 180}]' ></pl-polygon>
     </pl-drawing-initial>
@@ -352,7 +352,7 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-rod x1="60" y1="80" x2="120" y2="100"></pl-rod>
     </pl-drawing-initial>
@@ -391,7 +391,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-3pointrod x1="40" y1="100" x2="100" y2="100" x3="100" y3="180"></pl-3pointrod>
     </pl-drawing-initial>
@@ -435,7 +435,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-4pointrod ></pl-4pointrod>
     </pl-drawing-initial>
@@ -485,7 +485,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-collar-rod x1="60" y1="100" x2="160" y2="100"></pl-collar-rod>
     </pl-drawing-initial>
@@ -531,7 +531,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-fixed-pin x1="100" y1="100"></pl-fixed-pin>
     </pl-drawing-initial>
@@ -569,7 +569,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-roller x1="60" y1="100"></pl-roller>
         <pl-fixed-pin x1="140" y1="100"  color="green1" ></pl-fixed-pin>
@@ -607,7 +607,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
       <pl-roller  x1="140" y1="100" width="40" color="gray1"></pl-roller>
       <pl-rod x1="40" y1="100" x2="140" y2="100" draw-pin="false"></pl-rod>
@@ -643,7 +643,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200" grid-size="20">
+<pl-drawing width="200" height="200" grid-size="20">
     <pl-drawing-initial>
         <pl-spring x1=50 y1=40 width=140 draw-pin="true"></pl-spring>
         <pl-spring x1=20 y1=80 angle=20 width=120 height=20 interval=5></pl-spring>
@@ -678,7 +678,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing  preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-pulley  x1="100" y1="150"  x2="20" y2="120" x3="140" y3="60" radius="40"  ></pl-pulley>
         <pl-pulley  x1="50" y1="40"  x2="50" y2="100" x3="160" y3="40" color="blue1" ></pl-pulley>
@@ -718,7 +718,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true  width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-rod        x1="60" y1="100" x2="120"  y2="40" height="60"></pl-rod>
         <pl-dimensions x1="60" y1="100" x2="120"  y2="40" ></pl-dimensions>
@@ -764,7 +764,7 @@ Attribute | Type | Default | Description
 
 ## `pl-arc-dimensions` element
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-fixed-pin x1="80" y1="100" angle="50" color="turquoise1"></pl-fixed-pin>
         <pl-coordinates x1="80" y1="100" width="80"></pl-coordinates>
@@ -811,7 +811,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-point x1="100" y1="100" ></pl-point>
         <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
@@ -862,7 +862,7 @@ More information about the grading attributes in the Grading section below.
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-double-headed-vector x1="40" y1="120" width="120" color="blue" angle="-30"></pl-double-headed-vector>
     </pl-drawing-initial>
@@ -909,7 +909,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing width="200" height="200">
     <pl-drawing-initial>
         <pl-arc-vector x1="80" y1="80" label="M" radius="60" stroke-width="2"></pl-arc-vector>
     </pl-drawing-initial>
@@ -952,7 +952,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-  <pl-drawing preview=true width="200" height="200">
+  <pl-drawing  width="200" height="200">
       <pl-drawing-initial>
           <pl-distributed-load x1="50" y1="40" width="60" ></pl-distributed-load>
           <pl-distributed-load x1="100" y1="160" width="80" w1="0" w2="40" color="green3" anchor-is-tail="false" stroke-width="2"></pl-distributed-load>
@@ -1001,7 +1001,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing  width="200" height="200">
     <pl-drawing-initial>
         <pl-controlled-line x1="40" y1="40" x2="120" y2="80" draw-error-box="true" offset-tol-x="20" ></pl-controlled-line>
         <pl-controlled-line x1="60" y1="140" x2="160" y2="140" color="blue" stroke-width="6" handle-radius="8" ></pl-controlled-line>
@@ -1038,7 +1038,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200">
+<pl-drawing  width="200" height="200">
     <pl-drawing-initial>
         <pl-controlled-curved-line x1="20" y1="20" x2="160" y2="20" x3="40" y3="140" draw-error-box="true"  offset-control-tol-x="20" offset-control-tol-y="30"></pl-controlled-curved-line>
     </pl-drawing-initial>
@@ -1078,7 +1078,7 @@ Attribute | Type | Default | Description
 #### Sample Element
 
 ```html
-<pl-drawing preview=true width="200" height="200" grid-size="0">
+<pl-drawing  width="200" height="200" grid-size="0">
     <pl-drawing-initial>
         <pl-text x1="20" y1="40" label="Moment of inertia:" latex="false"></pl-text>
         <pl-text x1="20" y1="80" label="\\int_A y^2 dA" ></pl-text>
@@ -1109,7 +1109,7 @@ Attribute | Type | Default | Description
 The element `pl-drawing-group` combines several elements as a group, to allow groups of elements to be turned visible or not.
 
 ```html
-<pl-drawing  preview=true >
+<pl-drawing>
   <pl-drawing-initial>
 
       <pl-drawing-group visible="true">
@@ -1134,7 +1134,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 #### Sample Element
 
 ```html
-<pl-drawing grid-size="20" answers-name="box" width="320">
+<pl-drawing grid-size="20" gradable="true" answers-name="box" width="320">
 
     <pl-drawing-answer draw-error-box="true">
         <pl-vector x1="160" y1="160"  angle="-45"></pl-vector>
