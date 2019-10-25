@@ -23,7 +23,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `preview` | boolean | false | `preview = true` is used when canvas is used for display only. `preview = false` expects objects to be placed in the canvas for grading.
-`answers-name` | string | — | Variable name to store data in. This variable is required when `preview = false`.
+`answers-name` | string | — | Variable name to store student-input data in. This variable is required when `preview = false`. The input data will be stored in `data[“submitted_answers”][answers-name]`.
 `width` | integer | 580 | Horizontal width of the canvas (in pixels).
 `height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
