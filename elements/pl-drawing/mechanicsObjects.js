@@ -1513,6 +1513,8 @@ mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answe
       options.width = Math.sqrt(Math.pow(p2d.e(2) - p1d.e(2), 2) + Math.pow(p2d.e(1) - p1d.e(1), 2));
 
       let obj = new mechanicsObjects.Arrow(options);
+      obj.selectable = false;
+      obj.evented = false;
       if (!obj.id) {
           obj.id = this.newID();
       }
@@ -1528,10 +1530,14 @@ mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answe
       };
       if (options.startSupportLine) {
           let line1 = new fabric.Line([p1.e(1),p1.e(2), p1d.e(1), p1d.e(2)],options1);
+          line1.selectable = false;
+          line1.evented = false;
           canvas.add(line1);
         }
       if (options.endSupportLine) {
           let line2 = new fabric.Line([p2.e(1),p2.e(2), p2d.e(1), p2d.e(2)],options1);
+          line1.selectable = false;
+          line1.evented = false;
           canvas.add(line2);
         }
 
@@ -1572,12 +1578,16 @@ mechanicsObjects.addArcDimension = function(canvas, options, submittedAnswer, an
           xend = obj.left + 1.5*obj.radius*Math.cos( obj.startAngle*Math.PI/180 )
           yend = obj.top  + 1.5*obj.radius*Math.sin( obj.startAngle*Math.PI/180 )
           let line1 = new fabric.Line([obj.left,obj.top, xend, yend],options1);
+          line1.selectable = false;
+          line1.evented = false;
           canvas.add(line1);
         }
       if (options.endSupportLine) {
           xend = obj.left + 1.5*obj.radius*Math.cos( obj.endAngle*Math.PI/180 )
           yend = obj.top  + 1.5*obj.radius*Math.sin( obj.endAngle*Math.PI/180 )
           let line1 = new fabric.Line([obj.left,obj.top, xend, yend],options1);
+          line1.selectable = false;
+          line1.evented = false;
           canvas.add(line1);
         }
 
@@ -1708,6 +1718,8 @@ mechanicsObjects.byType['line'] = mechanicsObjects.addLine;
 // ======================================================================================
 mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, answerName) {
     let obj = mechanicsObjects.makeCoordinates(options);
+    obj.evented = false;
+    obj.selectable = false;
     if (!obj.id) {
          obj.id = this.newID();
     }
@@ -1730,6 +1742,8 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
         fontSize: 20,
         textAlign: "left"
     });
+    textObj2.evented = false;
+    textObj2.selectable = false;
     canvas.add(textObj2);
 
     var angle_rad = Math.PI*(options.angle-90)/180
@@ -1741,6 +1755,8 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
         fontSize: 20,
         textAlign: "left"
     });
+    textObj3.evented = false;
+    textObj3.selectable = false;
     canvas.add(textObj3);
 
     return obj;

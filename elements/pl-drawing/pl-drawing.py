@@ -14,7 +14,7 @@ element_names = {'controlledLine': 'Controlled Line', 'vector': 'Force Vector', 
 
 # Attributes for each element, automatically generated from doc.md
 element_attributes = {
-    'pl-drawing': ['preview', 'answers-name', 'width', 'height', 'grid-size', 'snap-to-grid', 'correct-answer', 'tol', 'angle-tol', 'show-tolerance-hint', 'tolerance-hint', 'hide-answer-panel'],
+    'pl-drawing': ['gradable', 'answers-name', 'width', 'height', 'grid-size', 'snap-to-grid', 'correct-answer', 'tol', 'angle-tol', 'show-tolerance-hint', 'tolerance-hint', 'hide-answer-panel'],
     'pl-drawing-initial': ['draw-error-box', 'draw-error-box=true'],
     'pl-coordinates': [
         'x1',
@@ -269,7 +269,7 @@ element_attributes = {
 graded_elements = ['pl-controlled-line', 'pl-controlled-curved-line', 'pl-vector', 'pl-arc-vector', 'pl-distributed-load', 'pl-point', 'pl-double-headed-vector', 'pl-graph-line']
 
 element_defaults = {
-    'preview': False,
+    'gradable': False,
     'answers-name': '',
     'draw-error-box': False,
     'grid-size': 20,
@@ -389,13 +389,13 @@ def prepare(element_html, data):
 
     w_button = None
 
-    prev = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
+    prev = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
 
     # Some preparation for elements with grading componenet
     if not prev:
         name = pl.get_string_attrib(element, 'answers-name', None)
         if name is None:
-            raise Exception('answers-name is required if preview mode is not enabled')
+            raise Exception('answers-name is required if gradable mode is enabled')
 
         n_id = 1
         n_init_elements = 0
@@ -433,7 +433,7 @@ def prepare(element_html, data):
             raise Exception('You should have only one pl-drawing-answer inside a pl-drawing.')
         elif n_ans_elements == 0:
             raise Exception(
-                'You do not have any pl-drawing-answer inside pl-drawing where preview=False. You should either enter the pl-drawing-answer if you want to grade objects, or make preview=True '
+                'You do not have any pl-drawing-answer inside pl-drawing where gradable=True. You should either enter the pl-drawing-answer if you want to grade objects, or make gradable=False'
             )
 
         # Makes sure that all objects in pl-drawing-answer are graded
@@ -1735,7 +1735,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', '')
-    preview_mode = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
+    preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
     with open('pl-drawing.mustache') as f:
         template = f.read()
 
@@ -1834,7 +1834,7 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
-    preview_mode = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
+    preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
 
     if preview_mode:
         return data
@@ -1854,7 +1854,7 @@ def parse(element_html, data):
 def grade(element_html, data):
 
     element = lxml.html.fragment_fromstring(element_html)
-    prev = pl.get_boolean_attrib(element, 'preview', element_defaults['preview'])
+    prev = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
     if prev:
         return
 
