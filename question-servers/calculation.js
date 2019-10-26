@@ -25,11 +25,11 @@ module.exports = {
                     return callback(null, server);
                 }, 0);
             }, (err) => {
-		const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
-		if (err.originalError != null) {
+                const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
+                if (err.originalError != null) {
                     e.stack = err.originalError.stack + '\n\n' + err.stack;
-            }
-		return callback(e);
+                }
+                return callback(e);
             });
         });
     },
