@@ -351,7 +351,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', require('./pages/instructorGradingJob/instructorGradingJob'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
@@ -384,6 +383,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/instanc
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/questions', [
+    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
+    require('./pages/instructorQuestions/instructorQuestions'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/syncs', [
     function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},
@@ -570,6 +573,20 @@ app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
 app.use('/pl/course/:course_id', require('./middlewares/selectCourses'));
 
+
+app.use('/pl/course/:course_id/question/:question_id/edit', [
+    function(req, res, next) {res.locals.navPage = 'question'; res.locals.navSubPage = 'edit'; next();},
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorFileEditor/instructorFileEditor'),
+]);
+app.use('/pl/course/:course_id/question/:question_id', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/shared/assessmentStatDescriptions'),   // FIXME: shouldn't be here? (course instance specific?)
+    require('./pages/shared/floatFormatters'),
+    require('./pages/instructorQuestion/instructorQuestion'),
+]);
+
+
 app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/overview`);
 });
@@ -594,6 +611,10 @@ app.use('/pl/course/:course_id/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
 ]);
+app.use('/pl/course/:course_id/course_admin/questions', [
+    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
+    require('./pages/instructorQuestions/instructorQuestions'),
+]);
 app.use('/pl/course/:course_id/course_admin/syncs', [
     function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},
     require('./pages/courseSyncs/courseSyncs'),
@@ -617,6 +638,29 @@ app.use('/pl/course/:course_id/course_admin/edit', [
 
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+
+// clientFiles
+app.use('/pl/course/:course_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
+app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// generatedFiles
+app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+]);
+
+// legacy client file paths
+app.use('/pl/course/:course_id/question/:question_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+]);
+app.use('/pl/course/:course_id/question/:question_id/text', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/legacyQuestionText/legacyQuestionText'),
+]);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

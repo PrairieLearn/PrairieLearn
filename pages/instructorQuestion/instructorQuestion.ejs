@@ -89,7 +89,7 @@
               </tr>
               <tr>
                 <th>Assessments</th>
-                <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
+                <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
               </tr>
               <% if (question.type == 'Freeform' && question.grading_method != 'External') { %>
               <tr>

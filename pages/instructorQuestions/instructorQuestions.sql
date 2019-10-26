@@ -21,11 +21,7 @@ FROM
     JOIN topics AS top ON (top.id = q.topic_id)
     LEFT JOIN issue_count ON (issue_count.question_id = q.id)
 WHERE
-    q.course_id IN (
-        SELECT ci.course_id
-        FROM course_instances AS ci
-        WHERE ci.id = $course_instance_id
-    )
+    q.course_id = $course_id
     AND q.deleted_at IS NULL
 GROUP BY q.id, top.id, issue_count.open_issue_count
 ORDER BY top.number, q.title;

@@ -3,11 +3,11 @@ var express = require('express');
 var router = express.Router();
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
-const debug = require('debug')('prairielearn:instructorQuestions');
 const fs = require('fs-extra');
 const path = require('path');
 const uuidv4 = require('uuid/v4');
 const logger = require('../../lib/logger');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -17,8 +17,9 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 const editHelpers = require('../shared/editHelpers');
 
 router.get('/', function(req, res, next) {
+    const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
     var params = {
-        course_instance_id: res.locals.course_instance.id,
+        course_instance_id: course_instance_id,
         course_id: res.locals.course.id,
     };
     sqldb.query(sql.questions, params, function(err, result) {
@@ -33,7 +34,7 @@ router.get('/', function(req, res, next) {
             res.locals.all_tags = result.rows;
 
             var params = {
-                course_instance_id: res.locals.course_instance.id,
+                course_instance_id: course_instance_id,
             };
             sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, next)) return;

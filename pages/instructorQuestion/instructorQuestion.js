@@ -379,7 +379,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, (e) => logger.error(e))) {
                 res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
-                res.redirect(res.locals.urlPrefix + '/questions');
+                res.redirect(res.locals.urlPrefix + '/course_admin/questions');
             }
         });
     } else {
