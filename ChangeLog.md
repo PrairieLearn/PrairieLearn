@@ -123,6 +123,8 @@
   
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
 
+  * Fix error reporting for v2 questions (Matt West).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
