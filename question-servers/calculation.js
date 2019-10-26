@@ -27,10 +27,10 @@ module.exports = {
             }, (err) => {
 		const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
 		if (err.originalError != null) {
-		    e.stack = err.originalError.stack + '\n\n' + err.stack;
-		}
+                    e.stack = err.originalError.stack + '\n\n' + err.stack;
+            }
 		return callback(e);
-	    });
+            });
         });
     },
 
