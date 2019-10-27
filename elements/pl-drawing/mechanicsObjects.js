@@ -1165,7 +1165,7 @@ mechanicsObjects.makeDistTrianLoad = function(options) {
 mechanicsObjects.makeCoordinates = function(options) {
 
     var group = new fabric.Group([ ], { left: 0, top: 0 , name: 'coordinates'});
-    
+
     let obj1 = new mechanicsObjects.Arrow(options);
     group.addWithUpdate(obj1);
 
@@ -1536,8 +1536,8 @@ mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answe
         }
       if (options.endSupportLine) {
           let line2 = new fabric.Line([p2.e(1),p2.e(2), p2d.e(1), p2d.e(2)],options1);
-          line1.selectable = false;
-          line1.evented = false;
+          line2.selectable = false;
+          line2.evented = false;
           canvas.add(line2);
         }
 
