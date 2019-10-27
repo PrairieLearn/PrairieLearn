@@ -2,7 +2,7 @@
     <!-------------------------------------------------------------------------------->
     <!-- Course Admin ---------------------------------------------------------------->
 
-    <li class="nav-item btn-group <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
+    <li class="nav-item btn-group border-left <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
         <a class="nav-link" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
@@ -17,12 +17,18 @@
         <% } %>
     </li>
 
+    <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "issues") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
+    <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/questions">Questions</a></li>
+    <% if (!devMode && authz_data.has_course_permission_edit) { %>
+        <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
+    <% } %>
+
     <% if (locals.course_instance) { %>
 
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
-        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
+        <li class="nav-item btn-group border-left <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
             <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
@@ -41,16 +47,10 @@
         <!-- Instance Other -------------------------------------------------------------->
 
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/assessments">Assessments</a></li>
-        <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/questions">Questions</a></li>
-        <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "issues") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
-        <% if (!devMode && authz_data.has_course_permission_edit) { %>
-            <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
-        <% } %>
-
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-            <li class="nav-item btn-group <% if (navPage == "assessment") { %>active<% } %>">
+            <li class="nav-item btn-group border-left <% if (navPage == "assessment") { %>active<% } %>">
                 <a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
@@ -64,9 +64,5 @@
                     </div>
                 <% } %>
             </li>
-        <% } %>
-    <% } else { %>
-        <% if (!devMode && authz_data.has_course_permission_edit) { %>
-            <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
         <% } %>
     <% } %>
