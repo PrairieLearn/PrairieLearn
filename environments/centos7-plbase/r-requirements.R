@@ -60,4 +60,4 @@ if(length(to_install_pkgs)) {
 }
 
 # Check if any updates exist, if so... Install!
-update.packages(ask = FALSE)
+update.packages(ask = FALSE, checkBuilt = TRUE)
