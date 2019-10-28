@@ -32,6 +32,7 @@
   * Add `pl-hide-in-panel` element (Matt West).
 
   * Add `pl-drawing` element (Mariana Silva and Nicolas Nytko)
+  
   * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
 
   * Add student Gradebook page (Matt West).
@@ -125,6 +126,8 @@
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
 
   * Fix error reporting for v2 questions (Matt West).
+  
+  * Fix detection of different internals during R package installation (James Balamuta).
 
 * __3.2.0__ - 2019-08-05
 
