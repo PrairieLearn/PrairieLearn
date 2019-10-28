@@ -48,6 +48,8 @@
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
   * Add `gvsu.edu` as an institution option (Matt West).
+  
+  * Add `scikit-learn`, `scikit-image`, and other data science libraries to external Python grader (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
