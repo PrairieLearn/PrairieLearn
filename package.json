@@ -32,6 +32,7 @@
         "dockerode": "^3.0.2",
         "ejs": "^2.7.1",
         "express": "^4.17.1",
+        "fabric": "^3.4.0",
         "filesize": "^5.0.3",
         "fs-extra": "^8.1.0",
         "googleapis": "^44.0.0",
