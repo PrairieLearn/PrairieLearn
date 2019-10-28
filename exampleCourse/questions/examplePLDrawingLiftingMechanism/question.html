@@ -1,0 +1,63 @@
+<pl-question-panel>
+
+<p>
+  
+<pl-drawing grid-size="20"  width={{params.width_canvas}} height={{params.height_canvas}}>
+    <pl-drawing-initial>
+        <pl-circle x1={{params.xA}} y1={{params.yA}}  radius={{params.circle_radius}} > </pl-circle>
+        <pl-circle x1={{params.xB}} y1={{params.yB}}  radius={{params.circle_radius}} > </pl-circle>
+        <pl-line x1={{params.xF}} y1={{params.yF}}  x2={{params.xG}} y2={{params.yG}} ></pl-line>
+        <pl-line x1={{params.xH}} y1={{params.yH}}  x2={{params.xI}} y2={{params.yI}} ></pl-line>
+        <pl-4pointrod x1={{params.xA}} y1={{params.yA}}  x2={{params.xC}} y2={{params.yC}}
+                      x3={{params.xB}} y3={{params.yB}} x4={{params.xD}} y4={{params.yD}}
+                      width={{params.wrod}}
+                      label1="A" label2="C" label3="B" label4="D"> </pl-4pointrod>
+        <pl-rectangle x1={{params.xbox}} y1={{params.ybox}} width={{params.wbox}} height={{params.wbox}}></pl-rectangle>
+        <pl-vector x1={{params.xA}} y1={{params.yA}} angle={{params.theta_op}} label="P" offsety="10"></pl-vector>
+        <pl-dimensions x1={{params.xA}} y1={{params.yA}}  x2={{params.xC}} y2={{params.yC}} dim-offset="-80" label="b" offsety="-20"></pl-dimensions>
+        <pl-dimensions x1={{params.xC}} y1={{params.yC}}  x2={{params.xD}} y2={{params.yD}} dim-offset="-80" label="b" offsety="-20"></pl-dimensions>
+
+        <pl-dimensions x1={{params.xD}} y1={{params.yD}} x2={{params.xB}} y2={{params.yB}}  dim-offset="-30" dim-offset-angle="90" label="a" end-support-line="true"></pl-dimensions>
+        <pl-dimensions x1={{params.xbox}} y1={{params.ybox}}  width={{params.d}} angle="-180" dim-offset="30" label="d"></pl-dimensions>
+    </pl-drawing-initial>
+</pl-drawing>
+
+
+</p>
+    <p>
+      a) Draw the corresponding free body diagram (disregard friction):
+    </p>
+
+</pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="false" width={{params.width_canvas}} height={{params.height_canvas}}>
+
+    <pl-drawing-answer draw-error-box="true">
+      <pl-vector x1={{params.xA}} y1={{params.yA}} angle={{params.theta_op}} ></pl-vector>
+      <pl-vector x1={{params.xbox}} y1={{params.ybox}} angle="90" offset-forward={{params.wbox}}></pl-vector>
+      <pl-vector x1={{params.xA}} y1={{params.yA}} angle={{params.theta_normal}} ></pl-vector>
+      <pl-vector x1={{params.xB}} y1={{params.yB}} angle={{params.theta_normal}} ></pl-vector>
+    </pl-drawing-answer>
+
+
+    <pl-drawing-initial>
+          <pl-4pointrod x1={{params.xA}} y1={{params.yA}}  x2={{params.xC}} y2={{params.yC}}
+                  x3={{params.xB}} y3={{params.yB}} x4={{params.xD}} y4={{params.yD}}
+                  width={{params.wrod}}
+                  label1="A" label2="C" label3="B" label4="D"> </pl-4pointrod>
+            <pl-line x1={{params.xF}} y1={{params.yF}}  x2={{params.xG}} y2={{params.yG}} dashed-size="4" stroke-width="1" stroke-color="green3"></pl-line>
+    </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group >
+            <pl-drawing-button type="pl-vector" ></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group >
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+</pl-drawing>
+</p>
+
+<pl-question-panel>
