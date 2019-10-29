@@ -47,6 +47,10 @@
 
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
+  * Add FAQ entries for escaping math mode in questions and accessing the `data` object on an external grader (James Balamuta).
+
+  * Add a new example question showing a probability mass function with `pl-python-variable` (James Balamuta).
+
   * Add `gvsu.edu` as an institution option (Matt West).
   
   * Add `scikit-learn`, `scikit-image`, and other data science libraries to external Python grader (Nicolas Nytko).
@@ -72,6 +76,10 @@
   * Change SSL file paths to be configurable (Dave Mussulman).
   
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
+
+  * Change documentation examples to be self-contained (James Balamuta).
+
+  * Change external grader documentation to show file system structure (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
