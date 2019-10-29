@@ -47,7 +47,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
-/** @typedef {"UIUC" | "ZJUI" | "LTI" | "Any"} Institution */
+/** @typedef {"UIUC" | "ZJUI" | "LTI" | "gvsu.edu" | "Any"} Institution */
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
