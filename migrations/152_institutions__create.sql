@@ -6,8 +6,10 @@ CREATE TABLE institutions (
 
 CREATE INDEX IF NOT EXISTS institutions_institution_idx ON institutions(institution);
 
-INSERT INTO institutions (institution, uid_pattern) VALUES
-    ('UIUC', '%@illinois.edu'),
-    ('ZJUI', '%@intl.zju.edu.cn'),
-    ('gvsu.edu', '%@mail.gvsu.edu'),
-    ('Any', '%');
+INSERT INTO institutions (id, institution, uid_pattern) VALUES
+    (1, 'UIUC', '%@illinois.edu'),
+    (2, 'ZJUI', '%@intl.zju.edu.cn'),
+    (3, 'gvsu.edu', '%@mail.gvsu.edu');
+
+ALTER TABLE pl_courses ADD COLUMN institution_id bigint REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL;
+UPDATE pl_courses SET institution_id=1;

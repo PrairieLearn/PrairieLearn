@@ -6,3 +6,6 @@ columns
 indexes
     institutions_pkey: PRIMARY KEY (id) USING btree (id)
     institutions_institution_idx: USING btree (institution)
+
+referenced by
+    pl_courses: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
