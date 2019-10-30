@@ -31,6 +31,8 @@
 
   * Add `pl-hide-in-panel` element (Matt West).
 
+  * Add `pl-drawing` element (Mariana Silva and Nicolas Nytko)
+  
   * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
 
   * Add student Gradebook page (Matt West).
@@ -45,7 +47,13 @@
 
   * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
 
+  * Add FAQ entries for escaping math mode in questions and accessing the `data` object on an external grader (James Balamuta).
+
+  * Add a new example question showing a probability mass function with `pl-python-variable` (James Balamuta).
+
   * Add `gvsu.edu` as an institution option (Matt West).
+  
+  * Add `scikit-learn`, `scikit-image`, and other data science libraries to external Python grader (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -70,6 +78,9 @@
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
   * Change institution definitions to read from the `institutions` table (Dave Mussulman).
+  * Change documentation examples to be self-contained (James Balamuta).
+
+  * Change external grader documentation to show file system structure (James Balamuta).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -124,6 +135,10 @@
   * Fix to prevent instructor testing of externally-graded questions (Matt West).
 
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
+
+  * Fix error reporting for v2 questions (Matt West).
+  
+  * Fix detection of different internals during R package installation (James Balamuta).
 
 * __3.2.0__ - 2019-08-05
 
