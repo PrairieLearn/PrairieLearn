@@ -46,7 +46,7 @@ BEGIN
                OR user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
                     available := FALSE;
             END IF;
-        ELSE
+        ELSIF course_instance_access_rule.institution != 'Any' THEN
             -- check the institutions table
             PERFORM * FROM institutions AS i
             WHERE
