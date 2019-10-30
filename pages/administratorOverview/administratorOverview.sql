@@ -13,11 +13,12 @@ select_administrator_users AS (
 select_courses AS (
     SELECT
         coalesce(
-            jsonb_agg(to_json(c) ORDER BY c.short_name, c.title, c.id),
+            jsonb_agg(to_jsonb(c) || to_jsonb(i) ORDER BY i.institution, c.short_name, c.title, c.id),
             '[]'::jsonb
         ) AS courses
     FROM
         pl_courses AS c
+        JOIN institutions AS i ON (i.id = c.institution_id)
     WHERE
         c.deleted_at IS NULL
 ),
