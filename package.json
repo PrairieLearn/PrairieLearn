@@ -96,7 +96,7 @@
         "chai-as-promised": "^7.1.1",
         "colors": "^1.4.0",
         "coveralls": "^3.0.7",
-        "eslint": "^6.5.1",
+        "eslint": "^6.6.0",
         "jsdoc": "^3.6.3",
         "json-stable-stringify": "^1.0.1",
         "mocha": "^6.2.2",
