@@ -60,7 +60,7 @@
         "pg": "^7.12.1",
         "plist": "^3.0.0",
         "popper.js": "^1.16.0",
-        "qrcode-svg": "^1.0.0",
+        "qrcode-svg": "^1.1.0",
         "redis": "^2.8.0",
         "redis-lru": "^0.6.0",
         "rehype-raw": "^4.0.1",
