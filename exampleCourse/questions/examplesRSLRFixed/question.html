@@ -1,0 +1,28 @@
+<pl-question-panel>
+<markdown>
+Consider the **<pl-file-download file_name="highway{{params.highway_id}}.csv" directory="clientFilesQuestion"></pl-file-download>** data set. (Click to download.)
+
+To read this data set into <i>R</i>, use the following: 
+
+<pl-code language="r">
+highway_data = read.csv('local/path/to/highway{{params.highway_id}}.csv')
+</pl-code>
+
+*Hint:* Where did the file download to on your local machine? Create a relative or absolute path to it.
+
+</markdown> 
+</pl-question-panel>
+
+<pl-question-panel>
+<hr></hr>
+</pl-question-panel>
+
+<pl-question-panel>
+<markdown>
+What would be the estimated parameters for a regression using **mpg** as the response and **hp** as the independent variable given the above data? 
+</markdown> 
+</pl-question-panel>
+
+<pl-number-input answers-name="beta0" label="$\hat{\beta_0}=$"></pl-number-input>
+<hr></hr>
+<pl-number-input answers-name="beta1" label="$\hat{\beta_1}=$"></pl-number-input>
