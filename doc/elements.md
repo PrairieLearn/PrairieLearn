@@ -56,8 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
-  
->>>>>>> master
+
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
 The following **Conditional** elements are available:
@@ -1274,7 +1273,7 @@ Attribute | Type | Default | Description
 Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
 Users can also add drawing objects to the canvas for grading.
 
-See the [`pl-drawing` documentation](drawingElement.md) for details.
+See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 

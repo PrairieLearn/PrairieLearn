@@ -8,7 +8,7 @@ A `pl-drawing` element displays a canvas, which can be used to display initial d
 
 The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
 
-<img src="elements/pl-origin-canvas.png" width=70%>
+<img src="pl-origin-canvas.png" width=70%>
 
 #### Sample Element
 
@@ -16,7 +16,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 <pl-drawing answers-name="fbd">
 </pl-drawing>
 ```
-<img src="elements/pl-drawing.png" width=70%>
+<img src="pl-drawing.png" width=70%>
 
 #### Customizations
 
@@ -49,7 +49,7 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 </pl-drawing>
 ```
 
-<img src="elements/pl-I.png" width=30%>
+<img src="pl-I.png" width=30%>
 
 And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are  graded.
 
@@ -83,7 +83,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-coordinates.png" width=50%>
+<img src="pl-coordinates.png" width=50%>
 
 #### Customizations
 
@@ -125,7 +125,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-line.png" width=50%>
+<img src="pl-line.png" width=50%>
 
 #### Customizations
 
@@ -160,7 +160,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-arc.png" width=50%>
+<img src="pl-arc.png" width=50%>
 
 #### Customizations
 
@@ -192,7 +192,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-point.png" width=50%>
+<img src="pl-point.png" width=50%>
 
 #### Customizations
 
@@ -224,7 +224,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-triangle.png" width=50%>
+<img src="pl-triangle.png" width=50%>
 
 #### Customizations
 
@@ -258,7 +258,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-rectangle.png" width=50%>
+<img src="pl-rectangle.png" width=50%>
 
 #### Customizations
 
@@ -292,7 +292,7 @@ Attribute | Type | Default | Description
 </pl-drawing>
 ```
 
-<img src="elements/pl-circle.png" width=50%>
+<img src="pl-circle.png" width=50%>
 
 #### Customizations
 
@@ -326,7 +326,7 @@ Attribute | Type | Default | Description
 </pl-drawing>
 ```
 
-<img src="elements/pl-polygon.png" width=50%>
+<img src="pl-polygon.png" width=50%>
 
 #### Customizations
 
@@ -358,7 +358,7 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-rod.png" width=50%>
+<img src="pl-rod.png" width=50%>
 
 #### Customizations
 
@@ -397,7 +397,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-3pointrod.png" width=50%>
+<img src="pl-3pointrod.png" width=50%>
 
 #### Customizations
 
@@ -441,7 +441,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-4pointrod.png" width=50%>
+<img src="pl-4pointrod.png" width=50%>
 
 #### Customizations
 
@@ -491,7 +491,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-collar.png" width=50%>
+<img src="pl-collar.png" width=50%>
 
 #### Customizations
 
@@ -537,7 +537,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-fixed-pin.png" width=50%>
+<img src="pl-fixed-pin.png" width=50%>
 
 #### Customizations
 
@@ -576,7 +576,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-roller.png" width=50%>
+<img src="pl-roller.png" width=50%>
 
 #### Customizations
 
@@ -615,7 +615,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-clamped.png" width=50%>
+<img src="pl-clamped.png" width=50%>
 
 #### Customizations
 
@@ -651,7 +651,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-spring.png" width=50%>
+<img src="pl-spring.png" width=50%>
 
 #### Customizations
 
@@ -685,7 +685,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-pulley.png" width=50%>
+<img src="pl-pulley.png" width=50%>
 
 #### Customizations
 
@@ -729,7 +729,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-dimensions.png" width=50%>
+<img src="pl-dimensions.png" width=50%>
 
 #### Customizations
 
@@ -773,7 +773,7 @@ Attribute | Type | Default | Description
 </pl-drawing>
 ```
 
-<img src="elements/pl-arc-dimensions.png" width=50%>
+<img src="pl-arc-dimensions.png" width=50%>
 
 #### Customizations
 
@@ -820,7 +820,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-vector.png" width=50%>
+<img src="pl-vector.png" width=50%>
 
 #### Customizations
 
@@ -868,7 +868,7 @@ More information about the grading attributes in the Grading section below.
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-double-headed-vector.png" width=50%>
+<img src="pl-double-headed-vector.png" width=50%>
 
 #### Customizations
 
@@ -915,7 +915,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-arc-vector.png" width=50%>
+<img src="pl-arc-vector.png" width=50%>
 
 #### Customizations
 
@@ -960,7 +960,7 @@ Attribute | Type | Default | Description
       </pl-drawing-initial>
   </pl-drawing>
 ```
-<img src="elements/pl-distributed-load.png" width=50%>
+<img src="pl-distributed-load.png" width=50%>
 
 #### Customizations
 
@@ -1008,7 +1008,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-controlled-line.png" width=50%>
+<img src="pl-controlled-line.png" width=50%>
 
 #### Customizations
 
@@ -1044,7 +1044,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-controlled-curved-line.png" width=50%>
+<img src="pl-controlled-curved-line.png" width=50%>
 
 #### Customizations
 
@@ -1085,7 +1085,7 @@ Attribute | Type | Default | Description
     </pl-drawing-initial>
 </pl-drawing>
 ```
-<img src="elements/pl-text.png" width=50%>
+<img src="pl-text.png" width=50%>
 
 #### Customizations
 
@@ -1155,7 +1155,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 </pl-drawing>
 ```
 
-<img src="elements/pl-vector-grading-canvas-example.png" width=70%>
+<img src="pl-vector-grading-canvas-example.png" width=70%>
 
 
 ## `pl-drawing-answer` element
@@ -1170,7 +1170,7 @@ Attribute | Type | Default | Description
 
 In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
 
-<img src="elements/pl-vector-correct-answer.png" width=50%>
+<img src="pl-vector-correct-answer.png" width=50%>
 
 ## `pl-drawing-initial` element
 
@@ -1205,7 +1205,7 @@ The element `pl-controls` will add the buttons that allows students to place obj
 The example [`QID: examplePLDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGradeVector) illustrates all the `pl-drawing-button`
 that are currently implemented.
 
-<img src="elements/pl-all-buttons.png" width=70%>
+<img src="pl-all-buttons.png" width=70%>
 
 ## `pl-drawing-buttons` element
 
@@ -1217,7 +1217,7 @@ that are currently implemented.
 
 This button adds a point to the canvas. The grading algorithm will check if the submitted point is within the error box. By default, the error box for `pl-point` is a square centered at the correct point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
 
-<img src="elements/pl-point-error-box.png" width=30%>
+<img src="pl-point-error-box.png" width=30%>
 
 #### To insert a vector:
 
@@ -1228,7 +1228,7 @@ This button adds a vector to the canvas. A vector is marked as correct when the 
 
  By default, the error box for `pl-vector` is a rectangle aligned with direction of the vector. The width of the rectangle is `tol` and the height is `hb + hf`, as illustrated below. `hb = offset-backward + tol` and `hf = offset-forward + tol`. The attribute `offset-backward` is set to the length of the vector by default. The attribute `offset-forward` is set to zero by default. The tolerances `tol` and `angle-tol` are attributes of `pl-drawing` to make sure that all elements use the same tolerance.
 
-<img src="elements/pl-vector-error-box-zoom.png" width=50%>
+<img src="pl-vector-error-box-zoom.png" width=50%>
 
 If the orientation of the vector is not important, so that vectors `p` and `-p` are both considered correct, the attribute `disregard-sense` should be set to `true`.
 
@@ -1277,7 +1277,7 @@ This button deletes objects that were previously placed on the canvas.
 
 # Elements for sketching plots
 
-<img src="elements/pl-graph.png" width=50%>
+<img src="pl-graph.png" width=50%>
 
 ```html
 <pl-drawing-initial>
