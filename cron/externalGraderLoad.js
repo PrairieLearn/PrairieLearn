@@ -42,6 +42,7 @@ function sendStatsToCloudWatch(stats, callback) {
     const cloudwatch = new AWS.CloudWatch();
     const dimensions = [{Name: 'By Queue', Value: config.externalGradingJobsQueueName}];
     const params = {
+        // AWS limits to 20 items within each MetricData list
         MetricData: [
             {
                 MetricName: 'InstanceCount',
@@ -195,84 +196,94 @@ function sendStatsToCloudWatch(stats, callback) {
                 Unit: 'Seconds',
                 Value: stats.age_of_oldest_job_in_report_sec,
             },
-            {
-                MetricName: 'HistoryJobs',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.history_jobs,
-            },
-            {
-                MetricName: 'CurrentUsers',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.current_users,
-            },
-            {
-                MetricName: 'PredictedJobsByCurrentUsers',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.predicted_jobs_by_current_users,
-            },
-            {
-                MetricName: 'JobsPerInstance',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.jobs_per_instance,
-            },
-            {
-                MetricName: 'DesiredInstancesByUngradedJobs',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.desired_instances_by_ungraded_jobs,
-            },
-            {
-                MetricName: 'DesiredInstancesByCurrentJobs',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.desired_instances_by_current_jobs,
-            },
-            {
-                MetricName: 'DesiredInstancesByHistoryJobs',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.desired_instances_by_history_jobs,
-            },
-            {
-                MetricName: 'DesiredInstancesByCurrentUsers',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.desired_instances_by_current_users,
-            },
-            {
-                MetricName: 'DesiredInstances',
-                Dimensions: dimensions,
-                StorageResolution: 1,
-                Timestamp: stats.timestamp_formatted,
-                Unit: 'Count',
-                Value: stats.desired_instances,
-            },
         ],
         Namespace: 'Grader',
     };
     cloudwatch.putMetricData(params, function(err, _data) {
         if (ERR(err, callback)) return;
-        callback(null);
+
+        const params = {
+            // AWS limits to 20 items within each MetricData list
+            MetricData: [
+                {
+                    MetricName: 'HistoryJobs',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.history_jobs,
+                },
+                {
+                    MetricName: 'CurrentUsers',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.current_users,
+                },
+                {
+                    MetricName: 'PredictedJobsByCurrentUsers',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.predicted_jobs_by_current_users,
+                },
+                {
+                    MetricName: 'JobsPerInstance',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.jobs_per_instance,
+                },
+                {
+                    MetricName: 'DesiredInstancesByUngradedJobs',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_by_ungraded_jobs,
+                },
+                {
+                    MetricName: 'DesiredInstancesByCurrentJobs',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_by_current_jobs,
+                },
+                {
+                    MetricName: 'DesiredInstancesByHistoryJobs',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_by_history_jobs,
+                },
+                {
+                    MetricName: 'DesiredInstancesByCurrentUsers',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_by_current_users,
+                },
+                {
+                    MetricName: 'DesiredInstances',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances,
+                },
+            ],
+            Namespace: 'Grader',
+        };
+        cloudwatch.putMetricData(params, function(err, _data) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     });
 }
 
