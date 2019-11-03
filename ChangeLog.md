@@ -55,6 +55,8 @@
   
   * Add `scikit-learn`, `scikit-image`, and other data science libraries to external Python grader (Nicolas Nytko).
 
+  * Add more detailed grader statistics (Matt West).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

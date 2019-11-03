@@ -19,7 +19,17 @@ CREATE OR REPLACE FUNCTION
         OUT max_jobs double precision,      -- current grading job capacity (max simultaneous jobs)
         OUT load_perc double precision,     -- current percentage load (0 to 100)
         OUT ungraded_jobs double precision, -- current jobs that have not yet been graded (waiting or in grading)
+        OUT ungraded_jobs_in_submit double precision, -- current jobs in phase "submit"
+        OUT ungraded_jobs_in_queue double precision, -- current jobs in phase "queue"
+        OUT ungraded_jobs_in_prepare double precision, -- current jobs in phase "prepare"
+        OUT ungraded_jobs_in_run double precision, -- current jobs in phase "run"
+        OUT ungraded_jobs_in_report double precision, -- current jobs in phase "report"
         OUT age_of_oldest_job_sec double precision, -- time since creation of oldest job
+        OUT age_of_oldest_job_in_submit_sec double precision, -- longest time of jobs currently in "submit" phase
+        OUT age_of_oldest_job_in_queue_sec double precision, -- longest time of jobs currently in "queue" phase
+        OUT age_of_oldest_job_in_prepare_sec double precision, -- longest time of jobs currently in "prepare" phase
+        OUT age_of_oldest_job_in_run_sec double precision, -- longest time of jobs currently in "run" phase
+        OUT age_of_oldest_job_in_report_sec double precision, -- longest time of jobs currently in "report" phase
         OUT history_jobs double precision,  -- max simultaneous jobs in previous history_interval
         OUT current_users integer,          -- current number of users viewing externally graded questions
         OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
@@ -37,11 +47,32 @@ BEGIN
     -- get information from the DB about jobs that still need to be graded
 
     SELECT
+        coalesce(max(extract(epoch FROM now() - gj.date)), 0),
+        coalesce(max(extract(epoch FROM now() - gj.grading_requested_at)) FILTER (WHERE gj.grading_submitted_at IS NULL), 0),
+        coalesce(max(extract(epoch FROM now() - gj.grading_submitted_at)) FILTER (WHERE gj.grading_received_at IS NULL), 0),
+        coalesce(max(extract(epoch FROM now() - gj.grading_received_at)) FILTER (WHERE gj.grading_started_at IS NULL), 0),
+        coalesce(max(extract(epoch FROM now() - gj.grading_started_at)) FILTER (WHERE gj.grading_finished_at IS NULL), 0),
+        coalesce(max(extract(epoch FROM now() - gj.grading_finished_at)) FILTER (WHERE gj.graded_at IS NULL), 0),
+        -- number of jobs in-flight in different phases
         count(*),
-        coalesce(max(extract(epoch FROM now() - gj.date)), 0)
+        count(*) FILTER (WHERE gj.grading_submitted_at IS NULL AND gj.grading_requested_at IS NOT NULL),
+        count(*) FILTER (WHERE gj.grading_received_at IS NULL AND gj.grading_submitted_at IS NOT NULL),
+        count(*) FILTER (WHERE gj.grading_started_at IS NULL AND gj.grading_received_at IS NOT NULL),
+        count(*) FILTER (WHERE gj.grading_finished_at IS NULL AND gj.grading_started_at IS NOT NULL),
+        count(*) FILTER (WHERE gj.graded_at IS NULL AND gj.grading_finished_at IS NOT NULL)
     INTO
+        age_of_oldest_job_sec,
+        age_of_oldest_job_in_submit_sec,
+        age_of_oldest_job_in_queue_sec,
+        age_of_oldest_job_in_prepare_sec,
+        age_of_oldest_job_in_run_sec,
+        age_of_oldest_job_in_report_sec,
         ungraded_jobs,
-        age_of_oldest_job_sec
+        ungraded_jobs_in_submit,
+        ungraded_jobs_in_queue,
+        ungraded_jobs_in_prepare,
+        ungraded_jobs_in_run,
+        ungraded_jobs_in_report
     FROM grading_jobs AS gj
     WHERE
         gj.grading_method = 'External'
@@ -150,19 +181,37 @@ BEGIN
     -- ######################################################################
     -- write data to time_series table
 
-    INSERT INTO time_series (name, value) VALUES ('instance_count', instance_count);
-    INSERT INTO time_series (name, value) VALUES ('current_jobs', current_jobs);
-    INSERT INTO time_series (name, value) VALUES ('max_jobs', max_jobs);
-    INSERT INTO time_series (name, value) VALUES ('load_perc', load_perc);
-    INSERT INTO time_series (name, value) VALUES ('ungraded_jobs', ungraded_jobs);
-    INSERT INTO time_series (name, value) VALUES ('history_jobs', history_jobs);
-    INSERT INTO time_series (name, value) VALUES ('current_users', current_users);
-    INSERT INTO time_series (name, value) VALUES ('predicted_jobs_by_current_users', predicted_jobs_by_current_users);
-    INSERT INTO time_series (name, value) VALUES ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs);
-    INSERT INTO time_series (name, value) VALUES ('desired_instances_by_current_jobs', desired_instances_by_current_jobs);
-    INSERT INTO time_series (name, value) VALUES ('desired_instances_by_history_jobs', desired_instances_by_history_jobs);
-    INSERT INTO time_series (name, value) VALUES ('desired_instances_by_current_users', desired_instances_by_current_users);
-    INSERT INTO time_series (name, value) VALUES ('desired_instances', desired_instances);
+    INSERT INTO time_series (name, value)
+    VALUES
+        ('instance_count', instance_count),
+        ('instance_count_launching', instance_count_launching),
+        ('instance_count_in_service', instance_count_in_service),
+        ('instance_count_abandoning_launch', instance_count_abandoning_launch),
+        ('instance_count_unhealthy', instance_count_unhealthy),
+        ('current_jobs', current_jobs),
+        ('max_jobs', max_jobs),
+        ('load_perc', load_perc),
+        ('ungraded_jobs', ungraded_jobs),
+        ('ungraded_jobs_in_submit', ungraded_jobs_in_submit),
+        ('ungraded_jobs_in_queue', ungraded_jobs_in_queue),
+        ('ungraded_jobs_in_prepare', ungraded_jobs_in_prepare),
+        ('ungraded_jobs_in_run', ungraded_jobs_in_run),
+        ('ungraded_jobs_in_report', ungraded_jobs_in_report),
+        ('age_of_oldest_job_sec', age_of_oldest_job_sec),
+        ('age_of_oldest_job_in_submit_sec', age_of_oldest_job_in_submit_sec),
+        ('age_of_oldest_job_in_queue_sec', age_of_oldest_job_in_queue_sec),
+        ('age_of_oldest_job_in_prepare_sec', age_of_oldest_job_in_prepare_sec),
+        ('age_of_oldest_job_in_run_sec', age_of_oldest_job_in_run_sec),
+        ('age_of_oldest_job_in_report_sec', age_of_oldest_job_in_report_sec),
+        ('history_jobs', history_jobs),
+        ('current_users', current_users),
+        ('predicted_jobs_by_current_users', predicted_jobs_by_current_users),
+        ('jobs_per_instance', jobs_per_instance),
+        ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs),
+        ('desired_instances_by_current_jobs', desired_instances_by_current_jobs),
+        ('desired_instances_by_history_jobs', desired_instances_by_history_jobs),
+        ('desired_instances_by_current_users', desired_instances_by_current_users),
+        ('desired_instances', desired_instances);
 
     -- ######################################################################
     -- timestamp for sending to CloudWatch
