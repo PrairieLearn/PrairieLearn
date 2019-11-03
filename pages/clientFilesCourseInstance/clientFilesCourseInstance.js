@@ -9,7 +9,7 @@ router.get('/*', function(req, res, _next) {
         res.locals.course.path,
         'courseInstances',
         res.locals.course_instance.short_name,
-        'clientFilesCourseInstance'
+        'clientFilesCourseInstance',
     );
     res.sendFile(filename, {root: clientFilesDir});
 });
