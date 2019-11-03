@@ -157,6 +157,14 @@ function sendStatsToCloudWatch(stats, callback) {
                 Value: stats.ungraded_jobs_in_report,
             },
             {
+                MetricName: 'AgeOfOldestJob',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Seconds',
+                Value: stats.age_of_oldest_job_sec,
+            },
+            {
                 MetricName: 'AgeOfOldestJobInSubmit',
                 Dimensions: dimensions,
                 StorageResolution: 1,
