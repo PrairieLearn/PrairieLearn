@@ -5,11 +5,6 @@ var $V = Sylvester.Vector.create;
 
 var mechanicsObjects = {};
 
-/* Need to set the MathJax renderer to use SVG in order to embed the math
-   into fabric.  Do this here because we were running into race conditions
-   w/ Firefox and Safari when doing it in the element */
-MathJax.Hub.setRenderer("SVG");
-
 // ======================================================================================
 // ======================================================================================
 // ======================================================================================
@@ -774,84 +769,26 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     },
     gen_text: function(str, options) {
         let ref = this;
-        let div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-        let contents = null;
-        let populateDiv = function() {
-            let child = div.lastChild;
-            while (child) {
-                div.removeChild(child);
-                child = div.lastChild;
-            }
-
-            /* Can't set 'display: none' otherwise MathJax won't pick up the element for rendering,
-               so... just move it off screen a bit */
-            div.style.position = "absolute";
-            div.style.top = "-500px";
-            div.style.left = "-500px";
-            if (options.fontSize) {
-                if (typeof options.fontSize == "string") {
-                    div.style.fontSize = options.fontSize.toString();
-                } else {
-                    div.style.fontSize = options.fontSize + "px";
-                }
-            }
-
-            contents = document.createElement("script");
-            contents.setAttribute('type', 'math/tex');
-            contents.innerHTML = str;
-
-            div.appendChild(contents);
-        }
-        populateDiv();
-        document.body.appendChild(div);
-
         var callback = function() {
-            /* Get the frame where the current Math is displayed */
-            var frame = div.getElementsByClassName("MathJax_SVG")[0];
-            if(!frame) {
-                /* This is probably not the cleanest solution, but if
-                   we can't get a rendered equation just re-try */
-                populateDiv();
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, contents],
-                                  [callback]);
+            if (MathJax.tex2svg == undefined) {
+                setTimeout(callback, 100);
                 return;
+                /* If MathJax is not loaded, then lazily try again in a few millis */
             }
 
-            /* Load the SVG */
-            let svg = frame.getElementsByTagName("svg")[0];
-            if (svg === undefined) {
-                return;
-            }
+            let svg = MathJax.tex2svg(str).children[0];
+            let svgSource = svg.outerHTML;
+            let width = parseFloat(svg.getAttribute("width")) * parseFloat(options.fontSize);
+            let height = parseFloat(svg.getAttribute("height")) * parseFloat(options.fontSize);
 
-            let height = svg.parentNode.offsetHeight;
-            let width = svg.parentNode.offsetWidth;
-            svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-            svg.setAttribute("version", "1.1");
-            svg.setAttribute("height", height * ref.scale);
-            svg.setAttribute("width", width * ref.scale);
-            svg.removeAttribute("style");
-
-            ref.width = width;
-            ref.height = height;
-
-            /* Embed the global MathJAX elements to it */
-            var mathJaxGlobal = document.getElementById("MathJax_SVG_glyphs");
-            svg.appendChild(mathJaxGlobal.cloneNode(true));
-
-            /* Create a data URL */
-            var svgSource = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-                '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" ' +
-                '"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
-                svg.outerHTML;
             /* Fix for Safari, https://stackoverflow.com/questions/30273775/namespace-prefix-ns1-for-href-on-tagelement-is-not-defined-setattributens */
             svgSource = svgSource.replace(/NS\d+:href/gi, 'xlink:href');
 
-            var base64svg = "data:image/svg+xml;base64," +
+            let base64svg = "data:image/svg+xml;base64," +
                 btoa(unescape(encodeURIComponent(svgSource)));
 
-            /* Remove the temporary elements */
-            document.body.removeChild(div);
-
+            console.log(svgSource);
+            
             fabric.Image.fromURL(base64svg, function(img) {
                 img.height = height * ref.scale;
                 img.width = width * ref.scale;
@@ -866,9 +803,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
             }, options);
         };
 
-        MathJax.Hub.processSectionDelay = 0;
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, contents],
-                          [callback]);
+        callback();
     },
     initialize: function(text, options) {
         options = options || {};
