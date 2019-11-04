@@ -107,6 +107,32 @@ All question and student-submitted code will be present in various subdirectorie
 * Files submitted by the student will be copied to `/grade/student`
 * The `data` object that would normally be provided to the `grade` method of your question's server file will be serialized to JSON at `/grade/data/data.json`
 
+In particular, the file system structure of the grader looks like: 
+
+```text
+/grade                         # Root directory of the grading job
++-- /data                      # JSON dump of the data object from server.py
+|   `-- data.json   
+|
++-- /results                   # Report of test output formatted for PrairieLearn
+|   `-- results.json   
+|
++-- /serverFilesCourse         # Files from serverFilesCourse/ in the course directory
+|   +-- /my_testing_framework 
+|   |   +-- testfile           # Test framework configuration
+|   |   `-- run.sh             # Entrypoint called in the container
+|
++-- /student                   # Files submitted by student
+|   +-- studentfile1
+|   `-- studentfile2
+|
++-- /tests                     # Files found in the question's tests/ directory
+|   +-- test1
+|   `-- test2
+|
++-- /...                       # Additional directories and files as needed.
+```
+
 When your container starts up, your `entrypoint` script will be executed. After that, you can do whatever you want. The only requirement is that by the time that script finished, you should have written results for the grading job to `/grade/results/results.json`; the format for this is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
 
 ## Directory layout
@@ -209,27 +235,38 @@ We have to do a couple interesting things to run external grading jobs when Prai
 
 Running PrairieLearn locally with externally graded question support looks something like this:
 
-1. Create an empty directory to use to share job data between containers. This can live anywhere, but
-needs to be created first and referenced in the docker launch command.
-    * i.e. `mkdir $HOME/pl_ag_jobs`
-1. Modify your PL docker run call to look something like:
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v $PWD:/course \                # Map your current directly in as course content
-    -v $HOME/pl_ag_jobs:/jobs \      # Map jobs directory into /jobs
-    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
-    -v /var/run/docker.sock:/var/run/docker.sock \ # Mount docker into itself so container can spawn others
-    prairielearn/prairielearn        # PL docker image itself
+- Create an empty directory to use to share job data between containers. 
+    - This can live anywhere, but needs to be created first and referenced in 
+      the docker launch command.
+```bash
+mkdir ${HOME}/pl_ag_jobs
 ```
 
-Note: The sequence above works on Windows 10 as well as MacOS and Linux docker. Windows users might see problems running grading jobs:
+- Modify your PL docker run call to look something like:
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v ${PWD}:/course `# Map your current directly in as course content` \
+    -v ${HOME}/pl_ag_jobs:/jobs `# Map jobs directory into /jobs` \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    prairielearn/prairielearn 
+```
 
-* A `standard_init_linux.go:207: exec user process caused "no such file or directory"` error when
-grading likely means a OS new-line incompatibility with the `entrypoint` script in the externally
-graded question.
-    * One solution for this is to make a `.gitattributes` files in your PL repository with the line
+**Note:** The sequence above is verified to work on Windows 10 as well as MacOS and Linux docker. 
+
+##### Common issues
+
+Windows users might see problems running grading jobs. The most common issue is the:
+
+```bash
+standard_init_linux.go:207: exec user process caused "no such file or directory"
+```
+
+The error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
+graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
-format instead of converting them for Windows (which breaks mapping them back into docker). This mimics the [.gitattributes file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
+format instead of converting them for Windows (which breaks mapping them back into docker). 
+This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
 #### Running locally (native, not on Docker)
 

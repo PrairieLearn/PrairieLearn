@@ -9,6 +9,7 @@ from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
+import colors
 
 
 def to_json(v):
@@ -288,16 +289,26 @@ def get_color_attrib(element, name, *args):
     Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
     or '#1a2b3c'), or the (optional) default value. If the default value is
     not provided and the attribute is missing then an exception is thrown. If
-    the attribute is not a valid RGB string then an exception is thrown.
+    the attribute is not a valid RGB string then it will be checked against various
+    named colours.  If the attribute is still not valid an exception is thrown.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
-        return val
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            return val
+
     match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
     if match:
         return val
     else:
-        raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 
 
 def numpy_to_matlab(A, ndigits=2, wtype='f'):

@@ -1,0 +1,51 @@
+<pl-question-panel>
+
+
+</pl-question-panel>
+<p>
+<pl-drawing answers-name="vm_diag" gradable="true" width="540" height="1000" hide-answer-panel="false">
+
+    <pl-drawing-initial>
+        <pl-fixed-pin x1={{params.x1}} y1={{params.y1}}> </pl-fixed-pin>
+        <pl-roller x1={{params.x2}} y1={{params.y1}}> </pl-roller>
+        <pl-rod x1={{params.x1}} y1={{params.y1}} x2={{params.x2}} y2={{params.y1}}> </pl-rod>
+        <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x3}} y2={{params.y1}} dim-offset="80" label="a"></pl-dimensions>
+        <pl-dimensions x1={{params.x3}} y1={{params.y1}} x2={{params.x2}} y2={{params.y1}} dim-offset="80" label="2a"></pl-dimensions>
+        <pl-distributed-load anchor-is-tail="false" x1={{params.xm}} y1={{params.y1}} width={{params.a}} label2="w" offsety2="-60"> </pl-distributed-load>
+
+        <!-- Drawing the shear diagram -->
+        <pl-axes origin="{{params.V_origin}}"
+                 grid-label="{{params.label_V}}"
+                 supporting-lines="{{params.sup_line}}"
+                 label-y="V" >
+        </pl-axes>
+        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}" > </pl-graph-line>
+        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}" >  </pl-graph-line>
+
+        <!-- Drawing the moment diagram -->
+        <pl-axes origin="{{params.M_origin}}"
+                 grid-label="{{params.label_M}}"
+                 supporting-lines="{{params.sup_line_M}}"
+                 label-y="M">
+        </pl-axes>
+
+    </pl-drawing-initial>
+
+    <pl-drawing-answer draw-error-box="true">
+        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M1}}" end-gradients="{{params.dM1}}" offset-control-tol-y="20" offset-control-tol-x="20" > </pl-graph-line>
+        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M2}}" > </pl-graph-line>
+    </pl-drawing-answer>
+
+    <pl-controls>
+      <pl-controls-group label="Graded objects:" >
+          <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
+          <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
+      </pl-controls-group>
+      <pl-controls-group label="Help buttons (not graded):">
+          <pl-drawing-button type="delete"></pl-drawing-button>
+          <pl-drawing-button type="help-line"></pl-drawing-button>
+      </pl-controls-group>
+  </pl-controls>
+
+</pl-drawing>
+</p>
