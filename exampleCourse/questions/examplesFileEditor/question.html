@@ -1,0 +1,113 @@
+<pl-question-panel>
+  <p>
+    Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-editor-element"><code>pl-file-editor</code></a>.
+    The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-editor-element"><code>pl-file-editor</code></a>
+    is to allow users to directly write or modify code within their web browser. To require students to upload a code file,
+    please consider using  <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element"><code>pl-file-upload</code></a>.
+  </p>
+
+  <p>
+    <strong>Note:</strong>There is no autograding setup for this example.
+  </p>
+</pl-question-panel>
+
+<div class="card my-2">
+  <div class="card-header">
+    Part 1
+  </div>
+
+  <div class="card-body">
+
+    <pl-question-panel>
+      <p>
+        The default behavior for the <code>pl-file-editor</code> element is displayed here.
+        The only required parameter is <code>file-name</code>, which is the name of the file where the student answer will be saved to.
+        This file name will be displayed at the top left of the inbrowser file editing area.
+      </p>
+
+      <p> 
+        Implement a function that determines if a number is even or odd.
+      </p>
+    </pl-question-panel>
+
+    <pl-file-editor file-name="is_odd.py" >
+    </pl-file-editor>
+  </div>
+</div>
+
+
+<div class="card my-2">
+  <div class="card-header">
+     Part 2
+  </div>
+
+  <div class="card-body">
+
+    <pl-question-panel>
+      <p>
+        The file editor area is highly configurable. Within this example, the programming language syntax highlighting is enabled 
+        for <strong>Python</strong> using <code>ace-mode="ace/mode/python"</code>. In addition,
+        the editor area is pre-populated with a starter template using <code>source-file-name="initial-code.py"</code>
+      </p>
+
+      <p>
+         Implement a function that determines if a number is even or odd.
+      </p>
+    </pl-question-panel>
+
+    <pl-file-editor file-name="is_odd2.py" ace-mode="ace/mode/python" source-file-name="initial_code.py">
+    </pl-file-editor>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header">
+    Part 3
+  </div>
+
+  <div class="card-body">
+
+    <pl-question-panel>
+      <p>
+        For long programming assignments, the minimum and the maximum number of lines of code to simultaneously display can be set. 
+        The minimum value causes a pre-allocation of the editor height for its viewing area using <code>min-lines="40"</code>. Meanwhile,
+        the maximum bound indicates when the text editor will enable scrolling. For example, <code>max-lines="60"</code>, would allow
+        for the editor to display 60 lines of code before the scroll bar would be unlocked.
+        Both features can be tested by holding down "return" or "enter".
+      </p>
+
+      <p> 
+        Implement a function that determines if a number is even or odd.
+      </p>
+    </pl-question-panel>
+
+    <pl-file-editor file-name="is_odd3.py" source-file-name="spacing-demo.txt" min-lines="40" max-lines="60">
+    </pl-file-editor>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header">
+     Part 4
+  </div>
+
+  <div class="card-body">
+
+    <pl-question-panel>
+      <p>
+        Moreover, for variable length programming assignments, the file editor can be set to automatically expand when new lines are added. 
+        Expansion is enabled by setting <code>auto-resize="true"</code> and results in the editor window growing downward. It's good
+        practice to pair this option with <code>min-lines="20"</code> or <code>source-file-name="initial_code.txt"</code>to initially set the window height.
+        Try out the expansion by holding down "return" or "enter".
+      </p>
+
+      <p> 
+        Implement a function that determines if a number is even or odd.
+      </p>
+    </pl-question-panel>
+
+    <pl-file-editor file-name="is_odd4.py" auto-resize="true">
+    </pl-file-editor>
+  </div>
+</div>

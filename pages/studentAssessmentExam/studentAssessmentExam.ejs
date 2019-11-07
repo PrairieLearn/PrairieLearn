@@ -13,9 +13,12 @@
 
         <div class="card-body">
 
-          <p class="lead text-center">
-            Please wait until instructed to start by a proctor
-          </p>
+          <% if (authz_result.mode == 'Exam' || authz_result.mode == 'SEB' || authz_result.password != null ) { %>
+            <p class="lead text-center">
+              Please wait until instructed to start by a proctor
+            </p>
+          <% } %>
+          
           <p class="lead text-center">
             This is <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>

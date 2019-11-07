@@ -60,12 +60,12 @@ module.exports = {
                 module: require('./externalGraderLoad'),
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
             },
-/*            {
+            {
                 name: 'serverLoad',
                 module: require('./serverLoad'),
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
             },
-*/            {
+            {
                 name: 'serverUsage',
                 module: require('./serverUsage'),
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerUsageSec,

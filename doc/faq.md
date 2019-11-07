@@ -216,6 +216,44 @@ will create a new variant of the question.
 
 See [UUIDs in JSON files](uuid.md) for more details.
 
+## How can I use a dollar sign ($) without triggering math mode?
+
+Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
+
+To escape either math environment, consider using PrairieLearn's markdown tag and inline code syntax.
+
+```html
+<markdown>
+What happens if we use a `$` to reference the spreadsheet cell location `$A$1`?  
+</markdown> 
+```
+
+In scenarios that do not make sense for using the code environment, consider disabling math entirely by
+adding the `tex2jax_ignore` class to an HTML element.
+
+```html
+<div class="tex2jax_ignore">
+Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1 dollar, then how many pieces of fruit 
+can Mary get?
+</div>
+```
+
+See [Using Markdown in questions](question.md#using-markdown-in-questions) for more details on
+how `markdown` is implemented in PrairieLearn.
+
+## What steps do I have to take to access the parameter object in an external grader?
+
+By default, the external grader will receive a JSON dump of all values inside of the `data` object called
+ `data.json`. This file is located at:
+
+```sh
+/grader/data/data.json
+```
+
+To access the JSON data, read in the file within the testing framework.
+
+See [The Grading Process section in Externally graded questions](externalGrading.md#the-grading-process) for more details on the default external grader file system.
+
 ## Why can't I launch PrairieLearn with docker?
 
 When previewing content within a local copy of PrairieLearn, the web version

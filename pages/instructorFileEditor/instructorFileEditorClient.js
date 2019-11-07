@@ -120,7 +120,7 @@ window.InstructorFileEditor.prototype.onChange = function() {
 };
 
 window.InstructorFileEditor.prototype.getHash = function(contents) {
-    return this.b64EncodeUnicode(CryptoJS.SHA256(this.b64EncodeUnicode(contents)).toString());
+    return CryptoJS.SHA256(this.b64EncodeUnicode(contents)).toString();
 };
 
 window.InstructorFileEditor.prototype.checkDiff = function() {

@@ -3,6 +3,9 @@ import lxml.html
 import random
 import math
 
+WEIGHT_DEFAULT = 1
+INLINE_DEFAULT = False
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -74,7 +77,7 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     answers = data['params'].get(name, [])
-    inline = pl.get_boolean_attrib(element, 'inline', False)
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
@@ -170,7 +173,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
@@ -185,7 +188,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
     if correct_key is None:

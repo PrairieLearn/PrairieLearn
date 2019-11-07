@@ -65,11 +65,19 @@
         
         <pl-question-panel>
           Example of a fill in the blank element that accepts <b>numeric</b> values.
-         <p> Correct Input: <code>3.14</code> </p>
+         <p> Correct Input: <code>{{correct_answers.ans_rtol}}</code> </p>
         </pl-question-panel>
         
-        <pl-number-input answers-name="numericvalue" comparison="sigfig" digits="2"></pl-number-input>
+        <pl-number-input answers-name="ans_rtol" label="$x =$">
+        </pl-number-input>
 
+        <hr></hr>
+
+        <pl-question-panel>
+           <p> Correct Input: <code>{{correct_answers.ans_sig}}</code> </p>
+        </pl-question-panel>
+        <pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
+        </pl-number-input>
     </div>
 </div>
 
@@ -85,7 +93,7 @@
          <p> Correct Input: <code>42</code> </p>
         </pl-question-panel>
         
-        <pl-integer-input answers-name="integervalue"></pl-integer-input>
+        <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
 
     </div>
 </div>
@@ -102,7 +110,7 @@
          <p> Correct Input: <code>x + y + 1</code> </p>
         </pl-question-panel>
         
-        <pl-symbolic-input answers-name="mathexpvalue"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
 
     </div>
 </div>
@@ -116,10 +124,10 @@
         
         <pl-question-panel>
           Example of a fill in the blank element that accepts <b>string</b> values.
-         <p> Correct Input: <code>PrairieLearn</code> </p>
+         <p> Correct Input: <code>Learn</code> </p>
         </pl-question-panel>
         
-        <pl-string-input answers-name="stringvalue"></pl-string-input>
+        <pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
 
     </div>
 </div>
@@ -337,7 +345,7 @@ $C = <pl-matrix-latex params-name="matrixC" digits="1"></pl-matrix-latex>$
 
 <div class="card my-2">
     <div class="card-header">
-        <code>pl-graphviz-render</code>
+        <code>pl-graph</code>
     </div>
 
     <div class="card-body">
@@ -346,11 +354,39 @@ $C = <pl-matrix-latex params-name="matrixC" digits="1"></pl-matrix-latex>$
          <p>Example of a graphviz visualization.</p>
         </pl-question-panel>
 
-<pl-graphviz-render>
+<pl-graph>
 digraph G {
   A -> B
 }
-</pl-graphviz-render>
+</pl-graph>
 
+        <pl-question-panel>
+          <p>Example of a graphviz visualization.</p>
+        </pl-question-panel>
+
+        <pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-python-variable</code>
+    </div>
+
+    <div class="card-body">
+        
+        <pl-question-panel>
+         <p>Displaying contents of a Python dictionary.</p>
+        </pl-question-panel>
+
+        <pl-python-variable params-name="data_dictionary"></pl-python-variable>
+
+        <pl-question-panel>
+          <p>Displaying contents of a pandas data frame from Python.</p>
+        </pl-question-panel>
+   
+        <pl-python-variable params-name="df"></pl-python-variable>
+   
     </div>
 </div>

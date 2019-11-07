@@ -1,5 +1,7 @@
+# Execute commands regardless of physical state of files
+.PHONY: all jsdoc build preview
 
-.PHONY: all
+# Overall build scheme
 all: jsdoc \
 	models.pdf \
 	models.png \
@@ -8,11 +10,22 @@ all: jsdoc \
 	high-level.pdf \
 	high-level.png \
 	question-flow.pdf \
-	question-flow.png
+	question-flow.png \
+	build
 
-.PHONY: jsdoc
+# Generate the documentation for the JavaScript components
+# For details, see: http://usejsdoc.org/about-getting-started.html
 jsdoc:
 	../node_modules/.bin/jsdoc -c jsdoc-config.json
+
+# The mkdocs commands have to be on the same directory level as the mkdocs.yml
+# Thus, we jump one directory up and then run the command.
+# For details, see: https://github.com/mkdocs/mkdocs/issues/1276
+build:
+	cd ../ && mkdocs build
+
+preview:
+	cd ../ && mkdocs serve
 
 %.png: %.pdf
 	convert -density 300 $< $@
@@ -20,6 +33,7 @@ jsdoc:
 %.pdf: %.gv
 	dot -Tpdf $< > $@
 
+# Clean up the environment
 clean:
 	rm -rf \
 	models.{pdf,png,eps} \

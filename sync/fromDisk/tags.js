@@ -2,10 +2,10 @@ const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function getDuplicates(arr) {
-    const seen = {};
+    const seen = new Set();
     return arr.filter(v => {
-        const present = seen[v];
-        seen[v] = true;
+        const present = seen.has(v);
+        seen.add(v);
         return present;
     });
 }

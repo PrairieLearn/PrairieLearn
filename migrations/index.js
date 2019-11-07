@@ -131,7 +131,7 @@ module.exports._initWithLock = function(callback) {
                 (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
-                }
+                },
             );
         },
     ], (err) => {

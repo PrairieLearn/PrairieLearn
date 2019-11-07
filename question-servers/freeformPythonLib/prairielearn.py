@@ -4,10 +4,12 @@ import to_precision
 import numpy as np
 import uuid
 import sympy
+import pandas
 from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
+import colors
 
 
 def to_json(v):
@@ -50,6 +52,8 @@ def to_json(v):
                 row.append(str(v[i, j]))
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
+    elif isinstance(v, pandas.DataFrame):
+        return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
     else:
         return v
 
@@ -112,6 +116,12 @@ def from_json(v):
                     return M
                 else:
                     raise Exception('variable of type sympy_matrix should have value, variables, and shape')
+            elif v['_type'] == 'dataframe':
+                if ('_value' in v) and ('index' in v['_value']) and ('columns' in v['_value']) and ('data' in v['_value']):
+                    val = v['_value']
+                    return pandas.DataFrame(index=val['index'], columns=val['columns'], data=val['data'])
+                else:
+                    raise Exception('variable of type dataframe should have value with index, columns, and data')
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
     return v
@@ -279,16 +289,26 @@ def get_color_attrib(element, name, *args):
     Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
     or '#1a2b3c'), or the (optional) default value. If the default value is
     not provided and the attribute is missing then an exception is thrown. If
-    the attribute is not a valid RGB string then an exception is thrown.
+    the attribute is not a valid RGB string then it will be checked against various
+    named colours.  If the attribute is still not valid an exception is thrown.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
-        return val
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            return val
+
     match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
     if match:
         return val
     else:
-        raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 
 
 def numpy_to_matlab(A, ndigits=2, wtype='f'):
@@ -310,9 +330,9 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
-                if i < m - 1:
-                    A_str += ', '
+            A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:
@@ -476,12 +496,12 @@ def numpy_to_matlab_sf(A, ndigits=2):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                if np.iscomplexobj(A[i]):
-                    A_str += _string_from_complex_sigfig(A[i], ndigits)
-                else:
-                    A_str += to_precision.to_precision(A[i], ndigits)
-                if i < m - 1:
-                    A_str += ', '
+            if np.iscomplexobj(A[i]):
+                A_str += _string_from_complex_sigfig(A[i], ndigits)
+            else:
+                A_str += to_precision.to_precision(A[i], ndigits)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:

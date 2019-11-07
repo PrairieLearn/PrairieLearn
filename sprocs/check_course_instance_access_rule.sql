@@ -44,6 +44,11 @@ BEGIN
                 available := FALSE;
             END IF;
         END IF;
+        IF course_instance_access_rule.institution = 'gvsu.edu' THEN
+            IF uid !~ '^.+@mail\.gvsu\.edu' THEN
+                available := FALSE;
+            END IF;
+        END IF;
         IF course_instance_access_rule.institution = 'LTI' THEN
             -- get the uid row from users
             SELECT *

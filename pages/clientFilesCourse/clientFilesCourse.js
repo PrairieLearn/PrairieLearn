@@ -6,7 +6,7 @@ router.get('/*', function(req, res, _next) {
     var filename = req.params[0];
     var clientFilesDir = path.join(
         res.locals.course.path,
-        'clientFilesCourse'
+        'clientFilesCourse',
     );
     res.sendFile(filename, {root: clientFilesDir});
 });
