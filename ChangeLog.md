@@ -85,6 +85,8 @@
 
   * Change external grader documentation to show file system structure (James Balamuta).
 
+  * Change `grader-r` docker container to include `pltest` package (James Balamuta).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
