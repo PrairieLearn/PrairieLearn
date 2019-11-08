@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION
         IN history_interval interval,       -- how far back to look to estimate max load
         IN current_capacity_factor double precision, -- how much current capacity to maintain (e.g., 1.5 means 50% more than needed)
         IN history_capacity_factor double precision, -- how much capacity based on historical load
-        IN seconds_per_submission_per_user double precision, -- predicted time between submissions for each user
+        IN max_seconds_per_submission_per_user double precision, -- maximum predicted time between submissions for each user
         OUT instance_count integer,         -- current number of graders
         OUT instance_count_launching integer, -- number of healthy graders in process of launching
         OUT instance_count_in_service integer, -- number of healthy, in-service graders
@@ -32,6 +32,8 @@ CREATE OR REPLACE FUNCTION
         OUT age_of_oldest_job_in_report_sec double precision, -- longest time of jobs currently in "report" phase
         OUT history_jobs double precision,  -- max simultaneous jobs in previous history_interval
         OUT current_users integer,          -- current number of users viewing externally graded questions
+        OUT seconds_per_submission_per_user double precision, -- estimated spacing between submissions for each user
+        OUT history_seconds_per_submission_per_user double precision, -- min submission spacing in previous history_interval
         OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
         OUT jobs_per_instance double precision, -- estimated jobs that run per grader instance
         OUT desired_instances_by_ungraded_jobs double precision,
@@ -42,6 +44,8 @@ CREATE OR REPLACE FUNCTION
         OUT timestamp_formatted text
     )
 AS $$
+DECLARE
+    external_grading_jobs_per_second double precision;
 BEGIN
     -- ######################################################################
     -- get information from the DB about jobs that still need to be graded
@@ -106,6 +110,38 @@ BEGIN
         AND (now() - gl.date) < grader_load_interval;
 
     -- ######################################################################
+    -- total number of users looking at an externally-graded question
+
+    SELECT count(*)
+    INTO current_users
+    FROM
+        current_pages AS cp
+        JOIN questions AS q ON (q.id = cp.question_id)
+    WHERE
+        cp.date > now() - interval '1 hour'
+        AND q.grading_method = 'External';
+
+    -- ######################################################################
+    -- estimate seconds_per_submission_per_user
+
+    -- use a historical minimum so we correctly react to spikes in user numbers
+    SELECT least(coalesce(min(value), max_seconds_per_submission_per_user), max_seconds_per_submission_per_user)
+    INTO history_seconds_per_submission_per_user
+    FROM time_series
+    WHERE
+        name = 'seconds_per_submission_per_user'
+        AND date > now() - history_interval;
+
+    SELECT count(*) / extract(epoch from grader_load_interval)
+    INTO external_grading_jobs_per_second
+    FROM grading_jobs
+    WHERE
+        date > now() - grader_load_interval
+        AND grading_method = 'External';
+
+    seconds_per_submission_per_user := current_users / external_grading_jobs_per_second;
+
+    -- ######################################################################
     -- get user counts on externally graded questions
 
     WITH
@@ -138,14 +174,12 @@ BEGIN
         GROUP BY ceq.question_id
     )
     SELECT
-        coalesce(sum(ceq.user_count), 0),
         coalesce(sum(
             ceq.user_count
-            / seconds_per_submission_per_user
+            / history_seconds_per_submission_per_user
             * coalesce(extract(epoch FROM agt.grading_duration), 10) -- use 10 s if we don't have any data
         ), 0)
     INTO
-        current_users,
         predicted_jobs_by_current_users
     FROM
         current_external_questions AS ceq
@@ -205,6 +239,8 @@ BEGIN
         ('age_of_oldest_job_in_report_sec', age_of_oldest_job_in_report_sec),
         ('history_jobs', history_jobs),
         ('current_users', current_users),
+        ('seconds_per_submission_per_user', seconds_per_submission_per_user),
+        ('history_seconds_per_submission_per_user', history_seconds_per_submission_per_user),
         ('predicted_jobs_by_current_users', predicted_jobs_by_current_users),
         ('jobs_per_instance', jobs_per_instance),
         ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs),

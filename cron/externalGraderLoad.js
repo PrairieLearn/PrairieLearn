@@ -29,7 +29,7 @@ function getLoadStats(callback) {
         config.externalGradingHistoryLoadIntervalSec,
         config.externalGradingCurrentCapacityFactor,
         config.externalGradingHistoryCapacityFactor,
-        config.externalGradingSecondsPerSubmissionPerUser,
+        config.externalGradingMaxSecondsPerSubmissionPerUser,
     ];
     sqldb.callOneRow('grader_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
@@ -228,6 +228,22 @@ function sendStatsToCloudWatch(stats, callback) {
                     Timestamp: stats.timestamp_formatted,
                     Unit: 'Count',
                     Value: stats.current_users,
+                },
+                {
+                    MetricName: 'SecondsPerSubmissionPerUser',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Seconds',
+                    Value: stats.seconds_per_submission_per_user,
+                },
+                {
+                    MetricName: 'HistorySecondsPerSubmissionPerUser',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Seconds',
+                    Value: stats.history_seconds_per_submission_per_user,
                 },
                 {
                     MetricName: 'PredictedJobsByCurrentUsers',
