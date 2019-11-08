@@ -1,7 +1,7 @@
 #! /bin/bash
 
-##### SETUP #####
-echo "[setup] Establishing directories..."
+##### VARIABLE SETUP #####
+echo "[setup] Establishing variables for directories..."
 
 # Base directory
 JOB_DIR='/grade/'
@@ -24,8 +24,13 @@ AG_DIR=$JOB_DIR'run/'
 # Path /grade/results
 RESULTS_DIR=$JOB_DIR'results/'
 
-mkdir $AG_DIR
-mkdir $RESULTS_DIR
+##### Directory setup #####
+echo "[setup] Creating directories..."
+
+mkdir $AG_DIR $RESULTS_DIR
+
+##### File Copies #####
+echo "[setup] Copying files to directories..."
 
 # Copy tests and student code into the run directory
 cp -av $TEST_DIR. $AG_DIR
@@ -34,9 +39,15 @@ cp -rv $STUDENT_DIR. $AG_DIR
 # Copy the grader script and catch header into the run directory
 cp -v -R $SERVER_FILES_COURSE_DIR* $AG_DIR
 
-# Give the ag user ownership of the run folder
-/usr/bin/sudo chown ag $AG_DIR
-/usr/bin/sudo chmod -R +rw $AG_DIR
+# Ensure correct root permissions over the run/ directory
+# go-rwx: removes read, write, execute permissions
+# from the group and other users, but not user who owns the file
+/usr/bin/sudo chown -R root:root $AG_DIR
+/usr/bin/sudo chmod -R go-rwx    $AG_DIR
+
+# Give the ag user ownership of the run/ folder
+# /usr/bin/sudo chown ag $AG_DIR
+# /usr/bin/sudo chmod -R +rw $AG_DIR
 
 ##### EXECUTION #####
 echo "[run] Starting grading..."
@@ -44,12 +55,9 @@ echo "[run] Starting grading..."
 cd $AG_DIR
 echo $PWD
 
-# Run the autograder as non-root
-# !!! THIS IS IMPORTANT !!!
-# We do the capturing ourselves, so that only the stdout of the autograder
-# is used and that we aren't relying on any files that the student code could
-# easily create. we are also running the autograder as a limited user called ag
-/usr/bin/sudo -H -u ag bash -c 'Rscript pltest.R' > results.json
+# Run the autograder as root
+# Student code is executed as ag
+/usr/bin/sudo bash -c 'Rscript -e "pltest::run_testthat()"' > results.json
 
 # Protect against the scenario when a catastrophic failure occurs.
 if [ ! -s results.json ]
