@@ -9,7 +9,6 @@ CREATE OR REPLACE FUNCTION
         IN history_interval interval,       -- how far back to look to estimate max load
         IN current_capacity_factor double precision, -- how much current capacity to maintain (e.g., 1.5 means 50% more than needed)
         IN history_capacity_factor double precision, -- how much capacity based on historical load
-        IN seconds_per_submission_per_user double precision, -- predicted time between submissions for each user
         OUT instance_count integer,         -- current number of graders
         OUT instance_count_launching integer, -- number of healthy graders in process of launching
         OUT instance_count_in_service integer, -- number of healthy, in-service graders
@@ -32,6 +31,9 @@ CREATE OR REPLACE FUNCTION
         OUT age_of_oldest_job_in_report_sec double precision, -- longest time of jobs currently in "report" phase
         OUT history_jobs double precision,  -- max simultaneous jobs in previous history_interval
         OUT current_users integer,          -- current number of users viewing externally graded questions
+        OUT grading_jobs_per_user double precision, -- current grading jobs per user
+        OUT average_grading_jobs_per_user double precision, -- average grading jobs per user over recent history
+        OUT history_grading_jobs_per_user double precision, -- max average grading jobs per user in previous history_interval
         OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
         OUT jobs_per_instance double precision, -- estimated jobs that run per grader instance
         OUT desired_instances_by_ungraded_jobs double precision,
@@ -42,6 +44,8 @@ CREATE OR REPLACE FUNCTION
         OUT timestamp_formatted text
     )
 AS $$
+DECLARE
+    external_grading_jobs_per_second double precision;
 BEGIN
     -- ######################################################################
     -- get information from the DB about jobs that still need to be graded
@@ -106,50 +110,37 @@ BEGIN
         AND (now() - gl.date) < grader_load_interval;
 
     -- ######################################################################
-    -- get user counts on externally graded questions
+    -- total number of users looking at an externally-graded question
 
-    WITH
-    -- first determine the number of users currently looking at an externally-graded question
-    current_external_questions AS (
-        SELECT
-            q.id AS question_id,
-            count(*) AS user_count
-        FROM
-            current_pages AS cp
-            JOIN questions AS q ON (q.id = cp.question_id)
-        WHERE
-            cp.date > now() - interval '1 hour'
-            AND q.grading_method = 'External'
-        GROUP BY q.id
-    ),
-    -- next determine the average grading time for each of these questions
-    average_grading_times AS (
-        SELECT
-            ceq.question_id,
-            avg(gj.grading_finished_at - gj.grading_started_at) AS grading_duration
-        FROM
-            current_external_questions AS ceq
-            JOIN variants AS v ON (v.question_id = ceq.question_id)
-            JOIN submissions AS s ON (s.variant_id = v.id)
-            JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
-        WHERE
-            gj.date > now() - interval '1 day'
-            AND gj.graded_at IS NOT NULL
-        GROUP BY ceq.question_id
-    )
-    SELECT
-        coalesce(sum(ceq.user_count), 0),
-        coalesce(sum(
-            ceq.user_count
-            / seconds_per_submission_per_user
-            * coalesce(extract(epoch FROM agt.grading_duration), 10) -- use 10 s if we don't have any data
-        ), 0)
-    INTO
-        current_users,
-        predicted_jobs_by_current_users
+    SELECT count(*)
+    INTO current_users
     FROM
-        current_external_questions AS ceq
-        LEFT JOIN average_grading_times AS agt ON (agt.question_id = ceq.question_id);
+        current_pages AS cp
+        JOIN questions AS q ON (q.id = cp.question_id)
+    WHERE
+        cp.date > now() - interval '1 hour'
+        AND q.grading_method = 'External';
+
+    -- ######################################################################
+    -- load per user
+
+    grading_jobs_per_user := current_jobs / greatest(current_users, 1);
+
+    SELECT coalesce(avg(value), 0)
+    INTO average_grading_jobs_per_user
+    FROM time_series
+    WHERE
+        name = 'grading_jobs_per_user'
+        AND date > now() - interval '5 minutes';
+
+    SELECT coalesce(max(value), 0)
+    INTO history_grading_jobs_per_user
+    FROM time_series
+    WHERE
+        name = 'average_grading_jobs_per_user'
+        AND date > now() - history_interval;
+
+    predicted_jobs_by_current_users := history_grading_jobs_per_user * current_users;
 
     -- ######################################################################
     -- get recent historical load information
@@ -205,6 +196,9 @@ BEGIN
         ('age_of_oldest_job_in_report_sec', age_of_oldest_job_in_report_sec),
         ('history_jobs', history_jobs),
         ('current_users', current_users),
+        ('grading_jobs_per_user', grading_jobs_per_user),
+        ('average_grading_jobs_per_user', average_grading_jobs_per_user),
+        ('history_grading_jobs_per_user', history_grading_jobs_per_user),
         ('predicted_jobs_by_current_users', predicted_jobs_by_current_users),
         ('jobs_per_instance', jobs_per_instance),
         ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs),
@@ -220,5 +214,3 @@ BEGIN
     timestamp_formatted := to_char(now(), 'YYYY-MM-DD') || 'T' || to_char(now(), 'HH24:MI:SS') || 'Z';
 END;
 $$ LANGUAGE plpgsql VOLATILE;
-
-
