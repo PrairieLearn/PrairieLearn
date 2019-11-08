@@ -261,6 +261,14 @@ function sendStatsToCloudWatch(stats, callback) {
                     Value: stats.predicted_jobs_by_current_users,
                 },
                 {
+                    MetricName: 'PredictedJobsByHistoryUsers',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.predicted_jobs_by_history_users,
+                },
+                {
                     MetricName: 'JobsPerInstance',
                     Dimensions: dimensions,
                     StorageResolution: 1,
@@ -299,6 +307,14 @@ function sendStatsToCloudWatch(stats, callback) {
                     Timestamp: stats.timestamp_formatted,
                     Unit: 'Count',
                     Value: stats.desired_instances_by_current_users,
+                },
+                {
+                    MetricName: 'DesiredInstancesByHistoryUsers',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_by_history_users,
                 },
                 {
                     MetricName: 'DesiredInstances',

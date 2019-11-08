@@ -35,11 +35,13 @@ CREATE OR REPLACE FUNCTION
         OUT average_grading_jobs_per_user double precision, -- average grading jobs per user over recent history
         OUT history_grading_jobs_per_user double precision, -- max average grading jobs per user in previous history_interval
         OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
+        OUT predicted_jobs_by_history_users double precision, -- estimated jobs based on historical active users
         OUT jobs_per_instance double precision, -- estimated jobs that run per grader instance
         OUT desired_instances_by_ungraded_jobs double precision,
         OUT desired_instances_by_current_jobs double precision,
         OUT desired_instances_by_history_jobs double precision,
         OUT desired_instances_by_current_users double precision,
+        OUT desired_instances_by_history_users double precision,
         OUT desired_instances integer,      -- the actual number of requested grading instances
         OUT timestamp_formatted text
     )
@@ -152,6 +154,13 @@ BEGIN
         name = 'current_jobs'
         AND date > now() - history_interval;
 
+    SELECT coalesce(max(value), 0)
+    INTO predicted_jobs_by_history_users
+    FROM time_series
+    WHERE
+        name = 'predicted_jobs_by_current_users'
+        AND date > now() - history_interval;
+
     -- ######################################################################
     -- calculate the desired number of graders, using several methodologies
 
@@ -161,12 +170,14 @@ BEGIN
     desired_instances_by_current_jobs := current_jobs * current_capacity_factor / jobs_per_instance;
     desired_instances_by_history_jobs := history_jobs * history_capacity_factor / jobs_per_instance;
     desired_instances_by_current_users := predicted_jobs_by_current_users / jobs_per_instance;
+    desired_instances_by_history_users := predicted_jobs_by_history_users / jobs_per_instance;
     desired_instances := ceiling(greatest(
         1,
         desired_instances_by_ungraded_jobs,
         desired_instances_by_current_jobs,
         desired_instances_by_history_jobs,
-        desired_instances_by_current_users
+        desired_instances_by_current_users,
+        desired_instances_by_history_users
     ));
 
     -- ######################################################################
@@ -200,11 +211,13 @@ BEGIN
         ('average_grading_jobs_per_user', average_grading_jobs_per_user),
         ('history_grading_jobs_per_user', history_grading_jobs_per_user),
         ('predicted_jobs_by_current_users', predicted_jobs_by_current_users),
+        ('predicted_jobs_by_history_users', predicted_jobs_by_history_users),
         ('jobs_per_instance', jobs_per_instance),
         ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs),
         ('desired_instances_by_current_jobs', desired_instances_by_current_jobs),
         ('desired_instances_by_history_jobs', desired_instances_by_history_jobs),
         ('desired_instances_by_current_users', desired_instances_by_current_users),
+        ('desired_instances_by_history_users', desired_instances_by_history_users),
         ('desired_instances', desired_instances);
 
     -- ######################################################################
