@@ -82,7 +82,7 @@ const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/edit?
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionHtmlPath}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
 const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
-const badExampleCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
+const badTestCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
 
 const findEditUrlData = [
     {
@@ -213,7 +213,7 @@ const verifyEditData = [
 describe('test file editor', function() {
     this.timeout(20000);
 
-    describe('not the example course', function() {
+    describe('not the test course', function() {
         before('create test course files', function(callback) {
             createCourseFiles((err) => {
                 if (ERR(err, callback)) return;
@@ -257,14 +257,14 @@ describe('test file editor', function() {
         });
     });
 
-    describe('the example course', function() {
+    describe('the testCourse', function() {
 
         before('set up testing server', helperServer.before());
 
         after('shut down testing server', helperServer.after);
 
-        describe('disallow edits inside exampleCourse', function() {
-            badGet(badExampleCoursePathUrl);
+        describe('disallow edits inside testCourse', function() {
+            badGet(badTestCoursePathUrl);
         });
     });
 
