@@ -1,0 +1,38 @@
+{
+    "uuid": "68fb9668-adff-45f2-92db-b2d1c5d97268",
+    "type": "Exam",
+    "title": "Exam for Safe Exam Browser 2",
+    "set": "Exam",
+    "number": "4",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100
+        },
+	{
+        "mode": "SEB",
+        "credit": 100,
+        "startDate": "2000-01-01T01:01:01",
+        "endDate": "2300-01-01T02:02:02",
+        "SEBConfig": {
+            "password": "baseball",
+            "quitPassword": "out",
+            "allowedPrograms": ["excel"]
+        }
+	}
+    ],
+    "zones": [
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"id": "addNumbers",       "points": [5, 3, 1]},
+                {"id": "addVectors",       "points": [11, 9]},
+                {"id": "fossilFuelsRadio", "points": [17, 13, 7, 2]},
+                {"id": "partialCredit1",   "points": [19]},
+                {"id": "partialCredit2",   "points": [9, 7, 5, 3]},
+                {"id": "partialCredit3",   "points": [13, 13, 8, 0.5, 0.1]}
+            ]
+        }
+    ]
+}

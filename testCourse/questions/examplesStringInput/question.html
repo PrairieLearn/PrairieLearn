@@ -1,0 +1,82 @@
+<pl-question-panel>
+  <p> 1) For the following python code snippet, enter below the resulting string:</p>
+
+<pl-code language="python">
+a = "{{params.stringname}}"*{{params.a}}
+</pl-code>
+
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans1" label="a = ">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 2) For the following python code snippet, what is d = b + c?</p>
+<pl-code language="python">
+  b = "{{params.b}}"
+  c = "{{params.c}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans2" label="b + c = ">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p>3) Enter the string below, however include trailing and leading blanks.
+ When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
+ still be evaluated as correct. </p>
+<pl-code language="python">
+"{{params.d}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans3" remove-leading-trailing="true">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 4) Enter the string below, however include blank spaces between some of the numbers.
+When using the attribute <code>remove-spaces="true"</code>, the answer will
+still be evaluated as correct. This example also uses the attribute
+<code>placeholder="string"</code>,
+to add a placeholder indicating the expected input is of type "string".</p>
+<pl-code language="python">
+"{{params.d}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans4" remove-spaces="true" placeholder="string">
+</pl-string-input>
+</p>
+
+
+<pl-question-panel>
+<p> 5) The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
+  receiving the <code>INVALID</code> error. Leave the box below empty, and notice
+that you will not receive the <code>INVALID</code> feedback (and hence the question is graded). </p>
+</pl-question-panel>
+
+<p>
+<pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true">
+</pl-string-input>
+</p>
+
+<pl-question-panel>
+<p> 6) To allow for case insensitivity, use <code>ignore-case="true"</code>. 
+This will autoconvert both the student answer and the correct answer to lower case.  Entering the string below with any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
+
+<pl-code language="python">
+  "{{params.e}}"
+</pl-code>
+</pl-question-panel>
+  
+<p>
+<pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
+</pl-string-input>
+</p>

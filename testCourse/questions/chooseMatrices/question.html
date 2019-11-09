@@ -1,0 +1,25 @@
+<pl-question-panel>
+  <p>
+    Select the matrices below with dimensions ${{params.N}}\times{{params.N}}$:
+  </p>
+</pl-question-panel>
+<pl-checkbox answers-name='students' hide-answer-panel="true">
+  <pl-answer correct="true">
+    $<pl-matrix-latex params-name="N1"></pl-matrix-latex>$
+  </pl-answer>
+  <pl-answer correct="true">
+    $<pl-matrix-latex params-name="N2"></pl-matrix-latex>$
+  </pl-answer>
+  <pl-answer correct="false">
+    $<pl-matrix-latex params-name="M1"></pl-matrix-latex>$
+  </pl-answer>
+  <pl-answer correct="false">
+    $<pl-matrix-latex params-name="M2"></pl-matrix-latex>$
+  </pl-answer>
+  <pl-answer correct="false">
+    $<pl-matrix-latex params-name="M3"></pl-matrix-latex>$
+  </pl-answer>
+  <pl-answer correct="false">
+    $<pl-matrix-latex params-name="M4"></pl-matrix-latex>$
+  </pl-answer>
+</pl-checkbox>

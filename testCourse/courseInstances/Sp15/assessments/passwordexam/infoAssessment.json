@@ -1,0 +1,34 @@
+{
+    "uuid": "7806904c-78b9-4bc9-b8b4-8b6ae32dabb8",
+    "type": "Exam",
+    "title": "Exam with password diamond",
+    "set": "Exam",
+    "number": "6",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100,
+            "timeLimitMin": 50
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59",
+            "timeLimitMin": 50,
+            "password": "diamond"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"id": "addVectors",                 "points": [10, 5, 1]},
+                {"id": "fibonacciEditor",            "points": [10, 5, 1]},
+                {"id": "ballToss2",                  "points": [10, 5, 1]},
+                {"id": "positionTimeGraph",          "points": [10]}
+            ]
+        }
+    ]
+}

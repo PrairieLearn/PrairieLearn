@@ -1,0 +1,32 @@
+[
+    {
+        "first": "Matthew",
+        "last": "West",
+        "preferred": "Matt",
+        "uin": "001"
+    },
+    {
+        "first": "Craig",
+        "last": "Zilles",
+        "preferred": null,
+        "uin": "002"
+    },
+    {
+        "first": "Timothy",
+        "last": "Bretl",
+        "preferred": "Tim",
+        "uin": "003"
+    },
+    {
+        "first": "David",
+        "last": "Mussulman",
+        "preferred": "Dave",
+        "uin": "004"
+    },
+    {
+        "first": "Mariana",
+        "last": "Silva",
+        "preferred": null,
+        "uin": "005"
+    }
+]

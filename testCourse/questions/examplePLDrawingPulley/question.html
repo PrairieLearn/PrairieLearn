@@ -1,0 +1,56 @@
+<pl-question-panel>
+
+<p>
+<pl-drawing gradable="false" grid-size="20"  width="640" height={{params.height_canvas}}>
+    <pl-drawing-initial>
+        <pl-pulley x1={{params.x1}} y1={{params.y1}}  x2={{params.x2}} y2={{params.y2}}  x3={{params.x3}} y3={{params.y3}}  radius={{params.r}} color="gray1" label="A" offsetx="-20"></pl-pulley>
+        <pl-triangle x1={{params.x4}} y1={{params.y4}} x2={{params.x5}} y2={{params.y5}} x3={{params.x6}} y3={{params.y6}} color="brown1"></pl-triangle>
+        <pl-rod x1={{params.x1}} y1={{params.y1}}  x2={{params.x4}} y2={{params.y4}}></pl-rod>
+        <pl-rectangle x1={{params.x2}} y1={{params.y2}} width="40" height="60" color="green1"></pl-rectangle>
+        <pl-rectangle x1={{params.x3}} y1={{params.y3}} width={{params.wbox}} height={{params.hbox}} color="green1" angle={{params.angle_plane}}></pl-rectangle>
+        <pl-point x1={{params.x2}} y1={{params.y2}} label="B" offsetx="-10" offsety="10"></pl-point>
+        <pl-point x1={{params.x3}} y1={{params.y3}} label="C"></pl-point>
+
+        <pl-coordinates x1={{params.xcoord}} y1={{params.ycoord}} width="60" angle={{params.angle_plane}}></pl-coordinates>
+        <pl-arc-dimensions x1={{params.x6}} y1={{params.y6}}  radius="80" start-angle="180" end-angle={{params.end_angle}} label="\\theta" offsety="-10" offsetx="-15"></pl-arc-dimensions>
+
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+    <p>
+      a) Draw the corresponding free body diagram (disregard friction):
+    </p>
+
+</pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="false" width="640" height={{params.height_canvas}}>
+    <!-- Answer -->
+    <pl-drawing-answer draw-error-box="true">
+      <pl-vector x1={{params.x3}} y1={{params.y3}}   angle={{params.end_angle}}     offset-forward={{params.off2}} offset-backward={{params.off1}} ></pl-vector>
+      <pl-vector x1={{params.x3}} y1={{params.y3}}   angle="90"                     offset-forward={{params.off2}} offset-backward={{params.off1}} ></pl-vector>
+      <pl-vector x1={{params.x3}} y1={{params.y3}}   angle={{params.normal_angle}}  offset-forward={{params.off2}} offset-backward={{params.off1}} anchor-is-tail="false" ></pl-vector>
+    </pl-drawing-answer>
+
+    <!-- Initial drawing state -->
+    <pl-drawing-initial>
+      <pl-coordinates x1={{params.xcoord}} y1={{params.ycoord}} width="60" angle={{params.angle_plane}}></pl-coordinates>
+      <pl-rectangle x1={{params.x3}} y1={{params.y3}} width={{params.wbox}} height={{params.hbox}} color="green1" angle={{params.angle_plane}}></pl-rectangle>
+      <pl-point x1={{params.x3}} y1={{params.y3}}></pl-point>
+    </pl-drawing-initial>
+
+    <pl-controls>
+
+        <pl-controls-group >
+            <pl-drawing-button type="pl-vector"></pl-drawing-button>
+        </pl-controls-group>
+
+        <pl-controls-group >
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+
+    </pl-controls>
+</pl-drawing>
+</p>
+
+<pl-question-panel>

@@ -1,0 +1,47 @@
+<div class="card my-2">
+    <div class="card-header">
+        An example in which complex numbers are not allowed (<code>allow-complex="false"</code>)
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="x" variables="a, b, y" label="$x=$"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which complex numbers are allowed (<code>allow-complex="true"</code>)
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Write an expression for the complex number $z$ whose argument is $a$ (in radians) and whose modulus is $m$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="z" variables="a, m" allow-complex="true" label="$z=$"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which the correct answer is specified as a string in <code>server.py</code>
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Write an expression for the current $I$ in a resistor if the voltage is $V$ and the resistance is $R$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="I" variables="V, R" label="$I=$"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which we specify a different imaginary unit for display (<code>imaginary-unit-for-display="j"</code>)
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Write an expression for the complex number $c$ whose real part is $a$ and whose imaginary part is $b$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
+    </div>
+</div>

@@ -1,0 +1,41 @@
+{
+    "uuid": "28760b11-beb1-4507-bb0a-a15bc8eaf091",
+    "name": "QA 101",
+    "title": "Test Course",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+    "assessmentSets": [],
+    "topics": [
+        {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
+        {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},
+        {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
+        {"name": "Functions", "color": "pink3", "description": "Writing and calling functions in code."},
+        {"name": "Energy", "color": "purple3", "description": "Mechanical energy; kinetic and potential."},
+        {"name": "Particle kinetics", "color": "red3", "description": "Newton's equation for point masses."},
+        {"name": "Coding", "color": "turquoise3", "description": "Writing computer code."},
+        {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."},
+        {"name": "Linear algebra", "color": "brown3", "description": "Matrix math."},
+        {"name": "Test", "color": "gray3", "description": "Feature examples."},
+        {"name": "Names", "color": "red2", "description": "Questions to help you learn names."},
+        {"name": "Statistics", "color": "blue2", "description": "Probability distributions."}
+    ],
+    "tags": [
+        {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
+        {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
+        {"name": "mfsilva", "color": "blue1", "description": "Question originally written by mfsilva"},
+        {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
+        {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
+        {"name": "eliving2", "color": "gray1", "description": "Question originally written by eliving2"},
+        {"name": "nwalter2", "color": "pink1", "description": "Question originally written by nwalter2"},
+        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
+        {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
+        {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
+        {"name": "su18", "color": "gray1", "description": "Question written in Summer 2018"},
+        {"name": "fa18", "color": "gray1", "description": "Question written in Fall 2018"},
+        {"name": "v2", "color": "red1", "description": "v2 generation question"},
+        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
+        {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"},
+        {"name": "rstats", "color": "blue2", "description": "Question requires the use of R"}
+    ]
+}
