@@ -20,6 +20,10 @@ const b64Util = require('../lib/base64-util');
 const locals = {};
 let page, elemList;
 
+// Connect to the exampleCourse
+const courseDirExampleCourse = path.join(__dirname, '..', 'exampleCourse');
+
+// Uses course within tests/testFileEditor
 const baseDir = path.join(__dirname, 'testFileEditor');
 const courseTemplateDir = path.join(baseDir, 'courseTemplate');
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
@@ -82,7 +86,7 @@ const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/edit?
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionHtmlPath}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
 const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
-const badTestCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
+const badExampleCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
 
 const findEditUrlData = [
     {
@@ -257,14 +261,14 @@ describe('test file editor', function() {
         });
     });
 
-    describe('the testCourse', function() {
+    describe('the exampleCourse', function() {
 
-        before('set up testing server', helperServer.before());
+        before('set up testing server', helperServer.before(courseDirExampleCourse));
 
         after('shut down testing server', helperServer.after);
 
-        describe('disallow edits inside testCourse', function() {
-            badGet(badTestCoursePathUrl);
+        describe('disallow edits inside exampleCourse', function() {
+            badGet(badExampleCoursePathUrl);
         });
     });
 
