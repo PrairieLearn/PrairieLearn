@@ -17,7 +17,7 @@ require('./testLoadCourse');
 require('./testSyncCourseInfo');
 require('./testFileEditor');
 require('./testGetHomepage');
-require('./testQuestions');
+require('./testTestCourseQuestions');
 require('./testInstructorQuestions');
 require('./testInstructorAssessment');
 require('./testInstructorAssessmentDownloads');
