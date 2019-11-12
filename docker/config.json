@@ -1,6 +1,6 @@
 {
     "courseDirs": [
-        "/PrairieLearn/testCourse",
+        "/PrairieLearn/exampleCourse",
         "/course"
     ],
     "filesRoot": "/files"
