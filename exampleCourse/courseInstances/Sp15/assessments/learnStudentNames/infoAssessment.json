@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "Homework to help instructors learn names",
     "set": "Homework",
-    "number": "5",
+    "number": "4",
     "allowAccess": [
         {
             "role": "Instructor",
@@ -13,8 +13,8 @@
     "zones": [
         {
             "questions": [
-                {"id": "whichName", "points": 1, "maxPoints": 50},
-                {"id": "whichFace", "points": 1, "maxPoints": 50}
+                {"id": "demoStudentNames", "points": 1, "maxPoints": 50},
+                {"id": "demoStudentFaces", "points": 1, "maxPoints": 50}
             ]
         }
     ]
