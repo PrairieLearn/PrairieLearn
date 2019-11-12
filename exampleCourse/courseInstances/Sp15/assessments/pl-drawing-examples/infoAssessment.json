@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "PrairieLearn drawing element gallery",
     "set": "Homework",
-    "number": "7",
+    "number": "2",
     "allowAccess": [
         {
             "mode": "Public",
@@ -21,16 +21,16 @@
     "zones": [
         {
             "questions": [
-                {"id": "examplePLDrawingGallery",                 "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingSimpleTutorial",          "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingGradeVector",             "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingLiftingMechanism",        "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingCentroid",                "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingCollarRod",               "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingPulley",                  "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingGraphs",                  "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingInclinedPlane",           "points": 2, "maxPoints": 6},
-                {"id": "examplePLDrawingVMDiagrams",              "points": 2, "maxPoints": 6}
+                {"id": "elementDrawingGallery",                 "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingSimpleTutorial",          "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingGradeVector",             "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingLiftingMechanism",        "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingCentroid",                "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingCollarRod",               "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingPulley",                  "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingGraphs",                  "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingInclinedPlane",           "points": 2, "maxPoints": 6},
+                {"id": "elementDrawingVMDiagrams",              "points": 2, "maxPoints": 6}
 
 
 
