@@ -12,32 +12,18 @@ locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
 locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
 
-const qids = [
+const qidsTestCourse = [
     'addNumbers',
-    'ballToss2',
-    'customElement',
     'differentiatePolynomial',
     'downloadFile',
-    // FIXME: 'fibonacciUpload',
-    'functionValueFromPlot',
-    'multiplyTwoMatrices',
-    'multiplyTwoNumbers',
-    'positionTimeGraph',
-    'addBinary',
-    'addComplexNumbers',
-    'codeHighlight',
-    'multiplyTwoComplexMatrices',
-    'examplesStringInput',
-    'examplesMatrixComponentInput',
-    'examplesPanels',
-    // FIXME: 'rotateObject',
+    'positionTimeGraph'
 ];
 
-describe('Auto-test questions', function() {
+describe('Auto-test questions in testCourse', function() {
     this.timeout(60000);
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
-    qids.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));
+    qidsTestCourse.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));
 });
