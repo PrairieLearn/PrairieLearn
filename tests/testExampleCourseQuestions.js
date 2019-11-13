@@ -1,4 +1,5 @@
 var config = require('../lib/config');
+const path = require('path');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -17,20 +18,52 @@ const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
 
 
 const qidsExampleCourse = [
+    'demoAnsiOutput',
     'demoCalculation',
-    'demoRandomMultipleChoice',
-    'demoCustomElement',
-    'demoRandomSymbolic',
-    'elementFileDownload',
     // FIXME: 'demoCodeEditorAutograded',
+    'demoCodeUploadAutograded',
+    'demoCodeUploadManualGrade',
+    'demoCustomElement',
+    'demoCustomGradeFunction',
     'demoDynamicGraphs',
+    'demoFixedCheckbox',
     'demoMatrixAlgebra',
-    'elementCode',
     'demoMatrixComplexAlgebra',
-    'elementStringInput',
+    'demoRandomCheckbox',
+    'demoRandomDataFrame',
+    'demoRandomMultipleChoice',
+    'demoRandomSymbolic',
+    'demoStudentFaces',
+    'demoStudentNames',
+    'elementCheckbox',
+    'elementCode',
+    'elementDrawingCentroid',
+    'elementDrawingCollarRod',
+    'elementDrawingGallery',
+    'elementDrawingGradeVector',
+    'elementDrawingGraphs',
+    'elementDrawingInclinedPlane',
+    'elementDrawingLiftingMechanism',
+    'elementDrawingPulley',
+    'elementDrawingSimpleTutorial',
+    'elementDrawingVMDiagrams',
+    'elementElementCodeDocumentation',
+    'elementFileDownload',
+    'elementFileEditor',
+    'elementGraph',
+    'elementIntegerInput',
+    'elementMarkdown',
     'elementMatrixComponentInput',
+    'elementMatrixLatex',
+    'elementMultipleChoice',
+    'elementNumberInput',
     'elementPanels',
+    'elementPrairieDrawFigure',
+    'elementPythonVariable',
+    'elementStringInput',
+    'elementSymbolicInput',
     // FIXME: 'elementThreeJS',
+    'elementVariableOutput'
 ];
 
 describe('Auto-test questions in exampleCourse', function() {
