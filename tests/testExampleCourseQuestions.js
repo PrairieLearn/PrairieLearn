@@ -15,25 +15,22 @@ locals.isStudentPage = false;
 // Link against exampleCourseDir
 const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
 
+
 const qidsExampleCourse = [
-    'addNumbers',
-    'ballToss2',
-    'customElement',
-    'differentiatePolynomial',
-    'downloadFile',
-    // FIXME: 'fibonacciUpload',
-    'functionValueFromPlot',
-    'multiplyTwoMatrices',
-    'multiplyTwoNumbers',
-    'positionTimeGraph',
-    'addBinary',
-    'addComplexNumbers',
-    'codeHighlight',
-    'multiplyTwoComplexMatrices',
-    'examplesStringInput',
-    'examplesMatrixComponentInput',
-    'examplesPanels',
-    // FIXME: 'rotateObject',
+    'demoCalculation',
+    'demoRandomMultipleChoice',
+    'demoCustomElement',
+    'demoRandomSymbolic',
+    'elementFileDownload',
+    // FIXME: 'demoCodeEditorAutograded',
+    'demoDynamicGraphs',
+    'demoMatrixAlgebra',
+    'elementCode',
+    'demoMatrixComplexAlgebra',
+    'elementStringInput',
+    'elementMatrixComponentInput',
+    'elementPanels',
+    // FIXME: 'elementThreeJS',
 ];
 
 describe('Auto-test questions in exampleCourse', function() {
