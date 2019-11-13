@@ -3,6 +3,154 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add python libraries sklearn and nltk to plbase, and preload them in python trampoline (Binglin Chen).
+
+  * Add UUIDs to cron job logs for better debugging (Matt West).
+
+  * Add report of unsuccessful cron jobs (Matt West).
+
+  * Add dev docs for interfacing async/await code (Matt West).
+
+  * Add integration tests for daily cron jobs (Matt West).
+
+  * Add example docker grading images for externally graded questions (James Balamuta).
+
+  * Add ANSI color support to `pl-external-grader-results` element (Nathan Walters).
+
+  * Add `min-lines`, `max-lines`, and `auto-resize` to change the number of lines displayed in the `pl-file-editor` (James Balamuta).
+
+  * Add example question for the `pl-file-editor` element to element example gallery (James Balamuta).
+
+  * Add docs for `singleVariant` question option (Matt West).
+
+  * Add file attachments to student assessments and questions (Matt West).
+
+  * Add connecting IP address report in instructor effective user page (Dave Mussulman).
+
+  * Add SSL https support inside the Docker container (Dave Mussulman).
+
+  * Add `pl-hide-in-panel` element (Matt West).
+
+  * Add `pl-drawing` element (Mariana Silva and Nicolas Nytko)
+
+  * Add `pl-python-variable` element for displaying Pandas dataframes and Python variables (Nicolas Nytko).
+
+  * Add student Gradebook page (Matt West).
+
+  * Add CloudWatch statistics for external grader lifecycles (Matt West).
+
+  * Add python library `tzlocal` (James Balamuta).
+
+  * Add console stack traces on Node warnings (Matt West).
+
+  * Add support for Latex in `<markdown>` tags (Nathan Walters).
+
+  * Add support for rendering graphs using adjacency matrices in `pl-graph` (Nicolas Nytko).
+
+  * Add FAQ entries for escaping math mode in questions and accessing the `data` object on an external grader (James Balamuta).
+
+  * Add a new example question showing a probability mass function with `pl-python-variable` (James Balamuta).
+
+  * Add `gvsu.edu` as an institution option (Matt West).
+
+  * Add `scikit-learn`, `scikit-image`, and other data science libraries to external Python grader (Nicolas Nytko).
+
+  * Add 'paths-lookup' database tool (Dave Mussulman).
+
+  * Add more detailed grader statistics (Matt West).
+
+  * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
+
+  * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
+
+  * Change blocked-event-loop detection to be more lightweight in production (Matt West).
+
+  * Change file editing access to `Editor`, down from `Owner` (Matt West).
+
+  * Change element default setup to be top-down instead of inline (James Balamuta).
+
+  * Change `type: "Exam"` under `mode: "Public"` to not display "waiting for proctor..." message (James Balamuta).
+
+  * Change Travis script to rebuild `prairielearn/centos7-plbase` if any relevant files have changed (Nathan Walters).
+
+  * Change location of draft files for file editor from S3 (prod) / local (dev) to `file-store` (Tim Bretl).
+
+  * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
+
+  * Change SSL file paths to be configurable (Dave Mussulman).
+
+  * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
+
+  * Change documentation examples to be self-contained (James Balamuta).
+
+  * Change external grader documentation to show file system structure (James Balamuta).
+
+  * Change `grader-r` docker container to include `pltest` package (James Balamuta).
+
+  * Fix dead letter cron job for `async` v3 (Matt West).
+
+  * Fix deadlock when syncing course staff (Nathan Walters).
+
+  * Fix name of `migrations/145_file_edits__job_sequence_id__add.sql` (Matt West).
+
+  * Fix `<pl-string-input>` handling of HTML entities in input (Nathan Walters).
+
+  * Fix assessment password clearing cookie situations, issue #1579 (Dave Mussulman).
+
+  * Fix the syncing of missing tags and topics (Nathan Walters).
+
+  * Fix documentation formatting (Dave Mussulman).
+
+  * Fix handling of duplicate topics in `infoCourse.json` (Nathan Walters).
+
+  * Fix tags/topics duplicates checking when tag/topic is a builtin JS object property, like `toString` (Nathan Walters).
+
+  * Fix `Makefile` for documentation to build correctly (James Balamuta).
+
+  * Fix description of the points download description for assessments (James Balamuta, h/t Mariana Silva).
+
+  * Fix LTI callback URL (Matt West).
+
+  * Fix vulnerability in external grading that allows arbitrary files on the server to be overwritten (Nathan Walters).
+
+  * Fix bug in unicode encode/decode in file editor (Tim Bretl).
+
+  * Fix KeyboardInterrupt errors when Ctrl-C'ing out of docker (Dave Mussulman).
+
+  * Fix disabled server load reporting to CloudWatch (Matt West).
+
+  * Fix legacy Ace editor assets (Nathan Walters).
+
+  * Fix stack trace error printing for externally graded question errors (Dave Mussulman).
+
+  * Fix SSL generation to happen at docker build instead of on each run (Dave Mussulman).
+
+  * Fix external grading results containing NULL bytes (Matt West).
+
+  * Fix `MaxListenersExceededWarning` (Dave Mussulman).
+
+  * Fix jobsPerInstance grader statistic (Matt West).
+
+  * Fix null filenames from missing files in downloads (Matt West).
+
+  * Fix `assessments.assessment_set_id` to cascade on deletes (Matt West).
+
+  * Fix git merge during CI (Matt West).
+
+  * Fix to prevent instructor testing of externally-graded questions (Matt West).
+
+  * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
+
+  * Fix error reporting for v2 questions (Matt West).
+
+  * Fix detection of different internals during R package installation (James Balamuta).
+  
+  * Fix figures in `pl-drawing` documentation (Nicolas Nytko).
+
+* __3.2.0__ - 2019-08-05
+
+  * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
+
   * Add feedback for correct answers in submitted answer panel (Brian Mercer).
 
   * Add Learning Tools Interoperability LTI 1.1.1 tool provider functionality (Dave Mussulman).
@@ -68,7 +216,7 @@
   * Add `force-download` attribute to `pl-file-download` to specify whether to download or view in browser (Shreyas Patil).
 
   * Add images of elements to element documentation (James Balamuta).
-  
+
   * Add check that no issues are generated by question load in `testQuestions.js` (Tim Bretl).
 
   * Add support for Markdown in questions with the `<markdown>` tag (Nathan Walters).
@@ -90,6 +238,10 @@
   * Add tabs for course admin page (Tim Bretl).
 
   * Add in-browser editing of course files (Tim Bretl).
+
+  * Add question score information to `all_submissions` CSV download (Matt West).
+
+  * Add warning to `pl-checkbox` if `partial-credit-method` is set but `partial-credit` is not enabled (Nathan Walters).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
 
@@ -136,6 +288,24 @@
   * Change JSON schemas to be independently publishable from PrairieLearn (Nathan Walters).
 
   * Change Travis CI to recognize dependabot rather than greenkeeper (Matt West).
+
+  * Change developer docs to recommend the use of async/await (Matt West).
+
+  * Change syncing process to be faster (Nathan Walters).
+
+  * Change syncing process to allow for tags/topics that are not explicitly listed in `courseInfo.json` (Nathan Walters).
+
+  * Change UUIDs to no longer be globally unique; they are not unique only in the smallest possible scope (Nathan Walters).
+
+  * Change syncing process to validate that QIDs are not repeated in an assessment; this is a potentially breaking change (Nathan Walters).
+
+  * Change to PostgreSQL version 11 (from version 10) (Matt West).
+
+  * Change to NodeJS version 12 (from v10) (Matt West).
+
+  * Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
+
+  * Change file editor to simplify the use of drafts and to improve the user interface (Tim Bretl).
 
   * Fix load-reporting close during unit tests (Matt West).
 
@@ -243,11 +413,25 @@
 
   * Fix `async.doWhilst()` and `async.doUntil()` for `async` v3 (Matt West).
 
+  * Fix best submissions downloads to use ungraded submissions as a last resort (Matt West).
+
+  * Fix help text CSV upload example with `points` (Matt West, h/t Mariana Silva and James Balamuta).
+
+  * Fix CSRF checking for external grading live updates (Nathan Walters).
+
+  * Fix flaky test cases in `pl-number-input` which didn't handle comparison options properly (Mingjie Zhao).
+
   * Remove `allowIssueReporting` option in `infoCourseInstance.json` (Matt West).
 
   * Remove old temporary upgrade flag `tmp_upgraded_iq_status` (Matt West).
 
   * Remove `string_from_2darray_sf()` from `freeformPythonLib/prairielearn.py` (Liz Livingston)
+
+  * Remove `number` column from `question_tags` table; question tags are now sorted by `tags.number` (Nathan Walters).
+
+  * Remove support for `externalGradingOptions.files` in question `info.json` files (Nathan Walters).
+
+  * Remove `number` column and the corresponding uniqueness constraint from `jobs` table (Tim Bretl).
 
 * __3.1.0__ - 2018-10-08
 

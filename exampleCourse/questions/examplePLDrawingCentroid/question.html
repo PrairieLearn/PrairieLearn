@@ -1,0 +1,36 @@
+<pl-question-panel>
+
+    <p>
+      a) Mark the centroid of the figures:
+    </p>
+
+</pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="true" width="400" height={{params.height_canvas}}>
+    <!-- Answer -->
+    <pl-drawing-answer draw-error-box="true">
+      <pl-point x1={{params.xD}} y1={{params.yD}}  ></pl-point>
+      <pl-point x1={{params.xO}} y1={{params.yO}}  ></pl-point>
+    </pl-drawing-answer>
+
+    <!-- Initial drawing state -->
+    <pl-drawing-initial >
+      <pl-triangle x1={{params.xA}} y1={{params.yA}} x2={{params.xB}} y2={{params.yB}} x3={{params.xC}} y3={{params.yC}} color="green1"></pl-triangle>
+      <pl-rectangle x1={{params.xD}} y1={{params.yD}} height={{params.height_rectangle}} width={{params.base_rectangle}} color="pink1"></pl-rectangle>
+    </pl-drawing-initial>
+
+    <pl-controls>
+
+        <pl-controls-group label="Objects for grading:">
+            <pl-drawing-button type="pl-point"></pl-drawing-button>
+        </pl-controls-group>
+
+        <pl-controls-group label="Help buttons (not graded):">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+            <pl-drawing-button type="help-line"></pl-drawing-button>
+        </pl-controls-group>
+
+    </pl-controls>
+</pl-drawing>
+</p>

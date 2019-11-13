@@ -102,8 +102,8 @@
                 </td>
                 <td>
                   Total points for each student, formatted by username
-                  for upload into LMS gradebooks. Points range from 0 to
-                  100 (or higher if bonus credit was given).
+                  for upload into LMS gradebooks. Points range from 0 
+                  to the maximum for this assessment.
                 </td>
               </tr>
               <% if (assessment.multiple_instance) { %>
@@ -114,8 +114,7 @@
                 <td>
                   Total points for each assessment instance, formatted
                   by username for upload into LMS gradebooks. Points
-                  range from 0 to 100 (or higher if bonus credit was
-                  given).
+                  range from 0 to the maximum for this assessment.
                 </td>
               </tr>
               <% } // assessment.multiple_instance %>
@@ -178,7 +177,9 @@
                 </td>
                 <td>
                   Best submitted answers for each question for all
-                  students for all assessment instances.
+                  students for all assessment instances. If a student
+                  has no graded submissions for a question, then the
+                  last submission (if any) is used instead.
                 </td>
               </tr>
               <tr>
@@ -213,7 +214,9 @@
                   Best submitted files for each question for all
                   students for all assessment instances. Only data
                   from <tt>File</tt>-type questions will be included in
-                  the zip.
+                  the zip. If a student has no graded submissions for a
+                  question then the last submission (if any) is used
+                  instead.
                 </td>
               </tr>
             </tbody>

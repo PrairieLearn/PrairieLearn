@@ -1,12 +1,15 @@
 columns
-    commit_hash: text not null
     course_id: bigint not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deleted_at: timestamp with time zone
+    did_save: boolean default false
+    did_sync: boolean default false
     dir_name: text not null
+    file_id: bigint
     file_name: text not null
     id: bigint not null default nextval('file_edits_id_seq'::regclass)
-    local_tmp_dir: text
-    s3_bucket: text
+    job_sequence_id: bigint
+    orig_hash: text not null
     user_id: bigint not null
 
 indexes

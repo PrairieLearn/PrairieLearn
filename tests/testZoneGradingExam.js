@@ -140,10 +140,6 @@ describe('Zone grading exam assessment', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain "Please wait"', function() {
-                elemList = locals.$('p.lead:contains("Please wait")');
-                assert.lengthOf(elemList, 1);
-            });
             it('should contain "Exam 5"', function() {
                 elemList = locals.$('p.lead strong:contains("Exam 5")');
                 assert.lengthOf(elemList, 1);

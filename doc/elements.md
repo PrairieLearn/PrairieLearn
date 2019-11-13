@@ -1,24 +1,24 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides 
+When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
-split into three distinct groups: **submission**, **decorative**, and 
+split into three distinct groups: **submission**, **decorative**, and
 **conditional**. Within this document, all of PrairieLearn's elements are
 displayed alongside links to sample elements within the example course. To
 build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
 documentation.
 
 **Submission** elements act as a way to receive a response or input from the
-student. These elements are traditionally referred to as form input fields. 
+student. These elements are traditionally referred to as form input fields.
 PrairieLearn presently provides the following templated **input field** elements:
 
-- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only 
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value 
+- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value 
+- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
@@ -40,29 +40,34 @@ students. Elements under this category include ways to specify question markup,
 images, files, and code display. The following **decorative** elements are available:
 
 - [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
-  syntax highlighting. 
+  syntax highlighting.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
-- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in 
+- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
   code form for supported programming languages.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
-- [`pl-graphviz-render`](#pl-graphviz-render-element): Show a Graphviz DOT 
-  figure.
-  
+- [`pl-python-variable`](#pl-python-variable): Display formatted output of Python 
+  variables and pandas data frames.
+- [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
+  or with an adjacency matrix.
+- [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
+  collection of graphic objects
+
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
 The following **Conditional** elements are available:
 
 - [`pl-question-panel`](#pl-question-panel-element): Displays the text of a
   question.
-- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer 
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
+- [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
@@ -79,7 +84,7 @@ will be removed at a future date.
 
 ## `pl-multiple-choice` element
 
-A `pl-multiple-choice` element selects **one** correct answer and zero or more 
+A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
 
 #### Sample Element
@@ -104,7 +109,7 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 
-Inside the `pl-multiple-choice` element, each choice must be specified with 
+Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -123,7 +128,7 @@ Attribute | Type | Default | Description
 
 ## `pl-checkbox` element
 
-A `pl-checkbox` element displays a subset of the answers in a random order 
+A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
 
 #### Sample Element
@@ -158,7 +163,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
-Inside the `pl-checkbox` element, each choice must be specified with 
+Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -191,10 +196,48 @@ tolerances.
 
 #### Sample Element
 
-![](elements/pl-number-input.png)
+![](elements/pl-number-input-rtol.png)
 
+**question.html**
 ```html
-<pl-number-input answers-name="v_avg" comparison="sigfig" digits="2"></pl-number-input>
+<pl-number-input answers-name="ans_rtol" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["ans_rtol"] = x
+```
+
+---- 
+
+![](elements/pl-number-input-sigfig.png)
+
+**question.html**
+```html
+<pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
@@ -211,11 +254,11 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
-`show-help-text` | boolean | True | Show the question mark at the end of the input displaying required input parameters.
-`show-placeholder` | boolean | True | Show the placeholder text that shows the default comparison.
+`allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+`show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
-`show-correct-answer` | boolean | True | Whether to show the correct answer in the submitted answers panel.
+`show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
 
 #### Example implementations
 
@@ -241,8 +284,22 @@ Fill in the blank field that requires an **integer** input.
 
 ![](elements/pl-integer-input.png)
 
+**question.html**
 ```html
-<pl-integer-input answers-name="x"></pl-integer-input>
+<pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random whole number
+  x = random.randint(1, 10)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
@@ -277,8 +334,26 @@ Fill in the blank field that allows for mathematical symbol input.
 
 ![](elements/pl-symbolic-input.png)
 
+**question.html**
 ```html
-<pl-symbolic-input answers-name="ans"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+  
+  # Declare math symbols
+  sympy.var('x y')
+
+  # Describe the equation
+  z = x + y + 1
+
+  # Answer to fill in the blank input stored as JSON.
+  data['correct_answer']['symbolic_math'] = pl.to_json(z)
 ```
 
 #### Customizations
@@ -291,21 +366,12 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
-`allow-complex` | boolean | False | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
+`allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using:
-
-```python
-import prairielearn as pl
-import sympy
-
-def generate(data):
-    sympy.var('x y')
-    data['correct_answer']['ans'] = pl.to_json(x + y + 1)
-```
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
 
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
@@ -331,8 +397,17 @@ Fill in the blank field that allows for **string** value input.
 
 ![](elements/pl-string-input.png)
 
+**question.html**
 ```html
-<pl-string-input answers-name="x"></pl-string-input>
+<pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
+```
+
+**server.py**
+```python
+def generate(data):
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations
@@ -345,10 +420,10 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
-`remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
-`remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
-`allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`ignore-case` | boolean | False | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO"). 
+`remove-leading-trailing` | boolean | false | Whether or not to remove leading and trailing blank spaces from the input string.
+`remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
+`allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 #### Example implementations
@@ -365,16 +440,32 @@ Attribute | Type | Default | Description
 
 ## `pl-matrix-component-input` element
 
-A `pl-matrix-component-input` element displays a grid of input fields with 
-the same shape of the variable stored in `answers-name` 
+A `pl-matrix-component-input` element displays a grid of input fields with
+the same shape of the variable stored in `answers-name`
 (only 2D arrays of real numbers can be stored in `answers-name`).
 
 #### Sample Element
 
 ![](elements/pl-matrix-component-input.png)
 
+
+**question.html**
 ```html
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+
+  # Generate a random 3x3 matrix
+  mat = np.random.random((3, 3))
+
+  # Answer to each matrix entry converted to JSON
+  data['correct_answers']['matrixA'] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -388,7 +479,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
+`allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 
 #### Details
@@ -399,7 +490,7 @@ The question will only be graded when all matrix components are entered.
 
 - [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
 
-#### See also 
+#### See also
 
 - [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
@@ -417,8 +508,22 @@ format (e.g. MATLAB or Python's numpy).
 
 ![](elements/pl-matrix-input.png)
 
+**question.html**
 ```html
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  # Randomly generate a 2x2 matrix
+  matrixB = np.random.random((2, 2))
+
+  # Answer exported to question.
+  data['correct_answers']['matrixB'] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -432,21 +537,24 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
 
 #### Details
 
-Here is an example of valid MATLAB format:
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
+The following are valid input format options: 
+
+**MATLAB format:**
 ```
 [1.23; 4.56]
 ```
 
-Here is an example of valid Python format:
+**Python format:**
 ```
 [[1.23], [4.56]]
 ```
 
-A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
+**Note:** A scalar will be accepted either as a matrix of size 1 x 1 (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
 
 In the answer panel, a `pl-matrix-input` element displays the correct answer, allowing the user to switch between matlab and python format.
 
@@ -492,9 +600,18 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`min-lines` | integer | None | Minimum number of lines the editor should show initially.
+`max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+
+#### Details
+
+When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
+This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
 
 #### Example implementations
 
+- [`examplesFileEditor`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesFileEditor)
 - [`fibonacciEditor`: Receive code written in a web browser and automatically grade it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
 
 #### See also
@@ -699,6 +816,76 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 -----
 
+## `pl-python-variable` element
+
+Displays the value of a Python variable, with formatted display of Pandas DataFrames.
+
+#### Sample Elements
+
+**Display Python variable value**
+
+![](elements/pl-python-variable.png)
+
+**question.html**
+```html
+<pl-python-variable params-name="variable"></pl-python-variable>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+
+def generate(data):
+  data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
+  data['params']['variable'] = pl.to_json(data_dictionary)
+```
+
+---
+
+**Display of a Pandas DataFrame**
+
+![](elements/pl-python-variable2.png)
+
+**question.html**
+```html
+<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import pandas as pd
+
+def generate(data):
+  d = {'col1': [1, 2], 'col2': [3, 4]}
+  df = pd.DataFrame(data=d)
+  data['params']['df'] = pl.to_json(df)
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | The name of the key in `data['params']` to get a value from
+`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
+`suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
+`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+
+#### Details
+
+As of right now, the element supports displaying either Pandas DataFrames as an HTML table or Python objects via `repr()`.  When setting a parameter to a DataFrame, use PrairieLearn's built in `pl.to_json()`.
+
+#### Example implementations
+
+- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
+- [`probabilityMassFunction`: Display the results of Probability Mass Function as a Table](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/probabilityMassFunction)
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+
 ## `pl-figure` element
 
 Display a statically or dynamically generated image.
@@ -813,11 +1000,30 @@ supported programming languages (e.g. MATLAB, Mathematica, or Python).
 
 ![](elements/pl-variable-output.png)
 
+**question.html**
 ```html
 <pl-variable-output digits="3">
     <variable params-name="matrixC">C</variable>
     <variable params-name="matrixD">D</variable>
 </pl-variable-output>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+
+  # Create fixed matrix
+  matrixC = np.matrix('5 6; 7 8')
+  matrixD = np.matrix('-1 4; 3 2')
+  # Random matrices can be generated with:
+  # mat = np.random.random((2, 2))
+  
+  # Export each matrix as a JSON object for the question view.
+  data['params']['matrixC'] = pl.to_json(matrixC)
+  data['params']['matrixD'] = pl.to_json(matrixD)
 ```
 
 #### Customizations
@@ -828,9 +1034,9 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `digits` | integer | — | Number of digits to display after the decimal.
 `default-tab` | string | 'matlab' | Select the active tab.
-`show-matlab` | boolean | True | Toggles the display of the Matlab tab.
-`show-mathematica` | boolean | True | Toggles the display of the Mathematica tab.
-`show-python` | boolean | True | Toggles the display of the Python tab.
+`show-matlab` | boolean | true | Toggles the display of the Matlab tab.
+`show-mathematica` | boolean | true | Toggles the display of the Mathematica tab.
+`show-python` | boolean | true | Toggles the display of the Python tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
@@ -843,21 +1049,25 @@ Attribute | Type | Default | Description
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into
+either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be
+either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
+text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Below
+are samples of the format displayed under each language tab.
 
-Here is an example of MATLAB format:
+**MATLAB format:**
 
 ```
 A = [1.23; 4.56]; % matrix
 ```
 
-Here is an example of the Mathematica format:
+**Mathematica format:**
 
 ```
 A = [1.23; 4.56]; (* matrix *)
 ```
 
-Here is an example of Python format:
+**Python format:**
 
 ```
 import numpy as np
@@ -885,15 +1095,32 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 ## `pl-matrix-latex` element
 
-Displays a matrix written in latex using mathjax.
+Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
-#### Customizations
+#### Sample Element
 
 ![](elements/pl-matrix-latex.png)
 
+**question.html**
 ```html
-<pl-matrix-latex params-name="A"></pl-matrix-latex>
+$$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
 ```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  
+  # Construct a matrix
+  mat = np.matrix('1 2; 3 4')
+  
+  # Export matrix to be displayed in question.html
+  data['params']['matrixC'] = pl.to_json(mat)
+```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -904,23 +1131,32 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
+one of the following will be returned. 
 
-If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
+- **scalar**
+    - a string containing the scalar not wrapped in brackets.
+- **numpy 2D array**
+    - a string formatted using the `bmatrix` LaTeX style.
 
-If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
-    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+Sample LaTeX formatting: 
 
-For example, if we want to display the following matrix operations
+```latex
+\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
+```
+
+As an example, consider the need to display the following matrix operations:
+
 ```
 x = [A][b] + [c]
 ```
-we write
+
+In this case, we would write:
 
 ```html
 ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 <pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
-+ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
++ <pl-matrix-latex params-name="c" digits="1"></pl-matrix-latex>$
 ```
 
 #### Example implementations
@@ -969,21 +1205,43 @@ The provided `script-name` corresponds to a file located within the director for
 
 -----
 
-## `pl-graphviz-render` element
+## `pl-graph` element
 
 Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
-Graphviz DOT visualizations .
+Graphviz DOT visualizations.
 
-#### Sample Element
+#### Sample Elements
 
-![](elements/pl-graphviz-render.png)
+![](elements/pl-graph1.png)
 
+**question.html**
 ```html
-<pl-graphviz-render>
+<pl-graph>
 digraph G {
   A -> B
 }
-</pl-graphviz-render>
+</pl-graph>
+```
+
+---
+
+![](elements/pl-graph2.png)
+
+**question.html**
+```html
+<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  mat = np.random.random((3, 3))
+  mat = mat / np.linalg.norm(mat, 1, axis=0)
+  data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
+  data['params']['matrix'] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -991,10 +1249,16 @@ digraph G {
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
+`params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
+`params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
+`weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
+`weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
+
 
 #### Example implementations
 
-- [`graphvizRender`: Sample creation of a graphviz graphic.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/graphvizRender)
+- [`examplesGraph`: Sample creation of graphs](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesGraph)
 
 #### See also
 
@@ -1003,6 +1267,16 @@ Attribute | Type | Default | Description
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
 -----
+
+## `pl-drawing` element
+
+Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
+Users can also add drawing objects to the canvas for grading.
+
+See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
+
+-----
+
 
 ## Conditional Elements
 
@@ -1021,8 +1295,8 @@ Displays the contents of question directions.
 ### Details
 
 Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information 
-between these tags is hidden. If content exists outside of a question panel, 
+either makes a submission or receives the correct answer, the information
+between these tags is hidden. If content exists outside of a question panel,
 then it will be displayed alongside or answer.
 
 #### Example implementations
@@ -1033,6 +1307,7 @@ then it will be displayed alongside or answer.
 
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 -----
 
@@ -1061,7 +1336,9 @@ may be correct, incorrect, or invalid.
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 -----
@@ -1082,7 +1359,7 @@ receive further answers for grading.
 
 ### Details
 
-Contents are only displayed when the answer panel is requested. 
+Contents are only displayed when the answer panel is requested.
 Common reasons that trigger the display of this element are:
 
 - The question is fully correct
@@ -1095,7 +1372,53 @@ Common reasons that trigger the display of this element are:
 
 #### See also
 
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+- [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+
+-----
+
+
+## `pl-hide-in-panel` element
+
+Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
+
+#### Sample Element
+
+```html
+<pl-hide-in-panel submission="true" answer="true">
+  This text will be hidden in the submission panel and answer panel.
+</pl-hide-in-panel>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`question` | boolean | false | Whether to hide the element contents in the question panel.
+`submission` | boolean | false | Whether to hide the element contents in the submission panel.
+`answer` | boolean | false | Whether to hide the element contents in the answer panel.
+
+### Details
+
+Hide the element contents in those panels for which the corresponding
+attribute is `true`. This is the reverse of
+[`pl-question-panel`](#pl-question-panel-element),
+[`pl-submission-panel`](#pl-submission-panel-element), or
+[`pl-answer-panel`](#pl-answer-panel-element), all of which explicitly show the
+element contents only in a specific panel.
+
+#### Example implementations
+
+- [`examplesPanels`: Showing and hiding text in different panels.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPanels)
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 
@@ -1104,7 +1427,7 @@ Common reasons that trigger the display of this element are:
 
 ## `pl-external-grader-results` element
 
-Displays results from externally-graded questions. 
+Displays results from externally-graded questions.
 
 #### Sample Element
 

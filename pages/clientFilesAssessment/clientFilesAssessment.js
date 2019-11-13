@@ -10,7 +10,7 @@ router.get('/*', function(req, res, _next) {
         res.locals.course_instance.short_name,
         'assessments',
         res.locals.assessment.tid,
-        'clientFilesAssessment'
+        'clientFilesAssessment',
     );
     res.sendFile(filename, {root: clientFilesDir});
 });

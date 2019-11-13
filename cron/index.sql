@@ -13,3 +13,8 @@ VALUES
 ON CONFLICT (name)
 DO UPDATE
 SET date = EXCLUDED.date;
+
+-- BLOCK update_succeeded_at
+UPDATE cron_jobs
+SET succeeded_at = now()
+WHERE name = $name;

@@ -12,7 +12,7 @@ module.exports = {
     init(callback) {
         const lockName = 'sprocs';
         logger.verbose(`Waiting for lock ${lockName}`);
-        namedLocks.waitLock(lockName, (err, lock) => {
+        namedLocks.waitLock(lockName, {}, (err, lock) => {
             if (ERR(err, callback)) return;
             logger.verbose(`Acquired lock ${lockName}`);
             this._initWithLock((err) => {
@@ -65,10 +65,7 @@ module.exports = {
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
-            'course_instances_with_uuid_elsewhere.sql',
-            'questions_with_uuid_elsewhere.sql',
             'questions_select.sql',
-            'assessments_with_uuid_elsewhere.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
             'admin_assessment_question_number.sql',
@@ -118,6 +115,8 @@ module.exports = {
             'users_select_or_insert_lti.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
+            'files_insert.sql',
+            'files_delete.sql',
             'issues_insert_for_variant.sql',
             'issues_insert_for_assessment.sql',
             'issues_update_open.sql',
@@ -144,6 +143,13 @@ module.exports = {
             'assessment_instances_points.sql',
             'sync_course_tags.sql',
             'sync_question_tags.sql',
+            'sync_questions.sql',
+            'sync_assessments.sql',
+            'sync_course_staff.sql',
+            'sync_assessment_sets.sql',
+            'sync_topics.sql',
+            'sync_course_instances.sql',
+            'lock_timeout_set.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

@@ -4,6 +4,11 @@ import chevron
 import os
 
 
+WIDTH_DEFAULT = None
+TYPE_DEFAULT = 'static'
+DIRECTORY_DEFAULT = 'clientFilesQuestion'
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory'])
@@ -16,10 +21,10 @@ def render(element_html, data):
     file_name = pl.get_string_attrib(element, 'file-name')
 
     # Get type (default is static)
-    file_type = pl.get_string_attrib(element, 'type', 'static')
+    file_type = pl.get_string_attrib(element, 'type', TYPE_DEFAULT)
 
     # Get directory (default is clientFilesQuestion)
-    file_directory = pl.get_string_attrib(element, 'directory', 'clientFilesQuestion')
+    file_directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':
@@ -41,7 +46,7 @@ def render(element_html, data):
     file_url = os.path.join(base_url, file_name)
 
     # Get width (optional)
-    width = pl.get_string_attrib(element, 'width', None)
+    width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
 
     # Create and return html
     html_params = {'src': file_url, 'width': width}

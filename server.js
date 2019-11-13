@@ -9,11 +9,13 @@ const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const http = require('http');
 const https = require('https');
-const blocked = require('blocked-at');
+const blocked = require('blocked');
+const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
-const multer  = require('multer');
+const multer = require('multer');
+const filesize = require('filesize');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -34,6 +36,8 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const workers = require('./lib/workers');
 
+
+process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -70,11 +74,17 @@ if (config.startServer) {
     }
 }
 
-if (config.blockedWarnEnable) {
-    blocked((time, stack) => {
+if (config.blockedAtWarnEnable) {
+    blockedAt((time, stack) => {
         const msg = `BLOCKED-AT: Blocked for ${time}ms`;
-        logger.verbose(msg, {stack});
+        logger.verbose(msg, {time, stack});
         console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+    }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
+} else if (config.blockedWarnEnable) {
+    blocked((time) => {
+        const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
+        logger.verbose(msg, {time});
+        console.log(msg); // eslint-disable-line no-console
     }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
 }
 
@@ -121,12 +131,15 @@ if (config.hasAzure) {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fieldSize: 1e7, // max in bytes
-        fileSize: 1e7, // max in bytes
-        parts: 100, // max number of fields + files
+        fieldSize: config.fileUploadMaxBytes,
+        fileSize: config.fileUploadMaxBytes,
+        parts: config.fileUploadMaxParts,
     },
 });
+config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {base: 10, round: 0});
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -142,6 +155,11 @@ if ('localRootFilesDir' in config) {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+
+// Support legacy use of ace by v2 questions
+app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+app.use('/javascripts/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
+
 
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
@@ -428,6 +446,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
+app.use('/pl/course_instance/:course_instance_id/gradebook', [
+    require('./middlewares/logPageView')('studentGradebook'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/studentGradebook/studentGradebook'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessments', [
     require('./middlewares/logPageView')('studentAssessments'),
     require('./middlewares/studentAssessmentAccess'),
@@ -590,9 +613,9 @@ var server;
 module.exports.startServer = function(callback) {
     if (config.serverType === 'https') {
         var options = {
-            key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
-            cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
-            ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')],
+            key: fs.readFileSync(config.sslKeyFile),
+            cert: fs.readFileSync(config.sslCertificateFile),
+            ca: [fs.readFileSync(config.sslCAFile)],
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);
