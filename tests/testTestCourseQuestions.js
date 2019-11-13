@@ -16,7 +16,7 @@ const qidsTestCourse = [
     'addNumbers',
     'differentiatePolynomial',
     'downloadFile',
-    'positionTimeGraph'
+    'positionTimeGraph',
 ];
 
 describe('Auto-test questions in testCourse', function() {
