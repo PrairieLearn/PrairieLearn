@@ -70,21 +70,24 @@
               <% if (!locals.course.options.isExampleCourse) { %>
                 <tr>
                   <th>Files</th>
-                  <td><%- include('instructorFileList', {files_to_list: locals.files.files,
-                                                         file_label: "",
-                                                         file_dir: ""}); %></td>
+                  <td><%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.files,
+                                      file_label: "",
+                                      file_dir: ""}); %></td>
                 </tr>
                 <tr>
                   <th>Client Files</th>
-                  <td><%- include('instructorFileList', {files_to_list: locals.files.clientFiles,
-                                                         file_label: "Client",
-                                                         file_dir: "clientFilesQuestion"}); %></td>
+                  <td><%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.clientFiles,
+                                      file_label: "Client",
+                                      file_dir: "clientFilesQuestion"}); %></td>
                 </tr>
                 <tr>
                   <th>Server Files</th>
-                  <td><%- include('instructorFileList', {files_to_list: locals.files.serverFiles,
-                                                         file_label: "Server",
-                                                         file_dir: "serverFilesQuestion"}); %></td>
+                  <td><%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.serverFiles,
+                                      file_label: "Server",
+                                      file_dir: "serverFilesQuestion"}); %></td>
                 </tr>
               <% } %>
               <tr>
