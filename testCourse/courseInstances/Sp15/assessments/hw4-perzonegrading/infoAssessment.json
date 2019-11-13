@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "Homework to test per-zone grading",
     "set": "Homework",
-    "number": "6",
+    "number": "4",
     "allowAccess": [{
             "mode": "Public",
             "role": "TA",
