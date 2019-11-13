@@ -12,7 +12,10 @@ locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
 locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
 
-const qids = [
+// Link against exampleCourseDir
+const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
+
+const qidsExampleCourse = [
     'addNumbers',
     'ballToss2',
     'customElement',
@@ -33,11 +36,11 @@ const qids = [
     // FIXME: 'rotateObject',
 ];
 
-describe('Auto-test questions', function() {
+describe('Auto-test questions in exampleCourse', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before());
+    before('set up testing server', helperServer.before(exampleCourseDir));
     after('shut down testing server', helperServer.after);
 
-    qids.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));
+    qidsExampleCourse.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));
 });
