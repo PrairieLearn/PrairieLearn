@@ -8,6 +8,36 @@ const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 
+function canEdit(params, callback) {
+    const res = params.res;
+    const req = params.req;
+
+    // Do not allow users to edit without permission
+    if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
+
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.options.isExampleCourse) {
+        return callback(error.make(400, `attempting to edit example course`, {
+            locals: res.locals,
+            body: req.body,
+        }));
+    }
+
+    // Do not allow users to edit files outside the course
+    if (params.fileName) {
+        const fullPath = path.join(res.locals.course.path, params.fileName);
+        const relPath = path.relative(res.locals.course.path, fullPath);
+        if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
+            return callback(error.make(400, `attempting to edit file outside course directory: ${params.fileName}`, {
+                locals: res.locals,
+                body: req.body,
+            }));
+        }
+    }
+
+    callback(null);
+}
+
 function doEdit(edit, locals, callback) {
     const options = {
         course_id: locals.course.id,
@@ -365,4 +395,5 @@ function doEdit(edit, locals, callback) {
 
 module.exports = {
     doEdit,
+    canEdit,
 };
