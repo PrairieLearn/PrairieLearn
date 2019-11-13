@@ -63,7 +63,7 @@ const qidsExampleCourse = [
     'elementStringInput',
     // FIXME: 'elementSymbolicInput',
     // FIXME: 'elementThreeJS',
-    'elementVariableOutput'
+    'elementVariableOutput',
 ];
 
 describe('Auto-test questions in exampleCourse', function() {
