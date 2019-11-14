@@ -386,12 +386,11 @@ router.get('/', function(req, res, next) {
             });
         },
         (callback) => {
-            const questionDir = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
             editHelpers.getFiles({
                 courseDir: res.locals.course.path,
-                baseDir: questionDir,
+                baseDir: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
                 clientFilesDir: 'clientFilesQuestion',
-                serverFilesDir: 'serverFilesQuestion'
+                serverFilesDir: 'serverFilesQuestion',
             }, (err, files) => {
                 if (ERR(err, callback)) return;
                 debug(files);

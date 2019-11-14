@@ -9,7 +9,7 @@
   <li class="list-group-item px-0 py-1">
     <span class="pr-2 text-monospace"><%= f.name %></span>
     <% if (f.editable) { %>
-    <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/edit?file=<%= f.path %>">
+    <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= file_url %>/edit?file=<%= f.path %>">
       <i class="fa fa-edit"></i>
       <span>Edit</span>
     </a>

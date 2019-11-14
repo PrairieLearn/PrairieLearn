@@ -52,6 +52,19 @@ router.get('/', function(req, res, next) {
                 callback(null);
             });
         },
+        (callback) => {
+            editHelpers.getFiles({
+                courseDir: res.locals.course.path,
+                baseDir: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
+                clientFilesDir: 'clientFilesAssessment',
+                serverFilesDir: 'serverFilesAssessment',
+            }, (err, files) => {
+                if (ERR(err, callback)) return;
+                debug(files);
+                res.locals.files = files;
+                callback(null);
+            });
+        },
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
@@ -170,7 +183,9 @@ router.post('/', function(req, res, next) {
             });
         }
     } else {
-        return next(new Error('unknown __action: ' + req.body.__action));
+        editHelpers.processFileAction(req, res, {
+            container: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
+        }, next);
     }
 });
 

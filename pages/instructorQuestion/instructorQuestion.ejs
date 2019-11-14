@@ -31,9 +31,6 @@
         $('[data-toggle="popover"]').popover({
           sanitize: false
         });
-        $(function () {
-          $('[data-toggle="tooltip"]').tooltip()
-        })
         // make the file inputs display the file name
         $(document).on('change', '.custom-file-input', function () {
             let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
@@ -67,29 +64,30 @@
                 <th>Type</th>
                 <td><%= question.type %></td>
               </tr>
-              <% if (!locals.course.options.isExampleCourse) { %>
-                <tr>
-                  <th>Files</th>
-                  <td><%- include('../partials/instructorFileList', {
-                                      files_to_list: locals.files.files,
-                                      file_label: "",
-                                      file_dir: ""}); %></td>
-                </tr>
-                <tr>
-                  <th>Client Files</th>
-                  <td><%- include('../partials/instructorFileList', {
-                                      files_to_list: locals.files.clientFiles,
-                                      file_label: "Client",
-                                      file_dir: "clientFilesQuestion"}); %></td>
-                </tr>
-                <tr>
-                  <th>Server Files</th>
-                  <td><%- include('../partials/instructorFileList', {
-                                      files_to_list: locals.files.serverFiles,
-                                      file_label: "Server",
-                                      file_dir: "serverFilesQuestion"}); %></td>
-                </tr>
-              <% } %>
+              <tr>
+                <th>Files</th>
+                <td><%- include('../partials/instructorFileList', {
+                                    files_to_list: locals.files.files,
+                                    file_label: "",
+                                    file_dir: "",
+                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+              </tr>
+              <tr>
+                <th>Client Files</th>
+                <td><%- include('../partials/instructorFileList', {
+                                    files_to_list: locals.files.clientFiles,
+                                    file_label: "Client",
+                                    file_dir: "clientFilesQuestion",
+                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+              </tr>
+              <tr>
+                <th>Server Files</th>
+                <td><%- include('../partials/instructorFileList', {
+                                    files_to_list: locals.files.serverFiles,
+                                    file_label: "Server",
+                                    file_dir: "serverFilesQuestion",
+                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+              </tr>
               <tr>
                 <th>Topic</th>
                 <td><%- include('../partials/topic', {topic: topic}); %></td>
