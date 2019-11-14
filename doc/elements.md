@@ -120,7 +120,6 @@ Attribute | Type | Default | Description
 
 - [elementMultipleChoice]
 - [demoRandomMultipleChoice]
-- [demoFixedCheckbox]
 
 #### See also
 
@@ -263,7 +262,6 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [elementNumberInput]
-- [demoFixedCheckbox]
 - [demoCalculation]
 
 #### See also
