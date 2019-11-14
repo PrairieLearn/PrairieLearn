@@ -1,6 +1,6 @@
 {
     "uuid": "63234b1e-f7e5-4a47-bf9a-9f02cc604c29",
-    "title": "Multiply two complex matrices",
+    "title": "Demo: Matrix algebra with complex values",
     "topic": "Linear algebra",
     "tags": ["tbretl", "v3", "sp18"],
     "type": "v3"
