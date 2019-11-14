@@ -109,9 +109,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingInclinedPlan`: Example that uses a system of coordinates](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlan)
+- [`demoDrawingInclinedPlan`: Example that uses a system of coordinates](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlan)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-line` element
@@ -143,9 +143,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingLiftingMechanism`: Example that uses lines](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that uses lines](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-arc` element
 
@@ -177,7 +177,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-point` element
@@ -208,9 +208,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingPulley`: Example that includes a point in the canvas](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+- [`demoDrawingPulley`: Example that includes a point in the canvas](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-triangle` element
@@ -242,9 +242,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingPulley`: Example that includes a triangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+- [`demoDrawingPulley`: Example that includes a triangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-rectangle` element
 
@@ -275,9 +275,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingPulley`: Example that includes a rectangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+- [`demoDrawingPulley`: Example that includes a rectangle](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-circle` element
 
@@ -310,9 +310,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingLiftingMechanism`: Example that uses circles](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that uses circles](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-polygon` element
 
@@ -345,7 +345,7 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
 
 ### Example Implementations
 
- - [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+ - [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-rod` element
 
@@ -382,9 +382,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingVMDiagrams`: Example that includes a rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+- [`demoDrawingVMDiagrams`: Example that includes a rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-3pointrod` element
 
@@ -426,9 +426,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingInclinedPlane`: Example that includes a 3-point rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+- [`demoDrawingInclinedPlane`: Example that includes a 3-point rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-4pointrod` element
 
@@ -475,9 +475,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingLiftingMechanism`: Example that uses 4-point rods](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that uses 4-point rods](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-collar-rod` element
@@ -521,9 +521,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingCollarRod`: Example that uses a collar rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+- [`demoDrawingCollarRod`: Example that uses a collar rod](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-fixed-pin` element
@@ -559,9 +559,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingVMDiagrams`: Example that uses a fixed pin as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+- [`demoDrawingVMDiagrams`: Example that uses a fixed pin as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-roller` element
@@ -598,9 +598,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingVMDiagrams`: Example that uses a roller as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+- [`demoDrawingVMDiagrams`: Example that uses a roller as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-clamped` element
 
@@ -634,9 +634,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingCollarRod`: Example that uses a clamped end as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+- [`demoDrawingCollarRod`: Example that uses a clamped end as boundary condition](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-spring` element
 
@@ -671,7 +671,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-pulley` element
 
@@ -708,9 +708,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingPulley`: Example that includes a pulley system](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingPulley)
+- [`demoDrawingPulley`: Example that includes a pulley system](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-dimensions` element
@@ -757,9 +757,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingLiftingMechanism`: Example that includes dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that includes dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-arc-dimensions` element
@@ -799,11 +799,11 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingLiftingMechanism`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingInclinedPlane`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+- [`demoDrawingInclinedPlane`: Example that includes arc dimensions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-vector` element
@@ -848,13 +848,13 @@ More information about the grading attributes in the Grading section below.
 
 ### Example Implementations
 
-- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+- [`demoDrawingSimpleTutorial`: Tutorial example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial)
 
-- [`examplePLDrawingLiftingMechanism`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingInclinedPlane`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+- [`demoDrawingInclinedPlane`: Example that includes arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-double-headed-vector` element
@@ -894,13 +894,13 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+- [`demoDrawingSimpleTutorial`: Tutorial example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial)
 
-- [`examplePLDrawingLiftingMechanism`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingLiftingMechanism)
+- [`demoDrawingLiftingMechanism`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism)
 
-- [`examplePLDrawingInclinedPlane`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingInclinedPlane)
+- [`demoDrawingInclinedPlane`: Example that includes double arrows (vectors)](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 
@@ -940,11 +940,11 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+- [`demoDrawingSimpleTutorial`: Tutorial example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial)
 
-- [`examplePLDrawingCollarRod`: Example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingCollarRod)
+- [`demoDrawingCollarRod`: Example that includes arc vectors ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-distributed-load` element
@@ -991,9 +991,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingSimpleTutorial`: Tutorial example that includes distributed loads ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+- [`demoDrawingSimpleTutorial`: Tutorial example that includes distributed loads ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 ## `pl-controlled-line` element
@@ -1027,11 +1027,11 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingGraphs`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+- [`demoDrawingGraphs`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs)
 
-- [`examplePLDrawingVMDiagrams`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+- [`demoDrawingVMDiagrams`: Example that includes controlled lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-controlled-curved-line` element
 
@@ -1067,11 +1067,11 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingGraphs`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+- [`demoDrawingGraphs`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs)
 
-- [`examplePLDrawingVMDiagrams`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingVMDiagrams)
+- [`demoDrawingVMDiagrams`: Example that includes controlled curved lines for graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams)
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 ## `pl-text` element
 
@@ -1101,7 +1101,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [`examplePLDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGallery)
+- [`elementDrawingGallery`: Image gallery with drawing objects](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery)
 
 
 # Creating group of elements
@@ -1124,7 +1124,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 
 ### Example Implementations
 
-- [`examplePLDrawingSimpleTutorial`: Example where the attribute `visible` is set in server.py](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingSimpleTutorial)
+- [`demoDrawingSimpleTutorial`: Example where the attribute `visible` is set in server.py](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial)
 
 
 # Elements to set up a grading canvas
@@ -1202,7 +1202,7 @@ The element `pl-controls` will add the buttons that allows students to place obj
 
 ### Example Implementations
 
-The example [`QID: examplePLDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGradeVector) illustrates all the `pl-drawing-button`
+The example [`QID: demoDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector) illustrates all the `pl-drawing-button`
 that are currently implemented.
 
 <img src="pl-all-buttons.png" width=70%>
@@ -1313,7 +1313,7 @@ This button deletes objects that were previously placed on the canvas.
 
 ### Example Implementations
 
-- [`examplePLDrawingGraphs`: Example that highlights graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplePLDrawingGraphs)
+- [`demoDrawingGraphs`: Example that highlights graph sketching ](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs)
 
 ## `pl-axes` element
 

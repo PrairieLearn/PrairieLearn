@@ -37,4 +37,4 @@ UPDATE assessments
 SET
     max_points = 13
 WHERE
-    tid = 'homework1';
+    tid = 'hw1-automaticTestSuite';
