@@ -45,7 +45,7 @@
                 {"id": "demoCustomElement",                   "points": 1, "maxPoints": 1},
                 {"id": "demoCustomGradeFunction",             "points": 1, "maxPoints": 1},
                 {"id": "demoRandomSymbolic",                  "points": 2, "maxPoints": 10},
-                {"id": "demoDynamicGraphs",                   "points": 1, "maxPoints": 3},
+                {"id": "demoRandomPlot",                      "points": 1, "maxPoints": 3},
                 {"id": "demoRandomDataFrame",                 "points": 2, "maxPoints": 6},
                 {"id": "demoAnsiOutput",                      "points": 2, "maxPoints": 4}
             ]
