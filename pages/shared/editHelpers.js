@@ -7,6 +7,337 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
+const klaw = require('klaw');
+const sha256 = require('crypto-js/sha256');
+const path = require('path');
+const fs = require('fs-extra');
+const uuidv4 = require('uuid/v4');
+const async = require('async');
+const error = require('@prairielearn/prairielib/error');
+
+function canEditFile(file) {
+    const extCanEdit = ['.py', '.html', '.json', '.txt', '.md'];
+    return extCanEdit.includes(path.extname(file));
+}
+
+function canMoveFile(file) {
+    const cannotMove = ['info.json', 'infoAssessment.json', 'infoCourseInstance.json', 'infoCourse.json'];
+    return (! cannotMove.includes(path.basename(file)));
+}
+
+function getFiles(options, callback) {
+    let files = [];
+    let clientFiles = [];
+    let serverFiles = [];
+    let index = 0;
+
+    const walker = klaw(options.baseDir);
+
+    walker.on('readable', () => {
+        let item;
+        while (item = walker.read()) {
+            if (!item.stats.isDirectory()) {
+                const relPath = path.relative(options.baseDir, item.path);
+                const prefix = relPath.split(path.sep)[0];
+                const file = {
+                    name: relPath,
+                    path: path.relative(options.courseDir, item.path),
+                    editable: canEditFile(item.path),
+                    moveable: canMoveFile(item.path),
+                    id: index,
+                };
+                if (prefix == options.clientFilesDir) {
+                    clientFiles.push(file);
+                } else if (prefix == options.serverFilesDir) {
+                    serverFiles.push(file);
+                } else {
+                    files.push(file);
+                }
+                index++;
+            }
+        }
+    });
+
+    walker.on('error', (err, item) => {
+        if (ERR(err, callback)) return;
+    });
+
+    walker.on('end', () => {
+        callback(null, {
+            files: files,
+            clientFiles: clientFiles,
+            serverFiles: serverFiles,
+        });
+    });
+}
+
+function getHashFromBuffer(buffer) {
+    return sha256(buffer.toString('utf8')).toString();
+}
+
+function file_delete_write(edit, callback) {
+    debug(`Delete ${edit.filePath}`);
+    // This will silently do nothing if edit.filePath no longer exists.
+    fs.remove(edit.filePath, (err) => {
+        if (ERR(err, callback)) return;
+        edit.pathsToAdd = [
+            edit.filePath,
+        ];
+        edit.commitMessage = `in-browser edit: delete file ${edit.filePath}`;
+        callback(null);
+    });
+}
+
+function file_rename_write(edit, callback) {
+    debug(`Move:\n from ${edit.oldFilePath}\n to ${edit.newFilePath}`);
+    async.series([
+        (callback) => {
+            debug(`ensure path exists`);
+            fs.ensureDir(path.dirname(edit.newFilePath), (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`rename file`);
+            fs.rename(edit.oldFilePath, edit.newFilePath, (err) => {
+                if (ERR(err, callback)) return;
+                edit.pathsToAdd = [
+                    edit.oldFilePath,
+                    edit.newFilePath,
+                ];
+                edit.commitMessage = `in-browser edit: rename file ${edit.oldFilePath} to ${edit.newFilePath}`;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function file_upload_write(edit, callback) {
+    debug(`Upload file ${edit.filePath}`);
+    async.series([
+        (callback) => {
+            debug(`ensure path exists`);
+            fs.ensureDir(path.dirname(edit.filePath), (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`write file`);
+            fs.writeFile(edit.filePath, edit.fileContents, (err) => {
+                if (ERR(err, callback)) return;
+                edit.pathsToAdd = [
+                    edit.filePath,
+                ];
+                edit.commitMessage = `in-browser edit: upload file ${edit.filePath}`;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function delete_write(edit, callback) {
+    debug(`Delete questions/${edit.qid}`);
+    const questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+    // This will silently do nothing if questionPath no longer exists.
+    fs.remove(questionPath, (err) => {
+        if (ERR(err, callback)) return;
+        edit.pathsToAdd = [
+            questionPath,
+        ];
+        edit.commitMessage = `in-browser edit: delete question ${edit.qid}`;
+        callback(null);
+    });
+}
+
+function copy_write(edit, callback) {
+    async.waterfall([
+        (callback) => {
+            debug(`Generate unique QID`);
+            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
+                if (ERR(err, callback)) return;
+
+                let number = 1;
+                filenames.forEach((filename) => {
+                    let found = filename.match(/^question-([0-9]+)$/);
+                    if (found) {
+                        const foundNumber = parseInt(found[1]);
+                        if (foundNumber >= number) {
+                            number = foundNumber + 1;
+                        }
+                    }
+                });
+
+                edit.qid = `question-${number}`;
+                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+                edit.pathsToAdd = [
+                    edit.questionPath,
+                ];
+                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
+            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`Read info.json`);
+            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
+                if (ERR(err, callback)) return;
+                callback(null, infoJson);
+            });
+        },
+        (infoJson, callback) => {
+            debug(`Write info.json with new title and uuid`);
+            infoJson.title = 'Replace this title';
+            infoJson.uuid = uuidv4();
+            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function processFileAction(req, res, params, next) {
+    if (req.body.__action == 'delete_file') {
+        debug('Delete file');
+        const filePath = path.join(res.locals.course.path, req.body.file_path);
+        canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
+            if (ERR(err, next)) return;
+
+            let edit = {
+                userID: res.locals.user.user_id,
+                courseID: res.locals.course.id,
+                coursePath: res.locals.course.path,
+                uid: res.locals.user.uid,
+                user_name: res.locals.user.name,
+                filePath: filePath,
+            };
+
+            edit.description = 'Delete file in browser and sync';
+            edit.write = file_delete_write;
+            doEdit(edit, res.locals, (err, job_sequence_id) => {
+                if (ERR(err, (e) => logger.error(e))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    res.redirect(req.originalUrl);
+                }
+            });
+        });
+    } else if (req.body.__action == 'rename_file') {
+        debug('Rename file');
+        const oldFilePath = path.join(params.container, req.body.old_file_name);
+        const newFilePath = path.join(params.container, req.body.new_file_name);
+        if (oldFilePath == newFilePath) {
+            debug('new file name is the same as old file name, so abort rename')
+            res.redirect(req.originalUrl);
+        } else {
+            canEdit({req: req, res: res, container: params.container, contained: [oldFilePath, newFilePath]}, (err) => {
+                if (ERR(err, next)) return;
+
+                let edit = {
+                    userID: res.locals.user.user_id,
+                    courseID: res.locals.course.id,
+                    coursePath: res.locals.course.path,
+                    uid: res.locals.user.uid,
+                    user_name: res.locals.user.name,
+                    oldFilePath: oldFilePath,
+                    newFilePath: newFilePath,
+                };
+
+                edit.description = 'Rename file in browser and sync';
+                edit.write = file_rename_write;
+                doEdit(edit, res.locals, (err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        res.redirect(req.originalUrl);
+                    }
+                });
+            });
+        }
+    } else if (req.body.__action == 'download_file') {
+        debug('Download file');
+        const filePath = path.join(res.locals.course.path, req.body.file_path);
+        canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
+            if (ERR(err, next)) return;
+            res.attachment(path.basename(filePath));
+            res.sendFile(filePath);
+        });
+    } else if (req.body.__action == 'upload_file') {
+        debug('Upload file');
+        let filePath;
+        if (req.body.file_path) {
+            debug('should replace old file');
+            filePath = path.join(res.locals.course.path, req.body.file_path);
+        } else {
+            debug('should add a new file')
+            filePath = path.join(params.container, req.body.file_dir, req.file.originalname);
+        }
+        debug('look for old contents');
+        fs.readFile(filePath, (err, contents) => {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    debug('no old contents, so continue with upload');
+                } else {
+                    return ERR(err, next);
+                }
+            } else {
+                debug('get hash of old contents and of new contents');
+                const oldHash = getHashFromBuffer(contents);
+                const newHash = getHashFromBuffer(req.file.buffer);
+                debug('oldHash: ' + oldHash);
+                debug('newHash: ' + newHash);
+                if (oldHash == newHash) {
+                    debug('new contents are the same as old contents, so abort upload')
+                    res.redirect(req.originalUrl);
+                    return;
+                } else {
+                    debug('new contents are different from old contents, so continue with upload')
+                }
+            }
+
+            canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
+                if (ERR(err, next)) return;
+                let edit = {
+                    userID: res.locals.user.user_id,
+                    courseID: res.locals.course.id,
+                    coursePath: res.locals.course.path,
+                    uid: res.locals.user.uid,
+                    user_name: res.locals.user.name,
+                    filePath: filePath,
+                    fileContents: req.file.buffer,
+                };
+                edit.description = 'Upload file in browser and sync';
+                edit.write = file_upload_write;
+                doEdit(edit, res.locals, (err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        res.redirect(req.originalUrl);
+                    }
+                });
+            });
+        });
+    } else {
+        return next(new Error('unknown __action: ' + req.body.__action));
+    }
+}
 
 function canEdit(params, callback) {
     const res = params.res;
@@ -396,4 +727,6 @@ function doEdit(edit, locals, callback) {
 module.exports = {
     doEdit,
     canEdit,
+    processFileAction,
+    getFiles,
 };
