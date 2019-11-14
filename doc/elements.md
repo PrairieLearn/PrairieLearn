@@ -803,7 +803,6 @@ Please let the PrairieLearn developers know if you need a language that is not o
 #### Example implementations
 
 - [elementCode]
-- [elementAddCodeFromFile]
 
 #### See also
 
