@@ -167,7 +167,7 @@ router.post('/', function(req, res, next) {
         }
     } else {
         editHelpers.processFileAction(req, res, {
-            container: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
+            container: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
         }, next);
     }
 });
