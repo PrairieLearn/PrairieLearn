@@ -17,6 +17,7 @@ const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 
 router.get('/', function(req, res, next) {
+    debug(res.locals);
     debug('GET /');
     async.series([
         function(callback) {
@@ -34,6 +35,20 @@ router.get('/', function(req, res, next) {
             sqldb.queryOneRow(sql.short_names, {course_id: res.locals.course.id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.short_names = result.rows[0].short_names;
+                callback(null);
+            });
+        },
+        (callback) => {
+            editHelpers.getFiles({
+                courseDir: res.locals.course.path,
+                baseDir: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
+                clientFilesDir: 'clientFilesCourseInstance',
+                serverFilesDir: 'serverFilesCourseInstance',
+                ignoreDirs: ['assessments'],
+            }, (err, files) => {
+                if (ERR(err, callback)) return;
+                debug(files);
+                res.locals.files = files;
                 callback(null);
             });
         },

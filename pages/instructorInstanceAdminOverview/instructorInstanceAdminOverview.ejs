@@ -3,6 +3,11 @@
 
 <head>
     <%- include('../partials/head'); %>
+    <style>
+        .popover{
+            max-width: 100%;
+        }
+    </style>
 </head>
 
 <body>
@@ -11,6 +16,11 @@
             $('[data-toggle="popover"]').popover({
                 sanitize: false
             })
+        });
+        // make the file inputs display the file name
+        $(document).on('change', '.custom-file-input', function () {
+            let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+            $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
         });
     </script>
     <%- include('../partials/navbar'); %>
@@ -34,6 +44,32 @@
                                 </button>
                             </td>
                         </tr>
+                        <tr>
+                            <th>Files</th>
+                            <td><%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.files,
+                                                file_label: "",
+                                                file_dir: "",
+                                                file_url: urlPrefix + "/instance_admin"}); %></td>
+                        </tr>
+                        <tr>
+                            <th>Client Files</th>
+                            <td><%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.clientFiles,
+                                                file_label: "Client",
+                                                file_dir: "clientFilesCourseInstance",
+                                                file_url: urlPrefix + "/instance_admin"}); %></td>
+                        </tr>
+                        <tr>
+                            <th>Server Files</th>
+                            <td><%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.serverFiles,
+                                                file_label: "Server",
+                                                file_dir: "serverFilesCourseInstance",
+                                                file_url: urlPrefix + "/instance_admin"}); %></td>
+                        </tr>
+
+
                         <tr><th>Files</th>
                             <td>
                                 <a id="editJsonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/instance_admin/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">

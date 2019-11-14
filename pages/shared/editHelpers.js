@@ -33,6 +33,8 @@ function getFiles(options, callback) {
 
     const walker = klaw(options.baseDir);
 
+    options.ignoreDirs = options.ignoreDirs || [];
+
     walker.on('readable', () => {
         let item;
         while (item = walker.read()) {
@@ -50,7 +52,7 @@ function getFiles(options, callback) {
                     clientFiles.push(file);
                 } else if (prefix == options.serverFilesDir) {
                     serverFiles.push(file);
-                } else {
+                } else if (! options.ignoreDirs.includes(prefix)) {
                     files.push(file);
                 }
                 index++;

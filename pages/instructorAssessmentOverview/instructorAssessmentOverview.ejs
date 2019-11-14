@@ -9,9 +9,9 @@
     <script src="/localscripts/scatter.js"></script>
     <script src="/localscripts/parallel_histograms.js"></script>
     <style>
-      .popover{
+        .popover{
         max-width: 100%;
-      }
+        }
     </style>
 </head>
 
@@ -77,14 +77,6 @@
                                                 file_label: "Server",
                                                 file_dir: "serverFilesAssessment",
                                                 file_url: urlPrefix + "/assessment/" + assessment.id}); %></td>
-                        </tr>
-                        <tr><th>Files</th>
-                            <td>
-                                <a id="editJsonButton" tabindex="0" class="btn btn-sm btn-outline-primary" role="button" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/edit?file=courseInstances/<%= course_instance.short_name %>/assessments/<%= assessment.tid %>/infoAssessment.json">
-                                    <i class="fa fa-edit"></i>
-                                    <span class="d-none d-sm-inline">Edit infoAssessment.json</span>
-                                </a>
-                            </td>
                         </tr>
                     </tbody>
                 </table>
