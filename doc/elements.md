@@ -118,9 +118,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesMultipleChoice`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMultipleChoice)
-- [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
-- [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
+- [elementMultipleChoice]
+- [demoRandomMultipleChoice]
 
 #### See also
 
@@ -180,8 +179,8 @@ Two grading methods are available when using `partial-credit="true"`:
 
 #### Example implementations
 
-- [`examplesCheckbox`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesCheckbox)
-- [`chooseMatrices`: Mathematical expressions embedded in answer options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+- [elementCheckbox]
+- [demoRandomCheckbox]
 
 #### See also
 
@@ -262,11 +261,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesNumberInput`: Examples of all customization options for the element](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesNumberInput)
-- [`positionTimeGraph`: Input a numeric value obtained from reading a graph](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
-- [`addNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers)
-- [`addComplexNumbers`: Random generation and input of complex numbers that use imaginary and real components](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addComplexNumbers)
-- [`multiplyTwoNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoNumbers)
+- [elementNumberInput]
+- [demoCalculation]
 
 #### See also
 
@@ -315,8 +311,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesIntegerInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesIntegerInput)
-- [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
+- [elementIntegerInput]
 
 #### See also
 
@@ -379,7 +374,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 #### Example implementations
 
-- [`examplesSymbolicInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesSymbolicInput)
+- [elementSymbolicInput]
 
 #### See also
 
@@ -428,7 +423,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesStringInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesStringInput)
+- [elementStringInput]
 
 #### See also
 
@@ -488,7 +483,7 @@ The question will only be graded when all matrix components are entered.
 
 #### Example implementations
 
-- [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
+- [elementMatrixComponentInput]
 
 #### See also
 
@@ -562,7 +557,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### Example implementations
 
-- [`multiplyTwoComplexMatrices`: Example entry of a matrix that uses complex numbers.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+- [demoMatrixComplexAlgebra]
 
 #### See also
 
@@ -611,8 +606,8 @@ This will initialize the editor area with a sufficient number of lines to displa
 
 #### Example implementations
 
-- [`examplesFileEditor`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesFileEditor)
-- [`fibonacciEditor`: Receive code written in a web browser and automatically grade it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [elementFileEditor]
+- [demoCodeEditorAutograded]
 
 #### See also
 
@@ -646,8 +641,8 @@ Attribute | Type | Default | description
 
 #### Example implementations
 
-- [`fibonacciUpload`: Receiving a code file submission and **automatically** grading it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciUploadManual`: Receiving a code file submission to **manually** grade.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUploadManual)
+- [demoCodeUploadAutograded]
+- [demoCodeUploadAutograded]
 
 #### See also
 
@@ -727,7 +722,7 @@ that if there are many submitted answers, the page will load slowly.
 
 #### Example implementations
 
-- [`rotateObject`: Example rotation of a robot](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/rotateObject)
+- [elementThreeJS]
 
 #### See also
 
@@ -807,8 +802,7 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 #### Example implementations
 
-- [`codeHighlight`: Highlight specific lines of the code chunk.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/codeHighlight)
-- [`examplesAddCodeFromFile`: Import code from a source file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesAddCodeFromFile)
+- [elementCode]
 
 #### See also
 
@@ -878,8 +872,8 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 
 #### Example implementations
 
-- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
-- [`probabilityMassFunction`: Display the results of Probability Mass Function as a Table](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/probabilityMassFunction)
+- [elementPythonVariable]
+- [demoRandomDataFrame]
 
 #### See also
 
@@ -928,9 +922,9 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [`functionValueFromPlot`: Dynamically generate an image and have students input value.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/functionValueFromPlot)
-- [`positionTimeGraph`: Include a static graph image.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/positionTimeGraph/)
-- [`whichName`: Use a static image that is randomly selected from a list of files.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/whichName)
+- [demoRandomPlot]
+- [demoFixedCheckbox]
+- [demoStudentNames]
 
 #### See also
 
@@ -982,7 +976,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [`downloadFile`: Provide different download file options.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/downloadFile/)
+- [elementFileDownload]
 
 #### See also
 
@@ -1080,9 +1074,9 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 #### Example implementations
 
-- [`examplesVariableOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesVariableOutput/)
-- [`examplesMatrixComponentInput`: Shows code output style for a matrix.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesMatrixComponentInput/)
-- [`multiplyTwoComplexMatrices`: Sample showing how two complex matrices are displayed.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+- [elementVariableOutput]
+- [elementMatrixComponentInput]
+- [demoMatrixComplexAlgebra]
 
 #### See also
 
@@ -1161,8 +1155,8 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 #### Example implementations
 
-- [`examplesMatrixLatex`: Provides examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMatrixLatex)
-- [`chooseMatrices`: Example of matrices being displayed in a multiple-selection problem.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+- [elementMatrixLatex]
+- [demoRandomCheckbox]
 
 #### See also
 
@@ -1197,7 +1191,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 #### Example implementations
 
-- [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https://github.com/PrairieLearn/PrairieLearn/blob/6b15d697c0dfa93b574ef1b8950f6cd3647cb573/exampleCourse/questions/examplesPrairieDrawFigure/)
+- [elementPrairieDrawFigure]
 
 #### See also
 
@@ -1258,7 +1252,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesGraph`: Sample creation of graphs](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesGraph)
+- [elementGraph]
 
 #### See also
 
@@ -1301,7 +1295,7 @@ then it will be displayed alongside or answer.
 
 #### Example implementations
 
-- [`addNumbers`: Providing directions for question.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers/)
+- [demoCalculation]
 
 #### See also
 
@@ -1330,9 +1324,9 @@ may be correct, incorrect, or invalid.
 
 #### Example implementations
 
-- [`addBinary`: Custom formatting for answer input when using a non-PrairieLearn element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
-- [`fibonacciUpload`: Displaying a students code file submitted.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciEditor`: Displaying code written by a student in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [demoCustomGradeFunction]
+- [demoCodeUploadAutograded]
+- [demoCodeEditorAutograded]
 
 #### See also
 
@@ -1368,7 +1362,7 @@ Common reasons that trigger the display of this element are:
 
 #### Example implementations
 
-- [`addBinary`: Displaying the correct answer.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
+- [demoCustomGradeFunction]
 
 #### See also
 
@@ -1412,7 +1406,7 @@ element contents only in a specific panel.
 
 #### Example implementations
 
-- [`examplesPanels`: Showing and hiding text in different panels.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPanels)
+- [elementPanels]
 
 #### See also
 
@@ -1441,8 +1435,8 @@ It expects results to follow [the reference schema for external grading results]
 
 ### Example Implementations
 
-- [`fibonacciUpload`: Displaying results from grading an uploaded code file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciEditor`: Displaying results from grading code written in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [demoCodeUploadAutograded]
+- [demoCodeEditorAutograded]
 
 ### See also
 
@@ -1467,3 +1461,51 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+<!-- Switch to using reference style links for elements -->
+[demoAnsiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAnsiOutput
+[demoCalculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCalculation
+[demoCodeEditorAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeEditorAutograded
+[demoCodeUploadAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadAutograded
+[demoCodeUploadManualGrade]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadManualGrade
+[demoCustomElement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomElement
+[demoCustomGradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomGradeFunction
+[demoDrawingCentroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCentroid
+[demoDrawingCollarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod
+[demoDrawingGradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector
+[demoDrawingGraphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs
+[demoDrawingInclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane
+[demoDrawingLiftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism
+[demoDrawingPulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley
+[demoDrawingSimpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial
+[demoDrawingVMDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams
+[demoFixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoFixedCheckbox
+[demoMatrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixAlgebra
+[demoMatrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixComplexAlgebra
+[demoRandomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomCheckbox
+[demoRandomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomDataFrame
+[demoRandomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomMultipleChoice
+[demoRandomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomPlot
+[demoRandomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomSymbolic
+[demoStudentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentFaces
+[demoStudentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentNames
+[elementCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCheckbox
+[elementCode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCode
+[elementDrawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery
+[elementElementCodeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementElementCodeDocumentation
+[elementFileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileDownload
+[elementFileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileEditor
+[elementGraph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementGraph
+[elementIntegerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementIntegerInput
+[elementMarkdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMarkdown
+[elementMatrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixComponentInput
+[elementMatrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixLatex
+[elementMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMultipleChoice
+[elementNumberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementNumberInput
+[elementPanels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPanels
+[elementPrairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPrairieDrawFigure
+[elementPythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPythonVariable
+[elementStringInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementStringInput
+[elementSymbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementSymbolicInput
+[elementThreeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementThreeJS
+[elementVariableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementVariableOutput

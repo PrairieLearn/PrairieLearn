@@ -1,0 +1,16 @@
+{
+    "uuid": "3551731f-b6b4-4afc-b1f8-a8a4f7f73bcc",
+    "title": "Demo: Fibonacci function, in-browser editor, external grading",
+    "topic": "Functions",
+    "tags": ["code", "v3"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "serverFilesCourse": ["python_autograder/"],
+        "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
+        "timeout": 20
+    }
+}

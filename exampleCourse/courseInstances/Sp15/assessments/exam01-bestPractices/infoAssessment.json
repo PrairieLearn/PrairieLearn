@@ -1,0 +1,84 @@
+{
+    "uuid": "883f8167-63fe-45bb-9d78-3db4a788e166",
+    "type": "Exam",
+    "title": "Exam Design: Best Practices",
+    "set": "Exam",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "examUuid": "edd569e8-5075-4c35-88f9-28c5feaad0cb"
+       }
+    ],
+    "zones": [
+        {
+            "title": "Fundamental questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [25, 24, 23, 22, 21, 20],
+                    "alternatives": [
+                        {"id": "demoCalculation"},
+                        {"id": "demoMatrixAlgebra"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [25, 24, 23, 22, 21, 20],
+                    "alternatives": [
+                        {"id": "demoFixedCheckbox"},
+                        {"id": "demoRandomPlot"}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Intermediate questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "demoMatrixComplexAlgebra"},
+                        {"id": "demoRandomCheckbox"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [10, 9, 8, 7, 6],
+                    "alternatives": [
+                        {"id": "demoRandomMultipleChoice"},
+                        {"id": "demoStudentFaces"}
+                    ]
+                }
+           ]
+        },
+        {
+            "title": "Advanced questions",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [5, 4, 3, 2, 1],
+                    "alternatives": [
+                        {"id": "demoRandomDataFrame"},
+                        {"id": "demoRandomSymbolic"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": [5, 4, 3, 2, 1],
+                    "alternatives": [
+                        {"id": "demoCustomElement"},
+                        {"id": "demoCustomGradeFunction"}
+                    ]
+                }
+            ]
+        }
+    ],
+    "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}

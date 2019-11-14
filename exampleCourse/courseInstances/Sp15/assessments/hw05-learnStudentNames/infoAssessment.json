@@ -1,0 +1,21 @@
+{
+    "uuid": "baf04c58-2aae-4cbd-9189-d012669b5d02",
+    "type": "Homework",
+    "title": "Homework to help instructors learn names",
+    "set": "Homework",
+    "number": "4",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demoStudentNames", "points": 1, "maxPoints": 50},
+                {"id": "demoStudentFaces", "points": 1, "maxPoints": 50}
+            ]
+        }
+    ]
+}
