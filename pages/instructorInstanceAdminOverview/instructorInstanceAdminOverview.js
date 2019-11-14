@@ -17,7 +17,6 @@ const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 
 router.get('/', function(req, res, next) {
-    debug(res.locals);
     debug('GET /');
     async.series([
         function(callback) {
@@ -167,7 +166,9 @@ router.post('/', function(req, res, next) {
             });
         }
     } else {
-        return next(new Error('unknown __action: ' + req.body.__action));
+        editHelpers.processFileAction(req, res, {
+            container: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
+        }, next);
     }
 });
 
