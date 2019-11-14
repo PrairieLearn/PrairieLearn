@@ -1,0 +1,61 @@
+{
+    "uuid": "754dac56-fc1f-4888-a74a-1b365fd48379",
+    "type": "Homework",
+    "title": "Homework Design: Best Practices",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2019-01-18T00:00:01",
+            "endDate": "2019-01-28T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2019-01-28T00:00:01",
+            "endDate": "2019-01-30T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2019-01-30T00:00:01"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Fundamental questions",
+            "bestQuestions": 3,
+            "questions": [
+                {"id": "demoCalculation",          "points": 1, "maxPoints": 5},
+                {"id": "demoMatrixAlgebra",        "points": 1, "maxPoints": 5},
+                {"id": "demoFixedCheckbox",        "points": 1, "maxPoints": 5},
+                {"id": "demoRandomPlot",           "points": 1, "maxPoints": 5}
+            ]
+        },
+        {
+            "title": "Intermediate questions",
+            "bestQuestions": 2,
+            "questions": [
+                {"id": "demoMatrixComplexAlgebra", "points": 1, "maxPoints": 5},
+                {"id": "demoRandomCheckbox",       "points": 1, "maxPoints": 5},
+                {"id": "demoRandomMultipleChoice", "points": 1, "maxPoints": 5}
+           ]
+        },
+        {
+            "title": "Advanced questions",
+            "bestQuestions": 1,
+            "questions": [
+                {"id": "demoRandomDataFrame",     "points": 1, "maxPoints": 5},
+                {"id": "demoRandomSymbolic",      "points": 1, "maxPoints": 5},
+                {"id": "demoCustomGradeFunction", "points": 1, "maxPoints": 5}
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}
