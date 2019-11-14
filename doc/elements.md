@@ -265,8 +265,6 @@ Attribute | Type | Default | Description
 - [elementNumberInput]
 - [demoFixedCheckbox]
 - [demoCalculation]
-- [`addComplexNumbers`: Random generation and input of complex numbers that use imaginary and real components](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addComplexNumbers)
-- [`multiplyTwoNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoNumbers)
 
 #### See also
 
@@ -316,7 +314,6 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [elementIntegerInput]
-- [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
 
 #### See also
 
