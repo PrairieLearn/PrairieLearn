@@ -1,6 +1,6 @@
 {
     "uuid": "c07e099f-0149-471e-9c44-ab55622bedec",
-    "title": "String answers with pl-string-input",
+    "title": "Element pl-string-input: Input of short strings",
     "topic": "Test",
     "tags": [ "mfsilva", "balamut2", "tpl101", "v3"],
     "type": "v3"
