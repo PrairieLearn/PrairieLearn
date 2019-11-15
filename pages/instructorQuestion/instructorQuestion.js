@@ -393,7 +393,6 @@ router.get('/', function(req, res, next) {
                 serverFilesDir: 'serverFilesQuestion',
             }, (err, files) => {
                 if (ERR(err, callback)) return;
-                debug(files);
                 res.locals.files = files;
                 callback(null);
             });

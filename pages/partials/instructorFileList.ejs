@@ -2,7 +2,7 @@
   <li class="list-group-item pt-0 px-0 <% if (files_to_list.length == 0) { %>pb-0<% } else { %>pb-1<%} %>">
     <button id="instructorFileUploadForm-New<%= file_label %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: "New" + file_label}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
       <i class="fa fa-plus"></i>
-      <span>Add new file</span>
+      <span>Add new <%= file_label.toLowerCase() %> file</span>
     </button>
   </li>
   <% files_to_list.forEach(function(f) { %>

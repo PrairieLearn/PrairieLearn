@@ -46,7 +46,6 @@ router.get('/', function(req, res, next) {
                 ignoreDirs: ['assessments'],
             }, (err, files) => {
                 if (ERR(err, callback)) return;
-                debug(files);
                 res.locals.files = files;
                 callback(null);
             });

@@ -31,7 +31,12 @@ function getFiles(options, callback) {
     let serverFiles = [];
     let index = 0;
 
-    const walker = klaw(options.baseDir);
+    const ignoreHidden = item => {
+        const basename = path.basename(item);
+        return basename === '.' || basename[0] !== '.';
+    }
+
+    const walker = klaw(options.baseDir, {filter: ignoreHidden});
 
     options.ignoreDirs = options.ignoreDirs || [];
 
