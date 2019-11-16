@@ -47,6 +47,10 @@
 
   * Add `gvsu.edu` as an institution option (Matt West).
 
+  * Add navbar dropdowns to swap between courses, course instances, and assessments (Tim Bretl).
+
+  * Add ability to create and modify all course content in the browser without docker or git (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -66,8 +70,10 @@
   * Change docker to use CentOS7 python3 instead of python36u (Dave Mussulman).
 
   * Change SSL file paths to be configurable (Dave Mussulman).
-  
+
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
+
+  * Change navbar/navtab structure to match course content structure (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -120,7 +126,7 @@
   * Fix git merge during CI (Matt West).
 
   * Fix to prevent instructor testing of externally-graded questions (Matt West).
-  
+
   * Fix LTI outcome reporting with Blackboard Learn (Dave Mussulman).
 
 * __3.2.0__ - 2019-08-05
