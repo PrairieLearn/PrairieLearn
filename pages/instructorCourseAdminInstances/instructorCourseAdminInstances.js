@@ -90,19 +90,6 @@ function getNextNameShort() {
     return `${nextSeason}${nextYear.toString().padStart(2, '0')}`;
 }
 
-function getPrefixAndNumber(name) {
-    let found = name.match(new RegExp('^(?<prefix>.*)_copy(?<number>[0-9]+)$'));
-    debug(`getPrefixAndNumber:\n${found}`);
-    if (found) {
-        return {
-            'prefix': found.groups.prefix,
-            'number': parseInt(found.groups.number),
-        };
-    } else {
-        return null;
-    }
-}
-
 function add_write(edit, callback) {
     const courseInstancesPath = path.join(edit.coursePath, 'courseInstances');
     async.waterfall([

@@ -2,13 +2,8 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/prairielib/error');
-const fs = require('fs-extra');
-const uuidv4 = require('uuid/v4');
-const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 
 router.get('/', function(req, res, next) {

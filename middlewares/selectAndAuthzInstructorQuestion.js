@@ -9,7 +9,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     if (res.locals.course_instance) {
-        var params = {
+        const params = {
             question_id: req.params.question_id,
             course_instance_id: res.locals.course_instance.id,
         };
@@ -20,7 +20,7 @@ module.exports = function(req, res, next) {
             next();
         });
     } else {
-        var params = {
+        const params = {
             question_id: req.params.question_id,
             course_id: res.locals.course.id,
         };

@@ -12,8 +12,8 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const debug = require('debug')('prairielearn:instructorQuestion');
 const fs = require('fs-extra');
-const path = require('path');
 const uuidv4 = require('uuid/v4');
+const path = require('path');
 const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 
@@ -168,6 +168,76 @@ function change_qid_write(edit, callback) {
                     callback(null);
                 });
             }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function delete_write(edit, callback) {
+    debug(`Delete questions/${edit.qid}`);
+    const questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+    // This will silently do nothing if questionPath no longer exists.
+    fs.remove(questionPath, (err) => {
+        if (ERR(err, callback)) return;
+        edit.pathsToAdd = [
+            questionPath,
+        ];
+        edit.commitMessage = `in-browser edit: delete question ${edit.qid}`;
+        callback(null);
+    });
+}
+
+function copy_write(edit, callback) {
+    async.waterfall([
+        (callback) => {
+            debug(`Generate unique QID`);
+            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
+                if (ERR(err, callback)) return;
+
+                let number = 1;
+                filenames.forEach((filename) => {
+                    let found = filename.match(/^question-([0-9]+)$/);
+                    if (found) {
+                        const foundNumber = parseInt(found[1]);
+                        if (foundNumber >= number) {
+                            number = foundNumber + 1;
+                        }
+                    }
+                });
+
+                edit.qid = `question-${number}`;
+                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
+                edit.pathsToAdd = [
+                    edit.questionPath,
+                ];
+                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
+            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            debug(`Read info.json`);
+            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
+                if (ERR(err, callback)) return;
+                callback(null, infoJson);
+            });
+        },
+        (infoJson, callback) => {
+            debug(`Write info.json with new title and uuid`);
+            infoJson.title = 'Replace this title';
+            infoJson.uuid = uuidv4();
+            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

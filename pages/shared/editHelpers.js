@@ -11,7 +11,6 @@ const klaw = require('klaw');
 const sha256 = require('crypto-js/sha256');
 const path = require('path');
 const fs = require('fs-extra');
-const uuidv4 = require('uuid/v4');
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
 
@@ -34,15 +33,18 @@ function getFiles(options, callback) {
     const ignoreHidden = item => {
         const basename = path.basename(item);
         return basename === '.' || basename[0] !== '.';
-    }
+    };
 
     const walker = klaw(options.baseDir, {filter: ignoreHidden});
 
     options.ignoreDirs = options.ignoreDirs || [];
 
     walker.on('readable', () => {
-        let item;
-        while (item = walker.read()) {
+        for (;;) {
+            const item = walker.read();
+            if (!item) {
+                break;
+            }
             if (!item.stats.isDirectory()) {
                 const relPath = path.relative(options.baseDir, item.path);
                 const prefix = relPath.split(path.sep)[0];
@@ -65,7 +67,7 @@ function getFiles(options, callback) {
         }
     });
 
-    walker.on('error', (err, item) => {
+    walker.on('error', (err) => {
         if (ERR(err, callback)) return;
     });
 
@@ -150,76 +152,6 @@ function file_upload_write(edit, callback) {
     });
 }
 
-function delete_write(edit, callback) {
-    debug(`Delete questions/${edit.qid}`);
-    const questionPath = path.join(edit.coursePath, 'questions', edit.qid);
-    // This will silently do nothing if questionPath no longer exists.
-    fs.remove(questionPath, (err) => {
-        if (ERR(err, callback)) return;
-        edit.pathsToAdd = [
-            questionPath,
-        ];
-        edit.commitMessage = `in-browser edit: delete question ${edit.qid}`;
-        callback(null);
-    });
-}
-
-function copy_write(edit, callback) {
-    async.waterfall([
-        (callback) => {
-            debug(`Generate unique QID`);
-            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
-                if (ERR(err, callback)) return;
-
-                let number = 1;
-                filenames.forEach((filename) => {
-                    let found = filename.match(/^question-([0-9]+)$/);
-                    if (found) {
-                        const foundNumber = parseInt(found[1]);
-                        if (foundNumber >= number) {
-                            number = foundNumber + 1;
-                        }
-                    }
-                });
-
-                edit.qid = `question-${number}`;
-                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
-                edit.pathsToAdd = [
-                    edit.questionPath,
-                ];
-                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
-            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Read info.json`);
-            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
-                if (ERR(err, callback)) return;
-                callback(null, infoJson);
-            });
-        },
-        (infoJson, callback) => {
-            debug(`Write info.json with new title and uuid`);
-            infoJson.title = 'Replace this title';
-            infoJson.uuid = uuidv4();
-            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
 function processFileAction(req, res, params, next) {
     if (req.body.__action == 'delete_file') {
         debug('Delete file');
@@ -251,7 +183,7 @@ function processFileAction(req, res, params, next) {
         const oldFilePath = path.join(params.container, req.body.old_file_name);
         const newFilePath = path.join(params.container, req.body.new_file_name);
         if (oldFilePath == newFilePath) {
-            debug('new file name is the same as old file name, so abort rename')
+            debug('new file name is the same as old file name, so abort rename');
             res.redirect(req.originalUrl);
         } else {
             canEdit({req: req, res: res, container: params.container, contained: [oldFilePath, newFilePath]}, (err) => {
@@ -293,7 +225,7 @@ function processFileAction(req, res, params, next) {
             debug('should replace old file');
             filePath = path.join(res.locals.course.path, req.body.file_path);
         } else {
-            debug('should add a new file')
+            debug('should add a new file');
             filePath = path.join(params.container, req.body.file_dir, req.file.originalname);
         }
         debug('look for old contents');
@@ -311,11 +243,11 @@ function processFileAction(req, res, params, next) {
                 debug('oldHash: ' + oldHash);
                 debug('newHash: ' + newHash);
                 if (oldHash == newHash) {
-                    debug('new contents are the same as old contents, so abort upload')
+                    debug('new contents are the same as old contents, so abort upload');
                     res.redirect(req.originalUrl);
                     return;
                 } else {
-                    debug('new contents are different from old contents, so continue with upload')
+                    debug('new contents are different from old contents, so continue with upload');
                 }
             }
 
