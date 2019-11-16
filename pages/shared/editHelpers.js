@@ -15,6 +15,7 @@ const async = require('async');
 const error = require('@prairielearn/prairielib/error');
 
 function canEditFile(file) {
+    // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
     const extCanEdit = ['.py', '.html', '.json', '.txt', '.md'];
     return extCanEdit.includes(path.extname(file));
 }

@@ -63,6 +63,10 @@ router.get('/', (req, res, next) => {
         fileEdit.aceMode = 'html';
     } else if (ext == '.py') {
         fileEdit.aceMode = 'python';
+    } else if (ext == '.txt') {
+        fileEdit.aceMode = 'text';
+    } else if (ext == '.md') {
+        fileEdit.aceMode = 'markdown';
     } else {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }

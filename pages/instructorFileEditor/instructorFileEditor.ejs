@@ -21,7 +21,9 @@
             $(function() {
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.editContents %>",
+                    <% if (fileEdit.aceMode) { %>
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     origHash: "<%- fileEdit.origHash %>",
                     diskHash: "<%- fileEdit.diskHash %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
@@ -39,7 +41,9 @@
                 <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.diskContents %>",
+                    <% if (fileEdit.aceMode) { %>
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     elementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     readOnly: true,
                 });
