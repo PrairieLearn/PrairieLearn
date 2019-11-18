@@ -18,7 +18,7 @@
       <i class="fa fa-arrow-up"></i>
       <span>Upload</span>
     </button>
-    <form class="d-inline" name="instructor-file-download-form" method="POST">
+    <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
       <input type="hidden" name="__action" value="download_file">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="file_path" value="<%= f.path %>">

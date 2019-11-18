@@ -16,6 +16,7 @@ const {
     exec,
 } = require('child_process');
 const b64Util = require('../lib/base64-util');
+const requestp = require('request-promise-native');
 
 const locals = {};
 let page, elemList;
@@ -27,12 +28,15 @@ const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseDir = courseLiveDir;
 
+const courseInstancePath = path.join('courseInstances', 'Fa18');
+const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
 const infoCoursePath = 'infoCourse.json';
-const infoCourseInstancePath = 'courseInstances/Fa18/infoCourseInstance.json';
-const infoAssessmentPath = 'courseInstances/Fa18/assessments/HW1/infoAssessment.json';
-const questionJsonPath = 'questions/testQuestion/info.json';
-const questionHtmlPath = 'questions/testQuestion/question.html';
-const questionPythonPath = 'questions/testQuestion/server.py';
+const infoCourseInstancePath = path.join(courseInstancePath, 'infoCourseInstance.json');
+const infoAssessmentPath = path.join(assessmentPath, 'infoAssessment.json');
+const questionPath = path.join('questions', 'testQuestion');
+const questionJsonPath = path.join(questionPath, 'info.json');
+const questionHtmlPath = path.join(questionPath, 'question.html');
+const questionPythonPath = path.join(questionPath, 'server.py');
 
 const infoCourseJsonA = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'));
 let infoCourseJsonB = JSON.parse(fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'));
@@ -186,6 +190,49 @@ const verifyEditData = [
     },
 ];
 
+const verifyFileData = [
+    {
+        'title': 'question',
+        'url': courseInstanceQuestionUrl,
+        'path': questionPath,
+        'clientFilesDir': 'clientFilesQuestion',
+        'serverFilesDir': 'serverFilesQuestion',
+        'index': 3,
+    },
+    {
+        'title': 'assessment',
+        'url': assessmentUrl + '/overview',
+        'path': assessmentPath,
+        'clientFilesDir': 'clientFilesAssessment',
+        'serverFilesDir': 'serverFilesAssessment',
+        'index': 1,
+    },
+    {
+        'title': 'course instance',
+        'url': courseInstanceInstanceAdminUrl + '/overview',
+        'path': courseInstancePath,
+        'clientFilesDir': 'clientFilesCourseInstance',
+        'serverFilesDir': 'serverFilesCourseInstance',
+        'index': 1,
+    },
+    {
+        'title': 'course (through course instance)',
+        'url': courseInstanceCourseAdminUrl + '/overview',
+        'path': '',
+        'clientFilesDir': 'clientFilesCourse',
+        'serverFilesDir': 'serverFilesCourse',
+        'index': 2,
+    },
+    {
+        'title': 'course',
+        'url': courseAdminUrl + '/overview',
+        'path': '',
+        'clientFilesDir': 'clientFilesCourse',
+        'serverFilesDir': 'serverFilesCourse',
+        'index': 2,
+    },
+];
+
 describe('test file editor', function() {
     this.timeout(20000);
 
@@ -230,6 +277,12 @@ describe('test file editor', function() {
 
         describe('disallow edits outside course directory', function() {
             badGet(badPathUrl);
+        });
+
+        describe('verify file handlers', function() {
+            verifyFileData.forEach((element) => {
+                doFiles(element);
+            });
         });
     });
 
@@ -763,6 +816,31 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
     });
 }
 
+function pullAndVerifyFileNotInDev(fileName) {
+    describe(`pull in dev and verify ${fileName} does not exist`, function() {
+        it('should pull', function(callback) {
+            const execOptions = {
+                cwd: courseDevDir,
+                env: process.env,
+            };
+            exec(`git pull`, execOptions, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+        it('should not exist', function(callback) {
+            fs.access(path.join(courseDevDir, fileName), (err) => {
+                if (err) {
+                    if (err.code == 'ENOENT') callback(null);
+                    else callback(new Error(`got wrong error: ${err}`));
+                } else {
+                    callback(new Error(`${fileName} should not exist, but does`));
+                }
+            });
+        });
+    });
+}
+
 function writeAndPushFileInDev(fileName, fileContents) {
     describe(`write ${fileName} in courseDev and push to courseOrigin`, function() {
         it('should write', function(callback) {
@@ -847,4 +925,307 @@ function waitForJobSequence(locals, expectedResult) {
             assert.equal(locals.job_sequence_status, expectedResult);
         });
     });
+}
+
+function doFiles(data) {
+    describe(`test file handlers for ${data.title}`, function() {
+        describe('Files', function() {
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, 'testfile.txt'),
+                id: 'New',
+                contents: 'This is a line of text.',
+                filename: 'testfile.txt',
+            });
+
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, 'testfile.txt'),
+                id: data.index,
+                contents: 'This is a different line of text.',
+                filename: 'anotherfile.txt',
+            });
+
+            testDownloadFile({
+                url: data.url,
+                id: data.index,
+                contents: 'This is a different line of text.',
+            });
+
+            testRenameFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, 'subdir', 'testfile.txt'),
+                contents: 'This is a different line of text.',
+                new_file_name: path.join('subdir', 'testfile.txt'),
+            });
+
+            testDeleteFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, 'subdir', 'testfile.txt'),
+            });
+        });
+        describe('Client Files', function() {
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
+                id: 'NewClient',
+                contents: 'This is a line of text.',
+                filename: 'testfile.txt',
+            });
+
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
+                id: data.index,
+                contents: 'This is a different line of text.',
+                filename: 'anotherfile.txt',
+            });
+
+            testDownloadFile({
+                url: data.url,
+                id: data.index,
+                contents: 'This is a different line of text.',
+            });
+
+            testRenameFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
+                contents: 'This is a different line of text.',
+                new_file_name: path.join(data.clientFilesDir, 'subdir', 'testfile.txt'),
+            });
+
+            testDeleteFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
+            });
+        });
+        describe('Server Files', function() {
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+                id: 'NewServer',
+                contents: 'This is a line of text.',
+                filename: 'testfile.txt',
+            });
+
+            testUploadFile({
+                url: data.url,
+                path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+                id: data.index,
+                contents: 'This is a different line of text.',
+                filename: 'anotherfile.txt',
+            });
+
+            testDownloadFile({
+                url: data.url,
+                id: data.index,
+                contents: 'This is a different line of text.',
+            });
+
+            testRenameFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+                contents: 'This is a different line of text.',
+                new_file_name: path.join(data.serverFilesDir, 'subdir', 'testfile.txt'),
+            });
+
+            testDeleteFile({
+                url: data.url,
+                id: data.index,
+                path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+            });
+        });
+    });
+}
+
+function testUploadFile(params) {
+    describe(`GET to ${params.url}`, () => {
+        it('should load successfully', async () => {
+            page = await requestp(params.url);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+        it('should have a CSRF token and a file_dir, and may have a file_path', () => {
+            elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
+            assert.lengthOf(elemList, 1);
+            const $ = cheerio.load(elemList[0].attribs['data-content']);
+            // __csrf_token
+            elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+            // __file_dir
+            elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_dir"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.file_dir = elemList[0].attribs.value;
+            // __file_path
+            elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`);
+            if (elemList.length > 0) {
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.file_path = elemList[0].attribs.value;
+            } else {
+                locals.file_path = undefined;
+            }
+        });
+    });
+
+    describe(`POST to ${params.url} with action upload_file`, function() {
+        it('should load successfully', async () => {
+            const options = {
+                url: params.url,
+                followAllRedirects: true,
+            };
+            options.formData = {
+                __action: 'upload_file',
+                __csrf_token: locals.__csrf_token,
+                file_dir: locals.file_dir,
+                file: {
+                    value: Buffer.from(params.contents),
+                    options: {
+                        filename: params.filename,
+                        contentType: 'text/plain',
+                    },
+                },
+            };
+            if (locals.file_path) options.formData.file_path = locals.file_path;
+            page = await requestp.post(options);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+    });
+
+    pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testDownloadFile(params) {
+    describe(`GET to ${params.url}`, () => {
+        it('should load successfully', async () => {
+            page = await requestp(params.url);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+        it('should have a CSRF token and a file_path', () => {
+            elemList = locals.$(`form[name="instructor-file-download-form-${params.id}"] input[name="__csrf_token"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+            // __file_path
+            elemList = locals.$(`form[name="instructor-file-download-form-${params.id}"] input[name="file_path"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.file_path = elemList[0].attribs.value;
+            assert.isString(locals.file_path);
+        });
+    });
+
+    describe(`POST to ${params.url} with action download_file`, function() {
+        it('should load successfully', async () => {
+            const options = {
+                url: params.url,
+                followAllRedirects: true,
+            };
+            options.formData = {
+                __action: 'download_file',
+                __csrf_token: locals.__csrf_token,
+                file_path: locals.file_path,
+            };
+            page = await requestp.post(options);
+        });
+        it('should contain the right data', () => {
+            assert.equal(page, params.contents);
+        });
+    });
+}
+
+function testRenameFile(params) {
+    describe(`GET to ${params.url}`, () => {
+        it('should load successfully', async () => {
+            page = await requestp(params.url);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+        it('should have a CSRF token and an old_file_name', () => {
+            elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
+            assert.lengthOf(elemList, 1);
+            const $ = cheerio.load(elemList[0].attribs['data-content']);
+            // __csrf_token
+            elemList = $(`form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+            // old_file_name
+            elemList = $(`form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.old_file_name = elemList[0].attribs.value;
+        });
+    });
+
+    describe(`POST to ${params.url} with action rename_file`, function() {
+        it('should load successfully', async () => {
+            const options = {
+                url: params.url,
+                followAllRedirects: true,
+            };
+            options.formData = {
+                __action: 'rename_file',
+                __csrf_token: locals.__csrf_token,
+                old_file_name: locals.old_file_name,
+                new_file_name: params.new_file_name,
+            };
+            page = await requestp.post(options);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+    });
+
+    pullAndVerifyFileInDev(params.path, params.contents);
+}
+
+function testDeleteFile(params) {
+    describe(`GET to ${params.url}`, () => {
+        it('should load successfully', async () => {
+            page = await requestp(params.url);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+        it('should have a CSRF token and a file_path', () => {
+            elemList = locals.$(`button[id="instructorFileDeleteForm-${params.id}"]`);
+            assert.lengthOf(elemList, 1);
+            const $ = cheerio.load(elemList[0].attribs['data-content']);
+            // __csrf_token
+            elemList = $(`form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+            // file_path
+            elemList = $(`form[name="instructor-file-delete-form-${params.id}"] input[name="file_path"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.file_path = elemList[0].attribs.value;
+        });
+    });
+
+    describe(`POST to ${params.url} with action delete_file`, function() {
+        it('should load successfully', async () => {
+            const options = {
+                url: params.url,
+                followAllRedirects: true,
+            };
+            options.formData = {
+                __action: 'delete_file',
+                __csrf_token: locals.__csrf_token,
+                file_path: locals.file_path,
+            };
+            page = await requestp.post(options);
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        });
+    });
+
+    pullAndVerifyFileNotInDev(params.path);
 }

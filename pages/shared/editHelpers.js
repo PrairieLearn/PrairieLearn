@@ -58,12 +58,14 @@ function getFiles(options, callback) {
                 };
                 if (prefix == options.clientFilesDir) {
                     clientFiles.push(file);
+                    index++;
                 } else if (prefix == options.serverFilesDir) {
                     serverFiles.push(file);
+                    index++;
                 } else if (! options.ignoreDirs.includes(prefix)) {
                     files.push(file);
+                    index++;
                 }
-                index++;
             }
         }
     });
