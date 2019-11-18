@@ -36,7 +36,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
             perf.timedFunc.bind(null, "syncTopics", syncTopics.sync.bind(null, course.courseInfo, course.questionDB)),
             function(callback) {logger.info("Syncing questions from git repository to database..."); callback(null);},
-            perf.timedFunc.bind(null, "syncQuestions", syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger)),
+            perf.timedFunc.bind(null, "syncQuestions", syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, courseDir, logger)),
             function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
             perf.timedFunc.bind(null, "syncTags", syncTags.sync.bind(null, course.courseInfo, course.questionDB)),
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
