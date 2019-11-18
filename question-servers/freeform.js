@@ -14,6 +14,7 @@ const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
 const jsonLoader = require('../lib/json-load');
+const { validateHtml } = require('../lib/html-validate');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
@@ -298,6 +299,22 @@ module.exports = {
             if (ERR(err, callback)) return;
             try {
                 html = markdown.processQuestion(html);
+                validateHtml(html);
+            } catch (e) {
+                err = e;
+            }
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    legacyExecTemplate: function(htmlFilename, data, callback) {
+        fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
+            if (ERR(err, callback)) return;
+            let html;
+            err = null;
+            try {
+                html = mustache.render(rawFile, data);
             } catch (e) {
                 err = e;
             }
@@ -569,8 +586,13 @@ module.exports = {
             return callback(null, courseIssues, data, '', Buffer.from(''));
         }
 
+        // Switch based on which renderer is enabled for this course
+        const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
+        const templateExecFunction = useNewQuestionRenderer ? module.exports.execTemplate : module.exports.legacyExecTemplate;
+
         const htmlFilename = path.join(context.question_dir, 'question.html');
-        module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
+        // $ in the callback will only be defined for the legacy renderer
+        templateExecFunction(htmlFilename, data, (err, html, $) => {
             if (err) {
                 const courseIssue = new Error(htmlFilename + ': ' + err.toString());
                 courseIssue.fatal = true;
@@ -578,8 +600,6 @@ module.exports = {
                 return callback(null, courseIssues, data, '', Buffer.from(''));
             }
 
-            // Switch based on which renderer is enabled for this course
-            const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {

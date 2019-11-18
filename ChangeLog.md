@@ -487,6 +487,7 @@
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
+  * Add simple HTML validation for invalid self-closing tags (Nathan Walters).
   * Fix Google auth using new API (Matt West).
 
   * Fix several issues with various elements (Nathan Walters).

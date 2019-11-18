@@ -1,11 +1,14 @@
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const fs = require('fs-extra');
 
+const { validateHtml } = require('../../lib/html-validate');
 const logger = require('../../lib/logger');
 const perf = require('../performance')('question');
 
-module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
+module.exports.sync = function(courseInfo, questionDB, courseDir, jobLogger, callback) {
     callbackify(async () => {
         logger.debug('Syncing questions');
 
@@ -19,6 +22,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 }
             });
 
+        var validateCount = 1;
         // Preprocess questions into obects before sending them to the sproc
         // for syncing
         const questionsParam = Object.keys(questionDB).map(qid => {
@@ -34,6 +38,27 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                     partialCredit = false;
                 }
             }
+
+            if (q.type == 'v3') {
+                var htmlFilename = `${courseDir}/questions/${qid}/question.html`;
+                fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    try {
+                        validateHtml(rawFile);
+                    }
+                    catch (e) {
+                        //jobLogger.info(htmlFilename);
+                        jobLogger.info(validateCount + '. ' + htmlFilename);
+                        jobLogger.info(e.message);
+                        jobLogger.info('This is a warning only; after January 2020, questions will be required to validate.')
+                        //console.log(htmlFilename, e);
+                        validateCount++;
+                    }
+                });
+            }
+
             return {
                 uuid: q.uuid,
                 qid: qid,

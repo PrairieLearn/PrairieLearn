@@ -35,6 +35,7 @@
         "fabric": "^3.4.0",
         "filesize": "^6.0.0",
         "fs-extra": "^8.1.0",
+        "htmlparser2": "^3.9.2",
         "googleapis": "^44.0.0",
         "handlebars": "^4.5.1",
         "http-status": "^1.4.0",
