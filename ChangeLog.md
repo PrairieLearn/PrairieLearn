@@ -148,6 +148,8 @@
   * Fix detection of different internals during R package installation (James Balamuta).
   
   * Fix figures in `pl-drawing` documentation (Nicolas Nytko).
+  
+  * Fix use of `data["correct_answers"]` in documentation (James Balamuta, h/t Eric Huber).
 
 * __3.2.0__ - 2019-08-05
 
