@@ -189,7 +189,7 @@ describe('API', function() {
             locals.json = JSON.parse(page);
         });
         it('should contain E1', function() {
-            const objectList = _.filter(locals.json, o => o.assessment_name == 'exam1');
+            const objectList = _.filter(locals.json, o => o.assessment_name == 'exam1-automaticTestSuite');
             assert.lengthOf(objectList, 1);
             locals.assessment_id = objectList[0].assessment_id;
             assert.equal(objectList[0].assessment_label, 'E1');

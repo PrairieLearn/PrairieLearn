@@ -2,6 +2,7 @@
 /node_modules/
 /public/
 /exampleCourse/
+/testCourse/
 /sync/
 /question-servers/default-calculation/
 /coverage/

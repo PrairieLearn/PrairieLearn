@@ -21,6 +21,10 @@ const requestp = require('request-promise-native');
 const locals = {};
 let page, elemList;
 
+// Connect to the exampleCourse
+const courseDirExampleCourse = path.join(__dirname, '..', 'exampleCourse');
+
+// Uses course within tests/testFileEditor
 const baseDir = path.join(__dirname, 'testFileEditor');
 const courseTemplateDir = path.join(baseDir, 'courseTemplate');
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
@@ -236,7 +240,7 @@ const verifyFileData = [
 describe('test file editor', function() {
     this.timeout(20000);
 
-    describe('not the example course', function() {
+    describe('not the test course', function() {
         before('create test course files', function(callback) {
             createCourseFiles((err) => {
                 if (ERR(err, callback)) return;
@@ -286,9 +290,9 @@ describe('test file editor', function() {
         });
     });
 
-    describe('the example course', function() {
+    describe('the exampleCourse', function() {
 
-        before('set up testing server', helperServer.before());
+        before('set up testing server', helperServer.before(courseDirExampleCourse));
 
         after('shut down testing server', helperServer.after);
 

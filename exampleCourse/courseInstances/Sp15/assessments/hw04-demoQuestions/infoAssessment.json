@@ -1,0 +1,54 @@
+{
+    "uuid": "b6468c04-f28c-465a-9108-077ed53e2148",
+    "type": "Homework",
+    "title": "PrairieLearn question demo gallery",
+    "set": "Homework",
+    "number": "3",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demoCalculation",                     "points": 1, "maxPoints": 5},
+                {"id": "demoCodeEditorAutograded",            "points": 1, "maxPoints": 5},
+                {"id": "demoCodeUploadAutograded",            "points": 1, "maxPoints": 5},
+                {"id": "demoCodeUploadManualGrade",           "points": 1, "maxPoints": 5},
+                {"id": "demoRandomMultipleChoice",            "points": 2, "maxPoints": 10},
+                {"id": "demoFixedCheckbox",                   "points": 2, "maxPoints": 10},
+                {"id": "demoRandomCheckbox",                  "points": 2, "maxPoints": 10},
+                {"id": "demoMatrixAlgebra",                   "points": 2, "maxPoints": 10},
+                {"id": "demoMatrixComplexAlgebra",            "points": 2, "maxPoints": 10},
+                {"id": "demoCustomElement",                   "points": 1, "maxPoints": 1},
+                {"id": "demoCustomGradeFunction",             "points": 1, "maxPoints": 1},
+                {"id": "demoRandomSymbolic",                  "points": 2, "maxPoints": 10},
+                {"id": "demoRandomPlot",                      "points": 1, "maxPoints": 3},
+                {"id": "demoRandomDataFrame",                 "points": 2, "maxPoints": 6},
+                {"id": "demoAnsiOutput",                      "points": 2, "maxPoints": 4}
+            ]
+        }
+    ]
+}

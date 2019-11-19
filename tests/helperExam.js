@@ -123,8 +123,8 @@ module.exports = {
                 elemList = locals.$('p.lead strong:contains("Exam 1")');
                 assert.lengthOf(elemList, 1);
             });
-            it('should contain "XC 101"', function() {
-                elemList = locals.$('p.lead strong:contains("XC 101")');
+            it('should contain "QA 101"', function() {
+                elemList = locals.$('p.lead strong:contains("QA 101")');
                 assert.lengthOf(elemList, 1);
             });
             it('should have a CSRF token', function() {

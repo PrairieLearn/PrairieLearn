@@ -25,5 +25,5 @@ FROM
 WHERE
     a.id = aq.assessment_id
     AND q.id = aq.question_id
-    AND a.tid = 'exam1'
+    AND a.tid = 'exam1-automaticTestSuite'
     AND q.qid = 'addVectors';
