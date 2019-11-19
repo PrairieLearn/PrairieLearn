@@ -131,7 +131,7 @@
               </button>
             </div>
             <div class="col-auto">
-              <form class="form-inline" method="POST">
+              <form name="copy-question-form" class="form-inline" method="POST">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <button name="__action" value="copy_question" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Make a copy of this question</button>
               </form>
@@ -171,7 +171,7 @@
                     <% } %>
                   </div>
                   <div class="modal-footer">
-                    <form name="delete-form" method="POST">
+                    <form name="delete-question-form" method="POST">
                       <input type="hidden" name="__action" value="delete_question">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

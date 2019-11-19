@@ -74,7 +74,7 @@
             <div class="card-footer">
                 <div class="row">
                     <div class="col-auto">
-                        <form class="form-inline" method="POST">
+                        <form name="copy-course-instance-form" class="form-inline" method="POST">
                             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                             <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Make a copy of this course instance</button>
                         </form>
@@ -94,7 +94,7 @@
                                     </p>
                                 </div>
                                 <div class="modal-footer">
-                                    <form name="delete-form" method="POST">
+                                    <form name="delete-course-instance-form" method="POST">
                                         <input type="hidden" name="__action" value="delete_course_instance">
                                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

@@ -32,8 +32,8 @@ router.get('/', function(req, res, next) {
 
 router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (req.body.__action == 'add_instance') {
-        debug(`Responding to action add_instance`);
+    if (req.body.__action == 'add_course_instance') {
+        debug(`Responding to action add_course_instance`);
 
         if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
 

@@ -67,7 +67,7 @@ router.post('/', (req, res, next) => {
             coursePath: res.locals.course.path,
             uid: res.locals.user.uid,
             user_name: res.locals.user.name,
-            templatePath: path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'addNumbers'),
+            templatePath: path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'demoCalculation'),
         };
 
         edit.description = 'Add question in browser and sync';
