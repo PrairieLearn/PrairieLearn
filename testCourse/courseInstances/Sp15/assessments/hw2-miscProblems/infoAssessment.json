@@ -1,0 +1,44 @@
+{
+    "uuid": "b6468c04-f28c-465a-9108-077ed53e2148",
+    "type": "Homework",
+    "title": "Miscellaneous homework",
+    "set": "Homework",
+    "number": "2",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "addVectors",                 "points": 1, "maxPoints": 5},
+                {"id": "fossilFuelsRadio",           "points": 2, "maxPoints": 10},
+                {"id": "positionTimeGraph",          "points": 2, "maxPoints": 10},
+                {"id": "downloadFile",               "points": 2, "maxPoints": 10},
+                {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10}
+            ]
+        }
+    ]
+}

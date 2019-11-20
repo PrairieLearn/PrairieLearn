@@ -1,0 +1,31 @@
+{
+    "uuid": "4491f76f-f637-43be-8e2d-a60b292e3673",
+    "type": "Exam",
+    "title": "Miscellaneous exam",
+    "set": "Exam",
+    "number": "2",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100,
+            "timeLimitMin": 50
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59",
+            "timeLimitMin": 50
+        }
+    ],
+    "zones": [
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"id": "addVectors",                 "points": [10, 5, 1]},
+                {"id": "positionTimeGraph",          "points": [10]}
+            ]
+        }
+    ]
+}
