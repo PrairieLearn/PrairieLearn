@@ -22,7 +22,10 @@ conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
 def ansi_to_html(output):
     if output is None:
         return None
-    return conv.convert(output, full=False)
+    try:
+        return conv.convert(output, full=False)
+    except Exception as e:
+        return f'[Error converting ANSI to HTML: {e}]\n\n{output}'
 
 
 def prepare(element_html, data):
