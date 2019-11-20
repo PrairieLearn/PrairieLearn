@@ -12,28 +12,28 @@
 # Sample test
 describe("1", {                               # Specify points per check
     it("Does `fib()` exist?", {               # Description of test
-        source("../student/student_answer.R") # Load student submission
+        source("student_answer.R") # Load student submission
         expect_equal(class(fib), "function")  # Perform test
     })
 })
 
 describe("1", {
     it("Check fib(0)", {
-        source("../student/student_answer.R")
+        source("student_answer.R")
         expect_equal(fib(0), 0)
     })
 })
 
 describe("1", {
     it("Check fib(1)", {
-        source("../student/student_answer.R")
+        source("student_answer.R")
         expect_equal(fib(1), 1)
     })
 })
 
 describe("3", {
     it("Check fib(13)", {
-        source("../student/student_answer.R")
+        source("student_answer.R")
         expect_equal(fib(13), 233)
     })
 })
