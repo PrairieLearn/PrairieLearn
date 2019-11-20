@@ -1,5 +1,18 @@
 #! /bin/bash
 
+#########################################################
+# File: run.sh
+# Version: 1.0.0
+# Author: James Balamuta
+#########################################################
+# Part of the R autograder framework for Prairielearn.
+# This script directs R to launch the code evaluation.
+# 
+#
+# Based off of autograders for Java and C++ 
+# shared by Craig Zilles
+#########################################################
+
 ##### VARIABLE SETUP #####
 echo "[setup] Establishing variables for directories..."
 
@@ -53,7 +66,6 @@ cp -v -R $SERVER_FILES_COURSE_DIR* $AG_DIR
 echo "[run] Starting grading..."
 
 cd $AG_DIR
-echo $PWD
 
 # Run the autograder as root
 # Student code is executed as ag
@@ -73,4 +85,4 @@ echo "[run] Grading complete..."
 # Place the results file into the output directory
 cp $AG_DIR'results.json' $RESULTS_DIR'results.json'
 
-echo "[run] Exported results..."
+echo "[done] Exported results..."
