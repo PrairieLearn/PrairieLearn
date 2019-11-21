@@ -29,6 +29,7 @@ function getFiles(options, callback) {
     let files = [];
     let clientFiles = [];
     let serverFiles = [];
+    let testFiles = [];
     let index = 0;
 
     const ignoreHidden = item => {
@@ -62,6 +63,9 @@ function getFiles(options, callback) {
                 } else if (prefix == options.serverFilesDir) {
                     serverFiles.push(file);
                     index++;
+                } else if ((options.testFilesDir) && (prefix == options.testFilesDir)) {
+                    testFiles.push(file);
+                    index++;
                 } else if (! options.ignoreDirs.includes(prefix)) {
                     files.push(file);
                     index++;
@@ -79,6 +83,7 @@ function getFiles(options, callback) {
             files: files,
             clientFiles: clientFiles,
             serverFiles: serverFiles,
+            testFiles: testFiles,
         });
     });
 }

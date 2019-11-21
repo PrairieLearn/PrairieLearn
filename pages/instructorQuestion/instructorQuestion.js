@@ -461,6 +461,7 @@ router.get('/', function(req, res, next) {
                 baseDir: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
                 clientFilesDir: 'clientFilesQuestion',
                 serverFilesDir: 'serverFilesQuestion',
+                testFilesDir: 'tests',
             }, (err, files) => {
                 if (ERR(err, callback)) return;
                 res.locals.files = files;

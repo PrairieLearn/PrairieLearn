@@ -201,6 +201,7 @@ const verifyFileData = [
         'path': questionPath,
         'clientFilesDir': 'clientFilesQuestion',
         'serverFilesDir': 'serverFilesQuestion',
+        'testFilesDir': 'tests',
         'index': 3,
     },
     {
@@ -1044,6 +1045,45 @@ function doFiles(data) {
                 path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
             });
         });
+        if (data.testFilesDir) {
+            describe('Test Files', function() {
+                testUploadFile({
+                    url: data.url,
+                    path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+                    id: 'NewTest',
+                    contents: 'This is a line of text.',
+                    filename: 'testfile.txt',
+                });
+
+                testUploadFile({
+                    url: data.url,
+                    path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
+                    id: data.index,
+                    contents: 'This is a different line of text.',
+                    filename: 'anotherfile.txt',
+                });
+
+                testDownloadFile({
+                    url: data.url,
+                    id: data.index,
+                    contents: 'This is a different line of text.',
+                });
+
+                testRenameFile({
+                    url: data.url,
+                    id: data.index,
+                    path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+                    contents: 'This is a different line of text.',
+                    new_file_name: path.join(data.testFilesDir, 'subdir', 'testfile.txt'),
+                });
+
+                testDeleteFile({
+                    url: data.url,
+                    id: data.index,
+                    path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
+                });
+            });
+        }
     });
 }
 

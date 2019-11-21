@@ -90,6 +90,14 @@
                                     file_url: urlPrefix + "/question/" + question.id}); %></td>
               </tr>
               <tr>
+                <th>Test Files</th>
+                <td><%- include('../partials/instructorFileList', {
+                                    files_to_list: locals.files.testFiles,
+                                    file_label: "Test",
+                                    file_dir: "tests",
+                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+              </tr>
+              <tr>
                 <th>Topic</th>
                 <td><%- include('../partials/topic', {topic: topic}); %></td>
               </tr>
