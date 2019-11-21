@@ -37,10 +37,10 @@
                         <tr><th>Students</th><td><%= course_instance_stat.number %></td></tr>
                         <tr><th>CIID</th>
                             <td>
-                                <%= course_instance.short_name %>
-                                <button id="changeCiidButton" tabindex="0" class="btn btn-sm btn-outline-primary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change CIID" data-content="<%= include('../partials/changeIdForm', {id_label: 'CIID', buttonID: 'changeCiidButton', id_old: course_instance.short_name, ids: short_names}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                                    <i class="fa fa-edit"></i>
-                                    <span class="d-none d-sm-inline">Change CIID</span>
+                                <span class="pr-2"><%= course_instance.short_name %></span>
+                                <button id="changeCiidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change CIID" data-content="<%= include('../partials/changeIdForm', {id_label: 'CIID', buttonID: 'changeCiidButton', id_old: course_instance.short_name, ids: short_names}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                    <i class="fa fa-i-cursor"></i>
+                                    <span>Change CIID</span>
                                 </button>
                             </td>
                         </tr>

@@ -52,12 +52,13 @@
               </tr>
               <tr>
                 <th>QID</th>
-                <td><%= question.qid %>
-                    <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
-                    <button id="changeQidButton" tabindex="0" class="btn btn-sm btn-outline-primary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change QID" data-content="<%= include('../partials/changeIdForm', {id_label: 'QID', buttonID: 'changeQidButton', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                        <i class="fa fa-edit"></i>
-                        <span class="d-none d-sm-inline">Change QID</span>
+                <td>
+                    <span class="pr-2"><%= question.qid %></span>
+                    <button id="changeQidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change QID" data-content="<%= include('../partials/changeIdForm', {id_label: 'QID', buttonID: 'changeQidButton', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                        <i class="fa fa-i-cursor"></i>
+                        <span>Change QID</span>
                     </button>
+                    <% if (questionGHLink) { %>(<a class="pl-2" target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
                 </td>
               </tr>
               <tr>
