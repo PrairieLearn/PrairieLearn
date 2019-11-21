@@ -1,42 +1,66 @@
-<ul class="list-group list-group-flush small">
-  <li class="list-group-item pt-0 px-0 <% if (files_to_list.length == 0) { %>pb-0<% } else { %>pb-1<%} %>">
+<% if (files_to_list.length > 0) { %>
+<script>
+  $(function() {
+      let showListElement = $("#toggle-list-of-files-<%= file_label %>");
+      showListElement.click(() => {
+          showListElement.text(showListElement.text() == "Show <%= file_label.toLowerCase() %> files" ? "Hide <%= file_label.toLowerCase() %> files" : "Show <%= file_label.toLowerCase() %> files");
+      });
+  });
+</script>
+<% } %>
+
+<div class="small">
+  <div class="row justify-content-start">
+    <div class="col">
     <button id="instructorFileUploadForm-New<%= file_label %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: "New" + file_label}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
       <i class="fa fa-plus"></i>
       <span>Add new <%= file_label.toLowerCase() %> file</span>
     </button>
-  </li>
-  <% files_to_list.forEach(function(f) { %>
-  <li class="list-group-item px-0 py-1">
-    <span class="pr-2 text-monospace"><%= f.name %></span>
-    <% if (f.editable) { %>
-    <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= file_url %>/edit?file=<%= f.path %>">
-      <i class="fa fa-edit"></i>
-      <span>Edit</span>
-    </a>
+    <% if (files_to_list.length > 0) { %>
+    <a class="btn btn-xs btn-secondary" data-toggle="collapse" href="#list-of-files-<%= file_label %>" role="button" id="toggle-list-of-files-<%= file_label %>">Hide <%= file_label.toLowerCase() %> files</a>
     <% } %>
-    <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-      <i class="fa fa-arrow-up"></i>
-      <span>Upload</span>
-    </button>
-    <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
-      <input type="hidden" name="__action" value="download_file">
-      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-      <input type="hidden" name="file_path" value="<%= f.path %>">
-      <button type="submit" class="btn btn-xs btn-secondary">
-        <i class="fa fa-arrow-down"></i>
-        <span>Download</span>
-      </button>
-    </form>
-    <% if (f.moveable) { %>
-    <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-      <i class="fa fa-i-cursor"></i>
-      <span>Rename</span>
-    </button>
-    <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-      <i class="far fa-trash-alt"></i>
-      <span>Delete</span>
-    </button>
-    <% } %>
-  </li>
-  <% }); %>
-</ul>
+    </div>
+  </div>
+  <% if (files_to_list.length > 0) { %>
+  <div class="row justify-content-start collapse show pt-2" id="list-of-files-<%= file_label %>">
+    <div class="col">
+      <ul class="list-group list-group-flush">
+        <% files_to_list.forEach(function(f) { %>
+        <li class="list-group-item px-0 py-1">
+          <span class="pr-2 text-monospace"><%= f.name %></span>
+          <% if (f.editable) { %>
+          <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= file_url %>/edit?file=<%= f.path %>">
+            <i class="fa fa-edit"></i>
+            <span>Edit</span>
+          </a>
+          <% } %>
+          <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-arrow-up"></i>
+            <span>Upload</span>
+          </button>
+          <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
+            <input type="hidden" name="__action" value="download_file">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <input type="hidden" name="file_path" value="<%= f.path %>">
+            <button type="submit" class="btn btn-xs btn-secondary">
+              <i class="fa fa-arrow-down"></i>
+              <span>Download</span>
+            </button>
+          </form>
+          <% if (f.moveable) { %>
+          <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-i-cursor"></i>
+            <span>Rename</span>
+          </button>
+          <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="far fa-trash-alt"></i>
+            <span>Delete</span>
+          </button>
+          <% } %>
+        </li>
+        <% }); %>
+      </ul>
+    </div>
+  </div>
+  <% } %>
+</div>
