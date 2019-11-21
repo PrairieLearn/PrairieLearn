@@ -59,6 +59,8 @@
 
   * Add more detailed grader statistics (Matt West).
 
+  * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz). 
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

@@ -22,6 +22,7 @@ update.packages(ask = FALSE, checkBuilt = TRUE)
 # The following are packages used in STAT 385 and STAT 432
 pkg_list = c(
   'tidyverse',
+  'remotes',
   'RcppArmadillo',
   'rmarkdown',
   'RSQLite',
@@ -61,3 +62,9 @@ to_install_pkgs = pkg_list[!(pkg_list %in% installed.packages()[,"Package"])]
 if(length(to_install_pkgs)) {
   install.packages(to_install_pkgs)
 }
+
+# List of packages only on GitHub
+gh_pkg_list = c('coatless/ucidata')
+
+# Install packages from GitHub
+remotes::install_github(gh_pkg_list)
