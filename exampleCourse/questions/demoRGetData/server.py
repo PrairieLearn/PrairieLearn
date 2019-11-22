@@ -26,18 +26,42 @@ def generate(data):
        ds_nrow = 15
     }
 
+    # Compute distractors    
+    gen_distractor_discrete = function(number_answers, true_answer, min_gap = 1, max_gap = 4) {
+      # Generate distinct random answer offsets from random gaps between answers
+      gaps = sample(min_gap:max_gap, size = number_answers, replace = TRUE)
+      offsets = cumsum(gaps)
+      
+      # Choose one of the answers to be the true answer
+      true_answer_index = sample(number_answers, 1)
+      
+      # Offset of the true answer from the smallest answer
+      true_answer_offset = offsets[true_answer_index]
+      
+      # Calculate the answers by computing the offsets from the known true answer
+      answers = true_answer + offsets - true_answer_offset
+      
+      # Eliminate the true answer from the answers array to get just the distractors
+      distractors = answers[-true_answer_index]
+      
+      return(distractors)
+    }
+
+    # Number of answers
+    n_answers = 5
+
+    # Generate distractors (n_answers - 1) 
+    bad_row = as.list(gen_distractor_discrete(n_answers, ds_nrow))
+    bad_col = as.list(gen_distractor_discrete(n_answers, ds_ncol), 1, 2)
+
+    # Name distractors
+    names(bad_row) = paste0("bad_row_val", seq_len(n_answers - 1))
+    names(bad_col) = paste0("bad_col_val", seq_len(n_answers - 1))
+
     df = knitr::kable(head(df_picked, ds_nrow),
                  align = rep('c', ds_ncol), format = 'html', row.names = FALSE)
 
-    list(params = list(display_data = df, 
-                       bad_row_low = ds_nrow + sample(-8:-1, 1),
-                       bad_row_medium = ds_nrow + sample(1:3, 1),
-                       bad_row_high = ds_nrow + sample(4:6, 1),
-                       bad_row_highest = ds_nrow + sample(6:9, 1),
-                       bad_col_low = ds_ncol + sample(-2:-1, 1), 
-                       bad_col_medium = ds_ncol + sample(1:3, 1),
-                       bad_col_high = ds_ncol + sample(4:7, 1), 
-                       bad_col_highest = ds_ncol + sample(7:10, 1)),
+    list(params = c(list(display_data = df), bad_row, bad_col),
          ans    = list(ds_nrow = ds_nrow, ds_ncol = ds_ncol))
     ''')
 
