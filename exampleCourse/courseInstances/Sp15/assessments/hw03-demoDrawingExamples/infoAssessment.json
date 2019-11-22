@@ -1,9 +1,9 @@
 {
     "uuid": "7A6CFC5A-75AF-49E8-BFBD-035E21EE4F8E",
     "type": "Homework",
-    "title": "PrairieLearn drawing element gallery",
+    "title": "Gallery: Demo Drawing Elements",
     "set": "Homework",
-    "number": "2",
+    "number": "3",
     "allowAccess": [
         {
             "mode": "Public",

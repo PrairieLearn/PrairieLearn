@@ -1,9 +1,9 @@
 {
     "uuid": "69aa799b-9492-4db2-9102-7753263f3863",
     "type": "Homework",
-    "title": "PrairieLearn element example gallery",
+    "title": "Gallery: PrairieLearn Element Options",
     "set": "Homework",
-    "number": "1",
+    "number": "2",
     "allowAccess": [
         {
             "mode": "Public",

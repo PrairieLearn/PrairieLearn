@@ -1,9 +1,9 @@
 {
     "uuid": "baf04c58-2aae-4cbd-9189-d012669b5d02",
     "type": "Homework",
-    "title": "Homework to help instructors learn names",
+    "title": "Instructor Homework: Learning student names",
     "set": "Homework",
-    "number": "4",
+    "number": "6",
     "allowAccess": [
         {
             "role": "Instructor",
