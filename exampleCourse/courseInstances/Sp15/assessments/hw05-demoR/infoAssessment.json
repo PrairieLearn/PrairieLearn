@@ -1,9 +1,9 @@
 {
     "uuid": "83730033-d2da-4361-bf29-95b3b8e8468f",
     "type": "Homework",
-    "title": "Gallery of R Augmented Questions",
+    "title": "Gallery: Demo R Augmented Questions",
     "set": "Homework",
-    "number": "7",
+    "number": "5",
     "allowAccess": [
         {
             "mode": "Public",
@@ -15,10 +15,10 @@
     "zones": [
         {
             "questions": [
-                {"id": "examplesRAddTwoNumbers",   "points": 2, "maxPoints": 10},
-                {"id": "examplesRGetData",   "points": 2, "maxPoints": 10},
-                {"id": "examplesRRNGSample", "points": 2, "maxPoints": 10},
-                {"id": "examplesRSLRFixed", "points": 2, "maxPoints": 10}
+                {"id": "demoRAddTwoNumbers",   "points": 2, "maxPoints": 10},
+                {"id": "demoRGetData",         "points": 2, "maxPoints": 10},
+                {"id": "demoRRNGSample",       "points": 2, "maxPoints": 10},
+                {"id": "demoRSLRFixed",        "points": 2, "maxPoints": 10}
             ]
         }
     ]
