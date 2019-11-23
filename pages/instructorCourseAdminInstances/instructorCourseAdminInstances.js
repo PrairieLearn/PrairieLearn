@@ -96,7 +96,13 @@ function add_write(edit, callback) {
         (callback) => {
             debug(`Generate unique short_name in ${courseInstancesPath}`);
             fs.readdir(courseInstancesPath, (err, filenames) => {
-                if (ERR(err, callback)) return;
+                if (err) {
+                    // if the code is ENOENT, then the "courseInstances" folder does
+                    // not exist, and so there are no course instances yet - otherwise,
+                    // something has gone wrong
+                    if (err.code == 'ENOENT') filenames = [];
+                    else return ERR(err, callback);
+                }
 
                 // Make some effort to create a sane short_name
                 edit.short_name = '';
