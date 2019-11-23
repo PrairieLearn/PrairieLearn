@@ -78,8 +78,12 @@
           <% } %>
           <% if (config.hasShib) { %>
             <a class="btn btn-illinois w-100 position-relative" href="/pl/shibcallback" role="button">
-              <img src="/images/illinois_logo.svg" class="social-icon"/>
-              <span class="font-weight-bold">Sign in with Illinois</span>
+              <% if (config.shibLinkLogo != null) { %>
+                <img src="<%- config.shibLinkLogo %>" class="social-icon"/>
+              <% } else { %>
+                <span class="social-icon">
+              <% } %>
+              <span class="font-weight-bold"><%= config.shibLinkText %></span>
             </a>
           <% } %>
           <% if (config.hasOauth) { %>
