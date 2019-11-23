@@ -96,18 +96,24 @@ function add_write(edit, callback) {
         (callback) => {
             debug(`Generate unique QID`);
             fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
-                if (ERR(err, callback)) return;
-
                 let number = 1;
-                filenames.forEach((filename) => {
-                    let found = filename.match(/^question-([0-9]+)$/);
-                    if (found) {
-                        const foundNumber = parseInt(found[1]);
-                        if (foundNumber >= number) {
-                            number = foundNumber + 1;
+
+                if (err) {
+                    // if the code is ENOENT, then the "questions" folder does
+                    // not exist, and so there are no questions yet - otherwise,
+                    // something has gone wrong
+                    if (err.code != 'ENOENT') return ERR(err, callback);
+                } else {
+                    filenames.forEach((filename) => {
+                        let found = filename.match(/^question-([0-9]+)$/);
+                        if (found) {
+                            const foundNumber = parseInt(found[1]);
+                            if (foundNumber >= number) {
+                                number = foundNumber + 1;
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 edit.qid = `question-${number}`;
                 edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
