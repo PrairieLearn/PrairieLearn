@@ -11,7 +11,7 @@
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
             <% courses.forEach(function(c) { %>
-                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= urlPrefix %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
+                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
             <% }); %>
         </div>
         <% } %>
