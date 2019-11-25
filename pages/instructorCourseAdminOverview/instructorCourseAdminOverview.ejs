@@ -41,6 +41,7 @@
                             <tr><th>Grading Queue</th><td><%= course.grading_queue %></td></tr>
                             <tr><th>Path</th><td><%= course.path %></td></tr>
                             <tr><th>Repository</th><td><%= course.repository %></td></tr>
+                            <% if (locals.files) { %>
                             <tr>
                                 <th>Files</th>
                                 <td><%- include('../partials/instructorFileList', {
@@ -65,6 +66,7 @@
                                                     file_dir: "serverFilesCourse",
                                                     file_url: urlPrefix + "/course_admin"}); %></td>
                             </tr>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>

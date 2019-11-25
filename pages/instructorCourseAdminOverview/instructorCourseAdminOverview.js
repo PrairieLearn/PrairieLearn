@@ -16,8 +16,13 @@ router.get('/', function(req, res, next) {
         serverFilesDir: 'serverFilesCourse',
         ignoreDirs: ['questions', 'elements', 'courseInstances'],
     }, (err, files) => {
-        if (ERR(err, next)) return;
-        res.locals.files = files;
+        if (err) {
+            if (err.code == 'ENOENT') res.locals.files = undefined;
+            else return ERR(err, next);
+        } else {
+            res.locals.files = files;
+        }
+
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
