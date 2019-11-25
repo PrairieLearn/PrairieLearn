@@ -21,7 +21,7 @@
     <%- extraHeadersHtml %>
     <style>
     .popover{
-      max-width: 100%;
+      max-width: 50%;
     }
     </style>
   </head>
@@ -67,38 +67,44 @@
                 <th>Type</th>
                 <td><%= question.type %></td>
               </tr>
+              <% if (locals.files) { %>
               <tr>
-                <th>Files</th>
-                <td><%- include('../partials/instructorFileList', {
+                  <%- include('../partials/instructorFileList', {
                                     files_to_list: locals.files.files,
                                     file_label: "",
                                     file_dir: "",
-                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+                                    file_url: urlPrefix + "/question/" + question.id,
+                                    file_info: "<p>Files you add here will be placed in the directory <code>" + files.dir + "</code>. File paths are relative to this directory.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser.</p><p>It is most common to include three files here: <code>info.json</code> with metadata for the question, <code>question.html</code> with an HTML template for the question, and <code>server.py</code> with server-side code that generates random question instances.</p>",
+                                }); %>
               </tr>
               <tr>
-                <th>Client Files</th>
-                <td><%- include('../partials/instructorFileList', {
-                                    files_to_list: locals.files.clientFiles,
-                                    file_label: "Client",
-                                    file_dir: "clientFilesQuestion",
-                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+                  <%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.clientFiles,
+                                      file_label: "Client",
+                                      file_dir: "clientFilesQuestion",
+                                      file_url: urlPrefix + "/question/" + question.id,
+                                      file_info: "<p>Files you add here will be placed in the subdirectory <code>clientFilesQuestion</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible from the student's webbrowser. This is appropriate for client-side code libraries or for files that a student should have access to, such as an image, reference webpages, or formula sheets.</p>",
+                                  }); %>
               </tr>
               <tr>
-                <th>Server Files</th>
-                <td><%- include('../partials/instructorFileList', {
-                                    files_to_list: locals.files.serverFiles,
-                                    file_label: "Server",
-                                    file_dir: "serverFilesQuestion",
-                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+                  <%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.serverFiles,
+                                      file_label: "Server",
+                                      file_dir: "serverFilesQuestion",
+                                      file_url: urlPrefix + "/question/" + question.id,
+                                      file_info: "<p>Files you add here will be placed in the subdirectory <code>serverFilesQuestion</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser. This is appropriate for server-side code libraries, for example that are used to help generate random question instances.</p>",
+                                  }); %>
               </tr>
               <tr>
-                <th>Test Files</th>
-                <td><%- include('../partials/instructorFileList', {
-                                    files_to_list: locals.files.testFiles,
-                                    file_label: "Test",
-                                    file_dir: "tests",
-                                    file_url: urlPrefix + "/question/" + question.id}); %></td>
+                  <%- include('../partials/instructorFileList', {
+                                      files_to_list: locals.files.testFiles,
+                                      file_label: "Test",
+                                      file_dir: "tests",
+                                      file_url: urlPrefix + "/question/" + question.id,
+                                      file_info: "<p>Files you add here will be placed in the subdirectory <code>tests</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.</p>",
+                                  }); %>
               </tr>
+              <% } %>
               <tr>
                 <th>Topic</th>
                 <td><%- include('../partials/topic', {topic: topic}); %></td>

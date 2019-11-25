@@ -7,7 +7,7 @@
         <script src="/localscripts/histmini.js"></script>
         <style>
             .popover{
-                max-width: 100%;
+                max-width: 50%;
             }
         </style>
     </head>
@@ -31,45 +31,45 @@
                 <div class="card-header bg-primary text-white d-flex">
                     Course <%= course.short_name %>
                 </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover two-column-description">
-                        <tbody>
-                            <tr><th>Short Name</th><td><%= course.short_name %></td></tr>
-                            <tr><th>Title</th><td><%= course.title %></td></tr>
-                            <tr><th>Timezone</th><td><%= course.display_timezone %></td></tr>
-                            <tr><th>Grading Queue</th><td><%= course.grading_queue %></td></tr>
-                            <tr><th>Path</th><td><%= course.path %></td></tr>
-                            <tr><th>Repository</th><td><%= course.repository %></td></tr>
-                            <% if (locals.files) { %>
-                            <tr>
-                                <th>Files</th>
-                                <td><%- include('../partials/instructorFileList', {
-                                                    files_to_list: locals.files.files,
-                                                    file_label: "",
-                                                    file_dir: "",
-                                                    file_url: urlPrefix + "/course_admin"}); %></td>
-                            </tr>
-                            <tr>
-                                <th>Client Files</th>
-                                <td><%- include('../partials/instructorFileList', {
-                                                    files_to_list: locals.files.clientFiles,
-                                                    file_label: "Client",
-                                                    file_dir: "clientFilesCourse",
-                                                    file_url: urlPrefix + "/course_admin"}); %></td>
-                            </tr>
-                            <tr>
-                                <th>Server Files</th>
-                                <td><%- include('../partials/instructorFileList', {
-                                                    files_to_list: locals.files.serverFiles,
-                                                    file_label: "Server",
-                                                    file_dir: "serverFilesCourse",
-                                                    file_url: urlPrefix + "/course_admin"}); %></td>
-                            </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
+                <table class="table table-sm table-hover two-column-description">
+                    <tbody>
+                        <tr><th>Short Name</th><td><%= course.short_name %></td></tr>
+                        <tr><th>Title</th><td><%= course.title %></td></tr>
+                        <tr><th>Timezone</th><td><%= course.display_timezone %></td></tr>
+                        <tr><th>Grading Queue</th><td><%= course.grading_queue %></td></tr>
+                        <tr><th>Path</th><td><%= course.path %></td></tr>
+                        <tr><th>Repository</th><td><%= course.repository %></td></tr>
+                        <% if (locals.files) { %>
+                        <tr>
+                            <%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.files,
+                                                file_label: "",
+                                                file_dir: "",
+                                                file_url: urlPrefix + "/course_admin",
+                                                file_info: "<p>Files you add here will be placed in the root course directory. File paths are relative to this directory.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser.</p><p>It is most common to include two files here: <code>README.md</code> with information about the GitHub repository in which all course content is stored, and <code>infoCourse.json</code> with metadata for the course.</p>",
+                                            }); %>
+                        </tr>
+                        <tr>
+                            <%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.clientFiles,
+                                                file_label: "Client",
+                                                file_dir: "clientFilesCourse",
+                                                file_url: urlPrefix + "/course_admin",
+                                                file_info: "<p>Files you add here will be placed in the subdirectory <code>clientFilesCourse</code> in the root course directory. File paths are relative to the root course directory.</p><p>These files are accessible from the student's webbrowser. This is appropriate for client-side code libraries or for files that a student should have access to, such as an image, reference webpages, or formula sheets.</p>",
+                                            }); %>
+                        </tr>
+                        <tr>
+                            <%- include('../partials/instructorFileList', {
+                                                files_to_list: locals.files.serverFiles,
+                                                file_label: "Server",
+                                                file_dir: "serverFilesCourse",
+                                                file_url: urlPrefix + "/course_admin",
+                                                file_info: "<p>Files you add here will be placed in the subdirectory <code>serverFilesCourse</code> in the root course directory. File paths are relative to the root course directory.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser. This is appropriate for server-side code libraries, for example that are used by many different questions for generating random question instances.</p>",
+                                            }); %>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
             </div>
         </div>
     </body>

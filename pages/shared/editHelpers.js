@@ -84,6 +84,7 @@ function getFiles(options, callback) {
             clientFiles: clientFiles,
             serverFiles: serverFiles,
             testFiles: testFiles,
+            dir: path.relative(options.courseDir, options.baseDir),
         });
     });
 }

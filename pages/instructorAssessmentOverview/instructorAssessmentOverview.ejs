@@ -10,7 +10,7 @@
     <script src="/localscripts/parallel_histograms.js"></script>
     <style>
         .popover{
-        max-width: 100%;
+            max-width: 50%;
         }
     </style>
 </head>
@@ -56,30 +56,35 @@
                                 <% } %>
                             </td>
                         </tr>
+                        <% if (locals.files) { %>
                         <tr>
-                            <th>Files</th>
-                            <td><%- include('../partials/instructorFileList', {
+                            <%- include('../partials/instructorFileList', {
                                                 files_to_list: locals.files.files,
                                                 file_label: "",
                                                 file_dir: "",
-                                                file_url: urlPrefix + "/assessment/" + assessment.id}); %></td>
+                                                file_url: urlPrefix + "/assessment/" + assessment.id,
+                                                file_info: "<p>Files you add here will be placed in the directory <code>" + files.dir + "</code>. File paths are relative to this directory.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser.</p><p>It is most common to include one file here: <code>infoAssessment.json</code> with metadata for the assessment.</p>",
+                                            }); %>
                         </tr>
                         <tr>
-                            <th>Client Files</th>
-                            <td><%- include('../partials/instructorFileList', {
+                            <%- include('../partials/instructorFileList', {
                                                 files_to_list: locals.files.clientFiles,
                                                 file_label: "Client",
                                                 file_dir: "clientFilesAssessment",
-                                                file_url: urlPrefix + "/assessment/" + assessment.id}); %></td>
+                                                file_url: urlPrefix + "/assessment/" + assessment.id,
+                                                file_info: "<p>Files you add here will be placed in the subdirectory <code>clientFilesAssessment</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible from the student's webbrowser. This is appropriate for client-side code libraries or for files that a student should have access to, such as an image, reference webpages, or formula sheets.</p>",
+                                            }); %>
                         </tr>
                         <tr>
-                            <th>Server Files</th>
-                            <td><%- include('../partials/instructorFileList', {
+                            <%- include('../partials/instructorFileList', {
                                                 files_to_list: locals.files.serverFiles,
                                                 file_label: "Server",
                                                 file_dir: "serverFilesAssessment",
-                                                file_url: urlPrefix + "/assessment/" + assessment.id}); %></td>
+                                                file_url: urlPrefix + "/assessment/" + assessment.id,
+                                                file_info: "<p>Files you add here will be placed in the subdirectory <code>serverFilesAssessment</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser. This is appropriate for server-side code libraries, for example that are used by many different questions for generating random question instances.</p>",
+                                            }); %>
                         </tr>
+                        <% } %>
                     </tbody>
                 </table>
             </div>

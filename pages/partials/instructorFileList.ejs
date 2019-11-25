@@ -9,62 +9,68 @@
 </script>
 <% } %>
 
-<div class="small">
-  <div class="row justify-content-start">
-    <div class="col">
-    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
-    <button id="instructorFileUploadForm-New<%= file_label %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: "New" + file_label}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-      <i class="fa fa-plus"></i>
-      <span>Add new <%= file_label.toLowerCase() %> file</span>
-    </button>
-    <% } %>
+<th>
+  <%= file_label %> Files
+  <a class="btn btn-xs" role="button" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="<%= file_label %> Files" tabindex="0" data-content="<%= file_info %>"><span><i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+</th>
+<td>
+  <div class="small">
+    <div class="row justify-content-start">
+      <div class="col">
+      <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+      <button id="instructorFileUploadForm-New<%= file_label %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: "New" + file_label}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+        <i class="fa fa-plus"></i>
+        <span>Add new <%= file_label.toLowerCase() %> file</span>
+      </button>
+      <% } %>
+      <% if (files_to_list.length > 0) { %>
+      <a class="btn btn-xs btn-secondary" data-toggle="collapse" href="#list-of-files-<%= file_label %>" role="button" id="toggle-list-of-files-<%= file_label %>">Hide <%= file_label.toLowerCase() %> files</a>
+      <% } %>
+      </div>
+    </div>
     <% if (files_to_list.length > 0) { %>
-    <a class="btn btn-xs btn-secondary" data-toggle="collapse" href="#list-of-files-<%= file_label %>" role="button" id="toggle-list-of-files-<%= file_label %>">Hide <%= file_label.toLowerCase() %> files</a>
-    <% } %>
-    </div>
-  </div>
-  <% if (files_to_list.length > 0) { %>
-  <div class="row justify-content-start collapse show pt-2" id="list-of-files-<%= file_label %>">
-    <div class="col">
-      <ul class="list-group list-group-flush">
-        <% files_to_list.forEach(function(f) { %>
-        <li class="list-group-item px-0 py-1">
-          <span class="pr-2 text-monospace"><%= f.name %></span>
-          <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
-          <% if (f.editable) { %>
-          <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= file_url %>/edit?file=<%= f.path %>">
-            <i class="fa fa-edit"></i>
-            <span>Edit</span>
-          </a>
-          <% } %>
-          <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-            <i class="fa fa-arrow-up"></i>
-            <span>Upload</span>
-          </button>
-          <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
-            <input type="hidden" name="__action" value="download_file">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="file_path" value="<%= f.path %>">
-            <button type="submit" class="btn btn-xs btn-secondary">
-              <i class="fa fa-arrow-down"></i>
-              <span>Download</span>
+    <div class="row justify-content-start collapse show pt-2" id="list-of-files-<%= file_label %>">
+      <div class="col">
+        <ul class="list-group list-group-flush">
+          <% files_to_list.forEach(function(f) { %>
+          <li class="list-group-item px-0 py-1">
+            <span class="pr-2 text-monospace"><%= f.name %></span>
+            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <% if (f.editable) { %>
+            <a tabindex="0" class="btn btn-xs btn-secondary" role="button" href="<%= file_url %>/edit?file=<%= f.path %>">
+              <i class="fa fa-edit"></i>
+              <span>Edit</span>
+            </a>
+            <% } %>
+            <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+              <i class="fa fa-arrow-up"></i>
+              <span>Upload</span>
             </button>
-          </form>
-          <% if (f.moveable) { %>
-          <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-            <i class="fa fa-i-cursor"></i>
-            <span>Rename</span>
-          </button>
-          <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-            <i class="far fa-trash-alt"></i>
-            <span>Delete</span>
-          </button>
-          <% } %>
-          <% } %>
-        </li>
-        <% }); %>
-      </ul>
+            <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
+              <input type="hidden" name="__action" value="download_file">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <input type="hidden" name="file_path" value="<%= f.path %>">
+              <button type="submit" class="btn btn-xs btn-secondary">
+                <i class="fa fa-arrow-down"></i>
+                <span>Download</span>
+              </button>
+            </form>
+            <% if (f.moveable) { %>
+            <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+              <i class="fa fa-i-cursor"></i>
+              <span>Rename</span>
+            </button>
+            <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+              <i class="far fa-trash-alt"></i>
+              <span>Delete</span>
+            </button>
+            <% } %>
+            <% } %>
+          </li>
+          <% }); %>
+        </ul>
+      </div>
     </div>
+    <% } %>
   </div>
-  <% } %>
-</div>
+</td>
