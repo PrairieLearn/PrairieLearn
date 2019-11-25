@@ -38,10 +38,12 @@
                         <tr><th>CIID</th>
                             <td>
                                 <span class="pr-2"><%= course_instance.short_name %></span>
+                                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
                                 <button id="changeCiidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change CIID" data-content="<%= include('../partials/changeIdForm', {id_label: 'CIID', buttonID: 'changeCiidButton', id_old: course_instance.short_name, ids: short_names}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                     <i class="fa fa-i-cursor"></i>
                                     <span>Change CIID</span>
                                 </button>
+                                <% } %>
                             </td>
                         </tr>
                         <tr>
@@ -71,6 +73,7 @@
                     </tbody>
                 </table>
             </div>
+            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
             <div class="card-footer">
                 <div class="row">
                     <div class="col-auto">
@@ -106,6 +109,7 @@
                     </div>
                 </div>
             </div>
+            <% } %>
         </div>
     </div>
 </body>

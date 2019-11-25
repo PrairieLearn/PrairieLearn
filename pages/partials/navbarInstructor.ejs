@@ -3,22 +3,24 @@
     <!-- Course Admin ---------------------------------------------------------------->
 
     <li class="nav-item btn-group border-left <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
-        <a class="nav-link" href="<%= urlPrefix %>/course_admin" role="button">
+        <a class="nav-link <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
+        <% if ((typeof courses != 'undefined') && (courses.length > 0)) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
-        <% if (typeof courses != 'undefined') { %>
-            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
-                <% courses.forEach(function(c) { %>
-                    <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= urlPrefix %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
-                <% }); %>
-            </div>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
+            <% courses.forEach(function(c) { %>
+                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= urlPrefix %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
+            <% }); %>
+        </div>
         <% } %>
     </li>
 
+    <% if (authz_data.has_course_permission_view) { %>
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "issues") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
     <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "questions") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/questions">Questions</a></li>
+    <% } %>
     <% if (!devMode && authz_data.has_course_permission_edit) { %>
         <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
     <% } %>

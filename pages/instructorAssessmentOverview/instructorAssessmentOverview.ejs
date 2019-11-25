@@ -48,10 +48,12 @@
                         <tr><th>AID</th>
                             <td>
                                 <span class="pr-2"><%= assessment.tid %></span>
+                                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
                                 <button id="changeAidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change AID" data-content="<%= include('../partials/changeIdForm', {id_label: 'AID', buttonID: 'changeAidButton', id_old: assessment.tid, ids: tids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                     <i class="fa fa-i-cursor"></i>
                                     <span>Change AID</span>
                                 </button>
+                                <% } %>
                             </td>
                         </tr>
                         <tr>
@@ -81,6 +83,7 @@
                     </tbody>
                 </table>
             </div>
+            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
             <div class="card-footer">
                 <div class="row">
                     <div class="col-auto">
@@ -116,6 +119,7 @@
                     </div>
                 </div>
             </div>
+            <% } %>
         </div>
     </div>
 </body>

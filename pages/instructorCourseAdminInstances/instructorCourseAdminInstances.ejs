@@ -16,6 +16,7 @@
                         <div class="col-auto">
                             <span class="text-white">Course instances</span>
                         </div>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
                         <div class="col-auto">
                             <form name="add-course-instance-form" method="POST">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -23,6 +24,7 @@
                                 <span class="d-none d-sm-inline">Add course instance</span></button>
                             </form>
                         </div>
+                        <% } %>
                     </div>
                 </div>
 
