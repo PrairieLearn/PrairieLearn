@@ -83,6 +83,8 @@
 
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
+  * Change institution definitions to read from the `institutions` table (Dave Mussulman).
+
   * Change documentation examples to be self-contained (James Balamuta).
 
   * Change external grader documentation to show file system structure (James Balamuta).

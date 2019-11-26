@@ -34,21 +34,6 @@ BEGIN
     END IF;
 
     IF course_instance_access_rule.institution IS NOT NULL THEN
-        IF course_instance_access_rule.institution = 'UIUC' THEN
-            IF uid !~ '^.+@illinois\.edu' THEN
-                available := FALSE;
-            END IF;
-        END IF;
-        IF course_instance_access_rule.institution = 'ZJUI' THEN
-            IF uid !~ '^.+@intl\.zju\.edu\.cn' THEN
-                available := FALSE;
-            END IF;
-        END IF;
-        IF course_instance_access_rule.institution = 'gvsu.edu' THEN
-            IF uid !~ '^.+@mail\.gvsu\.edu' THEN
-                available := FALSE;
-            END IF;
-        END IF;
         IF course_instance_access_rule.institution = 'LTI' THEN
             -- get the uid row from users
             SELECT *
@@ -60,6 +45,17 @@ BEGIN
             IF user_result.provider != 'lti'
                OR user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
                     available := FALSE;
+            END IF;
+        ELSIF course_instance_access_rule.institution != 'Any' THEN
+            -- check the institutions table
+            PERFORM * FROM institutions AS i
+            WHERE
+                i.short_name = course_instance_access_rule.institution
+                AND check_course_instance_access_rule.uid LIKE i.uid_pattern
+            ;
+
+            IF NOT FOUND THEN
+                available := FALSE;
             END IF;
         END IF;
     END IF;
