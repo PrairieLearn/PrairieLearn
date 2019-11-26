@@ -89,8 +89,8 @@ describe('Zone grading homework assessment', function() {
         });
 
         describe('the database', function() {
-            it('should contain HW6', function(callback) {
-                sqldb.queryOneRow(sql.select_hw6, [], function(err, result) {
+            it('should contain HW4', function(callback) {
+                sqldb.queryOneRow(sql.select_hw4, [], function(err, result) {
                     if (ERR(err, callback)) return;
                     locals.assessment_id = result.rows[0].id;
                     callback(null);
@@ -115,11 +115,11 @@ describe('Zone grading homework assessment', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain HW6', function() {
+            it('should contain "Homework to test per-zone grading"', function() {
                 elemList = locals.$('td a:contains("Homework to test per-zone grading")');
                 assert.lengthOf(elemList, 1);
             });
-            it('should have the correct link for HW6', function() {
+            it('should have the correct link for HW4', function() {
                 locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
                 assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
             });

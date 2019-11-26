@@ -11,6 +11,7 @@
 !docker/
 !elements/
 !exampleCourse/
+!testCourse/
 !lib/
 !middlewares/
 !migrations/
