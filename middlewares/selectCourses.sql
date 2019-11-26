@@ -9,8 +9,7 @@ WITH
             cp.user_id = $user_id
     )
 SELECT
-    c.short_name,
-    c.id
+    c.*
 FROM
     pl_courses AS c
     LEFT JOIN course_permissions_for_user AS cp ON (cp.course_id = c.id)

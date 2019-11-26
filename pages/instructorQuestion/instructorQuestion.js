@@ -10,12 +10,13 @@ const sanitizeName = require('../../lib/sanitize-name');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const debug = require('debug')('prairielearn:instructorQuestion');
 const fs = require('fs-extra');
 const uuidv4 = require('uuid/v4');
 const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
+const config = require('../../lib/config');
 
 const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
 
@@ -323,36 +324,71 @@ router.post('/', function(req, res, next) {
 
         if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
 
-        // Do not allow users to edit the exampleCourse
-        if (res.locals.course.options.isExampleCourse) {
-            return next(error.make(400, `attempting to edit example course`, {
-                locals: res.locals,
-                body: req.body,
-            }));
-        }
+        if (req.body.to_course_id == res.locals.course.id) {
+            // In this case, we are making a duplicate of this question in the same course
 
-        let edit = {
-            userID: res.locals.user.user_id,
-            courseID: res.locals.course.id,
-            coursePath: res.locals.course.path,
-            uid: res.locals.user.uid,
-            user_name: res.locals.user.name,
-            templatePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
-        };
-
-        edit.description = 'Copy question in browser and sync';
-        edit.write = copy_write;
-        editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error(e))) {
-                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
-                debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
-                sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
-                });
+            // Do not allow users to edit the exampleCourse
+            if (res.locals.course.options.isExampleCourse) {
+                return next(error.make(400, `attempting to edit example course`, {
+                    locals: res.locals,
+                    body: req.body,
+                }));
             }
-        });
+
+            let edit = {
+                userID: res.locals.user.user_id,
+                courseID: res.locals.course.id,
+                coursePath: res.locals.course.path,
+                uid: res.locals.user.uid,
+                user_name: res.locals.user.name,
+                templatePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+            };
+
+            edit.description = 'Copy question in browser and sync';
+            edit.write = copy_write;
+            editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
+                if (ERR(err, (e) => logger.error(e))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
+                    sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
+                        if (ERR(err, next)) return;
+                        res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                    });
+                }
+            });
+        } else {
+            // In this case, we are sending a copy of this question to a different course
+            debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
+            let params = {
+                from_course_id: res.locals.course.id,
+                to_course_id: req.body.to_course_id,
+                user_id: res.locals.user.user_id,
+                transfer_type: 'copy_question',
+                from_filename: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+            };
+            async.waterfall([
+                (callback) => {
+                    const f = uuidv4();
+                    const relDir = path.join(f.slice(0,3), f.slice(3,6));
+                    params.storage_filename = path.join(relDir, f.slice(6));
+                    if (config.filesRoot == null) return callback(new Error('config.filesRoot is null'));
+                    fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {errorOnExist: true}, (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                },
+                (callback) => {
+                    sqldb.queryOneRow(sql.insert_file_transfer, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        callback(null, result.rows[0]);
+                    });
+                },
+            ], (err, results) => {
+                if (ERR(err, next)) return;
+                res.redirect(`${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${results.id}`);
+            });
+        }
     } else if (req.body.__action == 'delete_question') {
         debug('Delete question');
 

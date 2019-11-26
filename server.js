@@ -592,6 +592,11 @@ app.use('/pl/course/:course_id/question/:question_id', [
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
 
+app.use('/pl/course/:course_id/file_transfer', [
+    require('./pages/instructorFileTransfer/instructorFileTransfer'),
+]);
+
+app.use('/pl/course/:course_id/edit_error', require('./pages/editError/editError'));
 
 app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/overview`);
