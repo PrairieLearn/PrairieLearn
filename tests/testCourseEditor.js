@@ -92,7 +92,11 @@ const testEditData = [
     },
     {
         url: `${courseInstanceUrl}/question/1`,
+        button: 'copyQuestionButton',
         form: 'copy-question-form',
+        data: {
+            to_course_id: 1,
+        },
         action: 'copy_question',
         info: 'questions/question-1/info.json',
         files: new Set([
