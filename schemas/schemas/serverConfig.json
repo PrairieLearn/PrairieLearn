@@ -36,14 +36,6 @@
             "description": "Filename to use for server logging.",
             "type": "string"
         },
-        "institutionDefault": {
-            "description": "Default institution applied to courseInstance allowAccess",
-            "type": "string"
-        },
-        "timezoneDefault": {
-            "description": "Default timezone applied to courseInstance config",
-            "type": "string"
-        },
         "authType": {
             "description": "The type of authentication to use.",
             "enum": [

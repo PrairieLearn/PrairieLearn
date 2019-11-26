@@ -5,7 +5,7 @@
       <label>Institution:</label>
       <select name="institution" class="form-control">
           <% institutions.forEach(function(i) { %>
-              <option value="<%= i.id %>"><%= i.institution %></option>
+              <option value="<%= i.id %>"><%= i.short_name %></option>
           <% }); %>
       </select>
   </div>

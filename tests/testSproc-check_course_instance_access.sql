@@ -15,8 +15,8 @@ setup_ciars AS (
         (3, 1, 3, null, null, '2012-01-01 00:00:00-00', '2012-12-31 23:59:59-00', 'notInDb')
 ),
 setup_institutions AS (
-    INSERT INTO institutions (id, institution, uid_pattern) VALUES
-        (100, 'school', '%@school.edu')
+    INSERT INTO institutions (id, short_name, long_name, uid_pattern) VALUES
+        (100, 'school', 'School of testing', '%@school.edu')
 )
 SELECT true;
 

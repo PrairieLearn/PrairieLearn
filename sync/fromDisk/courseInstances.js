@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const config = require('../../lib/config');
 
 module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
     callbackify(async () => {
@@ -22,7 +21,7 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
                 uids: _(accessRule).has('uids') ? accessRule.uids : null,
                 start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
                 end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-                institution: _(accessRule).has('institution') ? accessRule.institution : config.institutionDefault,
+                institution: _(accessRule).has('institution') ? accessRule.institution : 'Default',
             }));
 
             return {
@@ -30,7 +29,7 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
                 short_name: courseInstanceShortName,
                 long_name: courseInstance.longName,
                 number: courseInstance.number,
-                display_timezone: courseInstance.timezone || courseInfo.timezone || config.timezoneDefault,
+                display_timezone: courseInstance.timezone || courseInfo.timezone || 'America/Chicago',
                 access_rules: accessRules,
             };
         });

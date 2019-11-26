@@ -185,18 +185,15 @@
             <thead>
               <tr>
                 <th>Institution</th>
+                <th>Long name</th>
                 <th>uid_pattern</th>
                 <th></th>
             </thead>
             <tbody>
               <% institutions.forEach(function(inst, i) { %>
               <tr>
-                 <td>
-                     <%= inst.institution %>
-                     <% if (inst.institution == config.institutionDefault) { %>
-                     <strong>(default)</strong>
-                     <% } %>
-                 </td>
+                 <td><%= inst.short_name %></td>
+                 <td><%= inst.long_name %></td>
                  <td><code><%= inst.uid_pattern %></code></td>
                  <td></td>
               </tr>

@@ -15,7 +15,6 @@ router.get('/', (req, res, next) => {
         if (ERR(err, next)) return;
 
         _.assign(res.locals, result.rows[0]);
-        console.log(res.locals);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

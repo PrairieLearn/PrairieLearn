@@ -50,7 +50,7 @@ BEGIN
             -- check the institutions table
             PERFORM * FROM institutions AS i
             WHERE
-                i.institution = course_instance_access_rule.institution
+                i.short_name = course_instance_access_rule.institution
                 AND check_course_instance_access_rule.uid LIKE i.uid_pattern
             ;
 
