@@ -4,6 +4,7 @@ columns
     display_timezone: text
     grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
+    institution_id: bigint
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
@@ -12,6 +13,9 @@ columns
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pl_courses_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     assessment_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
