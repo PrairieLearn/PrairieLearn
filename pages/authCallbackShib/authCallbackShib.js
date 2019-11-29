@@ -7,7 +7,7 @@ var csrf = require('../../lib/csrf');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 
 router.get('/:action?/:target(*)?', function(req, res, next) {
-    if (!config.hasShib) return next(new Error('Illinois Shibboleth login is not enabled'));
+    if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
     var authUid = null;
     var authName = null;
     var authUin = null;
@@ -23,7 +23,7 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
         authUid,
         authName,
         authUin,
-        'shibboleth',
+        'Shibboleth',
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
         if (ERR(err, next)) return;

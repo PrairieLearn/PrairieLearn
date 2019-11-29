@@ -44,6 +44,7 @@ module.exports = function(req, res, next) {
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
             res.locals.authn_user = result.rows[0].user;
+            res.locals.authn_institution = result.rows[0].institution;
             res.locals.is_administrator = result.rows[0].is_administrator;
 
             let params = {
@@ -84,6 +85,7 @@ module.exports = function(req, res, next) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
                 res.locals.authn_user = result.rows[0].user;
+                res.locals.authn_institution = result.rows[0].institution;
                 res.locals.is_administrator = result.rows[0].is_administrator;
                 next();
             });
@@ -100,8 +102,7 @@ module.exports = function(req, res, next) {
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
     if (authnData == null) {
-        // if CSRF checking failed then clear the cookie and redirect to login
-        logger.error('authn cookie CSRF failure');
+        // if authn cookie check failed then clear the cookie and redirect to login
         res.clearCookie('pl_authn');
         res.redirect('/pl/login');
         return;
@@ -114,6 +115,7 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
+        res.locals.authn_institution = result.rows[0].institution;
         res.locals.is_administrator = result.rows[0].is_administrator;
         next();
     });

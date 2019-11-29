@@ -1,7 +1,7 @@
 -- BLOCK select_user
 SELECT
-    to_jsonb(u.*) || jsonb_build_object(
-          'institution', i.short_name) AS user,
+    to_jsonb(u.*) AS user,
+    to_jsonb(i.*) AS institution,
     (adm.id IS NOT NULL) AS is_administrator
 FROM
     users AS u

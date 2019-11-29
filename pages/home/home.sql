@@ -27,7 +27,8 @@ courses_list AS (
 enrollments_for_user AS (
     SELECT
         e.*,
-        u.uid
+        u.uid,
+        u.institution_id
     FROM
         enrollments AS e
         JOIN users AS u ON (u.user_id = e.user_id)
@@ -51,7 +52,7 @@ course_instances_list AS (
             $is_administrator
             OR (
                 e.id IS NOT NULL
-                AND check_course_instance_access(ci.id, e.role, e.uid, $req_date)
+                AND check_course_instance_access(ci.id, e.role, e.uid, e.institution_id, $req_date)
             )
         )
 )

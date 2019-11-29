@@ -1,9 +1,11 @@
+DROP FUNCTION IF EXISTS users_select_or_insert(text, text, text, text);
+
 CREATE OR REPLACE FUNCTION
     users_select_or_insert(
         IN uid text,
         IN name text,
         IN uin text,
-        IN provider text,
+        IN authn_provider text,
         OUT user_id bigint
     )
 AS $$

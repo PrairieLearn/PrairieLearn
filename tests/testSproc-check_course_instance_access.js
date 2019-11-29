@@ -65,7 +65,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if uid not in list', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'unknown@host.com',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
@@ -81,7 +80,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if date is before start_date', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'person1@host.com',
             date: '2007-07-07 06:06:06-00',
             ciar_id: 1,
@@ -97,7 +95,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if date is after end_date', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'person1@host.com',
             date: '2017-07-07 06:06:06-00',
             ciar_id: 1,
@@ -113,7 +110,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('pass if institution matches', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@school.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
@@ -129,7 +125,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if institution specified and does not match', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
@@ -145,7 +140,6 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if institution specified in rule is not in db', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 3,

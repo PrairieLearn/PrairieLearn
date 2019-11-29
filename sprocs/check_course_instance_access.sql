@@ -1,10 +1,14 @@
+DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, timestamptz);
+DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, bigint, timestamptz);
+
 CREATE OR REPLACE FUNCTION
     check_course_instance_access (
         course_instance_id bigint,
         role enum_role,
         uid text,
-        date TIMESTAMP WITH TIME ZONE
-    ) RETURNS BOOLEAN AS $$
+        institution_id bigint,
+        date timestamptz
+    ) RETURNS boolean AS $$
 SELECT
     CASE
         WHEN check_course_instance_access.role >= 'Instructor' THEN TRUE
@@ -12,7 +16,8 @@ SELECT
             SELECT
                 COALESCE(bool_or(
                     check_course_instance_access_rule(ciar, check_course_instance_access.role,
-                        check_course_instance_access.uid, check_course_instance_access.date)
+                        check_course_instance_access.uid, check_course_instance_access.institution_id,
+                        check_course_instance_access.date)
                 ), FALSE)
             FROM
                 course_instance_access_rules AS ciar

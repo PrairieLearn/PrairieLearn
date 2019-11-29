@@ -1,10 +1,14 @@
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, timestamptz);
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, timestamptz);
+
 CREATE OR REPLACE FUNCTION
     check_course_instance_access_rule (
         course_instance_access_rule course_instance_access_rules,
         role enum_role,
         uid text,
-        date TIMESTAMP WITH TIME ZONE
-    ) RETURNS BOOLEAN AS $$
+        institution_id bigint,
+        date timestamptz
+    ) RETURNS boolean AS $$
 DECLARE
     available boolean := TRUE;
     user_result record;
@@ -50,8 +54,8 @@ BEGIN
             -- check the institutions table
             PERFORM * FROM institutions AS i
             WHERE
-                i.short_name = course_instance_access_rule.institution
-                AND check_course_instance_access_rule.uid LIKE i.uid_pattern
+                i.id = institution_id
+                AND i.short_name = course_instance_access_rule.institution
             ;
 
             IF NOT FOUND THEN

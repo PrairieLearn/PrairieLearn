@@ -23,7 +23,7 @@ router.all('/', function(req, res, next) {
             user.upn,         // uid
             user.displayName, // name
             null,             // uin
-            'azure',          // provider
+            'Azure',          // provider
         ];
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;

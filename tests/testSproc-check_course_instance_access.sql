@@ -16,7 +16,9 @@ setup_ciars AS (
 ),
 setup_institutions AS (
     INSERT INTO institutions (id, short_name, long_name, uid_pattern) VALUES
-        (100, 'school', 'School of testing', '%@school.edu')
+        (100, 'host', 'Generic host', '%@host.com'),
+        (101, 'school', 'School of testing', '%@school.edu'),
+        (102, 'anotherSchool', 'Another School', '%@anotherschool.edu')
 )
 SELECT true;
 
@@ -25,13 +27,18 @@ SELECT
     *
 FROM
     course_instance_access_rules AS ciar,
-    check_course_instance_access_rule(ciar, $role, $uid, $date) AS authorized
+    institutions AS i,
+    check_course_instance_access_rule(ciar, $role, $uid, i.id, $date) AS authorized
 WHERE
-    ciar.id=$ciar_id;
+    $uid LIKE i.uid_pattern
+    AND ciar.id = $ciar_id;
 
 -- BLOCK cia_test
 SELECT
     *
 FROM
-    check_course_instance_access($ci_id, $role, $uid, $date) AS authorized
+    institutions AS i,
+    check_course_instance_access($ci_id, $role, $uid, i.id, $date) AS authorized
+WHERE
+    $uid LIKE i.uid_pattern
 ;
