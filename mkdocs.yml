@@ -35,3 +35,5 @@ pages:
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
   - 'Old v1/v2 question format': 'oldQuestion.md'
+- Admin Guide:
+  - 'Adding new courses': 'adminCourse.md'
