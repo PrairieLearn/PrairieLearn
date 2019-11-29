@@ -5,28 +5,69 @@ CREATE OR REPLACE FUNCTION
         IN uid text,
         IN name text,
         IN uin text,
-        IN authn_provider text,
+        IN authn_provider_name text,
         OUT user_id bigint
     )
 AS $$
 DECLARE
     u users%rowtype;
+    institution institutions%rowtype;
     new_u users%rowtype;
 BEGIN
-    -- try and get an existing user with "uid" as the key
+    -- try and get an existing user with "uin" as the key
     SELECT *
     INTO u
     FROM users
-    WHERE users.uid = users_select_or_insert.uid OR
-          users.uin = users_select_or_insert.uin;
+    WHERE users.uin = users_select_or_insert.uin;
+
+    -- if we couldn't match "uin", try "uid"
+    IF u.id IS NULL THEN
+        SELECT *
+        INTO u
+        FROM users
+        WHERE users.uid = users_select_or_insert.uid;
+    END IF;
+
+    -- if we found a user, see whether their institution is valid
+    IF u.institution_id IS NOT NULL THEN
+        SELECT i.*
+        INTO institution
+        FROM institutions AS i
+        WHERE
+            i.id = u.institution_id
+            AND users_select_or_insert.uid LIKE u.uid_pattern;
+    END IF;
+
+    -- if we don't have an institution at this point, try all of them
+    IF institution.id IS NULL THEN
+        SELECT i.*
+        INTO institution
+        FROM institutions AS i
+        WHERE users_select_or_insert.uid LIKE u.uid_pattern;
+    END IF;
+
+    -- if we have an institution, make sure the authn_provider is valid for it
+    IF institution.id IS NOT NULL THEN
+        PERFORM *
+        FROM
+            institution_authn_providers AS iap
+            JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
+        WHERE
+            iap.institution_id = institution.id
+            AND ap.name = authn_provider_name;
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
+        END IF;
+    END IF;
 
     -- if we don't have the user already, make it
-    IF NOT FOUND THEN
+    IF u.id IS NULL THEN
         INSERT INTO users
-            (uid, name, uin, provider)
+            (uid, name, uin, institution_id)
         VALUES
             (users_select_or_insert.uid, users_select_or_insert.name,
-            users_select_or_insert.uin, users_select_or_insert.provider)
+            users_select_or_insert.uin, institution.id)
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
@@ -83,9 +124,9 @@ BEGIN
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 
-    IF provider IS NOT NULL AND provider IS DISTINCT FROM u.provider THEN
+    IF institition.id IS DISTINCT FROM u.institution_id THEN
         UPDATE users
-        SET provider = users_select_or_insert.provider
+        SET institution_id = institution.id
         WHERE users.user_id = u.user_id
         RETURNING * INTO new_u;
 
@@ -94,8 +135,8 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'provider', u.user_id, 'update',
-            jsonb_build_object('provider', provider),
+            ('users', 'institution_id', u.user_id, 'update',
+            jsonb_build_object('institution_id', institution.id),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 
