@@ -4,6 +4,8 @@ var debug = require('debug')('prairielearn:testSproc-users_select_or_insert');
 var _ = require('lodash');
 
 var sqldb = require('@prairielearn/prairielib').sqldb;
+var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperDb = require('./helperDb');
 
 var get_user_params = (user_id, callback) => {
@@ -224,7 +226,7 @@ describe('sproc users_select_or_insert tests', () => {
     it('user 2 fails to log in via Azure', (callback) => {
         var params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Azure'];
 
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        sqldb.call('users_select_or_insert', params, (err, _result) => {
             if (err == null) {
                 return callback(new Error('users_select_or_insert succeeded'));
             }

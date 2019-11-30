@@ -15,8 +15,8 @@ indexes
     users_institution_id_key: USING btree (institution_id)
 
 foreign-key constraints
-    users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     users_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     access_tokens: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
