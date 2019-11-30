@@ -21,7 +21,7 @@ BEGIN
     WHERE users.uin = users_select_or_insert.uin;
 
     -- if we couldn't match "uin", try "uid"
-    IF u.id IS NULL THEN
+    IF u.user_id IS NULL THEN
         SELECT *
         INTO u
         FROM users
@@ -35,7 +35,7 @@ BEGIN
         FROM institutions AS i
         WHERE
             i.id = u.institution_id
-            AND users_select_or_insert.uid LIKE u.uid_pattern;
+            AND users_select_or_insert.uid LIKE i.uid_pattern;
     END IF;
 
     -- if we don't have an institution at this point, try all of them
@@ -43,7 +43,7 @@ BEGIN
         SELECT i.*
         INTO institution
         FROM institutions AS i
-        WHERE users_select_or_insert.uid LIKE u.uid_pattern;
+        WHERE users_select_or_insert.uid LIKE i.uid_pattern;
     END IF;
 
     -- if we have an institution, make sure the authn_provider is valid for it
@@ -62,7 +62,7 @@ BEGIN
     END IF;
 
     -- if we don't have the user already, make it
-    IF u.id IS NULL THEN
+    IF u.user_id IS NULL THEN
         INSERT INTO users
             (uid, name, uin, institution_id)
         VALUES
@@ -124,7 +124,7 @@ BEGIN
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 
-    IF institition.id IS DISTINCT FROM u.institution_id THEN
+    IF institution.id IS DISTINCT FROM u.institution_id THEN
         UPDATE users
         SET institution_id = institution.id
         WHERE users.user_id = u.user_id
