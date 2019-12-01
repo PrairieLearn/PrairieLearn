@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histmini.js"></script>
+    <style>
+      .popover{
+        max-width: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      $(function() {
+        $('[data-toggle="popover"]').popover({
+            sanitize: false
+        })
+      });
+      // make the file inputs display the file name
+      $(document).on('change', '.custom-file-input', function () {
+        let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+        $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/navtabs'); %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          <% file_browser.paths.branch.forEach((dir) => { %>
+            <% if (dir.canView) { %>
+              <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= dir.path %>"><%= dir.name %></a>
+            <% } else { %>
+              <span><%= dir.name %></span>
+            <% } %>
+            <span class="px-2"> / </span>
+          <% }); %>
+        </div>
+        <table class="table table-sm table-hover">
+          <tbody>
+            <% file_browser.files.forEach(function(f) { %>
+            <tr>
+              <td>
+                <span><i class="far fa-file-alt fa-fw"></i></span>
+                <span><%= f.name %></span>
+              </td>
+              <td>
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/edit?file=<%= f.path %>">
+                  <i class="fa fa-edit"></i>
+                  <span>Edit</span>
+                </a>
+                <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canUpload) { %>disabled<% } %>>
+                  <i class="fa fa-arrow-up"></i>
+                  <span>Upload</span>
+                </button>
+                <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
+                  <input type="hidden" name="__action" value="download_file">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <input type="hidden" name="file_path" value="<%= f.path %>">
+                  <button type="submit" class="btn btn-xs btn-secondary" <% if (!f.canDownload) { %> disabled <% } %>>
+                    <i class="fa fa-arrow-down"></i>
+                    <span>Download</span>
+                  </button>
+                </form>
+                <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
+                  <i class="fa fa-i-cursor"></i>
+                  <span>Rename</span>
+                </button>
+                <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canDelete) { %>disabled<% } %>>
+                  <i class="far fa-trash-alt"></i>
+                  <span>Delete</span>
+                </button>
+              </td>
+            </tr>
+            <% }); %>
+            <% file_browser.dirs.forEach(function(d) { %>
+            <tr>
+              <td colspan="2">
+                <i class="fa fa-folder fa-fw"></i>
+                <% if (d.canView) { %>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= d.path %>"><%= d.name %></a>
+                <% } else { %>
+                  <span><%= d.name %></span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

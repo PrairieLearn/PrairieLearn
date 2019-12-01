@@ -646,6 +646,10 @@ app.use('/pl/course/:course_id/course_admin/edit', [
     function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
+app.use('/pl/course/:course_id/course_admin/files', [
+    function(req, res, next) {res.locals.navSubPage = 'files'; next();},
+    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+]);
 
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));

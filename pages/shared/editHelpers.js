@@ -189,8 +189,8 @@ function processFileAction(req, res, params, next) {
         });
     } else if (req.body.__action == 'rename_file') {
         debug('Rename file');
-        const oldFilePath = path.join(params.container, req.body.old_file_name);
-        const newFilePath = path.join(params.container, req.body.new_file_name);
+        const oldFilePath = path.join(req.body.working_path, req.body.old_file_name);
+        const newFilePath = path.join(req.body.working_path, req.body.new_file_name);
         if (oldFilePath == newFilePath) {
             debug('new file name is the same as old file name, so abort rename');
             res.redirect(req.originalUrl);
@@ -287,6 +287,11 @@ function processFileAction(req, res, params, next) {
     }
 }
 
+function contains(parentPath, childPath) {
+    const relPath = path.relative(parentPath, childPath);
+    return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+}
+
 function canEdit(params, callback) {
     const res = params.res;
     const req = params.req;
@@ -296,21 +301,16 @@ function canEdit(params, callback) {
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.options.isExampleCourse) {
-        return callback(error.make(400, `attempting to edit example course`, {
-            locals: res.locals,
-            body: req.body,
-        }));
+        return callback(new Error(`attempting to edit example course`));
     }
 
-    // Do not allow users to edit files outside the course
-    if (params.fileName) {
-        const fullPath = path.join(res.locals.course.path, params.fileName);
-        const relPath = path.relative(res.locals.course.path, fullPath);
-        if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
-            return callback(error.make(400, `attempting to edit file outside course directory: ${params.fileName}`, {
-                locals: res.locals,
-                body: req.body,
-            }));
+    if (params.contained) {
+        if (params.contained.some((workingPath) => (!contains(params.container.rootPath, workingPath)))) {
+            return callback(new Error(`all paths ${params.contained} must be inside ${params.container.rootPath}`));
+        }
+
+        if (params.contained.some((workingPath) => (params.container.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, workingPath))))) {
+            return callback(new Error(`all paths ${params.contained} must be outside all paths ${params.container.invalidRootPaths}`));
         }
     }
 
