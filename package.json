@@ -56,7 +56,7 @@
         "on-finished": "^2.3.0",
         "parse5": "^5.1.1",
         "passport": "^0.4.0",
-        "passport-azure-ad": "^4.1.0",
+        "passport-azure-ad": "^4.2.0",
         "pg": "^7.14.0",
         "plist": "^3.0.0",
         "popper.js": "^1.16.0",
