@@ -54,7 +54,7 @@
         "numeric": "^1.2.6",
         "oauth-signature": "^1.5.0",
         "on-finished": "^2.3.0",
-        "parse5": "^5.0.0",
+        "parse5": "^5.1.1",
         "passport": "^0.4.0",
         "passport-azure-ad": "^4.1.0",
         "pg": "^7.12.1",
