@@ -27,18 +27,14 @@ SELECT
     *
 FROM
     course_instance_access_rules AS ciar,
-    institutions AS i,
-    check_course_instance_access_rule(ciar, $role, $uid, i.id, $date) AS authorized
+    check_course_instance_access_rule(ciar, $role, $uid, (SELECT id FROM institutions WHERE $uid LIKE uid_pattern), $date) AS authorized
 WHERE
-    $uid LIKE i.uid_pattern
-    AND ciar.id = $ciar_id;
+    ciar.id = $ciar_id
+;
 
 -- BLOCK cia_test
 SELECT
     *
 FROM
-    institutions AS i,
-    check_course_instance_access($ci_id, $role, $uid, i.id, $date) AS authorized
-WHERE
-    $uid LIKE i.uid_pattern
+    check_course_instance_access($ci_id, $role, $uid, (SELECT id FROM institutions WHERE $uid LIKE uid_pattern), $date) AS authorized
 ;
