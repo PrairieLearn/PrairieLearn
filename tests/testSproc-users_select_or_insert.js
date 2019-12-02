@@ -23,7 +23,7 @@ var get_user_params = (user_id, callback) => {
 var base_params = [ 'user@host.com', 'Joe User', null, 'Shibboleth' ];
 
                   // uid,             name,      uin,  institution_id
-var base_user =   [ 'user@host.com', 'Joe User', null, 1 ];
+var base_user =   [ 'user@host.com', 'Joe User', null, null ];
 
 describe('sproc users_select_or_insert tests', () => {
 
@@ -97,7 +97,7 @@ describe('sproc users_select_or_insert tests', () => {
         var params = _.clone(base_params);
         var user = _.clone(base_user);
 
-        user[3] = 100;
+        user[3] = '100';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -118,7 +118,7 @@ describe('sproc users_select_or_insert tests', () => {
 
         params[2] = '111122223';
         user[2] = params[2];
-        user[3] = 100;
+        user[3] = '100';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -139,7 +139,7 @@ describe('sproc users_select_or_insert tests', () => {
 
         params[2] = '111122224';
         user[2] = params[2];
-        user[3] = 100;
+        user[3] = '100';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -162,7 +162,7 @@ describe('sproc users_select_or_insert tests', () => {
         params[2] = '111122224';
         user[0] = params[0];
         user[2] = params[2];
-        user[3] = 100;
+        user[3] = '100';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -181,7 +181,7 @@ describe('sproc users_select_or_insert tests', () => {
         var params = ['joe@illinois.edu', 'Joe Bob', '444444444', 'Shibboleth'];
         var user = _.clone(params);
 
-        user[3] = 1;
+        user[3] = null;
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -208,7 +208,7 @@ describe('sproc users_select_or_insert tests', () => {
         var user = _.clone(params);
 
         user[2] = '444444444';
-        user[3] = 200;
+        user[3] = '200';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -238,7 +238,7 @@ describe('sproc users_select_or_insert tests', () => {
         var params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google'];
         var user = _.clone(params);
 
-        user[3] = 200;
+        user[3] = '200';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -257,7 +257,7 @@ describe('sproc users_select_or_insert tests', () => {
         var params = ['sally@illinois.edu', 'Sally Ann', '555566665', 'Shibboleth'];
         var user = _.clone(params);
 
-        user[3] = 200;
+        user[3] = '200';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -277,7 +277,7 @@ describe('sproc users_select_or_insert tests', () => {
         var user = _.clone(params);
 
         user[2] = '555566665';
-        user[3] = 200;
+        user[3] = '200';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -296,7 +296,7 @@ describe('sproc users_select_or_insert tests', () => {
         var params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'Shibboleth'];
         var user = _.clone(params);
 
-        user[3] = 200;
+        user[3] = '200';
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
@@ -311,11 +311,11 @@ describe('sproc users_select_or_insert tests', () => {
         });
     });
 
-    it('user 4 logs in with full correct credentials, account updated', (callback) => {
+    it('user 4 logs in with full correct credentials, no institution, account updated', (callback) => {
         var params = ['newstudent', 'Johnny New Student', '888899990', 'Shibboleth'];
         var user = _.clone(params);
 
-        user[3] = 200;
+        user[3] = null;
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
