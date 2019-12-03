@@ -1,4 +1,10 @@
 <form class="needs-validation" name="instructor-file-upload-form-<%= file.id %>" method="POST" enctype="multipart/form-data" novalidate>
+  <% if (file.info) { %>
+  <div class="form-group">
+    <%- file.info %>
+  </div>
+  <% } %>
+
   <div class="form-group">
     <div class="custom-file">
       <input type="file" name="file" class="custom-file-input" id="attachFileInput-<%= file.id %>" required>
@@ -13,7 +19,9 @@
     <input type="hidden" name="__action" value="upload_file">
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
     <% if (file.path) { %>
-        <input type="hidden" name="file_path" value="<%= file.path %>">
+      <input type="hidden" name="file_path" value="<%= file.path %>">
+    <% } else { %>
+      <input type="hidden" name="working_path" value="<%= file.working_path %>">
     <% } %>
     <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-<%= file.id %>').popover('hide')">
       Cancel

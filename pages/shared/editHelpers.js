@@ -234,7 +234,7 @@ function processFileAction(req, res, params, next) {
             filePath = path.join(res.locals.course.path, req.body.file_path);
         } else {
             debug('should add a new file');
-            filePath = path.join(params.container, req.body.file_dir, req.file.originalname);
+            filePath = path.join(req.body.working_path, req.file.originalname);
         }
         debug('look for old contents');
         fs.readFile(filePath, (err, contents) => {
@@ -293,7 +293,7 @@ function contains(parentPath, childPath) {
 
 function canEdit(params, callback) {
     const res = params.res;
-    
+
     // Do not allow users to edit without permission
     if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
 

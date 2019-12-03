@@ -35,6 +35,8 @@ function getPaths(req, res, callback) {
         paths.cannotMove = [
             path.join(paths.rootPath, 'infoCourse.json'),
         ];
+        paths.clientDir = path.join(paths.rootPath, 'clientFilesCourse');
+        paths.serverDir = path.join(paths.rootPath, 'serverFilesCourse');
     } else if (res.locals.navPage == 'instance_admin') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name);
         paths.invalidRootPaths = [
@@ -43,18 +45,25 @@ function getPaths(req, res, callback) {
         paths.cannotMove = [
             path.join(paths.rootPath, 'infoCourseInstance.json'),
         ];
+        paths.clientDir = path.join(paths.rootPath, 'clientFilesCourseInstance');
+        paths.serverDir = path.join(paths.rootPath, 'serverFilesCourseInstance');
     } else if (res.locals.navPage == 'assessment') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid);
         paths.invalidRootPaths = [];
         paths.cannotMove = [
             path.join(paths.rootPath, 'infoAssessment.json'),
         ];
+        paths.clientDir = path.join(paths.rootPath, 'clientFilesAssessment');
+        paths.serverDir = path.join(paths.rootPath, 'serverFilesAssessment');
     } else if (res.locals.navPage == 'question') {
         paths.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
         paths.invalidRootPaths = [];
         paths.cannotMove = [
             path.join(paths.rootPath, 'info.json'),
         ];
+        paths.clientDir = path.join(paths.rootPath, 'clientFilesQuestion');
+        paths.serverDir = path.join(paths.rootPath, 'serverFilesQuestion');
+        paths.testsDir = path.join(paths.rootPath, 'tests');
     } else {
         return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
     }
@@ -66,6 +75,31 @@ function getPaths(req, res, callback) {
             paths.workingPath = path.join(res.locals.course.path, req.query.path);
         } catch(err) {
             return callback(new Error(`Invalid query: path=${req.query.path}`));
+        }
+    }
+
+    if (paths.workingPath == paths.rootPath) {
+        paths.specialDirs = [];
+        if (paths.clientDir) {
+            paths.specialDirs.push({
+                label: 'Client',
+                path: paths.clientDir,
+                info: `This file will be placed in the subdirectory <code>${path.basename(paths.clientDir)}</code> and will be accessible from the student's webbrowser.`,
+            });
+        }
+        if (paths.serverDir) {
+            paths.specialDirs.push({
+                label: 'Server',
+                path: paths.serverDir,
+                info: `This file will be placed in the subdirectory <code>${path.basename(paths.serverDir)}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
+            });
+        }
+        if (paths.testsDir) {
+            paths.specialDirs.push({
+                label: 'Test',
+                path: paths.testsDir,
+                info: `This file will be placed in the subdirectory <code>${path.basename(paths.testsDir)}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
+            });
         }
     }
 

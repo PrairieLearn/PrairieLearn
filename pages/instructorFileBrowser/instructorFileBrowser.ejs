@@ -28,15 +28,35 @@
     <div id="content" class="container-fluid">
       <%- include('../partials/navtabs'); %>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
-          <% file_browser.paths.branch.forEach((dir) => { %>
-            <% if (dir.canView) { %>
-              <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= dir.path %>"><%= dir.name %></a>
-            <% } else { %>
-              <span><%= dir.name %></span>
-            <% } %>
-            <span class="px-2"> / </span>
-          <% }); %>
+        <div class="card-header bg-primary text-white">
+          <div class="row align-items-center justify-content-between">
+            <div class="col-auto">
+              <% file_browser.paths.branch.forEach((dir) => { %>
+                <% if (dir.canView) { %>
+                  <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= dir.path %>"><%= dir.name %></a>
+                <% } else { %>
+                  <span><%= dir.name %></span>
+                <% } %>
+                <span class="px-2"> / </span>
+              <% }); %>
+            </div>
+            <div class="col-auto">
+              <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+              <% if (file_browser.paths.specialDirs) { %>
+                <% file_browser.paths.specialDirs.forEach((d) => { %>
+                  <button id="instructorFileUploadForm-New<%= d.label %>" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New' + d.label, info: d.info, working_path: d.path}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-plus"></i>
+                    <span>Add new <%= d.label.toLowerCase() %> file</span>
+                  </button>
+                <% }); %>
+              <% } %>
+              <% } %>
+              <button id="instructorFileUploadForm-New" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New', working_path: file_browser.paths.workingPath}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                <i class="fa fa-plus"></i>
+                <span>Add new file</span>
+              </button>
+            </div>
+          </div>
         </div>
         <table class="table table-sm table-hover">
           <tbody>
