@@ -10,7 +10,7 @@ const async = require('async');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
-    const extCanEdit = ['.py', '.html', '.json', '.txt', '.md'];
+    const extCanEdit = ['.py', '.html', '.json', '.txt', '.md', '.mustache', '.css', '.csv', '.js', '.m'];
     return extCanEdit.includes(path.extname(file));
 }
 

@@ -67,6 +67,16 @@ router.get('/', (req, res, next) => {
         fileEdit.aceMode = 'text';
     } else if (ext == '.md') {
         fileEdit.aceMode = 'markdown';
+    } else if (ext == '.mustache') {
+        fileEdit.aceMode = 'text';
+    } else if (ext == '.css') {
+        fileEdit.aceMode = 'css';
+    } else if (ext == '.csv') {
+        fileEdit.aceMode = 'text';
+    } else if (ext == '.js') {
+        fileEdit.aceMode = 'javascript';
+    } else if (ext == '.m') {
+        fileEdit.aceMode = 'matlab';
     } else {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }

@@ -161,6 +161,10 @@ function file_upload_write(edit, callback) {
 }
 
 function processFileAction(req, res, params, next) {
+    // NOTE: This function is meant to do things to *files* and not to directories
+    // (or anything else). However, nowhere do we check that it is actually being
+    // applied to a file and not to a directory.
+
     if (req.body.__action == 'delete_file') {
         debug('Delete file');
         const filePath = path.join(res.locals.course.path, req.body.file_path);
