@@ -14,11 +14,6 @@ function canEditFile(file) {
     return extCanEdit.includes(path.extname(file));
 }
 
-function canMoveFile(file) {
-    const cannotMove = ['info.json', 'infoAssessment.json', 'infoCourseInstance.json', 'infoCourse.json'];
-    return (! cannotMove.includes(path.basename(file)));
-}
-
 function isHidden(item) {
     return (item[0] == '.');
 }
@@ -37,17 +32,29 @@ function getPaths(req, res, callback) {
             path.join(paths.rootPath, 'questions'),
             path.join(paths.rootPath, 'courseInstances'),
         ];
+        paths.cannotMove = [
+            path.join(paths.rootPath, 'infoCourse.json'),
+        ];
     } else if (res.locals.navPage == 'instance_admin') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name);
         paths.invalidRootPaths = [
             path.join(paths.rootPath, 'assessments'),
         ];
+        paths.cannotMove = [
+            path.join(paths.rootPath, 'infoCourseInstance.json'),
+        ];
     } else if (res.locals.navPage == 'assessment') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid);
         paths.invalidRootPaths = [];
+        paths.cannotMove = [
+            path.join(paths.rootPath, 'infoAssessment.json'),
+        ];
     } else if (res.locals.navPage == 'question') {
         paths.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
         paths.invalidRootPaths = [];
+        paths.cannotMove = [
+            path.join(paths.rootPath, 'info.json'),
+        ];
     } else {
         return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
     }
@@ -143,7 +150,7 @@ router.get('/', function(req, res, next) {
                     if (ERR(err, callback)) return;
                     if (stats.isFile()) {
                         const editable = canEditFile(filepath);
-                        const movable = canMoveFile(filepath);
+                        const movable = !file_browser.paths.cannotMove.includes(filepath);
                         file_browser.files.push({
                             id: index,
                             name: filename,
