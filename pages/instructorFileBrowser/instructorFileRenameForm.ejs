@@ -5,7 +5,7 @@
   <input type="hidden" name="old_file_name" value="<%= file.name %>">
   <div class="form-group">
       <label for="renameFileInput">Path:</label>
-      <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="[-A-Za-z0-9_]+(?:\/[-A-Za-z0-9_]+)*(?:\.[-A-Za-z0-9_]+)?" required>
+      <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?" required>
       <div class="invalid-feedback" id="invalidMessage-<%= file.id %>">
       </div>
   </div>
@@ -30,7 +30,7 @@
 
             elementDOM.setCustomValidity('');
             if (elementDOM.validity.patternMismatch) {
-                $('#invalidMessage-<%= file.id %>').text('Only letters, numbers, dashes, and underscores, with no spaces. Can have a file extension that is delimited by a period. Can have a path that is delimited by a forward slash.');
+                $('#invalidMessage-<%= file.id %>').text('Only letters, numbers, dashes, and underscores, with no spaces. Can have a file extension that is delimited by a period. Can have a path that is delimited by a forward slash and that includes "<code>..</code>".');
             } else if (elementDOM.validity.valueMissing) {
                 $('#invalidMessage-<%= file.id %>').text('Please choose a name');
             } else {

@@ -2,12 +2,16 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
+const _ = require('lodash');
+
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const editHelpers = require('../shared/editHelpers');
 const fs = require('fs-extra');
 const error = require('@prairielearn/prairielib/error');
 const async = require('async');
+
+const escapeHtml = require('escape-html');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
@@ -27,6 +31,10 @@ function isHidden(item) {
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
     return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+}
+
+function displayPath(coursePath, workingPath) {
+    return path.join(path.basename(coursePath), path.relative(coursePath, workingPath));
 }
 
 function getPaths(req, res, callback) {
@@ -64,10 +72,24 @@ function getPaths(req, res, callback) {
     }
 
     if (!contains(paths.rootPath, paths.workingPath)) {
-        return callback(new Error(`Working directory must be inside ${paths.rootPath} from navPage ${res.locals.navPage}`));
+        let err = new Error('Invalid working directory');
+        err.info =  `<p>The working directory</p>` +
+                    `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
+                    `<p>must be inside the root directory</p>` +
+                    `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.rootPath}</pre></div>` +
+                    `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
+        return callback(err);
     }
-    if (paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, paths.workingPath))) {
-        return callback(new Error(`Working directory must not be inside any of ${paths.invalidRootPaths} from navPage ${res.locals.navPage}`));
+
+    const found = paths.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, paths.workingPath));
+    if (found) {
+        let err = new Error('Invalid working directory');
+        err.info =  `<p>The working directory</p>` +
+                    `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
+                    `<p>must <em>not</em> be inside the directory</p>` +
+                    `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>` +
+                    `<p>when looking at <code>${res.locals.navPage}</code> files.</p>`;
+        return callback(err);
     }
 
     let curPath = res.locals.course.path;
@@ -79,7 +101,6 @@ function getPaths(req, res, callback) {
     path.relative(res.locals.course.path, paths.workingPath).split(path.sep).forEach((dir) => {
         if (dir) {
             curPath = path.join(curPath, dir);
-            debug(`add ${dir} to branch`);
             paths.branch.push({
                 name: path.basename(curPath),
                 path: path.relative(res.locals.course.path, curPath),
@@ -168,18 +189,6 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     debug('POST /');
-
-
-
-
-    // FIXME
-    //
-    // You need three things here:
-    //  - validRootPath
-    //  - invalidRootPaths
-    //  - browsePath, or whatever we want to call it, with respect to which "input paths" are defined
-    //      FIXME: should call this "working path" (or "working dir") to be consistent with shell terminology (e.g., "pwd")
-    //
     getPaths(req, res, (err, paths) => {
         if (ERR(err, next)) return;
         editHelpers.processFileAction(req, res, {
