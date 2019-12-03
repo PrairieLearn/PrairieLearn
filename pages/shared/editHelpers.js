@@ -12,7 +12,6 @@ const sha256 = require('crypto-js/sha256');
 const path = require('path');
 const fs = require('fs-extra');
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
@@ -294,8 +293,7 @@ function contains(parentPath, childPath) {
 
 function canEdit(params, callback) {
     const res = params.res;
-    const req = params.req;
-
+    
     // Do not allow users to edit without permission
     if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
 

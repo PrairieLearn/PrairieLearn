@@ -2,16 +2,11 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const _ = require('lodash');
-
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const editHelpers = require('../shared/editHelpers');
 const fs = require('fs-extra');
-const error = require('@prairielearn/prairielib/error');
 const async = require('async');
-
-const escapeHtml = require('escape-html');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
@@ -31,10 +26,6 @@ function isHidden(item) {
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
     return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
-}
-
-function displayPath(coursePath, workingPath) {
-    return path.join(path.basename(coursePath), path.relative(coursePath, workingPath));
 }
 
 function getPaths(req, res, callback) {
@@ -197,7 +188,7 @@ router.post('/', function(req, res, next) {
                 invalidRootPaths: paths.invalidRootPaths,
             },
         }, next);
-    })
+    });
 });
 
 module.exports = router;
