@@ -147,10 +147,15 @@ app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/over
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/overview', upload.single('file'));
 app.post('/pl/course/:course_id/course_admin/overview', upload.single('file'));
 app.post('/pl/course/:course_id/course_admin/file_view', upload.single('file'));
+app.post('/pl/course/:course_id/course_admin/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
 
 
 // Limit to 1MB of JSON
