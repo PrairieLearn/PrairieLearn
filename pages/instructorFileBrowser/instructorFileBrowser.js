@@ -7,6 +7,10 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const editHelpers = require('../shared/editHelpers');
 const fs = require('fs-extra');
 const async = require('async');
+const hljs = require('highlight.js');
+const fileType = require('file-type');
+const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const util = require('util');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
@@ -24,7 +28,9 @@ function contains(parentPath, childPath) {
 }
 
 function getPaths(req, res, callback) {
-    let paths = {};
+    let paths = {
+        coursePath: res.locals.course.path,
+    };
 
     if (res.locals.navPage == 'course_admin') {
         paths.rootPath = res.locals.course.path;
@@ -68,6 +74,20 @@ function getPaths(req, res, callback) {
         return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
     }
 
+    // if (_.isEmpty(req.query)) {
+    //     return next(error.make(400, 'no query', {
+    //         locals: res.locals,
+    //         body: req.body,
+    //     }));
+    // }
+    //
+    // if (!('file' in req.query)) {
+    //     return next(error.make(400, 'no file in query', {
+    //         locals: res.locals,
+    //         body: req.body,
+    //     }));
+    // }
+
     if (typeof req.query.path == 'undefined') {
         paths.workingPath = paths.rootPath;
     } else {
@@ -77,6 +97,7 @@ function getPaths(req, res, callback) {
             return callback(new Error(`Invalid query: path=${req.query.path}`));
         }
     }
+    paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
 
     if (paths.workingPath == paths.rootPath) {
         paths.specialDirs = [];
@@ -144,30 +165,8 @@ function getPaths(req, res, callback) {
     callback(null, paths);
 }
 
-router.get('/', function(req, res, next) {
-    debug('GET /');
-
-    const has_course_permission_edit = res.locals.authz_data.has_course_permission_edit;
-    const isExampleCourse = res.locals.course.options.isExampleCourse;
-
-    let file_browser = {};
+function browseDirectory(file_browser, callback) {
     async.waterfall([
-        (callback) => {
-            debug('get paths');
-            getPaths(req, res, (err, paths) => {
-                if (ERR(err, callback)) return;
-                file_browser.paths = paths;
-                callback(null);
-            });
-        },
-        (callback) => {
-            // Validate base directory - is it actually a directory?
-            fs.lstat(file_browser.paths.workingPath, (err, stats) => {
-                if (ERR(err, callback)) return;
-                if (!stats.isDirectory()) return callback(new Error(`Attempting to browse a non-directory: ${file_browser.paths.workingPath}`));
-                callback(null);
-            });
-        },
         (callback) => {
             fs.readdir(file_browser.paths.workingPath, (err, filenames) => {
                 if (ERR(err, callback)) return;
@@ -188,18 +187,20 @@ router.get('/', function(req, res, next) {
                         file_browser.files.push({
                             id: index,
                             name: filename,
-                            path: path.relative(res.locals.course.path, filepath),
-                            canEdit: editable && has_course_permission_edit && (! isExampleCourse),
-                            canUpload: has_course_permission_edit && (! isExampleCourse),
-                            canDownload: has_course_permission_edit,
-                            canRename: movable && has_course_permission_edit && (! isExampleCourse),
-                            canDelete: movable && has_course_permission_edit && (! isExampleCourse),
+                            path: path.relative(file_browser.paths.coursePath, filepath),
+                            dir: file_browser.paths.workingPath,
+                            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canDownload: file_browser.has_course_permission_edit,
+                            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     } else if (stats.isDirectory()) {
                         file_browser.dirs.push({
                             id: index,
                             name: filename,
-                            path: path.relative(res.locals.course.path, filepath),
+                            path: path.relative(file_browser.paths.coursePath, filepath),
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     }
@@ -211,10 +212,118 @@ router.get('/', function(req, res, next) {
             });
         },
     ], (err) => {
-        if (ERR(err, next)) return;
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function browseFile(file_browser, callback) {
+    async.waterfall([
+        (callback) => {
+            fs.readFile(file_browser.paths.workingPath, (err, contents) => {
+                if (ERR(err, callback)) return;
+                callback(null, contents);
+            });
+        },
+        (contents, callback) => {
+            isBinaryFile(contents).then((result) => {
+                debug(`isBinaryFile: ${result}`);
+                file_browser.isBinary = result;
+                if (result) {
+                    try { // FIXME (check for PDF, etc.)
+                    const type = fileType(contents);
+                        debug(`file type: ${type}`);
+                        if (type) {
+                            if (type.mime.startsWith('image')) {
+                                file_browser.isImage = true;
+                            } else if (type.mime == ('application/pdf')) {
+                                file_browser.isPDF = true;
+                            }
+                        }
+                        callback(null);
+                    } catch(err) {
+                        callback(new Error('Invalid file contents'));
+                    }
+                } else {
+                    debug(`found a text file`);
+                    file_browser.isText = true;
+                    file_browser.contents = hljs.highlightAuto(contents.toString('utf8')).value;
+                    callback(null);
+                }
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null); // should never get here
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        const filepath = file_browser.paths.workingPath;
+        const editable = !file_browser.isBinary;
+        const movable = !file_browser.paths.cannotMove.includes(filepath);
+        file_browser.file = {
+            id: 0,
+            name: path.basename(file_browser.paths.workingPath),
+            path: path.relative(file_browser.paths.coursePath, filepath),
+            dir: path.dirname(file_browser.paths.workingPath),
+            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canDownload: file_browser.has_course_permission_edit,
+            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
+        };
+        callback(null);
+    });
+}
+
+router.get('/', function(req, res, next) {
+    debug('GET /');
+    let file_browser = {
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        isExampleCourse: res.locals.course.options.isExampleCourse,
+    };
+    async.waterfall([
+        (callback) => {
+            debug('get paths');
+            getPaths(req, res, (err, paths) => {
+                if (ERR(err, callback)) return;
+                file_browser.paths = paths;
+                callback(null);
+            });
+        },
+        (callback) => {
+            fs.lstat(file_browser.paths.workingPath, (err, stats) => {
+                if (ERR(err, callback)) return;
+                callback(null, stats);
+            });
+        },
+        (stats, callback) => {
+            if (stats.isDirectory()) {
+                file_browser.isFile = false;
+                browseDirectory(file_browser, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            } else if (stats.isFile()) {
+                file_browser.isFile = true;
+                browseFile(file_browser, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            } else {
+                callback(new Error(`Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`));
+            }
+        },
+    ], (err) => {
+        if (err) {
+            if ((err.code == 'ENOENT') && (file_browser.paths.branch.length > 1)) {
+                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/files?path=${file_browser.paths.branch.slice(-2)[0].path}`);
+                return;
+            } else {
+                return ERR(err, next);
+            }
+        }
         res.locals.file_browser = file_browser;
-        debug(res.locals.file_browser);
-        debug(res.locals.file_browser.paths.branch);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

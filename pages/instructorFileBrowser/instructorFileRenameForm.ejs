@@ -1,7 +1,10 @@
 <form name="instructor-file-rename-form-<%= file.id %>" method="POST" class="needs-validation" novalidate>
   <input type="hidden" name="__action" value="rename_file">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-  <input type="hidden" name="working_path" value="<%= file_browser.paths.workingPath %>">
+  <input type="hidden" name="working_path" value="<%= file.dir %>">
+  <% if (file_browser.isFile) { %>
+    <input type="hidden" name="was_viewing_file" value="true">
+  <% } %>
   <input type="hidden" name="old_file_name" value="<%= file.name %>">
   <div class="form-group">
       <label for="renameFileInput">Path:</label>

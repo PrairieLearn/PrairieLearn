@@ -5,6 +5,7 @@
     <script src="/javascripts/lodash.min.js"></script>
     <script src="/javascripts/d3.min.js"></script>
     <script src="/localscripts/histmini.js"></script>
+    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
     <style>
       .popover{
         max-width: 50%;
@@ -41,6 +42,45 @@
               <% }); %>
             </div>
             <div class="col-auto">
+
+              <% if (file_browser.isFile) { %>
+
+              <!-------------------->
+              <!-- FILE HEAD      -->
+              <!-------------------->
+
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/edit?file=<%= file_browser.file.path %>">
+                <i class="fa fa-edit"></i>
+                <span>Edit</span>
+              </a>
+              <button id="instructorFileUploadForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
+                <i class="fa fa-arrow-up"></i>
+                <span>Upload</span>
+              </button>
+              <form class="d-inline" name="instructor-file-download-form-<%= file_browser.file.id %>" method="POST">
+                <input type="hidden" name="__action" value="download_file">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="file_path" value="<%= file_browser.file.path %>">
+                <button type="submit" class="btn btn-sm btn-light" <% if (!file_browser.file.canDownload) { %> disabled <% } %>>
+                  <i class="fa fa-arrow-down"></i>
+                  <span>Download</span>
+                </button>
+              </form>
+              <button id="instructorFileRenameForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canRename) { %>disabled<% } %>>
+                <i class="fa fa-i-cursor"></i>
+                <span>Rename</span>
+              </button>
+              <button id="instructorFileDeleteForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canDelete) { %>disabled<% } %>>
+                <i class="far fa-trash-alt"></i>
+                <span>Delete</span>
+              </button>
+
+              <% } else { %>
+
+              <!-------------------->
+              <!-- DIRECTORY HEAD -->
+              <!-------------------->
+
               <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
               <% if (file_browser.paths.specialDirs) { %>
                 <% file_browser.paths.specialDirs.forEach((d) => { %>
@@ -50,21 +90,57 @@
                   </button>
                 <% }); %>
               <% } %>
-              <% } %>
               <button id="instructorFileUploadForm-New" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New', working_path: file_browser.paths.workingPath}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                 <i class="fa fa-plus"></i>
                 <span>Add new file</span>
               </button>
+              <% } %>
+
+              <% }%>
+
             </div>
           </div>
         </div>
+
+        <% if (file_browser.isFile) { %>
+
+        <!-------------------->
+        <!-- FILE BODY      -->
+        <!-------------------->
+
+        <div class="card-body">
+          <% if (file_browser.isImage) { %>
+          <img src="<%= urlPrefix %>/<%= navPage %>/file_download/<%= file_browser.paths.workingPathRelativeToCourse %>" class="img-fluid">
+          <% } else if (file_browser.isText) { %>
+          <pre><code><%- file_browser.contents %></code></pre>
+          <% } else if (file_browser.isPDF) { %>
+          <div class="embed-responsive embed-responsive-4by3">
+            <object data="<%= urlPrefix %>/<%= navPage %>/file_download/<%= file_browser.paths.workingPathRelativeToCourse %>?type=application/pdf#view=FitH" type="application/pdf" class="embed-responsive-item">
+              This PDF cannot be displayed.
+            </object>
+          </div>
+          <% } else { %>
+          <div class="alert alert-warning" role="alert">No preview available.</div>
+          <% } %>
+        </div>
+
+        <% } else { %>
+
+        <!-------------------->
+        <!-- DIRECTORY BODY -->
+        <!-------------------->
+
         <table class="table table-sm table-hover">
           <tbody>
             <% file_browser.files.forEach(function(f) { %>
             <tr>
               <td>
                 <span><i class="far fa-file-alt fa-fw"></i></span>
-                <span><%= f.name %></span>
+                <% if (f.canView) { %>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= f.path %>"><%= f.name %></a>
+                <% } else { %>
+                  <span><%= f.name %></span>
+                <% } %>
               </td>
               <td>
                 <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/edit?file=<%= f.path %>">
@@ -109,6 +185,9 @@
             <% }); %>
           </tbody>
         </table>
+
+        <% }%>
+
       </div>
     </div>
   </body>

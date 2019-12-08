@@ -217,7 +217,11 @@ function processFileAction(req, res, params, next) {
                     if (ERR(err, (e) => logger.error(e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
-                        res.redirect(req.originalUrl);
+                        if (req.body.was_viewing_file) {
+                            res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/files?path=${path.relative(res.locals.course.path, newFilePath)}`);
+                        } else {
+                            res.redirect(req.originalUrl);
+                        }
                     }
                 });
             });
