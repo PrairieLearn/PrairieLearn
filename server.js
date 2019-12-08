@@ -425,6 +425,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_ed
     function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', [
+    function(req, res, next) {res.locals.navSubPage = 'file_view'; next();},
+    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 // course instance - instance admin pages
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/instance_admin)\/?$/, (req, res, _next) => {
