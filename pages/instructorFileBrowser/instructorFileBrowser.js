@@ -74,28 +74,14 @@ function getPaths(req, res, callback) {
         return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
     }
 
-    // if (_.isEmpty(req.query)) {
-    //     return next(error.make(400, 'no query', {
-    //         locals: res.locals,
-    //         body: req.body,
-    //     }));
-    // }
-    //
-    // if (!('file' in req.query)) {
-    //     return next(error.make(400, 'no file in query', {
-    //         locals: res.locals,
-    //         body: req.body,
-    //     }));
-    // }
-
-    if (typeof req.query.path == 'undefined') {
-        paths.workingPath = paths.rootPath;
-    } else {
+    if (req.params[0]) {
         try {
-            paths.workingPath = path.join(res.locals.course.path, req.query.path);
+            paths.workingPath = path.join(res.locals.course.path, decodeURIComponent(req.params[0]));
         } catch(err) {
-            return callback(new Error(`Invalid query: path=${req.query.path}`));
+            return callback(new Error(`Invalid path: ${req.params[0]}`));
         }
+    } else {
+        paths.workingPath = paths.rootPath;
     }
     paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
 
@@ -276,7 +262,7 @@ function browseFile(file_browser, callback) {
     });
 }
 
-router.get('/', function(req, res, next) {
+router.get('/*', function(req, res, next) {
     debug('GET /');
     let file_browser = {
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
@@ -317,7 +303,7 @@ router.get('/', function(req, res, next) {
     ], (err) => {
         if (err) {
             if ((err.code == 'ENOENT') && (file_browser.paths.branch.length > 1)) {
-                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/files?path=${file_browser.paths.branch.slice(-2)[0].path}`);
+                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${file_browser.paths.branch.slice(-2)[0].path}`);
                 return;
             } else {
                 return ERR(err, next);
@@ -328,7 +314,7 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/*', function(req, res, next) {
     debug('POST /');
     getPaths(req, res, (err, paths) => {
         if (ERR(err, next)) return;

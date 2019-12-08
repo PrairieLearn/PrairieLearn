@@ -146,11 +146,11 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/overview', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/overview', upload.single('file'));
 app.post('/pl/course/:course_id/course_admin/overview', upload.single('file'));
-app.post('/pl/course/:course_id/course_admin/files', upload.single('file'));
-app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/files', upload.single('file'));
-app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/files', upload.single('file'));
-app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/files', upload.single('file'));
-app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/files', upload.single('file'));
+app.post('/pl/course/:course_id/course_admin/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 
 
 // Limit to 1MB of JSON
@@ -652,8 +652,8 @@ app.use('/pl/course/:course_id/course_admin/edit', [
     function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
-app.use('/pl/course/:course_id/course_admin/files', [
-    function(req, res, next) {res.locals.navSubPage = 'files'; next();},
+app.use('/pl/course/:course_id/course_admin/file_view', [
+    function(req, res, next) {res.locals.navSubPage = 'file_view'; next();},
     require('./pages/instructorFileBrowser/instructorFileBrowser'),
 ]);
 app.use('/pl/course/:course_id/course_admin/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));

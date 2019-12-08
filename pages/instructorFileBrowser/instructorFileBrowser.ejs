@@ -34,7 +34,7 @@
             <div class="col-auto">
               <% file_browser.paths.branch.forEach((dir, key, arr) => { %>
                 <% if (dir.canView) { %>
-                  <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= dir.path %>"><%= dir.name %></a>
+                  <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= dir.path %>"><%= dir.name %></a>
                 <% } else { %>
                   <span><%= dir.name %></span>
                 <% } %>
@@ -139,7 +139,7 @@
               <td>
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 <% if (f.canView) { %>
-                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= f.path %>"><%= f.name %></a>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= f.path %>"><%= f.name %></a>
                 <% } else { %>
                   <span><%= f.name %></span>
                 <% } %>
@@ -178,7 +178,7 @@
               <td colspan="2">
                 <i class="fa fa-folder fa-fw"></i>
                 <% if (d.canView) { %>
-                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>?path=<%= d.path %>"><%= d.name %></a>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= d.path %>"><%= d.name %></a>
                 <% } else { %>
                   <span><%= d.name %></span>
                 <% } %>
