@@ -461,6 +461,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_
     function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', [
+    function(req, res, next) {res.locals.navSubPage = 'file_view'; next();},
+    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));

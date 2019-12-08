@@ -45,33 +45,17 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if (locals.files) { %>
-                    <tr>
-                        <%- include('../partials/instructorFileList', {
-                                            files_to_list: locals.files.files,
-                                            file_label: "",
-                                            file_dir: "",
-                                            file_url: urlPrefix + "/instance_admin",
-                                            file_info: "<p>Files you add here will be placed in the directory <code>" + files.dir + "</code>. File paths are relative to this directory.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser.</p><p>It is most common to include one file here: <code>infoCourseInstance.json</code> with metadata for the course instance.</p>",
-                                        }); %>
-                    </tr>
-                    <tr>
-                        <%- include('../partials/instructorFileList', {
-                                            files_to_list: locals.files.clientFiles,
-                                            file_label: "Client",
-                                            file_dir: "clientFilesCourseInstance",
-                                            file_url: urlPrefix + "/instance_admin",
-                                            file_info: "<p>Files you add here will be placed in the subdirectory <code>clientFilesCourseInstance</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible from the student's webbrowser. This is appropriate for client-side code libraries or for files that a student should have access to, such as an image, reference webpages, or formula sheets.</p>",
-                                        }); %>
-                    </tr>
-                    <tr>
-                        <%- include('../partials/instructorFileList', {
-                                            files_to_list: locals.files.serverFiles,
-                                            file_label: "Server",
-                                            file_dir: "serverFilesCourseInstance",
-                                            file_url: urlPrefix + "/instance_admin",
-                                            file_info: "<p>Files you add here will be placed in the subdirectory <code>serverFilesCourseInstance</code> of <code>" + files.dir + "</code>. File paths are relative to <code>" + files.dir + "</code>.</p><p>These files are accessible only from the server and cannot be directly accessed by the student's webbrowser. This is appropriate for server-side code libraries, for example that are used by many different questions for generating random question instances.</p>",
-                                        }); %>
+                    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                    <tr><th>Configuration</th>
+                        <td>
+                            <a href="<%= urlPrefix %>/<%= navPage %>/file_view/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
+                                infoCourseInstance.json
+                            </a>
+                            <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
+                                <i class="fa fa-edit"></i>
+                                <span>Edit</span>
+                            </a>
+                        </td>
                     </tr>
                     <% } %>
                 </tbody>

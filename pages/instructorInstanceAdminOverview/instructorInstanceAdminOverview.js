@@ -165,9 +165,10 @@ router.post('/', function(req, res, next) {
             });
         }
     } else {
-        editHelpers.processFileAction(req, res, {
-            container: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
-        }, next);
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+        }));
     }
 });
 
