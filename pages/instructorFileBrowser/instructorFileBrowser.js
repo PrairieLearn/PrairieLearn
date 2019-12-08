@@ -303,7 +303,7 @@ router.get('/*', function(req, res, next) {
     ], (err) => {
         if (err) {
             if ((err.code == 'ENOENT') && (file_browser.paths.branch.length > 1)) {
-                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${file_browser.paths.branch.slice(-2)[0].path}`);
+                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(file_browser.paths.branch.slice(-2)[0].path)}`);
                 return;
             } else {
                 return ERR(err, next);

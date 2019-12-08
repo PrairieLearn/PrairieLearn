@@ -218,7 +218,7 @@ function processFileAction(req, res, params, next) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         if (req.body.was_viewing_file) {
-                            res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${path.relative(res.locals.course.path, newFilePath)}`);
+                            res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(path.relative(res.locals.course.path, newFilePath))}`);
                         } else {
                             res.redirect(req.originalUrl);
                         }

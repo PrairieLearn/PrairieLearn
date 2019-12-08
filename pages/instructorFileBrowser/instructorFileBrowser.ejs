@@ -34,7 +34,7 @@
             <div class="col-auto">
               <% file_browser.paths.branch.forEach((dir, key, arr) => { %>
                 <% if (dir.canView) { %>
-                  <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= dir.path %>"><%= dir.name %></a>
+                  <a class="text-white" href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= encodeURIComponent(dir.path) %>"><%= dir.name %></a>
                 <% } else { %>
                   <span><%= dir.name %></span>
                 <% } %>
@@ -139,7 +139,7 @@
               <td>
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 <% if (f.canView) { %>
-                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= f.path %>"><%= f.name %></a>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= encodeURIComponent(f.path) %>"><%= f.name %></a>
                 <% } else { %>
                   <span><%= f.name %></span>
                 <% } %>
@@ -156,7 +156,7 @@
                 <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
                   <input type="hidden" name="__action" value="download_file">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <input type="hidden" name="file_path" value="<%= f.path %>">
+                  <input type="hidden" name="file_path" value="<%= encodeURIComponent(f.path) %>">
                   <button type="submit" class="btn btn-xs btn-secondary" <% if (!f.canDownload) { %> disabled <% } %>>
                     <i class="fa fa-arrow-down"></i>
                     <span>Download</span>
@@ -178,7 +178,7 @@
               <td colspan="2">
                 <i class="fa fa-folder fa-fw"></i>
                 <% if (d.canView) { %>
-                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= d.path %>"><%= d.name %></a>
+                  <a href="<%= urlPrefix %>/<%= navPage %>/<%= navSubPage %>/<%= encodeURIComponent(d.path) %>"><%= d.name %></a>
                 <% } else { %>
                   <span><%= d.name %></span>
                 <% } %>
