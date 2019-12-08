@@ -24,26 +24,32 @@ const { callbackify } = require('util');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/instructorFileEditorClient.js', (req, res) => {
-    debug('Responding to request for /instructorFileEditorClient.js');
-    res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
-});
-
-router.get('/', (req, res, next) => {
+router.get('/*', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
 
-    if (_.isEmpty(req.query)) {
-        return next(error.make(400, 'no query', {
-            locals: res.locals,
-            body: req.body,
-        }));
+    let workingPath;
+    if (req.params[0]) {
+        try {
+            workingPath = decodeURIComponent(req.params[0]);
+        } catch(err) {
+            return next(new Error(`Invalid path: ${req.params[0]}`));
+        }
+    } else {
+        return next(new Error(`No path`));
     }
 
-    if (!('file' in req.query)) {
-        return next(error.make(400, 'no file in query', {
-            locals: res.locals,
-            body: req.body,
-        }));
+    // This is a hack because we do not have a standard for how to serve
+    // page-specific client-side code. I would normally have done this with
+    // a route parameter, but all routes are being mapped to file paths, so
+    // I am using a query string instead.
+    if (req.query.serve) {
+        if (req.query.serve == 'client') {
+            debug('Responding to request for /instructorFileEditorClient.js');
+            res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
+            return;
+        } else {
+            return next(new Error(`Invalid query: serve=${req.query.serve}`));
+        }
     }
 
     let fileEdit = {
@@ -51,12 +57,12 @@ router.get('/', (req, res, next) => {
         userID: res.locals.user.user_id,
         courseID: res.locals.course.id,
         coursePath: res.locals.course.path,
-        dirName: path.dirname(req.query.file),
-        fileName: path.basename(req.query.file),
-        fileNameForDisplay: path.normalize(req.query.file),
+        dirName: path.dirname(workingPath),
+        fileName: path.basename(workingPath),
+        fileNameForDisplay: path.normalize(workingPath),
     };
 
-    const ext = path.extname(req.query.file);
+    const ext = path.extname(workingPath);
     if (ext == '.json') {
         fileEdit.aceMode = 'json';
     } else if (ext == '.html') {
@@ -83,7 +89,7 @@ router.get('/', (req, res, next) => {
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -94,7 +100,7 @@ router.get('/', (req, res, next) => {
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
     if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
-        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -168,9 +174,20 @@ router.get('/', (req, res, next) => {
     });
 });
 
-router.post('/', (req, res, next) => {
+router.post('/*', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
+
+    let workingPath;
+    if (req.params[0]) {
+        try {
+            workingPath = decodeURIComponent(req.params[0]);
+        } catch(err) {
+            return next(new Error(`Invalid path: ${req.params[0]}`));
+        }
+    } else {
+        return next(new Error(`No path`));
+    }
 
     let fileEdit = {
         userID: res.locals.user.user_id,
@@ -186,7 +203,7 @@ router.post('/', (req, res, next) => {
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -197,7 +214,7 @@ router.post('/', (req, res, next) => {
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
     if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
-        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -211,7 +228,7 @@ router.post('/', (req, res, next) => {
         // and origHash are the same. We will treat this is a catastrophic error.
         fileEdit.editHash = getHash(fileEdit.editContents);
         if (fileEdit.editHash == fileEdit.origHash) {
-            return next(error.make(400, `attempting to save a file without having made any changes: ${req.query.file}`, {
+            return next(error.make(400, `attempting to save a file without having made any changes: ${workingPath}`, {
                 locals: res.locals,
                 body: req.body,
             }));

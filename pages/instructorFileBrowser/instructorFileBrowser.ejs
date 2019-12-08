@@ -51,7 +51,7 @@
               <!-- FILE HEAD      -->
               <!-------------------->
 
-              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/edit?file=<%= file_browser.file.path %>">
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/<%= encodeURIComponent(file_browser.file.path) %>">
                 <i class="fa fa-edit"></i>
                 <span>Edit</span>
               </a>
@@ -145,7 +145,7 @@
                 <% } %>
               </td>
               <td>
-                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/edit?file=<%= f.path %>">
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/<%= encodeURIComponent(f.path) %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>

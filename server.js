@@ -346,8 +346,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
     require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/edit', [
-    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_edit', [
+    function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -357,8 +357,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/edit', [
-    function(req, res, next) {res.locals.navbarType = 'instructor'; res.locals.navPage = 'question'; res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_edit', [
+    function(req, res, next) {res.locals.navbarType = 'instructor'; res.locals.navPage = 'question'; res.locals.navSubPage = 'file_edit'; next();},
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
@@ -421,8 +421,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/grading
     function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
     require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/edit', [
-    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_edit', [
+    function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -452,8 +452,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/lti',
     function(req, res, next) {res.locals.navSubPage = 'lti'; next();},
     require('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/edit', [
-    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_edit', [
+    function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 
@@ -591,8 +591,8 @@ app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res
 app.use('/pl/course/:course_id', require('./middlewares/selectCourses'));
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
 
-app.use('/pl/course/:course_id/question/:question_id/edit', [
-    function(req, res, next) {res.locals.navPage = 'question'; res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course/:course_id/question/:question_id/file_edit', [
+    function(req, res, next) {res.locals.navPage = 'question'; res.locals.navSubPage = 'file_edit'; next();},
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
@@ -653,8 +653,8 @@ app.use('/pl/course/:course_id/course_admin/grading', [
     function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
     require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
 ]);
-app.use('/pl/course/:course_id/course_admin/edit', [
-    function(req, res, next) {res.locals.navSubPage = 'edit'; next();},
+app.use('/pl/course/:course_id/course_admin/file_edit', [
+    function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
 app.use('/pl/course/:course_id/course_admin/file_view', [
