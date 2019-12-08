@@ -28,11 +28,4 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
-    debug('POST /');
-    editHelpers.processFileAction(req, res, {
-        container: res.locals.course.path,
-    }, next);
-});
-
 module.exports = router;
