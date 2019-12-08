@@ -156,7 +156,7 @@
                 <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
                   <input type="hidden" name="__action" value="download_file">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <input type="hidden" name="file_path" value="<%= encodeURIComponent(f.path) %>">
+                  <input type="hidden" name="file_path" value="<%= f.path %>">
                   <button type="submit" class="btn btn-xs btn-secondary" <% if (!f.canDownload) { %> disabled <% } %>>
                     <i class="fa fa-arrow-down"></i>
                     <span>Download</span>
