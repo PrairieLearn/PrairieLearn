@@ -10,7 +10,6 @@ const async = require('async');
 const hljs = require('highlight.js');
 const fileType = require('file-type');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
-const util = require('util');
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js

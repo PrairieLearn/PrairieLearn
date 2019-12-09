@@ -3,20 +3,12 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
-
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
 const sanitizeName = require('../../lib/sanitize-name');
-const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const fs = require('fs-extra');
-const uuidv4 = require('uuid/v4');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const logger = require('../../lib/logger');
-const config = require('../../lib/config');
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const filenames = function(locals) {

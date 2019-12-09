@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');

@@ -1,12 +1,8 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
-
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
-const sanitizeName = require('../../lib/sanitize-name');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -17,9 +13,6 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const logger = require('../../lib/logger');
 const editHelpers = require('../shared/editHelpers');
 const config = require('../../lib/config');
-
-const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function change_qid_write(edit, callback) {
