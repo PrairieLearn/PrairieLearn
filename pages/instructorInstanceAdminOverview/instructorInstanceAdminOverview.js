@@ -37,19 +37,6 @@ router.get('/', function(req, res, next) {
                 callback(null);
             });
         },
-        (callback) => {
-            editHelpers.getFiles({
-                courseDir: res.locals.course.path,
-                baseDir: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
-                clientFilesDir: 'clientFilesCourseInstance',
-                serverFilesDir: 'serverFilesCourseInstance',
-                ignoreDirs: ['assessments'],
-            }, (err, files) => {
-                if (ERR(err, callback)) return;
-                res.locals.files = files;
-                callback(null);
-            });
-        },
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');

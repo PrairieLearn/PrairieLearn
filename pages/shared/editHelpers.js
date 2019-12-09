@@ -7,86 +7,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
-const klaw = require('klaw');
 const sha256 = require('crypto-js/sha256');
 const path = require('path');
 const fs = require('fs-extra');
 const async = require('async');
-
-function canEditFile(file) {
-    // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
-    const extCanEdit = ['.py', '.html', '.json', '.txt', '.md'];
-    return extCanEdit.includes(path.extname(file));
-}
-
-function canMoveFile(file) {
-    const cannotMove = ['info.json', 'infoAssessment.json', 'infoCourseInstance.json', 'infoCourse.json'];
-    return (! cannotMove.includes(path.basename(file)));
-}
-
-function getFiles(options, callback) {
-    let files = [];
-    let clientFiles = [];
-    let serverFiles = [];
-    let testFiles = [];
-    let index = 0;
-
-    const ignoreHidden = item => {
-        const basename = path.basename(item);
-        return basename === '.' || basename[0] !== '.';
-    };
-
-    const walker = klaw(options.baseDir, {filter: ignoreHidden});
-
-    options.ignoreDirs = options.ignoreDirs || [];
-
-    walker.on('readable', () => {
-        for (;;) {
-            const item = walker.read();
-            if (!item) {
-                break;
-            }
-            if (!item.stats.isDirectory()) {
-                const relPath = path.relative(options.baseDir, item.path);
-                const prefix = relPath.split(path.sep)[0];
-                const file = {
-                    name: relPath,
-                    path: path.relative(options.courseDir, item.path),
-                    editable: canEditFile(item.path),
-                    moveable: canMoveFile(item.path),
-                    id: index,
-                };
-                if (prefix == options.clientFilesDir) {
-                    clientFiles.push(file);
-                    index++;
-                } else if (prefix == options.serverFilesDir) {
-                    serverFiles.push(file);
-                    index++;
-                } else if ((options.testFilesDir) && (prefix == options.testFilesDir)) {
-                    testFiles.push(file);
-                    index++;
-                } else if (! options.ignoreDirs.includes(prefix)) {
-                    files.push(file);
-                    index++;
-                }
-            }
-        }
-    });
-
-    walker.on('error', (err) => {
-        if (ERR(err, callback)) return;
-    });
-
-    walker.on('end', () => {
-        callback(null, {
-            files: files,
-            clientFiles: clientFiles,
-            serverFiles: serverFiles,
-            testFiles: testFiles,
-            dir: path.relative(options.courseDir, options.baseDir),
-        });
-    });
-}
 
 function getHashFromBuffer(buffer) {
     return sha256(buffer.toString('utf8')).toString();
@@ -682,5 +606,4 @@ module.exports = {
     doEdit,
     canEdit,
     processFileAction,
-    getFiles,
 };
