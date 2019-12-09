@@ -43,6 +43,7 @@ function getPaths(req, res, callback) {
         ];
         paths.clientDir = path.join(paths.rootPath, 'clientFilesCourse');
         paths.serverDir = path.join(paths.rootPath, 'serverFilesCourse');
+        paths.urlPrefix = `${res.locals.urlPrefix}/course_admin`;
     } else if (res.locals.navPage == 'instance_admin') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name);
         paths.invalidRootPaths = [
@@ -53,6 +54,7 @@ function getPaths(req, res, callback) {
         ];
         paths.clientDir = path.join(paths.rootPath, 'clientFilesCourseInstance');
         paths.serverDir = path.join(paths.rootPath, 'serverFilesCourseInstance');
+        paths.urlPrefix = `${res.locals.urlPrefix}/instance_admin`;
     } else if (res.locals.navPage == 'assessment') {
         paths.rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid);
         paths.invalidRootPaths = [];
@@ -61,6 +63,7 @@ function getPaths(req, res, callback) {
         ];
         paths.clientDir = path.join(paths.rootPath, 'clientFilesAssessment');
         paths.serverDir = path.join(paths.rootPath, 'serverFilesAssessment');
+        paths.urlPrefix = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`;
     } else if (res.locals.navPage == 'question') {
         paths.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
         paths.invalidRootPaths = [];
@@ -70,6 +73,7 @@ function getPaths(req, res, callback) {
         paths.clientDir = path.join(paths.rootPath, 'clientFilesQuestion');
         paths.serverDir = path.join(paths.rootPath, 'serverFilesQuestion');
         paths.testsDir = path.join(paths.rootPath, 'tests');
+        paths.urlPrefix = `${res.locals.urlPrefix}/question/${res.locals.question.id}`;
     } else {
         return callback(new Error(`Invalid navPage: ${res.locals.navPage}`));
     }

@@ -350,6 +350,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view', [
+    function(req, res, next) {res.locals.navSubPage = 'file_view'; next();},
+    require('./pages/instructorFileBrowser/instructorFileBrowser'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [

@@ -182,9 +182,10 @@ router.post('/', function(req, res, next) {
             });
         }
     } else {
-        editHelpers.processFileAction(req, res, {
-            container: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
-        }, next);
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+        }));
     }
 });
 
