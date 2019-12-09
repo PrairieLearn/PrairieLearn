@@ -45,7 +45,7 @@ module.exports = {
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + locals.questionAppearanceTabUrl;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
                 request(questionUrl, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -199,7 +199,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + locals.questionAppearanceTabUrl;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
                 locals.preEndTime = Date.now();
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -278,7 +278,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + locals.questionAppearanceTabUrl;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -564,7 +564,7 @@ module.exports = {
             });
             describe('GET to instructor question overview URL', function() {
                 it('should load successfully', function(callback) {
-                    const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + locals.questionOverviewTabUrl;
+                    const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionOverviewTabUrl || '');
                     request(questionUrl, function (error, response, body) {
                         if (error) {
                             return callback(error);
@@ -593,7 +593,7 @@ module.exports = {
                         __action: 'test_once',
                         __csrf_token: locals.__csrf_token,
                     };
-                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + locals.questionOverviewTabUrl;
+                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionOverviewTabUrl || '');
                     request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                         if (error) {
                             return callback(error);
