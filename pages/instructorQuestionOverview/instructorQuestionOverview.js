@@ -40,7 +40,6 @@ function change_qid_write(edit, callback) {
         },
         (assessments, callback) => {
             debug(`For each assessment, read/write infoAssessment.json to replace ${edit.qid_old} with ${edit.qid_new}`);
-            // TODO: is it safe to run in parallel given that all modify the single array edit.pathsToAdd?
             async.eachSeries(assessments, (assessment, callback) => {
                 let infoPath = path.join(edit.coursePath,
                                          'courseInstances',
