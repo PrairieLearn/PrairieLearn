@@ -77,63 +77,51 @@ const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseAdminUrl = baseUrl + '/course/1/course_admin';
-const courseAdminEditUrl = courseAdminUrl + `/edit?file=${infoCoursePath}`;
+const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodeURIComponent(infoCoursePath)}`;
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const courseInstanceCourseAdminUrl = courseInstanceUrl + '/course_admin';
-const courseInstanceCourseAdminEditUrl = courseInstanceCourseAdminUrl + `/edit?file=${infoCoursePath}`;
+const courseInstanceCourseAdminEditUrl = courseInstanceCourseAdminUrl + `/file_edit/${encodeURIComponent(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminEditUrl = courseInstanceInstanceAdminUrl + `/edit?file=${infoCourseInstancePath}`;
+const courseInstanceInstanceAdminEditUrl = courseInstanceInstanceAdminUrl + `/file_edit/${encodeURIComponent(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assessmentEditUrl = assessmentUrl + `/edit?file=${infoAssessmentPath}`;
+const assessmentEditUrl = assessmentUrl + `/file_edit/${encodeURIComponent(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionJsonPath}`;
-const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionHtmlPath}`;
-const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/edit?file=${questionPythonPath}`;
-const badPathUrl = assessmentUrl + '/edit?file=../PrairieLearn/config.json';
-const badExampleCoursePathUrl = courseAdminUrl + '/edit?file=infoCourse.json';
+const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionJsonPath)}`;
+const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionHtmlPath)}`;
+const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionPythonPath)}`;
+const badPathUrl = assessmentUrl + `/file_edit/${encodeURIComponent("../PrairieLearn/config.json")}`;
+const badExampleCoursePathUrl = courseAdminUrl + `/file_edit/${encodeURIComponent("infoCourse.json")}`;
 
 const findEditUrlData = [
     {
         'name': 'assessment',
-        'selector': 'span:contains("infoAssessment.json") + a:contains("Edit")',
+        'selector': 'a:contains("infoAssessment.json") + a:contains("Edit")',
         'url': assessmentUrl,
         'expectedEditUrl': assessmentEditUrl,
     },
     {
         'name': 'course admin via course instance',
-        'selector': 'span:contains("infoCourse.json") + a:contains("Edit")',
+        'selector': 'a:contains("infoCourse.json") + a:contains("Edit")',
         'url': courseInstanceCourseAdminUrl,
         'expectedEditUrl': courseInstanceCourseAdminEditUrl,
     },
     {
         'name': 'course admin',
-        'selector': 'span:contains("infoCourse.json") + a:contains("Edit")',
+        'selector': 'a:contains("infoCourse.json") + a:contains("Edit")',
         'url': courseAdminUrl,
         'expectedEditUrl': courseAdminEditUrl,
     },
     {
         'name': 'instance admin',
-        'selector': 'span:contains("infoCourseInstance.json") + a:contains("Edit")',
+        'selector': 'a:contains("infoCourseInstance.json") + a:contains("Edit")',
         'url': courseInstanceInstanceAdminUrl,
         'expectedEditUrl': courseInstanceInstanceAdminEditUrl,
     },
     {
-        'name': 'question (json)',
-        'selector': 'span:contains("info.json") + a:contains("Edit")',
+        'name': 'question',
+        'selector': 'a:contains("info.json") + a:contains("Edit")',
         'url': courseInstanceQuestionUrl,
         'expectedEditUrl': courseInstanceQuestionJsonEditUrl,
-    },
-    {
-        'name': 'question (html)',
-        'selector': 'span:contains("question.html") + a:contains("Edit")',
-        'url': courseInstanceQuestionUrl,
-        'expectedEditUrl': courseInstanceQuestionHtmlEditUrl,
-    },
-    {
-        'name': 'question (python)',
-        'selector': 'span:contains("server.py") + a:contains("Edit")',
-        'url': courseInstanceQuestionUrl,
-        'expectedEditUrl': courseInstanceQuestionPythonEditUrl,
     },
 ];
 
@@ -197,7 +185,7 @@ const verifyEditData = [
 const verifyFileData = [
     {
         'title': 'question',
-        'url': courseInstanceQuestionUrl,
+        'url': courseInstanceQuestionUrl + '/file_view',
         'path': questionPath,
         'clientFilesDir': 'clientFilesQuestion',
         'serverFilesDir': 'serverFilesQuestion',
@@ -206,7 +194,7 @@ const verifyFileData = [
     },
     {
         'title': 'assessment',
-        'url': assessmentUrl + '/overview',
+        'url': assessmentUrl + '/file_view',
         'path': assessmentPath,
         'clientFilesDir': 'clientFilesAssessment',
         'serverFilesDir': 'serverFilesAssessment',
@@ -214,27 +202,27 @@ const verifyFileData = [
     },
     {
         'title': 'course instance',
-        'url': courseInstanceInstanceAdminUrl + '/overview',
+        'url': courseInstanceInstanceAdminUrl + '/file_view',
         'path': courseInstancePath,
         'clientFilesDir': 'clientFilesCourseInstance',
         'serverFilesDir': 'serverFilesCourseInstance',
-        'index': 1,
+        'index': 2,
     },
     {
         'title': 'course (through course instance)',
-        'url': courseInstanceCourseAdminUrl + '/overview',
+        'url': courseInstanceCourseAdminUrl + '/file_view',
         'path': '',
         'clientFilesDir': 'clientFilesCourse',
         'serverFilesDir': 'serverFilesCourse',
-        'index': 2,
+        'index': 5,
     },
     {
         'title': 'course',
-        'url': courseAdminUrl + '/overview',
+        'url': courseAdminUrl + '/file_view',
         'path': '',
         'clientFilesDir': 'clientFilesCourse',
         'serverFilesDir': 'serverFilesCourse',
-        'index': 2,
+        'index': 5,
     },
 ];
 
@@ -966,8 +954,8 @@ function doFiles(data) {
             });
 
             testDeleteFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, 'subdir')),
+                id: 0,
                 path: path.join(data.path, 'subdir', 'testfile.txt'),
             });
         });
@@ -981,30 +969,30 @@ function doFiles(data) {
             });
 
             testUploadFile({
-                url: data.url,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
                 path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
-                id: data.index,
+                id: 0,
                 contents: 'This is a different line of text.',
                 filename: 'anotherfile.txt',
             });
 
             testDownloadFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
+                id: 0,
                 contents: 'This is a different line of text.',
             });
 
             testRenameFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
+                id: 0,
                 path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
                 contents: 'This is a different line of text.',
-                new_file_name: path.join(data.clientFilesDir, 'subdir', 'testfile.txt'),
+                new_file_name: path.join('subdir', 'testfile.txt'),
             });
 
             testDeleteFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir, 'subdir')),
+                id: 0,
                 path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
             });
         });
@@ -1018,30 +1006,30 @@ function doFiles(data) {
             });
 
             testUploadFile({
-                url: data.url,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
                 path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-                id: data.index,
+                id: 0,
                 contents: 'This is a different line of text.',
                 filename: 'anotherfile.txt',
             });
 
             testDownloadFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
+                id: 0,
                 contents: 'This is a different line of text.',
             });
 
             testRenameFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
+                id: 0,
                 path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
                 contents: 'This is a different line of text.',
-                new_file_name: path.join(data.serverFilesDir, 'subdir', 'testfile.txt'),
+                new_file_name: path.join('subdir', 'testfile.txt'),
             });
 
             testDeleteFile({
-                url: data.url,
-                id: data.index,
+                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir, 'subdir')),
+                id: 0,
                 path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
             });
         });
@@ -1056,30 +1044,30 @@ function doFiles(data) {
                 });
 
                 testUploadFile({
-                    url: data.url,
+                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
                     path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
-                    id: data.index,
+                    id: 0,
                     contents: 'This is a different line of text.',
                     filename: 'anotherfile.txt',
                 });
 
                 testDownloadFile({
-                    url: data.url,
-                    id: data.index,
+                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
+                    id: 0,
                     contents: 'This is a different line of text.',
                 });
 
                 testRenameFile({
-                    url: data.url,
-                    id: data.index,
+                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
+                    id: 0,
                     path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
                     contents: 'This is a different line of text.',
-                    new_file_name: path.join(data.testFilesDir, 'subdir', 'testfile.txt'),
+                    new_file_name: path.join('subdir', 'testfile.txt'),
                 });
 
                 testDeleteFile({
-                    url: data.url,
-                    id: data.index,
+                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir, 'subdir')),
+                    id: 0,
                     path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
                 });
             });
@@ -1093,7 +1081,7 @@ function testUploadFile(params) {
             page = await requestp(params.url);
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
-        it('should have a CSRF token and a file_dir, and may have a file_path', () => {
+        it('should have a CSRF token and either a file_path or a working_path', () => {
             elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
             assert.lengthOf(elemList, 1);
             const $ = cheerio.load(elemList[0].attribs['data-content']);
@@ -1103,18 +1091,18 @@ function testUploadFile(params) {
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
-            // __file_dir
-            elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_dir"]`);
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.file_dir = elemList[0].attribs.value;
-            // __file_path
+            // file_path or working_path
             elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`);
             if (elemList.length > 0) {
                 assert.lengthOf(elemList, 1);
                 assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.file_path = elemList[0].attribs.value;
+                locals.working_path = undefined;
             } else {
+                elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`);
+                assert.lengthOf(elemList, 1);
+                assert.nestedProperty(elemList[0], 'attribs.value');
+                locals.working_path = elemList[0].attribs.value;
                 locals.file_path = undefined;
             }
         });
@@ -1129,7 +1117,6 @@ function testUploadFile(params) {
             options.formData = {
                 __action: 'upload_file',
                 __csrf_token: locals.__csrf_token,
-                file_dir: locals.file_dir,
                 file: {
                     value: Buffer.from(params.contents),
                     options: {
@@ -1139,6 +1126,8 @@ function testUploadFile(params) {
                 },
             };
             if (locals.file_path) options.formData.file_path = locals.file_path;
+            else if (locals.working_path) options.formData.working_path = locals.working_path;
+            else assert.fail('found neither file_path nor working_path');
             page = await requestp.post(options);
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
@@ -1193,7 +1182,7 @@ function testRenameFile(params) {
             page = await requestp(params.url);
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
-        it('should have a CSRF token and an old_file_name', () => {
+        it('should have a CSRF token, old_file_name, working_path', () => {
             elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
             assert.lengthOf(elemList, 1);
             const $ = cheerio.load(elemList[0].attribs['data-content']);
@@ -1208,6 +1197,11 @@ function testRenameFile(params) {
             assert.lengthOf(elemList, 1);
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.old_file_name = elemList[0].attribs.value;
+            // working_path
+            elemList = $(`form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`);
+            assert.lengthOf(elemList, 1);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.working_path = elemList[0].attribs.value;
         });
     });
 
@@ -1220,6 +1214,7 @@ function testRenameFile(params) {
             options.formData = {
                 __action: 'rename_file',
                 __csrf_token: locals.__csrf_token,
+                working_path: locals.working_path,
                 old_file_name: locals.old_file_name,
                 new_file_name: params.new_file_name,
             };
