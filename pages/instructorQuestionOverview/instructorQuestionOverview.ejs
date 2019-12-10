@@ -59,10 +59,10 @@
             <tr>
               <th>Configuration</th>
               <td>
-                <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/questions/<%= question.qid %>/info.json">
+                <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/<%= encodeURIComponent('questions/' + question.qid + '/info.json') %>">
                   info.json
                 </a>
-                <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/questions/<%= question.qid %>/info.json">
+                <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= encodeURIComponent('questions/' + question.qid + '/info.json') %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>
