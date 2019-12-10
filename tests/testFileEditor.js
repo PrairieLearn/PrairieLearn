@@ -89,8 +89,8 @@ const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
 const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionHtmlPath)}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionPythonPath)}`;
-const badPathUrl = assessmentUrl + `/file_edit/${encodeURIComponent("../PrairieLearn/config.json")}`;
-const badExampleCoursePathUrl = courseAdminUrl + `/file_edit/${encodeURIComponent("infoCourse.json")}`;
+const badPathUrl = assessmentUrl + '/file_edit/' + encodeURIComponent('../PrairieLearn/config.json');
+const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodeURIComponent('infoCourse.json');
 
 const findEditUrlData = [
     {
