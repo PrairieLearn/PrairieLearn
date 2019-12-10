@@ -91,7 +91,7 @@ const testEditData = [
         ]),
     },
     {
-        url: `${courseInstanceUrl}/question/1`,
+        url: `${courseInstanceUrl}/question/1/overview`,
         button: 'copyQuestionButton',
         form: 'copy-question-form',
         data: {
