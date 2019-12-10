@@ -143,6 +143,13 @@ router.post('/', function(req, res, next) {
             }));
         }
 
+        // Do not allow users to move the assessment outside the assessments directory
+        try {
+            if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid TID: ${req.body.id}`));
+        } catch {
+            return next(new Error(`Invalid TID: ${req.body.id}`));
+        }
+
         if (res.locals.assessment.tid == req.body.id) {
             debug('The new tid is the same as the old tid - do nothing');
             res.redirect(req.originalUrl);

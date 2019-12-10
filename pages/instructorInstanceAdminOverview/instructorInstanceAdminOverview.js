@@ -126,6 +126,13 @@ router.post('/', function(req, res, next) {
             }));
         }
 
+        // Do not allow users to move the course instance outside the course instances directory
+        try {
+            if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid CIID: ${req.body.id}`));
+        } catch {
+            return next(new Error(`Invalid CIID: ${req.body.id}`));
+        }
+
         if (res.locals.course_instance.short_name == req.body.id) {
             debug('The new short_name is the same as the old short_name - do nothing');
             res.redirect(req.originalUrl);

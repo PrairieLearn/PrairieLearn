@@ -606,4 +606,5 @@ module.exports = {
     doEdit,
     canEdit,
     processFileAction,
+    contains,
 };

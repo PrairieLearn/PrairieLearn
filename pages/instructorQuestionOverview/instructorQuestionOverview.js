@@ -197,7 +197,12 @@ router.post('/', function(req, res, next) {
             }));
         }
 
-        // FIXME: disallow QIDs that would take you outside 'questions' (or maybe just course directory)
+        // Do not allow users to move the question outside the questions directory
+        try {
+            if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid QID: ${req.body.id}`));
+        } catch {
+            return next(new Error(`Invalid QID: ${req.body.id}`));
+        }
 
         if (res.locals.question.qid == req.body.id) {
             debug('The new qid is the same as the old qid - do nothing');

@@ -21,11 +21,6 @@ function isHidden(item) {
     return (item[0] == '.');
 }
 
-function contains(parentPath, childPath) {
-    const relPath = path.relative(parentPath, childPath);
-    return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
-}
-
 function getPaths(req, res, callback) {
     let paths = {
         coursePath: res.locals.course.path,
@@ -113,7 +108,7 @@ function getPaths(req, res, callback) {
         }
     }
 
-    if (!contains(paths.rootPath, paths.workingPath)) {
+    if (!editHelpers.contains(paths.rootPath, paths.workingPath)) {
         let err = new Error('Invalid working directory');
         err.info =  `<p>The working directory</p>` +
                     `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
@@ -123,7 +118,7 @@ function getPaths(req, res, callback) {
         return callback(err);
     }
 
-    const found = paths.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, paths.workingPath));
+    const found = paths.invalidRootPaths.find((invalidRootPath) => editHelpers.contains(invalidRootPath, paths.workingPath));
     if (found) {
         let err = new Error('Invalid working directory');
         err.info =  `<p>The working directory</p>` +
@@ -138,7 +133,7 @@ function getPaths(req, res, callback) {
     paths.branch = [{
         name: path.basename(curPath),
         path: path.relative(res.locals.course.path, curPath),
-        canView: contains(paths.rootPath, curPath),
+        canView: editHelpers.contains(paths.rootPath, curPath),
     }];
     path.relative(res.locals.course.path, paths.workingPath).split(path.sep).forEach((dir) => {
         if (dir) {
@@ -146,7 +141,7 @@ function getPaths(req, res, callback) {
             paths.branch.push({
                 name: path.basename(curPath),
                 path: path.relative(res.locals.course.path, curPath),
-                canView: contains(paths.rootPath, curPath),
+                canView: editHelpers.contains(paths.rootPath, curPath),
             });
         }
     });
@@ -183,14 +178,14 @@ function browseDirectory(file_browser, callback) {
                             canDownload: file_browser.has_course_permission_edit,
                             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
                             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
+                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
                         });
                     } else if (stats.isDirectory()) {
                         file_browser.dirs.push({
                             id: index,
                             name: filename,
                             path: path.relative(file_browser.paths.coursePath, filepath),
-                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
+                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
                         });
                     }
                     callback(null);
@@ -259,7 +254,7 @@ function browseFile(file_browser, callback) {
             canDownload: file_browser.has_course_permission_edit,
             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
+            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
         };
         callback(null);
     });
