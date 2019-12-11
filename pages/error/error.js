@@ -10,7 +10,7 @@ module.exports = function(err, req, res, _next) {
 
     res.status(err.status || 500);
     var referrer = req.get('Referrer') || null;
-    logger.info('Error page', {
+    logger.warn('Error page', {
         msg: err.message,
         id: errorId,
         status: err.status,
