@@ -60,7 +60,7 @@ select_question_render_cache_stats AS (
 select_institutions AS (
     SELECT
         coalesce(
-            jsonb_agg(to_json(i) ORDER BY i.institution),
+            jsonb_agg(to_json(i) ORDER BY i.short_name),
             '[]'::jsonb
         ) AS institutions
     FROM
