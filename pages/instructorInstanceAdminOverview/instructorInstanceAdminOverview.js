@@ -129,7 +129,7 @@ router.post('/', function(req, res, next) {
         // Do not allow users to move the course instance outside the course instances directory
         try {
             if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid CIID: ${req.body.id}`));
-        } catch {
+        } catch(err) {
             return next(new Error(`Invalid CIID: ${req.body.id}`));
         }
 

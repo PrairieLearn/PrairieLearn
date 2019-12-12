@@ -200,7 +200,7 @@ router.post('/', function(req, res, next) {
         // Do not allow users to move the question outside the questions directory
         try {
             if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid QID: ${req.body.id}`));
-        } catch {
+        } catch(err) {
             return next(new Error(`Invalid QID: ${req.body.id}`));
         }
 

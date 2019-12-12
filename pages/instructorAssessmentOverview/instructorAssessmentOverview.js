@@ -146,7 +146,7 @@ router.post('/', function(req, res, next) {
         // Do not allow users to move the assessment outside the assessments directory
         try {
             if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid TID: ${req.body.id}`));
-        } catch {
+        } catch(err) {
             return next(new Error(`Invalid TID: ${req.body.id}`));
         }
 
