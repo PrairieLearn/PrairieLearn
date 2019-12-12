@@ -13,7 +13,7 @@ select_administrator_users AS (
 select_courses AS (
     SELECT
         coalesce(
-            jsonb_agg(jsonb_set(to_jsonb(c), '{institution}', to_jsonb(i.short_name)) ORDER BY i.short_name, c.short_name, c.title, c.id),
+            jsonb_agg(jsonb_set(to_jsonb(c), '{institution}', to_jsonb(i)) ORDER BY i.short_name, c.short_name, c.title, c.id),
             '[]'::jsonb
         ) AS courses
     FROM
