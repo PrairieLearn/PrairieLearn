@@ -13,7 +13,7 @@ select_administrator_users AS (
 select_courses AS (
     SELECT
         coalesce(
-            jsonb_agg(jsonb_set(to_jsonb(c), 'institution', to_jsonb(i)) ORDER BY i.institution, c.short_name, c.title, c.id),
+            jsonb_agg(jsonb_set(to_jsonb(c), '{institution}', to_jsonb(i)) ORDER BY i.short_name, c.short_name, c.title, c.id),
             '[]'::jsonb
         ) AS courses
     FROM
@@ -60,7 +60,7 @@ select_question_render_cache_stats AS (
 select_institutions AS (
     SELECT
         coalesce(
-            jsonb_agg(to_json(i) ORDER BY i.institution),
+            jsonb_agg(to_json(i) ORDER BY i.short_name),
             '[]'::jsonb
         ) AS institutions
     FROM

@@ -3,7 +3,7 @@
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <div class="form-group">
       <label>Institution:</label>
-      <select name="institution" class="form-control">
+      <select name="institution_id" class="form-control">
           <% institutions.forEach(function(i) { %>
               <option value="<%= i.id %>"><%= i.short_name %></option>
           <% }); %>
