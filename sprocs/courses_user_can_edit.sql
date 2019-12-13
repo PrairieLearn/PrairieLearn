@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
     SELECT
-        jsonb_agg(c.*)
+        jsonb_agg(c.* ORDER BY c.short_name, c.title, c.id)
     INTO
         courses
     FROM
