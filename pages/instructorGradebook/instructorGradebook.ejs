@@ -77,7 +77,7 @@
                     <%= Math.floor(score.score_perc) %>%
                   </a>
                   <% if (authz_data.has_instructor_edit) { %>
-                  <button class="btn btn-xs btn-secondary edit-score"
+                  <button type="button" class="btn btn-xs btn-secondary edit-score"
                      tabindex="0"
                      data-ai-id="<%= score.assessment_instance_id%>"
                      data-score="<%= score.score_perc %>">

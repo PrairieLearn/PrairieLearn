@@ -78,8 +78,8 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Administrators
-          <button id="administratorInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto"
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+              id="administratorInsertButton" tabindex="0"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
              data-content="<%= include('administratorInsertForm',
@@ -104,9 +104,9 @@
                 <td class="align-middle"><%= administrator_user.uid %></td>
                 <td class="align-middle"><%= administrator_user.name %></td>
                 <td class="align-middle">
-                  <button id="administratorDeleteButton<%= i %>"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
                      class="btn btn-sm btn-danger float-right"
-                     tabindex="0"
+                     id="administratorDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Remove administrator access"
                      data-content="<%= include('administratorDeleteForm',
@@ -217,8 +217,8 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Courses
-          <button id="courseInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto"
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+             id="courseInsertButton" tabindex="0"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new course"
              data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
@@ -249,9 +249,9 @@
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
                 <td class="align-middle">
-                  <button id="courseDeleteButton<%= i %>"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
                      class="btn btn-sm btn-danger float-right"
-                     tabindex="0"
+                     id="courseDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
                      data-content="<%= include('courseDeleteForm',

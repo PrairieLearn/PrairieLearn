@@ -18,7 +18,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
                     Course access roles
-                    <button id="coursePermissionsInsertButton" tabindex="0" class="btn btn-light btn-sm ml-auto" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add user" data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <button type="button" class="btn btn-light btn-sm ml-auto" id="coursePermissionsInsertButton" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add user" data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                         <i class="fa fa-user-plus" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Add user</span>
                     </button>
@@ -39,11 +39,11 @@
                                     <td class="align-middle">
                                         <%= course_user.course_role %>
 
-                                        <button id="coursePermissionsUpdateRoleButton<%= i %>" tabindex="0" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change course role" data-content="<%= include('coursePermissionsUpdateRoleForm', {id: 'coursePermissionsUpdateRoleButton' + i, uid: course_user.uid, user_id: course_user.user_id, course_role: course_user.course_role}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                        <button type="button" class="btn btn-xs btn-secondary" id="coursePermissionsUpdateRoleButton<%= i %>" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change course role" data-content="<%= include('coursePermissionsUpdateRoleForm', {id: 'coursePermissionsUpdateRoleButton' + i, uid: course_user.uid, user_id: course_user.user_id, course_role: course_user.course_role}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                             <i class="fa fa-edit" aria-hidden="true"></i> Change
                                         </button>
 
-                                        <button id="coursePermissionsDeleteButton<%= i %>" tabindex="0" class="btn btn-xs btn-secondary" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Remove user access" data-content="<%= include('coursePermissionsDeleteForm', {id: 'coursePermissionsDeleteButton' + i,
+                                        <button type="button" class="btn btn-xs btn-secondary"  id="coursePermissionsDeleteButton<%= i %>" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Remove user access" data-content="<%= include('coursePermissionsDeleteForm', {id: 'coursePermissionsDeleteButton' + i,
                                         uid: course_user.uid, user_id: course_user.user_id}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                             <i class="fa fa-times" aria-hidden="true"></i> Remove
                                         </button>
