@@ -26,6 +26,7 @@ module.exports = function(req, res, next) {
         res.locals.course = result.rows[0].course;
         res.locals.course_instance = result.rows[0].course_instance;
         res.locals.courses = result.rows[0].courses;
+        res.locals.course_instances = result.rows[0].course_instances;
 
         var permissions_course_instance = result.rows[0].permissions_course_instance;
         var permissions_course = result.rows[0].permissions_course;
