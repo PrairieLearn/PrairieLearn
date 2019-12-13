@@ -276,7 +276,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res,
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectCourseInstances'));
-app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectCourses'));
 
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
@@ -628,7 +627,6 @@ app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set r
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
-app.use('/pl/course/:course_id', require('./middlewares/selectCourses'));
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
 
 // single question
