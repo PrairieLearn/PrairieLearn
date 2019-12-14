@@ -11,6 +11,474 @@ const sha256 = require('crypto-js/sha256');
 const path = require('path');
 const fs = require('fs-extra');
 const async = require('async');
+const uuidv4 = require('uuid/v4');
+
+class Editor {
+    constructor(params) {
+        this.locals = params.locals;
+    }
+
+    write(callback) {
+        callback(new Error('write must be defined in a subclass'));
+    }
+
+    contains(parentPath, childPath) {
+        const relPath = path.relative(parentPath, childPath);
+        return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+    }
+
+    canEdit(callback) {
+        // Do not allow users to edit without permission
+        if (!this.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
+
+        // Do not allow users to edit the exampleCourse
+        if (this.locals.course.options.isExampleCourse) {
+            return callback(new Error(`Access denied (cannot edit the example course)`));
+        }
+
+        if (this.contained) {
+            // FIXME
+            return callback(new Error('FIXME'));
+
+            // if (this.contained.some((workingPath) => (!this.contains(this.container.rootPath, workingPath)))) {
+            //     return callback(new Error(`all paths ${this.contained} must be inside ${this.container.rootPath}`));
+            // }
+            //
+            // if (this.contained.some((workingPath) => (this.container.invalidRootPaths.some((invalidRootPath) => this.contains(invalidRootPath, workingPath))))) {
+            //     return callback(new Error(`all paths ${this.contained} must be outside all paths ${this.container.invalidRootPaths}`));
+            // }
+        }
+
+        callback(null);
+    }
+
+    doEdit(callback) {
+        const options = {
+            course_id: this.locals.course.id,
+            user_id: this.locals.user.user_id,
+            authn_user_id: this.locals.authz_data.authn_user.user_id,
+            type: 'sync',
+            description: this.description,
+            courseDir: this.locals.course.path,
+        };
+
+        serverJobs.createJobSequence(options, (err, job_sequence_id) => {
+            // Return immediately if we fail to create a job sequence
+            if (ERR(err, callback)) return;
+
+            let gitEnv = process.env;
+            if (config.gitSshCommand != null) {
+                gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+            }
+
+            let courseLock;
+            let jobSequenceHasFailed = false;
+
+            const _lock = () => {
+                debug(`${job_sequence_id}: _lock`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'lock',
+                    description: 'Lock',
+                    job_sequence_id: job_sequence_id,
+                    on_success: (config.fileEditorUseGit ? () => {_clean(_write, _unlock);} : _write),
+                    on_error: _finishWithFailure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+
+                    const lockName = 'coursedir:' + options.courseDir;
+                    job.verbose(`Trying lock ${lockName}`);
+                    namedLocks.waitLock(lockName, {timeout: 5000}, (err, lock) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            job.fail(err);
+                        } else if (lock == null) {
+                            job.verbose(`Did not acquire lock ${lockName}`);
+                            job.fail(new Error(`Another user is already syncing or modifying the course: ${options.courseDir}`));
+                        } else {
+                            courseLock = lock;
+                            job.verbose(`Acquired lock ${lockName}`);
+                            job.succeed();
+                        }
+                        return;
+                    });
+                });
+            };
+
+            const _clean = (on_success, on_failure) => {
+                debug(`${job_sequence_id}: _clean`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'clean_git_repo',
+                    description: 'Clean local files not in remote git repository',
+                    command: 'git',
+                    arguments: ['clean', '-fdx'],
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: () => {_reset(on_success, on_failure);},
+                    on_error: on_failure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _reset = (on_success, on_failure) => {
+                debug(`${job_sequence_id}: _reset`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'reset_from_git',
+                    description: 'Reset state to remote git repository',
+                    command: 'git',
+                    arguments: ['reset', '--hard', 'origin/master'],
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: on_success,
+                    on_error: on_failure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _write = () => {
+                debug(`${job_sequence_id}: _write`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'write',
+                    description: 'Write to disk',
+                    job_sequence_id: job_sequence_id,
+                    on_success: (config.fileEditorUseGit ? _add : _unlock),
+                    on_error: (config.fileEditorUseGit ? _cleanupAfterWrite : _cleanup),
+                    no_job_sequence_update: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+
+                    this.write((err) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            job.fail(err);
+                        } else {
+                            job.succeed();
+                        }
+                    });
+                });
+            };
+
+            const _add = () => {
+                debug(`${job_sequence_id}: _add`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'git_add',
+                    description: 'Stage changes',
+                    command: 'git',
+                    arguments: ['add'].concat(this.pathsToAdd),
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: _commit,
+                    on_error: _cleanupAfterWrite,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _commit = () => {
+                debug(`${job_sequence_id}: _commit`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'git_commit',
+                    description: 'Commit changes',
+                    command: 'git',
+                    arguments: [
+                        '-c', `user.name="${this.locals.user.name}"`,
+                        '-c', `user.email="${this.locals.user.uid}"`,
+                        'commit', '-m', this.commitMessage,
+                    ],
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: _push,
+                    on_error: _cleanupAfterWrite,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _push = () => {
+                debug(`${job_sequence_id}: _push`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'git_push',
+                    description: 'Push to remote',
+                    command: 'git',
+                    arguments: ['push'],
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: _unlock,
+                    on_error: _cleanupAfterCommit,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _unlock = () => {
+                debug(`${job_sequence_id}: _unlock`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'unlock',
+                    description: 'Unlock',
+                    job_sequence_id: job_sequence_id,
+                    on_success: (jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash),
+                    on_error: _finishWithFailure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+
+                    namedLocks.releaseLock(courseLock, (err) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            job.fail(err);
+                        } else {
+                            job.verbose(`Released lock`);
+                            job.succeed();
+                        }
+                    });
+                });
+            };
+
+            const _updateCommitHash = () => {
+                debug(`${job_sequence_id}: _updateCommitHash`);
+                courseUtil.updateCourseCommitHash(this.locals.course, (err) => {
+                    ERR(err, (e) => logger.error(e));
+                    _syncFromDisk();
+                });
+            };
+
+            const _syncFromDisk = () => {
+                debug(`${job_sequence_id}: _syncFromDisk`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'sync_from_disk',
+                    description: 'Sync course',
+                    job_sequence_id: job_sequence_id,
+                    on_success: _reloadQuestionServers,
+                    on_error: _finishWithFailure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+                    syncFromDisk.syncDiskToSql(this.locals.course.path, this.locals.course.id, job, (err) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            job.fail(err);
+                        } else {
+                            job.succeed();
+                        }
+                    });
+                });
+            };
+
+            const _reloadQuestionServers = () => {
+                debug(`${job_sequence_id}: _reloadQuestionServers`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'reload_question_servers',
+                    description: 'Reload server.js code (for v2 questions)',
+                    job_sequence_id: job_sequence_id,
+                    on_success: _finishWithSuccess,
+                    on_error: _finishWithFailure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+                    const coursePath = this.locals.course.path;
+                    requireFrontend.undefQuestionServers(coursePath, job, (err) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            job.fail(err);
+                        } else {
+                            job.succeed();
+                        }
+                    });
+                });
+            };
+
+            const _cleanupAfterCommit = (id) => {
+                debug(`Job id ${id} has failed (after git commit)`);
+                jobSequenceHasFailed = true;
+                debug(`${job_sequence_id}: _cleanupAfterCommit`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    job_sequence_id: job_sequence_id,
+                    type: 'git_reset',
+                    description: 'Roll back commit',
+                    command: 'git',
+                    arguments: ['reset', '--hard', 'HEAD~1'],
+                    working_directory: this.locals.course.path,
+                    env: gitEnv,
+                    on_success: _unlock,
+                    on_error: _finishWithFailure,
+                    no_job_sequence_update: true,
+                };
+                serverJobs.spawnJob(jobOptions);
+            };
+
+            const _cleanupAfterWrite = (id) => {
+                debug(`Job id ${id} has failed (after write)`);
+                jobSequenceHasFailed = true;
+                _clean(_unlock, _finishWithFailure);
+            };
+
+            const _cleanup = (id) => {
+                debug(`Job id ${id} has failed`);
+                jobSequenceHasFailed = true;
+                _unlock();
+            };
+
+            const _finishWithSuccess = () => {
+                debug(`${job_sequence_id}: _finishWithSuccess`);
+                const jobOptions = {
+                    course_id: options.course_id,
+                    user_id: options.user_id,
+                    authn_user_id: options.authn_user_id,
+                    type: 'finish',
+                    description: 'Finish job sequence',
+                    job_sequence_id: job_sequence_id,
+                    last_in_sequence: true,
+                };
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        _finishWithFailure();
+                        return;
+                    }
+
+                    job.verbose('Finished with success');
+                    job.succeed();
+                    callback(null, job_sequence_id);
+                });
+            };
+
+            const _finishWithFailure = () => {
+                debug(`${job_sequence_id}: _finishWithFailure`);
+                serverJobs.failJobSequence(job_sequence_id);
+                callback(new Error('edit failed'), job_sequence_id);
+            };
+
+            _lock();
+        });
+    }
+}
+
+
+
+
+// templatePath: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
+// courseInstanceID: res.locals.course_instance.id,
+// courseInstancePath: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
+// assessmentSetAbbreviation: res.locals.assessment_set.abbreviation,
+
+
+
+// function copy_write(edit, callback) {
+//     const assessmentsPath = path.join(edit.courseInstancePath, 'assessments');
+//     async.waterfall([
+//         (callback) => {
+//             debug(`Generate unique TID in ${assessmentsPath}`);
+//             fs.readdir(assessmentsPath, (err, filenames) => {
+//                 if (ERR(err, callback)) return;
+//
+//                 let number = 1;
+//                 filenames.forEach((filename) => {
+//                     const regex = new RegExp(`^${edit.assessmentSetAbbreviation}([0-9]+)$`);
+//                     let found = filename.match(regex);
+//                     if (found) {
+//                         const foundNumber = parseInt(found[1]);
+//                         if (foundNumber >= number) {
+//                             number = foundNumber + 1;
+//                         }
+//                     }
+//                 });
+//
+//                 edit.tid = `${edit.assessmentSetAbbreviation}${number}`;
+//                 edit.assessmentNumber = number,
+//                 edit.assessmentPath = path.join(assessmentsPath, edit.tid);
+//                 edit.pathsToAdd = [
+//                     edit.assessmentPath,
+//                 ];
+//                 edit.commitMessage = `in-browser edit: add assessment ${edit.tid}`;
+//                 callback(null);
+//             });
+//         },
+//         (callback) => {
+//             debug(`Copy template\n from ${edit.templatePath}\n to ${edit.assessmentPath}`);
+//             fs.copy(edit.templatePath, edit.assessmentPath, {overwrite: false, errorOnExist: true}, (err) => {
+//                 if (ERR(err, callback)) return;
+//                 callback(null);
+//             });
+//         },
+//         (callback) => {
+//             debug(`Read infoAssessment.json`);
+//             fs.readJson(path.join(edit.assessmentPath, 'infoAssessment.json'), (err, infoJson) => {
+//                 if (ERR(err, callback)) return;
+//                 callback(null, infoJson);
+//             });
+//         },
+//         (infoJson, callback) => {
+//             debug(`Write infoAssessment.json with new title, uuid, and number`);
+//             infoJson.title = 'Replace this title';
+//             infoJson.uuid = uuidv4();
+//             infoJson.number = `${edit.assessmentNumber}`;
+//             fs.writeJson(path.join(edit.assessmentPath, 'infoAssessment.json'), infoJson, {spaces: 4}, (err) => {
+//                 if (ERR(err, callback)) return;
+//                 callback(null);
+//             });
+//         },
+//     ], (err) => {
+//         if (ERR(err, callback)) return;
+//         callback(null);
+//     });
+// }
+
+
+
 
 function getHashFromBuffer(buffer) {
     return sha256(buffer.toString('utf8')).toString();
@@ -218,393 +686,171 @@ function processFileAction(req, res, params, next) {
     }
 }
 
-function contains(parentPath, childPath) {
-    const relPath = path.relative(parentPath, childPath);
-    return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
-}
-
-function canEdit(params, callback) {
-    const res = params.res;
-
-    // Do not allow users to edit without permission
-    if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
-
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
-        return callback(new Error(`attempting to edit example course`));
+class AssessmentCopyEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `${this.locals.course_instance.short_name}: copy assessment ${this.locals.assessment.tid}`;
     }
 
-    if (params.contained) {
-        if (params.contained.some((workingPath) => (!contains(params.container.rootPath, workingPath)))) {
-            return callback(new Error(`all paths ${params.contained} must be inside ${params.container.rootPath}`));
-        }
+    write(callback) {
+        debug('AssessmentCopyEditor: write()');
+        const assessmentsPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name, 'assessments');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique TID in ${assessmentsPath}`);
+                fs.readdir(assessmentsPath, (err, filenames) => {
+                    if (ERR(err, callback)) return;
 
-        if (params.contained.some((workingPath) => (params.container.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, workingPath))))) {
-            return callback(new Error(`all paths ${params.contained} must be outside all paths ${params.container.invalidRootPaths}`));
-        }
+                    let number = 1;
+                    filenames.forEach((filename) => {
+                        const regex = new RegExp(`^${this.locals.assessment_set.abbreviation}([0-9]+)$`);
+                        let found = filename.match(regex);
+                        if (found) {
+                            const foundNumber = parseInt(found[1]);
+                            if (foundNumber >= number) {
+                                number = foundNumber + 1;
+                            }
+                        }
+                    });
+
+                    this.tid = `${this.locals.assessment_set.abbreviation}${number}`;
+                    this.assessmentNumber = number,
+                    this.assessmentPath = path.join(assessmentsPath, this.tid);
+                    this.pathsToAdd = [
+                        this.assessmentPath,
+                    ];
+                    this.commitMessage = `${this.locals.course_instance.short_name}: copy assessment ${this.locals.assessment.tid} to ${this.tid}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const fromPath = path.join(assessmentsPath, this.locals.assessment.tid);
+                const toPath = this.assessmentPath;
+                debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+                fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Read infoAssessment.json`);
+                fs.readJson(path.join(this.assessmentPath, 'infoAssessment.json'), (err, infoJson) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, infoJson);
+                });
+            },
+            (infoJson, callback) => {
+                debug(`Write infoAssessment.json with new title, uuid, and number`);
+                infoJson.title = 'Replace this title';
+                infoJson.uuid = uuidv4();
+                infoJson.number = `${this.assessmentNumber}`;
+                fs.writeJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {spaces: 4}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+class AssessmentDeleteEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `${this.locals.course_instance.short_name}: delete assessment ${this.locals.assessment.tid}`;
     }
 
-    callback(null);
+    write(callback) {
+        debug('AssessmentDeleteEditor: write()');
+        const deletePath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name, 'assessments', this.locals.assessment.tid);
+        // This will silently do nothing if deletePath no longer exists.
+        fs.remove(deletePath, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                deletePath,
+            ];
+            this.commitMessage = `${this.locals.course_instance.short_name}: delete assessment ${this.locals.assessment.tid}`;
+            callback(null);
+        });
+    }
 }
 
-function doEdit(edit, locals, callback) {
-    const options = {
-        course_id: locals.course.id,
-        user_id: locals.user.user_id,
-        authn_user_id: locals.authz_data.authn_user.user_id,
-        type: 'sync',
-        description: edit.description,
-        courseDir: locals.course.path,
-    };
+class AssessmentRenameEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.tid_new = params.tid_new;
+        this.description = `${this.locals.course_instance.short_name}: rename assessment ${this.locals.assessment.tid}`;
+    }
 
-    serverJobs.createJobSequence(options, (err, job_sequence_id) => {
-        // Return immediately if we fail to create a job sequence
-        if (ERR(err, callback)) return;
+    canEdit(callback) {
+        if (path.dirname(this.tid_new) !== '.') return callback(new Error(`Invalid TID: ${this.tid_new}`));
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
 
-        let gitEnv = process.env;
-        if (config.gitSshCommand != null) {
-            gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-        }
-
-        let courseLock;
-        let jobSequenceHasFailed = false;
-
-        const _lock = () => {
-            debug(`${job_sequence_id}: _lock`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'lock',
-                description: 'Lock',
-                job_sequence_id: job_sequence_id,
-                on_success: (config.fileEditorUseGit ? () => {_clean(_write, _unlock);} : _write),
-                on_error: _finishWithFailure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-
-                const lockName = 'coursedir:' + options.courseDir;
-                job.verbose(`Trying lock ${lockName}`);
-                namedLocks.waitLock(lockName, {timeout: 5000}, (err, lock) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        job.fail(err);
-                    } else if (lock == null) {
-                        job.verbose(`Did not acquire lock ${lockName}`);
-                        job.fail(new Error(`Another user is already syncing or modifying the course: ${options.courseDir}`));
-                    } else {
-                        courseLock = lock;
-                        job.verbose(`Acquired lock ${lockName}`);
-                        job.succeed();
-                    }
-                    return;
-                });
-            });
-        };
-
-        const _clean = (on_success, on_failure) => {
-            debug(`${job_sequence_id}: _clean`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'clean_git_repo',
-                description: 'Clean local files not in remote git repository',
-                command: 'git',
-                arguments: ['clean', '-fdx'],
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: () => {_reset(on_success, on_failure);},
-                on_error: on_failure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _reset = (on_success, on_failure) => {
-            debug(`${job_sequence_id}: _reset`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'reset_from_git',
-                description: 'Reset state to remote git repository',
-                command: 'git',
-                arguments: ['reset', '--hard', 'origin/master'],
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: on_success,
-                on_error: on_failure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _write = () => {
-            debug(`${job_sequence_id}: _write`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'write',
-                description: 'Write to disk',
-                job_sequence_id: job_sequence_id,
-                on_success: (config.fileEditorUseGit ? _add : _unlock),
-                on_error: (config.fileEditorUseGit ? _cleanupAfterWrite : _cleanup),
-                no_job_sequence_update: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-
-                edit.write(edit, (err) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        job.fail(err);
-                    } else {
-                        job.succeed();
-                    }
-                });
-            });
-        };
-
-        const _add = function() {
-            debug(`${job_sequence_id}: _add`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'git_add',
-                description: 'Stage changes',
-                command: 'git',
-                arguments: ['add'].concat(edit.pathsToAdd),
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: _commit,
-                on_error: _cleanupAfterWrite,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _commit = function() {
-            debug(`${job_sequence_id}: _commit`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'git_commit',
-                description: 'Commit changes',
-                command: 'git',
-                arguments: [
-                    '-c', `user.name="${edit.user_name}"`,
-                    '-c', `user.email="${edit.uid}"`,
-                    'commit', '-m', edit.commitMessage,
-                ],
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: _push,
-                on_error: _cleanupAfterWrite,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _push = function() {
-            debug(`${job_sequence_id}: _push`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'git_push',
-                description: 'Push to remote',
-                command: 'git',
-                arguments: ['push'],
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: _unlock,
-                on_error: _cleanupAfterCommit,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _unlock = () => {
-            debug(`${job_sequence_id}: _unlock`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'unlock',
-                description: 'Unlock',
-                job_sequence_id: job_sequence_id,
-                on_success: (jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash),
-                on_error: _finishWithFailure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-
-                namedLocks.releaseLock(courseLock, (err) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        job.fail(err);
-                    } else {
-                        job.verbose(`Released lock`);
-                        job.succeed();
-                    }
-                });
-            });
-        };
-
-        const _updateCommitHash = () => {
-            debug(`${job_sequence_id}: _updateCommitHash`);
-            courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
-                _syncFromDisk();
-            });
-        };
-
-        const _syncFromDisk = () => {
-            debug(`${job_sequence_id}: _syncFromDisk`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'sync_from_disk',
-                description: 'Sync course',
-                job_sequence_id: job_sequence_id,
-                on_success: _reloadQuestionServers,
-                on_error: _finishWithFailure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        job.fail(err);
-                    } else {
-                        job.succeed();
-                    }
-                });
-            });
-        };
-
-        const _reloadQuestionServers = () => {
-            debug(`${job_sequence_id}: _reloadQuestionServers`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'reload_question_servers',
-                description: 'Reload server.js code (for v2 questions)',
-                job_sequence_id: job_sequence_id,
-                on_success: _finishWithSuccess,
-                on_error: _finishWithFailure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-                const coursePath = locals.course.path;
-                requireFrontend.undefQuestionServers(coursePath, job, (err) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        job.fail(err);
-                    } else {
-                        job.succeed();
-                    }
-                });
-            });
-        };
-
-        const _cleanupAfterCommit = (id) => {
-            debug(`Job id ${id} has failed (after git commit)`);
-            jobSequenceHasFailed = true;
-            debug(`${job_sequence_id}: _cleanupAfterCommit`);
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'git_reset',
-                description: 'Roll back commit',
-                command: 'git',
-                arguments: ['reset', '--hard', 'HEAD~1'],
-                working_directory: edit.coursePath,
-                env: gitEnv,
-                on_success: _unlock,
-                on_error: _finishWithFailure,
-                no_job_sequence_update: true,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const _cleanupAfterWrite = (id) => {
-            debug(`Job id ${id} has failed (after write)`);
-            jobSequenceHasFailed = true;
-            _clean(_unlock, _finishWithFailure);
-        };
-
-        const _cleanup = (id) => {
-            debug(`Job id ${id} has failed`);
-            jobSequenceHasFailed = true;
-            _unlock();
-        };
-
-        const _finishWithSuccess = () => {
-            debug(`${job_sequence_id}: _finishWithSuccess`);
-
-            const jobOptions = {
-                course_id: options.course_id,
-                user_id: options.user_id,
-                authn_user_id: options.authn_user_id,
-                type: 'finish',
-                description: 'Finish job sequence',
-                job_sequence_id: job_sequence_id,
-                last_in_sequence: true,
-            };
-            serverJobs.createJob(jobOptions, (err, job) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    _finishWithFailure();
-                    return;
-                }
-
-                job.verbose('Finished with success');
-                job.succeed();
-                callback(null, job_sequence_id);
-            });
-        };
-
-        const _finishWithFailure = () => {
-            debug(`${job_sequence_id}: _finishWithFailure`);
-            serverJobs.failJobSequence(job_sequence_id);
-            callback(new Error('edit failed'), job_sequence_id);
-        };
-
-        _lock();
-    });
+    write(callback) {
+        debug('AssessmentRenameEditor: write()');
+        const oldPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name, 'assessments', this.locals.assessment.tid);
+        const newPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name, 'assessments', this.tid_new);
+        debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+        fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                oldPath,
+                newPath,
+            ];
+            this.commitMessage = `${this.locals.course_instance.short_name}: rename assessment ${this.locals.assessment.tid} to ${this.tid_new}`;
+            callback(null);
+        });
+    }
 }
+
+
+
+
+
+
+
+// function contains(parentPath, childPath) {
+//     const relPath = path.relative(parentPath, childPath);
+//     return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+// }
+//
+// function canEdit(params, callback) {
+//     const res = params.res;
+//
+//     // Do not allow users to edit without permission
+//     if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
+//
+//     // Do not allow users to edit the exampleCourse
+//     if (res.locals.course.options.isExampleCourse) {
+//         return callback(new Error(`attempting to edit example course`));
+//     }
+//
+//     if (params.contained) {
+//         if (params.contained.some((workingPath) => (!contains(params.container.rootPath, workingPath)))) {
+//             return callback(new Error(`all paths ${params.contained} must be inside ${params.container.rootPath}`));
+//         }
+//
+//         if (params.contained.some((workingPath) => (params.container.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, workingPath))))) {
+//             return callback(new Error(`all paths ${params.contained} must be outside all paths ${params.container.invalidRootPaths}`));
+//         }
+//     }
+//
+//     callback(null);
+// }
 
 module.exports = {
-    doEdit,
-    canEdit,
+    // doEdit,
+    // canEdit,
     processFileAction,
-    contains,
+    // contains,
+    // Editor,
+    AssessmentCopyEditor,
+    AssessmentDeleteEditor,
+    AssessmentRenameEditor,
 };
