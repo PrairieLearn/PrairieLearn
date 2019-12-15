@@ -100,6 +100,8 @@ app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPref
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
+app.use(function(req, res, next) {res.locals.appName = 'PrairieLearn'; next();});
+app.use(function(req, res, next) {res.locals.htmlTitle = res.locals.appName; next();});
 
 if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
