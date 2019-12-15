@@ -6,15 +6,20 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
-const sha256 = require('crypto-js/sha256');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const fs = require('fs-extra');
 const async = require('async');
 const uuidv4 = require('uuid/v4');
+const sha256 = require('crypto-js/sha256');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+function contains(parentPath, childPath) {
+    const relPath = path.relative(parentPath, childPath);
+    return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+}
 
 class Editor {
     constructor(params) {
@@ -25,11 +30,6 @@ class Editor {
         callback(new Error('write must be defined in a subclass'));
     }
 
-    contains(parentPath, childPath) {
-        const relPath = path.relative(parentPath, childPath);
-        return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
-    }
-
     canEdit(callback) {
         // Do not allow users to edit without permission
         if (!this.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
@@ -37,19 +37,6 @@ class Editor {
         // Do not allow users to edit the exampleCourse
         if (this.locals.course.options.isExampleCourse) {
             return callback(new Error(`Access denied (cannot edit the example course)`));
-        }
-
-        if (this.contained) {
-            // FIXME
-            return callback(new Error('FIXME'));
-
-            // if (this.contained.some((workingPath) => (!this.contains(this.container.rootPath, workingPath)))) {
-            //     return callback(new Error(`all paths ${this.contained} must be inside ${this.container.rootPath}`));
-            // }
-            //
-            // if (this.contained.some((workingPath) => (this.container.invalidRootPaths.some((invalidRootPath) => this.contains(invalidRootPath, workingPath))))) {
-            //     return callback(new Error(`all paths ${this.contained} must be outside all paths ${this.container.invalidRootPaths}`));
-            // }
         }
 
         callback(null);
@@ -407,214 +394,6 @@ class Editor {
 
             _lock();
         });
-    }
-}
-
-
-
-function getHashFromBuffer(buffer) {
-    return sha256(buffer.toString('utf8')).toString();
-}
-
-function file_delete_write(edit, callback) {
-    debug(`Delete ${edit.filePath}`);
-    // This will silently do nothing if edit.filePath no longer exists.
-    fs.remove(edit.filePath, (err) => {
-        if (ERR(err, callback)) return;
-        edit.pathsToAdd = [
-            edit.filePath,
-        ];
-        edit.commitMessage = `in-browser edit: delete file ${edit.filePath}`;
-        callback(null);
-    });
-}
-
-function file_rename_write(edit, callback) {
-    debug(`Move:\n from ${edit.oldFilePath}\n to ${edit.newFilePath}`);
-    async.series([
-        (callback) => {
-            debug(`ensure path exists`);
-            fs.ensureDir(path.dirname(edit.newFilePath), (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`rename file`);
-            fs.rename(edit.oldFilePath, edit.newFilePath, (err) => {
-                if (ERR(err, callback)) return;
-                edit.pathsToAdd = [
-                    edit.oldFilePath,
-                    edit.newFilePath,
-                ];
-                edit.commitMessage = `in-browser edit: rename file ${edit.oldFilePath} to ${edit.newFilePath}`;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
-function file_upload_write(edit, callback) {
-    debug(`Upload file ${edit.filePath}`);
-    async.series([
-        (callback) => {
-            debug(`ensure path exists`);
-            fs.ensureDir(path.dirname(edit.filePath), (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`write file`);
-            fs.writeFile(edit.filePath, edit.fileContents, (err) => {
-                if (ERR(err, callback)) return;
-                edit.pathsToAdd = [
-                    edit.filePath,
-                ];
-                edit.commitMessage = `in-browser edit: upload file ${edit.filePath}`;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
-function processFileAction(req, res, params, next) {
-    // NOTE: This function is meant to do things to *files* and not to directories
-    // (or anything else). However, nowhere do we check that it is actually being
-    // applied to a file and not to a directory.
-
-    if (req.body.__action == 'delete_file') {
-        debug('Delete file');
-        const filePath = path.join(res.locals.course.path, req.body.file_path);
-        canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
-            if (ERR(err, next)) return;
-
-            let edit = {
-                userID: res.locals.user.user_id,
-                courseID: res.locals.course.id,
-                coursePath: res.locals.course.path,
-                uid: res.locals.user.uid,
-                user_name: res.locals.user.name,
-                filePath: filePath,
-            };
-
-            edit.description = 'Delete file in browser and sync';
-            edit.write = file_delete_write;
-            doEdit(edit, res.locals, (err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                } else {
-                    res.redirect(req.originalUrl);
-                }
-            });
-        });
-    } else if (req.body.__action == 'rename_file') {
-        debug('Rename file');
-        const oldFilePath = path.join(req.body.working_path, req.body.old_file_name);
-        const newFilePath = path.join(req.body.working_path, req.body.new_file_name);
-        if (oldFilePath == newFilePath) {
-            debug('new file name is the same as old file name, so abort rename');
-            res.redirect(req.originalUrl);
-        } else {
-            canEdit({req: req, res: res, container: params.container, contained: [oldFilePath, newFilePath]}, (err) => {
-                if (ERR(err, next)) return;
-
-                let edit = {
-                    userID: res.locals.user.user_id,
-                    courseID: res.locals.course.id,
-                    coursePath: res.locals.course.path,
-                    uid: res.locals.user.uid,
-                    user_name: res.locals.user.name,
-                    oldFilePath: oldFilePath,
-                    newFilePath: newFilePath,
-                };
-
-                edit.description = 'Rename file in browser and sync';
-                edit.write = file_rename_write;
-                doEdit(edit, res.locals, (err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                    } else {
-                        if (req.body.was_viewing_file) {
-                            res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(path.relative(res.locals.course.path, newFilePath))}`);
-                        } else {
-                            res.redirect(req.originalUrl);
-                        }
-                    }
-                });
-            });
-        }
-    } else if (req.body.__action == 'download_file') {
-        debug('Download file');
-        const filePath = path.join(res.locals.course.path, req.body.file_path);
-        canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
-            if (ERR(err, next)) return;
-            res.attachment(path.basename(filePath));
-            res.sendFile(filePath);
-        });
-    } else if (req.body.__action == 'upload_file') {
-        debug('Upload file');
-        let filePath;
-        if (req.body.file_path) {
-            debug('should replace old file');
-            filePath = path.join(res.locals.course.path, req.body.file_path);
-        } else {
-            debug('should add a new file');
-            filePath = path.join(req.body.working_path, req.file.originalname);
-        }
-        debug('look for old contents');
-        fs.readFile(filePath, (err, contents) => {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    debug('no old contents, so continue with upload');
-                } else {
-                    return ERR(err, next);
-                }
-            } else {
-                debug('get hash of old contents and of new contents');
-                const oldHash = getHashFromBuffer(contents);
-                const newHash = getHashFromBuffer(req.file.buffer);
-                debug('oldHash: ' + oldHash);
-                debug('newHash: ' + newHash);
-                if (oldHash == newHash) {
-                    debug('new contents are the same as old contents, so abort upload');
-                    res.redirect(req.originalUrl);
-                    return;
-                } else {
-                    debug('new contents are different from old contents, so continue with upload');
-                }
-            }
-
-            canEdit({req: req, res: res, container: params.container, contained: [filePath]}, (err) => {
-                if (ERR(err, next)) return;
-                let edit = {
-                    userID: res.locals.user.user_id,
-                    courseID: res.locals.course.id,
-                    coursePath: res.locals.course.path,
-                    uid: res.locals.user.uid,
-                    user_name: res.locals.user.name,
-                    filePath: filePath,
-                    fileContents: req.file.buffer,
-                };
-                edit.description = 'Upload file in browser and sync';
-                edit.write = file_upload_write;
-                doEdit(edit, res.locals, (err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
-                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                    } else {
-                        res.redirect(req.originalUrl);
-                    }
-                });
-            });
-        });
-    } else {
-        return next(new Error('unknown __action: ' + req.body.__action));
     }
 }
 
@@ -1436,45 +1215,249 @@ class QuestionTransferEditor extends Editor {
     }
 }
 
+class FileDeleteEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.container = params.container;
+        this.deletePath = params.deletePath;
+        if (this.locals.course.path == this.container.rootPath) {
+            this.prefix = '';
+        } else {
+            this.prefix = `${path.basename(this.container.rootPath)}: `;
+        }
+        this.description = `${this.prefix}delete ${path.relative(this.container.rootPath, this.deletePath)}`;
+    }
 
+    canEdit(callback) {
+        if (!contains(this.container.rootPath, this.deletePath)) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The path of the file to delete</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
+                        `<p>must be inside the root directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+            return callback(err);
+        }
 
+        const found = this.container.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, this.deletePath));
+        if (found) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The path of the file to delete</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.deletePath}</pre></div>` +
+                        `<p>must <em>not</em> be inside the directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+            return callback(err);
+        }
 
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
 
-// function contains(parentPath, childPath) {
-//     const relPath = path.relative(parentPath, childPath);
-//     return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
-// }
-//
-// function canEdit(params, callback) {
-//     const res = params.res;
-//
-//     // Do not allow users to edit without permission
-//     if (!res.locals.authz_data.has_course_permission_edit) return callback(new Error('Access denied'));
-//
-//     // Do not allow users to edit the exampleCourse
-//     if (res.locals.course.options.isExampleCourse) {
-//         return callback(new Error(`attempting to edit example course`));
-//     }
-//
-//     if (params.contained) {
-//         if (params.contained.some((workingPath) => (!contains(params.container.rootPath, workingPath)))) {
-//             return callback(new Error(`all paths ${params.contained} must be inside ${params.container.rootPath}`));
-//         }
-//
-//         if (params.contained.some((workingPath) => (params.container.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, workingPath))))) {
-//             return callback(new Error(`all paths ${params.contained} must be outside all paths ${params.container.invalidRootPaths}`));
-//         }
-//     }
-//
-//     callback(null);
-// }
+    write(callback) {
+        debug('FileDeleteEditor: write()');
+        // This will silently do nothing if deletePath no longer exists.
+        fs.remove(this.deletePath, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                this.deletePath,
+            ];
+            this.commitMessage = this.description;
+            callback(null);
+        });
+    }
+}
+
+class FileRenameEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.container = params.container;
+        this.oldPath = params.oldPath;
+        this.newPath = params.newPath;
+        if (this.locals.course.path == this.container.rootPath) {
+            this.prefix = '';
+        } else {
+            this.prefix = `${path.basename(this.container.rootPath)}: `;
+        }
+        this.description = `${this.prefix}rename ${path.relative(this.container.rootPath, this.oldPath)} to ${path.relative(this.container.rootPath, this.newPath)}`;
+    }
+
+    canEdit(callback) {
+        if (!contains(this.container.rootPath, this.oldPath)) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file's old path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+                        `<p>must be inside the root directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+            return callback(err);
+        }
+
+        if (!contains(this.container.rootPath, this.oldPath)) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file's new path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
+                        `<p>must be inside the root directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+            return callback(err);
+        }
+
+        let found;
+
+        found = this.container.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, this.oldPath));
+        if (found) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file's old path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+                        `<p>must <em>not</em> be inside the directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+            return callback(err);
+        }
+
+        found = this.container.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, this.newPath));
+        if (found) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file's new path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.newPath}</pre></div>` +
+                        `<p>must <em>not</em> be inside the directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+            return callback(err);
+        }
+
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+
+    write(callback) {
+        debug('FileRenameEditor: write()');
+        async.series([
+            (callback) => {
+                debug(`ensure path exists`);
+                fs.ensureDir(path.dirname(this.newPath), (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`rename file`);
+                fs.rename(this.oldPath, this.newPath, (err) => {
+                    if (ERR(err, callback)) return;
+                    this.pathsToAdd = [
+                        this.oldPath,
+                        this.newPath,
+                    ];
+                    this.commitMessage = this.description;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+class FileUploadEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.container = params.container;
+        this.filePath = params.filePath;
+        this.fileContents = params.fileContents;
+        if (this.locals.course.path == this.container.rootPath) {
+            this.prefix = '';
+        } else {
+            this.prefix = `${path.basename(this.container.rootPath)}: `;
+        }
+        this.description = `${this.prefix}upload ${path.relative(this.container.rootPath, this.filePath)}`;
+    }
+
+    getHashFromBuffer(buffer) {
+        return sha256(buffer.toString('utf8')).toString();
+    }
+
+    shouldEdit(callback) {
+        debug('look for old contents');
+        fs.readFile(this.filePath, (err, contents) => {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    debug('no old contents, so continue with upload');
+                    callback(null, true);
+                } else {
+                    ERR(err, callback);
+                }
+            } else {
+                debug('get hash of old contents and of new contents');
+                const oldHash = this.getHashFromBuffer(contents);
+                const newHash = this.getHashFromBuffer(this.fileContents);
+                debug('oldHash: ' + oldHash);
+                debug('newHash: ' + newHash);
+                if (oldHash == newHash) {
+                    debug('new contents are the same as old contents, so abort upload');
+                    callback(null, false);
+                } else {
+                    debug('new contents are different from old contents, so continue with upload');
+                    callback(null, true);
+                }
+            }
+        });
+    }
+
+    canEdit(callback) {
+        if (!contains(this.container.rootPath, this.filePath)) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+                        `<p>must be inside the root directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.container.rootPath}</pre></div>`;
+            return callback(err);
+        }
+
+        const found = this.container.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, this.filePath));
+        if (found) {
+            let err = new Error('Invalid file path');
+            err.info =  `<p>The file path</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${this.oldPath}</pre></div>` +
+                        `<p>must <em>not</em> be inside the directory</p>` +
+                        `<div class="container"><pre class="bg-dark text-white rounded p-2">${found}</pre></div>`;
+            return callback(err);
+        }
+
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+
+    write(callback) {
+        debug('FileUploadEditor: write()');
+        async.series([
+            (callback) => {
+                debug(`ensure path exists`);
+                fs.ensureDir(path.dirname(this.filePath), (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`write file`);
+                fs.writeFile(this.filePath, this.fileContents, (err) => {
+                    if (ERR(err, callback)) return;
+                    this.pathsToAdd = [
+                        this.filePath,
+                    ];
+                    this.commitMessage = this.description;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
 
 module.exports = {
-    // doEdit,
-    // canEdit,
-    processFileAction,
-    // contains,
-    // Editor,
     AssessmentCopyEditor,
     AssessmentDeleteEditor,
     AssessmentRenameEditor,
@@ -1488,4 +1471,7 @@ module.exports = {
     QuestionRenameEditor,
     QuestionAddEditor,
     QuestionTransferEditor,
+    FileDeleteEditor,
+    FileRenameEditor,
+    FileUploadEditor,
 };

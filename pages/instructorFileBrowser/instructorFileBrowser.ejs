@@ -59,15 +59,10 @@
                 <i class="fa fa-arrow-up"></i>
                 <span>Upload</span>
               </button>
-              <form class="d-inline" name="instructor-file-download-form-<%= file_browser.file.id %>" method="POST">
-                <input type="hidden" name="__action" value="download_file">
-                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                <input type="hidden" name="file_path" value="<%= file_browser.file.path %>">
-                <button type="submit" class="btn btn-sm btn-light" <% if (!file_browser.file.canDownload) { %> disabled <% } %>>
-                  <i class="fa fa-arrow-down"></i>
-                  <span>Download</span>
-                </button>
-              </form>
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= encodeURIComponent(file_browser.file.path) %>?attachment=<%= encodeURIComponent(file_browser.file.name) %>">
+                <i class="fa fa-arrow-down"></i>
+                <span>Download</span>
+              </a>
               <button id="instructorFileRenameForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canRename) { %>disabled<% } %>>
                 <i class="fa fa-i-cursor"></i>
                 <span>Rename</span>
@@ -153,15 +148,10 @@
                   <i class="fa fa-arrow-up"></i>
                   <span>Upload</span>
                 </button>
-                <form class="d-inline" name="instructor-file-download-form-<%= f.id %>" method="POST">
-                  <input type="hidden" name="__action" value="download_file">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <input type="hidden" name="file_path" value="<%= f.path %>">
-                  <button type="submit" class="btn btn-xs btn-secondary" <% if (!f.canDownload) { %> disabled <% } %>>
-                    <i class="fa fa-arrow-down"></i>
-                    <span>Download</span>
-                  </button>
-                </form>
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= encodeURIComponent(f.path) %>?attachment=<%= encodeURIComponent(f.name) %>">
+                  <i class="fa fa-arrow-down"></i>
+                  <span>Download</span>
+                </a>
                 <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
                   <i class="fa fa-i-cursor"></i>
                   <span>Rename</span>

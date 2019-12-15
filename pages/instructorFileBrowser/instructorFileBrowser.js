@@ -4,12 +4,18 @@ const router = express.Router();
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const editHelpers = require('../shared/editHelpers');
+const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../shared/editHelpers');
+const logger = require('../../lib/logger');
 const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');
 const fileType = require('file-type');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
+
+function contains(parentPath, childPath) {
+    const relPath = path.relative(parentPath, childPath);
+    return (!(relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)));
+}
 
 function canEditFile(file) {
     // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
@@ -108,7 +114,7 @@ function getPaths(req, res, callback) {
         }
     }
 
-    if (!editHelpers.contains(paths.rootPath, paths.workingPath)) {
+    if (!contains(paths.rootPath, paths.workingPath)) {
         let err = new Error('Invalid working directory');
         err.info =  `<p>The working directory</p>` +
                     `<div class="container"><pre class="bg-dark text-white rounded p-2">${paths.workingPath}</pre></div>` +
@@ -118,7 +124,7 @@ function getPaths(req, res, callback) {
         return callback(err);
     }
 
-    const found = paths.invalidRootPaths.find((invalidRootPath) => editHelpers.contains(invalidRootPath, paths.workingPath));
+    const found = paths.invalidRootPaths.find((invalidRootPath) => contains(invalidRootPath, paths.workingPath));
     if (found) {
         let err = new Error('Invalid working directory');
         err.info =  `<p>The working directory</p>` +
@@ -133,7 +139,7 @@ function getPaths(req, res, callback) {
     paths.branch = [{
         name: path.basename(curPath),
         path: path.relative(res.locals.course.path, curPath),
-        canView: editHelpers.contains(paths.rootPath, curPath),
+        canView: contains(paths.rootPath, curPath),
     }];
     path.relative(res.locals.course.path, paths.workingPath).split(path.sep).forEach((dir) => {
         if (dir) {
@@ -141,7 +147,7 @@ function getPaths(req, res, callback) {
             paths.branch.push({
                 name: path.basename(curPath),
                 path: path.relative(res.locals.course.path, curPath),
-                canView: editHelpers.contains(paths.rootPath, curPath),
+                canView: contains(paths.rootPath, curPath),
             });
         }
     });
@@ -178,14 +184,14 @@ function browseDirectory(file_browser, callback) {
                             canDownload: file_browser.has_course_permission_edit,
                             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
                             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
+                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     } else if (stats.isDirectory()) {
                         file_browser.dirs.push({
                             id: index,
                             name: filename,
                             path: path.relative(file_browser.paths.coursePath, filepath),
-                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
+                            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     }
                     callback(null);
@@ -254,7 +260,7 @@ function browseFile(file_browser, callback) {
             canDownload: file_browser.has_course_permission_edit,
             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => editHelpers.contains(invalidRootPath, filepath)),
+            canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
         };
         callback(null);
     });
@@ -316,13 +322,121 @@ router.post('/*', function(req, res, next) {
     debug('POST /');
     getPaths(req, res, (err, paths) => {
         if (ERR(err, next)) return;
-        editHelpers.processFileAction(req, res, {
-            container: {
-                rootPath: paths.rootPath,
-                invalidRootPaths: paths.invalidRootPaths,
-            },
-        }, next);
+        const container = {
+            rootPath: paths.rootPath,
+            invalidRootPaths: paths.invalidRootPaths,
+        };
+
+        // NOTE: All actions are meant to do things to *files* and not to directories
+        // (or anything else). However, nowhere do we check that it is actually being
+        // applied to a file and not to a directory.
+
+        if (req.body.__action == 'delete_file') {
+            debug('Delete file');
+            let deletePath;
+            try {
+                deletePath = path.join(res.locals.course.path, req.body.file_path);
+            } catch(err) {
+                return next(new Error(`Invalid file path: ${req.body.file_path}`));
+            }
+            const editor = new FileDeleteEditor({
+                locals: res.locals,
+                container: container,
+                deletePath: deletePath,
+            });
+            editor.canEdit((err) => {
+                if (ERR(err, next)) return;
+                editor.doEdit((err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        res.redirect(req.originalUrl);
+                    }
+                });
+            });
+        } else if (req.body.__action == 'rename_file') {
+            debug('Rename file');
+            let oldPath;
+            try {
+                oldPath = path.join(req.body.working_path, req.body.old_file_name);
+            } catch(err) {
+                return next(new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`));
+            }
+            let newPath;
+            try {
+                newPath = path.join(req.body.working_path, req.body.new_file_name);
+            } catch(err) {
+                return next(new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`));
+            }
+            if (oldPath == newPath) {
+                debug('The new file name is the same as old file name - do nothing');
+                res.redirect(req.originalUrl);
+            } else {
+                const editor = new FileRenameEditor({
+                    locals: res.locals,
+                    container: container,
+                    oldPath: oldPath,
+                    newPath: newPath,
+                });
+                editor.canEdit((err) => {
+                    if (ERR(err, next)) return;
+                    editor.doEdit((err, job_sequence_id) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                        } else {
+                            if (req.body.was_viewing_file) {
+                                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(path.relative(res.locals.course.path, newPath))}`);
+                            } else {
+                                res.redirect(req.originalUrl);
+                            }
+                        }
+                    });
+                });
+            }
+        } else if (req.body.__action == 'upload_file') {
+            debug('Upload file');
+            let filePath;
+            if (req.body.file_path) {
+                debug('should replace old file');
+                try {
+                    filePath = path.join(res.locals.course.path, req.body.file_path);
+                } catch(err) {
+                    return next(new Error(`Invalid file path: ${req.body.file_path}`));
+                }
+            } else {
+                debug('should add a new file');
+                try {
+                    filePath = path.join(req.body.working_path, req.file.originalname);
+                } catch(err) {
+                    return next(new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`));
+                }
+            }
+            const editor = new FileUploadEditor({
+                locals: res.locals,
+                container: container,
+                filePath: filePath,
+                fileContents: req.file.buffer,
+            });
+            editor.shouldEdit((err, yes) => {
+                if (ERR(err, next)) return;
+                if (!yes) return res.redirect(req.originalUrl);
+                editor.canEdit((err) => {
+                    if (ERR(err, next)) return;
+                    editor.doEdit((err, job_sequence_id) => {
+                        if (ERR(err, (e) => logger.error(e))) {
+                            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                        } else {
+                            res.redirect(req.originalUrl);
+                        }
+                    });
+                });
+            });
+        } else {
+            return next(new Error('unknown __action: ' + req.body.__action));
+        }
     });
 });
+
+
 
 module.exports = router;
