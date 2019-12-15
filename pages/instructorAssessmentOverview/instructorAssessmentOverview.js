@@ -12,7 +12,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
-const {AssessmentCopyEditor, AssessmentRenameEditor, AssessmentDeleteEditor} = require('../shared/editHelpers');
+const { AssessmentCopyEditor, AssessmentRenameEditor, AssessmentDeleteEditor } = require('../shared/editHelpers');
 
 router.get('/', function(req, res, next) {
     debug('GET /');
