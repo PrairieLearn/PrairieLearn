@@ -1005,7 +1005,7 @@ class CourseInstanceRenameEditor extends Editor {
 class CourseInstanceAddEditor extends Editor {
     constructor(params) {
         super(params);
-        this.description = `add course instance`;
+        this.description = `Add course instance`;
     }
 
     getNextNameShort() {
@@ -1099,6 +1099,82 @@ class CourseInstanceAddEditor extends Editor {
     }
 }
 
+class QuestionAddEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `Add question`;
+    }
+
+    write(callback) {
+        debug('QuestionAddEditor: write()');
+        const questionsPath = path.join(this.locals.course.path, 'questions');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique QID`);
+                fs.readdir(questionsPath, (err, filenames) => {
+                    let number = 1;
+
+                    if (err) {
+                        // if the code is ENOENT, then the "questions" folder does
+                        // not exist, and so there are no questions yet - otherwise,
+                        // something has gone wrong
+                        if (err.code != 'ENOENT') return ERR(err, callback);
+                    } else {
+                        filenames.forEach((filename) => {
+                            let found = filename.match(/^question-([0-9]+)$/);
+                            if (found) {
+                                const foundNumber = parseInt(found[1]);
+                                if (foundNumber >= number) {
+                                    number = foundNumber + 1;
+                                }
+                            }
+                        });
+                    }
+
+                    this.qid = `question-${number}`;
+                    this.questionPath = path.join(questionsPath, this.qid);
+                    this.pathsToAdd = [
+                        this.questionPath,
+                    ];
+                    this.commitMessage = `add question ${this.qid}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const fromPath = path.join(__dirname, '..', '..', 'exampleCourse', 'questions', 'demoCalculation');
+                const toPath = this.questionPath;
+                debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+                fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Read info.json`);
+                fs.readJson(path.join(this.questionPath, 'info.json'), (err, infoJson) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, infoJson);
+                });
+            },
+            (infoJson, callback) => {
+                debug(`Write info.json with new title and uuid`);
+                infoJson.title = 'Replace this title';
+                infoJson.uuid = uuidv4();
+                fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+
+
+
 
 // function contains(parentPath, childPath) {
 //     const relPath = path.relative(parentPath, childPath);
@@ -1143,4 +1219,5 @@ module.exports = {
     CourseInstanceDeleteEditor,
     CourseInstanceRenameEditor,
     CourseInstanceAddEditor,
+    QuestionAddEditor,
 };
