@@ -59,7 +59,9 @@
 
   * Add more detailed grader statistics (Matt West).
 
-  * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz). 
+  * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz).
+
+  * Add more detailed tab titles to student homework pages (David Mitchell)
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -150,9 +152,9 @@
   * Fix error reporting for v2 questions (Matt West).
 
   * Fix detection of different internals during R package installation (James Balamuta).
-  
+
   * Fix figures in `pl-drawing` documentation (Nicolas Nytko).
-  
+
   * Fix use of `data["correct_answers"]` in documentation (James Balamuta, h/t Eric Huber).
 
   * Fix authorization for users behind web proxies (Dave Mussulman).

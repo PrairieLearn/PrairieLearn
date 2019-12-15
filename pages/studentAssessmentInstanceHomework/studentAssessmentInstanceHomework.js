@@ -20,7 +20,7 @@ const ensureUpToDate = (locals, callback) => {
 
         debug('updated:', updated);
         if (!updated) return callback(null);
-        
+
         // we updated the assessment_instance, so reload it
 
         debug('selecting assessment instance');
@@ -53,6 +53,11 @@ router.get('/', function(req, res, next) {
             assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
+
+                res.locals.htmlTitle = res.locals.assessment_set.abbreviation
+                  + res.locals.assessment.number
+                  + ": " + res.locals.assessment.title
+                  + " - " + res.locals.course.short_name;
 
                 debug('rendering EJS');
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
