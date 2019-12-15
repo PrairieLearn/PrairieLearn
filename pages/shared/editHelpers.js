@@ -738,6 +738,79 @@ class AssessmentRenameEditor extends Editor {
     }
 }
 
+class AssessmentAddEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `${this.locals.course_instance.short_name}: add assessment`;
+    }
+
+    write(callback) {
+        debug('AssessmentAddEditor: write()');
+        const assessmentsPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name, 'assessments');
+        async.series([
+            (callback) => {
+                debug(`Generate unique TID in ${assessmentsPath}`);
+                fs.readdir(assessmentsPath, (err, filenames) => {
+                    let number = 1;
+
+                    if (err) {
+                        // if the code is ENOENT, then the "assessments" folder does
+                        // not exist, and so there are no assessments yet - otherwise,
+                        // something has gone wrong
+                        if (err.code != 'ENOENT') return ERR(err, callback);
+                    } else {
+                        filenames.forEach((filename) => {
+                            let found = filename.match(/^HW([0-9]+)$/);
+                            if (found) {
+                                const foundNumber = parseInt(found[1]);
+                                if (foundNumber >= number) {
+                                    number = foundNumber + 1;
+                                }
+                            }
+                        });
+                    }
+
+                    this.tid = `HW${number}`;
+                    this.assessmentNumber = number,
+                    this.assessmentPath = path.join(assessmentsPath, this.tid);
+                    this.pathsToAdd = [
+                        this.assessmentPath,
+                    ];
+                    this.commitMessage = `${this.locals.course_instance.short_name}: add assessment ${this.tid}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Write infoAssessment.json`);
+
+                // "number" may not be unique - that's ok, the user can change it later -
+                // what's important is that "tid" is unique (see above), because that's a
+                // directory name
+                let infoJson = {
+                    uuid: uuidv4(),
+                    type: 'Homework',
+                    title: 'Replace this title',
+                    set: 'Homework',
+                    number: `${this.assessmentNumber}`,
+                    allowAccess: [],
+                    zones: [],
+                };
+
+                // We use outputJson to create the directory this.assessmentsPath if it
+                // does not exist (which it shouldn't). We use the file system flag 'wx'
+                // to throw an error if this.assessmentPath already exists.
+                fs.outputJson(path.join(this.assessmentPath, 'infoAssessment.json'), infoJson, {spaces: 4, flag: 'wx'}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
 class CourseInstanceCopyEditor extends Editor {
     constructor(params) {
         super(params);
@@ -968,6 +1041,7 @@ module.exports = {
     AssessmentCopyEditor,
     AssessmentDeleteEditor,
     AssessmentRenameEditor,
+    AssessmentAddEditor,
     CourseInstanceCopyEditor,
     CourseInstanceDeleteEditor,
     CourseInstanceRenameEditor,
