@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const debug = require('debug')('prairielearn:editHelpers');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
@@ -9,6 +8,7 @@ const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 const sha256 = require('crypto-js/sha256');
 const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const fs = require('fs-extra');
 const async = require('async');
 const uuidv4 = require('uuid/v4');
@@ -1002,6 +1002,103 @@ class CourseInstanceRenameEditor extends Editor {
     }
 }
 
+class CourseInstanceAddEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `add course instance`;
+    }
+
+    getNextNameShort() {
+        const today = new Date();
+        const month = today.getMonth();
+        let nextSeason;
+        let nextYear = today.getFullYear() - 2000;
+        if (month <= 4) {
+            nextSeason = 'Su';
+        } else if (month <= 7) {
+            nextSeason = 'Fa';
+        } else {
+            nextSeason = 'Sp';
+            nextYear += 1;
+        }
+        return `${nextSeason}${nextYear.toString().padStart(2, '0')}`;
+    }
+
+    write(callback) {
+        debug('CourseInstanceAddEditor: write()');
+        const courseInstancesPath = path.join(this.locals.course.path, 'courseInstances');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique short_name in ${courseInstancesPath}`);
+                fs.readdir(courseInstancesPath, (err, filenames) => {
+                    if (err) {
+                        // if the code is ENOENT, then the "courseInstances" folder does
+                        // not exist, and so there are no course instances yet - otherwise,
+                        // something has gone wrong
+                        if (err.code == 'ENOENT') filenames = [];
+                        else return ERR(err, callback);
+                    }
+
+                    // Make some effort to create a sane short_name
+                    this.short_name = '';
+                    if (! this.short_name) {
+                        let short_name = this.getNextNameShort();
+                        if (! filenames.includes(short_name)) {
+                            this.short_name = short_name;
+                        }
+                    }
+
+                    // Fall back to courseInstanceX
+                    if (! this.short_name) {
+                        let number = 1;
+                        filenames.forEach((filename) => {
+                            let found = filename.match(/^courseInstance([0-9]+)$/);
+                            if (found) {
+                                const foundNumber = parseInt(found[1]);
+                                if (foundNumber >= number) {
+                                    number = foundNumber + 1;
+                                }
+                            }
+                        });
+                        this.short_name = `courseInstance${number}`;
+                    }
+
+                    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+                    this.pathsToAdd = [
+                        this.courseInstancePath,
+                    ];
+                    this.commitMessage = `add course instance ${this.short_name}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Write infoCourseInstance.json`);
+
+                // "number" may not be unique - that's ok, the user can change it later -
+                // what's important is that "tid" is unique (see above), because that's a
+                // directory name
+                let infoJson = {
+                    uuid: uuidv4(),
+                    longName: `Replace this long name (${this.short_name})`,
+                    userRoles: {},
+                    allowAccess: [],
+                };
+
+                // We use outputJson to create the directory this.courseInstancePath if it
+                // does not exist (which it shouldn't). We use the file system flag 'wx' to
+                // throw an error if this.courseInstancePath already exists.
+                fs.outputJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {spaces: 4, flag: 'wx'}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
 
 // function contains(parentPath, childPath) {
 //     const relPath = path.relative(parentPath, childPath);
@@ -1045,4 +1142,5 @@ module.exports = {
     CourseInstanceCopyEditor,
     CourseInstanceDeleteEditor,
     CourseInstanceRenameEditor,
+    CourseInstanceAddEditor,
 };
