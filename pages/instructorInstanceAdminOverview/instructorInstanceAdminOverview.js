@@ -87,7 +87,7 @@ router.post('/', function(req, res, next) {
             return next(new Error(`Invalid CIID: ${req.body.id}`));
         }
         if (res.locals.course_instance.short_name == ciid_new) {
-            debug('The new tid is the same as the old tid - do nothing');
+            debug('The new ciid is the same as the old ciid - do nothing');
             res.redirect(req.originalUrl);
         } else {
             const editor = new CourseInstanceRenameEditor({
