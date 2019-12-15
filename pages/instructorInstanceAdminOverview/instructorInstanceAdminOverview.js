@@ -55,7 +55,7 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, (e) => logger.error(e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
-                    debug(`Get assessment_id from tid=${editor.short_name} with course_id=${res.locals.course.id}`);
+                    debug(`Get course_instance_id from ciid=${editor.short_name} with course_id=${res.locals.course.id}`);
                     sqldb.queryOneRow(sql.select_course_instance_id_from_short_name, {short_name: editor.short_name, course_id: res.locals.course.id}, (err, result) => {
                         if (ERR(err, next)) return;
                         res.redirect(res.locals.plainUrlPrefix + '/course_instance/' + result.rows[0].course_instance_id + '/instructor/instance_admin');
