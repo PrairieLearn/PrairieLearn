@@ -939,12 +939,6 @@ function doFiles(data) {
                 filename: 'anotherfile.txt',
             });
 
-            testDownloadFile({
-                url: data.url,
-                id: data.index,
-                contents: 'This is a different line of text.',
-            });
-
             testRenameFile({
                 url: data.url,
                 id: data.index,
@@ -974,12 +968,6 @@ function doFiles(data) {
                 id: 0,
                 contents: 'This is a different line of text.',
                 filename: 'anotherfile.txt',
-            });
-
-            testDownloadFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
-                id: 0,
-                contents: 'This is a different line of text.',
             });
 
             testRenameFile({
@@ -1013,12 +1001,6 @@ function doFiles(data) {
                 filename: 'anotherfile.txt',
             });
 
-            testDownloadFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
-                id: 0,
-                contents: 'This is a different line of text.',
-            });
-
             testRenameFile({
                 url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
                 id: 0,
@@ -1049,12 +1031,6 @@ function doFiles(data) {
                     id: 0,
                     contents: 'This is a different line of text.',
                     filename: 'anotherfile.txt',
-                });
-
-                testDownloadFile({
-                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
-                    id: 0,
-                    contents: 'This is a different line of text.',
                 });
 
                 testRenameFile({
@@ -1134,46 +1110,6 @@ function testUploadFile(params) {
     });
 
     pullAndVerifyFileInDev(params.path, params.contents);
-}
-
-function testDownloadFile(params) {
-    describe(`GET to ${params.url}`, () => {
-        it('should load successfully', async () => {
-            page = await requestp(params.url);
-            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
-        });
-        it('should have a CSRF token and a file_path', () => {
-            elemList = locals.$(`form[name="instructor-file-download-form-${params.id}"] input[name="__csrf_token"]`);
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__csrf_token = elemList[0].attribs.value;
-            assert.isString(locals.__csrf_token);
-            // __file_path
-            elemList = locals.$(`form[name="instructor-file-download-form-${params.id}"] input[name="file_path"]`);
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.file_path = elemList[0].attribs.value;
-            assert.isString(locals.file_path);
-        });
-    });
-
-    describe(`POST to ${params.url} with action download_file`, function() {
-        it('should load successfully', async () => {
-            const options = {
-                url: params.url,
-                followAllRedirects: true,
-            };
-            options.formData = {
-                __action: 'download_file',
-                __csrf_token: locals.__csrf_token,
-                file_path: locals.file_path,
-            };
-            page = await requestp.post(options);
-        });
-        it('should contain the right data', () => {
-            assert.equal(page, params.contents);
-        });
-    });
 }
 
 function testRenameFile(params) {
