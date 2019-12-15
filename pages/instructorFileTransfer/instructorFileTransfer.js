@@ -4,125 +4,76 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const fs = require('fs-extra');
-const uuidv4 = require('uuid/v4');
 const logger = require('../../lib/logger');
-const editHelpers = require('../shared/editHelpers');
+const { QuestionTransferEditor } = require('../shared/editHelpers');
 const config = require('../../lib/config');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/:file_transfer_id', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
-
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to edit example course`, {
-            locals: res.locals,
-            body: req.body,
-        }));
-    }
-
-    if (config.filesRoot == null) return next(new Error('config.filesRoot is null'));
-
-    sqldb.queryOneRow(sql.select_file_transfer, {id: req.params.file_transfer_id}, (err, result) => {
-        if (ERR(err, next)) return;
-        const file_transfer = result.rows[0];
-        if (file_transfer.transfer_type != 'copy_question') return next(new Error(`bad transfer_type: ${file_transfer.transfer_type}`));
-        if (file_transfer.user_id != res.locals.user.user_id) return next(new Error(`must have same user_id: ${file_transfer.user_id} and ${res.locals.user.user_id}`));
-        let edit = {
-            userID: res.locals.user.user_id,
-            courseID: res.locals.course.id,
-            coursePath: res.locals.course.path,
-            uid: res.locals.user.uid,
-            user_name: res.locals.user.name,
-            templatePath: path.join(config.filesRoot, file_transfer.storage_filename),
-            old_qid: path.basename(file_transfer.from_filename),
-            description: 'Copy question from a different course in browser and sync',
-            write: copy_write,
-        };
-        editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error(e))) {
-                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
-                debug(`Soft-delete file transfer`);
-                sqldb.queryOneRow(sql.soft_delete_file_transfer, {
-                    id: req.params.file_transfer_id,
-                    user_id: res.locals.user.user_id,
-                }, (err, _result) => {
-                    if (ERR(err, next)) return;
-                    debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
-                    sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
-                        if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
-                    });
-                });
-            }
-        });
-    });
-});
-
-function copy_write(edit, callback) {
-    async.waterfall([
+function getFileTransfer(file_transfer_id, user_id, callback) {
+    let file_transfer;
+    async.series([
         (callback) => {
-            debug(`Generate unique QID`);
-            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
+            sqldb.queryOneRow(sql.select_file_transfer, {id: file_transfer_id}, (err, result) => {
                 if (ERR(err, callback)) return;
-
-                if (filenames.includes(edit.old_qid)) {
-                    let number = 1;
-                    filenames.forEach((filename) => {
-                        let found = filename.match(/^question-([0-9]+)$/);
-                        if (found) {
-                            const foundNumber = parseInt(found[1]);
-                            if (foundNumber >= number) {
-                                number = foundNumber + 1;
-                            }
-                        }
-                    });
-                    edit.qid = `question-${number}`;
-                } else {
-                    edit.qid = edit.old_qid;
+                file_transfer = result.rows[0];
+                if (file_transfer.transfer_type != 'copy_question') {
+                    return callback(new Error(`bad transfer_type: ${file_transfer.transfer_type}`));
                 }
-
-                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
-                edit.pathsToAdd = [
-                    edit.questionPath,
-                ];
-                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
+                if (file_transfer.user_id != user_id) {
+                    return callback(new Error(`must have same user_id: ${file_transfer.user_id} and ${user_id}`));
+                }
                 callback(null);
             });
         },
         (callback) => {
-            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
-            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
+            sqldb.queryOneRow(sql.select_course_from_course_id, {course_id: file_transfer.from_course_id}, (err, result) => {
                 if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Read info.json`);
-            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
-                if (ERR(err, callback)) return;
-                callback(null, infoJson);
-            });
-        },
-        (infoJson, callback) => {
-            debug(`Write info.json with new title and uuid`);
-            infoJson.title = 'Replace this title';
-            infoJson.uuid = uuidv4();
-            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
-                if (ERR(err, callback)) return;
+                file_transfer.from_course_short_name = result.rows[0].short_name;
                 callback(null);
             });
         },
     ], (err) => {
         if (ERR(err, callback)) return;
-        callback(null);
+        callback(null, file_transfer);
     });
 }
+
+
+router.get('/:file_transfer_id', function(req, res, next) {
+    if (config.filesRoot == null) return next(new Error('config.filesRoot is null'));
+    getFileTransfer(req.params.file_transfer_id, res.locals.user.user_id, (err, file_transfer) => {
+        if (ERR(err, next)) return;
+        const editor = new QuestionTransferEditor({
+            locals: res.locals,
+            from_qid: path.basename(file_transfer.from_filename),
+            from_course_short_name: file_transfer.from_course_short_name,
+            from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+        });
+        editor.canEdit((err) => {
+            if (ERR(err, next)) return;
+            editor.doEdit((err, job_sequence_id) => {
+                if (ERR(err, (e) => logger.error(e))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    debug(`Soft-delete file transfer`);
+                    sqldb.queryOneRow(sql.soft_delete_file_transfer, {
+                        id: req.params.file_transfer_id,
+                        user_id: res.locals.user.user_id,
+                    }, (err, _result) => {
+                        if (ERR(err, next)) return;
+                        debug(`Get question_id from qid=${editor.qid} with course_id=${res.locals.course.id}`);
+                        sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: editor.qid, course_id: res.locals.course.id}, function(err, result) {
+                            if (ERR(err, next)) return;
+                            res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                        });
+                    });
+                }
+            });
+        });
+    });
+});
 
 module.exports = router;

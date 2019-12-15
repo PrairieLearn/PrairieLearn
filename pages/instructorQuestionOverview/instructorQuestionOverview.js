@@ -11,160 +11,10 @@ const uuidv4 = require('uuid/v4');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
-const editHelpers = require('../shared/editHelpers');
+const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = require('../shared/editHelpers');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-function change_qid_write(edit, callback) {
-    async.waterfall([
-        (callback) => {
-            debug(`Move files from questions/${edit.qid_old} to questions/${edit.qid_new}`);
-            const oldPath = path.join(edit.coursePath, 'questions', edit.qid_old);
-            const newPath = path.join(edit.coursePath, 'questions', edit.qid_new);
-            fs.move(oldPath, newPath, {overwrite: false}, (err) => {
-                if (ERR(err, callback)) return;
-                edit.pathsToAdd = [
-                    oldPath,
-                    newPath,
-                ];
-                edit.commitMessage = `in-browser edit: rename question ${edit.qid_old} to ${edit.qid_new}`;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Find all assessments (in all course instances) that contain ${edit.qid_old}`);
-            sqldb.query(sql.select_assessments_with_question, {question_id: edit.question_id}, function(err, result) {
-                if (ERR(err, callback)) return;
-                callback(null, result.rows);
-            });
-        },
-        (assessments, callback) => {
-            debug(`For each assessment, read/write infoAssessment.json to replace ${edit.qid_old} with ${edit.qid_new}`);
-            async.eachSeries(assessments, (assessment, callback) => {
-                let infoPath = path.join(edit.coursePath,
-                                         'courseInstances',
-                                         assessment.course_instance_directory,
-                                         'assessments',
-                                         assessment.assessment_directory,
-                                         'infoAssessment.json');
-                edit.pathsToAdd.push(infoPath);
-                async.waterfall([
-                    (callback) => {
-                        debug(`Read ${infoPath}`);
-                        fs.readJson(infoPath, (err, infoJson) => {
-                            if (ERR(err, callback)) return;
-                            callback(null, infoJson);
-                        });
-                    },
-                    (infoJson, callback) => {
-                        debug(`Find/replace QID in ${infoPath}`);
-                        let found = false;
-                        infoJson.zones.forEach((zone) => {
-                            zone.questions.forEach((question) => {
-                                if (question.alternatives) {
-                                    question.alternatives.forEach((alternative) => {
-                                        if (alternative.id == edit.qid_old) {
-                                            alternative.id = edit.qid_new;
-                                            found = true;
-                                        }
-                                    });
-                                } else if (question.id == edit.qid_old) {
-                                    question.id = edit.qid_new;
-                                    found = true;
-                                }
-                            });
-                        });
-                        if (! found) logger.info(`Should have but did not find ${edit.qid_old} in ${infoPath}`);
-                        debug(`Write ${infoPath}`);
-                        fs.writeJson(infoPath, infoJson, {spaces: 4}, (err) => {
-                            if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    },
-                ], (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
-function delete_write(edit, callback) {
-    debug(`Delete questions/${edit.qid}`);
-    const questionPath = path.join(edit.coursePath, 'questions', edit.qid);
-    // This will silently do nothing if questionPath no longer exists.
-    fs.remove(questionPath, (err) => {
-        if (ERR(err, callback)) return;
-        edit.pathsToAdd = [
-            questionPath,
-        ];
-        edit.commitMessage = `in-browser edit: delete question ${edit.qid}`;
-        callback(null);
-    });
-}
-
-function copy_write(edit, callback) {
-    async.waterfall([
-        (callback) => {
-            debug(`Generate unique QID`);
-            fs.readdir(path.join(edit.coursePath, 'questions'), (err, filenames) => {
-                if (ERR(err, callback)) return;
-
-                let number = 1;
-                filenames.forEach((filename) => {
-                    let found = filename.match(/^question-([0-9]+)$/);
-                    if (found) {
-                        const foundNumber = parseInt(found[1]);
-                        if (foundNumber >= number) {
-                            number = foundNumber + 1;
-                        }
-                    }
-                });
-
-                edit.qid = `question-${number}`;
-                edit.questionPath = path.join(edit.coursePath, 'questions', edit.qid);
-                edit.pathsToAdd = [
-                    edit.questionPath,
-                ];
-                edit.commitMessage = `in-browser edit: add question ${edit.qid}`;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Copy template\n from ${edit.templatePath}\n to ${edit.questionPath}`);
-            fs.copy(edit.templatePath, edit.questionPath, {overwrite: false, errorOnExist: true}, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            debug(`Read info.json`);
-            fs.readJson(path.join(edit.questionPath, 'info.json'), (err, infoJson) => {
-                if (ERR(err, callback)) return;
-                callback(null, infoJson);
-            });
-        },
-        (infoJson, callback) => {
-            debug(`Write info.json with new title and uuid`);
-            infoJson.title = 'Replace this title';
-            infoJson.uuid = uuidv4();
-            fs.writeJson(path.join(edit.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
 
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
@@ -187,85 +37,51 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action == 'change_id') {
         debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
-        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
-
-        // Do not allow users to edit the exampleCourse
-        if (res.locals.course.options.isExampleCourse) {
-            return next(error.make(400, `attempting to edit the example course`, {
-                locals: res.locals,
-                body: req.body,
-            }));
-        }
-
-        // Do not allow users to move the question outside the questions directory
+        let qid_new;
         try {
-            if (path.dirname(path.normalize(req.body.id)) !== '.') return next(new Error(`Invalid QID: ${req.body.id}`));
+            qid_new = path.normalize(req.body.id);
         } catch(err) {
             return next(new Error(`Invalid QID: ${req.body.id}`));
         }
-
-        if (res.locals.question.qid == req.body.id) {
+        if (res.locals.question.qid == qid_new) {
             debug('The new qid is the same as the old qid - do nothing');
             res.redirect(req.originalUrl);
         } else {
-            let edit = {
-                userID: res.locals.user.user_id,
-                courseID: res.locals.course.id,
-                coursePath: res.locals.course.path,
-                uid: res.locals.user.uid,
-                user_name: res.locals.user.name,
-                qid_old: res.locals.question.qid,
-                qid_new: req.body.id,
-                question_id: res.locals.question.id,
-            };
-
-            edit.description = 'Change question ID in browser and sync';
-            edit.write = change_qid_write;
-            editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                } else {
-                    res.redirect(req.originalUrl);
-                }
+            const editor = new QuestionRenameEditor({
+                locals: res.locals,
+                qid_new: qid_new,
+            });
+            editor.canEdit((err) => {
+                if (ERR(err, next)) return;
+                editor.doEdit((err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        res.redirect(req.originalUrl);
+                    }
+                });
             });
         }
     } else if (req.body.__action == 'copy_question') {
         debug('Copy question');
-
-        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
-
         if (req.body.to_course_id == res.locals.course.id) {
             // In this case, we are making a duplicate of this question in the same course
-
-            // Do not allow users to edit the exampleCourse
-            if (res.locals.course.options.isExampleCourse) {
-                return next(error.make(400, `attempting to edit example course`, {
-                    locals: res.locals,
-                    body: req.body,
-                }));
-            }
-
-            let edit = {
-                userID: res.locals.user.user_id,
-                courseID: res.locals.course.id,
-                coursePath: res.locals.course.path,
-                uid: res.locals.user.uid,
-                user_name: res.locals.user.name,
-                templatePath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
-            };
-
-            edit.description = 'Copy question in browser and sync';
-            edit.write = copy_write;
-            editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
-                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                } else {
-                    debug(`Get question_id from qid=${edit.qid} with course_id=${edit.courseID}`);
-                    sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: edit.qid, course_id: edit.courseID}, function(err, result) {
-                        if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
-                    });
-                }
+            const editor = new QuestionCopyEditor({
+                locals: res.locals,
+            });
+            editor.canEdit((err) => {
+                if (ERR(err, next)) return;
+                editor.doEdit((err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error(e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        debug(`Get question_id from qid=${editor.qid} with course_id=${res.locals.course.id}`);
+                        sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: editor.qid, course_id: res.locals.course.id}, (err, result) => {
+                            if (ERR(err, next)) return;
+                            res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                        });
+                    }
+                });
             });
         } else {
             // In this case, we are sending a copy of this question to a different course
@@ -301,37 +117,24 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action == 'delete_question') {
         debug('Delete question');
-
-        if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
-
-        // Do not allow users to edit the exampleCourse
-        if (res.locals.course.options.isExampleCourse) {
-            return next(error.make(400, `attempting to edit example course`, {
-                locals: res.locals,
-                body: req.body,
-            }));
-        }
-
-        let edit = {
-            userID: res.locals.user.user_id,
-            courseID: res.locals.course.id,
-            coursePath: res.locals.course.path,
-            uid: res.locals.user.uid,
-            user_name: res.locals.user.name,
-            qid: res.locals.question.qid,
-        };
-
-        edit.description = 'Delete question in browser and sync';
-        edit.write = delete_write;
-        editHelpers.doEdit(edit, res.locals, (err, job_sequence_id) => {
-            if (ERR(err, (e) => logger.error(e))) {
-                res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-            } else {
-                res.redirect(res.locals.urlPrefix + '/course_admin/questions');
-            }
+        const editor = new QuestionDeleteEditor({
+            locals: res.locals,
+        });
+        editor.canEdit((err) => {
+            if (ERR(err, next)) return;
+            editor.doEdit((err, job_sequence_id) => {
+                if (ERR(err, (e) => logger.error(e))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    res.redirect(res.locals.urlPrefix + '/course_admin/questions');
+                }
+            });
         });
     } else {
-        editHelpers.processFileAction(req, res, {container: path.join(res.locals.course.path, 'questions', res.locals.question.qid)}, next);
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+        }));
     }
 });
 

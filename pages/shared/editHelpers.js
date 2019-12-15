@@ -12,6 +12,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const fs = require('fs-extra');
 const async = require('async');
 const uuidv4 = require('uuid/v4');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 class Editor {
     constructor(params) {
@@ -918,7 +921,7 @@ class CourseInstanceCopyEditor extends Editor {
                 });
             },
             (callback) => {
-                const fromPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name);
+                const fromPath = path.join(courseInstancesPath, this.locals.course_instance.short_name);
                 const toPath = this.courseInstancePath;
                 debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
                 fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
@@ -1172,6 +1175,267 @@ class QuestionAddEditor extends Editor {
     }
 }
 
+class QuestionDeleteEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `Delete question ${this.locals.question.qid}`;
+    }
+
+    write(callback) {
+        debug('QuestionDeleteEditor: write()');
+        const deletePath = path.join(this.locals.course.path, 'questions', this.locals.question.qid);
+        // This will silently do nothing if deletePath no longer exists.
+        fs.remove(deletePath, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                deletePath,
+            ];
+            this.commitMessage = `delete question ${this.locals.question.qid}`;
+            callback(null);
+        });
+    }
+}
+
+class QuestionRenameEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.qid_new = params.qid_new;
+        this.description = `Rename question ${this.locals.question.qid}`;
+    }
+
+    canEdit(callback) {
+        if (path.dirname(this.qid_new) !== '.') return callback(new Error(`Invalid QID: ${this.qid_new}`));
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+
+    write(callback) {
+        debug('QuestionRenameEditor: write()');
+        const questionsPath = path.join(this.locals.course.path, 'questions');
+        async.waterfall([
+            (callback) => {
+                const oldPath = path.join(questionsPath, this.locals.question.qid);
+                const newPath = path.join(questionsPath, this.qid_new);
+                debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+                fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+                    if (ERR(err, callback)) return;
+                    this.pathsToAdd = [
+                        oldPath,
+                        newPath,
+                    ];
+                    this.commitMessage = `rename question ${this.locals.question.qid} to ${this.qid_new}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Find all assessments (in all course instances) that contain ${this.locals.question.qid}`);
+                sqldb.query(sql.select_assessments_with_question, {question_id: this.locals.question.id}, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null, result.rows);
+                });
+            },
+            (assessments, callback) => {
+                debug(`For each assessment, read/write infoAssessment.json to replace ${this.locals.question.qid} with ${this.qid_new}`);
+                async.eachSeries(assessments, (assessment, callback) => {
+                    let infoPath = path.join(this.locals.course.path,
+                                             'courseInstances',
+                                             assessment.course_instance_directory,
+                                             'assessments',
+                                             assessment.assessment_directory,
+                                             'infoAssessment.json');
+                    this.pathsToAdd.push(infoPath);
+                    async.waterfall([
+                        (callback) => {
+                            debug(`Read ${infoPath}`);
+                            fs.readJson(infoPath, (err, infoJson) => {
+                                if (ERR(err, callback)) return;
+                                callback(null, infoJson);
+                            });
+                        },
+                        (infoJson, callback) => {
+                            debug(`Find/replace QID in ${infoPath}`);
+                            let found = false;
+                            infoJson.zones.forEach((zone) => {
+                                zone.questions.forEach((question) => {
+                                    if (question.alternatives) {
+                                        question.alternatives.forEach((alternative) => {
+                                            if (alternative.id == this.locals.question.qid) {
+                                                alternative.id = this.qid_new;
+                                                found = true;
+                                            }
+                                        });
+                                    } else if (question.id == this.locals.question.qid) {
+                                        question.id = this.qid_new;
+                                        found = true;
+                                    }
+                                });
+                            });
+                            if (! found) logger.info(`Should have but did not find ${this.locals.question.qid} in ${infoPath}`);
+                            debug(`Write ${infoPath}`);
+                            fs.writeJson(infoPath, infoJson, {spaces: 4}, (err) => {
+                                if (ERR(err, callback)) return;
+                                callback(null);
+                            });
+                        },
+                    ], (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+class QuestionCopyEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `Copy question ${this.locals.question.qid}`;
+    }
+
+    write(callback) {
+        debug('QuestionCopyEditor: write()');
+        const questionsPath = path.join(this.locals.course.path, 'questions');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique QID`);
+                fs.readdir(questionsPath, (err, filenames) => {
+                    if (ERR(err, callback)) return;
+
+                    let number = 1;
+                    filenames.forEach((filename) => {
+                        let found = filename.match(/^question-([0-9]+)$/);
+                        if (found) {
+                            const foundNumber = parseInt(found[1]);
+                            if (foundNumber >= number) {
+                                number = foundNumber + 1;
+                            }
+                        }
+                    });
+
+                    this.qid = `question-${number}`;
+                    this.questionPath = path.join(this.locals.course.path, 'questions', this.qid);
+                    this.pathsToAdd = [
+                        this.questionPath,
+                    ];
+                    this.commitMessage = `copy question ${this.locals.question.qid} to ${this.qid}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const fromPath = path.join(questionsPath, this.locals.question.qid);
+                const toPath = this.questionPath;
+                debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+                fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Read info.json`);
+                fs.readJson(path.join(this.questionPath, 'info.json'), (err, infoJson) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, infoJson);
+                });
+            },
+            (infoJson, callback) => {
+                debug(`Write info.json with new title and uuid`);
+                infoJson.title = 'Replace this title';
+                infoJson.uuid = uuidv4();
+                fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+class QuestionTransferEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.from_qid = params.from_qid;
+        this.from_course_short_name = params.from_course_short_name;
+        this.from_path = params.from_path;
+        this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
+    }
+
+    write(callback) {
+        debug('QuestionTransferEditor: write()');
+        const questionsPath = path.join(this.locals.course.path, 'questions');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique QID`);
+                fs.readdir(questionsPath, (err, filenames) => {
+                    if (ERR(err, callback)) return;
+
+                    if (filenames.includes(this.from_qid)) {
+                        let number = 1;
+                        filenames.forEach((filename) => {
+                            let found = filename.match(/^question-([0-9]+)$/);
+                            if (found) {
+                                const foundNumber = parseInt(found[1]);
+                                if (foundNumber >= number) {
+                                    number = foundNumber + 1;
+                                }
+                            }
+                        });
+                        this.qid = `question-${number}`;
+                    } else {
+                        this.qid = this.from_qid;
+                    }
+
+                    this.questionPath = path.join(questionsPath, this.qid);
+                    this.pathsToAdd = [
+                        this.questionPath,
+                    ];
+                    this.commitMessage = `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${this.qid}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const fromPath = this.from_path;
+                const toPath = this.questionPath;
+                debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+                fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Read info.json`);
+                fs.readJson(path.join(this.questionPath, 'info.json'), (err, infoJson) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, infoJson);
+                });
+            },
+            (infoJson, callback) => {
+                debug(`Write info.json with new title and uuid`);
+                infoJson.title = 'Replace this title';
+                infoJson.uuid = uuidv4();
+                fs.writeJson(path.join(this.questionPath, 'info.json'), infoJson, {spaces: 4}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
 
 
 
@@ -1219,5 +1483,9 @@ module.exports = {
     CourseInstanceDeleteEditor,
     CourseInstanceRenameEditor,
     CourseInstanceAddEditor,
+    QuestionCopyEditor,
+    QuestionDeleteEditor,
+    QuestionRenameEditor,
     QuestionAddEditor,
+    QuestionTransferEditor,
 };
