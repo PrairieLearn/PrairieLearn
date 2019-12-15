@@ -409,77 +409,6 @@ class Editor {
 
 
 
-
-// templatePath: getAssessmentPath(res.locals.course.path, res.locals.course_instance.short_name, res.locals.assessment.tid),
-// courseInstanceID: res.locals.course_instance.id,
-// courseInstancePath: path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name),
-// assessmentSetAbbreviation: res.locals.assessment_set.abbreviation,
-
-
-
-// function copy_write(edit, callback) {
-//     const assessmentsPath = path.join(edit.courseInstancePath, 'assessments');
-//     async.waterfall([
-//         (callback) => {
-//             debug(`Generate unique TID in ${assessmentsPath}`);
-//             fs.readdir(assessmentsPath, (err, filenames) => {
-//                 if (ERR(err, callback)) return;
-//
-//                 let number = 1;
-//                 filenames.forEach((filename) => {
-//                     const regex = new RegExp(`^${edit.assessmentSetAbbreviation}([0-9]+)$`);
-//                     let found = filename.match(regex);
-//                     if (found) {
-//                         const foundNumber = parseInt(found[1]);
-//                         if (foundNumber >= number) {
-//                             number = foundNumber + 1;
-//                         }
-//                     }
-//                 });
-//
-//                 edit.tid = `${edit.assessmentSetAbbreviation}${number}`;
-//                 edit.assessmentNumber = number,
-//                 edit.assessmentPath = path.join(assessmentsPath, edit.tid);
-//                 edit.pathsToAdd = [
-//                     edit.assessmentPath,
-//                 ];
-//                 edit.commitMessage = `in-browser edit: add assessment ${edit.tid}`;
-//                 callback(null);
-//             });
-//         },
-//         (callback) => {
-//             debug(`Copy template\n from ${edit.templatePath}\n to ${edit.assessmentPath}`);
-//             fs.copy(edit.templatePath, edit.assessmentPath, {overwrite: false, errorOnExist: true}, (err) => {
-//                 if (ERR(err, callback)) return;
-//                 callback(null);
-//             });
-//         },
-//         (callback) => {
-//             debug(`Read infoAssessment.json`);
-//             fs.readJson(path.join(edit.assessmentPath, 'infoAssessment.json'), (err, infoJson) => {
-//                 if (ERR(err, callback)) return;
-//                 callback(null, infoJson);
-//             });
-//         },
-//         (infoJson, callback) => {
-//             debug(`Write infoAssessment.json with new title, uuid, and number`);
-//             infoJson.title = 'Replace this title';
-//             infoJson.uuid = uuidv4();
-//             infoJson.number = `${edit.assessmentNumber}`;
-//             fs.writeJson(path.join(edit.assessmentPath, 'infoAssessment.json'), infoJson, {spaces: 4}, (err) => {
-//                 if (ERR(err, callback)) return;
-//                 callback(null);
-//             });
-//         },
-//     ], (err) => {
-//         if (ERR(err, callback)) return;
-//         callback(null);
-//     });
-// }
-
-
-
-
 function getHashFromBuffer(buffer) {
     return sha256(buffer.toString('utf8')).toString();
 }
@@ -809,10 +738,196 @@ class AssessmentRenameEditor extends Editor {
     }
 }
 
+class CourseInstanceCopyEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `Copy course instance ${this.locals.course_instance.short_name}`;
+    }
 
+    getNextNameShort(name) {
+        let found = name.match(new RegExp(`^([A-Za-z]{2})([0-9]{2})$`));
+        debug(`getNextNameShort:\n${found}`);
+        if (found) {
+            const seasons = ['Sp', 'Su', 'Fa'];
+            for (let i = 0; i < 3; i++) {
+                if (found[1] == seasons[i]) {
+                    if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, '0')}`;
+                    else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, '0')}`;
+                }
+            }
+        }
+        return '';
+    }
 
+    getNextNameLong(name) {
+        let found = name.match(new RegExp(`^([A-Za-z]+)([0-9]{4})$`));
+        debug(`getNextNameLong:\n${found}`);
+        if (found) {
+            const seasons = ['Spring', 'Summer', 'Fall'];
+            for (let i = 0; i < 3; i++) {
+                if (found[1] == seasons[i]) {
+                    if (i == 2) return `${seasons[0]}${(parseInt(found[2]) + 1).toString().padStart(2, '0')}`;
+                    else return `${seasons[i + 1]}${parseInt(found[2]).toString().padStart(2, '0')}`;
+                }
+            }
+        }
+        return '';
+    }
 
+    getPrefixAndNumber(name) {
+        let found = name.match(new RegExp('^(?<prefix>.*)_copy(?<number>[0-9]+)$'));
+        debug(`getPrefixAndNumber:\n${found}`);
+        if (found) {
+            return {
+                'prefix': found.groups.prefix,
+                'number': parseInt(found.groups.number),
+            };
+        } else {
+            return null;
+        }
+    }
 
+    write(callback) {
+        debug('CourseInstanceCopyEditor: write()');
+        const courseInstancesPath = path.join(this.locals.course.path, 'courseInstances');
+        async.waterfall([
+            (callback) => {
+                debug(`Generate unique short_name in ${courseInstancesPath}`);
+                fs.readdir(courseInstancesPath, (err, filenames) => {
+                    if (ERR(err, callback)) return;
+
+                    // Make some effort to create the next sane short_name
+                    this.short_name = '';
+                    if (! this.short_name) {
+                        let short_name = this.getNextNameShort(this.locals.course_instance.short_name);
+                        if (! filenames.includes(short_name)) {
+                            this.short_name = short_name;
+                        }
+                    }
+                    if (! this.short_name) {
+                        let short_name = this.getNextNameLong(this.locals.course_instance.short_name);
+                        if (! filenames.includes(short_name)) {
+                            this.short_name = short_name;
+                        }
+                    }
+
+                    // Fall back to <name>_copyXX
+                    if (! this.short_name) {
+                        // Make some effort to avoid <name>_copy1_copy1_...
+                        let prefix;
+                        let number;
+                        let prefixAndNumber = this.getPrefixAndNumber(this.locals.course_instance.short_name);
+                        if (prefixAndNumber) {
+                            prefix = prefixAndNumber.prefix;
+                            number = prefixAndNumber.number + 1;
+                        } else {
+                            prefix = this.locals.course_instance.short_name;
+                            number = 1;
+                        }
+                        filenames.forEach((filename) => {
+                            let found = filename.match(new RegExp(`^${prefix}_copy([0-9]+)$`));
+                            if (found) {
+                                const foundNumber = parseInt(found[1]);
+                                if (foundNumber >= number) {
+                                    number = foundNumber + 1;
+                                }
+                            }
+                        });
+                        this.short_name = `${prefix}_copy${number}`;
+                    }
+
+                    this.courseInstancePath = path.join(courseInstancesPath, this.short_name);
+                    this.pathsToAdd = [
+                        this.courseInstancePath,
+                    ];
+                    this.commitMessage = `copy course instance ${this.locals.course_instance.short_name} to ${this.short_name}`;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const fromPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name);
+                const toPath = this.courseInstancePath;
+                debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+                fs.copy(fromPath, toPath, {overwrite: false, errorOnExist: true}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                debug(`Read infoCourseInstance.json`);
+                fs.readJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), (err, infoJson) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, infoJson);
+                });
+            },
+            (infoJson, callback) => {
+                debug(`Write infoCourseInstance.json with new title, uuid, and number`);
+                infoJson.longName = `Replace this long name (${this.short_name})`;
+                infoJson.uuid = uuidv4();
+                fs.writeJson(path.join(this.courseInstancePath, 'infoCourseInstance.json'), infoJson, {spaces: 4}, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+}
+
+class CourseInstanceDeleteEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.description = `Delete course instance ${this.locals.course_instance.short_name}`;
+    }
+
+    write(callback) {
+        debug('CourseInstanceDeleteEditor: write()');
+        const deletePath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name);
+        // This will silently do nothing if deletePath no longer exists.
+        fs.remove(deletePath, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                deletePath,
+            ];
+            this.commitMessage = `delete course instance ${this.locals.course_instance.short_name}`;
+            callback(null);
+        });
+    }
+}
+
+class CourseInstanceRenameEditor extends Editor {
+    constructor(params) {
+        super(params);
+        this.ciid_new = params.ciid_new;
+        this.description = `Rename course instance ${this.locals.course_instance.short_name}`;
+    }
+
+    canEdit(callback) {
+        if (path.dirname(this.ciid_new) !== '.') return callback(new Error(`Invalid CIID: ${this.ciid_new}`));
+        super.canEdit((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    }
+
+    write(callback) {
+        debug('CourseInstanceRenameEditor: write()');
+        const oldPath = path.join(this.locals.course.path, 'courseInstances', this.locals.course_instance.short_name);
+        const newPath = path.join(this.locals.course.path, 'courseInstances', this.ciid_new);
+        debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+        fs.move(oldPath, newPath, {overwrite: false}, (err) => {
+            if (ERR(err, callback)) return;
+            this.pathsToAdd = [
+                oldPath,
+                newPath,
+            ];
+            this.commitMessage = `rename course instance ${this.locals.course_instance.short_name} to ${this.ciid_new}`;
+            callback(null);
+        });
+    }
+}
 
 
 // function contains(parentPath, childPath) {
@@ -853,4 +968,7 @@ module.exports = {
     AssessmentCopyEditor,
     AssessmentDeleteEditor,
     AssessmentRenameEditor,
+    CourseInstanceCopyEditor,
+    CourseInstanceDeleteEditor,
+    CourseInstanceRenameEditor,
 };
