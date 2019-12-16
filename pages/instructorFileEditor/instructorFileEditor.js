@@ -82,6 +82,12 @@ router.get('/*', (req, res, next) => {
         fileEdit.aceMode = 'javascript';
     } else if (ext == '.m') {
         fileEdit.aceMode = 'matlab';
+    } else if (ext == '.c') {
+        fileEdit.aceMode = 'c_cpp';
+    } else if (ext == '.cpp') {
+        fileEdit.aceMode = 'c_cpp';
+    } else if (ext == '.h') {
+        fileEdit.aceMode = 'c_cpp';
     } else {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }
@@ -235,6 +241,23 @@ router.post('/*', (req, res, next) => {
 
         // Whether or not to pull from remote git repo before proceeding to save and sync
         fileEdit.doPull = (req.body.__action == 'pull_and_save_and_sync');
+
+        if (res.locals.navPage == 'course_admin') {
+            const rootPath = res.locals.course.path;
+            fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'instance_admin') {
+            const rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'assessment') {
+            const rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'question') {
+            const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else {
+            const rootPath = res.locals.course.path;
+            fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
+        }
 
         async.series([
             (callback) => {
@@ -758,7 +781,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 arguments: [
                     '-c', `user.name="${fileEdit.user_name}"`,
                     '-c', `user.email="${fileEdit.uid}"`,
-                    'commit', '-m', `in-browser change to ${fileEdit.fileName}`,
+                    'commit', '-m', fileEdit.commitMessage,
                 ],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,
