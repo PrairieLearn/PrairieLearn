@@ -17,11 +17,6 @@
                 sanitize: false
             })
         });
-        // make the file inputs display the file name
-        $(document).on('change', '.custom-file-input', function () {
-            let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-        });
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
