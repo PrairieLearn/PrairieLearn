@@ -7,7 +7,7 @@ const async = require('async');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const logger = require('../../lib/logger');
-const { QuestionTransferEditor } = require('../shared/editHelpers');
+const { QuestionTransferEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);

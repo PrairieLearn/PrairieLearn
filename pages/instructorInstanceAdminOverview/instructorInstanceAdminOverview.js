@@ -12,7 +12,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
-const { CourseInstanceCopyEditor, CourseInstanceRenameEditor, CourseInstanceDeleteEditor } = require('../shared/editHelpers');
+const { CourseInstanceCopyEditor, CourseInstanceRenameEditor, CourseInstanceDeleteEditor } = require('../../lib/editors');
 
 router.get('/', function(req, res, next) {
     debug('GET /');

@@ -4,7 +4,7 @@ const router = express.Router();
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../shared/editHelpers');
+const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../../lib/editors');
 const logger = require('../../lib/logger');
 const fs = require('fs-extra');
 const async = require('async');

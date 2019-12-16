@@ -8,7 +8,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const { QuestionAddEditor } = require('../shared/editHelpers');
+const { QuestionAddEditor } = require('../../lib/editors');
 
 router.get('/', function(req, res, next) {
     const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;

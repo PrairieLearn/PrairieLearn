@@ -13,7 +13,7 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const error = require('@prairielearn/prairielib/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const logger = require('../../lib/logger');
-const { AssessmentAddEditor } = require('../shared/editHelpers');
+const { AssessmentAddEditor } = require('../../lib/editors');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

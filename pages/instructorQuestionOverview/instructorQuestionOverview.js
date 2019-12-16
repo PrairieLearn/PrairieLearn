@@ -11,7 +11,7 @@ const uuidv4 = require('uuid/v4');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
-const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = require('../shared/editHelpers');
+const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
