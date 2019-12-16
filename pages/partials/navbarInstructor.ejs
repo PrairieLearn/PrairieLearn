@@ -6,7 +6,7 @@
         <a class="nav-link <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if ((typeof courses != 'undefined') && (courses.length > 0)) { %>
+        <% if (courses && courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
