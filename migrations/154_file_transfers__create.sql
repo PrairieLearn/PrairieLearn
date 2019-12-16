@@ -1,3 +1,5 @@
+CREATE TYPE enum_transfer_type AS ENUM ('CopyQuestion');
+
 CREATE TABLE file_transfers (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -7,5 +9,5 @@ CREATE TABLE file_transfers (
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     deleted_at timestamptz,
     storage_filename text NOT NULL UNIQUE,
-    transfer_type text NOT NULL
+    transfer_type enum_transfer_type NOT NULL
 );

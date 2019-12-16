@@ -90,7 +90,7 @@ router.post('/', function(req, res, next) {
                 from_course_id: res.locals.course.id,
                 to_course_id: req.body.to_course_id,
                 user_id: res.locals.user.user_id,
-                transfer_type: 'copy_question',
+                transfer_type: 'CopyQuestion',
                 from_filename: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
             };
             async.waterfall([

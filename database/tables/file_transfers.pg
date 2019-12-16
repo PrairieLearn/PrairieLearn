@@ -6,7 +6,7 @@ columns
     id: bigint not null default nextval('file_transfers_id_seq'::regclass)
     storage_filename: text not null
     to_course_id: bigint not null
-    transfer_type: text not null
+    transfer_type: enum_transfer_type not null
     user_id: bigint not null
 
 indexes
