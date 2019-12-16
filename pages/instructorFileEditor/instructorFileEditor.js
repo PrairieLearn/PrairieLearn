@@ -63,32 +63,25 @@ router.get('/*', (req, res, next) => {
     };
 
     const ext = path.extname(workingPath);
-    if (ext == '.json') {
-        fileEdit.aceMode = 'json';
-    } else if (ext == '.html') {
-        fileEdit.aceMode = 'html';
-    } else if (ext == '.py') {
-        fileEdit.aceMode = 'python';
-    } else if (ext == '.txt') {
-        fileEdit.aceMode = 'text';
-    } else if (ext == '.md') {
-        fileEdit.aceMode = 'markdown';
-    } else if (ext == '.mustache') {
-        fileEdit.aceMode = 'text';
-    } else if (ext == '.css') {
-        fileEdit.aceMode = 'css';
-    } else if (ext == '.csv') {
-        fileEdit.aceMode = 'text';
-    } else if (ext == '.js') {
-        fileEdit.aceMode = 'javascript';
-    } else if (ext == '.m') {
-        fileEdit.aceMode = 'matlab';
-    } else if (ext == '.c') {
-        fileEdit.aceMode = 'c_cpp';
-    } else if (ext == '.cpp') {
-        fileEdit.aceMode = 'c_cpp';
-    } else if (ext == '.h') {
-        fileEdit.aceMode = 'c_cpp';
+    // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
+    const extensionModeMap = {
+            '.json': 'json',
+            '.html': 'html',
+            '.py': 'python',
+            '.txt': 'text',
+            '.md': 'markdown',
+            '.mustache': 'text',
+            '.css': 'css',
+            '.csv': 'text',
+            '.js': 'javascript',
+            '.m': 'matlab',
+            '.c': 'c_cpp',
+            '.cpp': 'c_cpp',
+            '.h': 'c_cpp',
+    };
+    const fileEditMode = extensionModeMap[ext];
+    if (fileEditMode) {
+        fileEdit.aceMode = fileEditMode;
     } else {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }

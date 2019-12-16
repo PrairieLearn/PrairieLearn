@@ -18,7 +18,7 @@ function contains(parentPath, childPath) {
 }
 
 function canEditFile(file) {
-    // If you add to this list, you also need to add aceMode handlers in instructorFileEditor.js
+    // If you add to this list, make sure the corresponding list in instructorFileEditor.js is consistent.
     const extCanEdit = ['.py', '.html', '.json', '.txt', '.md', '.mustache', '.css', '.csv', '.js', '.m', '.c', '.cpp', '.h'];
     return extCanEdit.includes(path.extname(file));
 }
