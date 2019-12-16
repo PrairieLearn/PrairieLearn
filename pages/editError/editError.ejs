@@ -14,7 +14,7 @@
         <script>
             $(function() {
                 let showDetailElement = $("#results-some-uuid-button");
-                showDetailElement.click(() => {
+                showDetailElement.click(function() {
                     showDetailElement.text(showDetailElement.text() == "Show detail" ? "Hide detail" : "Show detail");
                 });
             });
