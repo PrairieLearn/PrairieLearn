@@ -20,6 +20,7 @@ const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
 const { callbackify } = require('util');
+const isBinaryFile = require('isbinaryfile').isBinaryFile;
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -111,7 +112,7 @@ router.get('/*', (req, res, next) => {
         }));
     }
 
-    async.series([
+    async.waterfall([
         (callback) => {
             debug('Read from db');
             readEdit(fileEdit, (err) => {
@@ -121,11 +122,26 @@ router.get('/*', (req, res, next) => {
         },
         (callback) => {
             debug('Read from disk');
-            fs.readFile(fullPath, 'utf8', (err, contents) => {
+            fs.readFile(fullPath, (err, contents) => {
                 if (ERR(err, callback)) return;
-                fileEdit.diskContents = b64Util.b64EncodeUnicode(contents);
+                fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
                 fileEdit.diskHash = getHash(fileEdit.diskContents);
-                callback(null);
+                callback(null, contents);
+            });
+        },
+        (contents, callback) => {
+            isBinaryFile(contents).then((result) => {
+                debug(`isBinaryFile: ${result}`);
+                if (result) {
+                    debug('found a binary file');
+                    callback(new Error('Cannot edit binary file'));
+                } else {
+                    debug('found a text file');
+                    callback(null);
+                }
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null); // should never get here
             });
         },
         (callback) => {
