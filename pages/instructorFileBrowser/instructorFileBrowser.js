@@ -11,6 +11,7 @@ const async = require('async');
 const hljs = require('highlight.js');
 const fileType = require('file-type');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { encodePath, decodePath } = require('../../lib/uri-util');
 
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
@@ -80,7 +81,7 @@ function getPaths(req, res, callback) {
 
     if (req.params[0]) {
         try {
-            paths.workingPath = path.join(res.locals.course.path, decodeURIComponent(req.params[0]));
+            paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
         } catch(err) {
             return callback(new Error(`Invalid path: ${req.params[0]}`));
         }
@@ -177,7 +178,9 @@ function browseDirectory(file_browser, callback) {
                         file_browser.files.push({
                             id: index,
                             name: filename,
+                            encodedName: encodePath(filename),
                             path: path.relative(file_browser.paths.coursePath, filepath),
+                            encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                             dir: file_browser.paths.workingPath,
                             canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
                             canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
@@ -190,7 +193,9 @@ function browseDirectory(file_browser, callback) {
                         file_browser.dirs.push({
                             id: index,
                             name: filename,
+                            encodedName: encodePath(filename),
                             path: path.relative(file_browser.paths.coursePath, filepath),
+                            encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     }
@@ -253,7 +258,9 @@ function browseFile(file_browser, callback) {
         file_browser.file = {
             id: 0,
             name: path.basename(file_browser.paths.workingPath),
+            encodedName: encodePath(path.basename(file_browser.paths.workingPath)),
             path: path.relative(file_browser.paths.coursePath, filepath),
+            encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
             dir: path.dirname(file_browser.paths.workingPath),
             canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
             canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
@@ -307,7 +314,7 @@ router.get('/*', function(req, res, next) {
     ], (err) => {
         if (err) {
             if ((err.code == 'ENOENT') && (file_browser.paths.branch.length > 1)) {
-                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(file_browser.paths.branch.slice(-2)[0].path)}`);
+                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(file_browser.paths.branch.slice(-2)[0].path)}`);
                 return;
             } else {
                 return ERR(err, next);
@@ -385,7 +392,7 @@ router.post('/*', function(req, res, next) {
                             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                         } else {
                             if (req.body.was_viewing_file) {
-                                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodeURIComponent(path.relative(res.locals.course.path, newPath))}`);
+                                res.redirect(`${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(path.relative(res.locals.course.path, newPath))}`);
                             } else {
                                 res.redirect(req.originalUrl);
                             }

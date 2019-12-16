@@ -14,6 +14,7 @@ const logger = require('../../lib/logger');
 const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+const { encodePath } = require('../../lib/uri-util');
 
 
 router.post('/', function(req, res, next) {
@@ -168,6 +169,7 @@ router.get('/', function(req, res, next) {
         },
     ], (err) => {
         if (ERR(err, next)) return;
+        res.locals.infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

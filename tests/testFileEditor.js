@@ -17,6 +17,7 @@ const {
 } = require('child_process');
 const b64Util = require('../lib/base64-util');
 const requestp = require('request-promise-native');
+const { encodePath } = require('../lib/uri-util');
 
 const locals = {};
 let page, elemList;
@@ -77,20 +78,20 @@ const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseAdminUrl = baseUrl + '/course/1/course_admin';
-const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodeURIComponent(infoCoursePath)}`;
+const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const courseInstanceCourseAdminUrl = courseInstanceUrl + '/course_admin';
-const courseInstanceCourseAdminEditUrl = courseInstanceCourseAdminUrl + `/file_edit/${encodeURIComponent(infoCoursePath)}`;
+const courseInstanceCourseAdminEditUrl = courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminEditUrl = courseInstanceInstanceAdminUrl + `/file_edit/${encodeURIComponent(infoCourseInstancePath)}`;
+const courseInstanceInstanceAdminEditUrl = courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
-const assessmentEditUrl = assessmentUrl + `/file_edit/${encodeURIComponent(infoAssessmentPath)}`;
+const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionJsonPath)}`;
-const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionHtmlPath)}`;
-const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodeURIComponent(questionPythonPath)}`;
-const badPathUrl = assessmentUrl + '/file_edit/' + encodeURIComponent('../PrairieLearn/config.json');
-const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodeURIComponent('infoCourse.json');
+const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
+const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionHtmlPath)}`;
+const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
+const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
     {
@@ -948,7 +949,7 @@ function doFiles(data) {
             });
 
             testDeleteFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, 'subdir')),
+                url: data.url + '/' + encodePath(path.join(data.path, 'subdir')),
                 id: 0,
                 path: path.join(data.path, 'subdir', 'testfile.txt'),
             });
@@ -963,7 +964,7 @@ function doFiles(data) {
             });
 
             testUploadFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
+                url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
                 path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
                 id: 0,
                 contents: 'This is a different line of text.',
@@ -971,7 +972,7 @@ function doFiles(data) {
             });
 
             testRenameFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir)),
+                url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
                 id: 0,
                 path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
                 contents: 'This is a different line of text.',
@@ -979,7 +980,7 @@ function doFiles(data) {
             });
 
             testDeleteFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.clientFilesDir, 'subdir')),
+                url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
                 id: 0,
                 path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
             });
@@ -994,7 +995,7 @@ function doFiles(data) {
             });
 
             testUploadFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
+                url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
                 path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
                 id: 0,
                 contents: 'This is a different line of text.',
@@ -1002,7 +1003,7 @@ function doFiles(data) {
             });
 
             testRenameFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir)),
+                url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
                 id: 0,
                 path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
                 contents: 'This is a different line of text.',
@@ -1010,7 +1011,7 @@ function doFiles(data) {
             });
 
             testDeleteFile({
-                url: data.url + '/' + encodeURIComponent(path.join(data.path, data.serverFilesDir, 'subdir')),
+                url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
                 id: 0,
                 path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
             });
@@ -1026,7 +1027,7 @@ function doFiles(data) {
                 });
 
                 testUploadFile({
-                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
+                    url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
                     path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
                     id: 0,
                     contents: 'This is a different line of text.',
@@ -1034,7 +1035,7 @@ function doFiles(data) {
                 });
 
                 testRenameFile({
-                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir)),
+                    url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
                     id: 0,
                     path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
                     contents: 'This is a different line of text.',
@@ -1042,7 +1043,7 @@ function doFiles(data) {
                 });
 
                 testDeleteFile({
-                    url: data.url + '/' + encodeURIComponent(path.join(data.path, data.testFilesDir, 'subdir')),
+                    url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
                     id: 0,
                     path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
                 });

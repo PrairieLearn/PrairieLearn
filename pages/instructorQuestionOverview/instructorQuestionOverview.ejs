@@ -50,10 +50,10 @@
             <tr>
               <th>Configuration</th>
               <td>
-                <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/<%= encodeURIComponent('questions/' + question.qid + '/info.json') %>">
+                <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/<%= infoPath %>">
                   info.json
                 </a>
-                <a role="button" class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= encodeURIComponent('questions/' + question.qid + '/info.json') %>">
+                <a role="button" class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= infoPath %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>

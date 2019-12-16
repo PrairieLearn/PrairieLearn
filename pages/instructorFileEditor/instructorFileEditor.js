@@ -21,7 +21,7 @@ const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
 const { callbackify } = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
-
+const { decodePath } = require('../../lib/uri-util');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
@@ -30,7 +30,7 @@ router.get('/*', (req, res, next) => {
     let workingPath;
     if (req.params[0]) {
         try {
-            workingPath = decodeURIComponent(req.params[0]);
+            workingPath = decodePath(req.params[0]);
         } catch(err) {
             return next(new Error(`Invalid path: ${req.params[0]}`));
         }
@@ -195,7 +195,7 @@ router.post('/*', (req, res, next) => {
     let workingPath;
     if (req.params[0]) {
         try {
-            workingPath = decodeURIComponent(req.params[0]);
+            workingPath = decodePath(req.params[0]);
         } catch(err) {
             return next(new Error(`Invalid path: ${req.params[0]}`));
         }

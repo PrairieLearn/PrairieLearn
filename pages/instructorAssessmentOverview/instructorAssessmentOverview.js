@@ -13,6 +13,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
 const { AssessmentCopyEditor, AssessmentRenameEditor, AssessmentDeleteEditor } = require('../../lib/editors');
+const { encodePath } = require('../../lib/uri-util');
 
 router.get('/', function(req, res, next) {
     debug('GET /');
@@ -49,6 +50,7 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
+        res.locals.infoAssessmentPath = encodePath(path.join('courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid, 'infoAssessment.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

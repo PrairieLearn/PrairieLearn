@@ -26,7 +26,7 @@
             <div class="col-auto">
               <% file_browser.paths.branch.forEach((dir, key, arr) => { %>
                 <% if (dir.canView) { %>
-                  <a class="text-white" href="<%= file_browser.paths.urlPrefix %>/file_view/<%= encodeURIComponent(dir.path) %>"><%= dir.name %></a>
+                  <a class="text-white" href="<%= file_browser.paths.urlPrefix %>/file_view/<%= dir.encodedPath %>"><%= dir.name %></a>
                 <% } else { %>
                   <span><%= dir.name %></span>
                 <% } %>
@@ -43,7 +43,7 @@
               <!-- FILE HEAD      -->
               <!-------------------->
 
-              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= encodeURIComponent(file_browser.file.path) %>">
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
                 <i class="fa fa-edit"></i>
                 <span>Edit</span>
               </a>
@@ -51,7 +51,7 @@
                 <i class="fa fa-arrow-up"></i>
                 <span>Upload</span>
               </button>
-              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= encodeURIComponent(file_browser.file.path) %>?attachment=<%= encodeURIComponent(file_browser.file.name) %>">
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.file.encodedPath %>?attachment=<%= file_browser.file.encodedName %>">
                 <i class="fa fa-arrow-down"></i>
                 <span>Download</span>
               </a>
@@ -126,13 +126,13 @@
               <td>
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 <% if (f.canView) { %>
-                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= encodeURIComponent(f.path) %>"><%= f.name %></a>
+                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= f.encodedPath %>"><%= f.name %></a>
                 <% } else { %>
                   <span><%= f.name %></span>
                 <% } %>
               </td>
               <td>
-                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= encodeURIComponent(f.path) %>">
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>
@@ -140,7 +140,7 @@
                   <i class="fa fa-arrow-up"></i>
                   <span>Upload</span>
                 </button>
-                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= encodeURIComponent(f.path) %>?attachment=<%= encodeURIComponent(f.name) %>">
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= f.encodedPath %>?attachment=<%= f.encodedName %>">
                   <i class="fa fa-arrow-down"></i>
                   <span>Download</span>
                 </a>
@@ -160,7 +160,7 @@
               <td colspan="2">
                 <i class="fa fa-folder fa-fw"></i>
                 <% if (d.canView) { %>
-                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= encodeURIComponent(d.path) %>"><%= d.name %></a>
+                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= d.encodedPath %>"><%= d.name %></a>
                 <% } else { %>
                   <span><%= d.name %></span>
                 <% } %>

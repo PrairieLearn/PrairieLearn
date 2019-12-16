@@ -13,6 +13,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceCopyEditor, CourseInstanceRenameEditor, CourseInstanceDeleteEditor } = require('../../lib/editors');
+const { encodePath } = require('../../lib/uri-util');
 
 router.get('/', function(req, res, next) {
     debug('GET /');
@@ -38,6 +39,7 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
+        res.locals.infoCourseInstancePath = encodePath(path.join('courseInstances', res.locals.course_instance.short_name, 'infoCourseInstance.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
