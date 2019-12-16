@@ -98,8 +98,8 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
 
             res.locals.htmlTitle = res.locals.instance_question_info.question_number
-              + ": " + res.locals.question.title
-              + " - " + res.locals.course.short_name;
+              + ': ' + res.locals.question.title
+              + ' - ' + res.locals.course.short_name;
 
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });

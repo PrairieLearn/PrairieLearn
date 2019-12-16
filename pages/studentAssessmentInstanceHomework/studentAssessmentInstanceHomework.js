@@ -56,8 +56,8 @@ router.get('/', function(req, res, next) {
 
                 res.locals.htmlTitle = res.locals.assessment_set.abbreviation
                   + res.locals.assessment.number
-                  + ": " + res.locals.assessment.title
-                  + " - " + res.locals.course.short_name;
+                  + ': ' + res.locals.assessment.title
+                  + ' - ' + res.locals.course.short_name;
 
                 debug('rendering EJS');
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

@@ -15,7 +15,7 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.rows = result.rows;
-        res.locals.htmlTitle = "Gradebook - " + res.locals.course.short_name;
+        res.locals.htmlTitle = 'Gradebook - ' + res.locals.course.short_name;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
