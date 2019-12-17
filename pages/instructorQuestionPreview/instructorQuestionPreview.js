@@ -83,13 +83,13 @@ router.post('/', function(req, res, next) {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
-                         + '/appearance/?variant_id=' + variant_id);
+                         + '/preview/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
-                         + '/appearance/?variant_id=' + variant_id);
+                         + '/preview/?variant_id=' + variant_id);
         });
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {

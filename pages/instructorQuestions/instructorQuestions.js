@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
                     debug(`Get question_id from qid=${editor.qid} with course_id=${res.locals.course.id}`);
                     sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: editor.qid, course_id: res.locals.course.id}, (err, result) => {
                         if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+                        res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings');
                     });
                 }
             });

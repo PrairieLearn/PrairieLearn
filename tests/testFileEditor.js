@@ -78,15 +78,20 @@ const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseAdminUrl = baseUrl + '/course/1/course_admin';
+const courseAdminSettingsUrl = courseAdminUrl + '/settings';
 const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const courseInstanceCourseAdminUrl = courseInstanceUrl + '/course_admin';
+const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/settings';
 const courseInstanceCourseAdminEditUrl = courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
+const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl = courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
+const assesmentSettingsUrl = assessmentUrl + '/settings';
 const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
+const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionHtmlPath)}`;
 const courseInstanceQuestionPythonEditUrl = courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
@@ -97,31 +102,31 @@ const findEditUrlData = [
     {
         'name': 'assessment',
         'selector': 'a:contains("infoAssessment.json") + a:contains("Edit")',
-        'url': assessmentUrl,
+        'url': assesmentSettingsUrl,
         'expectedEditUrl': assessmentEditUrl,
     },
     {
         'name': 'course admin via course instance',
         'selector': 'a:contains("infoCourse.json") + a:contains("Edit")',
-        'url': courseInstanceCourseAdminUrl,
+        'url': courseInstanceCourseAdminSettingsUrl,
         'expectedEditUrl': courseInstanceCourseAdminEditUrl,
     },
     {
         'name': 'course admin',
         'selector': 'a:contains("infoCourse.json") + a:contains("Edit")',
-        'url': courseAdminUrl,
+        'url': courseAdminSettingsUrl,
         'expectedEditUrl': courseAdminEditUrl,
     },
     {
         'name': 'instance admin',
         'selector': 'a:contains("infoCourseInstance.json") + a:contains("Edit")',
-        'url': courseInstanceInstanceAdminUrl,
+        'url': courseInstanceInstanceAdminSettingsUrl,
         'expectedEditUrl': courseInstanceInstanceAdminEditUrl,
     },
     {
         'name': 'question',
         'selector': 'a:contains("info.json") + a:contains("Edit")',
-        'url': courseInstanceQuestionUrl,
+        'url': courseInstanceQuestionSettingsUrl,
         'expectedEditUrl': courseInstanceQuestionJsonEditUrl,
     },
 ];

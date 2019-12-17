@@ -45,7 +45,7 @@ module.exports = {
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 request(questionUrl, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -199,7 +199,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 locals.preEndTime = Date.now();
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -278,7 +278,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionAppearanceTabUrl || '');
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -562,9 +562,9 @@ module.exports = {
                     });
                 });
             });
-            describe('GET to instructor question overview URL', function() {
+            describe('GET to instructor question settings URL', function() {
                 it('should load successfully', function(callback) {
-                    const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionOverviewTabUrl || '');
+                    const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionSettingsTabUrl || '');
                     request(questionUrl, function (error, response, body) {
                         if (error) {
                             return callback(error);
@@ -588,12 +588,12 @@ module.exports = {
                 });
             });
             describe('the test job sequence', function() {
-                it('should start with POST to instructor question overview URL for test_once', function(callback) {
+                it('should start with POST to instructor question settings URL for test_once', function(callback) {
                     const form = {
                         __action: 'test_once',
                         __csrf_token: locals.__csrf_token,
                     };
-                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionOverviewTabUrl || '');
+                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionSettingsTabUrl || '');
                     request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                         if (error) {
                             return callback(error);

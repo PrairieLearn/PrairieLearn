@@ -9,9 +9,6 @@
     <a class="nav-link <% if (navSubPage == "file_view") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view"><i class="fa fa-edit"></i> Files</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "overview") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/overview"><i class="fas fa-glasses"></i> Overview</a>
-  </li>
-  <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
   </li>
   <li class="nav-item">
@@ -19,6 +16,9 @@
   </li>
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "regrading") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading"><i class="fa fa-sync"></i> Regrading</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "settings") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/settings"><i class="fas fa-cog"></i> Settings</a>
   </li>
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "assessment_statistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>

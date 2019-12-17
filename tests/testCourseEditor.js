@@ -91,7 +91,7 @@ const testEditData = [
         ]),
     },
     {
-        url: `${courseInstanceUrl}/question/1/overview`,
+        url: `${courseInstanceUrl}/question/1/settings`,
         button: 'copyQuestionButton',
         form: 'copy-question-form',
         data: {
@@ -174,7 +174,7 @@ const testEditData = [
         ]),
     },
     {
-        url: `${courseInstanceUrl}/assessment/1/overview`,
+        url: `${courseInstanceUrl}/assessment/1/settings`,
         form: 'copy-assessment-form',
         action: 'copy_assessment',
         info: 'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
@@ -251,7 +251,7 @@ const testEditData = [
         ]),
     },
     {
-        url: `${courseInstanceUrl}/instance_admin/overview`,
+        url: `${courseInstanceUrl}/instance_admin/settings`,
         form: 'copy-course-instance-form',
         action: 'copy_course_instance',
         info: 'courseInstances/Sp19/infoCourseInstance.json',
