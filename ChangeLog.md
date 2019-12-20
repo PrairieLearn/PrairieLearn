@@ -165,6 +165,8 @@
 
   * Fix admin overview page institutions (Matt West & Dave Mussulman).
 
+  * Fix button appearance after bootstrap upgrade (Tim Bretl).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
