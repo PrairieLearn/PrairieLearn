@@ -11,7 +11,7 @@
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
             <% courses.forEach(function(c) { %>
-                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
+                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
             <% }); %>
         </div>
         <% } %>
@@ -43,7 +43,7 @@
             <% if (typeof course_instances != 'undefined') { %>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
                     <% course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                        <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
                     <% }); %>
                 </div>
             <% } %>
@@ -69,7 +69,7 @@
                 <% if (typeof assessments != 'undefined') { %>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">
                         <% assessments.forEach(function(a) { %>
-                            <a class="dropdown-item <% if (navPage == "assessment" && assessment.id == a.id) { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= a.id %><% if (navPage == "assessment" && typeof navSubPage !== 'undefined' && navSubPage != "edit") { %>/<%= navSubPage %><% } %>"><%= a.assessment_label %></a>
+                            <a class="dropdown-item <% if (navPage == "assessment" && assessment.id == a.id) { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= a.id %><% if (navPage == "assessment" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= a.assessment_label %></a>
                         <% }); %>
                     </div>
                 <% } %>
