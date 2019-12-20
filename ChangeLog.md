@@ -166,6 +166,7 @@
   * Fix admin overview page institutions (Matt West & Dave Mussulman).
 
   * Fix bug in course instance switcher when on file edit page (Tim Bretl).
+  * Fix button appearance after bootstrap upgrade (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 

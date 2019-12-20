@@ -78,8 +78,8 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Administrators
-          <a id="administratorInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+              id="administratorInsertButton" tabindex="0"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
              data-content="<%= include('administratorInsertForm',
@@ -87,7 +87,7 @@
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="fa fa-user-plus" aria-hidden="true"></i>
             <span class="d-none d-sm-inline">Add administrator</span>
-          </a>
+        </button>
         </div>
 
         <div class="table-responsive">
@@ -104,9 +104,8 @@
                 <td class="align-middle"><%= administrator_user.uid %></td>
                 <td class="align-middle"><%= administrator_user.name %></td>
                 <td class="align-middle">
-                  <a id="administratorDeleteButton<%= i %>"
-                     class="btn btn-sm btn-danger float-right"
-                     tabindex="0" role="button"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
+                     id="administratorDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Remove administrator access"
                      data-content="<%= include('administratorDeleteForm',
@@ -114,7 +113,7 @@
                                    user_id: administrator_user.user_id}) %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
                     <i class="fa fa-times" aria-hidden="true"></i> Remove
-                  </a>
+                  </button>
                 </td>
               </tr>
               <% }); %>
@@ -217,15 +216,15 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Courses
-          <a id="courseInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+             id="courseInsertButton" tabindex="0"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new course"
              data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="fa fa-plus" aria-hidden="true"></i>
             <span class="d-none d-sm-inline">Add course</span>
-          </a>
+          </button>
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped">
@@ -249,16 +248,15 @@
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
                 <td class="align-middle">
-                  <a id="courseDeleteButton<%= i %>"
-                     class="btn btn-sm btn-danger float-right"
-                     tabindex="0" role="button"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
+                     id="courseDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
                      data-content="<%= include('courseDeleteForm',
                                    {id: 'courseDeleteButton' + i, course: course, i: i}) %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
                     <i class="fa fa-times" aria-hidden="true"></i> Delete course
-                  </a>
+                  </button>
                 </td>
               </tr>
               <% }); %>
