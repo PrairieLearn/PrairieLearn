@@ -1,0 +1,14 @@
+<ul class="nav nav-tabs mb-4" id="navtabsInstructorQuestion">
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "file_view") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/file_view"><i class="fa fa-edit"></i> Files</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "preview") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/preview"><i class="fas fa-tv"></i> Preview</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "settings") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/settings"><i class="fas fa-cog"></i> Settings</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "statistics") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
+  </li>
+</ul>

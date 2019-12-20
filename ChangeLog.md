@@ -61,6 +61,10 @@
 
   * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz).
 
+  * Add navbar dropdowns to swap between courses, course instances, and assessments (Tim Bretl).
+
+  * Add ability to create and modify all course content in the browser without docker or git (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -92,6 +96,8 @@
   * Change test infrastructure to use `testCourse` instead of `exampleCourse` (James Balamuta).
 
   * Change `grader-r` docker container to include `pltest` package (James Balamuta).
+
+  * Change navbar/navtab structure to match course content structure (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 

@@ -45,7 +45,7 @@ module.exports = {
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 request(questionUrl, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -199,7 +199,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 locals.preEndTime = Date.now();
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -278,7 +278,7 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
                 request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -562,13 +562,38 @@ module.exports = {
                     });
                 });
             });
+            describe('GET to instructor question settings URL', function() {
+                it('should load successfully', function(callback) {
+                    const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionSettingsTabUrl || '');
+                    request(questionUrl, function (error, response, body) {
+                        if (error) {
+                            return callback(error);
+                        }
+                        if (response.statusCode != 200) {
+                            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                        }
+                        page = body;
+                        callback(null);
+                    });
+                });
+                it('should parse', function() {
+                    locals.$ = cheerio.load(page);
+                });
+                it('should have a CSRF token', function() {
+                    elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
+                    assert.lengthOf(elemList, 1);
+                    assert.nestedProperty(elemList[0], 'attribs.value');
+                    locals.__csrf_token = elemList[0].attribs.value;
+                    assert.isString(locals.__csrf_token);
+                });
+            });
             describe('the test job sequence', function() {
-                it('should start with POST to instructorAssessment URL for test_once', function(callback) {
+                it('should start with POST to instructor question settings URL for test_once', function(callback) {
                     const form = {
                         __action: 'test_once',
                         __csrf_token: locals.__csrf_token,
                     };
-                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionSettingsTabUrl || '');
                     request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                         if (error) {
                             return callback(error);

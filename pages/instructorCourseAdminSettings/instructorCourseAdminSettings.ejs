@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <%- include('../partials/head'); %>
+        <style>
+            .popover{
+                max-width: 50%;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            $(function() {
+                $('[data-toggle="popover"]').popover({
+                    sanitize: false
+                })
+            });
+        </script>
+        <%- include('../partials/navbar'); %>
+        <div id="content" class="container-fluid">
+            <%- include('../partials/navtabs'); %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex">
+                    Course <%= course.short_name %>
+                </div>
+                <table class="table table-sm table-hover two-column-description">
+                    <tbody>
+                        <tr><th>Short Name</th><td><%= course.short_name %></td></tr>
+                        <tr><th>Title</th><td><%= course.title %></td></tr>
+                        <tr><th>Timezone</th><td><%= course.display_timezone %></td></tr>
+                        <tr><th>Grading Queue</th><td><%= course.grading_queue %></td></tr>
+                        <tr><th>Path</th><td><%= course.path %></td></tr>
+                        <tr><th>Repository</th><td><%= course.repository %></td></tr>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                        <tr><th>Configuration</th>
+                            <td>
+                                <a href="<%= urlPrefix %>/<%= navPage %>/file_view/infoCourse.json">
+                                    infoCourse.json
+                                </a>
+                                <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/infoCourse.json">
+                                    <i class="fa fa-edit"></i>
+                                    <span>Edit</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>

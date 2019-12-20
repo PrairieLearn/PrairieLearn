@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
+    <style>
+      .popover{
+        max-width: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      $(function() {
+        $('[data-toggle="popover"]').popover({
+            sanitize: false
+        })
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/navtabs'); %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <div class="row align-items-center justify-content-between">
+            <div class="col-auto">
+              <% file_browser.paths.branch.forEach((dir, key, arr) => { %>
+                <% if (dir.canView) { %>
+                  <a class="text-white" href="<%= file_browser.paths.urlPrefix %>/file_view/<%= dir.encodedPath %>"><%= dir.name %></a>
+                <% } else { %>
+                  <span><%= dir.name %></span>
+                <% } %>
+                <% if (!(Object.is(arr.length - 1, key) && file_browser.isFile)) { %>
+                <span class="px-2"> / </span>
+                <% } %>
+              <% }); %>
+            </div>
+            <div class="col-auto">
+
+              <% if (file_browser.isFile) { %>
+
+              <!-------------------->
+              <!-- FILE HEAD      -->
+              <!-------------------->
+
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
+                <i class="fa fa-edit"></i>
+                <span>Edit</span>
+              </a>
+              <button id="instructorFileUploadForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canUpload) { %>disabled<% } %>>
+                <i class="fa fa-arrow-up"></i>
+                <span>Upload</span>
+              </button>
+              <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.file.encodedPath %>?attachment=<%= file_browser.file.encodedName %>">
+                <i class="fa fa-arrow-down"></i>
+                <span>Download</span>
+              </a>
+              <button id="instructorFileRenameForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canRename) { %>disabled<% } %>>
+                <i class="fa fa-i-cursor"></i>
+                <span>Rename</span>
+              </button>
+              <button id="instructorFileDeleteForm-<%= file_browser.file.id %>" tabindex="0" class="btn btn-sm btn-light" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: file_browser.file}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!file_browser.file.canDelete) { %>disabled<% } %>>
+                <i class="far fa-trash-alt"></i>
+                <span>Delete</span>
+              </button>
+
+              <% } else { %>
+
+              <!-------------------->
+              <!-- DIRECTORY HEAD -->
+              <!-------------------->
+
+              <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+              <% if (file_browser.paths.specialDirs) { %>
+                <% file_browser.paths.specialDirs.forEach((d) => { %>
+                  <button id="instructorFileUploadForm-New<%= d.label %>" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New' + d.label, info: d.info, working_path: d.path}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-plus"></i>
+                    <span>Add new <%= d.label.toLowerCase() %> file</span>
+                  </button>
+                <% }); %>
+              <% } %>
+              <button id="instructorFileUploadForm-New" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New', working_path: file_browser.paths.workingPath}}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                <i class="fa fa-plus"></i>
+                <span>Add new file</span>
+              </button>
+              <% } %>
+
+              <% }%>
+
+            </div>
+          </div>
+        </div>
+
+        <% if (file_browser.isFile) { %>
+
+        <!-------------------->
+        <!-- FILE BODY      -->
+        <!-------------------->
+
+        <div class="card-body">
+          <% if (file_browser.isImage) { %>
+          <img src="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.paths.workingPathRelativeToCourse %>" class="img-fluid">
+          <% } else if (file_browser.isText) { %>
+          <pre><code><%- file_browser.contents %></code></pre>
+          <% } else if (file_browser.isPDF) { %>
+          <div class="embed-responsive embed-responsive-4by3">
+            <object data="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.paths.workingPathRelativeToCourse %>?type=application/pdf#view=FitH" type="application/pdf" class="embed-responsive-item">
+              This PDF cannot be displayed.
+            </object>
+          </div>
+          <% } else { %>
+          <div class="alert alert-warning" role="alert">No preview available.</div>
+          <% } %>
+        </div>
+
+        <% } else { %>
+
+        <!-------------------->
+        <!-- DIRECTORY BODY -->
+        <!-------------------->
+
+        <table class="table table-sm table-hover">
+          <tbody>
+            <% file_browser.files.forEach(function(f) { %>
+            <tr>
+              <td>
+                <span><i class="far fa-file-alt fa-fw"></i></span>
+                <% if (f.canView) { %>
+                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= f.encodedPath %>"><%= f.name %></a>
+                <% } else { %>
+                  <span><%= f.name %></span>
+                <% } %>
+              </td>
+              <td>
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
+                  <i class="fa fa-edit"></i>
+                  <span>Edit</span>
+                </a>
+                <button id="instructorFileUploadForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canUpload) { %>disabled<% } %>>
+                  <i class="fa fa-arrow-up"></i>
+                  <span>Upload</span>
+                </button>
+                <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canDownload) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_download/<%= f.encodedPath %>?attachment=<%= f.encodedName %>">
+                  <i class="fa fa-arrow-down"></i>
+                  <span>Download</span>
+                </a>
+                <button id="instructorFileRenameForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Rename file" data-content="<%= include('instructorFileRenameForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canRename) { %>disabled<% } %>>
+                  <i class="fa fa-i-cursor"></i>
+                  <span>Rename</span>
+                </button>
+                <button id="instructorFileDeleteForm-<%= f.id %>" tabindex="0" class="btn btn-xs btn-secondary" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Confirm delete" data-content="<%= include('instructorFileDeleteForm', {file: f}) %>" data-trigger="manual" onclick="$(this).popover('show')" <% if (!f.canDelete) { %>disabled<% } %>>
+                  <i class="far fa-trash-alt"></i>
+                  <span>Delete</span>
+                </button>
+              </td>
+            </tr>
+            <% }); %>
+            <% file_browser.dirs.forEach(function(d) { %>
+            <tr>
+              <td colspan="2">
+                <i class="fa fa-folder fa-fw"></i>
+                <% if (d.canView) { %>
+                  <a href="<%= file_browser.paths.urlPrefix %>/file_view/<%= d.encodedPath %>"><%= d.name %></a>
+                <% } else { %>
+                  <span><%= d.name %></span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <% }%>
+
+      </div>
+    </div>
+  </body>
+</html>
