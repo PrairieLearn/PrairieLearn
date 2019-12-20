@@ -60,10 +60,9 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        var authUid = 'dev@illinois.edu';
-        var authName = 'Dev User';
-        var authUin = '000000000';
-
+        var authUid = config.authUid;
+        var authName = config.authName;
+        var authUin = config.authUin;
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';

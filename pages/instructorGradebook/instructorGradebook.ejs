@@ -39,8 +39,9 @@
     })
   </script>
   <body>
-    <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
-    <div id="content" class="container">
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/navtabs'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           Users

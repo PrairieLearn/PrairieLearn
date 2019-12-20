@@ -16,9 +16,13 @@ const locals = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
+locals.courseBaseUrl = locals.baseUrl + '/course/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
+locals.questionPreviewTabUrl = '/preview';
+locals.questionSettingsTabUrl = '/settings';
+locals.questionsUrl = locals.courseInstanceBaseUrl + '/course_admin/questions';
+locals.questionsUrlCourse = locals.courseBaseUrl + '/course_admin/questions';
 locals.isStudentPage = false;
 
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
@@ -64,6 +68,48 @@ describe('Instructor questions', function() {
             const question = _.find(locals.questions, {directory: differentiatePolynomial.qid});
             assert.isDefined(question);
             differentiatePolynomial.id = question.id;
+        });
+    });
+
+    describe('GET ' + locals.questionsUrlCourse, function() {
+        it('should load successfully', function(callback) {
+            request(locals.questionsUrlCourse, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should link to addNumbers question', function() {
+            elemList = locals.$('td a:contains("Add two numbers")');
+            assert.lengthOf(elemList, 1);
+            addNumbers.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(addNumbers.url, locals.courseBaseUrl + '/question/' + addNumbers.id + '/');
+        });
+        it('should link to addVectors question', function() {
+            elemList = locals.$('td a:contains("Addition of vectors in Cartesian coordinates")');
+            assert.lengthOf(elemList, 1);
+            addVectors.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(addVectors.url, locals.courseBaseUrl + '/question/' + addVectors.id + '/');
+        });
+        it('should link to downloadFile question', function() {
+            elemList = locals.$('td a:contains("File download example question")');
+            assert.lengthOf(elemList, 1);
+            downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(downloadFile.url, locals.courseBaseUrl + '/question/' + downloadFile.id + '/');
+        });
+        it('should link to differentiatePolynomial question', function() {
+            elemList = locals.$('td a:contains("Differentiate a polynomial function of one variable")');
+            assert.lengthOf(elemList, 1);
+            differentiatePolynomial.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(differentiatePolynomial.url, locals.courseBaseUrl + '/question/' + differentiatePolynomial.id + '/');
         });
     });
 

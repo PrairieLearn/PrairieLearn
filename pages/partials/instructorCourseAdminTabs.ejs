@@ -1,27 +1,39 @@
 <ul class="nav nav-tabs mb-4" id="navtabsInstructorCourseAdmin">
-    <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "info") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/info"><i class="far fa-calendar-alt"></i> Information</a>
-    </li>
     <% if (authz_data.has_course_permission_own) { %>
         <li class="nav-item">
             <a class="nav-link <% if (navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
         </li>
     <% } %>
     <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "sets") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/sets"><i class="far fa-calendar-alt"></i> Assessment Sets</a>
+        <a class="nav-link <% if (navSubPage == "sets") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/sets"><i class="fa fa-list"></i> Assessment Sets</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "topics") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/topics"><i class="far fa-calendar-alt"></i> Topics</a>
+        <a class="nav-link <% if (navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/instances"><i class="fas fa-chalkboard-teacher"></i> Course Instances</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "tags") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/tags"><i class="far fa-calendar-alt"></i> Tags</a>
+        <a class="nav-link <% if (navSubPage == "grading") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/grading"><i class="fas fa-balance-scale"></i> External Grading</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "grading") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/grading"><i class="far fa-calendar-alt"></i> External Grading</a>
+        <a class="nav-link <% if (navSubPage == "file_view") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/file_view"><i class="fa fa-edit"></i> Files</a>
     </li>
-    <% if (!locals.course.options.isExampleCourse) { %>
-        <li class="nav-item">
-          <a class="nav-link <% if (navSubPage == "edit") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/edit?file=infoCourse.json"><i class="fa fa-edit"></i> Edit</a>
-        </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "issues") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/issues"><i class="fas fa-bug"></i> Issues</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/questions"><i class="fas fa-question"></i> Questions</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "settings") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/settings"><i class="fas fa-cog"></i> Settings</a>
+    </li>
+    <% if (!devMode && authz_data.has_course_permission_edit) { %>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "syncs") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/syncs"><i class="fas fa-sync-alt"></i> Sync</a>
+    </li>
     <% } %>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "tags") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/tags"><i class="fas fa-hashtag"></i> Tags</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <% if (navSubPage == "topics") { %>active<% } %>" href="<%= urlPrefix %>/course_admin/topics"><i class="fas fa-quote-right"></i> Topics</a>
+    </li>
 </ul>

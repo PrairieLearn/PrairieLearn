@@ -1,31 +1,32 @@
 <ul class="nav nav-tabs mb-4" id="navtabsInstructorAssessment">
   <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
-  </li>
-  <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "access") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/access"><i class="far fa-calendar-alt"></i> Access</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "assessmentStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "questionStatistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics"><i class="fas fa-table"></i> Question stats</a>
   </li>
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "downloads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads"><i class="fas fa-download"></i> Downloads</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "uploads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads"><i class="fas fa-upload"></i> Uploads</a>
+    <a class="nav-link <% if (navSubPage == "file_view") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view"><i class="fa fa-edit"></i> Files</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "questions") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/questions"><i class="far fa-file-alt"></i> Questions</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "question_statistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_statistics"><i class="fas fa-table"></i> Question stats</a>
   </li>
   <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "regrading") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/regrading"><i class="fa fa-sync"></i> Regrading</a>
   </li>
   <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "settings") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/settings"><i class="fas fa-cog"></i> Settings</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "assessment_statistics") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "instances") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances"><i class="fas fa-users"></i> Students</a>
   </li>
-  <% if (!locals.course.options.isExampleCourse) { %>
-      <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "edit") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/edit?file=courseInstances/<%= course_instance.short_name %>/assessments/<%= assessment.tid %>/infoAssessment.json"><i class="fa fa-edit"></i> Edit</a>
-      </li>
-  <% } %>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "uploads") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/uploads"><i class="fas fa-upload"></i> Uploads</a>
+  </li>
 </ul>

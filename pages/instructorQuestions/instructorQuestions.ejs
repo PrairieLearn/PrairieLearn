@@ -1,75 +1,118 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <%- include('../partials/head'); %>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/javascripts/jquery.tablesorter.min.js"></script>
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
-  </head>
-  <body>
-    <%- include('../partials/navbar', {navPage: 'questions'}); %>
-    <div id="content" class="container-fluid">
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          Questions
-          <button class="btn btn-sm btn-light ml-auto" id="resetFilter">Clear all filters</button>
-        </div>
+</head>
 
-        <div class="table-responsive">
-          <table id="questionsTable" class="table table-sm table-hover tablesorter">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>QID</th>
-                <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
-                <th data-placeholder="Choose tag">Tags</th>
-                <th data-placeholder="Choose assessment">Assessments</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% questions.forEach(function(question) { %>
-              <tr>
-                <td class="align-middle">
-                  <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
-                  <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
-                </td>
-                <td class="align-middle"><%= question.qid %></td>
-                <td class="align-middle"><%- include('../partials/topic', {topic: question.topic}); %></td>
-                <td class="align-middle"><%- include('../partials/tags', {tags: question.tags}); %></td>
-                <td class="align-middle"><%- include('../partials/assessments', {assessments: question.assessments}); %></td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
+<body>
+    <script>
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                sanitize: false
+            });
+        });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+        <%- include('../partials/navtabs'); %>
+        <div class="card mb-4">
+            <div class="card-header bg-primary">
+                <div class="row align-items-center justify-content-between">
+                    <div class="col-auto">
+                        <span class="text-white">Questions</span>
+                    </div>
+                    <div class="col-auto">
+                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                        <form class="d-inline" name="add-question-form" method="POST">
+                            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                            <button name="__action" value="add_question" class="btn btn-sm btn-light"><i class="fa fa-plus" aria-hidden="true"></i>
+                            <span>Add question</span></button>
+                        </form>
+                        <% } %>
+                        <button class="btn btn-sm btn-light" type="button" id="resetFilter">Clear all filters</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="questionsTable" class="table table-sm table-hover tablesorter">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>QID</th>
+                            <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
+                            <th data-placeholder="Choose tag">Tags</th>
+                            <% if (locals.course_instance) { %>
+                            <th data-placeholder="Choose assessment">Assessments</th>
+                            <% } %>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% questions.forEach(function(question) { %>
+                        <tr>
+                            <td class="align-middle">
+                                <a href="<%= urlPrefix %>/question/<%= question.id %>/">
+                                    <%= question.title %></a>
+                                <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
+                            </td>
+                            <td class="align-middle">
+                                <%= question.qid %>
+                            </td>
+                            <td class="align-middle">
+                                <%- include('../partials/topic', {topic: question.topic}); %>
+                            </td>
+                            <td class="align-middle">
+                                <%- include('../partials/tags', {tags: question.tags}); %>
+                            </td>
+                            <% if (locals.course_instance) { %>
+                            <td class="align-middle">
+                                <%- include('../partials/assessments', {assessments: question.assessments}); %>
+                            </td>
+                            <% } %>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            <script>
+                $(function() {
+                    $("#questionsTable").tablesorter({
+                        theme: "bootstrap",
+                        widthFixed: true,
+                        headerTemplate: '{content} {icon}',
+                        widgets: ["uitheme", "filter", "zebra"],
+                        widgetOptions: {
+                            zebra: ["even", "odd"],
+                            filter_reset: "#resetFilter",
+                            filter_cssFilter: "form-control",
+                            filter_functions: {
+                                3: {
+                                    <% all_tags.forEach(function(tag) { %>
+                                    "<%= tag.name %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= tag.name %>\b/.test(e);
+                                    },
+                                    <% }); %>
+                                },
+                                <% if (locals.course_instance) { %>
+                                4: {
+                                    <% all_assessments.forEach(function(assessment) { %>
+                                    "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= assessment.label %>\b/.test(e);
+                                    },
+                                    <% }); %>
+                                },
+                                <% } %>
+                            },
+                        },
+                    });
+                });
+            </script>
         </div>
-        <script>
-          $(function(){
-              $("#questionsTable").tablesorter({
-                  theme: "bootstrap",
-                  widthFixed: true,
-                  headerTemplate: '{content} {icon}',
-                  widgets: ["uitheme", "filter", "zebra"],
-                  widgetOptions: {
-                      zebra: ["even", "odd"],
-                      filter_reset : "#resetFilter",
-                      filter_cssFilter: "form-control",
-                      filter_functions: {
-                          3: {
-                              <% all_tags.forEach(function(tag) { %>
-                                  "<%= tag.name %>": function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
-                              <% }); %>
-                          },
-                          4: {
-                              <% all_assessments.forEach(function(assessment) { %>
-                                  "<%= assessment.label %>": function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
-                              <% }); %>
-                          },
-                      },
-                  },
-              });
-          });
-        </script>
-      </div>
     </div>
-  </body>
+</body>
+
 </html>
