@@ -64,8 +64,11 @@ router.get('/:file_transfer_id', function(req, res, next) {
                         user_id: res.locals.user.user_id,
                     }, (err, _result) => {
                         if (ERR(err, next)) return;
-                        debug(`Get question_id from qid=${editor.qid} with course_id=${res.locals.course.id}`);
-                        sqldb.queryOneRow(sql.select_question_id_from_qid, {qid: editor.qid, course_id: res.locals.course.id}, function(err, result) {
+                        debug(`Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);
+                        // Normally, it would not be safe to get an id from a string in a SQL query. The reason it is safe
+                        // in this context is that the uuid was created by doEdit and is known to be valid. Otherwise we would
+                        // be leaving ourselves open to SQL injection.
+                        sqldb.queryOneRow(sql.select_question_id_from_uuid, {uuid: editor.uuid, course_id: res.locals.course.id}, (err, result) => {
                             if (ERR(err, next)) return;
                             res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
                         });
