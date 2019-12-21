@@ -18,16 +18,6 @@ const { encodePath } = require('../../lib/uri-util');
 router.get('/', function(req, res, next) {
     debug('GET /');
     async.series([
-        function(callback) {
-            debug('query course_instance_stat');
-            var params = {course_instance_id: res.locals.course_instance.id};
-            sqldb.queryOneRow(sql.course_instance_stat, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.course_instance_stat = result.rows[0];
-                debug(res.locals.course_instance_stat);
-                callback(null);
-            });
-        },
         (callback) => {
             debug('query short_names');
             sqldb.queryOneRow(sql.short_names, {course_id: res.locals.course.id}, (err, result) => {

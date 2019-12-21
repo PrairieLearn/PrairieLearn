@@ -1,12 +1,3 @@
--- BLOCK course_instance_stat
-SELECT
-    count(e.user_id) AS number
-FROM
-    enrollments AS e
-WHERE
-    e.course_instance_id = $course_instance_id
-    AND e.role = 'Student';
-
 -- BLOCK short_names
 SELECT
     array_agg(ci.short_name) AS short_names
