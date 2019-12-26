@@ -7,21 +7,23 @@
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/node_modules/ace-builds/src-min-noconflict/ace.js"></script>
     <script src="/node_modules/crypto-js/crypto-js.js"></script>
-    <script src="./edit/instructorFileEditorClient.js"></script>
+    <script src="./file_edit?serve=client"></script>
     <script src="/javascripts/socket.io.js"></script>
 </head>
 
 <body>
     <%- include('../partials/navbar'); %>
 
-    <div class="container">
+    <div id="content" class="container-fluid">
         <%- include('../partials/navtabs'); %>
 
         <script>
             $(function() {
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.editContents %>",
+                    <% if (fileEdit.aceMode) { %>
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     origHash: "<%- fileEdit.origHash %>",
                     diskHash: "<%- fileEdit.diskHash %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
@@ -39,7 +41,9 @@
                 <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.diskContents %>",
+                    <% if (fileEdit.aceMode) { %>
                     aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     elementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     readOnly: true,
                 });
@@ -75,7 +79,7 @@
                     </div>
                 </div>
                 <div class="card-body row collapse" id="help-<%= fileEdit.uuid %>">
-                    <div class="container">
+                    <div class="container-fluid">
                         <p>
                             You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong>.
                             <% if (config.fileEditorUseGit) { %>
@@ -88,7 +92,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0 row">
-                    <div class="container">
+                    <div class="container-fluid">
                         <% if (fileEdit.alertResults) { %>
                         <div class="alert <% if (fileEdit.didSave && fileEdit.didSync) { %>alert-success<% } else { %>alert-danger<% } %> alert-dismissible fade show m-2" role="alert">
                             <div class="row align-items-center">

@@ -14,7 +14,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
       <%- include('../partials/instructorAssessmentTabs'); %>
 
       <!-- ###################################################################### -->
@@ -54,10 +54,10 @@
           <%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination
           <div class="ml-auto">
             <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
-            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+            <button type="button" class="btn btn-sm btn-light" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
                 <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
-            </a>
+            </button>
           </div>
         </div>
 
@@ -106,10 +106,10 @@
           <%= assessment_set.name %> <%= assessment.number %>: Question statistics
           <div class="ml-auto">
             <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
-            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+            <button type="button" class="btn btn-sm btn-light" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
                 <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
-            </a>
+            </button>
           </div>
         </div>
 
@@ -180,10 +180,10 @@
           <%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics
           <div class="ml-auto">
             <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
-            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+            <button type="button" class="btn btn-sm btn-light" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
                 <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
-            </a>
+            </button>
           </div>
         </div>
 

@@ -67,7 +67,7 @@ if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
     if (navbarType == 'student') {
         rolebutton.color = "btn-info";
         rolebutton.other = "Switch to instructor view";
-        rolebutton.otherLink = `${urlPrefix}/instructor/assessments`;
+        rolebutton.otherLink = `${urlPrefix}/instructor/instance_admin`;
         // If we know its question or assessment id, link right to it.
         if (typeof question !== 'undefined' && question.id) {
             rolebutton.otherLink = `${urlPrefix}/instructor/question/${question.id}`;

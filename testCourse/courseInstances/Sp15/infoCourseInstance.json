@@ -1,0 +1,18 @@
+{
+    "uuid": "31a69dd9-81a1-4b17-b578-2098d20fb57a",
+    "shortName": "Sp15",
+    "longName": "Spring 2015",
+    "userRoles": {
+        "mwest@illinois.edu": "Instructor",
+        "zilles@illinois.edu": "TA",
+        "mussulma@illinois.edu": "TA",
+        "nwalter2@illinois.edu": "Student"
+    },
+    "allowAccess": [
+        {
+            "institution": "Any",
+            "startDate": "1800-01-19T00:00:01",
+            "endDate": "2400-05-13T23:59:59"
+        }
+    ]
+}

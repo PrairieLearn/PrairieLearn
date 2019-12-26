@@ -53,7 +53,7 @@ module.exports = function(err, req, res, _next) {
     } else {
         // production error handler
         // no stacktraces leaked to user
-        templateData.error = {message: err.message};
+        templateData.error = {message: err.message, info: err.info};
         res.render(path.join(__dirname, 'error'), templateData);
     }
 };

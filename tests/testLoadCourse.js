@@ -5,10 +5,10 @@ var fs = require('fs');
 var courseDB = require('../lib/course-db');
 var logger = require('./dummyLogger');
 
-describe('courseDB.loadFullCourse() on exampleCourse', function() {
+describe('courseDB.loadFullCourse() on testCourse', function() {
     this.timeout(20000);
 
-    var courseDir = 'exampleCourse';
+    var courseDir = 'testCourse';
     var course;
     before('load course from disk', function(callback) {
         courseDB.loadFullCourse(courseDir, logger, function(err, c) {

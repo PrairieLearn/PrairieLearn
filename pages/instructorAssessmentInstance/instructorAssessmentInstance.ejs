@@ -17,7 +17,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
@@ -44,15 +44,15 @@
                 <span id="total-points"><%= getStringFromFloat(assessment_instance.points) %></span>
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
                 <% if (authz_data.has_instructor_edit) { %>
-                <a id="editTotalPointsButton"
-                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                <button type="button" class="btn btn-xs btn-secondary"
+                   id="editTotalPointsButton" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total points"
                    data-content="<%= include('editTotalPointsForm',
                                  {id: 'editTotalPointsButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-                </a>
+              </button>
                 <% } %>
               </td>
             </tr>
@@ -63,15 +63,15 @@
               </td>
               <td class="align-middle" style="width: 100%;">
                 <% if (authz_data.has_instructor_edit) { %>
-                <a id="editTotalScorePercButton"
-                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
+                <button type="button" class="btn btn-xs btn-secondary"
+                   id="editTotalScorePercButton" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total percentage score"
                    data-content="<%= include('editTotalScorePercForm',
                                  {id: 'editTotalScorePercButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-                </a>
+                </button>
                 <% } %>
               </td>
             </tr>
@@ -131,8 +131,8 @@
               <td class="text-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
-                <a id="editQuestionPoints<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-secondary editQuestionPointsButton" role="button"
+                <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                   id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('editQuestionPointsForm',
@@ -140,7 +140,7 @@
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-                </a>
+                </button>
                 <% } %>
               </td>
               <td class="align-middle text-center">
@@ -148,8 +148,8 @@
               </td>
               <td class="align-middle" style="width: 1em;">
                 <% if (authz_data.has_instructor_edit) { %>
-                <a id="editQuestionScorePerc<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-secondary editQuestionScorePercButton" role="button"
+                <button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
+                   id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
                    data-content="<%= include('editQuestionScorePercForm',
@@ -157,7 +157,7 @@
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-                </a>
+                </button>
                 <% } %>
               </td>
             </tr>

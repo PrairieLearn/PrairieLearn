@@ -35,13 +35,13 @@ module.exports = function(req, res, next) {
             return next(new Error('invalid load_test_token'));
         }
 
-        let params = {
-            uid: 'loadtest@prairielearn.org',
-            name: 'Load Test',
-            uin: '999999999',
-            provider: 'dev',
-        };
-        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+        let params = [
+            'loadtest@prairielearn.org',
+            'Load Test',
+            '999999999',
+            'dev',
+        ];
+        sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
             res.locals.authn_user = result.rows[0].user;
             res.locals.is_administrator = result.rows[0].is_administrator;
@@ -60,26 +60,33 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        var authUid = 'dev@illinois.edu';
-        var authName = 'Dev User';
-        var authUin = '000000000';
-
+        var authUid = config.authUid;
+        var authName = config.authName;
+        var authUin = config.authUin;
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
             authUin = '000000001';
         }
-        let params = {
-            uid: authUid,
-            name: authName,
-            uin: authUin,
-            provider: 'dev',
-        };
-        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+        let params = [
+            authUid,
+            authName,
+            authUin,
+            'dev',
+        ];
+        sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.is_administrator = result.rows[0].is_administrator;
-            next();
+
+            let params = {
+                user_id: result.rows[0].user_id,
+            };
+            sqldb.query(sql.select_user, params, (err, result) => {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
+                res.locals.authn_user = result.rows[0].user;
+                res.locals.is_administrator = result.rows[0].is_administrator;
+                next();
+            });
         });
         return;
     }

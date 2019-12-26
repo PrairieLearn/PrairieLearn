@@ -59,6 +59,12 @@
 
   * Add more detailed grader statistics (Matt West).
 
+  * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz).
+
+  * Add navbar dropdowns to swap between courses, course instances, and assessments (Tim Bretl).
+
+  * Add ability to create and modify all course content in the browser without docker or git (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -81,9 +87,17 @@
 
   * Change `rpy2` version from 2.9.5 to 3.2.0 (James Balamuta).
 
+  * Change institution definitions to read from the `institutions` table (Dave Mussulman).
+
   * Change documentation examples to be self-contained (James Balamuta).
 
   * Change external grader documentation to show file system structure (James Balamuta).
+
+  * Change test infrastructure to use `testCourse` instead of `exampleCourse` (James Balamuta).
+
+  * Change `grader-r` docker container to include `pltest` package (James Balamuta).
+
+  * Change navbar/navtab structure to match course content structure (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -142,8 +156,16 @@
   * Fix error reporting for v2 questions (Matt West).
 
   * Fix detection of different internals during R package installation (James Balamuta).
-  
+
   * Fix figures in `pl-drawing` documentation (Nicolas Nytko).
+
+  * Fix use of `data["correct_answers"]` in documentation (James Balamuta, h/t Eric Huber).
+
+  * Fix authorization for users behind web proxies (Dave Mussulman).
+
+  * Fix admin overview page institutions (Matt West & Dave Mussulman).
+
+  * Fix button appearance after bootstrap upgrade (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 

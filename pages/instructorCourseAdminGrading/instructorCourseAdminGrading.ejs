@@ -8,14 +8,14 @@
     </head>
     <body>
         <%- include('../partials/navbar'); %>
-        <div id="content" class="container">
+        <div id="content" class="container-fluid">
             <%- include('../partials/navtabs'); %>
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
                     External grading
-                    <a tabindex="0" class="btn btn-light btn-sm ml-auto" onclick="alert('External grading dashboard coming soon!')">
+                    <button type="button" class="btn btn-light btn-sm ml-auto" tabindex="0" onclick="alert('External grading dashboard coming soon!')">
                         External grading dashboard <i class="fa fa-chevron-right" aria-hidden="true"></i>
-                    </a>
+                    </button>
                 </div>
                 <div class="card-body">
                     <% if (external_grading_stats_all.total > 0) { %>

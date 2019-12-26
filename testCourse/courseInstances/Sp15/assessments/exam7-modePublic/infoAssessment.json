@@ -1,0 +1,28 @@
+{
+    "uuid": "ccdcc95b-76b5-4d08-b1d9-f87948f916ba",
+    "type": "Exam",
+    "title": "Verify Exam Mode Lacks 'Waiting for a Proctor'",
+    "set": "Exam",
+    "number": "7",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"id": "addNumbers",              "points": [5, 3, 1]},
+                {"id": "addVectors",              "points": [11, 9]},
+                {"id": "fossilFuelsRadio",        "points": [17, 13, 7, 2]},
+                {"id": "partialCredit1",          "points": [19]},
+                {"id": "partialCredit2",          "points": [9, 7, 5, 3]},
+                {"id": "partialCredit3",          "points": [13, 13, 8, 0.5, 0.1]},
+                {"id": "brokenGeneration",        "points": [10]}
+              ]
+        }
+    ],
+    "text": "This exam should not display the 'Waiting for a Proctor' message if accessed through a public mode."
+}

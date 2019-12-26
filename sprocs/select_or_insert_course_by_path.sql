@@ -14,9 +14,9 @@ BEGIN
 
     IF NOT FOUND THEN
         INSERT INTO pl_courses AS c
-            (path,  display_timezone)
+            (path,  display_timezone, institution_id)
         VALUES
-            (path, 'America/Chicago')
+            (path, 'America/Chicago', 1)
         RETURNING
             c.id INTO course_id;
     END IF;
