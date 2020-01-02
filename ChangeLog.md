@@ -59,6 +59,8 @@
 
   * Add more detailed grader statistics (Matt West).
 
+  * Add diagnostics for external grader results processing (Dave Mussulman).
+
   * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz).
 
   * Add navbar dropdowns to swap between courses, course instances, and assessments (Tim Bretl).
