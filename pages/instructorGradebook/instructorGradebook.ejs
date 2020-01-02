@@ -5,7 +5,7 @@
   </head>
   <script>
     $(function() {
-      $('a.edit-score').popover({
+      $('button.edit-score').popover({
         sanitize: false,
         placement: 'auto',
         container: 'body',
@@ -39,8 +39,9 @@
     })
   </script>
   <body>
-    <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
-    <div id="content" class="container">
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/navtabs'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           Users
@@ -77,13 +78,12 @@
                     <%= Math.floor(score.score_perc) %>%
                   </a>
                   <% if (authz_data.has_instructor_edit) { %>
-                  <a class="btn btn-xs btn-secondary edit-score"
-                     role="button"
+                  <button type="button" class="btn btn-xs btn-secondary edit-score"
                      tabindex="0"
                      data-ai-id="<%= score.assessment_instance_id%>"
                      data-score="<%= score.score_perc %>">
                     <i class="fa fa-edit" aria-hidden="true"></i>
-                  <a/>
+                  </button>
                   <% } %>
                   <% } %>
                 </td>

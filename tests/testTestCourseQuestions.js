@@ -9,6 +9,8 @@ locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
+locals.questionPreviewTabUrl = '/preview';
+locals.questionSettingsTabUrl = '/settings';
 locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
 

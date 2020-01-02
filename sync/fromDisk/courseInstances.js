@@ -21,7 +21,7 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
                 uids: _(accessRule).has('uids') ? accessRule.uids : null,
                 start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
                 end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-                institution: _(accessRule).has('institution') ? accessRule.institution : 'UIUC',
+                institution: _(accessRule).has('institution') ? accessRule.institution : 'Default',
             }));
 
             return {
