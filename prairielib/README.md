@@ -7,7 +7,7 @@
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=PrairieLearn/PrairieLib)](https://dependabot.com)
 
 
-[![Build Status](https://github.com/PrairieLearn/PrairieLib/workflows/main/CI.svg)](https://github.com/PrairieLearn/PrairieLib/actions)
+[![Build Status](https://github.com/PrairieLearn/PrairieLib/workflows/CI/badge.svg)](https://github.com/PrairieLearn/PrairieLib/actions)
 
 
 [![License](https://img.shields.io/github/license/PrairieLearn/PrairieLib.svg)](https://github.com/PrairieLearn/PrairieLib/blob/master/LICENSE)
