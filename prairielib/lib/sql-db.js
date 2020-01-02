@@ -9,7 +9,7 @@ const error = require('./error');
 
 /**
  * Formats a string for debugging.
- * 
+ *
  * @param {string} s
  * @returns string
  */
@@ -23,8 +23,8 @@ function debugString(s) {
 
 /**
  * Formats a set of params for debugging.
- * 
- * @param {Params} params 
+ *
+ * @param {Params} params
  * @returns string
  */
 function debugParams(params) {
@@ -40,10 +40,10 @@ function debugParams(params) {
 /**
  * Given an SQL string and params, creates an array of params and an SQL string
  * with any named dollar-sign placeholders replaced with parameters.
- * 
- * @param {String} sql 
- * @param {Params} params 
- * @param {(error: Error | null, processedSql: string, paramsArray: any[])} callback 
+ *
+ * @param {String} sql
+ * @param {Params} params
+ * @param {(error: Error | null, processedSql: string, paramsArray: any[])} callback
  */
 function paramsToArray(sql, params, callback) {
     if (!_.isString(sql)) return callback(new Error('SQL must be a string'));
@@ -89,7 +89,7 @@ let pool = null;
 
 /**
  * Creates a new connection pool and attempts to connect to the database.
- * 
+ *
  * @param { import("pg").PoolConfig } pgConfig - The config object for Postgres
  * @param {(error: Error, client: import("pg").PoolClient) => void} idleErrorHandler - A handler for async errors
  * @param {(error: Error | null) => void} callback - Callback once the connection is initialized
@@ -104,6 +104,11 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
     }
     pool.on('error', function(err, client) {
         idleErrorHandler(err, client);
+    });
+    pool.on('connect', (client) => {
+        client.on('error', (err) => {
+            idleErrorHandler(err, client);
+        });
     });
 
     let retryCount = 0;
@@ -140,7 +145,7 @@ module.exports.initAsync = promisify(module.exports.init);
 
 /**
  * Closes the connection pool.
- * 
+ *
  * @param {(error: Error | null) => void} callback
  */
 module.exports.close = function(callback) {
@@ -161,7 +166,7 @@ module.exports.closeAsync = promisify(module.exports.close);
 
 /**
  * Gets a new client from the connection pool.
- * 
+ *
  * @param {(error: Error | null, client: import("pg").PoolClient, done: (release?: any) => void) => void} callback
  */
 module.exports.getClient = function(callback) {
@@ -181,7 +186,7 @@ module.exports.getClient = function(callback) {
 
 /**
  * Gets a new client from the connection pool.
- * 
+ *
  * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
  */
 module.exports.getClientAsync = function() {
@@ -198,7 +203,7 @@ module.exports.getClientAsync = function() {
 
 /**
  * Performs a query with the given client.
- * 
+ *
  * @param { import("pg").PoolClient } client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
@@ -230,7 +235,7 @@ module.exports.queryWithClientAsync = promisify(module.exports.queryWithClient);
 /**
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
- * 
+ *
  * @param { import("pg").PoolClient } client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
@@ -286,7 +291,7 @@ module.exports.queryWithClientZeroOrOneRowAsync = promisify(module.exports.query
 
 /**
  * Rolls back the current transaction for the given client.
- * 
+ *
  * @param {import("pg").PoolClient} client
  * @param {(release?: any) => void} done
  * @param {(err: Error | null) => void} callback
@@ -313,7 +318,7 @@ module.exports.rollbackWithClientAsync = promisify(module.exports.rollbackWithCl
 
 /**
  * Begins a new transaction.
- * 
+ *
  * @param {(err: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
  */
 module.exports.beginTransaction = function(callback) {
@@ -335,7 +340,7 @@ module.exports.beginTransaction = function(callback) {
 
 /**
  * Begins a new transation.
- * 
+ *
  * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
  */
 module.exports.begiTransactionAsync = function() {
@@ -353,7 +358,7 @@ module.exports.begiTransactionAsync = function() {
 /**
  * Commits the transaction if err is null, otherwize rollbacks the transaction.
  * Also releasese the client.
- * 
+ *
  * @param { import("pg").PoolClient } client
  * @param {(rollback?: any) => void} done
  * @param {Error | null} err
@@ -390,7 +395,7 @@ module.exports.endTransactionAsync = promisify(module.exports.endTransaction);
 
 /**
  * Executes a query with the specified parameters.
- * 
+ *
  * @param {string} sql - The SQL query to execute
  * @param {Params} params - The params for the query
  * @param {ResultsCallback} callback
@@ -435,7 +440,7 @@ module.exports.queryAsync = promisify(module.exports.query);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
- * 
+ *
  * @param {string} sql - The SQL query to execute
  * @param {Params} params - The params for the query
  * @param {ResultsCallback} callback
@@ -463,7 +468,7 @@ module.exports.queryOneRowAsync = promisify(module.exports.queryOneRow);
 /**
  * Executes a query with the specified parameters. Errors if the query
  * returns more than one row.
- * 
+ *
  * @param {string} sql - The SQL query to execute
  * @param {Params} params - The params for the query
  * @param {ResultsCallback} callback
@@ -490,7 +495,7 @@ module.exports.queryZeroOrOneRowAsync = promisify(module.exports.queryZeroOrOneR
 
 /**
  * Calls the given function with the specified parameters.
- * 
+ *
  * @param {string} functionName - The name of the function to call
  * @param {any[]} params - The params for the function
  * @param {ResultsCallback} callback
@@ -515,7 +520,7 @@ module.exports.callAsync = promisify(module.exports.call);
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function does not return exactly one row.
- * 
+ *
  * @param {string} functionName - The name of the function to call
  * @param {Params} params - The params for the function
  * @param {ResultsCallback} callback
@@ -543,7 +548,7 @@ module.exports.callOneRowAsync = promisify(module.exports.callOneRow);
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function returns more than one row.
- * 
+ *
  * @param {string} functionName - The name of the function to call
  * @param {Params} params - The params for the function
  * @param {ResultsCallback} callback
@@ -570,7 +575,7 @@ module.exports.callZeroOrOneRowAsync = promisify(module.exports.callZeroOrOneRow
 
 /**
  * Calls a function with the specified parameters using a specific client.
- * 
+ *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
  * @param {Params} params
@@ -596,7 +601,7 @@ module.exports.callWithClientAsync = promisify(module.exports.callWithClient);
 /**
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function does not return exactly one row.
- * 
+ *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
  * @param {Params} params
@@ -627,7 +632,7 @@ module.exports.callWithClientOneRowAsync = promisify(module.exports.callWithClie
 /**
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function returns more than one row.
- * 
+ *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
  * @param {Params} params
