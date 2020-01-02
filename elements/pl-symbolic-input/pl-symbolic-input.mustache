@@ -42,7 +42,7 @@
         });
 
         $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, '#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]']);
+            MathJax.typesetPromise();
         });
     });
 </script>
