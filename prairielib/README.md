@@ -10,7 +10,7 @@
 [![Build Status](https://github.com/PrairieLearn/PrairieLib/workflows/main/badge.svg)](https://github.com/PrairieLearn/PrairieLib/actions)
 
 
-[![License](https://img.shields.io/github/license/PrairieLearn/PrairieLib.svg)](https://github.com/PrairieLearn/PrairieLib/blob/master/LICENSE.md)
+[![License](https://img.shields.io/github/license/PrairieLearn/PrairieLib.svg)](https://github.com/PrairieLearn/PrairieLib/blob/master/LICENSE)
 
 
 ### Publishing instructions for a new version
