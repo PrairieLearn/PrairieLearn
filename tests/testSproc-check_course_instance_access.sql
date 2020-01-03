@@ -15,10 +15,10 @@ setup_ciars AS (
         (3, 1, 3, null, null, '2012-01-01 00:00:00-00', '2012-12-31 23:59:59-00', 'notInDb')
 ),
 setup_institutions AS (
-    INSERT INTO institutions (id, short_name, long_name, uid_pattern) VALUES
-        (100, 'host', 'Generic host', '%@host.com'),
-        (101, 'school', 'School of testing', '%@school.edu'),
-        (102, 'anotherSchool', 'Another School', '%@anotherschool.edu')
+    INSERT INTO institutions (id, short_name, long_name, uid_regexp) VALUES
+        (100, 'host', 'Generic host', '@host.com$'),
+        (101, 'school', 'School of testing', '@school.edu$'),
+        (102, 'anotherSchool', 'Another School', '@anotherschool.edu$')
 )
 SELECT true;
 
@@ -27,7 +27,7 @@ SELECT
     *
 FROM
     course_instance_access_rules AS ciar,
-    check_course_instance_access_rule(ciar, $role, $uid, (SELECT id FROM institutions WHERE $uid LIKE uid_pattern), $date) AS authorized
+    check_course_instance_access_rule(ciar, $role, $uid, (SELECT id FROM institutions WHERE $uid ~ uid_regexp), $date) AS authorized
 WHERE
     ciar.id = $ciar_id
 ;
@@ -36,5 +36,5 @@ WHERE
 SELECT
     *
 FROM
-    check_course_instance_access($ci_id, $role, $uid, (SELECT id FROM institutions WHERE $uid LIKE uid_pattern), $date) AS authorized
+    check_course_instance_access($ci_id, $role, $uid, (SELECT id FROM institutions WHERE $uid ~ uid_regexp), $date) AS authorized
 ;

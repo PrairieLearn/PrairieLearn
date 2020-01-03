@@ -6,7 +6,7 @@ SELECT
 FROM
     users AS u
     LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
-    LEFT JOIN institutions AS i ON (u.uid LIKE i.uid_pattern)
+    JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
     u.user_id = $user_id;
 
