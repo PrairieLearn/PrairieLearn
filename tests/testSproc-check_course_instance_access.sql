@@ -27,7 +27,7 @@ SELECT
     *
 FROM
     course_instance_access_rules AS ciar,
-    check_course_instance_access_rule(ciar, $role, $uid, (SELECT id FROM institutions WHERE $uid ~ uid_regexp), $date) AS authorized
+    check_course_instance_access_rule(ciar, $role, $uid, (SELECT id FROM institutions WHERE $uid ~ uid_regexp), 1, $date) AS authorized
 WHERE
     ciar.id = $ciar_id
 ;
