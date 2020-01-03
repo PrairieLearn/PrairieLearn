@@ -28,8 +28,8 @@ BEGIN
         WHERE users.uid = users_select_or_insert.uid;
     END IF;
 
-    -- if we found a user, see whether their institution is valid
-    IF u.institution_id IS NOT NULL THEN
+    -- if we found a user, with an institution not 1, try their existing institution for a uid match
+    IF (u.institution_id IS NOT NULL) AND (u.institution_id != 1) THEN
         SELECT i.*
         INTO institution
         FROM institutions AS i
@@ -38,7 +38,7 @@ BEGIN
             AND users_select_or_insert.uid LIKE i.uid_pattern;
     END IF;
 
-    -- if we don't have an institution at this point, try all of them
+    -- if we don't have an institution at this point, try all of them for a uid match
     IF institution.id IS NULL THEN
         SELECT i.*
         INTO institution
@@ -46,7 +46,7 @@ BEGIN
         WHERE users_select_or_insert.uid LIKE i.uid_pattern;
     END IF;
 
-    -- if we have an institution, make sure the authn_provider is valid for it
+    -- if we've matched an institution, make sure the authn_provider is valid for it
     IF institution.id IS NOT NULL THEN
         PERFORM *
         FROM
@@ -58,6 +58,18 @@ BEGIN
 
         IF NOT FOUND THEN
             RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
+        END IF;
+    END IF;
+
+    -- if we didn't find an institution by uid match, use institution 1 and check short_name='Default'
+    IF institution.id IS NULL THEN
+        SELECT i.*
+        INTO institution
+        FROM institutions AS i
+        WHERE i.id = 1;
+
+        IF institution.short_name != 'Default' THEN
+            RAISE EXCEPTION 'institution_id=1 must have short_name="Default"';
         END IF;
     END IF;
 
