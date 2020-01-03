@@ -1,5 +1,5 @@
 columns
-    institution_id: bigint
+    institution_id: bigint not null default 1
     lti_context_id: text
     lti_course_instance_id: bigint
     lti_user_id: text
