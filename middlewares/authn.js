@@ -44,6 +44,7 @@ module.exports = function(req, res, next) {
             if (ERR(err, next)) return;
             res.locals.authn_user = result.rows[0].user;
             res.locals.authn_institution = result.rows[0].institution;
+            res.locals.authn_provider_name = 'LoadTest';
             res.locals.is_administrator = result.rows[0].is_administrator;
 
             let params = {
@@ -85,6 +86,7 @@ module.exports = function(req, res, next) {
                 if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
                 res.locals.authn_user = result.rows[0].user;
                 res.locals.authn_institution = result.rows[0].institution;
+                res.locals.authn_provider_name = 'Local';
                 res.locals.is_administrator = result.rows[0].is_administrator;
                 next();
             });
