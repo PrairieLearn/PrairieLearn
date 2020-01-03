@@ -35,7 +35,7 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `uids`             | ✓ | ✓ | Require one of the UIDs in the array to access.                     | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
 `startDate`        | ✓ | ✓ | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
 `endDate`          | ✓ | ✓ | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
-`institution`      | ✓ |   | Only people from this institution ("UIUC", "ZJUI", "LTI", "gvsu.edu", or "Any"). | `"institution": "UIUC"`
+`institution`      | ✓ |   | Only people from this institution (or "Any" or "LTI").              | `"institution": "UIUC"`
 `mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
 `credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
 `timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
@@ -62,6 +62,10 @@ Restricting access to `"role": "Student"` is equivalent to not including a role 
 All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in Central Time (either CST or CDT as appropriate).
 
 If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
+
+## Institutions
+
+Every course belongs to an **institution** and by default access is only allowed for students from that institution. This can be overridden to either provide access to students from all institutions (`"institution": "Any"`) or to allow access from a particular institution (e.g., `"institution": "UIUC"`). The list of available institutions is configured by the PrairieLearn administrators.
 
 ## Server modes
 

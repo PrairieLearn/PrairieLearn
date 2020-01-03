@@ -29,6 +29,7 @@ router.all('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id,
+                authn_provider_name: 'Azure',
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});

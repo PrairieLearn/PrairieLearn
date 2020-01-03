@@ -3,7 +3,7 @@ CREATE TABLE authn_providers (
     name TEXT
 );
 
-INSERT INTO authn_providers (id, name) VALUES (1, 'Shibboleth'), (2, 'Google'), (3, 'Azure');
+INSERT INTO authn_providers (id, name) VALUES (1, 'Shibboleth'), (2, 'Google'), (3, 'Azure'), (4, 'LTI');
 
 CREATE TABLE institution_authn_providers (
     id bigserial PRIMARY KEY,
@@ -12,5 +12,3 @@ CREATE TABLE institution_authn_providers (
 );
 
 CREATE INDEX institution_authn_providers_institution_id_idx ON institution_authn_providers (institution_id);
-
-INSERT INTO institution_authn_providers (institution_id, authn_provider_id) VALUES (1, 1), (1, 2), (1, 3);
