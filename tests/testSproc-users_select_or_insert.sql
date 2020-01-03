@@ -1,7 +1,7 @@
 -- BLOCK insert_host_com
 WITH institution_insert AS (
     INSERT INTO institutions (id, short_name, long_name, uid_pattern)
-    VALUES (100, 'host.com', 'Host Institution', '%@host.com')
+    VALUES (100, 'host.com', 'Host Institution', '^.*@host.com$')
 )
 INSERT INTO institution_authn_providers (institution_id, authn_provider_id)
 VALUES (100, 1), (100, 3);
@@ -9,7 +9,7 @@ VALUES (100, 1), (100, 3);
 -- BLOCK insert_illinois_edu
 WITH institution_insert AS (
     INSERT INTO institutions (id, short_name, long_name, uid_pattern)
-    VALUES (200, 'UIUC', 'University of Illinois', '%@illinois.edu')
+    VALUES (200, 'UIUC', 'University of Illinois', '^.*@illinois.edu$')
 )
 INSERT INTO institution_authn_providers (institution_id, authn_provider_id)
 VALUES (200, 1), (200, 2);

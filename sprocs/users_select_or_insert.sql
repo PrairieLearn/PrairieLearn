@@ -28,14 +28,14 @@ BEGIN
         WHERE users.uid = users_select_or_insert.uid;
     END IF;
 
-    -- if we found a user, with an institution not 1, try their existing institution for a uid match
+    -- if we found a user, with institution_id not 1, try their existing institution for a uid match to avoid checking all institutions
     IF (u.institution_id IS NOT NULL) AND (u.institution_id != 1) THEN
         SELECT i.*
         INTO institution
         FROM institutions AS i
         WHERE
             i.id = u.institution_id
-            AND users_select_or_insert.uid LIKE i.uid_pattern;
+            AND users_select_or_insert.uid ~ i.uid_regexp;
     END IF;
 
     -- if we don't have an institution at this point, try all of them for a uid match
@@ -43,7 +43,9 @@ BEGIN
         SELECT i.*
         INTO institution
         FROM institutions AS i
-        WHERE users_select_or_insert.uid LIKE i.uid_pattern;
+        WHERE users_select_or_insert.uid ~ i.uid_regexp
+        ORDER BY i.id ASC
+        LIMIT 1;
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it
