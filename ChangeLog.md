@@ -100,7 +100,7 @@
   * Change `grader-r` docker container to include `pltest` package (James Balamuta).
 
   * Change navbar/navtab structure to match course content structure (Tim Bretl).
-  
+
   * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
@@ -170,6 +170,12 @@
   * Fix admin overview page institutions (Matt West & Dave Mussulman).
 
   * Fix button appearance after bootstrap upgrade (Tim Bretl).
+
+  * Fix bug in course instance switcher on file edit page (Tim Bretl).
+
+  * Fix bug in branch links on file browser page (Tim Bretl).
+
+  * Fix bug in element popovers (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 

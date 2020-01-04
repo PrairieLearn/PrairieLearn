@@ -141,6 +141,7 @@ function getPaths(req, res, callback) {
         name: path.basename(curPath),
         path: path.relative(res.locals.course.path, curPath),
         canView: contains(paths.rootPath, curPath),
+        encodedPath: encodePath(path.relative(res.locals.course.path, curPath)),
     }];
     path.relative(res.locals.course.path, paths.workingPath).split(path.sep).forEach((dir) => {
         if (dir) {
@@ -149,6 +150,7 @@ function getPaths(req, res, callback) {
                 name: path.basename(curPath),
                 path: path.relative(res.locals.course.path, curPath),
                 canView: contains(paths.rootPath, curPath),
+                encodedPath: encodePath(path.relative(res.locals.course.path, curPath)),
             });
         }
     });

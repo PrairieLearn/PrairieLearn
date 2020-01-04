@@ -40,12 +40,12 @@ WHERE a.course_instance_id = $course_instance_id
 AND a.deleted_at IS NULL
 ORDER BY aset.number,a.number;
 
--- BLOCK select_question_id_from_qid
+-- BLOCK select_question_id_from_uuid
 SELECT
     q.id AS question_id
 FROM
     questions AS q
 WHERE
-    q.qid = $qid
+    q.uuid = $uuid
     AND q.course_id = $course_id
     AND q.deleted_at IS NULL;

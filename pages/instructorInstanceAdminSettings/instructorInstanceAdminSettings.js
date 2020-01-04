@@ -18,16 +18,6 @@ const { encodePath } = require('../../lib/uri-util');
 router.get('/', function(req, res, next) {
     debug('GET /');
     async.series([
-        function(callback) {
-            debug('query course_instance_stat');
-            var params = {course_instance_id: res.locals.course_instance.id};
-            sqldb.queryOneRow(sql.course_instance_stat, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.course_instance_stat = result.rows[0];
-                debug(res.locals.course_instance_stat);
-                callback(null);
-            });
-        },
         (callback) => {
             debug('query short_names');
             sqldb.queryOneRow(sql.short_names, {course_id: res.locals.course.id}, (err, result) => {
@@ -57,8 +47,8 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, (e) => logger.error(e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
-                    debug(`Get course_instance_id from ciid=${editor.short_name} with course_id=${res.locals.course.id}`);
-                    sqldb.queryOneRow(sql.select_course_instance_id_from_short_name, {short_name: editor.short_name, course_id: res.locals.course.id}, (err, result) => {
+                    debug(`Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);
+                    sqldb.queryOneRow(sql.select_course_instance_id_from_uuid, {uuid: editor.uuid, course_id: res.locals.course.id}, (err, result) => {
                         if (ERR(err, next)) return;
                         res.redirect(res.locals.plainUrlPrefix + '/course_instance/' + result.rows[0].course_instance_id + '/instructor/instance_admin/settings');
                     });

@@ -7,13 +7,13 @@ WHERE
     q.course_id = $course_id
     AND q.deleted_at IS NULL;
 
--- BLOCK select_question_id_from_qid
+-- BLOCK select_question_id_from_uuid
 SELECT
     q.id AS question_id
 FROM
     questions AS q
 WHERE
-    q.qid = $qid
+    q.uuid = $uuid
     AND q.course_id = $course_id
     AND q.deleted_at IS NULL;
 

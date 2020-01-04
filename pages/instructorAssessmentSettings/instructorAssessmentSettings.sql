@@ -1,18 +1,10 @@
--- BLOCK assessment_stats
-SELECT number, mean, std
-FROM assessments_stats($assessment_id);
-
--- BLOCK assessment_duration_stats
-SELECT format_interval(mean) AS mean
-FROM assessments_duration_stats($assessment_id) AS d;
-
--- BLOCK select_assessment_id_from_tid
+-- BLOCK select_assessment_id_from_uuid
 SELECT
     a.id AS assessment_id
 FROM
     assessments AS a
 WHERE
-    a.tid = $tid
+    a.uuid = $uuid
     AND a.course_instance_id = $course_instance_id
     AND a.deleted_at IS NULL;
 
