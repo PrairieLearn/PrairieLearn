@@ -125,7 +125,6 @@ SELECT
 FROM
     assessments AS a
 WHERE
-    /* vulnerable to injection attack unless we know the uuid is valid */
     a.uuid = $uuid
     AND a.course_instance_id = $course_instance_id
     AND a.deleted_at IS NULL;

@@ -13,7 +13,6 @@ SELECT
 FROM
     questions AS q
 WHERE
-    /* vulnerable to injection attack unless we know the uuid is valid */
     q.uuid = $uuid
     AND q.course_id = $course_id
     AND q.deleted_at IS NULL;
