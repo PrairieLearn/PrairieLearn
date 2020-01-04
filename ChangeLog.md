@@ -59,6 +59,8 @@
 
   * Add more detailed grader statistics (Matt West).
 
+  * Add diagnostics for external grader results processing (Dave Mussulman).
+
   * Add the `ucidata` package to `centos-plbase` (James Balamuta, h/t David Dalpiaz).
 
   * Add navbar dropdowns to swap between courses, course instances, and assessments (Tim Bretl).
@@ -98,6 +100,8 @@
   * Change `grader-r` docker container to include `pltest` package (James Balamuta).
 
   * Change navbar/navtab structure to match course content structure (Tim Bretl).
+  
+  * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 

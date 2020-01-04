@@ -1,0 +1,33 @@
+<script>
+ var MathJax = {
+     tex: {
+         inlineMath: [['$', '$'], ['\\(', '\\)']]
+     },
+     svg: {
+         fontCache: 'global'
+     },
+     loader: {
+         load: ['input/tex', 'output/svg']
+     },
+     /* Register a callback to be run when MathJax is loaded, use MathJax.config.onReady() */
+     readyQueue: [],
+     onReady: (cb) => { MathJax.config.readyQueue.push(cb); },
+     startup: {
+         ready: () => {
+             MathJax.startup.defaultReady();
+             MathJax.Hub = {
+                 Queue: function(){
+                     MathJax.typeset();
+                     console.warn("MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typeset() or MathJax.typesetPromise()");
+                 }
+             };
+         },
+         pageReady: () => {
+             MathJax.startup.defaultPageReady();
+             MathJax.config.onReady = cb => cb();
+             MathJax.config.readyQueue.forEach(cb => cb());
+         }
+     }
+ };
+</script>
+<script type="text/javascript" id="MathJax-script" src="/MathJax/startup.js" async></script>
