@@ -117,7 +117,7 @@ module.exports = function(req, res, next) {
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
         res.locals.authn_institution = result.rows[0].institution;
-        res.locals.authn_provider_name = authnData.authn_provider_name;
+        res.locals.authn_provider_name = authnData.authn_provider_name || null; // when upgrading, old cookies will not have this property
         res.locals.is_administrator = result.rows[0].is_administrator;
         next();
     });
