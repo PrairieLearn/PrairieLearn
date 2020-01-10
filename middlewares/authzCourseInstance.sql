@@ -56,4 +56,4 @@ FROM
     effective_data AS ed
 WHERE
     ed.role IS NOT NULL
-    AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', ed.req_date);
+    AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', (ed.user->>'institution_id')::bigint, ed.req_date);

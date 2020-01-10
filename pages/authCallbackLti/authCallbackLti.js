@@ -107,7 +107,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id,
-                provider: 'lti',
+                authn_provider_name: 'LTI',
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});

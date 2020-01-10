@@ -1,10 +1,16 @@
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, timestamptz);
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, timestamptz);
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, bigint, timestamptz);
+
 CREATE OR REPLACE FUNCTION
     check_course_instance_access_rule (
         course_instance_access_rule course_instance_access_rules,
         role enum_role,
         uid text,
-        date TIMESTAMP WITH TIME ZONE
-    ) RETURNS BOOLEAN AS $$
+        user_institution_id bigint,
+        course_institution_id bigint,
+        date timestamptz
+    ) RETURNS boolean AS $$
 DECLARE
     available boolean := TRUE;
     user_result record;
@@ -34,6 +40,8 @@ BEGIN
     END IF;
 
     IF course_instance_access_rule.institution IS NOT NULL THEN
+        -- we have an explicit institution restriction
+
         IF course_instance_access_rule.institution = 'LTI' THEN
             -- get the uid row from users
             SELECT *
@@ -41,22 +49,25 @@ BEGIN
             FROM users
             WHERE users.uid = check_course_instance_access_rule.uid;
 
-            -- check if LTI user, check their course instance matches
-            IF user_result.provider != 'lti'
-               OR user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
-                    available := FALSE;
+            IF user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
+                available := FALSE;
             END IF;
         ELSIF course_instance_access_rule.institution != 'Any' THEN
             -- check the institutions table
             PERFORM * FROM institutions AS i
             WHERE
-                i.short_name = course_instance_access_rule.institution
-                AND check_course_instance_access_rule.uid LIKE i.uid_pattern
+                i.id = user_institution_id
+                AND i.short_name = course_instance_access_rule.institution
             ;
 
             IF NOT FOUND THEN
                 available := FALSE;
             END IF;
+        END IF;
+    ELSE
+        -- no explicit institution restriction, so we default to the course institution
+        IF user_institution_id != course_institution_id THEN
+            available := FALSE;
         END IF;
     END IF;
 

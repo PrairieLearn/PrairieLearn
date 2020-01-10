@@ -20,7 +20,7 @@ describe('sproc check_course_instance_access* tests', function() {
     it('pass for role Instructor', function(callback) {
         var params = {
             role: 'Instructor',
-            uid: null,
+            uid: 'person1@host.com',
             date: null,
             ci_id: 1,
         };
@@ -38,6 +38,7 @@ describe('sproc check_course_instance_access* tests', function() {
             uid: 'person1@host.com',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -53,6 +54,7 @@ describe('sproc check_course_instance_access* tests', function() {
             uid: 'user@school.edu',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
+            short_name: 'school',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -65,10 +67,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if uid not in list', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'unknown@host.com',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -81,10 +83,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if date is before start_date', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'person1@host.com',
             date: '2007-07-07 06:06:06-00',
             ciar_id: 1,
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -97,10 +99,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if date is after end_date', function(callback) {
         var params = {
             role: 'TA',
-            user_id: 1020,
             uid: 'person1@host.com',
             date: '2017-07-07 06:06:06-00',
             ciar_id: 1,
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -113,10 +115,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('pass if institution matches', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@school.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
+            short_name: 'school',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -129,10 +131,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if institution specified and does not match', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
+            short_name: 'anotherschool',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -145,10 +147,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if institution specified in rule is not in db', function(callback) {
         var params = {
             role: 'Student',
-            user_id: 1020,
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 3,
+            short_name: 'anotherschool',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -158,4 +160,35 @@ describe('sproc check_course_instance_access* tests', function() {
         });
     });
 
+    it('pass if user matches course institution', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'person1@school.edu',
+            date: '2013-07-07 06:06:06-00',
+            ciar_id: 4,
+            short_name: 'school',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, true);
+            callback(null);
+        });
+    });
+
+    it('fail if user does not match course institution', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'person1@school.edu',
+            date: '2013-07-07 06:06:06-00',
+            ciar_id: 4,
+            short_name: 'anotherschool',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, false);
+            callback(null);
+        });
+    });
 });
