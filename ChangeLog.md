@@ -179,6 +179,8 @@
 
   * Fix bug in element popovers (Tim Bretl).
 
+  * Fix redirects to question preview page by maintaining query parameters (Nathan Walters).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
