@@ -67,6 +67,8 @@
 
   * Add ability to create and modify all course content in the browser without docker or git (Tim Bretl).
 
+  * Add support for Rust to `pl-code` element (Nathan Walters).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).

@@ -11,6 +11,27 @@ PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
 
+# To add a new language, we need to download a new build of
+# public/javascripts/highlight.js
+#
+# This comes from https://highlightjs.org/download/
+#
+# To download a new build, here's a handy JS script to auto-check the correct
+# language boxes. Run this script in the browser JavaScript console on the
+# highlight.js download page. The list of languages in this script should match
+# the list below in python code.
+#
+###############################################################################
+# const languages = [`armasm`, `bash`, `cpp`, `csharp`, `css`, `excel`, `fortran`, `go`, `haskell`, `html`, `ini`, `java`, `javascript`, `json`, `julia`, `makefile`, `markdown`, `mathematica`, `matlab`, `mipsasm`, `objectivec`, `ocaml`, `perl`, `php`, `python`, `r`, `ruby`, `rust`, `shell`, `sql`, `tex`, `x86asm`, `yaml`];
+# document.querySelectorAll('input[type="checkbox"]').forEach(input => {
+#     if (languages.indexOf(input.name.replace(".js", "")) >= 0) {
+#         input.checked = true;
+#     } else {
+#         input.checked = false;
+#     }
+# });
+###############################################################################
+
 allowed_languages = [
     'armasm',
     'bash',
@@ -40,6 +61,7 @@ allowed_languages = [
     'python',
     'r',
     'ruby',
+    'rust',
     'shell',
     'sql',
     'tex',
