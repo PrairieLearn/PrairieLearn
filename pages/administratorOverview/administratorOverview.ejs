@@ -186,7 +186,7 @@
                 <th>Short name</th>
                 <th>Long name</th>
                 <th>UID regexp</th>
-                <th></th>
+                <th>Authn providers</th>
             </thead>
             <tbody>
               <% institutions.forEach(function(inst, i) { %>
@@ -194,7 +194,7 @@
                  <td><%= inst.short_name %></td>
                  <td><%= inst.long_name %></td>
                  <td><code><%= inst.uid_regexp %></code></td>
-                 <td></td>
+                 <td><%= inst.authn_providers.join(', ') %></td>
               </tr>
               <% }); %>
             </tbody>
@@ -203,7 +203,8 @@
 
         <div class="card-footer">
           <small>
-              To change institutions, see the <strong><tt>institutions</tt></strong> table.
+            To change institutions, edit the <strong><tt>institutions</tt></strong> table.
+            To change the allowed authentication providers, edit the <strong><tt>institution_authn_providers</tt></strong> table.
           </small>
         </div>
       </div>
