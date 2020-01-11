@@ -8,11 +8,19 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 
 const redirects = [
     {
-        original: '/pl/course/1/question/4/?variant_id=99',
+        original: '/pl/course/1/question/4',
+        redirect: '/pl/course/1/question/4/preview',
+    },
+    {
+        original: '/pl/course_instance/1/instructor/question/4',
+        redirect: '/pl/course_instance/1/instructor/question/4/preview',
+    },
+    {
+        original: '/pl/course/1/question/4?variant_id=99',
         redirect: '/pl/course/1/question/4/preview?variant_id=99',
     },
     {
-        original: '/pl/course_instance/1/instructor/question/4/?variant_id=99',
+        original: '/pl/course_instance/1/instructor/question/4?variant_id=99',
         redirect: '/pl/course_instance/1/instructor/question/4/preview?variant_id=99',
     },
 ];
