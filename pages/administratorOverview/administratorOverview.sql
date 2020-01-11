@@ -57,14 +57,27 @@ select_question_render_cache_stats AS (
     WHERE
         pvl.date > now() - interval '1 day'
 ),
+select_institutions_with_authn_providers AS (
+    SELECT
+        i.*,
+        coalesce(
+            jsonb_agg(ap.name ORDER BY ap.name),
+            '[]'::jsonb
+        ) AS authn_providers
+    FROM
+        institutions AS i
+        JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
+        JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
+    GROUP BY i.id
+),
 select_institutions AS (
     SELECT
         coalesce(
-            jsonb_agg(to_json(i) ORDER BY i.short_name),
+            jsonb_agg(i ORDER BY i.short_name),
             '[]'::jsonb
         ) AS institutions
     FROM
-        institutions AS i
+        select_institutions_with_authn_providers AS i
 )
 SELECT
     administrator_users,
