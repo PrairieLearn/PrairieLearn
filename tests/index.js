@@ -37,4 +37,5 @@ require('./testSproc-users_select_or_insert');
 require('./testJsonLoad');
 require('./testSchemas');
 require('./testMarkdown');
+require('./testRedirects');
 require('./sync');

@@ -16,6 +16,7 @@ const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const multer = require('multer');
 const filesize = require('filesize');
+const url = require('url');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -368,7 +369,13 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./middlewares/selectAndAuthzInstructorQuestion'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/preview`);
+    // Redirect legacy question URLs to their preview page.
+    // We need to maintain query parameters like `variant_id` so that the
+    // preview page can render the correct variant.
+    const newUrl = `${req.params[0]}/preview`;
+    const newUrlParts = url.parse(newUrl);
+    newUrlParts.query = req.query;
+    res.redirect(url.format(newUrlParts));
 });
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', function(req, res, next) {res.locals.navPage = 'question'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/settings', [
@@ -634,7 +641,13 @@ app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
 ]);
 app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/preview`);
+    // Redirect legacy question URLs to their preview page.
+    // We need to maintain query parameters like `variant_id` so that the
+    // preview page can render the correct variant.
+    const newUrl = `${req.params[0]}/preview`;
+    const newUrlParts = url.parse(newUrl);
+    newUrlParts.query = req.query;
+    res.redirect(url.format(newUrlParts));
 });
 app.use('/pl/course/:course_id/question/:question_id', function(req, res, next) {res.locals.navPage = 'question'; next();});
 app.use('/pl/course/:course_id/question/:question_id/settings', [
