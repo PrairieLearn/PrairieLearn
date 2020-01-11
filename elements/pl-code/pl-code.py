@@ -40,6 +40,7 @@ allowed_languages = [
     'python',
     'r',
     'ruby',
+    'rust',
     'shell',
     'sql',
     'tex',

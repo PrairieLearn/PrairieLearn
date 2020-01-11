@@ -792,6 +792,7 @@ The `language` can be one of the following values.
 `python` | Python
 `r` | R
 `ruby` | Ruby
+`rust` | Rust
 `shell` | Shell Session
 `sql` | SQL
 `tex` | TeX
