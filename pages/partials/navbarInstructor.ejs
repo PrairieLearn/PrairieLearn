@@ -43,7 +43,11 @@
             <% if (typeof course_instances != 'undefined') { %>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
                     <% course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                        <% if ((navPage == "instance_admin") || (navPage == "course_admin")) { %>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                        <% } else { %>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
+                        <% } %>
                     <% }); %>
                 </div>
             <% } %>
