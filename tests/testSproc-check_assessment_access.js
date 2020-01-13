@@ -7,13 +7,20 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperDb = require('./helperDb');
 
 
-var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_id, expectWideOpen=false, seeOtherExams=false) {
+var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_id, expectLinked=false, seeOtherExams=false, expectedOpen=false) {
 
     var expectedWord = 'fail';
     var expectedBool = false;
+    var expectedWordCheckedIn = 'fail';
+    var expectedBoolCheckedIn = false;
 
     // Handle the special case without any linking
-    if (expectWideOpen) {
+    if (expectLinked) {
+        expectedWordCheckedIn = 'pass';
+        expectedBoolCheckedIn = true;
+    }
+
+    if (expectedOpen) {
         expectedWord = 'pass';
         expectedBool = true;
     }
@@ -45,8 +52,7 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             });
         });
 
-
-        it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', function(callback) {
+        it(`${expectedWordCheckedIn} for student inside start_date/end_date, checked-in reservation, inside access_start/end`, function(callback) {
             var params = [
                 assessment_id,
                 'Exam',
@@ -59,12 +65,12 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
 
             sqldb.call(`check_assessment_access`, params, (err, result) => {
                 if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
+                assert.strictEqual(result.rows[0].authorized, expectedBoolCheckedIn);
                 callback(null);
             });
         });
 
-        it(expectedWord + ' for student inside start_date/end_date, checked-in reservation, after access_start/end', function(callback) {
+        it(`${expectedWord} for student inside start_date/end_date, checked-in reservation, after access_start/end`, function(callback) {
             var params = [
                 assessment_id,
                 'Exam',
@@ -143,7 +149,7 @@ describe('sproc check_assessment_access* tests', function() {
             });
         });
 
-        it('pass if all parameters match', function(callback) {
+        it('fail if all parameters match mode:Exam but no linked exam', function(callback) {
             var params = {
                 mode: 'Exam',
                 role: 'TA',
@@ -156,7 +162,7 @@ describe('sproc check_assessment_access* tests', function() {
 
             sqldb.query(sql.caar_test, params, (err, result) => {
                 if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
+                assert.strictEqual(result.rows[0].authorized, false);
                 callback(null);
             });
         });
@@ -267,38 +273,51 @@ describe('sproc check_assessment_access* tests', function() {
 
         describe('PL course not linked anywhere', () => {
             describe('Unlinked exam', () => {
-                caa_reservation_tests(10, 1, 13, true, true);
+                caa_reservation_tests(10, 1, 13, false, false);
             });
             describe('Linked exam', () => {
-                caa_reservation_tests(11, 1, 13, false, true);
+                caa_reservation_tests(11, 1, 13, true, false);
             });
             describe('Linked exam in different PS course', () => {
-                caa_reservation_tests(12, 5, 13, false, true);
+                caa_reservation_tests(12, 5, 13, true, false);
             });
         });
 
         describe('PL course linked to 1 PS course', () => {
             describe('Unlinked exam', () => {
-                caa_reservation_tests(20, 2, 23, false, true);
+                caa_reservation_tests(20, 2, 23, false, false);
             });
             describe('Linked exam', () => {
-                caa_reservation_tests(21, 2, 23, false, true);
+                caa_reservation_tests(21, 2, 23, true, false);
             });
             describe('Linked exam in different PS course', () => {
-                caa_reservation_tests(22, 5, 23, false, false);
+                caa_reservation_tests(22, 5, 23, true, false);
             });
         });
 
         describe('PL course linked to >1 PS course', () => {
             describe('Unlinked exam', () => {
-                caa_reservation_tests(40, 4, 43, false, true);
+                caa_reservation_tests(40, 4, 43, false, false);
             });
             describe('Linked exam', () => {
-                caa_reservation_tests(41, 4, 43, false, true);
+                caa_reservation_tests(41, 4, 43, true, false);
             });
             describe('Linked exam in different PS course', () => {
-                caa_reservation_tests(42, 5, 43, false, false);
+                caa_reservation_tests(42, 5, 43, true, false);
             });
         });
+
+        describe('PL course with ci.ps_linked=false', () => {
+            describe('Unlinked exam', () => {
+                caa_reservation_tests(50, null, 53, true, true, true);
+            });
+            describe('Linked exam', () => {
+                caa_reservation_tests(51, null, 53, false, true);
+            });
+            describe('Linked exam in different PS course', () => {
+                caa_reservation_tests(52, null, 43, false, false);
+            });
+        });
+
     });
 });

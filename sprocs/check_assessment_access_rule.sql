@@ -56,7 +56,6 @@ BEGIN
 
     << schedule_access >>
     DECLARE
-        ps_course_id bigint;
         reservation reservations;
     BEGIN
         -- is an exam_id hardcoded into the access rule? Check that first
@@ -88,47 +87,25 @@ BEGIN
                 EXIT schedule_access;
             END IF;
 
-        ELSE -- no rule.exam_uuid defined, so search the long way
+        ELSE -- no rule.exam_uuid defined, fail if course_instance.ps_linked=true
 
             -- only needed for exams
             EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
 
             -- is there a corresponding PrairieSchedule course
             -- that we actually want to enforce? (course_instance.ps_linked=true)
-            SELECT ps_c.course_id
-            INTO ps_course_id
+            PERFORM
             FROM
                 assessments AS a
                 JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-                JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
-                JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
             WHERE
                 ci.ps_linked IS TRUE AND
                 a.id = assessment_access_rule.assessment_id;
-            EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
+            EXIT schedule_access WHEN NOT FOUND; -- no linked PS course instance
 
-            -- is there a current checked-in reservation?
-            SELECT r.*
-            INTO reservation
-            FROM
-                assessments AS a
-                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-                JOIN courses AS ps_c ON (ps_c.pl_course_id = ci.course_id)
-                JOIN exams AS e ON (e.course_id = ps_c.course_id)
-                JOIN reservations AS r USING (exam_id)
-            WHERE
-                a.id = assessment_access_rule.assessment_id
-                AND r.user_id = check_assessment_access_rule.user_id
-                AND r.delete_date IS NULL
-                AND date BETWEEN r.access_start AND r.access_end
-            ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
-            LIMIT 1;
+            authorized := FALSE;
+            EXIT schedule_access;
 
-            IF NOT FOUND THEN
-                -- no reservation, so block access
-                authorized := FALSE;
-                EXIT schedule_access;
-            END IF;
         END IF;
     END schedule_access;
 END;

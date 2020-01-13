@@ -107,6 +107,8 @@
 
   * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
 
+  * Change mode:Exam assessments to require scheduler exam_uuid linking (Dave Mussulman).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
