@@ -29,6 +29,7 @@ const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const migrations = require('./migrations');
 const sprocs = require('./sprocs');
+const announcements = require('./announcements');
 const cron = require('./cron');
 const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
@@ -889,6 +890,12 @@ if (config.startServer) {
             } else {
                 callback(null);
             }
+        },
+        function(callback) {
+            announcements.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             cron.init(function(err) {

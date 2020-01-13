@@ -1,0 +1,57 @@
+columns
+    id: bigint not null default nextval('announcements_id_seq'::regclass)
+    directory_name: text not null
+    date: timestamp with time zone not null default now()
+    title: text not null
+    instructor_only: boolean not null default false
+
+indexes
+    announcements_pkey: PRIMARY KEY (id) USING btree (id)
+
+
+allow_issue_reporting: boolean default true
+    assessment_set_id: bigint not null
+    auto_close: boolean default true
+    config: jsonb
+    constant_question_value: boolean default false
+    course_instance_id: bigint not null
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('assessments_id_seq'::regclass)
+    max_points: double precision
+    mode: enum_mode
+    multiple_instance: boolean
+    number: text
+    obj: jsonb
+    order_by: integer
+    shuffle_questions: boolean default false
+    stats_last_updated: timestamp with time zone
+    text: text
+    tid: text
+    title: text
+    type: enum_assessment_type
+    uuid: uuid not null
+
+indexes
+    assessments_pkey: PRIMARY KEY (id) USING btree (id)
+    assessments_course_instance_id_uuid_key: UNIQUE (course_instance_id, uuid) USING btree (course_instance_id, uuid)
+    assessments_assessment_set_id_idx: USING btree (assessment_set_id)
+    assessments_course_instance_id_idx: USING btree (course_instance_id)
+
+foreign-key constraints
+    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    alternative_groups: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_access_rules: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instances: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_questions: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    files: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    issues: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL
+    job_sequences: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_links: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_outcomes: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    zones: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

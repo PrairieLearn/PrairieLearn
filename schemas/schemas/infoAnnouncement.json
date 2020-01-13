@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Announcement Info",
+    "description": "Info files for announcements.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "uuid",
+        "title",
+        "for_students"
+    ],
+    "properties": {
+        "uuid": {
+            "description": "Unique identifier (UUID v4).",
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "title": {
+            "description": "The title of the announcement.",
+            "type": "string"
+        },
+        "for_students": {
+            "description": "Whether the announcement should be shown to students.",
+            "type": "boolean"
+        }
+    }
+}
