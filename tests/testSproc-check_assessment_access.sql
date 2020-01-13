@@ -4,8 +4,8 @@ setup_course AS (
     INSERT INTO pl_courses (id) VALUES (1)
 ),
 setup_ci AS (
-    INSERT INTO course_instances (id, uuid, course_id) VALUES
-        (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1)
+    INSERT INTO course_instances (id, uuid, course_id, ps_linked) VALUES
+        (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1, true)
 ),
 setup_assessment_sets AS (
     INSERT INTO assessment_sets (id, course_id) VALUES (1, 1)
@@ -57,11 +57,12 @@ setup_pl_course AS (
     INSERT INTO pl_courses (id) VALUES (1), (2), (3)
 ),
 setup_ci AS (
-    INSERT INTO course_instances (id, uuid, course_id) VALUES
-        (1, 'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d', 1),
-        (2, '5756a615-cdc4-48e6-9836-79fb708a2f55', 2),
-        (3, '335c2f78-f8d3-4a14-99da-53af231b0428', 3),
-        (4, '2256b06e-c00a-4596-a3b2-510f159d36d5', 3)
+    INSERT INTO course_instances (id, uuid, course_id, ps_linked) VALUES
+        (1, 'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d', 1, true),
+        (2, '5756a615-cdc4-48e6-9836-79fb708a2f55', 2, true),
+        (3, '335c2f78-f8d3-4a14-99da-53af231b0428', 3, true),
+        (4, '2256b06e-c00a-4596-a3b2-510f159d36d5', 3, true),
+        (5, '4817fc73-692d-40b1-a39d-834432a1a982', 3, false)
 ),
 setup_assessment_sets AS (
     INSERT INTO assessment_sets (id, course_id) VALUES
@@ -85,7 +86,11 @@ setup_assessments AS (
         (40, '24fc184d-656b-44e5-979a-33e4d41abebd', 'someExam', 'Some Exam', 4, 3),
         (41, '6a4eba13-930d-4e1b-99db-0a5b4205cf83', 'someExam', 'Some Exam', 4, 3),
         (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4, 3),
-        (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4, 3)
+        (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4, 3),
+        (50, 'c4b55775-f6a7-441f-b245-9821f34c4370', 'someExam', 'Some Exam', 5, 3),
+        (51, '6cb7261c-f134-49f5-9494-f62d9706b4d8', 'someExam', 'Some Exam', 5, 3),
+        (52, '927d7785-8b37-4ead-be34-66553d429ed3', 'someExam', 'Some Exam', 5, 3),
+        (53, '0d4d9edd-9c42-43f8-b524-a5d2c551778f', 'someExam', 'Some Exam', 5, 3)
 ),
 setup_assessment_access_rule AS (
     INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_uuid) VALUES
@@ -100,7 +105,11 @@ setup_assessment_access_rule AS (
         (40, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
         (41, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'adf9ce2d-dfca-4a7f-8c6b-1376715fd346'),
         (42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3'),
-        (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null)
+        (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (50, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null),
+        (51, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'd3e32f53-9bac-49ca-a5bb-3483ee119e44'),
+        (52, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'adc1489b-b05b-4517-ae03-cf0f849b61c1'),
+        (53, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null)
 )
 SELECT true;
 
