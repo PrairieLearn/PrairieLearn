@@ -9,8 +9,7 @@ CREATE TABLE announcements (
 
 CREATE TABLE announcement_notifications (
     id bigserial PRIMARY KEY,
-    announcement_id bigint NOT NULL REFERENCES announcements(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    user_id bigint NOT NULL REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    announcement_id bigint NOT NULL REFERENCES announcements(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    user_id bigint NOT NULL REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE (user_id, announcement_id)
 );
-
-CREATE INDEX announcement_notifications_user_id_idx ON announcement_notifications (user_id);
