@@ -129,7 +129,7 @@ const testEditData = [
         url: assessmentsUrl,
         form: 'add-assessment-form',
         action: 'add_assessment',
-        info: 'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+        info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -138,7 +138,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+            'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
         ]),
     },
     {
@@ -177,7 +177,7 @@ const testEditData = [
         url: `${courseInstanceUrl}/assessment/1/settings`,
         form: 'copy-assessment-form',
         action: 'copy_assessment',
-        info: 'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+        info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -186,7 +186,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+            'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
         ]),
     },
     {

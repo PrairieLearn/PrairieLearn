@@ -11,3 +11,12 @@ WHERE
     AND aq.deleted_at IS NULL
     AND a.deleted_at IS NULL
     AND ci.deleted_at IS NULL;
+
+-- BLOCK select_assessments_with_course_instance
+SELECT
+    a.title
+FROM
+    assessments AS a
+WHERE
+    a.course_instance_id = $course_instance_id
+    AND a.deleted_at IS NULL;
