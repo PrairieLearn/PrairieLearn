@@ -35,7 +35,7 @@ async function loadAnnouncements() {
             }
         });
 
-    return announcements;
+    return _.sortBy(announcements, 'directory');
 }
 
 module.exports.initAsync = async function() {

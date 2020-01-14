@@ -409,6 +409,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
 
+// course instance - announcements
+app.use('/pl/course_instance/:course_instance_id/instructor/announcements', require('./pages/announcements/announcements.js'));
+app.use('/pl/course_instance/:course_instance_id/instructor/announcement', require('./pages/announcement/announcement.js'));
+
+
 // course instance - course admin pages
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
     require('./middlewares/authzCourseInstanceHasCourseView'),

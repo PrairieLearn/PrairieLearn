@@ -44,6 +44,7 @@ module.exports = {
             'format_date_full.sql',
             'format_date_full_compact.sql',
             'format_date_full_compact_ms.sql',
+            'format_date_only_no_tz.sql',
             'input_date.sql',
             'interval_hist_thresholds.sql',
             'check_course_instance_access_rule.sql',

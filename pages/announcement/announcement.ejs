@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <link href="/stylesheets/issues.css" rel="stylesheet" />
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'announcement'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/navtabs'); %>
+
+      <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/announcements" role="button">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        Back to announcements
+      </a>
+
+      <h1>
+        <%= announcement.title %>
+      </h1>
+
+      <p class="text-muted">
+        <i>Posted on <%= announcement.formatted_date %></i>
+      </p>
+
+      <%- index_html %>
+
+    </div>
+  </body>
+</html>

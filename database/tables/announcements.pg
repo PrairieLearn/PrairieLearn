@@ -3,6 +3,7 @@ columns
     directory: text not null
     for_students: boolean not null default false
     id: bigint not null default nextval('announcements_id_seq'::regclass)
+    order_by: integer not null default 0
     title: text not null
     uuid: uuid not null
 

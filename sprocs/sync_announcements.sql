@@ -20,15 +20,19 @@ BEGIN
     -- make the DB announcements be the same as the on-disk announcements
     WITH new_announcements AS (
         INSERT INTO announcements
-            (uuid, directory, title, for_students)
+            (uuid, directory, title, for_students, order_by)
         SELECT *
-        FROM jsonb_to_recordset(announcements_on_disk)
-            AS aod(uuid uuid, directory text, title text, for_students boolean)
+        FROM
+            ROWS FROM(
+                jsonb_to_recordset(announcements_on_disk)
+                AS (uuid uuid, directory text, title text, for_students boolean)
+            ) WITH ORDINALITY AS aod(uuid, directory, title, for_students, order_by)
         ON CONFLICT (uuid) DO UPDATE
         SET
             directory = EXCLUDED.directory,
             title = EXCLUDED.title,
-            for_students = EXCLUDED.for_students
+            for_students = EXCLUDED.for_students,
+            order_by = EXCLUDED.order_by
         RETURNING id
     )
     DELETE FROM announcements AS ann

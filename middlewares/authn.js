@@ -9,6 +9,8 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     res.locals.is_administrator = false;
+    res.locals.notification_count_for_student = 0;
+    res.locals.notification_count_for_instructor = 0;
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -119,6 +121,8 @@ module.exports = function(req, res, next) {
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
+        res.locals.notification_count_for_student = result.rows[0].notification_count_for_student;
+        res.locals.notification_count_for_instructor = result.rows[0].notification_count_for_instructor;
         next();
     });
 };
