@@ -319,22 +319,6 @@ describe('test course editor', function() {
     });
 });
 
-function getNextNameShort() {
-    const today = new Date();
-    const month = today.getMonth();
-    let nextSeason;
-    let nextYear = today.getFullYear() - 2000;
-    if (month <= 4) {
-        nextSeason = 'Su';
-    } else if (month <= 7) {
-        nextSeason = 'Fa';
-    } else {
-        nextSeason = 'Sp';
-        nextYear += 1;
-    }
-    return `${nextSeason}${nextYear.toString().padStart(2, '0')}`;
-}
-
 function getFiles(options, callback) {
     let files = new Set([]);
 
