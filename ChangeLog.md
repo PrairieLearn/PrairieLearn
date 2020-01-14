@@ -183,6 +183,8 @@
 
   * Fix redirects to question preview page by maintaining query parameters (Nathan Walters).
 
+  * Fix code coverage tool to ignore async-stacktrace error handler (Dave Mussulman).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
