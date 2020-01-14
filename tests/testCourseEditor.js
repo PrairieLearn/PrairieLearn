@@ -41,7 +41,7 @@ const testEditData = [
         url: questionsUrl,
         form: 'add-question-form',
         action: 'add_question',
-        info: 'questions/question-1/info.json',
+        info: 'questions/New_1/info.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -50,9 +50,9 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'questions/question-1/info.json',
-            'questions/question-1/question.html',
-            'questions/question-1/server.py',
+            'questions/New_1/info.json',
+            'questions/New_1/question.html',
+            'questions/New_1/server.py',
         ]),
     },
     {
@@ -97,7 +97,7 @@ const testEditData = [
             to_course_id: 1,
         },
         action: 'copy_question',
-        info: 'questions/question-1/info.json',
+        info: 'questions/testQuestion_copy1/info.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -106,9 +106,9 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'questions/question-1/info.json',
-            'questions/question-1/question.html',
-            'questions/question-1/server.py',
+            'questions/testQuestion_copy1/info.json',
+            'questions/testQuestion_copy1/question.html',
+            'questions/testQuestion_copy1/server.py',
         ]),
     },
     {
@@ -317,7 +317,6 @@ describe('test course editor', function() {
             });
         });
     });
-
 });
 
 function getNextNameShort() {

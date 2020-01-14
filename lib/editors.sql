@@ -30,3 +30,12 @@ FROM
 WHERE
     ci.course_id = $course_id
     AND ci.deleted_at IS NULL;
+
+-- BLOCK select_questions_with_course
+SELECT
+    q.title
+FROM
+    questions AS q
+WHERE
+    q.course_id = $course_id
+    AND q.deleted_at IS NULL;
