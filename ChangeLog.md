@@ -69,6 +69,10 @@
 
   * Add support for Rust to `pl-code` element (Nathan Walters).
 
+  * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
+
+  * Add `Order By` column to list of course instances on instructor page and provide info in popover (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -104,6 +108,10 @@
   * Change navbar/navtab structure to match course content structure (Tim Bretl).
 
   * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
+
+  * Change and standardize naming scheme on in-browser add/copy of course instance, assessment, or question (Tim Bretl).
+
+  * Change `number` to `order_by` / `orderBy` in `course_instances` table / `infoCourseInstance.json` schema (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -180,6 +188,14 @@
   * Fix bug in element popovers (Tim Bretl).
 
   * Fix redirects to question preview page by maintaining query parameters (Nathan Walters).
+
+  * Fix redirects to course admin sub-page when switching course instances (Tim Bretl).
+
+  * Fix server-side check of new file names and paths on in-browser rename (Tim Bretl).
+
+  * Fix in-browser course edit handler to update commit hash only when using git (Tim Bretl).
+
+  * Fix in-browser course edit handler to keep one course lock throughout entire process (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 
