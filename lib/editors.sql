@@ -20,3 +20,13 @@ FROM
 WHERE
     a.course_instance_id = $course_instance_id
     AND a.deleted_at IS NULL;
+
+-- BLOCK select_course_instances_with_course
+SELECT
+    ci.long_name,
+    ci.number
+FROM
+    course_instances AS ci
+WHERE
+    ci.course_id = $course_id
+    AND ci.deleted_at IS NULL;

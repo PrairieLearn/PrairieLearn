@@ -35,7 +35,6 @@ const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
-const newCourseInstanceName = getNextNameShort();
 
 const testEditData = [
     {
@@ -206,7 +205,7 @@ const testEditData = [
         url: courseInstancesUrl,
         form: 'add-course-instance-form',
         action: 'add_course_instance',
-        info: `courseInstances/${newCourseInstanceName}/infoCourseInstance.json`,
+        info: `courseInstances/New_1/infoCourseInstance.json`,
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -215,7 +214,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            `courseInstances/${newCourseInstanceName}/infoCourseInstance.json`,
+            `courseInstances/New_1/infoCourseInstance.json`,
         ]),
     },
     {
@@ -254,7 +253,7 @@ const testEditData = [
         url: `${courseInstanceUrl}/instance_admin/settings`,
         form: 'copy-course-instance-form',
         action: 'copy_course_instance',
-        info: 'courseInstances/Sp19/infoCourseInstance.json',
+        info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -263,8 +262,8 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Sp19/infoCourseInstance.json',
-            'courseInstances/Sp19/assessments/HW1/infoAssessment.json',
+            'courseInstances/Fa18_copy1/infoCourseInstance.json',
+            'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
         ]),
     },
     {
