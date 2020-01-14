@@ -72,11 +72,13 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'change_id') {
         debug(`Change short_name from ${res.locals.course_instance.short_name} to ${req.body.id}`);
+        if (!req.body.id) return next(new Error(`Invalid CIID (was falsey): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid CIID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
         let ciid_new;
         try {
             ciid_new = path.normalize(req.body.id);
         } catch(err) {
-            return next(new Error(`Invalid CIID: ${req.body.id}`));
+            return next(new Error(`Invalid CIID (could not be normalized): ${req.body.id}`));
         }
         if (res.locals.course_instance.short_name == ciid_new) {
             debug('The new ciid is the same as the old ciid - do nothing');

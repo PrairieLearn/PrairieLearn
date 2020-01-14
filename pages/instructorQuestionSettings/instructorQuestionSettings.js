@@ -38,11 +38,13 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action == 'change_id') {
         debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
+        if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
         let qid_new;
         try {
             qid_new = path.normalize(req.body.id);
         } catch(err) {
-            return next(new Error(`Invalid QID: ${req.body.id}`));
+            return next(new Error(`Invalid QID (could not be normalized): ${req.body.id}`));
         }
         if (res.locals.question.qid == qid_new) {
             debug('The new qid is the same as the old qid - do nothing');
