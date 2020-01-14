@@ -51,14 +51,8 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
-            <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
-              <% if (notification_count_for_instructor > 0) { %>
-                <span class="badge badge-pill badge-danger"><%= notification_count_for_instructor %></span>
-              <% } %>
-            <% } else { %>
-              <% if (notification_count_for_student > 0) { %>
-                <span class="badge badge-pill badge-danger"><%= notification_count_for_student %></span>
-              <% } %>
+            <% if (announcement_notification_count > 0) { %>
+              <span class="badge badge-pill badge-danger"><%= announcement_notification_count %></span>
             <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -68,14 +62,8 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
             <% } %>
             <a class="dropdown-item" href="<%= urlPrefix %>/announcements">
               Announcements
-              <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
-                <% if (notification_count_for_instructor > 0) { %>
-                  <span class="badge badge-pill badge-danger"><%= notification_count_for_instructor %></span>
-                <% } %>
-              <% } else { %>
-                <% if (notification_count_for_student > 0) { %>
-                  <span class="badge badge-pill badge-danger"><%= notification_count_for_student %></span>
-                <% } %>
+              <% if (announcement_notification_count > 0) { %>
+                <span class="badge badge-pill badge-danger"><%= announcement_notification_count %></span>
               <% } %>
             </a>
         </div>

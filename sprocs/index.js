@@ -116,6 +116,7 @@ module.exports = {
             'config_select.sql',
             'users_select_or_insert.sql',
             'users_select_or_insert_lti.sql',
+            'users_is_course_staff.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
             'files_insert.sql',

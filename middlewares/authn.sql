@@ -1,24 +1,13 @@
 -- BLOCK select_user
-WITH notification_counts AS (
-    SELECT
-        count(*) FILTER (WHERE ann.for_students) AS notification_count_for_student,
-        count(*) AS notification_count_for_instructor
-    FROM
-        announcement_notifications AS an
-        JOIN announcements AS ann ON (ann.id = an.announcement_id)
-    WHERE
-        an.user_id = $user_id
-)
 SELECT
     to_jsonb(u.*) AS user,
     to_jsonb(i.*) AS institution,
     (adm.id IS NOT NULL) AS is_administrator,
-    notification_counts.*
+    (SELECT count(*) FROM announcement_notifications WHERE user_id = $user_id) AS announcement_notification_count
 FROM
     users AS u
     LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
-    JOIN institutions AS i ON (i.id = u.institution_id),
-    notification_counts
+    JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
     u.user_id = $user_id;
 

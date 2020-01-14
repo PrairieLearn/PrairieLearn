@@ -239,6 +239,8 @@ app.use('/pl/settings', require('./pages/userSettings/userSettings'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 app.use('/pl/password', require('./pages/authPassword/authPassword'));
+app.use('/pl/announcements', require('./pages/announcements/announcements.js'));
+app.use('/pl/announcement', require('./pages/announcement/announcement.js'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
@@ -408,6 +410,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
+
 
 // course instance - announcements
 app.use('/pl/course_instance/:course_instance_id/instructor/announcements', require('./pages/announcements/announcements.js'));
@@ -587,6 +590,11 @@ if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
+// student - announcements
+app.use('/pl/course_instance/:course_instance_id/announcements', require('./pages/announcements/announcements.js'));
+app.use('/pl/course_instance/:course_instance_id/announcement', require('./pages/announcement/announcement.js'));
+
+
 // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
@@ -682,7 +690,9 @@ app.use('/pl/course/:course_id/question/:question_id/file_view', [
 app.use('/pl/course/:course_id/question/:question_id/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 
-
+// course - announcements
+app.use('/pl/course/:course_id/announcements', require('./pages/announcements/announcements.js'));
+app.use('/pl/course/:course_id/announcement', require('./pages/announcement/announcement.js'));
 
 
 app.use('/pl/course/:course_id/file_transfer', [

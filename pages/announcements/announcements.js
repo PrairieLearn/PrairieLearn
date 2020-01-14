@@ -10,7 +10,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     const params = {
         user_id: res.locals.authn_user.user_id,
-        has_instructor_view: res.locals.authz_data.authn_has_instructor_view,
         course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
         course_id: res.locals.course ? res.locals.course.id : null,
     }
