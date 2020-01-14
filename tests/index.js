@@ -28,6 +28,7 @@ require('./testHomework');
 require('./testExam');
 require('./testAccess');
 require('./testApi');
+require('./testLti');
 require('./testCron');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');

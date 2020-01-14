@@ -72,6 +72,7 @@
   * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
 
   * Add `Order By` column to list of course instances on instructor page and provide info in popover (Tim Bretl).
+  * Add tests for LTI auth (Dave Mussulman).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
