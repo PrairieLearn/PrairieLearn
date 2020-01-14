@@ -101,6 +101,8 @@
 
   * Change test infrastructure to use `testCourse` instead of `exampleCourse` (James Balamuta).
 
+  * Change size limit for form data by increasing from 200K to 1M (Nathan Bowman).
+
   * Change `grader-r` docker container to include `pltest` package (James Balamuta).
 
   * Change navbar/navtab structure to match course content structure (Tim Bretl).
