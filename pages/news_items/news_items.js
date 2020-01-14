@@ -13,9 +13,9 @@ router.get('/', function(req, res, next) {
         course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
         course_id: res.locals.course ? res.locals.course.id : null,
     }
-    sqldb.query(sql.select_announcements, params, function(err, result) {
+    sqldb.query(sql.select_news_items, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.rows = result.rows;
+        res.locals.news_items = result.rows;
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

@@ -145,7 +145,7 @@ module.exports = {
             'access_tokens_insert.sql',
             'access_tokens_delete.sql',
             'assessment_instances_points.sql',
-            'sync_announcements.sql',
+            'sync_news_items.sql',
             'sync_course_tags.sql',
             'sync_question_tags.sql',
             'sync_questions.sql',

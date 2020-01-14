@@ -1,4 +1,4 @@
-CREATE TABLE announcements (
+CREATE TABLE news_items (
     id bigserial PRIMARY KEY,
     uuid uuid NOT NULL UNIQUE,
     directory text NOT NULL,
@@ -8,9 +8,9 @@ CREATE TABLE announcements (
     order_by integer NOT NULL DEFAULT 0
 );
 
-CREATE TABLE announcement_notifications (
+CREATE TABLE news_item_notifications (
     id bigserial PRIMARY KEY,
-    announcement_id bigint NOT NULL REFERENCES announcements(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    news_item_id bigint NOT NULL REFERENCES news_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
     user_id bigint NOT NULL REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    UNIQUE (user_id, announcement_id)
+    UNIQUE (user_id, news_item_id)
 );

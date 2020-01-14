@@ -1,4 +1,4 @@
-export const infoAnnouncement: any;
+export const infoNewsItem: any;
 export const infoAssessment: any;
 export const infoCourse: any;
 export const infoCourseInstance: any;

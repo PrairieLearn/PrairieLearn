@@ -1,4 +1,4 @@
-module.exports.infoAnnouncement = require('./schemas/infoAnnouncement.json');
+module.exports.infoNewsItem = require('./schemas/infoNewsItem.json');
 module.exports.infoAssessment = require('./schemas/infoAssessment.json');
 module.exports.infoCourse = require('./schemas/infoCourse.json');
 module.exports.infoCourseInstance = require('./schemas/infoCourseInstance.json');

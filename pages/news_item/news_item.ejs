@@ -5,24 +5,24 @@
     <link href="/stylesheets/issues.css" rel="stylesheet" />
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'announcement'}); %>
+    <%- include('../partials/navbar', {navPage: 'news_item'}); %>
     <div id="content" class="container">
       <%- include('../partials/navtabs'); %>
 
-      <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/announcements" role="button">
+      <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/news_items" role="button">
         <i class="fa fa-arrow-left" aria-hidden="true"></i>
-        Back to announcements
+        Back to news_items
       </a>
 
       <h1>
-        <%= announcement.title %>
+        <%= news_item.title %>
       </h1>
 
       <p class="text-muted">
-        <i>Posted on <%= announcement.formatted_date %></i>
+        <i>Posted on <%= news_item.formatted_date %></i>
       </p>
 
-      <%- index_html %>
+      <%- news_item_html %>
 
     </div>
   </body>
