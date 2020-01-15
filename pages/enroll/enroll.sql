@@ -17,7 +17,7 @@ WHERE
     AND c.deleted_at IS NULL
     AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, u.institution_id, $req_date)
 ORDER BY
-    c.short_name, c.title, c.id, ci.order_by DESC NULLS LAST, ci.id;
+    c.short_name, c.title, c.id, ci.number DESC, ci.id;
 
 -- BLOCK enroll
 INSERT INTO enrollments AS e

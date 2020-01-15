@@ -17,8 +17,8 @@
             "description": "The long name of this course instance (e.g., 'Spring 2015').",
             "type": "string"
         },
-        "orderBy": {
-            "description": "Course instances are listed in descending order of this number (which is used only for the purpose of display).",
+        "number": {
+            "description": "The number of this course instance, used for sorting.",
             "type": "integer"
         },
         "timezone": {

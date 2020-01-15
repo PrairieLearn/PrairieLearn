@@ -24,7 +24,7 @@ WHERE
 -- BLOCK select_course_instances_with_course
 SELECT
     ci.long_name,
-    ci.order_by
+    ci.number
 FROM
     course_instances AS ci
 WHERE

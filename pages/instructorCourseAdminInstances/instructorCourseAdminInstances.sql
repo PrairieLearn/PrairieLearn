@@ -3,7 +3,6 @@ SELECT
     ci.short_name,
     ci.long_name,
     ci.id,
-    ci.order_by,
     count(e.user_id) AS number
 FROM
     course_instances AS ci
@@ -16,7 +15,7 @@ WHERE
 GROUP BY
     ci.id
 ORDER BY
-    ci.order_by DESC NULLS LAST, ci.id;
+    ci.number DESC, ci.id;
 
 -- BLOCK select_course_instance_id_from_uuid
 SELECT

@@ -15,7 +15,7 @@ BEGIN
             uuid,
             short_name,
             long_name,
-            order_by,
+            number,
             display_timezone,
             deleted_at
         ) VALUES (
@@ -23,7 +23,7 @@ BEGIN
             (course_instance->>'uuid')::uuid,
             course_instance->>'short_name',
             course_instance->>'long_name',
-            (course_instance->>'order_by')::integer,
+            (course_instance->>'number')::integer,
             course_instance->>'display_timezone',
             NULL
         )
@@ -31,7 +31,7 @@ BEGIN
         SET
             short_name = EXCLUDED.short_name,
             long_name = EXCLUDED.long_name,
-            order_by = EXCLUDED.order_by,
+            number = EXCLUDED.number,
             display_timezone = EXCLUDED.display_timezone,
             deleted_at = EXCLUDED.deleted_at
         WHERE

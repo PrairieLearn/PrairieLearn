@@ -7,11 +7,6 @@
         <script src="/localscripts/histmini.js"></script>
     </head>
     <body>
-        <script>
-            $(function () {
-                $('[data-toggle="popover"]').popover({sanitize: false})
-            });
-        </script>
         <%- include('../partials/navbar'); %>
         <div id="content" class="container-fluid">
             <%- include('../partials/navtabs'); %>
@@ -39,20 +34,15 @@
                             <tr>
                                 <th>Long Name</th>
                                 <th>CIID</th>
-                                <th class="text-center">
-                                    Order By
-                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Order By" tabindex="0" data-content="Course instances are listed in descending order of this number. If you like, you can change this number for a course instance - and so change the order in which course instances are displayed to both you and your students - by setting the property <code>orderBy</code> in the course instance's configuration file (<code>infoCourseInstance.json</code>)."><i class="far fa-question-circle" aria-hidden="true"></i></a>
-                                </th>
-                                <th class="text-center">Students</th>
+                                <th>Students</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% rows.forEach(function(row) { %>
                                 <tr>
-                                    <td><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
-                                    <td><%= row.short_name %></td>
-                                    <td class="text-center"><%= row.order_by %></td>
-                                    <td class="text-center"><%= row.number %></td>
+                                    <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                    <td class="align-left"><%= row.short_name %></td>
+                                    <td class="align-middle"><%= row.number %></td>
                                 </tr>
                             <% }); %>
                         </tbody>
