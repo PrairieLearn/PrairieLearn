@@ -14,11 +14,13 @@ BEGIN
         users AS u
         LEFT JOIN course_permissions AS cp USING (user_id)
         LEFT JOIN enrollments AS e USING (user_id)
+        LEFT JOIN administrators AS adm USING (user_id)
     WHERE
         u.user_id = users_is_course_staff.user_id
         AND (
             cp.course_role > 'None'
             OR e.role > 'Student'
+            OR adm.id IS NOT NULL
         );
 
     is_course_staff := FOUND;
