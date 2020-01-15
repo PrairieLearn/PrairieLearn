@@ -48,7 +48,7 @@ BEGIN
     -- existing news items then we only notify if there are a small
     -- number of new ones. This is to avoid spamming people when we
     -- deploy a new PL server with a backlog of news items.
-    IF existing_news_items_count > 0 OR array_length(new_uuids) < 3 THEN
+    IF existing_news_items_count > 0 OR array_length(new_uuids, 1) <= 2 THEN
         WITH
         course_staff AS (
             -- This is a more efficient implementation of
@@ -69,8 +69,8 @@ BEGIN
                 JOIN unnest(new_uuids) AS nu(uuid) USING (uuid)
         )
         INSERT INTO news_item_notifications (news_item_id, user_id)
-        SELECT new_news_items.id CROSS JOIN course_staff.user_id
-        FROM new_news_items, course_staff;
+        SELECT new_news_items.id, course_staff.user_id
+        FROM new_news_items CROSS JOIN course_staff;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

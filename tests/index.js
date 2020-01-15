@@ -30,6 +30,7 @@ require('./testAccess');
 require('./testApi');
 require('./testLti');
 require('./testCron');
+require('./testNewsItems');
 require('./testZoneGradingHomework');
 require('./testZoneGradingExam');
 require('./testSproc-check_course_instance_access');

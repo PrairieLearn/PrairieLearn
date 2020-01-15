@@ -1,6 +1,6 @@
 columns
-    news_item_id: bigint not null
     id: bigint not null default nextval('news_item_notifications_id_seq'::regclass)
+    news_item_id: bigint not null
     user_id: bigint not null
 
 indexes

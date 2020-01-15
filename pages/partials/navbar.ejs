@@ -52,7 +52,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
             <% if (news_item_notification_count > 0) { %>
-              <span class="badge badge-pill badge-danger"><%= news_item_notification_count %></span>
+              <span class="badge badge-pill badge-danger news-item-count"><%= news_item_notification_count %></span>
             <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -60,10 +60,10 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
             <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>
-            <a class="dropdown-item" href="<%= urlPrefix %>/news_items">
+            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
               News
               <% if (news_item_notification_count > 0) { %>
-                <span class="badge badge-pill badge-danger"><%= news_item_notification_count %></span>
+                <span class="badge badge-pill badge-danger news-item-link-count"><%= news_item_notification_count %></span>
               <% } %>
             </a>
         </div>
