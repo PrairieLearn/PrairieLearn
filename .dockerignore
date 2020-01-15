@@ -16,6 +16,7 @@
 !middlewares/
 !migrations/
 !models/
+!news_items/
 !package.json
 !package-lock.json
 !pages/
