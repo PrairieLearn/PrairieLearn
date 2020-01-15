@@ -19,6 +19,10 @@
             "description": "The title of the news item.",
             "type": "string"
         },
+        "author": {
+            "description": "The author of the news item.",
+            "type": "string"
+        },
         "for_students": {
             "description": "Whether the news item should be shown to students.",
             "type": "boolean"

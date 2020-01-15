@@ -1,4 +1,5 @@
 columns
+    author: text
     date: timestamp with time zone not null default now()
     directory: text not null
     for_students: boolean not null default false

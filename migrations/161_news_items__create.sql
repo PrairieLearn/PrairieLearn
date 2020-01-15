@@ -4,6 +4,7 @@ CREATE TABLE news_items (
     directory text NOT NULL,
     date timestamptz NOT NULL DEFAULT now(),
     title text NOT NULL,
+    author text,
     for_students boolean NOT NULL DEFAULT FALSE,
     order_by integer NOT NULL DEFAULT 0
 );
