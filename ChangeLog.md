@@ -69,10 +69,9 @@
 
   * Add support for Rust to `pl-code` element (Nathan Walters).
 
-  * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
-
-  * Add `Order By` column to list of course instances on instructor page and provide info in popover (Tim Bretl).
   * Add tests for LTI auth (Dave Mussulman).
+
+  * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -111,8 +110,6 @@
   * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
 
   * Change and standardize naming scheme on in-browser add/copy of course instance, assessment, or question (Tim Bretl).
-
-  * Change `number` to `order_by` / `orderBy` in `course_instances` table / `infoCourseInstance.json` schema (Tim Bretl).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
