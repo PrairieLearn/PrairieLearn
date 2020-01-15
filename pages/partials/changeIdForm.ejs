@@ -1,6 +1,9 @@
 <form name="change-id-form" class="needs-validation" method="POST" novalidate>
     <input type="hidden" name="__action" value="change_id">
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <div class="container p-0 mb-4">
+      Use only letters, numbers, dashes, and underscores, with no spaces. <% if (locals.changeIdFormHelpText) { %><%- changeIdFormHelpText %><% } %>
+    </div>
     <div class="form-group">
         <label for="changeIdInput"><%= id_label %>:</label>
         <input type="text" class="form-control" id="changeIdInput" name="id" value="<%= id_old %>" pattern="[-A-Za-z0-9_]+" required>
@@ -36,9 +39,9 @@
 
             elementDOM.setCustomValidity('');
             if (elementDOM.validity.patternMismatch) {
-                $('#invalidIdMessage').text('Only letters, numbers, dashes, and underscores, with no spaces');
+                $('#invalidIdMessage').text('Please match required format.');
             } else if (elementDOM.validity.valueMissing) {
-                $('#invalidIdMessage').text('Please choose <%= id_label%>');
+                $('#invalidIdMessage').text('Please choose <%= id_label %>');
             } else {
                 $('#invalidIdMessage').text('');
             }

@@ -72,11 +72,13 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'change_id') {
         debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
+        if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid TID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
         let tid_new;
         try {
             tid_new = path.normalize(req.body.id);
         } catch(err) {
-            return next(new Error(`Invalid TID: ${req.body.id}`));
+            return next(new Error(`Invalid TID (could not be normalized): ${req.body.id}`));
         }
         if (res.locals.assessment.tid == tid_new) {
             debug('The new tid is the same as the old tid - do nothing');
