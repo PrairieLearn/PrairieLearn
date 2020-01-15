@@ -15,7 +15,7 @@ router.get('/:news_item_id', function(req, res, next) {
         user_id: res.locals.authn_user.user_id,
         course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
         course_id: res.locals.course ? res.locals.course.id : null,
-    }
+    };
     sqldb.queryZeroOrOneRow(sql.select_news_item_for_read, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));
@@ -37,7 +37,7 @@ router.get('/:news_item_id/*', function(req, res, next) {
     const filename = req.params[0];
     const params = {
         news_item_id: req.params.news_item_id,
-    }
+    };
     sqldb.queryZeroOrOneRow(sql.select_news_item, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));

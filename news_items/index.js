@@ -11,7 +11,7 @@ const namedLocks = require('../lib/named-locks');
 
 async function loadNewsItems() {
     const news_items = [];
-    dirs = await fsPromises.readdir(__dirname);
+    const dirs = await fsPromises.readdir(__dirname);
     await async.each(dirs, async (dir) => {
         const infoFilename = path.join(__dirname, dir, 'info.json');
         let info;

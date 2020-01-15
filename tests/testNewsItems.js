@@ -11,7 +11,7 @@ const helperServer = require('./helperServer');
 
 config.testNewsItemsSetCount = true; // hack to tell middlewares/authn to process notification counts
 
-const locals = {}
+const locals = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
@@ -68,11 +68,11 @@ describe('News items', function() {
             assert.lengthOf(elemList, 1);
         });
         it('should remove notification 1', async () => {
-            results = await sqldb.queryAsync(sql.select_notification, [1]);
+            const results = await sqldb.queryAsync(sql.select_notification, [1]);
             assert.equal(results.rowCount, 0);
         });
         it('should still have notification 2', async () => {
-            results = await sqldb.queryAsync(sql.select_notification, [2]);
+            const results = await sqldb.queryAsync(sql.select_notification, [2]);
             assert.equal(results.rowCount, 1);
         });
     });
