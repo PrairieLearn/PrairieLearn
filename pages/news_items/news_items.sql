@@ -9,7 +9,7 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)
     LEFT JOIN pl_courses AS c ON (c.id = $course_id)
 WHERE
-    ann.for_students
+    ann.visible_to_students
     OR an.user_id IS NOT NULL
     OR users_is_course_staff($user_id)
 ORDER BY

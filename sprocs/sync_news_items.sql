@@ -25,19 +25,19 @@ BEGIN
     -- Make the DB news_items be the same as the on-disk news_items
     WITH new_news_items AS (
         INSERT INTO news_items
-            (uuid, directory, title, author, for_students, order_by)
+            (uuid, directory, title, author, visible_to_students, order_by)
         SELECT *
         FROM
             ROWS FROM(
                 jsonb_to_recordset(news_items_on_disk)
-                AS (uuid uuid, directory text, title text, author text, for_students boolean)
-            ) WITH ORDINALITY AS aod(uuid, directory, title, author, for_students, order_by)
+                AS (uuid uuid, directory text, title text, author text, visible_to_students boolean)
+            ) WITH ORDINALITY AS aod(uuid, directory, title, author, visible_to_students, order_by)
         ON CONFLICT (uuid) DO UPDATE
         SET
             directory = EXCLUDED.directory,
             title = EXCLUDED.title,
             author = EXCLUDED.author,
-            for_students = EXCLUDED.for_students,
+            visible_to_students = EXCLUDED.visible_to_students,
             order_by = EXCLUDED.order_by
         RETURNING id
     )

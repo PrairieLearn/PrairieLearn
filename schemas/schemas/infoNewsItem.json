@@ -7,7 +7,7 @@
     "required": [
         "uuid",
         "title",
-        "for_students"
+        "visible_to_students"
     ],
     "properties": {
         "uuid": {
@@ -23,7 +23,7 @@
             "description": "The author of the news item.",
             "type": "string"
         },
-        "for_students": {
+        "visible_to_students": {
             "description": "Whether the news item should be shown to students.",
             "type": "boolean"
         }

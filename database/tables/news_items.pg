@@ -2,7 +2,7 @@ columns
     author: text
     date: timestamp with time zone not null default now()
     directory: text not null
-    for_students: boolean not null default false
+    visible_to_students: boolean not null default false
     id: bigint not null default nextval('news_items_id_seq'::regclass)
     order_by: integer not null default 0
     title: text not null
