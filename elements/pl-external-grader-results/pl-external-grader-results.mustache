@@ -1,3 +1,9 @@
+{{#plot}}
+    <li class="list-group-item">
+        <div><strong>Figure</strong></div>
+        <img src="{{image_data}}"/>
+    </li>
+{{/plot}}
 {{#graded}}
 <div class="pl-external-grader-results">
   {{^grading_succeeded}}
@@ -21,7 +27,7 @@
       {{/points}}
       </span>
     </h3>
-    {{#has_message_or_output}}
+    {{#has_message_or_output_or_image}}
       {{#has_message}}
         <div class="card mb-4">
           <div class="card-header">Message</div>
@@ -34,7 +40,12 @@
           <pre class="output text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
       {{/has_output}}
-    {{/has_message_or_output}}
+      {{#images_data}}
+          <ul class="list-group list-group-flush">
+              {{{ images_data }}}
+          </ul>
+      {{/images_data}}
+    {{/has_message_or_output_or_image}}
     <h3>Test Results</h3>
     {{^has_tests}}
       <p>No detailed test results available.</p>

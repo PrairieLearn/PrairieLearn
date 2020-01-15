@@ -35,6 +35,15 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
+def render_plot(image_data):
+    html_params = {
+        'plot': True,
+        'image_data': image_data
+    }
+    with open('pl-external-grader-results-plot.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, html_params).strip()
+    
+
 def render(element_html, data):
     if data['panel'] == 'submission':
         html_params = {'submission': True, 'graded': True, 'uuid': pl.get_uuid()}
@@ -56,8 +65,15 @@ def render(element_html, data):
                 html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
                 html_params['output'] = ansi_to_html(results.get('output', None))
-                html_params['has_message_or_output'] = bool(html_params['has_message'] or html_params['has_output'])
 
+                num_images = results.get('num_images', 0)
+                images_data = []
+                for img_num in range(num_images):
+                    image = results.get('image_' + str(img_num))
+                    images_data.append(render_plot(image))
+                html_params['images_data'] = '\n'.join(images_data)
+                html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or (num_images > 0))
+                
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
                 if results_tests:
