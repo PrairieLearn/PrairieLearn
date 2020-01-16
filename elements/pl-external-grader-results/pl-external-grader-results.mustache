@@ -91,6 +91,28 @@
                   <pre class="output text-white rounded p-3 mb-0"><code>{{{output}}}</code></pre>
                 </li>
               {{/has_output}}
+              {{#has_text_outputs}}
+                  <li class="list-group-item">
+                      {{#text_outputs}}
+                          {{#feedback}}
+                              <p><div><strong>Feedback</strong></div></p>
+                              <p><pre class="bg-dark text-white rounded p-3 mb-0">{{.}}</pre></p>
+                          {{/feedback}}
+                          {{#code_output}}
+                              <p><div><strong>Code Output</strong></div></p>
+                              <p><pre class="bg-dark text-white rounded p-3 mb-0">{{.}}</pre></p>
+                          {{/code_output}}
+                      {{/text_outputs}}
+                  </li>
+              {{/has_text_outputs}}
+              {{#has_imgsrcs}}
+                  <li class="list-group-item">
+                      <div><strong>Figure</strong></div>
+                      {{#imgsrcs}}
+                          <img src="{{.}}"/>
+                      {{/imgsrcs}}
+                  </li>
+              {{/has_imgsrcs}}
             </ul>
           </div>
         </div>

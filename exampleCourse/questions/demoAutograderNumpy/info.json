@@ -1,11 +1,10 @@
 {
-    "uuid": "994D6DDE-B41F-4EC5-90CC-9CE18EF5558B",
-    "title": "Autograder demo: square a number",
+    "uuid": "DF0FF186-DECC-448C-B23C-78D86A966E4C",
+    "title": "Autograder demo: using NumPy arrays",
     "topic": "Coding",
     "tags": [
         "v3",
         "sp20",
-        "mfsilva",
         "nnytko2",
         "short-coding"
     ],
