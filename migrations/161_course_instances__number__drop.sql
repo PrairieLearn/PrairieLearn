@@ -1,1 +1,1 @@
-ALTER TABLE course_instances DROP COLUMN IF EXISTS number;
+ALTER TABLE course_instances DROP COLUMN number;
