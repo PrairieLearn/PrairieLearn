@@ -11,7 +11,7 @@ def prepare(element_html, element_index, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     variables_category = pl.get_string_attrib(element, 'variables_category', None)
     if variables_category is not None:
-        if variables_category not in ["names_for_user", "names_from_user"]:
+        if variables_category not in ['names_for_user', 'names_from_user']:
             raise Exception(f'Unknown variable category: "{variables_category}". Must be one of {",".join(["names_for_user", "names_from_user"])}')
 
 
