@@ -35,6 +35,7 @@
             "questions": [
                 {"id": "demoCodeEditorAutograded",            "points": 1, "maxPoints": 5},
                 {"id": "demoCodeUploadAutograded",            "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderSquare",                "points": 1, "maxPoints": 5},
                 {"id": "demoAnsiOutput",                      "points": 2, "maxPoints": 4}
             ]
         }
