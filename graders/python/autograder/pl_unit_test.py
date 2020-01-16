@@ -15,6 +15,7 @@ class PrairieLearnTestCase(unittest.TestCase):
 
     include_plt = False
     student_code_string = 'test_print_student_code'
+    student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
 
@@ -22,7 +23,7 @@ class PrairieLearnTestCase(unittest.TestCase):
     def setUpClass(cls):
         ref_result, student_result, plot_value = execute_code(
                                                      "filenames/ans.py",
-                                                     "user_code.py",
+                                                     cls.student_code_file,
                                                      cls.include_plt,
                                                      "output.txt",
                                                      cls.iter_num)
@@ -84,7 +85,7 @@ class PrairieLearnTestCase(unittest.TestCase):
     @points(0)
     @name('Student Code')
     def test_print_student_code(self):
-        print_student_code()
+        print_student_code(self.student_code_file)
 
 
 class PrairieLearnTestCaseWithPlot(PrairieLearnTestCase):

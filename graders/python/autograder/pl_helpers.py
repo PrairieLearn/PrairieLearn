@@ -55,6 +55,6 @@ def not_repeated(f):
     return wrapped
 
 
-def print_student_code():
-    with open('user_code.py', 'r', encoding='utf-8') as f:
+def print_student_code(st_code='user_code.py'):
+    with open(st_code, 'r', encoding='utf-8') as f:
         Feedback.add_feedback(f.read())
