@@ -42,7 +42,7 @@ def render_plot(image_data):
     }
     with open('pl-external-grader-results-plot.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, html_params).strip()
-    
+
 
 def render(element_html, data):
     if data['panel'] == 'submission':
@@ -73,7 +73,7 @@ def render(element_html, data):
                     images_data.append(render_plot(image))
                 html_params['images_data'] = '\n'.join(images_data)
                 html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or (num_images > 0))
-                
+
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
                 if results_tests:
