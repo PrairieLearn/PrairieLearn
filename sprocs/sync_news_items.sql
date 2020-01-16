@@ -41,37 +41,51 @@ BEGIN
             order_by = EXCLUDED.order_by
         RETURNING id
     )
-    DELETE FROM news_items AS ann
+    DELETE FROM news_items AS ni
     WHERE
-        ann.id NOT IN (SELECT id FROM new_news_items);
+        ni.id NOT IN (SELECT id FROM new_news_items);
 
-    -- Add news_item notifications for instructors. If there were no
-    -- existing news items then we only notify if there are a small
-    -- number of new ones. This is to avoid spamming people when we
-    -- deploy a new PL server with a backlog of news items.
+    -- If there were no existing news items then we only notify if
+    -- there are a small number of new ones. This is to avoid spamming
+    -- people when we deploy a new PL server with a backlog of news
+    -- items.
     IF existing_news_items_count > 0 OR array_length(new_uuids, 1) <= 2 THEN
         WITH
-        course_staff AS (
+        users_as_course_staff AS (
             -- This is a more efficient implementation of
             -- sprocs/users_is_course_staff for all users at once
-            SELECT DISTINCT user_id
+            SELECT
+                user_id,
+                bool_or(
+                    cp.course_role > 'None'
+                    OR e.role > 'Student'
+                    OR adm.id IS NOT NULL
+                ) AS is_course_staff
             FROM
                 users AS u
                 LEFT JOIN course_permissions AS cp USING (user_id)
                 LEFT JOIN enrollments AS e USING (user_id)
-            WHERE
-                cp.course_role > 'None'
-                OR e.role > 'Student'
+                LEFT JOIN administrators AS adm USING (user_id)
+            GROUP BY user_id
         ),
         new_news_items AS (
-            SELECT ann.id
+            SELECT
+                ni.id,
+                ni.visible_to_students
             FROM
-                news_items AS ann
+                news_items AS ni
                 JOIN unnest(new_uuids) AS nu(uuid) USING (uuid)
         )
         INSERT INTO news_item_notifications (news_item_id, user_id)
-        SELECT new_news_items.id, course_staff.user_id
-        FROM new_news_items CROSS JOIN course_staff;
+        SELECT
+            ni.id,
+            u.user_id
+        FROM
+            new_news_items AS ni
+            CROSS JOIN users_as_course_staff AS u
+        WHERE
+            ni.visible_to_students
+            OR u.is_course_staff;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

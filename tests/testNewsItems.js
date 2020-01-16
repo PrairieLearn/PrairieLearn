@@ -2,6 +2,7 @@ const assert = require('chai').assert;
 const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
 
+const news_items = require('../news_items');
 const config = require('../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -25,10 +26,43 @@ describe('News items', function() {
 
     var page, elemList;
 
-    describe('News item notifications', () => {
-        it('should be inserted', async () => {
-            await sqldb.queryAsync(sql.insert_notifications, []);
+    describe('News item initialization', () => {
+        it('should prepare by creating the student test user', async () => {
+            const cookies = requestp.jar();
+            cookies.setCookie(requestp.cookie('pl_test_user=test_student'), locals.siteUrl);
+            page = await requestp({url: locals.baseUrl, jar: cookies});
+            locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
+        it('should succeed', async () => {
+            await news_items.initAsync();
+        });
+        it('should create a notification for news item 1 for admin user', async () => {
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'dev@illinois.edu', news_item_id: 1});
+            assert.equal(results.rowCount, 1);
+        });
+        it('should create a notification for news item 2 for admin user', async () => {
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'dev@illinois.edu', news_item_id: 2});
+            assert.equal(results.rowCount, 1);
+        });
+        it('should not create a notification for news item 1 for student user', async () => {
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'student@illinois.edu', news_item_id: 1});
+            assert.equal(results.rowCount, 0);
+        });
+        it('should not create a notification for news item 2 for student user', async () => {
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'student@illinois.edu', news_item_id: 2});
+            assert.equal(results.rowCount, 0);
+        });
+    });
+
+    // FIXME: We only test notifiction creation for course staff users
+    // (the dev user). We don't test for student users. This is
+    // because when this code was originally written we didn't have
+    // any student-visible news items and it was too horrible to mock
+    // one. If we add a student-visible news item in the future then
+    // we should create student_user (see authn.js) and check that it
+    // gets the appropriate notifications.
+
+    describe('News item notifications', () => {
         it('should permit page load', async () => {
             page = await requestp(locals.baseUrl);
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
@@ -68,11 +102,11 @@ describe('News items', function() {
             assert.lengthOf(elemList, 1);
         });
         it('should remove notification 1', async () => {
-            const results = await sqldb.queryAsync(sql.select_notification, [1]);
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'dev@illinois.edu', news_item_id: 1});
             assert.equal(results.rowCount, 0);
         });
         it('should still have notification 2', async () => {
-            const results = await sqldb.queryAsync(sql.select_notification, [2]);
+            const results = await sqldb.queryAsync(sql.select_notification, {uid: 'dev@illinois.edu', news_item_id: 2});
             assert.equal(results.rowCount, 1);
         });
     });

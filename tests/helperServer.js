@@ -7,7 +7,6 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const config = require('../lib/config');
 const load = require('../lib/load');
-const news_items = require('../news_items');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
 const serverJobs = require('../lib/server-jobs');
@@ -47,13 +46,6 @@ module.exports = {
                     const tmpDir = await tmp.dir({ unsafeCleanup: true });
                     config.filesRoot = tmpDir.path;
                 }),
-                function(callback) {
-                    debug('before(): initializing news items');
-                    news_items.init(function(err) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
                 function(callback) {
                     debug('before(): initializing cron');
                     cron.init(function(err) {

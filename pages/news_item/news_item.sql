@@ -6,14 +6,14 @@ WITH mark_news_item_as_read AS (
         AND user_id = $user_id
 )
 SELECT
-    ann.*,
-    format_date_only_no_tz(ann.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
+    ni.*,
+    format_date_only_no_tz(ni.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
 FROM
-    news_items AS ann
+    news_items AS ni
     LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)
     LEFT JOIN pl_courses AS c ON (c.id = $course_id)
 WHERE
-    ann.id = $news_item_id;
+    ni.id = $news_item_id;
 
 -- BLOCK select_news_item
 SELECT *
