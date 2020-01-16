@@ -1,0 +1,17 @@
+{{#has_names_user_description}}
+<table style="width:100%" border="1px">
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+  </tr>
+{{#names_user_description}}
+  <tr>
+    <td><code>{{name}}</code></td>
+    <td>{{type}}</td>
+    <td>{{description}}</td>
+  </tr>
+{{/names_user_description}}
+</table>
+<br>
+{{/has_names_user_description}}
