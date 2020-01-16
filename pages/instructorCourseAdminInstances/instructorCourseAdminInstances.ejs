@@ -34,6 +34,8 @@
                             <tr>
                                 <th>Long Name</th>
                                 <th>CIID</th>
+                                <th>Earliest Access Date</th>
+                                <th>Latest Access Date</th>
                                 <th>Students</th>
                             </tr>
                         </thead>
@@ -42,6 +44,8 @@
                                 <tr>
                                     <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
                                     <td class="align-left"><%= row.short_name %></td>
+                                    <td class="align-left"><%= row.start_date %></td>
+                                    <td class="align-left"><%= row.end_date %></td>
                                     <td class="align-middle"><%= row.number %></td>
                                 </tr>
                             <% }); %>
