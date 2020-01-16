@@ -67,11 +67,6 @@ then
   echo '{"succeeded": false, "score": 0.0, "message": "The autograder has failed. Please contact course staff and have them check the logs for this submission."}' > results.json
 fi
 
-echo root
-ls /
-echo /grade
-find /grade
-
 echo "[run] autograder completed"
 
 # get the results from the file

@@ -111,22 +111,22 @@ def render(element_html, data):
                             test['results_color'] = '#4CAF50' if correct else '#F44336'
                             test['results_icon'] = 'fa-check' if correct else 'fa-times'
                         test['imgsrcs'] = []
-                        test['text_outputs'] = {'feedback': [], 'code_output':[]}
+                        test['text_outputs'] = {'feedback': [], 'code_output': []}
                         for f in results_test.get('files', []):
-                            if (f["name"][-3:] == "png"):
-                                test["imgsrcs"].append(f["imgsrc"])
-                            if ("feedback" in f["name"]):
-                                test["text_outputs"]["feedback"].append(f["text_output"])
-                            if ("output" in f["name"]):
-                                test["text_outputs"]["code_output"].append(f["text_output"])
+                            if (f['name'][-3:] == 'png'):
+                                test['imgsrcs'].append(f['imgsrc'])
+                            if ('feedback' in f['name']):
+                                test['text_outputs']['feedback'].append(f['text_output'])
+                            if ('output' in f['name']):
+                                test['text_outputs']['code_output'].append(f['text_output'])
 
-                        test["has_imgsrcs"] = True
-                        if not test["imgsrcs"]:
-                            test["has_imgsrcs"] = False
+                        test['has_imgsrcs'] = True
+                        if not test['imgsrcs']:
+                            test['has_imgsrcs'] = False
 
-                        test["has_text_outputs"] = True
-                        if not test["text_outputs"]:
-                            test["has_text_outputs"] = False
+                        test['has_text_outputs'] = True
+                        if not test['text_outputs']:
+                            test['has_text_outputs'] = False
                         tests.append(test)
 
                     html_params['tests'] = tests
