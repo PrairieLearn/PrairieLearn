@@ -33,7 +33,7 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
         displayedName = authz_data.user.uid;
     }
     displayedName += ' (' + authz_data.role;
-	if (authz_data.mode != 'Public') {
+    if (authz_data.mode != 'Public') {
         displayedName += ', ' + authz_data.mode;
     }
     displayedName += ')';
@@ -51,12 +51,21 @@ if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
     <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
+            <% if (news_item_notification_count > 0) { %>
+              <span class="badge badge-pill badge-danger news-item-count"><%= news_item_notification_count %></span>
+            <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
             <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>
+            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+              News
+              <% if (news_item_notification_count > 0) { %>
+                <span class="badge badge-pill badge-danger news-item-link-count"><%= news_item_notification_count %></span>
+              <% } %>
+            </a>
         </div>
     </li>
 
