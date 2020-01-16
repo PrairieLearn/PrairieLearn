@@ -26,7 +26,7 @@ GROUP BY
     d.start_date,
     d.end_date
 ORDER BY
-    d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id;
+    d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC;
 
 -- BLOCK select_course_instance_id_from_uuid
 SELECT

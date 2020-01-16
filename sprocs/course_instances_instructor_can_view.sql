@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
     SELECT
-        jsonb_agg(ci.* ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id)
+        jsonb_agg(ci.* ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC)
     INTO
         course_instances_instructor_can_view.course_instances
     FROM
