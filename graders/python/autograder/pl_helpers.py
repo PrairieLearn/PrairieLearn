@@ -3,6 +3,9 @@ import urllib
 import base64
 from functools import wraps
 from code_feedback import Feedback
+import pygments
+from pygments.lexers import PythonLexer
+from pygments.formatters import TerminalFormatter
 
 
 class DoNotRun(Exception):
@@ -57,4 +60,6 @@ def not_repeated(f):
 
 def print_student_code(st_code='user_code.py'):
     with open(st_code, 'r', encoding='utf-8') as f:
-        Feedback.add_feedback(f.read())
+        contents = f.read()
+        formatted = pygments.highlight(contents, PythonLexer(), TerminalFormatter(bg='dark'))
+        Feedback.add_feedback(formatted)

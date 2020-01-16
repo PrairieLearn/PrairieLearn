@@ -11,6 +11,8 @@ class Test(PrairieLearnTestCase):
         user_val = feedback.call_user(self.st.fib, 0)
         if feedback.check_scalar("fib(0)", 0, user_val):
             feedback.set_points(1)
+        else:
+            feedback.set_points(0)
 
     @points(1)
     @name('Check fib(1)')
@@ -18,6 +20,8 @@ class Test(PrairieLearnTestCase):
         user_val = feedback.call_user(self.st.fib, 1)
         if feedback.check_scalar("fib(1)", 1, user_val):
             feedback.set_points(1)
+        else:
+            feedback.set_points(0)
 
     @points(3)
     @name('Check fibonacci of an integer > 1')
@@ -25,3 +29,5 @@ class Test(PrairieLearnTestCase):
         user_val = feedback.call_user(self.st.fib, 7)
         if feedback.check_scalar("fib(1)", 13, user_val):
             feedback.set_points(1)
+        else:
+            feedback.set_points(0)

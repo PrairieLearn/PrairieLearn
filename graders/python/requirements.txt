@@ -16,3 +16,4 @@ nltk==3.4.5
 beautifulsoup4==4.8.2
 bokeh==1.4.0
 folium==0.10.1
+Pygments==2.5.2

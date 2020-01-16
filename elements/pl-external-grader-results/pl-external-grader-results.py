@@ -116,9 +116,9 @@ def render(element_html, data):
                             if (f['name'][-3:] == 'png'):
                                 test['imgsrcs'].append(f['imgsrc'])
                             if ('feedback' in f['name']):
-                                test['text_outputs']['feedback'].append(f['text_output'])
+                                test['text_outputs']['feedback'].append(ansi_to_html(f['text_output']))
                             if ('output' in f['name']):
-                                test['text_outputs']['code_output'].append(f['text_output'])
+                                test['text_outputs']['code_output'].append(ansi_to_html(f['text_output']))
 
                         test['has_imgsrcs'] = True
                         if not test['imgsrcs']:

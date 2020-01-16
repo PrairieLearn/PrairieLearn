@@ -4,9 +4,9 @@ from code_feedback import Feedback as feedback
 
 class Test(PrairieLearnTestCase):
     @points(1)
-    @name("x")
+    @name("df")
     def test_0(self):
-        if feedback.check_numpy_array_allclose("x", self.ref.x, self.st.x):
+        if feedback.check_dataframe("df", self.ref.df, self.st.df, display_input=True):
             feedback.set_points(1)
         else:
             feedback.set_points(0)
