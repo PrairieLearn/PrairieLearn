@@ -79,7 +79,7 @@ class Feedback:
 
         if isinstance(data, np.matrix):
             cls.finish("'%s' is a numpy matrix. Do not use those. "
-                    "bit.ly/array-vs-matrix" % name)
+                       "bit.ly/array-vs-matrix" % name)
 
         if len(data.shape) != num_axes:
             cls.finish(
@@ -115,7 +115,7 @@ class Feedback:
 
         if isinstance(data, np.matrix):
             return bad("'%s' is a numpy matrix. Do not use those. "
-                    "bit.ly/array-vs-matrix" % name)
+                       "bit.ly/array-vs-matrix" % name)
 
         if ref.shape != data.shape:
             return bad(
@@ -132,12 +132,15 @@ class Feedback:
         return True
 
     @classmethod
-    def check_numpy_array_allclose(cls, name, ref, data, accuracy_critical=True,
-            rtol=1e-05, atol=1e-08, report_success=True, report_failure=True):
+    def check_numpy_array_allclose(cls, name, ref, data,
+                                   accuracy_critical=True, rtol=1e-05,
+                                   atol=1e-08, report_success=True,
+                                   report_failure=True):
         import numpy as np
 
         if not cls.check_numpy_array_features(name, ref, data,
-                accuracy_critical, report_failure):
+                                              accuracy_critical,
+                                              report_failure):
             return False
 
         good = np.allclose(ref, data, rtol=rtol, atol=atol)
@@ -154,11 +157,10 @@ class Feedback:
 
         return good
 
-
     @classmethod
     def check_list_features(cls, name, ref, data, entry_type=None,
-                                   accuracy_critical=True,
-                                   report_failure=True):
+                            accuracy_critical=True,
+                            report_failure=True):
         def bad(msg):
             if report_failure:
                 cls.add_feedback(msg)
@@ -175,7 +177,7 @@ class Feedback:
 
         if len(ref) != len(data):
             return bad("'%s' has the wrong length--expected %d, got %d"
-              % (name, len(ref), len(data)))
+                       % (name, len(ref), len(data)))
 
         if entry_type is not None:
             for i, entry in enumerate(data):
@@ -195,7 +197,7 @@ class Feedback:
 
         if len(ref) != len(data):
             cls.finish("'%s' has the wrong length--expected %d, got %d"
-              % (name, len(ref), len(data)))
+                       % (name, len(ref), len(data)))
 
         if entry_type is not None:
             for i, entry in enumerate(data):
@@ -204,7 +206,7 @@ class Feedback:
 
     @classmethod
     def check_tuple(cls, name, ref, data, accuracy_critical=True,
-            report_failure=True, report_success=True):
+                    report_failure=True, report_success=True):
 
         def bad(msg):
             if report_failure:
@@ -227,11 +229,11 @@ class Feedback:
 
         good = True
         for i in range(nref):
-            if type(data[i]) != type(ref[i]):
+            if type(data[i]) != type(ref[i]):  # noqa: E721
                 good = False
                 if report_failure:
-                    cls.add_feedback("{}[{}] should be of type {}".format(name,
-                            i, type(ref[i]).__name__))
+                    cls.add_feedback("{}[{}] should be of type {}"
+                                     .format(name, i, type(ref[i]).__name__))
             elif data[i] != ref[i]:
                 good = False
 
@@ -245,7 +247,8 @@ class Feedback:
 
     @classmethod
     def check_scalar(cls, name, ref, data, accuracy_critical=True,
-            rtol=1e-5, atol=1e-8, report_success=True, report_failure=True):
+                     rtol=1e-5, atol=1e-8, report_success=True,
+                     report_failure=True):
         import numpy as np
 
         def bad(msg):
@@ -289,7 +292,7 @@ class Feedback:
     def call_user(cls, f, *args, **kwargs):
         try:
             return f(*args, **kwargs)
-        except Exception as e:
+        except Exception:
             if callable(f):
                 try:
                     callable_name = f.__name__
@@ -302,8 +305,8 @@ class Feedback:
                 from traceback import format_exc
                 cls.add_feedback(
                         "The callable '%s' supplied in your code failed with "
-                        "an exception while it was being called by the grading "
-                        "code:"
+                        "an exception while it was being called by the "
+                        "grading code:"
                         "%s"
                         % (
                             callable_name,
@@ -365,16 +368,18 @@ class Feedback:
 
         ref_datas = {}
         for i, ref_line in enumerate(ref_lines):
-            ref_data = np.array([ref_line.get_data()[0], ref_line.get_data()[1]])
+            ref_data = np.array([ref_line.get_data()[0],
+                                 ref_line.get_data()[1]])
             ref_data = ref_data[np.lexsort(ref_data.T)]
             ref_datas[i] = ref_data
 
         num_correct = 0
         for i, line in enumerate(user_lines):
-            data = np.array([line.get_data()[0], line.get_data()[1]])
+            data = np.array([line.get_data()[0],
+                             line.get_data()[1]])
             data = data[np.lexsort(data.T)]
-            for j, ref_data in ref_datas.items():
-                if data.shape == ref_data.shape and np.allclose(data, ref_data):
+            for j, ref in ref_datas.items():
+                if data.shape == ref.shape and np.allclose(data, ref):
                     num_correct += 1
                     del[ref_datas[j]]
                     break
@@ -385,3 +390,74 @@ class Feedback:
         else:
             cls.add_feedback("'%s' is inaccurate" % name)
             return False
+
+    # `check_dataframe`
+    # Checks and adds feedback regarding the correctness of
+    # a pandas `DataFrame`.
+    # @author: Wade Fagen-Ulmschneider (waf)
+    #
+    # By default, checks if the student DataFrame `data` contains the
+    # same contents as the reference DataFrame `ref` by using
+    # `pandas.util.testing.assert_frame_equal` after basic sanity checks.
+    #
+    # @params:
+    #   `name`, String: The human-readable name of the DataFrame being checked
+    #   `ref`, DataFrame: The reference (correct) DataFrame
+    #   `data`, DataFrame: The student DataFrame
+    #   `subset_columns` = [], Array of Strings:
+    #    - If `subset_columns` is an empty array, all columns are
+    #      used in the check.
+    #    - Otherwise, only columns named in `subset_columns` are used
+    #      in the check and other columns are dropped.
+    #   `check_values` = True, Boolean: Check the values of each cell,
+    #    in addition to the dimensions of the DataFrame
+    #   `allow_order_variance` = True, Boolean: Allow rows to appear in any
+    #    order (so long as the dimensions and values are correct)
+    #   `display_input` = False, Boolean: Display the student's answer in
+    #    the feedback area.
+    @classmethod
+    def check_dataframe(cls, name, ref, data, subset_columns=[],
+                        check_values=True, allow_order_variance=True,
+                        display_input=False):
+        import pandas as pd
+
+        def bad(msg):
+            cls.add_feedback(msg)
+            if display_input and isinstance(data, pd.DataFrame):
+                cls.add_feedback("----------")
+                cls.add_feedback(data.to_string(max_rows=9))
+
+            return False
+
+        if not isinstance(data, pd.DataFrame):
+            return bad(f"{name} is not a DataFrame")
+
+        if len(data) == 0 and len(ref) != 0:
+            return bad(f"{name} is empty and should not be empty")
+
+        if len(ref) != len(data):
+            return bad(f"{name} is inaccurate")
+
+        # If `subset_columns` is non-empty, use only the columns
+        # specified for grading
+        if len(subset_columns) > 0:
+            for col in subset_columns:
+                if col not in data:
+                    return bad(f"Variable (column) `{col}` is not in `{name}`")
+
+            ref = ref[subset_columns]
+            data = data[subset_columns]
+
+        if check_values:
+            from pandas.util.testing import assert_frame_equal
+
+            try:
+                assert_frame_equal(ref, data, check_like=allow_order_variance)
+            except Exception:
+                return bad(f"{name} is inaccurate")
+
+        cls.add_feedback(f"{name} looks good")
+        if display_input:
+            cls.add_feedback("----------")
+            cls.add_feedback(data.to_string(max_rows=9))
+        return True

@@ -70,6 +70,8 @@
   * Add support for Rust to `pl-code` element (Nathan Walters).
 
   * Add tests for LTI auth (Dave Mussulman).
+  
+  * Add more robust Python autograder to `prairielearn/grader-python` (Nathan Bowman and Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
