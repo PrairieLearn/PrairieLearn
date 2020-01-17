@@ -15,10 +15,10 @@
       <div class="invalid-feedback" id="invalidMessage-<%= file.id %>">
       </div>
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#instructorFileRenameForm-<%= file.id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Change</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#instructorFileRenameForm-<%= file.id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Change</button>
+  </div>
 </form>
 
 <script>
