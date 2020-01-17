@@ -197,6 +197,8 @@
 
   * Fix in-browser course edit handler to keep one course lock throughout entire process (Tim Bretl).
 
+  * Fix button alignment in popovers (Tim Bretl).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
