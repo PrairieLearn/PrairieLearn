@@ -40,7 +40,7 @@ def render_plot(image_data):
         'plot': True,
         'image_data': image_data
     }
-    with open('pl-external-grader-results-plot.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-external-grader-results.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, html_params).strip()
 
 
