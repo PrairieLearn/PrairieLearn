@@ -109,8 +109,8 @@
           <div class="row">
             <% if (authz_data.has_course_permission_edit && ((! course.options.isExampleCourse) || (courses && (courses.length > 1)))) { %>
             <div class="col-auto">
-              <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Make a copy of this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                  <i class="fa fa-i-cursor"></i>
+              <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-clone"></i>
                   <span>Make a copy of this question</span>
               </button>
             </div>

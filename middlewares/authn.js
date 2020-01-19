@@ -9,6 +9,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     res.locals.is_administrator = false;
+    res.locals.news_item_notification_count = 0;
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -88,6 +89,10 @@ module.exports = function(req, res, next) {
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
                 res.locals.is_administrator = result.rows[0].is_administrator;
+                if (config.testNewsItemsSetCount) {
+                    // only do this during testing, not in regular dev mode
+                    res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
+                }
                 next();
             });
         });
@@ -119,6 +124,7 @@ module.exports = function(req, res, next) {
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
+        res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
         next();
     });
 };

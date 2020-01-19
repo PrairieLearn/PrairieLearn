@@ -5,8 +5,8 @@
     <label for="administratorInsertFormUid">UID:</label>
     <input type="text" class="form-control" id="administratorInsertFormUid" name="uid" placeholder="username@domain.org">
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Add administrator</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Add administrator</button>
+  </div>
 </form>

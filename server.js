@@ -29,6 +29,7 @@ const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const migrations = require('./migrations');
 const sprocs = require('./sprocs');
+const news_items = require('./news_items');
 const cron = require('./cron');
 const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
@@ -238,6 +239,8 @@ app.use('/pl/settings', require('./pages/userSettings/userSettings'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 app.use('/pl/password', require('./pages/authPassword/authPassword'));
+app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
@@ -407,6 +410,12 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
+
+
+// course instance - news_items
+app.use('/pl/course_instance/:course_instance_id/instructor/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course_instance/:course_instance_id/instructor/news_item', require('./pages/news_item/news_item.js'));
+
 
 // course instance - course admin pages
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
@@ -581,6 +590,11 @@ if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
+// student - news_items
+app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
+
+
 // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
@@ -676,7 +690,9 @@ app.use('/pl/course/:course_id/question/:question_id/file_view', [
 app.use('/pl/course/:course_id/question/:question_id/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 
-
+// course - news_items
+app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
 
 
 app.use('/pl/course/:course_id/file_transfer', [
@@ -889,6 +905,12 @@ if (config.startServer) {
             } else {
                 callback(null);
             }
+        },
+        function(callback) {
+            news_items.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             cron.init(function(err) {
