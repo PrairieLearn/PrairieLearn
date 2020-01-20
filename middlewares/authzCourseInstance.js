@@ -88,13 +88,22 @@ module.exports = function(req, res, next) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
-                _.assign(res.locals.authz_data, result.rows[0]);
+                res.locals.authz_data.user = result.rows[0].user;
+                res.locals.authz_data.role = result.rows[0].role;
+                res.locals.authz_data.mode = result.rows[0].mode;
                 res.locals.req_date = result.rows[0].req_date;
-                // remove all course permissions if we are emulating another user
-                res.locals.authz_data.course_role = 'None';
-                res.locals.authz_data.has_course_permission_view = false;
-                res.locals.authz_data.has_course_permission_edit = false;
-                res.locals.authz_data.has_course_permission_own = false;
+
+                // Make sure that we never grant extra permissions
+                if (res.locals.authz_data.has_instructor_view) res.locals.authz_data.has_instructor_view = result.rows[0].has_instructor_view;
+                if (res.locals.authz_data.has_instructor_edit) res.locals.authz_data.has_instructor_edit = result.rows[0].has_instructor_edit;
+                if (res.locals.authz_data.has_course_permission_view) res.locals.authz_data.has_course_permission_view = result.rows[0].permissions_course.has_course_permission_view;
+                if (res.locals.authz_data.has_course_permission_edit) res.locals.authz_data.has_course_permission_edit = result.rows[0].permissions_course.has_course_permission_edit;
+                if (res.locals.authz_data.has_course_permission_own) res.locals.authz_data.has_course_permission_own = result.rows[0].permissions_course.has_course_permission_own;
+
+                // NOTE: When this code is all rewritten, you may want to throw an error if
+                // the user tries to emulate another user with greater permissions, so that
+                // it is clear why these permissions aren't granted.
+
                 // FIXME: debugging for #422
                 logger.debug('Overridden authz_data', res.locals.authz_data);
                 res.locals.user = res.locals.authz_data.user;

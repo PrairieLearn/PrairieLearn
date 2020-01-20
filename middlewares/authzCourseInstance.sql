@@ -50,10 +50,13 @@ WITH effective_data AS (
 )
 SELECT
     ed.*,
+    authz_course((ed.user->>'user_id')::bigint, c.id, FALSE) AS permissions_course,
     (ed.role >= 'TA') AS has_instructor_view,
     (ed.role >= 'Instructor') AS has_instructor_edit
 FROM
     effective_data AS ed
+    JOIN course_instances AS ci ON (ci.id = $course_instance_id AND ci.deleted_at IS NULL)
+    JOIN pl_courses AS c ON (c.id = ci.course_id AND c.deleted_at IS NULL)
 WHERE
     ed.role IS NOT NULL
     AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', (ed.user->>'institution_id')::bigint, ed.req_date);
