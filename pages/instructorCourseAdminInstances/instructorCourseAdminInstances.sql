@@ -6,11 +6,11 @@ SELECT
     CASE
         WHEN d.start_date IS NULL THEN '—'
         ELSE format_date_full_compact(d.start_date, ci.display_timezone)
-    END AS start_date,
+    END AS formatted_start_date,
     CASE
         WHEN d.end_date IS NULL THEN '—'
         ELSE format_date_full_compact(d.end_date, ci.display_timezone)
-    END AS end_date,
+    END AS formatted_end_date,
     count(e.user_id) AS number
 FROM
     course_instances AS ci
