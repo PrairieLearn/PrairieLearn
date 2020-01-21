@@ -20,15 +20,14 @@
 </p>
 
 <p>
-  <b>How exactly is the order now being determined?</b> The date used for
-  ordering is the first-access date for each course instance. You can
-  see this date by clicking on the course rubric (e.g., "TAM 212") in
-  the top navigation bar, and then selecting the "Course instances"
-  tab. This date is determined from
-  the <tt>infoCourseInstance.json</tt> files, where PrairieLearn uses
-  the earliest <tt>startDate</tt> of any <tt>allowAccess</tt> rule. In
-  case of ties between dates, the <tt>endDate</tt> is used as
-  tie-breaker.
+  <b>How exactly are they ordered?</b> The date used for ordering is
+  the first-access date for each course instance. You can see this
+  date by clicking on the course rubric (e.g., "TAM 212") in the top
+  navigation bar and then selecting the "Course instances" tab. This
+  date is determined from the <tt>infoCourseInstance.json</tt> files,
+  where PrairieLearn uses the earliest <tt>startDate</tt> of
+  any <tt>allowAccess</tt> rule. In case of ties between dates,
+  the <tt>endDate</tt> is used as a tie breaker.
 </p>
 
 <p>
