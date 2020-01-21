@@ -53,8 +53,6 @@ module.exports = function(req, res, next) {
             has_course_permission_own: permissions_course.has_course_permission_own,
         };
         res.locals.user = res.locals.authz_data.user;
-        // FIXME: debugging for #422
-        logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // check whether we are requesting user data override
         if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode && !req.cookies.pl_requested_date) {
@@ -132,8 +130,6 @@ module.exports = function(req, res, next) {
                 // the user tries to emulate another user with greater permissions, so that
                 // it is clear why these permissions aren't granted.
 
-                // FIXME: debugging for #422
-                logger.debug('Overridden authz_data', res.locals.authz_data);
                 res.locals.user = res.locals.authz_data.user;
                 next();
             });
