@@ -120,11 +120,11 @@ module.exports = function(req, res, next) {
                 res.locals.req_date = result.rows[0].req_date;
 
                 // Make sure that we never grant extra permissions
-                if (res.locals.authz_data.has_instructor_view) res.locals.authz_data.has_instructor_view = result.rows[0].has_instructor_view;
-                if (res.locals.authz_data.has_instructor_edit) res.locals.authz_data.has_instructor_edit = result.rows[0].has_instructor_edit;
-                if (res.locals.authz_data.has_course_permission_view) res.locals.authz_data.has_course_permission_view = result.rows[0].permissions_course.has_course_permission_view;
-                if (res.locals.authz_data.has_course_permission_edit) res.locals.authz_data.has_course_permission_edit = result.rows[0].permissions_course.has_course_permission_edit;
-                if (res.locals.authz_data.has_course_permission_own) res.locals.authz_data.has_course_permission_own = result.rows[0].permissions_course.has_course_permission_own;
+                res.locals.authz_data.has_instructor_view = res.locals.authz_data.has_instructor_view && result.rows[0].has_instructor_view;
+                res.locals.authz_data.has_instructor_edit = res.locals.authz_data.has_instructor_edit && result.rows[0].has_instructor_edit;
+                res.locals.authz_data.has_course_permission_view = res.locals.authz_data.has_course_permission_view && result.rows[0].permissions_course.has_course_permission_view;
+                res.locals.authz_data.has_course_permission_edit = res.locals.authz_data.has_course_permission_edit && result.rows[0].permissions_course.has_course_permission_edit;
+                res.locals.authz_data.has_course_permission_own = res.locals.authz_data.has_course_permission_own && result.rows[0].permissions_course.has_course_permission_own;
 
                 // NOTE: When this code is all rewritten, you may want to throw an error if
                 // the user tries to emulate another user with greater permissions, so that
