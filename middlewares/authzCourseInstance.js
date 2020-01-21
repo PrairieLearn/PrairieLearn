@@ -1,7 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
-var logger = require('../lib/logger');
 var config = require('../lib/config');
 var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
