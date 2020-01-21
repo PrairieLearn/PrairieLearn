@@ -230,7 +230,7 @@ if (config.devMode) {
 }
 
 // clear cookies on the homepage to reset any stale session state
-app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
+app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
 app.use('/', require('./pages/home/home'));

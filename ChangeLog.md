@@ -202,6 +202,8 @@
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
   * Fix button alignment in popovers (Tim Bretl).
 
+  * Fix authorization of effective user (Tim Bretl).
+
 * __3.2.0__ - 2019-08-05
 
   * Add openpyxl to the centos7-python for Excel .xlsx autograding (Craig Zilles).
