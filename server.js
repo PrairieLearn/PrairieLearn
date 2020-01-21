@@ -230,7 +230,7 @@ if (config.devMode) {
 }
 
 // clear cookies on the homepage to reset any stale session state
-app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
+app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
 app.use('/', require('./pages/home/home'));
@@ -907,7 +907,8 @@ if (config.startServer) {
             }
         },
         function(callback) {
-            news_items.init(function(err) {
+            const notify_with_new_server = false;
+            news_items.init(notify_with_new_server, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -38,12 +38,12 @@ async function loadNewsItems() {
     return _.sortBy(news_items, 'directory');
 }
 
-module.exports.initAsync = async function() {
+module.exports.initAsync = async function(notify_with_new_server) {
     const lockName = 'news_items';
     const lock = await namedLocks.waitLockAsync(lockName, {});
     try {
         const news_items = await loadNewsItems();
-        await sqldb.callAsync('sync_news_items', [JSON.stringify(news_items)]);
+        await sqldb.callAsync('sync_news_items', [JSON.stringify(news_items), notify_with_new_server]);
     } catch (err) {
         await namedLocks.releaseLockAsync(lock);
         throw err;

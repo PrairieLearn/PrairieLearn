@@ -23,8 +23,7 @@ WHERE
 
 -- BLOCK select_course_instances_with_course
 SELECT
-    ci.long_name,
-    ci.number
+    ci.long_name
 FROM
     course_instances AS ci
 WHERE

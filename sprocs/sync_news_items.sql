@@ -1,8 +1,10 @@
 DROP FUNCTION IF EXISTS sync_news_items(jsonb);
+DROP FUNCTION IF EXISTS sync_news_items(jsonb,boolean);
 
 CREATE OR REPLACE FUNCTION
     sync_news_items (
-        IN news_items_on_disk jsonb
+        IN news_items_on_disk jsonb,
+        IN notify_with_new_server boolean -- should we send notifications on a new server install (a blank DB)
     ) RETURNS void
 AS $$
 DECLARE
@@ -45,11 +47,9 @@ BEGIN
     WHERE
         ni.id NOT IN (SELECT id FROM new_news_items);
 
-    -- If there were no existing news items then we only notify if
-    -- there are a small number of new ones. This is to avoid spamming
-    -- people when we deploy a new PL server with a backlog of news
-    -- items.
-    IF existing_news_items_count > 0 OR array_length(new_uuids, 1) <= 2 THEN
+    IF existing_news_items_count > 0   -- IF we are updating a existing server
+    OR notify_with_new_server          -- OR we should notify on new servers
+    THEN                               -- THEN send notifications
         WITH
         users_as_course_staff AS (
             -- This is a more efficient implementation of

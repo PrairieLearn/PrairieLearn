@@ -29,10 +29,9 @@
               </td>
               <td>
                 <% if (!course_instance.enrolled) { %>
-                <a tabindex="0" class="btn btn-sm btn-info" role="button"
-                   data-toggle="modal" data-target="#addModal<%= modalIdx %>" >
+                <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#addModal<%= modalIdx %>">
                   Add course
-                </a>
+                </button>
                 <div class="modal fade" id="addModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="addModal<%= modalIdx %>Title" aria-hidden="true">
                   <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
@@ -68,10 +67,9 @@
               </td>
               <td>
                 <% if (course_instance.enrolled) { %>
-                <a tabindex="0" class="btn btn-sm btn-danger" role="button"
-                   data-toggle="modal" data-target="#removeModal<%= modalIdx %>" >
+                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#removeModal<%= modalIdx %>">
                   Remove course
-                </a>
+                </button>
                 <div class="modal fade" id="removeModal<%= modalIdx %>" tabindex="-1" role="dialog" aria-labelledby="removeModal<%= modalIdx %>Title" aria-hidden="true">
                   <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
