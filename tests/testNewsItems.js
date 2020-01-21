@@ -10,8 +10,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 
-config.testNewsItemsSetCount = true; // hack to tell middlewares/authn to process notification counts
-
 const locals = {};
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -33,8 +31,9 @@ describe('News items', function() {
             page = await requestp({url: locals.baseUrl, jar: cookies});
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
-        it('should succeed', async () => {
-            await news_items.initAsync();
+        it('should succeed with notifications turned on', async () => {
+            const notify_with_new_server = true;
+            await news_items.initAsync(notify_with_new_server);
         });
         it('should create a notification for news item 1 for admin user', async () => {
             const results = await sqldb.queryAsync(sql.select_notification, {uid: 'dev@illinois.edu', news_item_id: 1});
@@ -68,11 +67,11 @@ describe('News items', function() {
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
         it('should show up in the top navbar', () => {
-            elemList = locals.$('span.news-item-count:contains("2")');
+            elemList = locals.$('span.news-item-count');
             assert.lengthOf(elemList, 1);
         });
         it('should show up in the News link', () => {
-            elemList = locals.$('span.news-item-link-count:contains("2")');
+            elemList = locals.$('span.news-item-link-count');
             assert.lengthOf(elemList, 1);
         });
     });

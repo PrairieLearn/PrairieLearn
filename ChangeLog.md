@@ -113,6 +113,8 @@
 
   * Change and standardize naming scheme on in-browser add/copy of course instance, assessment, or question (Tim Bretl).
 
+  * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
@@ -197,6 +199,7 @@
 
   * Fix in-browser course edit handler to keep one course lock throughout entire process (Tim Bretl).
 
+  * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
   * Fix button alignment in popovers (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05

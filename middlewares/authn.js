@@ -89,10 +89,7 @@ module.exports = function(req, res, next) {
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
                 res.locals.is_administrator = result.rows[0].is_administrator;
-                if (config.testNewsItemsSetCount) {
-                    // only do this during testing, not in regular dev mode
-                    res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
-                }
+                res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
                 next();
             });
         });

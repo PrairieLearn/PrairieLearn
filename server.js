@@ -907,7 +907,8 @@ if (config.startServer) {
             }
         },
         function(callback) {
-            news_items.init(function(err) {
+            const notify_with_new_server = false;
+            news_items.init(notify_with_new_server, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
