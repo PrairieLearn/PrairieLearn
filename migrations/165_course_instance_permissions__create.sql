@@ -7,3 +7,5 @@ CREATE TABLE course_instance_permissions (
     course_instance_role enum_course_instance_role,
     UNIQUE (user_id, course_instance_id)
 );
+
+CREATE INDEX course_instance_permissions_course_instance_id_idx ON course_instance_permissions (course_instance_id);

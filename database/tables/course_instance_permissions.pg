@@ -7,6 +7,7 @@ columns
 indexes
     course_instance_permissions_pkey: PRIMARY KEY (id) USING btree (id)
     course_instance_permissions_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
+    course_instance_permissions_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
     course_instance_permissions_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
