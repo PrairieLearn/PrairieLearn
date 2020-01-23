@@ -40,3 +40,6 @@ def generate(data):
 
 ### `question.html`
 
+# Security
+
+On the start of a grading job, the script `run.sh` is run with `root` privileges.  This will initialise directories and copy grading files into the correct location, delete itself, then run the actual grading script `pltest.py`.

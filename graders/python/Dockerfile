@@ -4,7 +4,7 @@ FROM centos:7
 ENV PYTHONIOENCODING=UTF-8
 
 COPY requirements.txt /
-COPY autograder /python_autograder
+COPY python_autograder /python_autograder
 
 RUN yum -y update \
     && yum install -y sudo gcc make \
