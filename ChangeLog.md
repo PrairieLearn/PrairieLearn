@@ -199,10 +199,13 @@
 
   * Fix in-browser course edit handler to keep one course lock throughout entire process (Tim Bretl).
 
-  * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
   * Fix button alignment in popovers (Tim Bretl).
 
   * Fix authorization of effective user (Tim Bretl).
+
+  * Fix in-browser add/copy of course instances to ensure user has `Instructor` role (Tim Bretl).
+
+  * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 
