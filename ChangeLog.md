@@ -73,6 +73,8 @@
 
   * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
 
+  * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -114,6 +116,8 @@
   * Change and standardize naming scheme on in-browser add/copy of course instance, assessment, or question (Tim Bretl).
 
   * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
+
+  * Change size limit for form data to account for increase from encoding (Nathan Bowman).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
