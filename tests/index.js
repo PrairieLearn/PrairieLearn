@@ -40,4 +40,5 @@ require('./testJsonLoad');
 require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
+require('./testIssues');
 require('./sync');
