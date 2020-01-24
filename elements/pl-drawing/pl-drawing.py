@@ -1925,15 +1925,15 @@ def grade(element_html, data):
         rang = ref['angle']
         rang_bwd = ref['angle'] + 180
         rang_rad = rang * (np.pi / 180.0)
-        
+
         # Defining the error box limit in the direction of the vector
         max_backward = ref['offset_backward'] + tol
         max_forward = ref['offset_forward'] + tol
-        
+
         # Check the angles
         error_fwd = abserr_ang(rang, eang)
         error_bwd = abserr_ang(rang_bwd, eang)
-        
+
         if ref['disregard_sense']:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
@@ -1972,9 +1972,9 @@ def grade(element_html, data):
         max_forward = ref['offset_forward'] + tol
 
         # Check the angles
-        error_fwd = abserr_ang(rang, eang)
+        error_fwd = abserr_ang(rang_fwd, eang)
         error_bwd = abserr_ang(rang_bwd, eang)
-        
+
         if ref['disregard_sense']:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
