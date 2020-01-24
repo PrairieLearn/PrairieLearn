@@ -1880,8 +1880,6 @@ def grade(element_html, data):
         return np.abs(x - xapp)
 
     def abserr_ang(ref, x):
-        ref = ref % 360
-        x = x % 360
         return np.abs(((np.abs(ref - x) + 180) % 360) - 180)
 
     def comp_controlledLine(ref, st):
