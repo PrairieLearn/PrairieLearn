@@ -1961,7 +1961,7 @@ def grade(element_html, data):
         # Get the position of the anchor point for the correct answer
         rpos = np.array([ref['x1'], ref['y1']])
         # Get the angle for the correct answer
-        rang_fwd = ref['angle']
+        rang = ref['angle']
         rang_bwd = ref['angle'] + 180
         rang_rad = rang * (np.pi / 180.0)
         rlen = ref['range']
@@ -1972,7 +1972,7 @@ def grade(element_html, data):
         max_forward = ref['offset_forward'] + tol
 
         # Check the angles
-        error_fwd = abserr_ang(rang_fwd, eang)
+        error_fwd = abserr_ang(rang, eang)
         error_bwd = abserr_ang(rang_bwd, eang)
 
         if ref['disregard_sense']:
