@@ -207,6 +207,8 @@
 
   * Fix authorization of effective user (Tim Bretl).
 
+  * Fix in-browser add/copy of course instances to ensure user has `Instructor` role (Tim Bretl).
+
   * Fix permissions on issues page (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
