@@ -210,8 +210,10 @@
   * Fix in-browser add/copy of course instances to ensure user has `Instructor` role (Tim Bretl).
 
   * Fix permissions on issues page (Tim Bretl).
-  
+
   * Fix angle tolerance checks for vectors in `pl-drawing` element (Nicolas Nytko).
+
+  * Fix course instance access check (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
