@@ -46,6 +46,14 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 
 See [Access control](accessControl.md) for more details.
 
+## Why does a user have the role of None?
+
+Users with the role of `None` at one point have enrolled and, then, unenrolled
+in the course. All data for anyone who ever did anything in the course
+-- even if they drop the course -- will be retained but with this indication.
+Their information is also included within the aggregation of assessment
+statistics.
+
 ## Why is the exam closed if it is not past the end date?
 
 As a built-in security measure, assessments are automatically closed after 6 hours
