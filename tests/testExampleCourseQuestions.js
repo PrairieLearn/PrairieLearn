@@ -20,11 +20,16 @@ const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
 
 
 const qidsExampleCourse = [
-    // FIXME: 'demoAnsiOutput',
+    /* Externally graded questions */
+    'demoAnsiOutput',
+    'demoCodeEditorAutograded',
+    'demoCodeUploadAutograded',
+    'demoAutograderSquare',
+    'demoAutograderPandas',
+    'demoAutograderPlots',
+    /* Normal questions */
     'demoCalculation',
-    // FIXME: 'demoCodeEditorAutograded',
-    // FIXME: 'demoCodeUploadAutograded',
-    // FIXME: 'demoCodeUploadManualGrade',
+    'demoCodeUploadManualGrade',
     'demoCustomElement',
     'demoCustomGradeFunction',
     'demoFixedCheckbox',
@@ -39,6 +44,7 @@ const qidsExampleCourse = [
     'demoStudentNames',
     'elementCheckbox',
     'elementCode',
+    /* Drawing questions */
     // FIXME: 'demoDrawingCentroid',
     // FIXME: 'demoDrawingCollarRod',
     // FIXME: 'elementDrawingGallery',
@@ -50,6 +56,7 @@ const qidsExampleCourse = [
     // FIXME: 'demoDrawingSimpleTutorial',
     // FIXME: 'demoDrawingVMDiagrams',
     // FIXME: 'elementElementCodeDocumentation',
+    /* Other */
     'elementFileDownload',
     // FIXME: 'elementFileEditor',
     'elementGraph',
