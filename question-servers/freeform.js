@@ -1037,12 +1037,16 @@ module.exports = {
                         dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
                         dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
                         dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
-                        dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
-                        dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
+                        if (course_instance != null) {
+                            dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
+                            dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
+                        }
                         dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
-                        dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
-                        dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
+                        if (course_instance != null) {
+                            dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
+                            dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
+                        }
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                             // It's important that any library-style scripts come first
