@@ -30,6 +30,7 @@
                             <th>UID</th>
                             <th>Name</th>
                             <th>Course access role</th>
+                            <th>Course instances with student data access</th>
                         </thead>
                         <tbody>
                             <% course_users.forEach(function(course_user, i) { %>
@@ -47,6 +48,25 @@
                                         uid: course_user.uid, user_id: course_user.user_id}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                             <i class="fa fa-times" aria-hidden="true"></i> Remove
                                         </button>
+                                    </td>
+                                    <td class="align-middle">
+                                        <% if (course_user.course_instance_roles) { %>
+                                            <% course_user.course_instance_roles.forEach(function(cir, i) { %>
+                                                <% if (cir.course_instance_role == 'Student Data Editor') { %>
+                                                    <button type="button" class="btn btn-xs btn-secondary">
+                                                        <%= cir.short_name %>
+                                                        <i class="fa fa-times ml-1" aria-hidden="true"></i>
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="button" class="btn btn-xs btn-danger">
+                                                        <%= cir.short_name %> (Edit)
+                                                        <i class="fa fa-times ml-1" aria-hidden="true"></i>
+                                                    </button>
+                                                <% } %>
+                                            <% }); %>
+                                        <% } else { %>
+                                            —
+                                        <% } %>
                                     </td>
                                 </tr>
                             <% }); %>
