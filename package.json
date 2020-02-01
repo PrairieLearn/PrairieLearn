@@ -39,7 +39,7 @@
         "fs-extra": "^8.1.0",
         "googleapis": "^46.0.0",
         "handlebars": "^4.5.3",
-        "highlight.js": "^9.17.1",
+        "highlight.js": "^9.18.0",
         "http-status": "^1.4.2",
         "isbinaryfile": "^4.0.3",
         "javascript-natural-sort": "^0.7.1",
