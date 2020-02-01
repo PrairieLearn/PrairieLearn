@@ -89,7 +89,7 @@
         "unified": "^8.4.2",
         "unified-stream": "^1.0.5",
         "unist-util-visit": "^2.0.1",
-        "uuid": "^3.3.3",
+        "uuid": "^3.4.0",
         "viz.js": "^2.1.2",
         "winston": "^3.2.1",
         "yargs": "^15.1.0",
