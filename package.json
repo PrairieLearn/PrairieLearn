@@ -83,7 +83,7 @@
         "socket.io-redis": "^5.2.0",
         "streamifier": "^0.1.1",
         "supports-color": "^7.1.0",
-        "tar": "^5.0.5",
+        "tar": "^6.0.1",
         "three": "^0.113.2",
         "tmp-promise": "^2.0.2",
         "unified": "^8.4.2",
