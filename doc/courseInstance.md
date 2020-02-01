@@ -68,7 +68,7 @@ Each user has a single role assigned to them. These are:
 
 Role         | Description
 ---          | ---
-`None`       | A user who at one point was enrolled in the course and, then, unenrolled. They can no longer access the course, but the work done within the course has been retained.
+`None`       | A user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.
 `Student`    | A student participating in the class. They can only see their own information, and can do assessments. Default permission.
 `TA`         | A teaching assisstant. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. They have full permission to see and edit the information of other users.
