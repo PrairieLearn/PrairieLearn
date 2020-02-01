@@ -36,7 +36,7 @@
                             <% course_users.forEach(function(course_user, i) { %>
                                 <tr>
                                     <td class="align-middle"><%= course_user.uid %></td>
-                                    <td class="align-middle"><%= course_user.name %></td>
+                                    <td class="align-middle"><%= course_user.name %> Or Some Name</td>
                                     <td class="align-middle">
                                         <%= course_user.course_role %>
 
@@ -50,19 +50,30 @@
                                         </button>
                                     </td>
                                     <td class="align-middle">
+
+
+
                                         <% if (course_user.course_instance_roles) { %>
                                             <% course_user.course_instance_roles.forEach(function(cir, i) { %>
-                                                <% if (cir.course_instance_role == 'Student Data Editor') { %>
-                                                    <button type="button" class="btn btn-xs btn-secondary">
-                                                        <%= cir.short_name %>
-                                                        <i class="fa fa-times ml-1" aria-hidden="true"></i>
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                            <%= cir.short_name %>
+                                                            <% if (cir.course_instance_role == 'Student Data Editor') { %>
+                                                                (Editor)
+                                                            <% } else { %>
+                                                                (Viewer)
+                                                            <% } %>
+                                                        </button>
+                                                        <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                                                            <a class="dropdown-item" href="#">Sp19 (Editor)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-dark">
+                                                        <i class="fa fa-times"></i>
                                                     </button>
-                                                <% } else { %>
-                                                    <button type="button" class="btn btn-xs btn-danger">
-                                                        <%= cir.short_name %> (Edit)
-                                                        <i class="fa fa-times ml-1" aria-hidden="true"></i>
-                                                    </button>
-                                                <% } %>
+                                                </div>
                                             <% }); %>
                                         <% } else { %>
                                             —
