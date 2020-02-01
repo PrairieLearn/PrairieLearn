@@ -48,7 +48,7 @@ See [Access control](accessControl.md) for more details.
 
 ## Why does a user have the role of None?
 
-Users with the role of `None` at one point have enrolled and, then, unenrolled
+Users with a role of `None` at one point added the course and later removed themselves.
 in the course. All data for anyone who ever did anything in the course
 -- even if they drop the course -- will be retained but with this indication.
 Their information is also included within the aggregation of assessment
@@ -282,4 +282,3 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart your computer.
 - Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then, 
   close the terminal application.   
-
