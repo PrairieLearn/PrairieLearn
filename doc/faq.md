@@ -49,7 +49,7 @@ See [Access control](accessControl.md) for more details.
 ## Why does a user have the role of None?
 
 Users with a role of `None` at one point added the course and later removed themselves.
-in the course. All data for anyone who ever did anything in the course
+All data for anyone who ever did anything in the course
 -- even if they drop the course -- will be retained but with this indication.
 Their information is also included within the aggregation of assessment
 statistics.
