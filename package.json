@@ -8,7 +8,7 @@
         "@prairielearn/prairielib": "^1.8.1",
         "ace-builds": "^1.4.8",
         "adm-zip": "^0.4.13",
-        "ajv": "^6.10.2",
+        "ajv": "^6.11.0",
         "archiver": "^3.1.1",
         "async": "^3.1.0",
         "async-stacktrace": "0.0.2",
