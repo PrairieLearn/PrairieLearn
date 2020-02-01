@@ -38,7 +38,7 @@
         "filesize": "^6.0.1",
         "fs-extra": "^8.1.0",
         "googleapis": "^47.0.0",
-        "handlebars": "^4.5.3",
+        "handlebars": "^4.7.2",
         "highlight.js": "^9.17.1",
         "http-status": "^1.4.2",
         "isbinaryfile": "^4.0.4",
