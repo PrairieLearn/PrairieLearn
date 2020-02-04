@@ -54,41 +54,25 @@ FROM
 RETURNING id;
 
 -- BLOCK update_job_on_close
-WITH job_updates AS (
-    SELECT
-        j.id,
-        CASE
-            WHEN j.status = 'Running' THEN TRUE
-            ELSE FALSE
-        END AS update_job
-    FROM
-        jobs AS j
-    WHERE
-        j.id = $job_id
-),
-updated_jobs AS (
+WITH updated_jobs AS (
     UPDATE jobs AS j
     SET
-        finish_date = CASE WHEN ju.update_job THEN CURRENT_TIMESTAMP ELSE j.finish_date END,
-        status = CASE WHEN NOT ju.update_job THEN j.status WHEN $exit_code = 0 THEN 'Success'::enum_job_status ELSE 'Error'::enum_job_status END,
-        stderr = CASE WHEN ju.update_job THEN $stderr ELSE j.stderr END,
-        stdout = CASE WHEN ju.update_job THEN $stdout ELSE j.stdout END,
-        output = CASE WHEN ju.update_job THEN $output ELSE j.output END,
-        exit_code = CASE WHEN ju.update_job THEN $exit_code ELSE j.exit_code END,
-        exit_signal = CASE WHEN ju.update_job THEN $exit_signal ELSE j.exit_signal END
-    FROM
-        job_updates AS ju
+        finish_date = CURRENT_TIMESTAMP,
+        status = CASE WHEN $exit_code = 0 THEN 'Success'::enum_job_status ELSE 'Error'::enum_job_status END,
+        stderr = $stderr,
+        stdout = $stdout,
+        output = $output,
+        exit_code = $exit_code,
+        exit_signal = $exit_signal
     WHERE
         j.id = $job_id
     RETURNING
-        j.*,
-        ju.update_job
+        j.*
 ),
 job_sequence_updates AS (
     SELECT
         j.*,
         CASE
-            WHEN NOT j.update_job THEN FALSE
             WHEN j.no_job_sequence_update THEN FALSE
             WHEN j.status = 'Error' THEN TRUE
             WHEN j.last_in_sequence THEN TRUE
@@ -97,7 +81,7 @@ job_sequence_updates AS (
     FROM
         updated_jobs AS j
 ),
-updated_job_sequences AS (
+update_results AS (
     UPDATE job_sequences AS js
     SET
         finish_date = j.finish_date,
