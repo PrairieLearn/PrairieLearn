@@ -1156,6 +1156,9 @@ module.exports = {
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
             };
+
+            console.log("grade()", data);
+            
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1188,6 +1191,10 @@ module.exports = {
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
+            }
+
+            if (question.external_grading_enabled) {
+                console.log("externally graded question:", question);
             }
 
             let data = {

@@ -124,6 +124,10 @@
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"
         },
+        "externalGradingPullImagesFromDockerHub": {
+            "description": "If externally graded questions should automatically pull container images from DockerHub (true) or use only locally cached images (false)",
+            "type": "boolean"
+        },
         "awsRegion": {
             "description": "The region for AWS resources.",
             "type": "string"
