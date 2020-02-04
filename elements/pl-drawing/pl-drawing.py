@@ -2060,7 +2060,7 @@ def grade(element_html, data):
             if 'optional_grading' in ref_element and ref_element['optional_grading']:
                 continue
             num_total_ref += 1
-
+            
     # Loop through and check everything
     for element in student['objects']:
         if 'gradingName' not in element or element['gradingName'] not in comp or not element['graded']:
@@ -2070,7 +2070,7 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or matches[ref_element['id']] or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 continue
 
             if comp[element['gradingName']](ref_element, element):
@@ -2086,7 +2086,7 @@ def grade(element_html, data):
                 break
 
     extra_not_optional = num_total_st - (num_optional + num_correct)
-
+    
     if num_total_ref == 0:
         score = 1
     else:
