@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "News Item Info",
+    "description": "Info files for news items.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "uuid",
+        "title",
+        "visible_to_students"
+    ],
+    "properties": {
+        "uuid": {
+            "description": "Unique identifier (UUID v4).",
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "title": {
+            "description": "The title of the news item.",
+            "type": "string"
+        },
+        "author": {
+            "description": "The author of the news item.",
+            "type": "string"
+        },
+        "visible_to_students": {
+            "description": "Whether the news item should be shown to students.",
+            "type": "boolean"
+        }
+    }
+}

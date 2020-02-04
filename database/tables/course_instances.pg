@@ -4,7 +4,6 @@ columns
     display_timezone: text
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
-    number: integer
     ps_linked: boolean not null default true
     short_name: text
     uuid: uuid not null

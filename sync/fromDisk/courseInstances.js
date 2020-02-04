@@ -28,7 +28,6 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
                 uuid: courseInstance.uuid,
                 short_name: courseInstanceShortName,
                 long_name: courseInstance.longName,
-                number: courseInstance.number,
                 display_timezone: courseInstance.timezone || courseInfo.timezone || 'America/Chicago',
                 access_rules: accessRules,
             };

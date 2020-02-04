@@ -23,10 +23,10 @@
     <% } else { %>
       <input type="hidden" name="working_path" value="<%= file.working_path %>">
     <% } %>
-    <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-<%= file.id %>').popover('hide')">
-      Cancel
-    </button>
-    <button type="submit" class="btn btn-primary">Upload file</button>
+    <div class="text-right">
+      <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-<%= file.id %>').popover('hide')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload file</button>
+    </div>
   </div>
 </form>
 
@@ -37,7 +37,7 @@
           let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
           $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
         });
-        
+
         $('form[name="instructor-file-upload-form-<%= file.id %>"]').submit(function(event) {
           if ($(this).get(0).checkValidity() === false) {
               event.preventDefault();

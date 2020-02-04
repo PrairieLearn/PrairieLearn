@@ -29,6 +29,7 @@ const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const migrations = require('./migrations');
 const sprocs = require('./sprocs');
+const news_items = require('./news_items');
 const cron = require('./cron');
 const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
@@ -162,7 +163,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
-app.use(bodyParser.urlencoded({extended: false, limit: 1024 * 1024}));
+app.use(bodyParser.urlencoded({extended: false, limit: 1536 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -229,7 +230,7 @@ if (config.devMode) {
 }
 
 // clear cookies on the homepage to reset any stale session state
-app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
+app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
 app.use('/', require('./pages/home/home'));
@@ -238,6 +239,8 @@ app.use('/pl/settings', require('./pages/userSettings/userSettings'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 app.use('/pl/password', require('./pages/authPassword/authPassword'));
+app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
@@ -277,10 +280,17 @@ app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res,
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
 
+// all pages under /pl/course require authorization
+app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
+app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
+
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
 app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/elementFiles/elementFiles'));
 app.use('/pl/course_instance/:course_instance_id/instructor/elements', require('./pages/elementFiles/elementFiles'));
+app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -407,6 +417,12 @@ app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
+
+
+// course instance - news_items
+app.use('/pl/course_instance/:course_instance_id/instructor/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course_instance/:course_instance_id/instructor/news_item', require('./pages/news_item/news_item.js'));
+
 
 // course instance - course admin pages
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
@@ -581,6 +597,11 @@ if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
+// student - news_items
+app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
+
+
 // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
@@ -629,11 +650,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 //////////////////////////////////////////////////////////////////////
 // Course pages //////////////////////////////////////////////////////
 
-app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
-app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
-app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
-app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
 
 // single question
 
@@ -676,7 +693,9 @@ app.use('/pl/course/:course_id/question/:question_id/file_view', [
 app.use('/pl/course/:course_id/question/:question_id/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
 
 
-
+// course - news_items
+app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
+app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
 
 
 app.use('/pl/course/:course_id/file_transfer', [
@@ -889,6 +908,13 @@ if (config.startServer) {
             } else {
                 callback(null);
             }
+        },
+        function(callback) {
+            const notify_with_new_server = false;
+            news_items.init(notify_with_new_server, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             cron.init(function(err) {

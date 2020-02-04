@@ -6,7 +6,7 @@
         <a class="nav-link <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if (courses && courses.length > 0) { %>
+        <% if (locals.courses && courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
@@ -43,7 +43,11 @@
             <% if (typeof course_instances != 'undefined') { %>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
                     <% course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                        <% if ((navPage == "instance_admin") || (navPage == "course_admin")) { %>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                        <% } else { %>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
+                        <% } %>
                     <% }); %>
                 </div>
             <% } %>
@@ -73,6 +77,23 @@
                         <% }); %>
                     </div>
                 <% } %>
+            </li>
+        <% } %>
+    <% } else { %>
+        <% if (locals.course_instances && course_instances.length > 0) { %>
+            <span class="navbar-text mx-2">
+                <i class="fas fa-circle"></i>
+            </span>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceChoose" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Choose course instance...
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChoose">
+                    <% course_instances.forEach(function(ci) { %>
+                        <a class="dropdown-item" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                    <% }); %>
+                </div>
             </li>
         <% } %>
     <% } %>

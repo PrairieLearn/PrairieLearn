@@ -1017,6 +1017,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'arrow',
             'gradingName': 'vector',
         }
@@ -1211,6 +1212,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
             'originY': 'center',
             'fill': color,
             'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable'],
             'type': 'circle',
             'gradingName': 'point',
         }
@@ -1860,6 +1862,7 @@ def grade(element_html, data):
 
     grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
+    angtol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
 
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
@@ -1875,6 +1878,9 @@ def grade(element_html, data):
 
     def abserr(x, xapp):
         return np.abs(x - xapp)
+
+    def abserr_ang(ref, x):
+        return np.abs(((np.abs(ref - x) + 180) % 360) - 180)
 
     def comp_controlledLine(ref, st):
         ex1, ex2 = st['x1'], st['x2']
@@ -1912,26 +1918,25 @@ def grade(element_html, data):
 
         # Get the position of the anchor point for the correct answer
         rpos = np.array([ref['x1'], ref['y1']])
+
         # Get the angle for the correct answer
         rang = ref['angle']
-        rang2 = -1.0 * np.sign(rang) * (360 - np.abs(rang)) if np.sign(rang) != 0 else 360
-        rang3 = -1.0 * np.sign(rang) * (180 - np.abs(rang)) if np.sign(rang) != 0 else -180
-        rang4 = 1.0 * np.sign(rang) * (180 + np.abs(rang)) if np.sign(rang) != 0 else 180
+        rang_bwd = ref['angle'] + 180
         rang_rad = rang * (np.pi / 180.0)
+
         # Defining the error box limit in the direction of the vector
         max_backward = ref['offset_backward'] + tol
         max_forward = ref['offset_forward'] + tol
 
         # Check the angles
-        error1 = abserr(rang, eang)
-        error2 = abserr(rang2, eang)
-        error3 = abserr(rang3, eang)
-        error4 = abserr(rang4, eang)
+        error_fwd = abserr_ang(rang, eang)
+        error_bwd = abserr_ang(rang_bwd, eang)
+
         if ref['disregard_sense']:
-            if error1 > tol and error2 > tol and error3 > tol and error4 > tol:
+            if error_fwd > angtol and error_bwd > angtol:
                 return False
         else:
-            if error1 > tol and error2 > tol:
+            if error_fwd > angtol:
                 return False
 
         # Get position of student answer relative to reference answer
@@ -1955,9 +1960,7 @@ def grade(element_html, data):
         rpos = np.array([ref['x1'], ref['y1']])
         # Get the angle for the correct answer
         rang = ref['angle']
-        rang2 = -1.0 * np.sign(rang) * (360 - np.abs(rang)) if np.sign(rang) != 0 else 360
-        rang3 = -1.0 * np.sign(rang) * (180 - np.abs(rang)) if np.sign(rang) != 0 else -180
-        rang4 = 1.0 * np.sign(rang) * (180 + np.abs(rang)) if np.sign(rang) != 0 else 180
+        rang_bwd = ref['angle'] + 180
         rang_rad = rang * (np.pi / 180.0)
         rlen = ref['range']
         rw1 = ref['w1']
@@ -1967,15 +1970,14 @@ def grade(element_html, data):
         max_forward = ref['offset_forward'] + tol
 
         # Check the angles
-        error1 = abserr(rang, eang)
-        error2 = abserr(rang2, eang)
-        error3 = abserr(rang3, eang)
-        error4 = abserr(rang4, eang)
+        error_fwd = abserr_ang(rang, eang)
+        error_bwd = abserr_ang(rang_bwd, eang)
+
         if ref['disregard_sense']:
-            if error1 > tol and error2 > tol and error3 > tol and error4 > tol:
+            if error_fwd > angtol and error_bwd > angtol:
                 return False
         else:
-            if error1 > tol and error2 > tol:
+            if error_fwd > angtol:
                 return False
 
         # Check width
@@ -2068,7 +2070,7 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or matches[ref_element['id']] or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 continue
 
             if comp[element['gradingName']](ref_element, element):

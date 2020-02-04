@@ -73,6 +73,10 @@
   
   * Add more robust Python autograder to `prairielearn/grader-python` (Nathan Bowman and Nicolas Nytko).
 
+  * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
+
+  * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -110,6 +114,12 @@
   * Change navbar/navtab structure to match course content structure (Tim Bretl).
 
   * Change `MathJax` version from 2.7.5 to 3.0.0 (Nicolas Nytko)
+
+  * Change and standardize naming scheme on in-browser add/copy of course instance, assessment, or question (Tim Bretl).
+
+  * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
+
+  * Change size limit for form data to account for increase from encoding (Nathan Bowman).
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -186,6 +196,28 @@
   * Fix bug in element popovers (Tim Bretl).
 
   * Fix redirects to question preview page by maintaining query parameters (Nathan Walters).
+
+  * Fix redirects to course admin sub-page when switching course instances (Tim Bretl).
+
+  * Fix server-side check of new file names and paths on in-browser rename (Tim Bretl).
+
+  * Fix in-browser course edit handler to update commit hash only when using git (Tim Bretl).
+
+  * Fix in-browser course edit handler to keep one course lock throughout entire process (Tim Bretl).
+
+  * Fix button alignment in popovers (Tim Bretl).
+
+  * Fix authorization of effective user (Tim Bretl).
+
+  * Fix in-browser add/copy of course instances to ensure user has `Instructor` role (Tim Bretl).
+
+  * Fix permissions on issues page (Tim Bretl).
+  
+  * Fix angle tolerance checks for vectors in `pl-drawing` element (Nicolas Nytko).
+  
+  * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
+
+  * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
 

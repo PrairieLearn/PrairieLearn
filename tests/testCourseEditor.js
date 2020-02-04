@@ -35,14 +35,13 @@ const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
-const newCourseInstanceName = getNextNameShort();
 
 const testEditData = [
     {
         url: questionsUrl,
         form: 'add-question-form',
         action: 'add_question',
-        info: 'questions/question-1/info.json',
+        info: 'questions/New_1/info.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -51,9 +50,9 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'questions/question-1/info.json',
-            'questions/question-1/question.html',
-            'questions/question-1/server.py',
+            'questions/New_1/info.json',
+            'questions/New_1/question.html',
+            'questions/New_1/server.py',
         ]),
     },
     {
@@ -98,7 +97,7 @@ const testEditData = [
             to_course_id: 1,
         },
         action: 'copy_question',
-        info: 'questions/question-1/info.json',
+        info: 'questions/testQuestion_copy1/info.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -107,9 +106,9 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'questions/question-1/info.json',
-            'questions/question-1/question.html',
-            'questions/question-1/server.py',
+            'questions/testQuestion_copy1/info.json',
+            'questions/testQuestion_copy1/question.html',
+            'questions/testQuestion_copy1/server.py',
         ]),
     },
     {
@@ -129,7 +128,7 @@ const testEditData = [
         url: assessmentsUrl,
         form: 'add-assessment-form',
         action: 'add_assessment',
-        info: 'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+        info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -138,7 +137,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+            'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
         ]),
     },
     {
@@ -177,7 +176,7 @@ const testEditData = [
         url: `${courseInstanceUrl}/assessment/1/settings`,
         form: 'copy-assessment-form',
         action: 'copy_assessment',
-        info: 'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+        info: 'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -186,7 +185,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Fa18/assessments/HW2/infoAssessment.json',
+            'courseInstances/Fa18/assessments/HW1_copy1/infoAssessment.json',
         ]),
     },
     {
@@ -206,7 +205,7 @@ const testEditData = [
         url: courseInstancesUrl,
         form: 'add-course-instance-form',
         action: 'add_course_instance',
-        info: `courseInstances/${newCourseInstanceName}/infoCourseInstance.json`,
+        info: `courseInstances/New_1/infoCourseInstance.json`,
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -215,7 +214,7 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            `courseInstances/${newCourseInstanceName}/infoCourseInstance.json`,
+            `courseInstances/New_1/infoCourseInstance.json`,
         ]),
     },
     {
@@ -254,7 +253,7 @@ const testEditData = [
         url: `${courseInstanceUrl}/instance_admin/settings`,
         form: 'copy-course-instance-form',
         action: 'copy_course_instance',
-        info: 'courseInstances/Sp19/infoCourseInstance.json',
+        info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
         files: new Set([
             'README.md',
             'infoCourse.json',
@@ -263,8 +262,8 @@ const testEditData = [
             'questions/testQuestion/info.json',
             'questions/testQuestion/question.html',
             'questions/testQuestion/server.py',
-            'courseInstances/Sp19/infoCourseInstance.json',
-            'courseInstances/Sp19/assessments/HW1/infoAssessment.json',
+            'courseInstances/Fa18_copy1/infoCourseInstance.json',
+            'courseInstances/Fa18_copy1/assessments/HW1/infoAssessment.json',
         ]),
     },
     {
@@ -318,24 +317,7 @@ describe('test course editor', function() {
             });
         });
     });
-
 });
-
-function getNextNameShort() {
-    const today = new Date();
-    const month = today.getMonth();
-    let nextSeason;
-    let nextYear = today.getFullYear() - 2000;
-    if (month <= 4) {
-        nextSeason = 'Su';
-    } else if (month <= 7) {
-        nextSeason = 'Fa';
-    } else {
-        nextSeason = 'Sp';
-        nextYear += 1;
-    }
-    return `${nextSeason}${nextYear.toString().padStart(2, '0')}`;
-}
 
 function getFiles(options, callback) {
     let files = new Set([]);

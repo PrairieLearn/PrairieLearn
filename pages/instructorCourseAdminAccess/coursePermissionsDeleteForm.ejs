@@ -6,8 +6,8 @@
     <label for="addUserInputUid">UID:</label>
     <p class="form-control-static"><%= uid %></p>
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Remove user access</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Remove user access</button>
+  </div>
 </form>

@@ -143,7 +143,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!(res.locals.authz_data.has_course_permission_edit || res.locals.authz_data.has_instructor_edit)) return next();
     if (req.body.__action == 'open') {
         let params = [
             req.body.issue_id,

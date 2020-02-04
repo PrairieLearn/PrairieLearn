@@ -66,8 +66,8 @@ select_institutions_with_authn_providers AS (
         ) AS authn_providers
     FROM
         institutions AS i
-        JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
-        JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
+        LEFT JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
+        LEFT JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
     GROUP BY i.id
 ),
 select_institutions AS (

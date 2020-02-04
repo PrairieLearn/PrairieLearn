@@ -371,6 +371,8 @@ router.post('/*', function(req, res, next) {
             } catch(err) {
                 return next(new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`));
             }
+            if (!req.body.new_file_name) return next(new Error(`Invalid new file name (was falsey): ${req.body.new_file_name}`));
+            if (!/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(req.body.new_file_name)) return next(new Error(`Invalid new file name (did not match required pattern): ${req.body.new_file_name}`));
             let newPath;
             try {
                 newPath = path.join(req.body.working_path, req.body.new_file_name);
