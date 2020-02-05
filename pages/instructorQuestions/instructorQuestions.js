@@ -9,34 +9,56 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { QuestionAddEditor } = require('../../lib/editors');
+const fs = require('fs-extra');
+const async = require('async');
 
 router.get('/', function(req, res, next) {
     const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
-    var params = {
-        course_instance_id: course_instance_id,
-        course_id: res.locals.course.id,
-    };
-    sqldb.query(sql.questions, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.questions = result.rows;
-
-        var params = {
-            course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.tags, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.locals.all_tags = result.rows;
-
-            var params = {
+    async.series([
+        (callback) => {
+            fs.access(res.locals.course.path, (err) => {
+                if (err) {
+                    if (err.code == 'ENOENT') {
+                        res.locals.needToSync = true;
+                    } else return ERR(err, callback);
+                }
+                callback(null);
+            });
+        },
+        (callback) => {
+            const params = {
+                course_instance_id: course_instance_id,
+                course_id: res.locals.course.id,
+            };
+            sqldb.query(sql.questions, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.questions = result.rows;
+                callback(null);
+            });
+        },
+        (callback) => {
+            const params = {
+                course_id: res.locals.course.id,
+            };
+            sqldb.query(sql.tags, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.all_tags = result.rows;
+                callback(null);
+            });
+        },
+        (callback) => {
+            const params = {
                 course_instance_id: course_instance_id,
             };
             sqldb.query(sql.assessments, params, function(err, result) {
-                if (ERR(err, next)) return;
+                if (ERR(err, callback)) return;
                 res.locals.all_assessments = result.rows;
-
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                callback(null);
             });
-        });
+        },
+    ], (err) => {
+        if (ERR(err, next)) return;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
