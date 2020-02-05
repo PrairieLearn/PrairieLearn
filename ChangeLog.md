@@ -75,6 +75,8 @@
 
   * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
 
+  * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
