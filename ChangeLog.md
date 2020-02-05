@@ -217,6 +217,8 @@
   
   * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
 
+  * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
