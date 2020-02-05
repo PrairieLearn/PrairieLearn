@@ -191,6 +191,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Params', 'params'],
                 ['True answer', 'true_answer'],
                 ['Options', 'options'],
+                ['submission_id', 'submission_id'],
                 ['Submission date', 'submission_date_formatted'],
                 ['Submitted answer', 'submitted_answer'],
                 ['Override score', 'override_score'],

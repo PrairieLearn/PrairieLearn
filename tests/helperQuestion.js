@@ -26,8 +26,8 @@ module.exports = {
                     var params = {job_sequence_id: locals.job_sequence_id};
                     sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
                         if (ERR(err, callback)) return;
-                        locals.job_sequence_status = result.rows[0].status;
-                        if (locals.job_sequence_status == 'Running') {
+                        locals.job_sequence = result.rows[0];
+                        if (locals.job_sequence.status == 'Running') {
                             setTimeout(checkComplete, 10);
                         } else {
                             callback(null);
@@ -36,8 +36,14 @@ module.exports = {
                 };
                 setTimeout(checkComplete, 10);
             });
-            it('should be successful', function() {
-                assert.equal(locals.job_sequence_status, 'Success');
+            it('should be successful', async () => {
+                if (locals.job_sequence.status != 'Success') {
+                    console.log(locals.job_sequence);
+                    const params = {job_sequence_id: locals.job_sequence_id};
+                    const result = await sqldb.queryAsync(sql.select_jobs, params);
+                    console.log(result.rows);
+                }
+                assert.equal(locals.job_sequence.status, 'Success');
             });
         });
     },
@@ -375,6 +381,26 @@ module.exports = {
         });
     },
 
+    checkQuestionFeedback(locals) {
+        describe('check question feedback', function() {
+            it('should still have ', function(callback) {
+                var params = {
+                    assessment_instance_id: locals.assessment_instance.id,
+                    qid: locals.expectedFeedback.qid,
+                    submission_id: locals.expectedFeedback.submission_id || null,
+                };
+                sqldb.queryOneRow(sql.select_question_feedback, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    locals.question_feedback = result.rows[0];
+                    callback(null);
+                });
+            });
+            it('should have the correct feedback', function() {
+                assert.deepEqual(locals.question_feedback.feedback, locals.expectedFeedback.feedback);
+            });
+        });
+    },
+
     regradeAssessment(locals) {
         describe('GET to instructorAssessmentRegrading URL', function() {
             it('should succeed', function(callback) {
@@ -421,7 +447,7 @@ module.exports = {
         module.exports.waitForJobSequence(locals);
     },
 
-    uploadInstanceQuestionScores(locals, csvData) {
+    uploadInstanceQuestionScores(locals) {
         describe('GET to instructorAssessmentUploads URL', function() {
             it('should succeed', function(callback) {
                 locals.instructorAssessmentUploadsUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/uploads';
@@ -430,6 +456,8 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
+                        console.log(response);
+                        console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
@@ -453,7 +481,7 @@ module.exports = {
                     __action: 'upload_instance_question_scores',
                     __csrf_token: locals.__csrf_token,
                     file: {
-                        value: csvData,
+                        value: locals.csvData,
                         options: {
                             filename: 'data.csv',
                             contentType: 'text/csv',
@@ -465,6 +493,8 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
+                        console.log(response);
+                        console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     callback(null);
@@ -474,7 +504,7 @@ module.exports = {
         module.exports.waitForJobSequence(locals);
     },
 
-    uploadAssessmentInstanceScores(locals, csvData) {
+    uploadAssessmentInstanceScores(locals) {
         describe('GET to instructorAssessmentUploads URL', function() {
             it('should succeed', function(callback) {
                 locals.instructorAssessmentUploadsUrl = locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/uploads';
@@ -483,6 +513,8 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
+                        console.log(response);
+                        console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
@@ -506,7 +538,7 @@ module.exports = {
                     __action: 'upload_assessment_instance_scores',
                     __csrf_token: locals.__csrf_token,
                     file: {
-                        value: csvData,
+                        value: locals.csvData,
                         options: {
                             filename: 'data.csv',
                             contentType: 'text/csv',
@@ -518,6 +550,8 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
+                        console.log(response);
+                        console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     callback(null);

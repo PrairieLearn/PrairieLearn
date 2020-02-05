@@ -683,8 +683,15 @@ describe('Exam assessment', function() {
     });
 
     describe('34. instance question score_perc uploads', function() {
-        let csvData = 'uid,instance,qid,score_perc\ndev@illinois.edu,1,addNumbers,40\ndev@illinois.edu,1,addVectors,50\n';
-        helperQuestion.uploadInstanceQuestionScores(locals, csvData);
+        describe('prepare the CSV upload data', function() {
+            it('should succeed', function() {
+                locals.csvData
+                    = 'uid,instance,qid,score_perc,feedback\n'
+                    + 'dev@illinois.edu,1,addNumbers,40,"{""manual"":""feedbackNumbers""}"\n'
+                    + 'dev@illinois.edu,1,addVectors,50,"{""manual"":""feedbackVectors""}"\n';
+            });
+        });
+        helperQuestion.uploadInstanceQuestionScores(locals);
         describe('check the instance question score upload succeeded', function() {
             describe('setting up the expected question addNumbers results', function() {
                 it('should succeed', function() {
@@ -725,12 +732,63 @@ describe('Exam assessment', function() {
                 });
             });
             helperQuestion.checkAssessmentScore(locals);
+            describe('setting up the expected feedback for addNumbers', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: null,
+                        qid: helperExam.questions.addNumbers.qid,
+                        feedback: {manual: 'feedbackNumbers'},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for addVectors', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: null,
+                        qid: helperExam.questions.addVectors.qid,
+                        feedback: {manual: 'feedbackVectors'},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for fossilFuelsRadio', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: null,
+                        qid: helperExam.questions.fossilFuelsRadio.qid,
+                        feedback: null,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
         });
     });
 
     describe('35. instance question points uploads', function() {
-        let csvData = 'uid,instance,qid,points\ndev@illinois.edu,1,addNumbers,4.7\ndev@illinois.edu,1,addVectors,1.2\n';
-        helperQuestion.uploadInstanceQuestionScores(locals, csvData);
+        describe('prepare the CSV upload data', function() {
+            it('should get the submission_ids for addNumbers', async () => {
+                const params = {
+                    qid: helperExam.questions.addNumbers.qid,
+                };
+                const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+                // make sure we've got lots of submissions to make the later checks work
+                assert.isAtLeast(result.rowCount, 4);
+                // we are going to add feedback to one of the submissions
+                locals.submission_id_for_feedback = result.rows[2].id;
+                // all the the other submissions should not be modified
+                locals.submission_id_preserve0 = result.rows[0].id;
+                locals.submission_id_preserve1 = result.rows[1].id;
+                locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+            });
+            it('should succeed', function() {
+                locals.csvData
+                    = 'uid,instance,qid,points,submission_id,feedback\n'
+                    + 'dev@illinois.edu,1,addNumbers,4.7,' + locals.submission_id_for_feedback + ',"{""manual"":""feedbackNumbers2""}"\n'
+                    + 'dev@illinois.edu,1,addVectors,1.2,,\n';
+            });
+        });
+        helperQuestion.uploadInstanceQuestionScores(locals);
         describe('check the instance question score upload succeeded', function() {
             describe('setting up the expected question addNumbers results', function() {
                 it('should succeed', function() {
@@ -771,12 +829,78 @@ describe('Exam assessment', function() {
                 });
             });
             helperQuestion.checkAssessmentScore(locals);
+            describe('setting up the expected feedback for addNumbers, submission with new feedback', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: locals.submission_id_for_feedback,
+                        qid: helperExam.questions.addNumbers.qid,
+                        feedback: {manual: 'feedbackNumbers2'},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for addNumbers, submission with preserved feedback 0', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: locals.submission_id_preserve0,
+                        qid: helperExam.questions.addNumbers.qid,
+                        feedback: {},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for addNumbers, submission with preserved feedback 1', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: locals.submission_id_preserve1,
+                        qid: helperExam.questions.addNumbers.qid,
+                        feedback: null,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for addNumbers, submission with preserved feedback N', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: locals.submission_id_preserveN,
+                        qid: helperExam.questions.addNumbers.qid,
+                        feedback: {manual: 'feedbackNumbers'},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for addVectors', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: null,
+                        qid: helperExam.questions.addVectors.qid,
+                        feedback: {manual: 'feedbackVectors'},
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
+            describe('setting up the expected feedback for fossilFuelsRadio', function() {
+                it('should succeed', function() {
+                    locals.expectedFeedback = {
+                        submission_id: null,
+                        qid: helperExam.questions.fossilFuelsRadio.qid,
+                        feedback: null,
+                    };
+                });
+            });
+            helperQuestion.checkQuestionFeedback(locals);
         });
     });
 
     describe('36. assessment instance score_perc uploads', function() {
-        let csvData = 'uid,instance,score_perc\ndev@illinois.edu,1,43.7\n';
-        helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
+        describe('prepare the CSV upload data', function() {
+            it('should succeed', function() {
+                locals.csvData
+                    = 'uid,instance,score_perc\n'
+                    + 'dev@illinois.edu,1,43.7\n';
+            });
+        });
+        helperQuestion.uploadAssessmentInstanceScores(locals);
         describe('check the assessment instance score upload succeeded', function() {
             describe('setting up the expected question addNumbers results', function() {
                 it('should succeed', function() {
@@ -821,8 +945,14 @@ describe('Exam assessment', function() {
     });
 
     describe('37. assessment instance points uploads', function() {
-        let csvData = 'uid,instance,points\ndev@illinois.edu,1,29.6\n';
-        helperQuestion.uploadAssessmentInstanceScores(locals, csvData);
+        describe('prepare the CSV upload data', function() {
+            it('should succeed', function() {
+                locals.csvData
+                    = 'uid,instance,points\n'
+                    + 'dev@illinois.edu,1,29.6\n';
+            });
+        });
+        helperQuestion.uploadAssessmentInstanceScores(locals);
         describe('check the assessment instance score upload succeeded', function() {
             describe('setting up the expected question addNumbers results', function() {
                 it('should succeed', function() {

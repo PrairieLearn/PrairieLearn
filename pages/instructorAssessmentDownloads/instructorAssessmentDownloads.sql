@@ -79,6 +79,7 @@ WITH all_submissions AS (
         v.true_answer,
         v.options,
         s.date,
+        s.id AS submission_id,
         format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
         s.submitted_answer,
         s.override_score,
@@ -163,6 +164,7 @@ all_files AS (
         qid,
         variant_number,
         date,
+        submission_id,
         submission_number,
         (CASE
             WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
@@ -189,6 +191,7 @@ SELECT
         || '_' || qid
         || '_' || variant_number
         || '_' || submission_number
+        || '_' || submission_id
         || '_' || filename
     ) AS filename,
     base64_safe_decode(contents) AS contents

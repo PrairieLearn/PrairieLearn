@@ -108,10 +108,13 @@ router.post('/', (req, res, next) => {
     } else if (req.body.__action == 'edit_question_points') {
         const params = [
             req.body.instance_question_id,
+            null, // score_perc
             req.body.points,
+            null, // submission_id
+            null, // feedback
             res.locals.authn_user.user_id,
         ];
-        sqlDb.call('instance_questions_update_points', params, (err, _result) => {
+        sqlDb.call('instance_questions_update_score', params, (err, _result) => {
             if (ERR(err, next)) return;
             ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
@@ -122,9 +125,12 @@ router.post('/', (req, res, next) => {
         const params = [
             req.body.instance_question_id,
             req.body.score_perc,
+            null, // points
+            null, // submission_id
+            null, // feedback
             res.locals.authn_user.user_id,
         ];
-        sqlDb.call('instance_questions_update_score_perc', params, (err, _result) => {
+        sqlDb.call('instance_questions_update_score', params, (err, _result) => {
             if (ERR(err, next)) return;
             ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
