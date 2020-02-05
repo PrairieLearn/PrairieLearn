@@ -280,10 +280,17 @@ app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res,
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
 
+// all pages under /pl/course require authorization
+app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
+app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
+
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
 app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/elementFiles/elementFiles'));
 app.use('/pl/course_instance/:course_instance_id/instructor/elements', require('./pages/elementFiles/elementFiles'));
+app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -643,11 +650,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 //////////////////////////////////////////////////////////////////////
 // Course pages //////////////////////////////////////////////////////
 
-app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
-app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
-app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
-app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
 
 // single question
 
