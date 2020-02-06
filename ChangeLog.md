@@ -220,6 +220,7 @@
   * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
 
   * Fix gradebook and question statistics download links (Tim Bretl).
+  * Fix course instance access check (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
