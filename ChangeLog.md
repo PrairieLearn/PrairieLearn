@@ -75,6 +75,8 @@
 
   * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
 
+  * Add support for editing from bare git repo (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
