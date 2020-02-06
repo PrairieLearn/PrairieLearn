@@ -214,12 +214,14 @@
   * Fix permissions on issues page (Tim Bretl).
 
   * Fix angle tolerance checks for vectors in `pl-drawing` element (Nicolas Nytko).
-  
+
   * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
 
   * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
 
   * Fix course instance access check (Tim Bretl).
+
+  * Fix gradebook and question statistics download links (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
