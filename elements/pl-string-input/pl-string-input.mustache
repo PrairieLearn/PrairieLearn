@@ -30,7 +30,6 @@
 {{#inline}}</span>{{/inline}}
 {{/question}}
 
-
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
 {{#parse_error}}
@@ -50,7 +49,7 @@
 {{/parse_error}}
 {{^parse_error}}
 {{#label}}<span>{{label}}</span>{{/label}}
-<samp>{{a_sub}}</samp>
+<code class="pl-string-input-value">{{a_sub}}</code>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
@@ -61,7 +60,7 @@
 
 {{#answer}}
 {{#label}}<span>{{label}}</span>{{/label}}
-<samp>{{a_tru}}</samp>
+<code class="pl-string-input-value">{{a_tru}}</code>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
 

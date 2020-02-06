@@ -223,6 +223,12 @@
 
   * Fix server jobs so that errors are handled only once (Tim Bretl).
 
+  * Fix course instance access check (Tim Bretl).
+
+  * Fix `pl-string-input` incorrectly displaying whitespace and special characters (Nicolas Nytko).
+
+  * Fix gradebook and question statistics download links (Tim Bretl).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
 * __3.2.0__ - 2019-08-05
