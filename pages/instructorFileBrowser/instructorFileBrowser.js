@@ -231,7 +231,7 @@ function browseFile(file_browser, callback) {
                     util.callbackify(async () => {
                         // FIXME (check for PDF, etc.)
                         const type = await FileType.fromBuffer(contents);
-                        if (!type) {
+                        if (type) {
                             debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
                             if (type.mime.startsWith('image')) {
                                 file_browser.isImage = true;
