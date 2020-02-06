@@ -77,6 +77,8 @@
 
   * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
+  * Add support for editing from bare git repo (Tim Bretl).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -218,6 +220,8 @@
   * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
 
   * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
+
+  * Fix server jobs so that errors are handled only once (Tim Bretl).
 
   * Fix course instance access check (Tim Bretl).
 

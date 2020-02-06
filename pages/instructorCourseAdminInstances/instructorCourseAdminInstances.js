@@ -13,16 +13,36 @@ const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
 
+const fs = require('fs-extra');
+const async = require('async');
+
 router.get('/', function(req, res, next) {
-    var params = {
-        user_id: res.locals.user.user_id,
-        is_administrator: res.locals.is_administrator,
-        req_date: res.locals.req_date,
-        course_id: res.locals.course.id,
-    };
-    sqldb.query(sql.select_course_instances, params, function(err, result) {
+    async.series([
+        (callback) => {
+            fs.access(res.locals.course.path, (err) => {
+                if (err) {
+                    if (err.code == 'ENOENT') {
+                        res.locals.needToSync = true;
+                    } else return ERR(err, callback);
+                }
+                callback(null);
+            });
+        },
+        (callback) => {
+            var params = {
+                user_id: res.locals.user.user_id,
+                is_administrator: res.locals.is_administrator,
+                req_date: res.locals.req_date,
+                course_id: res.locals.course.id,
+            };
+            sqldb.query(sql.select_course_instances, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.rows = result.rows;
+                callback(null);
+            });
+        },
+    ], (err) => {
         if (ERR(err, next)) return;
-        res.locals.rows = result.rows;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
