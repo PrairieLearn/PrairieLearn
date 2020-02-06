@@ -2,10 +2,3 @@
     width: 400px;
     max-width: 100%;
 }
-
-.pl-string-input-value {
-    display: inline;
-    font-size: 16px;
-    color: unset;
-    white-space: pre;
-}

@@ -195,3 +195,25 @@ table td > .badge {
   background-color: #c3c3c3;
   box-shadow: 0 0 0 0.2rem rgba(195,195,195,.25)
 }
+
+.user-output, .user-output-invalid {
+    display: inline;
+    font-size: 14px;
+    white-space: pre;
+    color: #444;
+    background: #F0F0F0;
+    
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 2px;
+    padding-right: 2px;
+    
+    border-radius: 2px;
+    border-color: #ccc;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.user-output-invalid {
+    color: #dc3545;
+}
