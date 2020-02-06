@@ -2070,7 +2070,7 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or matches[ref_element['id']] or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 continue
 
             if comp[element['gradingName']](ref_element, element):
