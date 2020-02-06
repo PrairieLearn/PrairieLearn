@@ -24,7 +24,9 @@ You can also provide the token via a `private_token` query parameter:
 curl https://prairielearn.engr.illinois.edu/pl/api/v1/<REST_OF_PATH>?private_token=TOKEN
 ```
 
-## Example access script
+## Example usage
+
+### Python example script
 
 An example script that will download all API data for a course instance is at <https://github.com/PrairieLearn/PrairieLearn/blob/master/tools/api_download.py>. You can use it like this:
 
@@ -33,6 +35,34 @@ python api_download.py --token 9a6932a1-e356-4ddc-ad82-4cf30ad896ac --course-ins
 ```
 
 The `token` is your personal access token described above. The `course-instance-id` can be obtained by navigating to your course instance in the PrairieLearn web interface and extracting the ID from the URL.
+
+### R package
+
+All endpoints listed below are implemented in the [`pli`](https://github.com/illinois-r/pli) _R_ package. 
+The package provides a convenient way for downloading and importing PrairieLearn data into _R_ using the API. 
+Similar to the python example, one needs to obtain `course-instance-id` from the URL inside PrairieLearn web interface.
+Unlike the  example python script, the `token` value generated must be stored in the `~/.Renviron` file under the
+environment variable `PRAIRIELEARN_API_TOKEN`.
+
+A similar approach can be had with: 
+
+```r
+# Download and install pli from GitHub
+if(!requireNamespace("devtools")) { install.packages("devtools") }
+devtools::install_github("illinois-r/pli")
+
+# Load the R package
+library("pli")
+
+# Obtain from the URL
+course_instance_id = 54777
+
+# Download the entire gradebook
+grades = pl_course_gradebook(course_instance_id)
+
+# Get an overview of all assessments
+assessments = pl_assessment_list(course_instance_id)
+```
 
 ## Endpoints
 
