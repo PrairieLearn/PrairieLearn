@@ -76,6 +76,7 @@
   * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
 
   * Add support for editing from bare git repo (Tim Bretl).
+  * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -214,6 +215,10 @@
   * Fix permissions on issues page (Tim Bretl).
 
   * Fix angle tolerance checks for vectors in `pl-drawing` element (Nicolas Nytko).
+  
+  * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
+
+  * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
 
   * Fix server jobs so that errors are handled only once (Tim Bretl).
 
