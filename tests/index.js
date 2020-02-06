@@ -27,6 +27,7 @@ require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');
+require('./testAccessAsStudent');
 require('./testApi');
 require('./testLti');
 require('./testCron');
