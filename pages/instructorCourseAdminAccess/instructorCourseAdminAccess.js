@@ -15,6 +15,7 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, function(err, result) {
         if (ERR(err, next)) return;
         debug(result.rows);
+        debug(res.locals.course_instances);
         res.locals.course_users = result.rows;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

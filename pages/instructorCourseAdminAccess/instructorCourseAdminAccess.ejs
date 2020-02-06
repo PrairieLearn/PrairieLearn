@@ -23,7 +23,7 @@
                         <span class="d-none d-sm-inline">Add user</span>
                     </button>
                 </div>
-                <div class="table-responsive">
+                <div>
                     <table class="table table-sm table-hover table-striped">
                         <thead>
                             <tr>
@@ -50,14 +50,11 @@
                                         </button>
                                     </td>
                                     <td class="align-middle">
-
-
-
                                         <% if (course_user.course_instance_roles) { %>
                                             <% course_user.course_instance_roles.forEach(function(cir, i) { %>
                                                 <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <%= cir.short_name %>
                                                             <% if (cir.course_instance_role == 'Student Data Editor') { %>
                                                                 (Editor)
@@ -68,15 +65,34 @@
                                                         <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
                                                             <a class="dropdown-item" href="#">Sp19 (Editor)</a>
                                                             <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
                                                         </div>
                                                     </div>
-                                                    <button type="button" class="btn btn-sm btn-outline-dark">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary">
                                                         <i class="fa fa-times"></i>
                                                     </button>
                                                 </div>
                                             <% }); %>
-                                        <% } else { %>
-                                            —
+                                        <% } %>
+                                        <% if (locals.course_instances && course_instances.length > 0) { %>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button id="addCIPDrop-<%= course_user.uid %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                Add...
+                                            </button>
+                                            <div class="dropdown-menu" aria-labelledby="addCIPDrop">
+                                                <% course_instances.forEach(function(ci) { %>
+                                                    <a class="dropdown-item" href="#"><%= ci.short_name %></a>
+                                                <% }); %>
+                                            </div>
+                                        </div>
                                         <% } %>
                                     </td>
                                 </tr>
