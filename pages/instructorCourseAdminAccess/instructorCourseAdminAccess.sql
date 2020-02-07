@@ -20,3 +20,11 @@ WHERE
     cp.course_id = $course_id
 GROUP BY
     u.user_id, cp.course_role;
+
+-- BLOCK update_course_permissions
+UPDATE course_permissions AS cp
+SET
+    course_role = $course_role
+WHERE
+    cp.user_id = $user_id
+    AND cp.course_id = $course_id;

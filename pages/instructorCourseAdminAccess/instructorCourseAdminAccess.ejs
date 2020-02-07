@@ -17,89 +17,91 @@
             <%- include('../partials/navtabs'); %>
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
-                    Course access roles
+                    Course staff
                     <button type="button" class="btn btn-light btn-sm ml-auto" id="coursePermissionsInsertButton" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add user" data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                         <i class="fa fa-user-plus" aria-hidden="true"></i>
                         <span class="d-none d-sm-inline">Add user</span>
                     </button>
                 </div>
-                <div>
-                    <table class="table table-sm table-hover table-striped">
-                        <thead>
+                <table class="table table-sm table-hover table-striped">
+                    <thead>
+                        <th>UID</th>
+                        <th>Name</th>
+                        <th>Course content access</th>
+                        <th>Student data access</th>
+                        <th></th>
+                    </thead>
+                    <tbody>
+                        <% course_users.forEach(function(course_user, i) { %>
                             <tr>
-                            <th>UID</th>
-                            <th>Name</th>
-                            <th>Course access role</th>
-                            <th>Course instances with student data access</th>
-                        </thead>
-                        <tbody>
-                            <% course_users.forEach(function(course_user, i) { %>
-                                <tr>
-                                    <td class="align-middle"><%= course_user.uid %></td>
-                                    <td class="align-middle"><%= course_user.name %> Or Some Name</td>
-                                    <td class="align-middle">
-                                        <%= course_user.course_role %>
-
-                                        <button type="button" class="btn btn-xs btn-secondary" id="coursePermissionsUpdateRoleButton<%= i %>" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change course role" data-content="<%= include('coursePermissionsUpdateRoleForm', {id: 'coursePermissionsUpdateRoleButton' + i, uid: course_user.uid, user_id: course_user.user_id, course_role: course_user.course_role}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                                            <i class="fa fa-edit" aria-hidden="true"></i> Change
-                                        </button>
-
-                                        <button type="button" class="btn btn-xs btn-secondary"  id="coursePermissionsDeleteButton<%= i %>" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Remove user access" data-content="<%= include('coursePermissionsDeleteForm', {id: 'coursePermissionsDeleteButton' + i,
-                                        uid: course_user.uid, user_id: course_user.user_id}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                                            <i class="fa fa-times" aria-hidden="true"></i> Remove
-                                        </button>
-                                    </td>
-                                    <td class="align-middle">
-                                        <% if (course_user.course_instance_roles) { %>
-                                            <% course_user.course_instance_roles.forEach(function(cir, i) { %>
-                                                <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
-                                                    <div class="btn-group btn-group-sm" role="group">
-                                                        <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                            <%= cir.short_name %>
-                                                            <% if (cir.course_instance_role == 'Student Data Editor') { %>
-                                                                (Editor)
-                                                            <% } else { %>
-                                                                (Viewer)
-                                                            <% } %>
-                                                        </button>
-                                                        <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                                                            <a class="dropdown-item" href="#">Sp19 (Editor)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                            <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
-                                                        </div>
-                                                    </div>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fa fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            <% }); %>
-                                        <% } %>
-                                        <% if (locals.course_instances && course_instances.length > 0) { %>
+                                <td class="align-middle"><%= course_user.uid %></td>
+                                <td class="align-middle"><%= course_user.name %> Or Some Name</td>
+                                <td class="align-middle">
+                                    <form name="course-content-access-form-<%= course_user.user_id %>" method="POST">
+                                        <input type="hidden" name="__action" value="change_course_content_access">
+                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button id="addCIPDrop-<%= course_user.uid %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                Add...
+                                            <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <%= course_user.course_role %>
                                             </button>
-                                            <div class="dropdown-menu" aria-labelledby="addCIPDrop">
-                                                <% course_instances.forEach(function(ci) { %>
-                                                    <a class="dropdown-item" href="#"><%= ci.short_name %></a>
-                                                <% }); %>
+                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>">
+                                                <input class="dropdown-item" type="submit" name="course_role" value="None">
+                                                <input class="dropdown-item" type="submit" name="course_role" value="Previewer">
+                                                <input class="dropdown-item" type="submit" name="course_role" value="Viewer">
+                                                <input class="dropdown-item" type="submit" name="course_role" value="Editor">
+                                                <input class="dropdown-item" type="submit" name="course_role" value="Owner">
                                             </div>
                                         </div>
-                                        <% } %>
-                                    </td>
-                                </tr>
-                            <% }); %>
-                        </tbody>
-                    </table>
-                </div>
+                                    </form>
+                                </td>
+                                <td class="align-middle">
+                                    <% if (course_user.course_instance_roles) { %>
+                                        <% course_user.course_instance_roles.forEach(function(cir, i) { %>
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <%= cir.short_name %>
+                                                        <% if (cir.course_instance_role == 'Student Data Editor') { %>
+                                                            (Editor)
+                                                        <% } else { %>
+                                                            (Viewer)
+                                                        <% } %>
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+                                                        <a class="dropdown-item" href="#">Sp19 (Editor)</a>
+                                                        <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </div>
+                                        <% }); %>
+                                    <% } %>
+                                    <% if (locals.course_instances && course_instances.length > 0) { %>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button id="addCIPDrop-<%= course_user.uid %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Add...
+                                        </button>
+                                        <div class="dropdown-menu" aria-labelledby="addCIPDrop">
+                                            <% course_instances.forEach(function(ci) { %>
+                                                <a class="dropdown-item" href="#"><%= ci.short_name %></a>
+                                            <% }); %>
+                                        </div>
+                                    </div>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-dark"  id="coursePermissionsDeleteButton<%= i %>" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Remove user access" data-content="<%= include('coursePermissionsDeleteForm', {id: 'coursePermissionsDeleteButton' + i,
+                                    uid: course_user.uid, user_id: course_user.user_id}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                        <i class="fa fa-times" aria-hidden="true"></i> Delete user
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
 
                 <div class="card-footer">
                     <small>
