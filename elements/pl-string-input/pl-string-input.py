@@ -57,7 +57,7 @@ def render(element_html, data):
                 space_hint = 'Whitespaces between text will be removed but leading and trailing spaces will be left as part of your answer.'
             else:
                 space_hint = 'Leading and trailing spaces will be left as part of your answer.'
-        
+
         # Get info strings
         info_params = {'format': True, 'space_hint': space_hint}
         with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:

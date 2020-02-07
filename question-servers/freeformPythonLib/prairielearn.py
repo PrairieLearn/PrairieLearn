@@ -1013,7 +1013,7 @@ def escape_unicode_string(string):
     """
     escape_unicode_string(string)
 
-    Combs through any string and replaces invisible/unprintable characters with a 
+    Combs through any string and replaces invisible/unprintable characters with a
     text representation of their hex id: <U+xxxx>
 
     A character is considered invisible if its category is "control" or "format", as
