@@ -402,11 +402,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
             format_errors = data['format_errors'].get(each_entry_name, None)
             if format_errors is None:
-                display_array += ' <td class="allborder"> '
+                display_array += '<td class="allborder"><code class="user-output">'
             else:
-                display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-            display_array += escape(raw_submitted_answer)
-            display_array += ' </td> '
+                display_array += '<td class="allborder"><code class="user-output-invalid">'
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+            display_array += '</code></td> '
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
@@ -417,11 +417,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 format_errors = data['format_errors'].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += ' <td class="allborder"> '
+                    display_array += '<td class="allborder"><code class="user-output">'
                 else:
-                    display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-                display_array += escape(raw_submitted_answer)
-                display_array += ' </td> '
+                    display_array += '<td class="allborder"><code class="user-output-invalid">'
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+                display_array += '</code></td> '
             display_array += '</tr>'
         display_array += '</table>'
 
