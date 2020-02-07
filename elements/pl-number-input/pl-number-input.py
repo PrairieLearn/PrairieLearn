@@ -147,7 +147,7 @@ def render(element_html, data):
             html_params['show_info'] = True
         html_params['display_append_span'] = 'questionmark' in html_params or suffix
 
-        if display == 'inline':
+        if display == 'inline:'
             html_params['inline'] = True
         elif display == 'block':
             html_params['block'] = True
@@ -182,7 +182,7 @@ def render(element_html, data):
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         # Add true answer to be able to display it in the submitted answer panel
         ans_true = None
