@@ -161,7 +161,7 @@ describe('sproc check_assessment_access* tests', function() {
             });
         });
 
-        it('pass if all parameter match match except UID with no uids', function(callback) {
+        it('pass if all parameters match, with no uids', function(callback) {
             var params = {
                 mode: 'Exam',
                 role: 'TA',
@@ -179,7 +179,7 @@ describe('sproc check_assessment_access* tests', function() {
             });
         });
 
-        it('fail if all parameters match, but uids = []', function(callback) {
+        it('fail if uids = []', function(callback) {
             var params = {
                 mode: 'Exam',
                 role: 'TA',
