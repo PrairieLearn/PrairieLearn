@@ -147,7 +147,7 @@ def render(element_html, data):
             html_params['show_info'] = True
         html_params['display_append_span'] = 'questionmark' in html_params or suffix
 
-        if display == 'inline:'
+        if display == 'inline':
             html_params['inline'] = True
         elif display == 'block':
             html_params['block'] = True

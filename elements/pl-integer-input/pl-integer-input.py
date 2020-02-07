@@ -108,7 +108,7 @@ def render(element_html, data):
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
