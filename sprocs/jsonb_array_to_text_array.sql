@@ -21,7 +21,7 @@ BEGIN
     ELSIF len = 0 THEN
         text_array := array[]::text[];
     ELSE
-        text_array := (SELECT array_agg(v) FROM jsonb_array_elements_text(jsonb_array) AS tmp(v));
+        text_array := (SELECT array_agg(v) FROM jsonb_array_elements_text(jsonb_array) AS v);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

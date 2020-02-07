@@ -21,7 +21,7 @@ BEGIN
     ELSIF len = 0 THEN
         double_precision_array := array[]::double precision[];
     ELSE
-        double_precision_array := (SELECT array_agg(v::double precision) FROM jsonb_array_elements_text(jsonb_array) AS tmp(v));
+        double_precision_array := (SELECT array_agg(v::double precision) FROM jsonb_array_elements_text(jsonb_array) AS v);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
