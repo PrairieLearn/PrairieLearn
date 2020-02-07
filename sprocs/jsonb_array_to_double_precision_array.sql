@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS jsonb_array_to_double_precision_array(jsonb, double precision[]);
+DROP FUNCTION IF EXISTS jsonb_array_to_double_precision_array(jsonb);
 
 CREATE OR REPLACE FUNCTION
     jsonb_array_to_double_precision_array(

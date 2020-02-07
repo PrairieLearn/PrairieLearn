@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS jsonb_array_to_text_array(jsonb, text[]);
+DROP FUNCTION IF EXISTS jsonb_array_to_text_array(jsonb);
 
 CREATE OR REPLACE FUNCTION
     jsonb_array_to_text_array(
