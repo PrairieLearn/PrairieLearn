@@ -9,7 +9,8 @@ const logger = require('../../lib/logger');
 const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');
-const fileType = require('file-type');
+const FileType = require('file-type');
+const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { encodePath, decodePath } = require('../../lib/uri-util');
 
@@ -227,20 +228,18 @@ function browseFile(file_browser, callback) {
                 debug(`isBinaryFile: ${result}`);
                 file_browser.isBinary = result;
                 if (result) {
-                    try { // FIXME (check for PDF, etc.)
-                    const type = fileType(contents);
-                        debug(`file type: ${type}`);
+                    util.callbackify(async () => {
+                        // FIXME (check for PDF, etc.)
+                        const type = await FileType.fromBuffer(contents);
                         if (type) {
+                            debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
                             if (type.mime.startsWith('image')) {
                                 file_browser.isImage = true;
                             } else if (type.mime == ('application/pdf')) {
                                 file_browser.isPDF = true;
                             }
-                        }
-                        callback(null);
-                    } catch(err) {
-                        callback(new Error('Invalid file contents'));
-                    }
+                        } else debug(`could not get file type`);
+                    })(callback);
                 } else {
                     debug(`found a text file`);
                     file_browser.isText = true;
