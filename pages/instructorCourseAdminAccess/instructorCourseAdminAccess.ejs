@@ -35,7 +35,7 @@
                         <% course_users.forEach(function(course_user, i) { %>
                             <tr>
                                 <td class="align-middle"><%= course_user.uid %></td>
-                                <td class="align-middle"><%= course_user.name %> Or Some Name</td>
+                                <td class="align-middle"><%= (course_user.name || '—') %></td>
                                 <td class="align-middle">
                                     <form name="course-content-access-form-<%= course_user.user_id %>" method="POST">
                                         <input type="hidden" name="__action" value="change_course_content_access">
@@ -59,37 +59,51 @@
                                     <% if (course_user.course_instance_roles) { %>
                                         <% course_user.course_instance_roles.forEach(function(cir, i) { %>
                                             <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <button id="btnGroupDrop1" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                        <%= cir.short_name %>
-                                                        <% if (cir.course_instance_role == 'Student Data Editor') { %>
-                                                            (Editor)
-                                                        <% } else { %>
-                                                            (Viewer)
-                                                        <% } %>
-                                                    </button>
-                                                    <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-                                                        <a class="dropdown-item" href="#">Sp19 (Editor)</a>
-                                                        <a class="dropdown-item" href="#">Sp19 (Viewer)</a>
+                                                <form name="student-data-access-change-<%= course_user.user_id %>-<%= i %>" method="POST">
+                                                    <input type="hidden" name="__action" value="change_student_data_access">
+                                                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                                    <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                                                    <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                            <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
+                                                        </button>
+                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>">
+                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">Viewer</button>
+                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Editor">Editor</button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <button type="button" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fa fa-times"></i>
-                                                </button>
+                                                </form>
+                                                <form name="student-data-access-remove-<%= course_user.user_id %>-<%= i %>" method="POST">
+                                                    <input type="hidden" name="__action" value="remove_student_data_access">
+                                                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                                    <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                                                    <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                         <% }); %>
                                     <% } %>
-                                    <% if (locals.course_instances && course_instances.length > 0) { %>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button id="addCIPDrop-<%= course_user.uid %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            Add...
-                                        </button>
-                                        <div class="dropdown-menu" aria-labelledby="addCIPDrop">
-                                            <% course_instances.forEach(function(ci) { %>
-                                                <a class="dropdown-item" href="#"><%= ci.short_name %></a>
-                                            <% }); %>
+                                    <% if (course_user.other_course_instances && course_user.other_course_instances.length > 0) { %>
+                                    <form name="student-data-access-form-<%= course_user.user_id %>-add" method="POST" class="d-inline">
+                                        <input type="hidden" name="__action" value="add_student_data_access">
+                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button id="addCIPDrop-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                Add...
+                                            </button>
+                                            <div class="dropdown-menu" aria-labelledby="addCIPDrop-<%= course_user.user_id %>">
+                                                <% course_user.other_course_instances.forEach(function(ci) { %>
+                                                    <button class="dropdown-item" type="submit" name="course_instance_id" value="<%= ci.id %>">
+                                                        <%= ci.short_name %>
+                                                    </button>
+                                                <% }); %>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </form>
                                     <% } %>
                                 </td>
                                 <td>
