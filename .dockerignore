@@ -11,10 +11,12 @@
 !docker/
 !elements/
 !exampleCourse/
+!testCourse/
 !lib/
 !middlewares/
 !migrations/
 !models/
+!news_items/
 !package.json
 !package-lock.json
 !pages/

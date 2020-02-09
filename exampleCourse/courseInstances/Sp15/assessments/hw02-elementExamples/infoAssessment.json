@@ -1,0 +1,53 @@
+{
+    "uuid": "69aa799b-9492-4db2-9102-7753263f3863",
+    "type": "Homework",
+    "title": "PrairieLearn element example gallery",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "elementPanels",                   "points": 2, "maxPoints": 10},
+                {"id": "elementElementCodeDocumentation", "points": 2, "maxPoints": 10},
+                {"id": "elementCheckbox",                 "points": 2, "maxPoints": 10},
+                {"id": "elementNumberInput",              "points": 2, "maxPoints": 10},
+                {"id": "elementIntegerInput",             "points": 2, "maxPoints": 10},
+                {"id": "elementSymbolicInput",            "points": 2, "maxPoints": 10},
+                {"id": "elementStringInput",              "points": 2, "maxPoints": 10},
+                {"id": "elementMatrixComponentInput",     "points": 2, "maxPoints": 10},
+                {"id": "elementMatrixLatex",              "points": 2, "maxPoints": 10},
+                {"id": "elementPrairieDrawFigure",        "points": 2, "maxPoints": 10},
+                {"id": "elementVariableOutput",           "points": 2, "maxPoints": 10},
+                {"id": "elementFileEditor",               "points": 2, "maxPoints": 10},
+                {"id": "elementPythonVariable",           "points": 2, "maxPoints": 10},
+                {"id": "elementGraph",                    "points": 2, "maxPoints": 10}
+            ]
+        }
+    ]
+}

@@ -25,40 +25,55 @@
     <!-- User and logout ------------------------------------------------------------->
 
 <%
-var displayedName = '';
-if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
-    if (authz_data.user.name) {
-        displayedName = authz_data.user.name;
-    } else {
-        displayedName = authz_data.user.uid;
-    }
-    displayedName += ' (' + authz_data.role;
-	if (authz_data.mode != 'Public') {
-        displayedName += ', ' + authz_data.mode;
-    }
-    displayedName += ')';
-} else {
-    if (typeof authn_user == 'undefined') {
-        displayedName = '(No user)';
-    } else if (is_administrator) {
-        displayedName = authn_user.name + ' (Administrator)';
-    } else {
-        displayedName = authn_user.name;
-    }
+if (!locals.effective_user_has_no_access_to_course_instance) {
+  var displayedName = '';
+  if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
+      if (authz_data.user.name) {
+          displayedName = authz_data.user.name;
+      } else {
+          displayedName = authz_data.user.uid;
+      }
+      displayedName += ' (' + authz_data.role;
+      if (authz_data.mode != 'Public') {
+          displayedName += ', ' + authz_data.mode;
+      }
+      displayedName += ')';
+  } else {
+      if (typeof authn_user == 'undefined') {
+          displayedName = '(No user)';
+      } else if (is_administrator) {
+          displayedName = authn_user.name + ' (Administrator)';
+      } else {
+          displayedName = authn_user.name;
+      }
+  }
 }
 %>
+
 <ul class="nav navbar-nav" id="username-nav">
+
+    <% if (!locals.effective_user_has_no_access_to_course_instance) { %>
     <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
+            <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+              <span class="badge badge-pill badge-danger news-item-count"><%= news_item_notification_count %></span>
+            <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
             <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>
+            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+              News
+              <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+                <span class="badge badge-pill badge-danger news-item-link-count"><%= news_item_notification_count %></span>
+              <% } %>
+            </a>
         </div>
     </li>
+    <% } %>
 
 <%
 if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
@@ -67,7 +82,7 @@ if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
     if (navbarType == 'student') {
         rolebutton.color = "btn-info";
         rolebutton.other = "Switch to instructor view";
-        rolebutton.otherLink = `${urlPrefix}/instructor/assessments`;
+        rolebutton.otherLink = `${urlPrefix}/instructor/instance_admin`;
         // If we know its question or assessment id, link right to it.
         if (typeof question !== 'undefined' && question.id) {
             rolebutton.otherLink = `${urlPrefix}/instructor/question/${question.id}`;

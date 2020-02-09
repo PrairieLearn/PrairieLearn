@@ -1,24 +1,24 @@
 # PrairieLearn Elements for use in `question.html`
 
-When writing questions, there exists a core pool of elements that provides 
+When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
-split into three distinct groups: **submission**, **decorative**, and 
+split into three distinct groups: **submission**, **decorative**, and
 **conditional**. Within this document, all of PrairieLearn's elements are
 displayed alongside links to sample elements within the example course. To
 build your own PrairieLearn element, please see [Question Element Writing](devElements.md)
 documentation.
 
 **Submission** elements act as a way to receive a response or input from the
-student. These elements are traditionally referred to as form input fields. 
+student. These elements are traditionally referred to as form input fields.
 PrairieLearn presently provides the following templated **input field** elements:
 
-- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only 
+- [`pl-multiple-choice`](#pl-multiple-choice-element): Selecting only
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value 
+- [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
-- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value 
+- [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
@@ -40,26 +40,30 @@ students. Elements under this category include ways to specify question markup,
 images, files, and code display. The following **decorative** elements are available:
 
 - [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
-  syntax highlighting. 
+  syntax highlighting.
 - [`pl-figure`](#pl-figure-element): Embed an image file in the question.
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
-- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in 
+- [`pl-variable-output`](#pl-variable-output-element): Displays matrices in
   code form for supported programming languages.
-- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using 
+- [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
+- [`pl-python-variable`](#pl-python-variable): Display formatted output of Python 
+  variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
-  
+- [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
+  collection of graphic objects
+
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
 The following **Conditional** elements are available:
 
 - [`pl-question-panel`](#pl-question-panel-element): Displays the text of a
   question.
-- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer 
+- [`pl-submission-panel`](#pl-submission-panel-element): Displays the answer
   given by the student.
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
@@ -80,7 +84,7 @@ will be removed at a future date.
 
 ## `pl-multiple-choice` element
 
-A `pl-multiple-choice` element selects **one** correct answer and zero or more 
+A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
 
 #### Sample Element
@@ -105,7 +109,7 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 
-Inside the `pl-multiple-choice` element, each choice must be specified with 
+Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -114,9 +118,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesMultipleChoice`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMultipleChoice)
-- [`ballToss2`: Dynamically generating choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/ballToss2)
-- [`positionTimeGraph`: Mathematical symbols in choice options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
+- [elementMultipleChoice]
+- [demoRandomMultipleChoice]
 
 #### See also
 
@@ -124,7 +127,7 @@ Attribute | Type | Default | Description
 
 ## `pl-checkbox` element
 
-A `pl-checkbox` element displays a subset of the answers in a random order 
+A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
 
 #### Sample Element
@@ -159,7 +162,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
-Inside the `pl-checkbox` element, each choice must be specified with 
+Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
 Attribute | Type | Default | Description
@@ -176,8 +179,8 @@ Two grading methods are available when using `partial-credit="true"`:
 
 #### Example implementations
 
-- [`examplesCheckbox`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesCheckbox)
-- [`chooseMatrices`: Mathematical expressions embedded in answer options](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+- [elementCheckbox]
+- [demoRandomCheckbox]
 
 #### See also
 
@@ -192,10 +195,48 @@ tolerances.
 
 #### Sample Element
 
-![](elements/pl-number-input.png)
+![](elements/pl-number-input-rtol.png)
 
+**question.html**
 ```html
-<pl-number-input answers-name="v_avg" comparison="sigfig" digits="2"></pl-number-input>
+<pl-number-input answers-name="ans_rtol" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["ans_rtol"] = x
+```
+
+---- 
+
+![](elements/pl-number-input-sigfig.png)
+
+**question.html**
+```html
+<pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
+</pl-number-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random value
+  x = random.uniform(1, 2)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
@@ -220,11 +261,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesNumberInput`: Examples of all customization options for the element](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesNumberInput)
-- [`positionTimeGraph`: Input a numeric value obtained from reading a graph](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/positionTimeGraph)
-- [`addNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers)
-- [`addComplexNumbers`: Random generation and input of complex numbers that use imaginary and real components](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addComplexNumbers)
-- [`multiplyTwoNumbers`: Random generation and input of numeric values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoNumbers)
+- [elementNumberInput]
+- [demoCalculation]
 
 #### See also
 
@@ -242,8 +280,22 @@ Fill in the blank field that requires an **integer** input.
 
 ![](elements/pl-integer-input.png)
 
+**question.html**
 ```html
-<pl-integer-input answers-name="x"></pl-integer-input>
+<pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
+```
+
+**server.py**
+```python
+import random 
+
+def generate(data):
+
+  # Generate a random whole number
+  x = random.randint(1, 10)
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
@@ -259,8 +311,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesIntegerInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesIntegerInput)
-- [`addIntegers`: Random generation and input of integer values](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addIntegers)
+- [elementIntegerInput]
 
 #### See also
 
@@ -278,8 +329,26 @@ Fill in the blank field that allows for mathematical symbol input.
 
 ![](elements/pl-symbolic-input.png)
 
+**question.html**
 ```html
-<pl-symbolic-input answers-name="ans"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import sympy
+
+def generate(data):
+  
+  # Declare math symbols
+  sympy.var('x y')
+
+  # Describe the equation
+  z = x + y + 1
+
+  # Answer to fill in the blank input stored as JSON.
+  data['correct_answer']['symbolic_math'] = pl.to_json(z)
 ```
 
 #### Customizations
@@ -297,16 +366,7 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Correct answers are best created as `sympy` expressions and converted to json using:
-
-```python
-import prairielearn as pl
-import sympy
-
-def generate(data):
-    sympy.var('x y')
-    data['correct_answer']['ans'] = pl.to_json(x + y + 1)
-```
+Correct answers are best created as `sympy` expressions and converted to json using `pl.to_json(data_here)`.
 
 It is also possible to specify the correct answer simply as a string, e.g., `x + y + 1`.
 
@@ -314,7 +374,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 #### Example implementations
 
-- [`examplesSymbolicInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesSymbolicInput)
+- [elementSymbolicInput]
 
 #### See also
 
@@ -332,8 +392,17 @@ Fill in the blank field that allows for **string** value input.
 
 ![](elements/pl-string-input.png)
 
+**question.html**
 ```html
-<pl-string-input answers-name="x"></pl-string-input>
+<pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
+```
+
+**server.py**
+```python
+def generate(data):
+
+  # Answer to fill in the blank input
+  data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations
@@ -342,19 +411,19 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `remove-leading-trailing` | boolean | false | Whether or not to remove leading and trailing blank spaces from the input string.
 `remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO"). 
+`ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 
 #### Example implementations
 
-- [`examplesStringInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesStringInput)
+- [elementStringInput]
 
 #### See also
 
@@ -366,16 +435,32 @@ Attribute | Type | Default | Description
 
 ## `pl-matrix-component-input` element
 
-A `pl-matrix-component-input` element displays a grid of input fields with 
-the same shape of the variable stored in `answers-name` 
+A `pl-matrix-component-input` element displays a grid of input fields with
+the same shape of the variable stored in `answers-name`
 (only 2D arrays of real numbers can be stored in `answers-name`).
 
 #### Sample Element
 
 ![](elements/pl-matrix-component-input.png)
 
+
+**question.html**
 ```html
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+
+  # Generate a random 3x3 matrix
+  mat = np.random.random((3, 3))
+
+  # Answer to each matrix entry converted to JSON
+  data['correct_answers']['matrixA'] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -398,9 +483,9 @@ The question will only be graded when all matrix components are entered.
 
 #### Example implementations
 
-- [`examplesMatrixComponentInput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/MatrixComponentInput)
+- [elementMatrixComponentInput]
 
-#### See also 
+#### See also
 
 - [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
@@ -418,8 +503,22 @@ format (e.g. MATLAB or Python's numpy).
 
 ![](elements/pl-matrix-input.png)
 
+**question.html**
 ```html
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  # Randomly generate a 2x2 matrix
+  matrixB = np.random.random((2, 2))
+
+  # Answer exported to question.
+  data['correct_answers']['matrixB'] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -437,17 +536,20 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Here is an example of valid MATLAB format:
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
+The following are valid input format options: 
+
+**MATLAB format:**
 ```
 [1.23; 4.56]
 ```
 
-Here is an example of valid Python format:
+**Python format:**
 ```
 [[1.23], [4.56]]
 ```
 
-A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
+**Note:** A scalar will be accepted either as a matrix of size 1 x 1 (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
 
 In the answer panel, a `pl-matrix-input` element displays the correct answer, allowing the user to switch between matlab and python format.
 
@@ -455,7 +557,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### Example implementations
 
-- [`multiplyTwoComplexMatrices`: Example entry of a matrix that uses complex numbers.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+- [demoMatrixComplexAlgebra]
 
 #### See also
 
@@ -504,8 +606,8 @@ This will initialize the editor area with a sufficient number of lines to displa
 
 #### Example implementations
 
-- [`examplesFileEditor`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesFileEditor)
-- [`fibonacciEditor`: Receive code written in a web browser and automatically grade it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [elementFileEditor]
+- [demoCodeEditorAutograded]
 
 #### See also
 
@@ -539,8 +641,8 @@ Attribute | Type | Default | description
 
 #### Example implementations
 
-- [`fibonacciUpload`: Receiving a code file submission and **automatically** grading it.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciUploadManual`: Receiving a code file submission to **manually** grade.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUploadManual)
+- [demoCodeUploadAutograded]
+- [demoCodeUploadAutograded]
 
 #### See also
 
@@ -620,7 +722,7 @@ that if there are many submitted answers, the page will load slowly.
 
 #### Example implementations
 
-- [`rotateObject`: Example rotation of a robot](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/rotateObject)
+- [elementThreeJS]
 
 #### See also
 
@@ -690,6 +792,7 @@ The `language` can be one of the following values.
 `python` | Python
 `r` | R
 `ruby` | Ruby
+`rust` | Rust
 `shell` | Shell Session
 `sql` | SQL
 `tex` | TeX
@@ -700,8 +803,7 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 #### Example implementations
 
-- [`codeHighlight`: Highlight specific lines of the code chunk.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/codeHighlight)
-- [`examplesAddCodeFromFile`: Import code from a source file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesAddCodeFromFile)
+- [elementCode]
 
 #### See also
 
@@ -713,40 +815,47 @@ Please let the PrairieLearn developers know if you need a language that is not o
 
 Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
-#### Sample Element 1
+#### Sample Elements
+
+**Display Python variable value**
 
 ![](elements/pl-python-variable.png)
 
-`server.py`
-
-```python
-data['params']['variable'] = pl.to_json({ 'a': 1, 'b': 2, 'c': 3 })
-```
-
----
-
-`question.html`
-
+**question.html**
 ```html
 <pl-python-variable params-name="variable"></pl-python-variable>
 ```
 
-#### Sample Element 2
-
-`server.py`
-
+**server.py**
 ```python
-df = pd.io.parsers.read_csv("breast-cancer-train.dat", header=None)
-data['params']['df'] = pl.to_json(df.head(15))
+import prairielearn as pl
+
+def generate(data):
+  data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
+  data['params']['variable'] = pl.to_json(data_dictionary)
 ```
 
-`question.html`
+---
 
-```html
-<pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
-```
+**Display of a Pandas DataFrame**
 
 ![](elements/pl-python-variable2.png)
+
+**question.html**
+```html
+<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import pandas as pd
+
+def generate(data):
+  d = {'col1': [1, 2], 'col2': [3, 4]}
+  df = pd.DataFrame(data=d)
+  data['params']['df'] = pl.to_json(df)
+```
 
 #### Customizations
 
@@ -764,7 +873,8 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 
 #### Example implementations
 
-- [`examplesPythonVariable`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPythonVariable)
+- [elementPythonVariable]
+- [demoRandomDataFrame]
 
 #### See also
 
@@ -813,9 +923,9 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [`functionValueFromPlot`: Dynamically generate an image and have students input value.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/functionValueFromPlot)
-- [`positionTimeGraph`: Include a static graph image.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/positionTimeGraph/)
-- [`whichName`: Use a static image that is randomly selected from a list of files.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/whichName)
+- [demoRandomPlot]
+- [demoFixedCheckbox]
+- [demoStudentNames]
 
 #### See also
 
@@ -867,7 +977,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [`downloadFile`: Provide different download file options.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/downloadFile/)
+- [elementFileDownload]
 
 #### See also
 
@@ -885,11 +995,30 @@ supported programming languages (e.g. MATLAB, Mathematica, or Python).
 
 ![](elements/pl-variable-output.png)
 
+**question.html**
 ```html
 <pl-variable-output digits="3">
     <variable params-name="matrixC">C</variable>
     <variable params-name="matrixD">D</variable>
 </pl-variable-output>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+
+  # Create fixed matrix
+  matrixC = np.matrix('5 6; 7 8')
+  matrixD = np.matrix('-1 4; 3 2')
+  # Random matrices can be generated with:
+  # mat = np.random.random((2, 2))
+  
+  # Export each matrix as a JSON object for the question view.
+  data['params']['matrixC'] = pl.to_json(matrixC)
+  data['params']['matrixD'] = pl.to_json(matrixD)
 ```
 
 #### Customizations
@@ -915,21 +1044,25 @@ Attribute | Type | Default | Description
 
 #### Details
 
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into
+either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be
+either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
+text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Below
+are samples of the format displayed under each language tab.
 
-Here is an example of MATLAB format:
+**MATLAB format:**
 
 ```
 A = [1.23; 4.56]; % matrix
 ```
 
-Here is an example of the Mathematica format:
+**Mathematica format:**
 
 ```
 A = [1.23; 4.56]; (* matrix *)
 ```
 
-Here is an example of Python format:
+**Python format:**
 
 ```
 import numpy as np
@@ -942,9 +1075,9 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 #### Example implementations
 
-- [`examplesVariableOutput`: Examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesVariableOutput/)
-- [`examplesMatrixComponentInput`: Shows code output style for a matrix.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/examplesMatrixComponentInput/)
-- [`multiplyTwoComplexMatrices`: Sample showing how two complex matrices are displayed.](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/multiplyTwoComplexMatrices)
+- [elementVariableOutput]
+- [elementMatrixComponentInput]
+- [demoMatrixComplexAlgebra]
 
 #### See also
 
@@ -957,15 +1090,32 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 ## `pl-matrix-latex` element
 
-Displays a matrix written in latex using mathjax.
+Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
-#### Customizations
+#### Sample Element
 
 ![](elements/pl-matrix-latex.png)
 
+**question.html**
 ```html
-<pl-matrix-latex params-name="A"></pl-matrix-latex>
+$$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
 ```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  
+  # Construct a matrix
+  mat = np.matrix('1 2; 3 4')
+  
+  # Export matrix to be displayed in question.html
+  data['params']['matrixC'] = pl.to_json(mat)
+```
+
+#### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -976,29 +1126,38 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
+one of the following will be returned. 
 
-If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
+- **scalar**
+    - a string containing the scalar not wrapped in brackets.
+- **numpy 2D array**
+    - a string formatted using the `bmatrix` LaTeX style.
 
-If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
-    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+Sample LaTeX formatting: 
 
-For example, if we want to display the following matrix operations
+```latex
+\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
+```
+
+As an example, consider the need to display the following matrix operations:
+
 ```
 x = [A][b] + [c]
 ```
-we write
+
+In this case, we would write:
 
 ```html
 ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 <pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
-+ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
++ <pl-matrix-latex params-name="c" digits="1"></pl-matrix-latex>$
 ```
 
 #### Example implementations
 
-- [`examplesMatrixLatex`: Provides examples of all customization options for the element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesMatrixLatex)
-- [`chooseMatrices`: Example of matrices being displayed in a multiple-selection problem.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/chooseMatrices)
+- [elementMatrixLatex]
+- [demoRandomCheckbox]
 
 #### See also
 
@@ -1033,7 +1192,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 #### Example implementations
 
-- [`examplesPrairieDrawFigure`: Rendering shapes with PrairieDraw](https://github.com/PrairieLearn/PrairieLearn/blob/6b15d697c0dfa93b574ef1b8950f6cd3647cb573/exampleCourse/questions/examplesPrairieDrawFigure/)
+- [elementPrairieDrawFigure]
 
 #### See also
 
@@ -1050,6 +1209,7 @@ Graphviz DOT visualizations.
 
 ![](elements/pl-graph1.png)
 
+**question.html**
 ```html
 <pl-graph>
 digraph G {
@@ -1062,15 +1222,21 @@ digraph G {
 
 ![](elements/pl-graph2.png)
 
-```python
-mat = np.random.random((3, 3))
-mat = mat / la.norm(mat, 1, axis=0)
-data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
-data['params']['matrix'] = pl.to_json(mat)
-```
-
+**question.html**
 ```html
 <pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+```
+
+**server.py**
+```python
+import prairielearn as pl
+import numpy as np
+
+def generate(data):
+  mat = np.random.random((3, 3))
+  mat = mat / np.linalg.norm(mat, 1, axis=0)
+  data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
+  data['params']['matrix'] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -1087,7 +1253,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [`examplesGraph`: Sample creation of graphs](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesGraph)
+- [elementGraph]
 
 #### See also
 
@@ -1096,6 +1262,16 @@ Attribute | Type | Default | Description
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
 -----
+
+## `pl-drawing` element
+
+Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
+Users can also add drawing objects to the canvas for grading.
+
+See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
+
+-----
+
 
 ## Conditional Elements
 
@@ -1114,13 +1290,13 @@ Displays the contents of question directions.
 ### Details
 
 Contents are only shown during question input portion. When a student
-either makes a submission or receives the correct answer, the information 
-between these tags is hidden. If content exists outside of a question panel, 
+either makes a submission or receives the correct answer, the information
+between these tags is hidden. If content exists outside of a question panel,
 then it will be displayed alongside or answer.
 
 #### Example implementations
 
-- [`addNumbers`: Providing directions for question.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers/)
+- [demoCalculation]
 
 #### See also
 
@@ -1149,9 +1325,9 @@ may be correct, incorrect, or invalid.
 
 #### Example implementations
 
-- [`addBinary`: Custom formatting for answer input when using a non-PrairieLearn element.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
-- [`fibonacciUpload`: Displaying a students code file submitted.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciEditor`: Displaying code written by a student in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [demoCustomGradeFunction]
+- [demoCodeUploadAutograded]
+- [demoCodeEditorAutograded]
 
 #### See also
 
@@ -1178,7 +1354,7 @@ receive further answers for grading.
 
 ### Details
 
-Contents are only displayed when the answer panel is requested. 
+Contents are only displayed when the answer panel is requested.
 Common reasons that trigger the display of this element are:
 
 - The question is fully correct
@@ -1187,7 +1363,7 @@ Common reasons that trigger the display of this element are:
 
 #### Example implementations
 
-- [`addBinary`: Displaying the correct answer.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addBinary)
+- [demoCustomGradeFunction]
 
 #### See also
 
@@ -1231,7 +1407,7 @@ element contents only in a specific panel.
 
 #### Example implementations
 
-- [`examplesPanels`: Showing and hiding text in different panels.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/examplesPanels)
+- [elementPanels]
 
 #### See also
 
@@ -1246,7 +1422,7 @@ element contents only in a specific panel.
 
 ## `pl-external-grader-results` element
 
-Displays results from externally-graded questions. 
+Displays results from externally-graded questions.
 
 #### Sample Element
 
@@ -1260,8 +1436,8 @@ It expects results to follow [the reference schema for external grading results]
 
 ### Example Implementations
 
-- [`fibonacciUpload`: Displaying results from grading an uploaded code file.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciUpload)
-- [`fibonacciEditor`: Displaying results from grading code written in-browser.](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/fibonacciEditor)
+- [demoCodeUploadAutograded]
+- [demoCodeEditorAutograded]
 
 ### See also
 
@@ -1286,3 +1462,51 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+<!-- Switch to using reference style links for elements -->
+[demoAnsiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAnsiOutput
+[demoCalculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCalculation
+[demoCodeEditorAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeEditorAutograded
+[demoCodeUploadAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadAutograded
+[demoCodeUploadManualGrade]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadManualGrade
+[demoCustomElement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomElement
+[demoCustomGradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomGradeFunction
+[demoDrawingCentroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCentroid
+[demoDrawingCollarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod
+[demoDrawingGradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector
+[demoDrawingGraphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs
+[demoDrawingInclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane
+[demoDrawingLiftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism
+[demoDrawingPulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley
+[demoDrawingSimpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial
+[demoDrawingVMDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams
+[demoFixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoFixedCheckbox
+[demoMatrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixAlgebra
+[demoMatrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixComplexAlgebra
+[demoRandomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomCheckbox
+[demoRandomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomDataFrame
+[demoRandomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomMultipleChoice
+[demoRandomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomPlot
+[demoRandomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomSymbolic
+[demoStudentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentFaces
+[demoStudentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentNames
+[elementCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCheckbox
+[elementCode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCode
+[elementDrawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery
+[elementElementCodeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementElementCodeDocumentation
+[elementFileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileDownload
+[elementFileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileEditor
+[elementGraph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementGraph
+[elementIntegerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementIntegerInput
+[elementMarkdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMarkdown
+[elementMatrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixComponentInput
+[elementMatrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixLatex
+[elementMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMultipleChoice
+[elementNumberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementNumberInput
+[elementPanels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPanels
+[elementPrairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPrairieDrawFigure
+[elementPythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPythonVariable
+[elementStringInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementStringInput
+[elementSymbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementSymbolicInput
+[elementThreeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementThreeJS
+[elementVariableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementVariableOutput

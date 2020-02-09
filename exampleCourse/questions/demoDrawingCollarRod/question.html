@@ -1,0 +1,57 @@
+<pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20"  width={{params.width_canvas}} height={{params.height_canvas}}>
+    <pl-drawing-initial>
+        <pl-rod x1={{params.xA}} y1={{params.yA}}  x2={{params.xC}} y2={{params.yC}} label1="A" offsetx1="20"  draw-pin="false"></pl-rod>
+        <pl-point x1={{params.xC}} y1={{params.yC}} label="C" offsetx="10" offsety="-10"></pl-point>
+        <pl-clamped x1={{params.xA}} y1={{params.yA}} angle="-90">  </pl-clamped>
+        <pl-collar-rod x1={{params.xB}} y1={{params.yB}} x2={{params.xD}} y2={{params.yD}} width={{params.w}} color="gray1" label1="B" label2="D"></pl-collar-rod>
+        <pl-vector x1={{params.xD}} y1={{params.yD}} angle="90" anchor-is-tail="false" label="P" offsety="-80"></pl-vector>
+        <pl-dimensions  x1={{params.xA}} y1={{params.yA}} x2={{params.xB}} y2={{params.yB}} dim-offset="-50" label="a"></pl-dimensions>
+        <pl-dimensions  x1={{params.xC}} y1={{params.yC}} width="{{params.c}}" dim-offset="100"  label="c"></pl-dimensions>
+        <pl-dimensions  x1={{params.xB}} y1={{params.yB}} x2={{params.xC}} y2={{params.yC}} dim-offset="-50" label="b"></pl-dimensions>
+        <pl-circle  x1={{params.xE}} y1={{params.yE}} radius={{params.circle_radius}} color="gray3"> </pl-circle>
+        <pl-dimensions  x1={{params.xE}} y1={{params.yE}} width="{{params.cby2}}" dim-offset="-40" angle="-180" label="c/2"></pl-dimensions>
+        <pl-coordinates x1={{params.x0}} y1={{params.y0}} width="60" ></pl-coordinates>
+    </pl-drawing-initial>
+</pl-drawing>
+
+
+</p>
+    <p>
+      a) Draw the corresponding free body diagram:
+    </p>
+
+</pl-question-panel>
+
+<p>
+<pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="false" width={{params.width_canvas}} height={{params.height_canvas}}>
+
+    <pl-drawing-answer draw-error-box="true">
+      <pl-vector x1={{params.xD}} y1={{params.yD}}  angle="90"  anchor-is-tail="false" ></pl-vector>
+      <pl-vector x1={{params.xE}} y1={{params.yE}}  angle="-90" anchor-is-tail="false"  offset-forward={{params.w}}></pl-vector>
+      <pl-vector x1={{params.xB}} y1={{params.yB}}      disregard-sense="true" ></pl-vector>
+      <pl-arc-vector x1={{params.xB}} y1={{params.yB}}  disregard-sense="true" ></pl-arc-vector>
+    </pl-drawing-answer>
+
+
+    <pl-drawing-initial>
+      <pl-collar-rod x1={{params.xB}} y1={{params.yB}} x2={{params.xD}} y2={{params.yD}} width={{params.w}} color="gray1" label1="B" label2="D"></pl-collar-rod>
+      <pl-coordinates x1={{params.x0}} y1={{params.y0}} width="60" ></pl-coordinates>
+  </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group >
+            <pl-drawing-button type="pl-vector" ></pl-drawing-button>
+            <pl-drawing-button type="pl-arc-vector-CCW" ></pl-drawing-button>
+            <pl-drawing-button type="pl-arc-vector-CW" ></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group >
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+</pl-drawing>
+</p>
+
+<pl-question-panel>

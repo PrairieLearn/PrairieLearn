@@ -18,7 +18,7 @@
             {{{input_array}}}
         </div>
         <div class="input-group-append">
-            <a class="btn btn-light border d-flex align-items-center" role="button" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
                 {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
                 {{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
@@ -46,9 +46,9 @@
 </script>
 <span id="pl-matrix-component-input-submission-{{uuid}}">
     {{#label}}<span>{{label}}</span>{{/label}}
-    <a class="btn btn-secondary btn-sm" role="button" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID
+    <a role="button" class="btn btn-light btn-sm" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID
       <span><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-    </a>
+  </a>
 </span>
 {{/parse_error}}
 

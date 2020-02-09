@@ -41,6 +41,7 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'courses_insert') {
         let params = [
+            req.body.institution_id,
             req.body.short_name,
             req.body.title,
             req.body.display_timezone,

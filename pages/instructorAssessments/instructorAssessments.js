@@ -10,6 +10,11 @@ const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
+const error = require('@prairielearn/prairielib/error');
+const debug = require('debug')('prairielearn:instructorAssessments');
+const logger = require('../../lib/logger');
+const { AssessmentAddEditor } = require('../../lib/editors');
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
@@ -107,6 +112,35 @@ router.get('/:filename', function(req, res, next) {
         });
     } else {
         next(new Error('Unknown filename: ' + req.params.filename));
+    }
+});
+
+router.post('/', (req, res, next) => {
+    debug(`Responding to post with action ${req.body.__action}`);
+    if (req.body.__action == 'add_assessment') {
+        debug(`Responding to action add_assessment`);
+        const editor = new AssessmentAddEditor({
+            locals: res.locals,
+        });
+        editor.canEdit((err) => {
+            if (ERR(err, next)) return;
+            editor.doEdit((err, job_sequence_id) => {
+                if (ERR(err, (e) => logger.error(e))) {
+                    res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                } else {
+                    debug(`Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`);
+                    sqldb.queryOneRow(sql.select_assessment_id_from_uuid, {uuid: editor.uuid, course_instance_id: res.locals.course_instance.id}, (err, result) => {
+                        if (ERR(err, next)) return;
+                        res.redirect(res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings');
+                    });
+                }
+            });
+        });
+    } else {
+        next(error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+        }));
     }
 });
 

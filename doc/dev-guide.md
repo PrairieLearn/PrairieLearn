@@ -119,7 +119,7 @@ RAISE NOTICE 'This is logging: % and %', var1, var2;
 ```
 
 
-## Page generation
+## HTML page generation
 
 * Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.
 
@@ -177,12 +177,13 @@ module.exports = router;
 ```
 
 
-## Page style
+## HTML style
 
-* Use [Bootstrap](http://getbootstrap.com) as the style. As of 2016-09-27 we are using v3.
+* Use [Bootstrap](http://getbootstrap.com) as the style. As of 2019-12-13 we are using v4.
 
 * Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
 
+* Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
 
 ## SQL usage
 

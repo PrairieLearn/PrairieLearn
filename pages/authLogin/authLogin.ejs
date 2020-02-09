@@ -44,22 +44,23 @@
     bottom: 0;
     margin: auto;
   }
-  .btn-illinois {
-    background-color: #E84A27;
-    border-color: #E84A27;
-    color: white;
+  .btn-shib {
+    background-color: <%- config.shibLinkColors.normal.background %>;
+    border-color: <%- config.shibLinkColors.normal.border %>;
+    color: <%- config.shibLinkColors.normal.text %>;
   }
-  .btn-illinois:hover {
-    background-color: #D04223;
-    border-color: #D04223;
-    color: white;
+  .btn-shib:hover {
+    background-color: <%- config.shibLinkColors.hover.background %>;
+    border-color: <%- config.shibLinkColors.hover.border %>;
+    color: <%- config.shibLinkColors.hover.text %>;
   }
-  .btn-illinois:focus {
-    box-shadow: 0 0 0 0.2rem rgba(255, 83, 0, 0.35);
+  .btn-shib:focus {
+    box-shadow: 0 0 0 0.2rem <%- config.shibLinkColors.focus.shadow %>;
   }
-  .btn-illinois:active {
-    background-color: #B93B1F;
-    border-color: #B93B1F;
+  .btn-shib:active {
+    background-color: <%- config.shibLinkColors.active.background %>;
+    border-color: <%- config.shibLinkColors.active.border %>;
+    color: <%- config.shibLinkColors.active.text %>;
   }
   </style>
 </head>
@@ -77,9 +78,13 @@
             </a>
           <% } %>
           <% if (config.hasShib) { %>
-            <a class="btn btn-illinois w-100 position-relative" href="/pl/shibcallback" role="button">
-              <img src="/images/illinois_logo.svg" class="social-icon"/>
-              <span class="font-weight-bold">Sign in with Illinois</span>
+            <a class="btn btn-shib w-100 position-relative" href="/pl/shibcallback" role="button">
+              <% if (config.shibLinkLogo != null) { %>
+                <img src="<%- config.shibLinkLogo %>" class="social-icon"/>
+              <% } else { %>
+                <span class="social-icon">
+              <% } %>
+              <span class="font-weight-bold"><%= config.shibLinkText %></span>
             </a>
           <% } %>
           <% if (config.hasOauth) { %>

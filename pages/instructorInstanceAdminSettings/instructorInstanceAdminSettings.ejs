@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <%- include('../partials/head'); %>
+    <style>
+        .popover{
+            max-width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                sanitize: false
+            })
+        });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+        <%- include('../partials/navtabs'); %>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex">
+                Course instance <%= course_instance.short_name %>
+            </div>
+            <table class="table table-sm table-hover two-column-description">
+                <tbody>
+                    <tr><th>Long Name</th><td><%= course_instance.long_name %></td></tr>
+                    <tr><th>CIID</th>
+                        <td>
+                            <span class="pr-2"><%= course_instance.short_name %></span>
+                            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                            <button id="changeCiidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change CIID" data-content="<%= include('../partials/changeIdForm', {id_label: 'CIID', buttonID: 'changeCiidButton', id_old: course_instance.short_name, ids: short_names, changeIdFormHelpText: 'The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple versions, like <code>Fa19honors</code>.'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                <i class="fa fa-i-cursor"></i>
+                                <span>Change CIID</span>
+                            </button>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                    <tr><th>Configuration</th>
+                        <td>
+                            <a href="<%= urlPrefix %>/<%= navPage %>/file_view/<%= infoCourseInstancePath %>">
+                                infoCourseInstance.json
+                            </a>
+                            <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/<%= infoCourseInstancePath %>">
+                                <i class="fa fa-edit"></i>
+                                <span>Edit</span>
+                            </a>
+                        </td>
+                    </tr>
+                    <% } %>
+                </tbody>
+            </table>
+            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-auto">
+                        <form name="copy-course-instance-form" class="form-inline" method="POST">
+                            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                            <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Make a copy of this course instance</button>
+                        </form>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteCourseInstanceModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this course instance</button>
+                    </div>
+                    <div class="modal fade" id="deleteCourseInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteCourseInstance">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" id="deleteCourseInstanceModalLabel">Delete course instance</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>
+                                        Are you sure you want to delete the course instance <strong><%= course_instance.short_name %></strong>?
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <form name="delete-course-instance-form" method="POST">
+                                        <input type="hidden" name="__action" value="delete_course_instance">
+                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</body>
+
+</html>

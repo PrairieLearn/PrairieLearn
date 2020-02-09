@@ -5,7 +5,7 @@
 # Dynamical detect physical cores...
 Ncpus = parallel::detectCores(logical = FALSE)
 
-# Cap number of cores used in installation to less than 4
+# Cap number of cores used in installation to be 4 or less
 if(Ncpus > 4) {
   Ncpus = 4
 } else {
@@ -16,9 +16,13 @@ if(Ncpus > 4) {
 # during package installation/updation and set the default mirror
 options(Ncpus = Ncpus, repos = c("CRAN" = "https://cran.rstudio.com"))
 
+# Check if any updates exist, if so... Install!
+update.packages(ask = FALSE, checkBuilt = TRUE)
+
 # The following are packages used in STAT 385 and STAT 432
 pkg_list = c(
   'tidyverse',
+  'remotes',
   'RcppArmadillo',
   'rmarkdown',
   'RSQLite',
@@ -47,7 +51,8 @@ pkg_list = c(
   'randomForest',
   'rpart',
   'rpart.plot',
-  'rsample'
+  'rsample',
+  'kableExtra'
 )
 
 # Determine what packages are NOT installed already.
@@ -58,5 +63,8 @@ if(length(to_install_pkgs)) {
   install.packages(to_install_pkgs)
 }
 
-# Check if any updates exist, if so... Install!
-update.packages(ask = FALSE)
+# List of packages only on GitHub
+gh_pkg_list = c('coatless/ucidata')
+
+# Install packages from GitHub
+remotes::install_github(gh_pkg_list)

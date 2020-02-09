@@ -5,9 +5,9 @@
     <link href="/stylesheets/issues.css" rel="stylesheet" />
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'issues'}); %>
-    <div id="content" class="container">
-
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/navtabs'); %>
       <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -131,7 +131,7 @@
               </div>
               <input type="text" class="form-control" name="q" value="<%= filterQuery %>">
               <div class="input-group-append">
-                <a class="btn btn-med-light" href="<%= urlPrefix %>/issues?q=" title="Clear filters">
+                <a class="btn btn-med-light" href="<%= urlPrefix %>/course_admin/issues?q=" title="Clear filters">
                   <i class="fa fa-times" aria-hidden="true"></i>
                 </a>
                 <button class="btn btn-med-light" type="button" title="Show filter help" data-toggle="modal" data-target="#filterHelpModal">

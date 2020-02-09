@@ -1,0 +1,9 @@
+columns
+    id: bigint not null default nextval('authn_providers_id_seq'::regclass)
+    name: text
+
+indexes
+    authn_providers_pkey: PRIMARY KEY (id) USING btree (id)
+
+referenced by
+    institution_authn_providers: FOREIGN KEY (authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE CASCADE

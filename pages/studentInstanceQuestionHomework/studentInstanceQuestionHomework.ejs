@@ -2,8 +2,7 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
-    <script src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <%- include('../partials/mathjax'); %>
     <script src="/javascripts/socket.io.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -18,10 +17,6 @@
   </head>
   <body>
     <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
-      });
-
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');

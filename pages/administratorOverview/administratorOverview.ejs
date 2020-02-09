@@ -36,7 +36,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
@@ -78,8 +78,8 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Administrators
-          <a id="administratorInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+              id="administratorInsertButton" tabindex="0"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
              data-content="<%= include('administratorInsertForm',
@@ -87,7 +87,7 @@
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="fa fa-user-plus" aria-hidden="true"></i>
             <span class="d-none d-sm-inline">Add administrator</span>
-          </a>
+        </button>
         </div>
 
         <div class="table-responsive">
@@ -104,9 +104,8 @@
                 <td class="align-middle"><%= administrator_user.uid %></td>
                 <td class="align-middle"><%= administrator_user.name %></td>
                 <td class="align-middle">
-                  <a id="administratorDeleteButton<%= i %>"
-                     class="btn btn-sm btn-danger float-right"
-                     tabindex="0" role="button"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
+                     id="administratorDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Remove administrator access"
                      data-content="<%= include('administratorDeleteForm',
@@ -114,7 +113,7 @@
                                    user_id: administrator_user.user_id}) %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
                     <i class="fa fa-times" aria-hidden="true"></i> Remove
-                  </a>
+                  </button>
                 </td>
               </tr>
               <% }); %>
@@ -174,25 +173,65 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
-      <!-- Courses --------------------------------------------------------------------->
+      <!-- Institutions ---------------------------------------------------------------->
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          Courses
-          <a id="courseInsertButton"
-             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
-             data-toggle="popover" data-container="body"
-             data-html="true" data-placement="auto" title="Add new administrator"
-             data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
-             data-trigger="manual" onclick="$(this).popover('show')">
-            <i class="fa fa-plus" aria-hidden="true"></i>
-            <span class="d-none d-sm-inline">Add course</span>
-          </a>
+          Institutions
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped">
             <thead>
               <tr>
+                <th>Short name</th>
+                <th>Long name</th>
+                <th>UID regexp</th>
+                <th>Authn providers</th>
+            </thead>
+            <tbody>
+              <% institutions.forEach(function(inst, i) { %>
+              <tr>
+                 <td><%= inst.short_name %></td>
+                 <td><%= inst.long_name %></td>
+                 <td><code><%= inst.uid_regexp %></code></td>
+                 <td><%= inst.authn_providers.join(', ') %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            To change institutions, edit the <strong><tt>institutions</tt></strong> table.
+            To change the allowed authentication providers, edit the <strong><tt>institution_authn_providers</tt></strong> table.
+          </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Courses --------------------------------------------------------------------->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Courses
+          <button type="button" class="btn btn-sm btn-light ml-auto"
+             id="courseInsertButton" tabindex="0"
+             data-toggle="popover" data-container="body"
+             data-html="true" data-placement="auto" title="Add new course"
+             data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
+             data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-plus" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Add course</span>
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped">
+            <thead>
+              <tr>
+                <th>Institution</th>
                 <th>Short name</th>
                 <th>Title</th>
                 <th>Timezone</th>
@@ -203,22 +242,22 @@
             <tbody>
               <% courses.forEach(function(course, i) { %>
               <tr>
+                <td><%= course.institution.short_name %></td>
                 <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'title',            label: 'title',      course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
                 <td class="align-middle">
-                  <a id="courseDeleteButton<%= i %>"
-                     class="btn btn-sm btn-danger float-right"
-                     tabindex="0" role="button"
+                  <button type="button" class="btn btn-sm btn-danger float-right"
+                     id="courseDeleteButton<%= i %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
                      data-content="<%= include('courseDeleteForm',
                                    {id: 'courseDeleteButton' + i, course: course, i: i}) %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
                     <i class="fa fa-times" aria-hidden="true"></i> Delete course
-                  </a>
+                  </button>
                 </td>
               </tr>
               <% }); %>

@@ -6,8 +6,8 @@
     <label for="inputConfirm<%= id %>">Type “<%= course.short_name %>” to confirm:</label>
     <input type="text" class="form-control" id="inputConfirm<%= id %>" name="confirm_short_name" %>">
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-danger">Delete course</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-danger">Delete course</button>
+  </div>
 </form>

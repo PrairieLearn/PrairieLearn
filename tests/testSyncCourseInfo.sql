@@ -4,4 +4,4 @@ SELECT
 FROM
     pl_courses AS c
 WHERE
-    c.short_name = 'XC 101';
+    c.short_name = 'QA 101';
