@@ -31,7 +31,7 @@ router.post('/', function(req, res, next) {
         let params = [
             res.locals.course.id,
             req.body.uid,
-            req.body.course_role,
+            'None',
             res.locals.authz_data.authn_user.user_id,
         ];
         sqldb.call('course_permissions_insert_by_user_uid', params, function(err, _result) {
@@ -103,23 +103,30 @@ router.post('/', function(req, res, next) {
         // in the given course instance. We choose not to do this for the same
         // reason as above (see handler for change_course_content_access).
 
-        async.series([
-            (callback) => {
-                const params = {
-                    user_id: req.body.user_id,
-                    course_id: res.locals.course.id,
-                    course_instance_id: req.body.course_instance_id,
-                    course_instance_role: req.body.course_instance_role,
-                };
-                sqldb.queryOneRow(sql.update_course_instance_permissions, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null)
-                });
-            }
-        ], (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
+        if (req.body.course_instance_role) {
+            // In this case, we update the role associated with the course instance permission
+            const params = {
+                user_id: req.body.user_id,
+                course_id: res.locals.course.id,
+                course_instance_id: req.body.course_instance_id,
+                course_instance_role: req.body.course_instance_role,
+            };
+            sqldb.queryOneRow(sql.update_course_instance_permissions, params, (err, _result) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
+        } else {
+            // In this case, we delete the course instance permission
+            const params = {
+                user_id: req.body.user_id,
+                course_id: res.locals.course.id,
+                course_instance_id: req.body.course_instance_id,
+            };
+            sqldb.queryOneRow(sql.delete_course_instance_permissions, params, (err, _result) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
+        }
     } else if (req.body.__action == 'add_student_data_access') {
         // FIXME: check authz
         // - check if user_id is owner (owners have full access to all)
@@ -136,31 +143,6 @@ router.post('/', function(req, res, next) {
                     course_instance_id: req.body.course_instance_id,
                 };
                 sqldb.queryOneRow(sql.insert_course_instance_permissions, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null)
-                });
-            }
-        ], (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'remove_student_data_access') {
-        // FIXME: check authz
-        // - check if user_id is owner (owners have full access to all)
-
-        // Again, we could make some effort to verify that the user is still a
-        // member of the course staff and that they still have student data access
-        // in the given course instance. We choose not to do this for the same
-        // reason as above (see handler for change_course_content_access).
-
-        async.series([
-            (callback) => {
-                const params = {
-                    user_id: req.body.user_id,
-                    course_id: res.locals.course.id,
-                    course_instance_id: req.body.course_instance_id,
-                };
-                sqldb.queryOneRow(sql.delete_course_instance_permissions, params, (err, _result) => {
                     if (ERR(err, callback)) return;
                     callback(null)
                 });
