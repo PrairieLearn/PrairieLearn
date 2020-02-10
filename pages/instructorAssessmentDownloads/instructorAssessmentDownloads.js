@@ -232,7 +232,8 @@ router.get('/:filename', function(req, res, next) {
         res.attachment(req.params.filename);
         archive.pipe(res);
         paginateQuery(sql.assessment_instance_files, params, (row, callback) => {
-            archive.append(row.contents, { name: prefix + row.filename });
+            const contents = (row.contents != null) ? row.contents : '';
+            archive.append(contents, { name: prefix + row.filename });
             callback(null);
         }, (err) => {
             if (ERR(err, next)) return;

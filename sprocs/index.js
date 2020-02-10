@@ -35,6 +35,7 @@ module.exports = {
             'array_and_number.sql',
             'array_avg.sql',
             'array_var.sql',
+            'base64_safe_decode.sql',
             'histogram.sql',
             'array_histogram.sql',
             'format_interval.sql',
