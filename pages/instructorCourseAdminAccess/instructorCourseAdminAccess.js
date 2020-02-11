@@ -8,8 +8,6 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const async = require('async');
-
 router.get('/', (req, res, next) => {
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
