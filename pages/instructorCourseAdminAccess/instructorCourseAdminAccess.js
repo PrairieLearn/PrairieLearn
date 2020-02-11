@@ -2,9 +2,6 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -16,10 +13,6 @@ const async = require('async');
 router.get('/', (req, res, next) => {
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
-        debug(result.rows);
-        result.rows.forEach((row) => {
-            debug(row.other_course_instances);
-        });
         res.locals.course_users = result.rows;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
@@ -132,7 +125,6 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else {
-        debug(req.body);
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
