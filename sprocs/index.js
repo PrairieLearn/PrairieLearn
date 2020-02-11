@@ -48,6 +48,8 @@ module.exports = {
             'format_date_only_no_tz.sql',
             'input_date.sql',
             'interval_hist_thresholds.sql',
+            'jsonb_array_to_text_array.sql',
+            'jsonb_array_to_double_precision_array.sql',
             'check_course_instance_access_rule.sql',
             'check_course_instance_access.sql',
             'check_assessment_access_rule.sql',
