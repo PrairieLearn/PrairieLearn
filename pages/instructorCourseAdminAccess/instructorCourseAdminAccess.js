@@ -1,20 +1,20 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var error = require('@prairielearn/prairielib/error');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('@prairielearn/prairielib/error');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const async = require('async');
 
-router.get('/', function(req, res, next) {
-    sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, function(err, result) {
+router.get('/', (req, res, next) => {
+    sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
         debug(result.rows);
         result.rows.forEach((row) => {
@@ -25,41 +25,20 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
     if (req.body.__action == 'course_permissions_insert_by_user_uid') {
-        let params = [
+        const params = [
             res.locals.course.id,
             req.body.uid,
             'None',
             res.locals.authz_data.authn_user.user_id,
         ];
-        sqldb.call('course_permissions_insert_by_user_uid', params, function(err, _result) {
+        sqldb.call('course_permissions_insert_by_user_uid', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'course_permissions_update_role') {
-        let params = [
-            res.locals.course.id,
-            req.body.user_id,
-            req.body.course_role,
-            res.locals.authz_data.authn_user.user_id,
-        ];
-        sqldb.call('course_permissions_update_role', params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'course_permissions_delete') {
-        var params = [
-            res.locals.course.id,
-            req.body.user_id,
-            res.locals.authz_data.authn_user.user_id,
-        ];
-        sqldb.call('course_permissions_delete', params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'change_course_content_access') {
         // FIXME: check authz
         // - remove all course instance access roles if user changed to owner?
 
@@ -78,23 +57,27 @@ router.post('/', function(req, res, next) {
         // permissions simultaneously, and so we are choosing to prioritize speed
         // in responding to the POST request.
 
-        async.series([
-            (callback) => {
-                const params = {
-                    user_id: req.body.user_id,
-                    course_id: res.locals.course.id,
-                    course_role: req.body.course_role,
-                };
-                sqldb.queryOneRow(sql.update_course_permissions, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null)
-                });
-            }
-        ], (err) => {
+        const params = [
+            res.locals.course.id,
+            req.body.user_id,
+            req.body.course_role,
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_permissions_update_role', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'change_student_data_access') {
+    } else if (req.body.__action == 'course_permissions_delete') {
+        const params = [
+            res.locals.course.id,
+            req.body.user_id,
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_permissions_delete', params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'course_instance_permissions_update_role_or_delete') {
         // FIXME: check authz
         // - check if user_id is owner (owners have full access to all)
 
@@ -105,29 +88,31 @@ router.post('/', function(req, res, next) {
 
         if (req.body.course_instance_role) {
             // In this case, we update the role associated with the course instance permission
-            const params = {
-                user_id: req.body.user_id,
-                course_id: res.locals.course.id,
-                course_instance_id: req.body.course_instance_id,
-                course_instance_role: req.body.course_instance_role,
-            };
-            sqldb.queryOneRow(sql.update_course_instance_permissions, params, (err, _result) => {
+            const params = [
+                res.locals.course.id,
+                req.body.user_id,
+                req.body.course_instance_id,
+                req.body.course_instance_role,
+                res.locals.authz_data.authn_user.user_id,
+            ];
+            sqldb.call('course_instance_permissions_update_role', params, (err, _result) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
         } else {
             // In this case, we delete the course instance permission
-            const params = {
-                user_id: req.body.user_id,
-                course_id: res.locals.course.id,
-                course_instance_id: req.body.course_instance_id,
-            };
-            sqldb.queryOneRow(sql.delete_course_instance_permissions, params, (err, _result) => {
+            const params = [
+                res.locals.course.id,
+                req.body.user_id,
+                req.body.course_instance_id,
+                res.locals.authz_data.authn_user.user_id,
+            ];
+            sqldb.call('course_instance_permissions_delete', params, (err, _result) => {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
         }
-    } else if (req.body.__action == 'add_student_data_access') {
+    } else if (req.body.__action == 'course_instance_permissions_insert') {
         // FIXME: check authz
         // - check if user_id is owner (owners have full access to all)
 
@@ -135,19 +120,14 @@ router.post('/', function(req, res, next) {
         // member of the course staff. We choose not to do this for the same
         // reason as above (see handler for change_course_content_access).
 
-        async.series([
-            (callback) => {
-                const params = {
-                    user_id: req.body.user_id,
-                    course_id: res.locals.course.id,
-                    course_instance_id: req.body.course_instance_id,
-                };
-                sqldb.queryOneRow(sql.insert_course_instance_permissions, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null)
-                });
-            }
-        ], (err) => {
+        const params = [
+            res.locals.course.id,
+            req.body.user_id,
+            req.body.course_instance_id,
+            'Student Data Viewer',
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_instance_permissions_insert', params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

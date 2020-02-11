@@ -38,7 +38,7 @@
                                 <td class="align-middle"><%= (course_user.name || '—') %></td>
                                 <td class="align-middle">
                                     <form name="course-content-access-form-<%= course_user.user_id %>" method="POST">
-                                        <input type="hidden" name="__action" value="change_course_content_access">
+                                        <input type="hidden" name="__action" value="course_permissions_update_role">
                                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                                         <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
                                         <div class="btn-group btn-group-sm" role="group">
@@ -59,7 +59,7 @@
                                     <% if (course_user.course_instance_roles) { %>
                                         <% course_user.course_instance_roles.forEach(function(cir, i) { %>
                                             <form name="student-data-access-change-<%= course_user.user_id %>-<%= i %>" method="POST" class="d-inline">
-                                                <input type="hidden" name="__action" value="change_student_data_access">
+                                                <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
                                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                                                 <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
                                                 <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
@@ -82,7 +82,7 @@
                                     <% } %>
                                     <% if (course_user.other_course_instances && course_user.other_course_instances.length > 0) { %>
                                     <form name="student-data-access-add-<%= course_user.user_id %>" method="POST" class="d-inline">
-                                        <input type="hidden" name="__action" value="add_student_data_access">
+                                        <input type="hidden" name="__action" value="course_instance_permissions_insert">
                                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                                         <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
                                         <div class="btn-group btn-group-sm" role="group">
