@@ -107,10 +107,33 @@
                                                         <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
                                                         </button>
-                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>">
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Sampler">Sampler</button>
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">Viewer</button>
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Editor">Editor</button>
+                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 30em;">
+                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Sampler">
+                                                                <div class="text-wrap">
+                                                                    <h6>Sampler</h6>
+                                                                    <p class="small">
+                                                                        Can see scores (and other data) aggregated by assessment. Cannot see the roster. Cannot see scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
+                                                                    </p>
+                                                                </div>
+                                                            </button>
+                                                            <div class="dropdown-divider"></div>
+                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">
+                                                                <div class="text-wrap">
+                                                                    <h6>Viewer</h6>
+                                                                    <p class="small">
+                                                                        Can see scores (and other data) aggregated by assessment. Can see the roster. Can see but not edit scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
+                                                                    </p>
+                                                                </div>
+                                                            </button>
+                                                            <div class="dropdown-divider"></div>
+                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Editor">
+                                                                <div class="text-wrap">
+                                                                    <h6>Editor</h6>
+                                                                    <p class="small">
+                                                                        Can see scores (and other data) aggregated by assessment. Can see the roster. Can see and edit scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
+                                                                    </p>
+                                                                </div>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                     <button type="submit" class="btn btn-sm btn-outline-primary">
