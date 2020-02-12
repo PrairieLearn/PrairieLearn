@@ -222,7 +222,7 @@ def render(element_html, data):
 
 
 def get_format_string(is_complex=False):
-    params = {"complex": is_complex, "format_error": True}
+    params = {'complex': is_complex, 'format_error': True}
     with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, params).strip()
 

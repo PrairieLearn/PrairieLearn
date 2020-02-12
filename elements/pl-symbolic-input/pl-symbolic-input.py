@@ -112,7 +112,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
-        
+
         html_params = {
             'submission': True,
             'label': label,
