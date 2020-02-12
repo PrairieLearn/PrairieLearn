@@ -45,12 +45,51 @@
                                             <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                 <%= course_user.course_role %>
                                             </button>
-                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>">
-                                                <input class="dropdown-item" type="submit" name="course_role" value="None">
-                                                <input class="dropdown-item" type="submit" name="course_role" value="Previewer">
-                                                <input class="dropdown-item" type="submit" name="course_role" value="Viewer">
-                                                <input class="dropdown-item" type="submit" name="course_role" value="Editor">
-                                                <input class="dropdown-item" type="submit" name="course_role" value="Owner">
+                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 30em;">
+                                                <button class="dropdown-item" type="submit" name="course_role" value="None">
+                                                    <div class="text-wrap">
+                                                        <h6>None</h6>
+                                                        <p class="small">
+                                                            Can see no course content.
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                                <div class="dropdown-divider"></div>
+                                                <button class="dropdown-item" type="submit" name="course_role" value="Previewer">
+                                                    <div class="text-wrap">
+                                                        <h6>Previewer</h6>
+                                                        <p class="small">
+                                                            Can see all questions, course instances, and assessments. Can see but not close issues. Cannot see any code or configuration files.
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                                <div class="dropdown-divider"></div>
+                                                <button class="dropdown-item" type="submit" name="course_role" value="Viewer">
+                                                    <div class="text-wrap">
+                                                        <h6>Viewer</h6>
+                                                        <p class="small">
+                                                            Can see all questions, course instances, and assessments. Can see but not close issues. Can see and download but not edit all code and configuration files.
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                                <div class="dropdown-divider"></div>
+                                                <button class="dropdown-item" type="submit" name="course_role" value="Editor">
+                                                    <div class="text-wrap">
+                                                        <h6>Editor</h6>
+                                                        <p class="small">
+                                                            Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository.
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                                <div class="dropdown-divider"></div>
+                                                <button class="dropdown-item" type="submit" name="course_role" value="Owner">
+                                                    <div class="text-wrap">
+                                                        <h6>Owner</h6>
+                                                        <p class="small">
+                                                            Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository. Can add and remove course staff and can change access roles.
+                                                        </p>
+                                                    </div>
+                                                </button>
                                             </div>
                                         </div>
                                     </form>
