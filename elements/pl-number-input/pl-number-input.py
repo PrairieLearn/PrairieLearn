@@ -221,6 +221,12 @@ def render(element_html, data):
     return html
 
 
+def get_format_string(is_complex=False):
+    params = {"complex": is_complex, "format_error": True}
+    with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, params).strip()
+
+
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -243,9 +249,9 @@ def parse(element_html, data):
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
         if allow_complex:
-            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
+            data['format_errors'][name] = get_format_string(True)
         else:
-            data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
+            data['format_errors'][name] = get_format_string(False)
         data['submitted_answers'][name] = None
 
 

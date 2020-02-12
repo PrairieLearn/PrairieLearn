@@ -217,3 +217,11 @@ table td > .badge {
 .user-output-invalid {
     color: #dc3545;
 }
+
+.badge-invalid {
+    border-style: solid;
+    border-width: 1.5px;
+    border-color: #dc3545;
+    margin-left: 5px;
+    background: #fff;
+}

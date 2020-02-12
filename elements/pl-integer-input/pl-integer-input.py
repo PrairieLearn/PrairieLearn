@@ -160,7 +160,9 @@ def parse(element_html, data):
             raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
-        data['format_errors'][name] = 'Invalid format. The submitted answer was not an integer.'
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, {'format_error': True}).strip()
+        data['format_errors'][name] = format_str
         data['submitted_answers'][name] = None
 
 

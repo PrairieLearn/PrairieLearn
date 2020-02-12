@@ -112,6 +112,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
+        
         html_params = {
             'submission': True,
             'label': label,
@@ -129,6 +130,9 @@ def render(element_html, data):
             html_params['a_sub'] = sympy.latex(a_sub)
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
+            with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
+                parse_error += chevron.render(f, {'format_error': True}).strip()
+            html_params['parse_error'] = parse_error
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 

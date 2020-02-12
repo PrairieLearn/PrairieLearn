@@ -251,7 +251,8 @@ def parse(element_html, data):
                     A[i, j] = a_sub_parsed
 
     if invalid_format:
-        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
+            data['format_errors'][name] = chevron.render(f, {'format_error': True}).strip()
         data['submitted_answers'][name] = None
     else:
         data['submitted_answers'][name] = pl.to_json(A)
