@@ -115,7 +115,7 @@ router.post('/', (req, res, next) => {
             res.locals.course.id,
             req.body.user_id,
             req.body.course_instance_id,
-            'Student Data Viewer',
+            'Student Data Sampler',
             res.locals.authz_data.authn_user.user_id,
         ];
         sqldb.call('course_instance_permissions_insert', params, (err, _result) => {
