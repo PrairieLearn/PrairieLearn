@@ -151,6 +151,17 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    if a_sub.strip() == '':
+        opts = {
+            'format_error': True,
+            'format_error_message': 'the submitted answer was blank.'
+        }
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, opts).strip()
+        data['format_errors'][name] = format_str
+        data['submitted_answers'][name] = None
+        return
+    
     # Convert to integer
     try:
         a_sub_parsed = pl.string_to_integer(a_sub)

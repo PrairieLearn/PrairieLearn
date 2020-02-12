@@ -221,8 +221,8 @@ def render(element_html, data):
     return html
 
 
-def get_format_string(is_complex=False):
-    params = {'complex': is_complex, 'format_error': True}
+def get_format_string(is_complex=False, message=None):
+    params = {'complex': is_complex, 'format_error': True, 'format_error_message': message}
     with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, params).strip()
 
@@ -239,6 +239,11 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    if a_sub.strip() == '':
+        data['format_errors'][name] = get_format_string(allow_complex, 'the submitted answer was blank.')
+        data['submitted_answers'][name] = None
+        return
+    
     # Convert to float or complex
     try:
         a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
@@ -248,10 +253,7 @@ def parse(element_html, data):
             raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
-        if allow_complex:
-            data['format_errors'][name] = get_format_string(True)
-        else:
-            data['format_errors'][name] = get_format_string(False)
+        data['format_errors'][name] = get_format_string(allow_complex)
         data['submitted_answers'][name] = None
 
 
