@@ -243,7 +243,7 @@ def parse(element_html, data):
         data['format_errors'][name] = get_format_string(allow_complex, 'the submitted answer was blank.')
         data['submitted_answers'][name] = None
         return
-    
+
     # Convert to float or complex
     try:
         a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)

@@ -161,7 +161,7 @@ def parse(element_html, data):
         data['format_errors'][name] = format_str
         data['submitted_answers'][name] = None
         return
-    
+
     # Convert to integer
     try:
         a_sub_parsed = pl.string_to_integer(a_sub)
