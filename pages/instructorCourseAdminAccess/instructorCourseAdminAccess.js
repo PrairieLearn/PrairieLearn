@@ -6,9 +6,14 @@ const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
+    debug(res.locals.courses);
+
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.course_users = result.rows;
