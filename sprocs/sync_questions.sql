@@ -43,7 +43,7 @@ BEGIN
             (question->>'type')::enum_question_type,
             question->>'title',
             (question->'options')::JSONB,
-            (SELECT ARRAY_AGG(client_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(question->>'client_files', '[]')::jsonb) client_files)::text[],
+            jsonb_array_to_text_array(question->'client_files'),
             (question->>'partial_credit')::boolean,
             new_course_id,
             (question->>'grading_method')::enum_grading_method,
@@ -53,7 +53,7 @@ BEGIN
             COALESCE((SELECT id FROM topics WHERE name = question->>'topic' AND course_id = new_course_id), NULL),
             (question->>'external_grading_enabled')::boolean,
             question->>'external_grading_image',
-            (SELECT ARRAY_AGG(external_grading_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(question->>'external_grading_files', '[]')::jsonb) external_grading_files)::text[],
+            jsonb_array_to_text_array(question->'external_grading_files'),
             question->>'external_grading_entrypoint',
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean
