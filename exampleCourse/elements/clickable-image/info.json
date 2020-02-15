@@ -1,0 +1,17 @@
+{
+    "controller": "clickable-image.py",
+    "dependencies": {
+        "elementScripts": [
+            "clickable-image.js"
+        ],
+        "elementStyles": [
+            "clickable-image.css"
+        ],
+        "clientFilesCourseScripts": [
+            "sharedElementCode.js"
+        ],
+        "clientFilesCourseStyles": [
+            "sharedElementStyles.css"
+        ]
+    }
+}

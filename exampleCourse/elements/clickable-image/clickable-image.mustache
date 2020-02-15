@@ -1,0 +1,29 @@
+{{#question}}
+<div class="example-course-custom-element">
+    <p class="big example-shared-style">Click on the image this many times: {{number}}</p>
+    <input id="my_hidden_field" name="{{answers_name}}" type="hidden" value="0" />
+    <p><img src="{{image_url}}" width="50px" id="IMark"></p>
+    <p id="my_display_field">0</p>
+</div>
+{{/question}}
+
+
+
+
+{{#submission}}
+<p id="my_display_field">{{submitted}}</p>
+
+   {{#provide_feedback}}
+   <p><span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span><i>{{feedback}}</i></p>
+   {{/provide_feedback}}
+   
+{{/submission}}
+
+
+
+
+
+
+{{#answer}}
+<p id="my_display_field">{{correct}}</p>
+{{/answer}}
