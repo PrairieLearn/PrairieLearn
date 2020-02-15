@@ -161,22 +161,33 @@ def terminate_worker(signum, stack):
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
 
-while True:
-    worker_pid = os.fork()
-    if worker_pid == 0:
-        worker_loop()
-        break
-    else:
-        pid,status = os.waitpid(worker_pid, 0)
-        worker_pid = 0
-        if os.WIFEXITED(status):
-            if os.WEXITSTATUS(status) == 0:
-                # everything is ok, the worker exited gracefully,
-                # just repeat
-                pass
-            else:
-                # the worker did not exit gracefully
-                raise Exception('worker process exited unexpectedly with status %d' % status)
+with open(4, 'w', encoding='utf-8') as exitf:
+    while True:
+        worker_pid = os.fork()
+        if worker_pid == 0:
+            # Ensure that no code running in the worker can interact with
+            # file descriptor 4
+            exitf.close()
+
+            worker_loop()
+            break
         else:
-            # something else happened that is weird
-            raise Exception('worker process exited unexpectedly with status %d' % status)
+            pid,status = os.waitpid(worker_pid, 0)
+            worker_pid = 0
+            if os.WIFEXITED(status):
+                if os.WEXITSTATUS(status) == 0:
+                    # Everything is ok, the worker exited gracefully,
+                    # just repeat
+
+                    # We'll need to write a confirmation message on file
+                    # descriptor 4 so that PL knows that control was actually
+                    # returned to the zygote
+                    json.dump({ "exited": True }, exitf)
+                    exitf.write('\n')
+                    exitf.flush()
+                else:
+                    # The worker did not exit gracefully
+                    raise Exception('worker process exited unexpectedly with status %d' % status)
+            else:
+                # Something else happened that is weird
+                raise Exception('worker process exited unexpectedly with status %d' % status)
