@@ -45,8 +45,14 @@
                                             <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                 <%= course_user.course_role %>
                                             </button>
-                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 30em;">
-                                                <button class="dropdown-item" type="submit" name="course_role" value="None">
+                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 35em;">
+                                                <div class="dropdown-header text-wrap">
+                                                    <p>
+                                                        Users with course content access can see aggregate student data (e.g., mean scores), but cannot see the names or scores of individual students without having also been granted student data access to a particular course instance.
+                                                    </p>
+                                                </div>
+                                                <div class="dropdown-divider"></div>
+                                                <button class="dropdown-item mt-2" type="submit" name="course_role" value="None">
                                                     <div class="text-wrap">
                                                         <h6>None</h6>
                                                         <p class="small">
@@ -107,21 +113,18 @@
                                                         <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
                                                         </button>
-                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 30em;">
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Sampler">
-                                                                <div class="text-wrap">
-                                                                    <h6>Sampler</h6>
-                                                                    <p class="small">
-                                                                        Can see scores and other student data aggregated by assessment. Cannot see the roster. Cannot see scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
-                                                                    </p>
-                                                                </div>
-                                                            </button>
+                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 35em;">
+                                                            <div class="dropdown-header text-wrap">
+                                                                <p>
+                                                                    Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files, and cannot see any other course instances or assessments, without having also been granted course content access.
+                                                                </p>
+                                                            </div>
                                                             <div class="dropdown-divider"></div>
                                                             <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">
                                                                 <div class="text-wrap">
                                                                     <h6>Viewer</h6>
                                                                     <p class="small">
-                                                                        Can see scores and other student data aggregated by assessment. Can see the roster. Can see but not edit scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
+                                                                        Can see but not edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
                                                                     </p>
                                                                 </div>
                                                             </button>
@@ -130,7 +133,7 @@
                                                                 <div class="text-wrap">
                                                                     <h6>Editor</h6>
                                                                     <p class="small">
-                                                                        Can see scores and other student data aggregated by assessment. Can see the roster. Can see and edit scores of individual students. These permissions are granted only for the course instance <code><%= cir.short_name %></code>.
+                                                                        Can see and edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
                                                                     </p>
                                                                 </div>
                                                             </button>

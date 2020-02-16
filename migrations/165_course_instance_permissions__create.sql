@@ -1,4 +1,4 @@
-CREATE TYPE enum_course_instance_role AS ENUM ('None', 'Student Data Sampler', 'Student Data Viewer', 'Student Data Editor');
+CREATE TYPE enum_course_instance_role AS ENUM ('None', 'Student Data Viewer', 'Student Data Editor');
 
 CREATE TABLE course_instance_permissions (
     id BIGSERIAL PRIMARY KEY,

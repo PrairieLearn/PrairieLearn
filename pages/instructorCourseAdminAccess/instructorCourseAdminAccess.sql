@@ -9,7 +9,7 @@ SELECT
         'short_name', ci.short_name,
         'course_instance_permission_id', cip.id,
         'course_instance_role', cip.course_instance_role,
-        'course_instance_role_formatted', CASE WHEN cip.course_instance_role = 'Student Data Sampler'::enum_course_instance_role THEN 'Sampler' WHEN cip.course_instance_role = 'Student Data Viewer'::enum_course_instance_role THEN 'Viewer' WHEN cip.course_instance_role = 'Student Data Editor'::enum_course_instance_role THEN 'Editor' END
+        'course_instance_role_formatted', CASE WHEN cip.course_instance_role = 'Student Data Viewer'::enum_course_instance_role THEN 'Viewer' WHEN cip.course_instance_role = 'Student Data Editor'::enum_course_instance_role THEN 'Editor' END
     ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC) FILTER (WHERE cip.course_instance_role IS NOT NULL) AS course_instance_roles,
     jsonb_agg(jsonb_build_object(
         'id', ci.id,
