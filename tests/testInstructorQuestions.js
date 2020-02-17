@@ -29,6 +29,7 @@ const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
 const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
+const brokenSubmission = {qid: 'brokenSubmission', type: 'Freeform'};
 
 describe('Instructor questions', function() {
     this.timeout(60000);
@@ -421,43 +422,6 @@ describe('Instructor questions', function() {
                     }
                     callback(null);
                 });
-            });
-        });
-    });
-
-    describe('9. submit missing answers to question brokenSubmission', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
-                locals.postAction = 'grade';
-                locals.question = questions.brokenSubmission;
-                locals.expectedResult = {
-                    submission_score: null,
-                    submission_correct: null,
-                };
-                locals.getSubmittedAnswer = function(_variant) {
-                    return {};
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-        describe('check the submission is not gradable', function() {
-            it('should succeed', function(callback) {
-                sqldb.queryOneRow(sql.select_last_submission, [], function(err, result) {
-                    if (ERR(err, callback)) return;
-                    const submission = result.rows[0];
-                    if (submission.gradable) return callback(new Error('submission.gradable is true'));
-                    callback(null);
-                });
-            });
-        });
-        describe('the submission panel contents', function() {
-            it('should contain "Missing Input"', function() {
-                elemList = locals.$('div.submission-body :contains("Missing Input")');
-                assert.isAtLeast(elemList.length, 1);
             });
         });
     });
