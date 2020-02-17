@@ -194,6 +194,12 @@ def render(element_html, data):
     return html
 
 
+def get_format_string(message):
+    params = {'format_error': True, 'format_error_message': message}
+    with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, params).strip()
+
+
 def parse(element_html, data):
     # By convention, this function returns at the first error found
 
@@ -204,14 +210,14 @@ def parse(element_html, data):
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = get_format_string('No submitted answer.')
         data['submitted_answers'][name] = None
         return
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, info) = pl.string_to_2darray(a_sub, allow_complex=allow_complex)
     if a_sub_parsed is None:
-        data['format_errors'][name] = info['format_error']
+        data['format_errors'][name] = get_format_string(info['format_error'])
         data['submitted_answers'][name] = None
         return
 
