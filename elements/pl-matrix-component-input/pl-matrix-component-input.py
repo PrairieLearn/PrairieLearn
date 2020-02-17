@@ -137,7 +137,7 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -157,10 +157,15 @@ def render(element_html, data):
                     html_params['a_sub'] = sub_latex
             else:
                 html_params['a_sub'] = sub_latex
+        elif not name in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
 
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
+            
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 

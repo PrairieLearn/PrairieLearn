@@ -119,7 +119,7 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             a_sub = data['submitted_answers'][name]
             if isinstance(a_sub, str):
                 # this is for backward-compatibility
@@ -128,6 +128,9 @@ def render(element_html, data):
                 a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
             a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params['a_sub'] = sympy.latex(a_sub)
+        elif not name in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
@@ -157,6 +160,8 @@ def render(element_html, data):
         else:
             raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
 
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
+        
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 

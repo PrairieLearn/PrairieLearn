@@ -225,3 +225,11 @@ table td > .badge {
     margin-left: 5px;
     background: #fff;
 }
+
+.badge-missing-input {
+    border-style: solid;
+    border-width: 2px;
+    border-color: #6c757d;
+    margin-left: 5px;
+    background: #fff;
+} 

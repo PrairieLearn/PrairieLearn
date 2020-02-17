@@ -104,7 +104,7 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -119,6 +119,9 @@ def render(element_html, data):
 
             # Format answer as a string
             html_params['a_sub'] = pl.string_from_2darray(a_sub, language=format_type, digits=12, presentation_type='g')
+        elif not name in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
@@ -138,6 +141,8 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
+            
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
