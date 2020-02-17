@@ -1,6 +1,5 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
 import numpy as np
 import random
 import math
@@ -92,7 +91,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         if raw_submitted_answer is not None:
-            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+            html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -125,7 +124,7 @@ def render(element_html, data):
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)

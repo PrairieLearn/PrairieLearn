@@ -30,6 +30,7 @@ const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
 const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
 
+
 describe('Instructor questions', function() {
     this.timeout(60000);
 
@@ -295,7 +296,7 @@ describe('Instructor questions', function() {
             });
         });
     });
-    
+
     describe('8. test downloading files', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
