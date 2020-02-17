@@ -29,7 +29,6 @@ const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
 const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
-const brokenSubmission = {qid: 'brokenSubmission', type: 'Freeform'};
 
 describe('Instructor questions', function() {
     this.timeout(60000);
