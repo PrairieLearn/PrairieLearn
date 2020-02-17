@@ -125,7 +125,7 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = a_sub
-        elif not name in data['submitted_answers']:
+        elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
         else:
@@ -148,7 +148,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
-            
+
         with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':

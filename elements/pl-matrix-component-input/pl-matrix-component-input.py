@@ -157,7 +157,7 @@ def render(element_html, data):
                     html_params['a_sub'] = sub_latex
             else:
                 html_params['a_sub'] = sub_latex
-        elif not name in data['submitted_answers']:
+        elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
         else:
@@ -165,7 +165,7 @@ def render(element_html, data):
             html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
-            
+
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 

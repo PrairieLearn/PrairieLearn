@@ -175,7 +175,7 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:.12g}'.format(a_sub)
-        elif not name in data['submitted_answers']:
+        elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
         else:
