@@ -37,7 +37,7 @@ Questions from a question set can be referenced with a combination of question s
 
 # Motivation
 
-*TODO*
+As PrairieLearn becomes more widely used, courses want to be able to easily share questions. Currently this is accomplished by copying question files between courses. However, this approach requires a lot of manual effort to copy questions around and keep them up-to-date as questions are improved. By adding first-class support for sharing questions, we hope to reduce the burden of sharing questions.
 
 # Detailed design
 
@@ -84,13 +84,48 @@ On a given PrairieLearn instance, the ability to sync a question set is controll
 
 # Drawbacks
 
-*TODO*
+## Inability to configure or augment questions
+
+With this proposed solution, there isn't an obvious way to control the behavior of a given question, such as adjusting the difficulty level or adjusting units/tolerances based on the needs of a particular course. There's also no way to augment questions, such as by providing additional instructions for a given question.
+
+It's unclear if either of these features would be needed in practice. However, it's worth calling them out to be aware of the limitations. These constraints might actually prove useful by encouraging sensible defaults and ensuring that questions are self-contained so that additional instructions/context aren't needed.
 
 # Alternatives
 
-*TODO*
+## No formal support for sharing questions
+
+This is the current state of PrairieLearn. "Sharing" a question involves manually copying all of its files from one course to another. From a technical perspective, this solution is simple, as it requires no special treatment in PrairieLearn code. However, it scales poorly as it requires a lot of manual action to propagage question enhancements or fixes.
+
+## Share questions directly from courses
+
+Instead of having a special entity that stores shared questions, one could share questions directly from an existing course. From a technical perspective this is likely easier than the proposal of a dedicated question set course.
+
+The first drawback to this solution is that it makes it hard to ensure the previously-mentioned consistency guarantees. Since a normal course is a self-contained unit, questions can be renamed and deleted at will as long as all references to the question within the course change at the same time. This is by design, as it allows courses to reorganize their course material as time goes on. However, with question sets, a question's ID becomes a part of the "interface" of the question set.
+
+The second drawback is less technical and more organizational. Specifically, it does nothing to discourage tying a question too closely to the needs of a particular course/institution or making changes that may be unexpected or undesired by consumers of the question. While we can't enforce these things at the technical level, the hope is that by having shared questions located in a separate repo, question editors will think more carefully about how they design questions and the changes they make to them over time.
+
+# Potential future enhancements
+
+The following features are not necessary for an MVP version of this feature, but are called out for the sake of discussion.
+
+## Question deprecation
+
+To ensure safety guarantees, once a question in a question set exists, it cannot be renamed or deleted. However, as question sets eveolve over the course of many years, certain questions may become outdated or broken and there may not be sufficient resources to update them. To make it easy for this to be communicated to consumers of questions, a "deprecated" flag could be added to a question's `info.json` file:
+
+```json
+{
+  "uuid": "754dac56-fc1f-4888-a74a-1b365fd48376",
+  "deprecated": true
+}
+```
+
+Deprecated questions could render a warning in instructor views of the question, on a question's row in an assessment overview, or in other useful locations across PrairieLearn.
 
 # Unresolved questions and concerns
+
+## Feature name
+
+With the existence of assessment sets, "set" might become too much of an overloaded term if used for this feature. A name like "question collections" may be more appropriate.
 
 ## Question set IDs
 
