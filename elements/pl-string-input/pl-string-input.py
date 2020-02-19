@@ -54,7 +54,7 @@ def render(element_html, data):
                 space_hint = 'Leading and trailing spaces will be removed from your answer.'
         else:
             if remove_spaces:
-                space_hint = 'Whitespaces between text will be removed but leading and trailing spaces will be left as part of your answer.'
+                space_hint = 'All spaces between text will be removed but leading and trailing spaces will be left as part of your answer.'
             else:
                 space_hint = 'Leading and trailing spaces will be left as part of your answer.'
 
