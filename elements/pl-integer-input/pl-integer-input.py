@@ -3,7 +3,6 @@ from html import escape
 import chevron
 import math
 import prairielearn as pl
-import numpy as np
 import random
 
 
