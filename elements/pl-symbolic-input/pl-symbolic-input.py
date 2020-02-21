@@ -210,6 +210,9 @@ def parse(element_html, data):
         # for exponentiation. In python, only the latter can be used.
         a_sub = a_sub.replace('^', '**')
 
+        # Replace unicode minus with hyphen minus wherever it occurs
+        a_sub = a_sub.replace(u'\u2212', '-')
+
         # Strip whitespace
         a_sub = a_sub.strip()
 
