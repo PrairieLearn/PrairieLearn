@@ -172,8 +172,6 @@ def parse(element_html, data):
         a_sub_parsed = pl.string_to_integer(a_sub)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
-        if not np.isfinite(a_sub_parsed):
-            raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
