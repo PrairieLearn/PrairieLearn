@@ -30,13 +30,9 @@ zilles@illinois.edu,1,addTwoNumbers,0</pre>
   <tt>feedback</tt>:
 </p>
 <pre class="ml-4">uid,instance,qid,score_perc,feedback
-mwest@illinois.edu,1,addTwoNumbers,34.5,"{""manual"": ""You _divided_ rather than _multiplying_.""}"
+mwest@illinois.edu,1,addTwoNumbers,34.5,You _divided_ rather than _multiplying_.
 zilles@illinois.edu,1,matrixMultiply,100,
-zilles@illinois.edu,1,addTwoNumbers,78.92,"{""manual"": ""You forgot to take a *cube* root.""}"</pre>
-<p>
-  The <tt>feedback</tt> column contains JSON, which needs
-  double-quotation escaping inside CSV files.
-</p>
+zilles@illinois.edu,1,addTwoNumbers,78.92,You forgot to take a *cube* root.</pre>
 <p>
   The feedback will be attached to the most recent student submission.
   To display it to students you can put something like the following
@@ -47,7 +43,9 @@ zilles@illinois.edu,1,addTwoNumbers,78.92,"{""manual"": ""You forgot to take a *
 </pl-submission-panel></pre>
 <p>
   Feedback can be set along with either <tt>score_perc</tt>
-  or <tt>points</tt>.
+  or <tt>points</tt>. The <tt>feedback.manual</tt> property will be
+  set to the entire feedback string. Any other properties of the
+  feedback object will be left unchanged.
 </p>
 <p>
   To associate the feedback with a specific student submission (rather
@@ -55,6 +53,16 @@ zilles@illinois.edu,1,addTwoNumbers,78.92,"{""manual"": ""You forgot to take a *
   values obtained from the CSV or ZIP files on the Downloads page:
 </p>
 <pre class="ml-4">uid,instance,qid,score_perc,submission_id,feedback
-mwest@illinois.edu,1,addTwoNumbers,34.5,42983,"{""manual"": ""You _divided_ rather than _multiplying_""}"
+mwest@illinois.edu,1,addTwoNumbers,34.5,42983,You _divided_ rather than _multiplying_.
 zilles@illinois.edu,1,matrixMultiply,100,42984,
-zilles@illinois.edu,1,addTwoNumbers,78.92,42987,"{""manual"": ""You forgot to take a *cube* root.""}"</pre>
+zilles@illinois.edu,1,addTwoNumbers,78.92,42987,You forgot to take a *cube* root.</pre>
+<p>
+  You can alternatively use a <tt>feedback_json</tt> column containing
+  JSON, which will overwrite properties of the
+  existing <tt>feedback</tt> object in the submission. Note that JSON
+  requires double-quotation escaping inside CSV files:
+</p>
+<pre class="ml-4">uid,instance,qid,score_perc,feedback_json
+mwest@illinois.edu,1,addTwoNumbers,34.5,"{""msg"": ""You _divided_ rather than _multiplying_""}"
+zilles@illinois.edu,1,matrixMultiply,100,
+zilles@illinois.edu,1,addTwoNumbers,78.92,"{""msg"": ""You forgot to take a *cube* root.""}"</pre>

@@ -687,8 +687,8 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.csvData
                     = 'uid,instance,qid,score_perc,feedback\n'
-                    + 'dev@illinois.edu,1,addNumbers,40,"{""manual"":""feedbackNumbers""}"\n'
-                    + 'dev@illinois.edu,1,addVectors,50,"{""manual"":""feedbackVectors""}"\n';
+                    + 'dev@illinois.edu,1,addNumbers,40,feedback numbers\n'
+                    + 'dev@illinois.edu,1,addVectors,50,feedback vectors\n';
             });
         });
         helperQuestion.uploadInstanceQuestionScores(locals);
@@ -737,7 +737,7 @@ describe('Exam assessment', function() {
                     locals.expectedFeedback = {
                         submission_id: null,
                         qid: helperExam.questions.addNumbers.qid,
-                        feedback: {manual: 'feedbackNumbers'},
+                        feedback: {manual: 'feedback numbers'},
                     };
                 });
             });
@@ -747,7 +747,7 @@ describe('Exam assessment', function() {
                     locals.expectedFeedback = {
                         submission_id: null,
                         qid: helperExam.questions.addVectors.qid,
-                        feedback: {manual: 'feedbackVectors'},
+                        feedback: {manual: 'feedback vectors'},
                     };
                 });
             });
@@ -783,8 +783,8 @@ describe('Exam assessment', function() {
             });
             it('should succeed', function() {
                 locals.csvData
-                    = 'uid,instance,qid,points,submission_id,feedback\n'
-                    + 'dev@illinois.edu,1,addNumbers,4.7,' + locals.submission_id_for_feedback + ',"{""manual"":""feedbackNumbers2""}"\n'
+                    = 'uid,instance,qid,points,submission_id,feedback_json\n'
+                    + 'dev@illinois.edu,1,addNumbers,4.7,' + locals.submission_id_for_feedback + ',"{""msg"":""feedback numbers 2""}"\n'
                     + 'dev@illinois.edu,1,addVectors,1.2,,\n';
             });
         });
@@ -834,7 +834,7 @@ describe('Exam assessment', function() {
                     locals.expectedFeedback = {
                         submission_id: locals.submission_id_for_feedback,
                         qid: helperExam.questions.addNumbers.qid,
-                        feedback: {manual: 'feedbackNumbers2'},
+                        feedback: {msg: 'feedback numbers 2'},
                     };
                 });
             });
@@ -864,7 +864,7 @@ describe('Exam assessment', function() {
                     locals.expectedFeedback = {
                         submission_id: locals.submission_id_preserveN,
                         qid: helperExam.questions.addNumbers.qid,
-                        feedback: {manual: 'feedbackNumbers'},
+                        feedback: {manual: 'feedback numbers'},
                     };
                 });
             });
@@ -874,7 +874,7 @@ describe('Exam assessment', function() {
                     locals.expectedFeedback = {
                         submission_id: null,
                         qid: helperExam.questions.addVectors.qid,
-                        feedback: {manual: 'feedbackVectors'},
+                        feedback: {manual: 'feedback vectors'},
                     };
                 });
             });

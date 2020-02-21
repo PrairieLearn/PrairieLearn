@@ -97,7 +97,12 @@ BEGIN
         UPDATE submissions AS s
         SET
             auth_user_id = instance_questions_update_score.authn_user_id,
-            feedback = set_feedback,
+            feedback = CASE
+                WHEN feedback IS NULL THEN set_feedback
+                WHEN set_feedback IS NULL THEN feedback
+                WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(set_feedback) = 'object' THEN feedback || set_feedback
+                ELSE set_feedback
+            END,
             graded_at = now(),
             grading_method = 'Manual',
             override_score = new_score,

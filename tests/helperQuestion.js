@@ -396,7 +396,9 @@ module.exports = {
                 });
             });
             it('should have the correct feedback', function() {
-                assert.deepEqual(locals.question_feedback.feedback, locals.expectedFeedback.feedback);
+                for (const p in locals.expectedFeedback.feedback) {
+                    assert.deepEqual(locals.question_feedback.feedback[p], locals.expectedFeedback.feedback[p]);
+                }
             });
         });
     },
