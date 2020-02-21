@@ -85,21 +85,21 @@ ${{a_tru}}$
 {{/answer}}
 
 {{#format}}
-<p>Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
+<p>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
 {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
     
-<h5><small class='text-uppercase'>Allowable Operators</small></h5>
+<h6>Allowable Operators</h6>
 <pre>{{operators}}</pre>
 <p>All operations must be explicit:</p>
 
 <p> Example <i>valid</i> inputs: <code class="user-output">2*3</code> &nbsp; <code class="user-output">cos(1)</code> </p>
 <p> Example <i>invalid</i> inputs: <code class="user-output">2(3)</code> &nbsp; <code class="user-output">cos 1</code> </p>
 
-<p>Note that either <code>^</code> or <code>**</code> can be used for exponentiation.</p>
-<h5><small class='text-uppercase'>Allowable Constants</small></h5>
+<p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
+<h6>Allowable Constants</h6>
 <pre>{{constants}}</pre>{{#variables}}
 {{#allow_complex}}<p>Either <code>i</code> or <code>j</code> can be used to denote the imaginary unit. Examples of valid complex numbers are <code>1 + 2 * i</code> and <code>-3 * j</code>.</p>{{/allow_complex}}
-<h5><small class='text-uppercase'>Allowable Variables</small></h5>
+<h6>Allowable Variables</h6>
 <pre>{{variables}}</pre>{{/variables}}
 {{/format}}
 

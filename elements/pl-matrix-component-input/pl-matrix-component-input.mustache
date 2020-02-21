@@ -110,11 +110,12 @@ No symbolic expressions (those that involve fractions, square roots, variables, 
 {{/shortformat}}
 
 {{#format_error}}
-    <p> Invalid format: one or more entries of the submitted answer could not be interpreted as a decimal {{#complex}}or complex{{/complex}} number.  No symbolic input or fractions are allowed.</p>
-    <p> Example <i>valid</i> inputs: <code class="user-output">5</code> &nbsp; <code class="user-output">-17.3</code> &nbsp; <code class="user-output">4.25e7</code> {{#complex}}&nbsp; <code class="user-output">4.2 + 3.6i</code>{{/complex}} </p>
-    <p> Example <i>invalid</i> inputs: <code class="user-output">2/3</code> &nbsp; <code class="user-output">6+9</code> &nbsp; <code class="user-output">4*10^7</code> &nbsp; <code class="user-output">3*pi</code> {{^complex}}&nbsp; <code class="user-output">3.6i</code>{{/complex}} </p>
+    <p> Invalid format: one or more entries of the submitted answer could not be interpreted as a decimal  number.  No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted. </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output">5</code> &nbsp; <code class="user-output">-17.3</code> &nbsp; <code class="user-output">4.25e7</code> </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output">2/3</code> &nbsp; <code class="user-output">6+9</code> &nbsp; <code class="user-output">4*10^7</code> &nbsp; <code class="user-output">3*pi</code> &nbsp; <code class="user-output">3.6i</code> </p>
     <hr>
     <small>
-        <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> {{#complex}}or complex{{/complex}} number.  These numbers {{#complex}}(both real and complex parts){{/complex}} lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
+        <p> You must enter all the components of the matrix. </p>
+        <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> number.  These numbers lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
     </small>
 {{/format_error}}

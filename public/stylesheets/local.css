@@ -218,6 +218,10 @@ table td > .badge {
     color: #dc3545;
 }
 
+.user-output.small, .user-output-invalid.small {
+    font-size: 11px;
+}
+
 .badge-invalid {
     border-style: solid;
     border-width: 1.5px;

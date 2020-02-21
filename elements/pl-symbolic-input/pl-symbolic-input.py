@@ -55,7 +55,7 @@ def render(element_html, data):
 
     operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
     constants = ', '.join(['pi, e'])
-    
+
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
