@@ -212,7 +212,10 @@ def render(element_html, data):
         with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        ans_true = format_true_ans(element, data, name)
+        ans_true = None
+        if pl.get_boolean_attrib(element, 'show-correct-answer', SHOW_CORRECT_ANSWER_DEFAULT):
+            ans_true = format_true_ans(element, data, name)
+
         if ans_true is not None:
             html_params = {'answer': True, 'label': label, 'a_tru': ans_true, 'suffix': suffix}
             with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
