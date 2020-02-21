@@ -255,12 +255,12 @@ def parse(element_html, data):
         return
 
     # support FANCY division characters
-    a_sub = a_sub.replace(u'\u2215', '/') # unicode /
-    a_sub = a_sub.replace(u'\u00F7', '/') # division symbol, because why not
+    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
+    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
 
     if a_sub.count('/') == 1:
         # Specially handle fractions.
-        
+
         if allow_fractions:
             a_sub_splt = a_sub.split('/')
             try:
@@ -275,16 +275,16 @@ def parse(element_html, data):
                 a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
                     raise ValueError('invalid submitted answer')
-                
+
                 data['submitted_answers'][name] = pl.to_json(a_frac)
             except ZeroDivisionError:
-                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, "your fraction resulted in a division by zero.")
+                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'your fraction resulted in a division by zero.')
                 data['submitted_answers'][name] = None
             except Exception:
                 data['format_errors'][name] = get_format_string(allow_complex, allow_fractions)
                 data['submitted_answers'][name] = None
         else:
-            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, "fractional answers are not allowed.")
+            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'fractional answers are not allowed.')
             data['submitted_answers'][name] = None
     else:
         # Not a fraction, just convert to float or complex
