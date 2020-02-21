@@ -53,12 +53,12 @@ def render(element_html, data):
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
 
+    operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
+    constants = ', '.join(['pi, e'])
+    
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
-
-        operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
-        constants = ', '.join(['pi, e'])
 
         info_params = {
             'format': True,
@@ -132,9 +132,22 @@ def render(element_html, data):
             html_params['missing_input'] = True
             html_params['parse_error'] = None
         else:
+            # Use the existing format text in the invalid popup.
+            info_params = {
+                'format': True,
+                'variables': variables_string,
+                'operators': operators,
+                'constants': constants,
+                'allow_complex': allow_complex,
+            }
+            with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
+                info = chevron.render(f, info_params).strip()
+
+            # Render invalid popup
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
-                parse_error += chevron.render(f, {'format_error': True}).strip()
+                parse_error += chevron.render(f, {'format_error': True, 'format_string': info}).strip()
+
             html_params['parse_error'] = parse_error
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
