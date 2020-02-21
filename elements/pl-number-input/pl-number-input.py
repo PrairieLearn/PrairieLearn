@@ -18,12 +18,13 @@ ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
+ALLOW_FRACTIONS_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder', 'allow-fractions']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -59,6 +60,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -116,6 +118,7 @@ def render(element_html, data):
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
         info_params['show_info'] = pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT)
         info_params['show_correct'] = show_correct
+        info_params['allow_fractions'] = allow_fractions
 
         # Find the true answer to be able to display it in the info popup
         ans_true = None
@@ -222,8 +225,13 @@ def render(element_html, data):
     return html
 
 
-def get_format_string(is_complex=False, message=None):
-    params = {'complex': is_complex, 'format_error': True, 'format_error_message': message}
+def get_format_string(is_complex=False, allow_frac=False, message=None):
+    params = {
+        'complex': is_complex,
+        'format_error': True,
+        'allow_fractions': allow_frac,
+        'format_error_message': message
+    }
     with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
         return chevron.render(f, params).strip()
 
@@ -232,6 +240,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -241,21 +250,54 @@ def parse(element_html, data):
         return
 
     if a_sub.strip() == '':
-        data['format_errors'][name] = get_format_string(allow_complex, 'the submitted answer was blank.')
+        data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'the submitted answer was blank.')
         data['submitted_answers'][name] = None
         return
 
-    # Convert to float or complex
-    try:
-        a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
-        if a_sub_parsed is None:
-            raise ValueError('invalid submitted answer (wrong type)')
-        if not np.isfinite(a_sub_parsed):
-            raise ValueError('invalid submitted answer (not finite)')
-        data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
-    except Exception:
-        data['format_errors'][name] = get_format_string(allow_complex)
-        data['submitted_answers'][name] = None
+    # support FANCY division characters
+    a_sub = a_sub.replace(u'\u2215', '/') # unicode /
+    a_sub = a_sub.replace(u'\u00F7', '/') # division symbol, because why not
+
+    if a_sub.count('/') == 1:
+        # Specially handle fractions.
+        
+        if allow_fractions:
+            a_sub_splt = a_sub.split('/')
+            try:
+                a_parse_l = pl.string_to_number(a_sub_splt[0], allow_complex=allow_complex)
+                a_parse_r = pl.string_to_number(a_sub_splt[1], allow_complex=allow_complex)
+
+                if a_parse_l is None or not np.isfinite(a_parse_l):
+                    raise ValueError('invalid submitted answer')
+                if a_parse_r is None or not np.isfinite(a_parse_r):
+                    raise ValueError('invalid submitted answer')
+
+                a_frac = a_parse_l / a_parse_r
+                if not np.isfinite(a_frac):
+                    raise ValueError('invalid submitted answer')
+                
+                data['submitted_answers'][name] = pl.to_json(a_frac)
+            except ZeroDivisionError:
+                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, "your fraction resulted in a division by zero.")
+                data['submitted_answers'][name] = None
+            except Exception:
+                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions)
+                data['submitted_answers'][name] = None
+        else:
+            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, "fractional answers are not allowed.")
+            data['submitted_answers'][name] = None
+    else:
+        # Not a fraction, just convert to float or complex
+        try:
+            a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
+            if a_sub_parsed is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(a_sub_parsed):
+                raise ValueError('invalid submitted answer (not finite)')
+            data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
+        except Exception:
+            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions)
+            data['submitted_answers'][name] = None
 
 
 def grade(element_html, data):

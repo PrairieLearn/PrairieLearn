@@ -258,6 +258,7 @@ Attribute | Type | Default | Description
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Example implementations
 
@@ -416,7 +417,7 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `remove-leading-trailing` | boolean | false | Whether or not to remove leading and trailing blank spaces from the input string.
-`remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
+`remove-spaces` | boolean | true | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
