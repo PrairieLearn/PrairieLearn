@@ -27,6 +27,7 @@ const setFilenames = function(locals) {
     locals.instancesCsvFilename = prefix + 'instances.csv';
     locals.instancesAllCsvFilename = prefix + 'instances_all.csv';
     locals.instanceQuestionsCsvFilename = prefix + 'instance_questions.csv';
+    locals.submissionsForManualGradingCsvFilename = prefix + 'submissions_for_manual_grading.csv';
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
@@ -157,6 +158,28 @@ router.get('/:filename', function(req, res, next) {
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
                 ['Duration seconds', 'duration_seconds'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.submissionsForManualGradingCsvFilename) {
+        let params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.submissions_for_manual_grading, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['uid', 'uid'],
+                ['qid', 'qid'],
+                ['submission_id', 'submission_id'],
+                ['params', 'params'],
+                ['true_answer', 'true_answer'],
+                ['submitted_answer', 'submitted_answer'],
+                ['score_perc', null],
+                ['feedback', null],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;

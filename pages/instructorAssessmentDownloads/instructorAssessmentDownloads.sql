@@ -28,6 +28,7 @@ WHERE
 ORDER BY
     e.role DESC, u.uid, u.user_id, ai.number, ai.id;
 
+
 -- BLOCK select_instance_questions
 SELECT
     u.uid,
@@ -59,6 +60,36 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     u.uid, ai.number, q.qid, iq.number, iq.id;
+
+
+-- BLOCK submissions_for_manual_grading
+WITH final_assessment_instances AS (
+    SELECT DISTINCT ON (u.user_id)
+        u.user_id,
+        ai.id
+    FROM
+        assessment_instances AS ai
+        JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE ai.assessment_id = $assessment_id
+    ORDER BY u.user_id, ai.number DESC
+)
+SELECT DISTINCT ON (ai.id, q.qid)
+    u.uid,
+    q.qid,
+    s.id AS submission_id,
+    v.params,
+    v.true_answer,
+    s.submitted_answer
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+ORDER BY ai.id, q.qid, s.date DESC;
+
 
 -- BLOCK assessment_instance_submissions
 WITH all_submissions AS (

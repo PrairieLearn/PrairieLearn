@@ -153,6 +153,19 @@
               </tr>
               <tr>
                 <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= submissionsForManualGradingCsvFilename %>"><%= submissionsForManualGradingCsvFilename %></a>
+                </td>
+                <td>
+                  Submitted answers for all students and all
+                  questions, formatted for offline manual grading and
+                  re-upload (see the "Upload" tab). For each student
+                  and each question, only the most recent submission
+                  from the most recent assessment instance is
+                  included.
+                </td>
+              </tr>
+              <tr>
+                <td>
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
                 </td>
                 <td>
