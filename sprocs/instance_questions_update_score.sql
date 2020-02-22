@@ -2,17 +2,21 @@ DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,double precision,
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_score(
-        IN instance_question_id bigint,
-        IN set_score_perc double precision, -- either set_score_perc or set_points must be non-NULL
-        IN set_points double precision,
-        IN given_submission_id bigint, -- if NULL, use the most recent submission
-        IN set_feedback jsonb,
-        IN authn_user_id bigint
+        IN arg_assessment_id bigint,
+        IN arg_submission_id bigint, -- must provide submission_id or (uid, assessment_instance_number, qid)
+        IN arg_uid text,
+        IN arg_assessment_instance_number integer,
+        IN arg_qid text,
+        IN arg_score_perc double precision,
+        IN arg_points double precision,
+        IN arg_feedback jsonb,
+        IN arg_authn_user_id bigint
     ) RETURNS void
 AS $$
 DECLARE
-    assessment_instance_id bigint;
     submission_id bigint;
+    instance_question_id bigint;
+    assessment_instance_id bigint;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -20,118 +24,105 @@ DECLARE
     new_correct boolean;
 BEGIN
     -- ##################################################################
-    -- get the assessment_instance information
+    -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT                ai.id, aq.max_points
-    INTO assessment_instance_id,    max_points
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points
     FROM
         instance_questions AS iq
-        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    WHERE iq.id = instance_question_id;
+        JOIN questions AS q on (q.id = aq.question_id)
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
+        LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
+        LEFT JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+        a.id = arg_assessment_id
+        AND (
+            s.id = arg_submission_id
+            OR (u.uid = arg_uid AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
+        )
+    ORDER BY s.date DESC, ai.number DESC;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such instance_question_id: %', instance_question_id; END IF;
+    IF NOT FOUND THEN
+        IF arg_submission_id IS NOT NULL THEN
+            RAISE EXCEPTION 'could not locate submission_id=% in assessment_id=%',
+                arg_submission_id, arg_assessment_id;
+        ELSE
+            RAISE EXCEPTION 'could not locate instance question for uid=%, assessment_instance_number=%, qid=%, assessment_id=%',
+                arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id;
+        END IF;
+    END IF;
 
     -- ##################################################################
     -- compute the new score_perc/points
 
     max_points := COALESCE(max_points, 0);
 
-    IF set_score_perc IS NOT NULL THEN
-        IF set_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both score_perc and points'; END IF;
-        new_score_perc := set_score_perc;
+    IF arg_score_perc IS NOT NULL THEN
+        IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both score_perc and points'; END IF;
+        new_score_perc := arg_score_perc;
         new_points := new_score_perc / 100 * max_points;
-    ELSIF set_points IS NOT NULL THEN
-        new_points := set_points;
-        new_score_perc := new_points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
+    ELSIF arg_points IS NOT NULL THEN
+        new_points := arg_points;
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
     ELSE
-        RAISE EXCEPTION 'Must set either score_perc or points';
+        new_points := NULL;
+        new_score_perc := NULL;
     END IF;
 
     new_score := new_score_perc / 100;
     new_correct := (new_score > 0.5);
 
     -- ##################################################################
-    -- look up the most recent submission_id if necessary
-
-    submission_id := given_submission_id;
-
-    IF (submission_id IS NULL) AND (set_feedback IS NOT NULL) THEN
-        SELECT s.id
-        INTO submission_id
-        FROM
-            submissions AS s
-            JOIN variants AS v ON (v.id = s.variant_id)
-        WHERE v.instance_question_id = instance_questions_update_score.instance_question_id
-        ORDER BY s.date DESC;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'No submissions found for instance_question_id = %, cannot set feedback', instance_question_id;
-        END IF;
-    END IF;
-
-    -- ##################################################################
-    -- update the submission and grading if we have a submission_id
+    -- create a grading job and update the submission, if we have a submission_id
 
     IF submission_id IS NOT NULL THEN
-        -- make sure the submission belongs to the instance_question
-        PERFORM *
-        FROM
-            submissions AS s
-            JOIN variants AS v ON (v.id = s.variant_id)
-        WHERE
-            s.id = submission_id
-            AND v.instance_question_id = instance_questions_update_score.instance_question_id;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'submission_id = % not found for instance_question_id = %', submission_id, instance_question_id;
-        END IF;
-
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
             grading_method, correct,     score,     feedback)
         VALUES
-            (submission_id, authn_user_id, authn_user_id,     now(),
-            'Manual',   new_correct, new_score, set_feedback);
+            (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
+            'Manual',   new_correct, new_score, arg_feedback);
 
         UPDATE submissions AS s
         SET
-            auth_user_id = instance_questions_update_score.authn_user_id,
+            auth_user_id = arg_authn_user_id,
             feedback = CASE
-                WHEN feedback IS NULL THEN set_feedback
-                WHEN set_feedback IS NULL THEN feedback
-                WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(set_feedback) = 'object' THEN feedback || set_feedback
-                ELSE set_feedback
+                WHEN feedback IS NULL THEN arg_feedback
+                WHEN arg_feedback IS NULL THEN feedback
+                WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
+                ELSE arg_feedback
             END,
             graded_at = now(),
-            grading_method = 'Manual',
+            grading_method = 'External',
             override_score = new_score,
-            score = new_score,
-            correct = new_correct
+            score = COALESCE(new_score, score),
+            correct = COALESCE(new_correct, correct)
         WHERE s.id = submission_id;
     END IF;
 
     -- ##################################################################
-    -- do the score update of the instance_question and log it
+    -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
 
-    UPDATE instance_questions AS iq
-    SET
-        points = new_points,
-        points_in_grading = 0,
-        score_perc = new_score_perc,
-        score_perc_in_grading = 0
-    WHERE iq.id = instance_question_id;
+    IF new_score IS NOT NULL THEN
+        UPDATE instance_questions AS iq
+        SET
+            points = new_points,
+            points_in_grading = 0,
+            score_perc = new_score_perc,
+            score_perc_in_grading = 0
+        WHERE iq.id = instance_question_id;
 
-    INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id,
-        max_points,     points,     score_perc)
-    VALUES
-        (instance_question_id, authn_user_id,
-        max_points, new_points, new_score_perc);
+        INSERT INTO question_score_logs
+            (instance_question_id, auth_user_id,
+            max_points,     points,     score_perc)
+        VALUES
+            (instance_question_id, arg_authn_user_id,
+            max_points, new_points, new_score_perc);
 
-    -- ##################################################################
-    -- recompute the assessment_instance score
-
-    PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit => 100, allow_decrease => true);
+        PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit => 100, allow_decrease => true);
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
