@@ -1,12 +1,19 @@
-DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,double precision,double precision,bigint,jsonb,bigint);
+DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_score(
-        IN arg_assessment_id bigint,
-        IN arg_submission_id bigint, -- must provide submission_id or (uid, assessment_instance_number, qid)
-        IN arg_uid text,
+        -- identify the assessment/assessment_instance
+        IN arg_assessment_id bigint,          -- must provide assessment_id
+        IN arg_assessment_instance_id bigint, -- OR assessment_instance_id
+
+        -- identify the instance_question/submission
+        IN arg_submission_id bigint,        -- must provide submission_id
+        IN arg_instance_question_id bigint, -- OR instance_question_id
+        IN arg_uid text,                    -- OR (uid, assessment_instance_number, qid)
         IN arg_assessment_instance_number integer,
         IN arg_qid text,
+
+        -- specify what should be updated
         IN arg_score_perc double precision,
         IN arg_points double precision,
         IN arg_feedback jsonb,
@@ -38,21 +45,21 @@ BEGIN
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        a.id = arg_assessment_id
-        AND (
-            s.id = arg_submission_id
-            OR (u.uid = arg_uid AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
+        ( -- make sure we belong to the correct assessment/assessment_instance
+            ai.id = arg_assessment_instance_id
+            OR (arg_assessment_instance_id IS NULL AND a.id = arg_assessment_id)
+        )
+        AND
+        ( -- make sure we have the correct instance_question/submission
+            (s.id = arg_submission_id)
+            OR (arg_submission_id IS NULL AND iq.id = arg_instance_question_id)
+            OR (arg_submission_id IS NULL AND arg_instance_question_id IS NULL
+                AND u.uid = arg_uid AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
         )
     ORDER BY s.date DESC, ai.number DESC;
 
     IF NOT FOUND THEN
-        IF arg_submission_id IS NOT NULL THEN
-            RAISE EXCEPTION 'could not locate submission_id=% in assessment_id=%',
-                arg_submission_id, arg_assessment_id;
-        ELSE
-            RAISE EXCEPTION 'could not locate instance question for uid=%, assessment_instance_number=%, qid=%, assessment_id=%',
-                arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id;
-        END IF;
+        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
     END IF;
 
     -- ##################################################################
@@ -76,9 +83,14 @@ BEGIN
     new_correct := (new_score > 0.5);
 
     -- ##################################################################
-    -- create a grading job and update the submission, if we have a submission_id
+    -- if we were originally provided a submission_id or we have feedback,
+    -- create a grading job and update the submission
 
-    IF submission_id IS NOT NULL THEN
+    IF submission_id IS NOT NULL
+    AND (
+        submission_id = arg_submission_id
+        OR arg_feedback IS NOT NULL
+    ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
             grading_method, correct,     score,     feedback)

@@ -94,7 +94,7 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'edit_total_score_perc') {
         const params = [
-            req.body.assessment_instance_id,
+            res.locals.assessment_instance.id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
         ];
@@ -107,10 +107,15 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'edit_question_points') {
         const params = [
+            null, // assessment_id
+            res.locals.assessment_instance.id,
+            null, // submission_id
             req.body.instance_question_id,
+            null, // uid
+            null, // assessment_instance_number
+            null, // qid
             null, // score_perc
             req.body.points,
-            null, // submission_id
             null, // feedback
             res.locals.authn_user.user_id,
         ];
@@ -123,10 +128,15 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'edit_question_score_perc') {
         const params = [
+            null, // assessment_id
+            res.locals.assessment_instance.id,
+            null, // submission_id
             req.body.instance_question_id,
+            null, // uid
+            null, // assessment_instance_number
+            null, // qid
             req.body.score_perc,
             null, // points
-            null, // submission_id
             null, // feedback
             res.locals.authn_user.user_id,
         ];
