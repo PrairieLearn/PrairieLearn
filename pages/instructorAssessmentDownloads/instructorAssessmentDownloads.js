@@ -31,6 +31,7 @@ const setFilenames = function(locals) {
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
+    locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
     locals.finalFilesZipFilename = prefix + 'final_files.zip';
     locals.bestFilesZipFilename = prefix + 'best_files.zip';
     locals.allFilesZipFilename = prefix + 'all_files.zip';
@@ -234,6 +235,26 @@ router.get('/:filename', function(req, res, next) {
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
+        });
+    } else if (req.params.filename == res.locals.filesForManualGradingZipFilename) {
+        const params = {
+            assessment_id: res.locals.assessment.id,
+            limit: 100,
+        };
+
+        const archive = archiver('zip');
+        const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+        const prefix = `${dirname}/`;
+        archive.append(null, { name: prefix });
+        res.attachment(req.params.filename);
+        archive.pipe(res);
+        paginateQuery(sql.files_for_manual_grading, params, (row, callback) => {
+            const contents = (row.contents != null) ? row.contents : '';
+            archive.append(contents, { name: prefix + row.filename });
+            callback(null);
+        }, (err) => {
+            if (ERR(err, next)) return;
+            archive.finalize();
         });
     } else if (req.params.filename == res.locals.allFilesZipFilename
                || req.params.filename == res.locals.finalFilesZipFilename

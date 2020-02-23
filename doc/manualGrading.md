@@ -1,6 +1,6 @@
 # Manual Grading
 
-PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores (or whole assessment scores) and optional per-question feedback. There is not currently an online web interface for manual grading.
+PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
 
 
 ## Configuring a question for maual grading
@@ -29,7 +29,7 @@ To show manual feedback the `question.html` file should contain an element to di
 </pl-submission-panel>
 ```
 
-This example template formats the feedback as Markdown and displays a message if there was no feedback.
+This example template formats the feedback as Markdown.
 
 
 ## Downloading the students' submitted answers
@@ -42,7 +42,9 @@ zilles@illinois.edu,explainMax,42984,{},{},{"ans": "gives the set of largest val
 zilles@illinois.edu,describeFibonacci,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,
 ```
 
-This CSV file has two blank columns at the end, ready for the percentage score and optional feedback. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns 
+This CSV file has two blank columns at the end, ready for the percentage score and optional feedback. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data.
+
+If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the Downloads page. The scores and feedback should still be entered into the CSV file.
 
 
 ## Uploading the scores and feedback

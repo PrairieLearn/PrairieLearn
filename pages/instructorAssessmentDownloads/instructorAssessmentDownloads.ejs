@@ -166,6 +166,19 @@
               </tr>
               <tr>
                 <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= filesForManualGradingZipFilename %>"><%= filesForManualGradingZipFilename %></a>
+                </td>
+                <td>
+                  Submitted files for all students and all questions, named for easy use with offline manual grading. These files match the submissions in <tt><%= submissionsForManualGradingCsvFilename %></tt>. For each student
+                  and each question, only the most recent submitted file
+                  from the most recent assessment instance is
+                  included. The
+                  filename format
+                  is <tt>&lt;uid&gt;_&lt;qid&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</tt>
+                </td>
+              </tr>
+              <tr>
+                <td>
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
                 </td>
                 <td>
@@ -202,10 +215,12 @@
                 <td>
                   All submitted files for all students for all
                   assessment instances. Only data
-                  from <code>File</code>-type questions will be included in
-                  the zip. Not all submitted files will have been used
-                  to compute the final score, as some may have been
-                  superceded by subsequent attempts.
+                  from <code>File</code>-type questions will be
+                  included in the zip. Not all submitted files will
+                  have been used to compute the final score, as some
+                  may have been superceded by subsequent attempts. The
+                  filename format
+                  is <tt>&lt;uid&gt;_&lt;assessment_instance_number&gt;_&lt;qid&gt;_&lt;variant_number&gt;_&lt;submission_number&gt;_&lt;submission_id&gt;_&lt;uploaded_filename&gt;</tt>
                 </td>
               </tr>
               <tr>

@@ -150,6 +150,82 @@ ORDER BY
     uid, assessment_instance_number, qid, instance_question_number, variant_number, date;
 
 
+-- BLOCK files_for_manual_grading
+WITH
+final_assessment_instances AS (
+    SELECT DISTINCT ON (u.user_id)
+        u.user_id,
+        ai.id
+    FROM
+        assessment_instances AS ai
+        JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE ai.assessment_id = $assessment_id
+    ORDER BY u.user_id, ai.number DESC
+),
+submissions_with_files AS (
+    SELECT DISTINCT ON (ai.id, q.qid)
+        u.uid,
+        q.qid,
+        s.id AS submission_id,
+        s.submitted_answer,
+        v.params
+    FROM
+        submissions AS s
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+    WHERE
+        (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
+        OR (s.submitted_answer ? '_files')
+    ORDER BY ai.id, q.qid, s.date DESC
+),
+all_files AS (
+    SELECT
+        uid,
+        qid,
+        submission_id,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
+            WHEN submitted_answer ? '_files' THEN f.file->>'name'
+        END) as filename,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN submitted_answer->>'fileData'
+            WHEN submitted_answer ? '_files' THEN f.file->>'contents'
+        END) as contents
+    FROM
+        submissions_with_files AS s
+        LEFT JOIN (
+            SELECT
+                submission_id AS id,
+                jsonb_array_elements(submitted_answer->'_files') AS file
+            FROM submissions_with_files
+            WHERE submitted_answer ? '_files'
+        ) f ON (f.id = submission_id)
+)
+SELECT
+    (
+        uid
+        || '_' || qid
+        || '_' || submission_id
+        || '_' || filename
+    ) AS filename,
+    base64_safe_decode(contents) AS contents
+FROM
+    all_files
+WHERE
+    filename IS NOT NULL
+    AND contents IS NOT NULL
+ORDER BY
+    uid, qid, filename, submission_id
+LIMIT
+    $limit
+OFFSET
+    $offset;
+
+
 -- BLOCK assessment_instance_files
 WITH all_submissions_with_files AS (
     SELECT
