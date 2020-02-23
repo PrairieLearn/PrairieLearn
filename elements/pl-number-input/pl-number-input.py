@@ -148,7 +148,7 @@ def render(element_html, data):
         # Enable or disable the popup
         if pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT) or show_correct:
             html_params['show_info'] = True
-        html_params['display_append_span'] = 'questionmark' in html_params or suffix
+        html_params['display_append_span'] = 'show_info' in html_params or suffix
 
         if display == 'inline':
             html_params['inline'] = True

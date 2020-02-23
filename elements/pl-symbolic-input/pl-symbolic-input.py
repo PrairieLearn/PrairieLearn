@@ -53,8 +53,8 @@ def render(element_html, data):
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
 
-    operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
-    constants = ', '.join(['pi, e'])
+    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    constants = ['pi', 'e']
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -62,7 +62,7 @@ def render(element_html, data):
 
         info_params = {
             'format': True,
-            'variables': variables_string,
+            'variables': variables,
             'operators': operators,
             'constants': constants,
             'allow_complex': allow_complex,
@@ -135,7 +135,7 @@ def render(element_html, data):
             # Use the existing format text in the invalid popup.
             info_params = {
                 'format': True,
-                'variables': variables_string,
+                'variables': variables,
                 'operators': operators,
                 'constants': constants,
                 'allow_complex': allow_complex,

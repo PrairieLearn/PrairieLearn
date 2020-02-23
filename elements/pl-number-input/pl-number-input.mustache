@@ -16,12 +16,12 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
             {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
             {{#show_info}}
-              <a role="button" class="btn btn-light border" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+              <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="{{popup_title}}" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
               <i class="fa fa-question-circle" aria-hidden="true"></i>
             {{/show_info}}
             {{^show_info}}

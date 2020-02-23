@@ -16,9 +16,9 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
+        <input name="{{name}}" type="text" class="form-control pl-symbolic-input-input" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
         <span class="input-group-append">
-            <a role="button" class="btn btn-light border" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
                 {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
                 {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
@@ -87,20 +87,20 @@ ${{a_tru}}$
 {{#format}}
 <p>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
 {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
-    
-<h6>Allowable Operators</h6>
-<pre>{{operators}}</pre>
+
+<p>
+    <strong>Allowable variables, constants, and operators:</strong><br>
+    {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+    {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+    {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
+</p>
+
 <p>All operations must be explicit:</p>
 
 <p> Example <i>valid</i> inputs: <code class="user-output">2*3</code> &nbsp; <code class="user-output">cos(1)</code> </p>
 <p> Example <i>invalid</i> inputs: <code class="user-output">2(3)</code> &nbsp; <code class="user-output">cos 1</code> </p>
 
 <p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
-<h6>Allowable Constants</h6>
-<pre>{{constants}}</pre>{{#variables}}
-{{#allow_complex}}<p>Either <code>i</code> or <code>j</code> can be used to denote the imaginary unit. Examples of valid complex numbers are <code>1 + 2 * i</code> and <code>-3 * j</code>.</p>{{/allow_complex}}
-<h6>Allowable Variables</h6>
-<pre>{{variables}}</pre>{{/variables}}
 {{/format}}
 
 {{#shortformat}}

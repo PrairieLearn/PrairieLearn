@@ -212,14 +212,17 @@ table td > .badge {
     border-color: #ccc;
     border-width: 1px;
     border-style: solid;
+
+    line-height: 28px;
 }
 
 .user-output-invalid {
     color: #dc3545;
 }
 
-.user-output.small, .user-output-invalid.small {
+.user-output.small, .user-output-invalid.small, small .user-output, small .user-output-invalid {
     font-size: 11px;
+    line-height: 25px;
 }
 
 .badge-invalid {
