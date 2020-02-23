@@ -124,7 +124,8 @@ BEGIN
             points = new_points,
             points_in_grading = 0,
             score_perc = new_score_perc,
-            score_perc_in_grading = 0
+            score_perc_in_grading = 0,
+            modified_at = now()
         WHERE iq.id = instance_question_id;
 
         INSERT INTO question_score_logs

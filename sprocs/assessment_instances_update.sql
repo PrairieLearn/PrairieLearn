@@ -105,7 +105,8 @@ BEGIN
 
         UPDATE assessment_instances AS ai
         SET
-            max_points = new_assessment_instance_max_points
+            max_points = new_assessment_instance_max_points,
+            modified_at = now()
         WHERE
             ai.id = assessment_instance_id;
 

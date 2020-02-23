@@ -9,6 +9,7 @@ columns
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
     max_points: double precision
     mode: enum_mode
+    modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
     obj: jsonb
     open: boolean default true
@@ -23,6 +24,7 @@ columns
 indexes
     assessment_instances_pkey: PRIMARY KEY (id) USING btree (id)
     assessment_instances_assessment_id_user_id_number_key: UNIQUE (assessment_id, user_id, number) USING btree (assessment_id, user_id, number)
+    assessment_instances_modified_at_key: USING btree (modified_at)
     assessment_instances_tiid_key: UNIQUE (tiid) USING btree (tiid)
     assessment_instances_user_id_idx: USING btree (user_id)
 
