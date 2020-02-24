@@ -1864,7 +1864,7 @@ def grade(element_html, data):
     grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
     angtol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
-    disregard_extra = pl.get_boolean_attrib(element, 'disregard-extra-elements', element_defaults['disregard-extra-elements'])
+    disregard_extra_elements = pl.get_boolean_attrib(element, 'disregard-extra-elements', element_defaults['disregard-extra-elements'])
 
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
@@ -2072,19 +2072,16 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if (ref_element['gradingName'] not in comp
-                    or ref_element['id'] not in matches
-                    or not ref_element['graded']
-                    or element['gradingName'] != ref_element['gradingName']):
+            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 # Skip if the reference element is not gradable
                 continue
 
-            if not disregard_extra and matches[ref_element['id']]:
+            if not disregard_extra_elements and matches[ref_element['id']]:
                 # Skip if this object has already been matched
                 continue
 
             if comp[element['gradingName']](ref_element, element):
-                if ('optional_grading' in ref_element and ref_element['optional_grading']) or (disregard_extra and matches[ref_element['id']]):
+                if ('optional_grading' in ref_element and ref_element['optional_grading']) or (disregard_extra_elements and matches[ref_element['id']]):
                     # It's optional but correct, so the score should not be affected
                     # Or, it's a duplicate and we're okay with that.
                     num_optional += 1
