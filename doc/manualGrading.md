@@ -5,7 +5,7 @@ PrairieLearn supports manual grading of questions by downloading a CSV file with
 
 ## Configuring a question for maual grading
 
-The [`info.json` file](question.md#question-infojson) in the question should be set for manual grading:
+The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
 ```json
 {
     "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
