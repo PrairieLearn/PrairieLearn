@@ -36,13 +36,13 @@ This example template formats the feedback as Markdown.
 
 After students have completed the assessment, download the submitted answers by going to the assessment page, then the "Downloads" tab, and selecting the `<assessment>_submissions_for_manual_grading.csv` file. This looks like:
 ```csv
-uid,qid,submission_id,params,true_answer,submitted_answer,score_perc,feedback
-mwest@illinois.edu,explainMax,42983,{},{},{"ans": "returns the maximum value in the array"},,
-zilles@illinois.edu,explainMax,42984,{},{},{"ans": "gives the set of largest values in the object"},,
-zilles@illinois.edu,describeFibonacci,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,
+uid,qid,old_score_perc,submission_id,params,true_answer,submitted_answer,score_perc,feedback
+mwest@illinois.edu,explainMax,0,42983,{},{},{"ans": "returns the maximum value in the array"},,
+zilles@illinois.edu,explainMax,0,42984,{},{},{"ans": "gives the set of largest values in the object"},,
+zilles@illinois.edu,describeFibonacci,100,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,
 ```
 
-This CSV file has two blank columns at the end, ready for the percentage score and optional feedback. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data.
+This CSV file has two blank columns at the end, ready for the percentage score (0 to 100) and optional feedback. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, which is convenient for re-grading or doing optional manual grading after an autograder has already done a first pass.
 
 If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the Downloads page. The scores and feedback should still be entered into the CSV file.
 

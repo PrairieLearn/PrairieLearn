@@ -76,6 +76,7 @@ WITH final_assessment_instances AS (
 SELECT DISTINCT ON (ai.id, q.qid)
     u.uid,
     q.qid,
+    iq.score_perc AS old_score_perc,
     s.id AS submission_id,
     v.params,
     v.true_answer,

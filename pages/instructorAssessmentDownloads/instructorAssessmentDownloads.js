@@ -175,6 +175,7 @@ router.get('/:filename', function(req, res, next) {
             var columns = [
                 ['uid', 'uid'],
                 ['qid', 'qid'],
+                ['old_score_perc', 'old_score_perc'],
                 ['submission_id', 'submission_id'],
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
