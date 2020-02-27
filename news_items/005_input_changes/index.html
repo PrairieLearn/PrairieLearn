@@ -1,0 +1,33 @@
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+ }
+</style>
+
+<p>
+    More feedback for invalid input and submissions has been added.  Invalid answers are now denoted by an "invalid" badge next to the field.
+    <img src="invalid_input.png">
+</p>
+
+<p>
+    Clicking on the more obvious <span class="badge badge-secondary">Why <i class="fas fa-question-circle"></i></span> button will give more information on why the answer couldn't be parsed, including some example answers that are valid and invalid.
+    <img src="why_btn.png">
+</p>
+
+<p>
+    By default, students now have the ability to express answers as fractions for <code class="user-output">pl-number-input</code> fields.  For example, the following is now valid:
+    <img src="approx_pi.png">
+    This can be enabled or disabled using the <code class="user-output">allow-fractions</code> attribute.
+</p>
+
+<p>
+    Previously, students could run into render errors if questions have been changed (notably if elements were added or modifed) after answers were submitted.  This has been fixed and students are now shown a "Missing Input" badge in the answers panel.
+    <img src="missing_input.png">
+</p>
+
+<p>
+    Inputs with "tall" labels will also now correctly scale.
+    <img src="full_height_input.png">
+</p>
