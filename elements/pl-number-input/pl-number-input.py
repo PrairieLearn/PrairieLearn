@@ -271,20 +271,20 @@ def parse(element_html, data):
                 a_parse_r = pl.string_to_number(a_sub_splt[1], allow_complex=allow_complex)
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
-                    raise ValueError('invalid submitted answer')
+                    raise ValueError('the numerator could not be interpreted as a decimal number.')
                 if a_parse_r is None or not np.isfinite(a_parse_r):
-                    raise ValueError('invalid submitted answer')
+                    raise ValueError('the denominator could not be interpreted as a decimal number.')
 
                 a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
-                    raise ValueError('invalid submitted answer')
+                    raise ValueError('The submitted answer is not a finite number.')
 
                 data['submitted_answers'][name] = pl.to_json(a_frac)
             except ZeroDivisionError:
                 data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'your fraction resulted in a division by zero.')
                 data['submitted_answers'][name] = None
-            except Exception:
-                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions)
+            except Exception as error:
+                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, error)
                 data['submitted_answers'][name] = None
         else:
             data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'fractional answers are not allowed.')
