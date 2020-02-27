@@ -78,6 +78,8 @@
   * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
   * Add support for editing from bare git repo (Tim Bretl).
+  
+  * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 

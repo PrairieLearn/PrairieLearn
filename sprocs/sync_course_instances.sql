@@ -50,7 +50,7 @@ BEGIN
             (access_rule->>'role')::enum_role,
             CASE
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
-                ELSE (SELECT ARRAY_AGG(uids)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(access_rule->>'uids', '[]')::jsonb) uids)::text[]
+                ELSE jsonb_array_to_text_array(access_rule->'uids')
             END,
             input_date(access_rule->>'start_date', course_instance->>'display_timezone'),
             input_date(access_rule->>'end_date', course_instance->>'display_timezone'),

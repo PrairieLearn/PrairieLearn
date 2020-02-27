@@ -191,7 +191,7 @@ SELECT
         || '_' || submission_number
         || '_' || filename
     ) AS filename,
-    decode(contents, 'base64') AS contents
+    base64_safe_decode(contents) AS contents
 FROM
     all_files
 WHERE
