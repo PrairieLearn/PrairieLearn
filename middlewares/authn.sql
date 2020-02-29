@@ -3,11 +3,13 @@ SELECT
     to_jsonb(u.*) AS user,
     to_jsonb(i.*) AS institution,
     (adm.id IS NOT NULL) AS is_administrator,
-    (SELECT count(*) FROM news_item_notifications WHERE user_id = $user_id) AS news_item_notification_count
+    (SELECT count(*) FROM news_item_notifications WHERE user_id = $user_id) AS news_item_notification_count,
+    t.themenum AS themenum
 FROM
     users AS u
     LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
     JOIN institutions AS i ON (i.id = u.institution_id)
+    JOIN theme AS t ON (t.user_id = u.user_id)
 WHERE
     u.user_id = $user_id;
 

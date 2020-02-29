@@ -69,6 +69,18 @@
           </li>
           <% })}; %>
         </ul>
+        <form method="post" action="#">      
+          <fieldset>      
+              <legend>Settings</legend>      
+              <input type="checkbox" name="dark_mode" value="0" id="darkid">dark_mode<br>      
+              <input type="checkbox" name="other_thing1" value="2">other_thing1<br>      
+              <input type="checkbox" name="other_thing2" value="3">other_thing2<br>   
+              <input type="hidden" name="__action" value="update_settings">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">   
+              <br>      
+              <input type="submit" value="Submit now" />      
+          </fieldset>      
+      </form>
       </div>
     </div>
   </body>

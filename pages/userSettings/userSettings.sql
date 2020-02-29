@@ -16,3 +16,13 @@ ORDER BY created_at DESC;
 UPDATE access_tokens
 SET token = NULL
 WHERE user_id = $user_id;
+
+-- BLOCK update_dark_mode
+UPDATE theme
+SET themenum = $dark_mode
+WHERE user_id = $user_id;
+
+-- BLOCK select_theme_data
+SELECT t.themenum
+FROM users as u JOIN theme as t on (t.user_id = u.user_id)
+WHERE u.user_id = $user_id;

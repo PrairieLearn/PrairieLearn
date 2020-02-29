@@ -863,8 +863,15 @@ module.exports.insertDevUser = function(callback) {
         var params = {user_id};
         sqldb.query(sql, params, function(err, _result) {
             if (ERR(err, callback)) return;
-            callback(null);
+            var sql
+            = 'INSERT INTO theme (id, user_id, themenum)'
+            + ' VALUES ($user_id, $user_id, 1)';
+            sqldb.query(sql, params, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
+
     });
 };
 

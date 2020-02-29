@@ -37,12 +37,48 @@ router.post('/', (req, res, next) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else {
+    }
+    else if(req.body.__action === 'update_settings'){
+        console.log(req.body);
+        if("dark_mode" in req.body){
+            var params = {
+                user_id: res.locals.authn_user.user_id,
+                dark_mode: 1
+            };
+        }
+        else{
+            var params = {
+                user_id: res.locals.authn_user.user_id,
+                dark_mode: 0
+            };
+        }
+        sqldb.query(sql.update_dark_mode, params, (err, result) => {
+            if (ERR(err, next)) return;
+            console.log("reached dark_mode update");
+            console.log(res.locals.darkmode);
+            res.redirect(req.originalUrl);
+        });
+        console.log(req.body["dark_mode"]);
+    } 
+    else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 
 router.get('/', (req, res, next) => {
+            
+    var params = {
+        user_id: res.locals.authn_user.user_id
+    };
+    // sqldb.query(sql.select_theme_data, params, (err, result) => {
+    //     if (ERR(err, next)) return;
+    //     if(result.rows[0].themenum == 1){
+    //         document.theForm.elements['darkid'].checked = true;
+    //         console.log("reached checked");
+    //     }
+    //     res.redirect(req.originalUrl);
+    // });
+
     const params = {
         user_id: res.locals.authn_user.user_id,
     };

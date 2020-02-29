@@ -10,7 +10,6 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = function(req, res, next) {
     res.locals.is_administrator = false;
     res.locals.news_item_notification_count = 0;
-
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
         next();
@@ -86,6 +85,7 @@ module.exports = function(req, res, next) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
                 res.locals.authn_user = result.rows[0].user;
+                res.locals.darkmode = result.rows[0].themenum;
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
                 res.locals.is_administrator = result.rows[0].is_administrator;
@@ -118,6 +118,7 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
+        res.locals.darkmode = result.rows[0].themenum;
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
