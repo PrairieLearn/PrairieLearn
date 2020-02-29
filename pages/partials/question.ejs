@@ -27,9 +27,9 @@
       </tbody>
     </table>
 
-    <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
+    
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
-      <% if (is_administrator && issue.system_data.courseErrData ) { %>
+      <% if ((devMode || authz_data.has_instructor_view || is_administrator) && (is_administrator && issue.system_data.courseErrData) ) { %>
       <p><strong>Console log:</strong>
         <pre class="bg-dark text-white rounded p-3"><%= issue.system_data.courseErrData.outputBoth %></pre>
         <% } %>
@@ -41,19 +41,33 @@
       <div class="collapse" id="issue-course-data-<%= iIssue %>">
         <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
       </div>
-      <% if (is_administrator) { %>
+      <% if ((devMode || authz_data.has_instructor_view || is_administrator) && (is_administrator)) { %>
       <p><strong>System data:</strong>
         <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-system-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-system-data-<%= iIssue %>">
           Show/hide
         </button>
       </p>
+      <% } %>
+      <p><strong>Issue status:</strong>
+        <% if (issue.open) { %>
+          <span type="button" class="badge badge-danger" data-toggle="collapse" href="#">
+            Open
+          </span>
+          <% } else { %>
+            <span type="button" class="badge badge-success" data-toggle="collapse" href="#">
+              Closed
+            </span>
+          <% } %>
+      </p>
       <div class="collapse" id="issue-system-data-<%= iIssue %>">
         <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.system_data, null, '    ') %></pre>
       </div>
-      <% } %>
+     
     </div>
-    <% } %>
+
   </div>
+
+  
   <% }); %>
 
 
