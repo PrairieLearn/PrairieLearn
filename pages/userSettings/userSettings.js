@@ -70,16 +70,17 @@ router.get('/', (req, res, next) => {
     var params = {
         user_id: res.locals.authn_user.user_id
     };
-    // sqldb.query(sql.select_theme_data, params, (err, result) => {
-    //     if (ERR(err, next)) return;
-    //     if(result.rows[0].themenum == 1){
-    //         document.theForm.elements['darkid'].checked = true;
-    //         console.log("reached checked");
-    //     }
-    //     res.redirect(req.originalUrl);
-    // });
-
-    const params = {
+    sqldb.query(sql.select_theme_data, params, (err, result) => {
+        if (ERR(err, next)) return;
+        if(result.rows[0].themenum == 1){
+            res.locals.checked = 1;
+            console.log("reached checked");
+        }
+        else{
+            res.locals.checked = 0;
+        }
+    });
+    params = {
         user_id: res.locals.authn_user.user_id,
     };
     sqldb.query(sql.select_access_tokens, params, (err, result) => {

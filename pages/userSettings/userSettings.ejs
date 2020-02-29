@@ -2,6 +2,8 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
   </head>
   <body>
     <script>
@@ -71,9 +73,13 @@
         </ul>
         <form method="post" action="#">      
           <fieldset>      
-              <legend>Settings</legend>      
-              <input type="checkbox" name="dark_mode" value="0" id="darkid">dark_mode<br>      
-              <input type="checkbox" name="other_thing1" value="2">other_thing1<br>      
+              <legend>Settings</legend>       
+              <%if (checked == true) {%>
+              <input type="checkbox" name="dark_mode" value="0" id="darkid" checked = true checked data-toggle="toggle" data-on="🌙" data-off="☀" data-onstyle="outline-primary" data-offstyle="outline-warning">dark_mode<br>  
+              <%} else { %>   
+                <input type="checkbox" name="dark_mode" value="0" id="darkid" data-toggle="toggle" data-on="🌙" data-off="☀" data-onstyle="dark" data-offstyle="primary">dark_mode<br> 
+              <%}  %> 
+              <input type="checkbox" name="other_thing1" value="2">other_thing1<br>     
               <input type="checkbox" name="other_thing2" value="3">other_thing2<br>   
               <input type="hidden" name="__action" value="update_settings">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">   
