@@ -10,8 +10,10 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
+
     if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
+        res.locals.rows = [];
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
         var params = {
