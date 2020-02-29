@@ -39,7 +39,6 @@ router.post('/', (req, res, next) => {
         });
     }
     else if(req.body.__action === 'update_settings'){
-        console.log(req.body);
         if("dark_mode" in req.body){
             var params = {
                 user_id: res.locals.authn_user.user_id,
@@ -54,11 +53,8 @@ router.post('/', (req, res, next) => {
         }
         sqldb.query(sql.update_dark_mode, params, (err, result) => {
             if (ERR(err, next)) return;
-            console.log("reached dark_mode update");
-            console.log(res.locals.darkmode);
             res.redirect(req.originalUrl);
         });
-        console.log(req.body["dark_mode"]);
     } 
     else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
@@ -72,16 +68,13 @@ router.get('/', (req, res, next) => {
     };
     sqldb.query(sql.select_theme_data, params, (err, result) => {
         if (ERR(err, next)){
-            console.log("reached error");
             return;
         }
         if(result.rows[0].themenum == 1){
             res.locals.checked = 1;
-            console.log("reached 1");
         }
         else{
             res.locals.checked = 0;
-            console.log("reached 0");
         }
 
         params = {

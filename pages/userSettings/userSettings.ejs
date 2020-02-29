@@ -74,9 +74,7 @@
       <div class="card-body">
         <form method="post" action="#">      
           <fieldset>        
-              <%console.log("reached check undefined " + (checked === 'undefined'));
-              if (checked !== 'undefined') 
-              if(checked) {%>
+              <%if(checked) {%>
               <input type="checkbox" name="dark_mode" value="0" id="darkid" checked = true checked data-toggle="toggle" 
               data-on="🌙" data-off="☀" data-onstyle="outline-primary" data-offstyle="outline-warning">dark_mode<br>  
               <%} else { %>   
