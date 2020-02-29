@@ -98,8 +98,8 @@ WITH
 
     all_rows AS (
         SELECT * FROM multiple_instance_assessments
-        UNION
-        SELECT * FROM multiple_instance_assessment_instances
+        -- UNION
+        -- SELECT * FROM multiple_instance_assessment_instances
         UNION
         SELECT * FROM single_instance_assessments
     )
