@@ -71,37 +71,42 @@ router.get('/', (req, res, next) => {
         user_id: res.locals.authn_user.user_id
     };
     sqldb.query(sql.select_theme_data, params, (err, result) => {
-        if (ERR(err, next)) return;
+        if (ERR(err, next)){
+            console.log("reached error");
+            return;
+        }
         if(result.rows[0].themenum == 1){
             res.locals.checked = 1;
-            console.log("reached checked");
+            console.log("reached 1");
         }
         else{
             res.locals.checked = 0;
+            console.log("reached 0");
         }
-    });
-    params = {
-        user_id: res.locals.authn_user.user_id,
-    };
-    sqldb.query(sql.select_access_tokens, params, (err, result) => {
-        if (ERR(err, next)) return;
 
-        // If the raw tokens are present for any of these hashes, include them
-        // in this response and then delete them from memory
-        const newAccessTokens = [];
-        result.rows.forEach((row) => {
-            if (row.token) {
-                newAccessTokens.push(row.token);
-            }
-        });
-
-        res.locals.accessTokens = result.rows;
-        res.locals.newAccessTokens = newAccessTokens;
-
-        // Now that we've rendered these tokens, remove any tokens from the DB
-        sqldb.query(sql.clear_tokens_for_user, params, (err) => {
+        params = {
+            user_id: res.locals.authn_user.user_id,
+        };
+        sqldb.query(sql.select_access_tokens, params, (err, result) => {
             if (ERR(err, next)) return;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+            // If the raw tokens are present for any of these hashes, include them
+            // in this response and then delete them from memory
+            const newAccessTokens = [];
+            result.rows.forEach((row) => {
+                if (row.token) {
+                    newAccessTokens.push(row.token);
+                }
+            });
+
+            res.locals.accessTokens = result.rows;
+            res.locals.newAccessTokens = newAccessTokens;
+
+            // Now that we've rendered these tokens, remove any tokens from the DB
+            sqldb.query(sql.clear_tokens_for_user, params, (err) => {
+                if (ERR(err, next)) return;
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
         });
     });
 });
