@@ -33,6 +33,9 @@
                     <% if (news_item.unread) { %>
                     <span class="badge badge-danger ml-2">Unread</span>
                     <% } %>
+                    <% if (news_item.visible_to_students == true) { %>
+                    <span class="badge badge-secondary ml-2">Student</span>
+                    <% } %>
                   </a>
                 </td>
               </tr>
