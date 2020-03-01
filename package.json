@@ -35,7 +35,7 @@
         "express": "^4.17.1",
         "fabric": "^3.6.2",
         "file-type": "^13.1.2",
-        "filesize": "^6.0.1",
+        "filesize": "^6.1.0",
         "fs-extra": "^8.1.0",
         "googleapis": "^47.0.0",
         "handlebars": "^4.7.3",
