@@ -35,7 +35,7 @@ user_ids AS (
     (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
 ),
 course_users AS (
-    SELECT u.user_id,u.uid,u.uin, u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
+    SELECT u.user_id,u.uid,u.uin,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
