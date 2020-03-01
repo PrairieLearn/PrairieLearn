@@ -46,10 +46,10 @@
                             <th>QID</th>
                             <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
                             <th data-placeholder="Choose tag">Tags</th>
-                            <th class="filter-select filter-exact" data-placeholder="Choose Version">Version</th>
                             <% if (locals.course_instance) { %>
                             <th data-placeholder="Choose assessment">Assessments</th>
                             <% } %>
+                            <th class="filter-select filter-exact" data-placeholder="Choose Version">Version</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -69,14 +69,14 @@
                             <td class="align-middle">
                                 <%- include('../partials/tags', {tags: question.tags}); %>
                             </td>
-                            <td class="align-middle">
-                                <%= question.display_type %>
-                            </td>
                             <% if (locals.course_instance) { %>
                             <td class="align-middle">
                                 <%- include('../partials/assessments', {assessments: question.assessments}); %>
                             </td>
                             <% } %>
+                            <td class="align-middle">
+                                <%= question.display_type %>
+                            </td>
                         </tr>
                         <% }); %>
                     </tbody>
