@@ -48,7 +48,7 @@
         "json-stringify-safe": "^5.0.1",
         "lodash": "^4.17.15",
         "lru-cache": "^5.1.1",
-        "mathjax": "^3.0.0",
+        "mathjax": "^3.0.1",
         "mersenne": "0.0.4",
         "moment": "^2.24.0",
         "multer": "^1.4.2",
