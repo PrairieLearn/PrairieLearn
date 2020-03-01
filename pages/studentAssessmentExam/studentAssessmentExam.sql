@@ -49,7 +49,7 @@ WITH
             mia.assessment_id,
             mia.assessment_number,
             mia.assessment_order_by,
-            mia.title || ' instance #' || ai.number,
+            mia.title || ' instance #' || ai.number AS title,
             mia.assessment_set_id,
             mia.assessment_set_abbreviation,
             mia.assessment_set_name,

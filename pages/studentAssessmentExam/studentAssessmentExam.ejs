@@ -55,7 +55,7 @@
 
         </div> <!-- panel-body -->
 
-        <% if (assessment.multiple_instance) { %>
+        <% if (assessment.multiple_instance && rows.length > 0) { %>
           <table class="table table-sm table-hover">
             <thead>
               <tr>
@@ -67,11 +67,6 @@
             </thead>
             <tbody>
               <% rows.forEach(function(row) { %>
-              <% if (row.start_new_set) { %>
-              <tr>
-                <th colspan="4"><%= row.assessment_set_heading %></th>
-              </tr>
-              <% } %>
               <tr>
                 <td class="align-middle" style="width: 1%">
                   <a href="<%= urlPrefix %><%= row.link %>"
