@@ -105,7 +105,7 @@
         "json-stable-stringify": "^1.0.1",
         "mocha": "^7.0.1",
         "nyc": "^15.0.0",
-        "request": "^2.87.0",
+        "request": "^2.88.2",
         "sinon": "^8.1.1",
         "tmp": "0.1.0"
     },
