@@ -29,7 +29,7 @@
     "fs-extra": "8.1.0",
     "js-yaml": "3.13.1",
     "lodash": "4.17.15",
-    "s3-streamlogger": "1.5.0",
+    "s3-streamlogger": "1.6.1",
     "tmp": "0.1.0",
     "winston": "3.2.1",
     "winston-aws-cloudwatch": "3.0.0"
