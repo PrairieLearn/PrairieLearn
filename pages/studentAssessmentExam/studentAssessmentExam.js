@@ -23,7 +23,6 @@ router.get('/', function(req, res, next) {
 
     if (res.locals.assessment.multiple_instance) {
         sqldb.query(sql.select_assessments, params, function(err, result) {
-            console.log(res.locals);
             if (ERR(err, next)) return;
             res.locals.rows = result.rows;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
