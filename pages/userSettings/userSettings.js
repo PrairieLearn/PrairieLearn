@@ -39,19 +39,19 @@ router.post('/', (req, res, next) => {
         });
     }
     else if(req.body.__action === 'update_settings'){
-        if("dark_mode" in req.body){
+        if('dark_mode' in req.body){
             var params = {
                 user_id: res.locals.authn_user.user_id,
-                dark_mode: 1
+                dark_mode: 1,
             };
         }
         else{
-            var params = {
+            params = {
                 user_id: res.locals.authn_user.user_id,
-                dark_mode: 0
+                dark_mode: 0,
             };
         }
-        sqldb.query(sql.update_dark_mode, params, (err, result) => {
+        sqldb.query(sql.update_dark_mode, params, (err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
