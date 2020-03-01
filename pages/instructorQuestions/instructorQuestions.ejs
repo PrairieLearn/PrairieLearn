@@ -75,7 +75,7 @@
                             </td>
                             <% } %>
                             <td class="align-middle">
-                                <%= question.display_type %>
+                                <%- include('../partials/type', {type: question.display_type}); %>
                             </td>
                         </tr>
                         <% }); %>
