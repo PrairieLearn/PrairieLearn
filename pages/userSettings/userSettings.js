@@ -64,7 +64,7 @@ router.post('/', (req, res, next) => {
 router.get('/', (req, res, next) => {
             
     var params = {
-        user_id: res.locals.authn_user.user_id
+        user_id: res.locals.authn_user.user_id,
     };
     sqldb.query(sql.select_theme_data, params, (err, result) => {
         if (ERR(err, next)){
