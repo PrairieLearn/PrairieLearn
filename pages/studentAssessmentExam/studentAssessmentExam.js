@@ -10,14 +10,24 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
+
     if (res.locals.assessment.type !== 'Exam') return next();
+
+    var params = {
+        course_instance_id: res.locals.course_instance.id,
+        assessment_id: res.locals.assessment.id,
+        authz_data: res.locals.authz_data,
+        user_id: res.locals.user.user_id,
+        req_date: res.locals.req_date
+    };
+
     if (res.locals.assessment.multiple_instance) {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        sqldb.query(sql.select_assessments, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.rows = result.rows;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     } else {
-        var params = {
-            assessment_id: res.locals.assessment.id,
-            user_id: res.locals.user.user_id,
-        };
         sqldb.query(sql.select_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {

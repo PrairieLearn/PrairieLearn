@@ -7,6 +7,7 @@
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="card mb-4">
+        
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
         </div>
@@ -35,7 +36,13 @@
             <input type="hidden" name="__action" value="newInstance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <div class="d-flex justify-content-center">
-              <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
+              <button id="start-assessment" type="submit" class="btn btn-primary">
+                <% if (assessment.multiple_instance) { %>
+                  New instance 
+                <% } else { %>
+                  Start Assessment
+                <% } %>
+              </button>
             </div>
           </form>
           <script>
@@ -47,6 +54,53 @@
           </script>
 
         </div> <!-- panel-body -->
+
+        <% if (assessment.multiple_instance && rows.length > 0) { %>
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th style="width: 1%">Instances</th>
+                <th></th>
+                <th class="text-center">Available credit</th>
+                <th class="text-center">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach(function(row) { %>
+              <tr>
+                <td class="align-middle" style="width: 1%">
+                  <a href="<%= urlPrefix %><%= row.link %>"
+                    class="badge color-<%= row.assessment_set_color %> color-hover">
+                    <%= row.label %>
+                  </a>
+                </td>
+                <td class="align-middle">
+                  <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %></a>
+                </td>
+                <td class="text-center align-middle">
+                  <% if (row.assessment_instance_open !== false) { %>
+                      <%= row.credit_date_string %>
+                  <% } else { %>
+                      Assessment closed.
+                  <% } %>
+                  <%- include('../partials/studentAccessRulesPopover', {
+                      accessRules: row.access_rules,
+                      assessmentSetName: row.assessment_set_name,
+                      assessmentNumber: row.assessment_number,
+                      }) %>
+                </td>
+                <td class="text-center align-middle">
+                  <% if (row.assessment_instance_id) { %>
+                      <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                  <% } else { %>
+                      Not started
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } %>
 
       </div>
     </div>
