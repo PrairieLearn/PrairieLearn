@@ -43,14 +43,16 @@ BEGIN
         -- we have an explicit institution restriction
 
         IF course_instance_access_rule.institution = 'LTI' THEN
+            available := FALSE;
+
             -- get the uid row from users
             SELECT *
             INTO user_result
             FROM users
             WHERE users.uid = check_course_instance_access_rule.uid;
 
-            IF user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
-                available := FALSE;
+            IF user_result.lti_course_instance_id = course_instance_access_rule.course_instance_id THEN
+                available := TRUE;
             END IF;
         ELSIF course_instance_access_rule.institution != 'Any' THEN
             -- check the institutions table

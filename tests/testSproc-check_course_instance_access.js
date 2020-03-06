@@ -191,4 +191,49 @@ describe('sproc check_course_instance_access* tests', function() {
             callback(null);
         });
     });
+    it('fail if institution=LTI and user is not created with a course instance', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'person1@school.edu',
+            date: '2013-07-07 06:06:06-00',
+            ciar_id: 5,
+            short_name: 'school',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, false);
+            callback(null);
+        });
+    });
+    it('pass if institution=LTI and user is created with correct course instance', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'ltiuserci1@host.com',
+            date: '2013-07-07 06:06:06-00',
+            ciar_id: 5,
+            short_name: 'host',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, true);
+            callback(null);
+        });
+    });
+    it('fail if institution=LTI and user is created with a different course instance', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'ltiuserci2@host.com',
+            date: '2013-07-07 06:06:06-00',
+            ciar_id: 5,
+            short_name: 'school',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, false);
+            callback(null);
+        });
+    });
 });
