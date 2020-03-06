@@ -194,10 +194,10 @@ describe('sproc check_course_instance_access* tests', function() {
     it('fail if institution=LTI and user is not created with a course instance', function(callback) {
         var params = {
             role: 'Student',
-            uid: 'person1@school.edu',
+            uid: 'normaluser@host.com',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 5,
-            short_name: 'school',
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
@@ -227,7 +227,7 @@ describe('sproc check_course_instance_access* tests', function() {
             uid: 'ltiuserci2@host.com',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 5,
-            short_name: 'school',
+            short_name: 'host',
         };
 
         sqldb.query(sql.ciar_test, params, (err, result) => {
