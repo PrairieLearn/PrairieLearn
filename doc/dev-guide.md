@@ -458,7 +458,8 @@ sqldb.query(sql.select_questions, params, ...);
 SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 ```
 
-* To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/sprocs/sync_news_items.sql). For example, given the JavaScript:
+* To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/sprocs/sync_news_items.sql). For example:
+
 ```javascript
 let data = [
     {a: 5, b: "foo"},
@@ -467,18 +468,25 @@ let data = [
 let params = {data};
 sqldb.query(sql.insert_data, params, ...);
 ```
-We can insert this into a DB table in a single operation with:
+
+```sql
+-- BLOCK insert_data
+INSERT INTO my_table (a, b)
+SELECT *
+FROM jsonb_to_recordset($data) AS (a INTEGER, b TEXT);
+```
+
+* To use a JSON object array in the above fashion, but where the order of rows is important, use `ROWS FROM () WITH ORDINALITY` to generate a row index like this:
 ```sql
 -- BLOCK insert_data
 INSERT INTO my_table (a, b, order_by)
 SELECT *
 FROM
-    ROWS FROM(
-        jsonb_to_recordset(json_variable_name)
+    ROWS FROM (
+        jsonb_to_recordset($data)
         AS (a INTEGER, b TEXT)
-    ) WITH ORDINALITY AS data(a, b, order_by)
+    ) WITH ORDINALITY AS data(a, b, order_by);
 ```
-The optional `WITH ORDINALITY` clause adds the `order_by` index.
 
 
 ## Asynchronous control flow in JavaScript
