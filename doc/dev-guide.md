@@ -465,7 +465,7 @@ let data = [
     {a: 5, b: "foo"},
     {a: 9, b: "bar"}
 ];
-let params = {data};
+let params = {data: JSON.stringify(data)};
 sqldb.query(sql.insert_data, params, ...);
 ```
 
