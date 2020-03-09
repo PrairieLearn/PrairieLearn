@@ -236,4 +236,21 @@ describe('sproc check_course_instance_access* tests', function() {
             callback(null);
         });
     });
+
+    it('fail if date is after end_date and LTI matches', function(callback) {
+        var params = {
+            role: 'Student',
+            uid: 'ltiuserci1@host.com',
+            date: '2017-07-07 06:06:06-00',
+            ciar_id: 5,
+            short_name: 'host',
+        };
+
+        sqldb.query(sql.ciar_test, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            assert.strictEqual(result.rows[0].authorized, false);
+            callback(null);
+        });
+    });
+
 });
