@@ -25,6 +25,17 @@
         <tr><th>ID:</th><td><%= issue.id %></td></tr>
         <tr><th>Date:</th><td><%= issue.formatted_date %></td></tr>
       </tbody>
+      <p><strong> Issue status: </strong>
+        <% if (issue.open) { %>
+        <span class="badge badge-danger" data-toggle="collapse" href="#">
+          Open
+        </span>
+        <% } else { %>
+          <span class="badge badge-success" data-toggle="collapse" href="#">
+            Closed
+          </span>
+        <% } %>
+      </p>
     </table>
 
     <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
