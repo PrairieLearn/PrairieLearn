@@ -15,7 +15,10 @@
       </a>
 
       <h1>
-        <%= news_item.title %>
+          <%= news_item.title %>
+          <% if (news_item.show_student_badge) { %>
+              <span class="badge badge-secondary ml-4">Student</span>
+          <% } %>
       </h1>
 
       <p class="text-muted">
