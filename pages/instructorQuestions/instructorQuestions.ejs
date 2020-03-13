@@ -49,7 +49,6 @@
                             <% if (locals.course_instance) { %>
                             <th data-placeholder="Choose assessment">Assessments</th>
                             <% } %>
-                            <th class="filter-select filter-exact" data-placeholder="Choose Version">Version</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,9 +73,6 @@
                                 <%- include('../partials/assessments', {assessments: question.assessments}); %>
                             </td>
                             <% } %>
-                            <td class="align-middle">
-                                <%- include('../partials/types', {type: question.display_type}); %>
-                            </td>
                         </tr>
                         <% }); %>
                     </tbody>
