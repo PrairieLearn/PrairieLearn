@@ -155,21 +155,3 @@
   <%- include('externalGradingLiveUpdate'); %>
 
 </div>
-
-<script>
-  var inputs = document.getElementsByTagName("input");
-  for (var i = 0; i < inputs.length; i++){
-    input = inputs[i].getAttribute("type");
-    if(input.indexOf("text") == 0 || input.indexOf("checkbox") == 0){
-      inputs[i].addEventListener('keypress', function(event) {
-        if (event.keyCode == 13) {
-          event.preventDefault();
-          var saves = document.getElementsByClassName("btn btn-info question-save disable-on-submit");
-          for (var j = 0; j < saves.length; j++) {
-            saves[j].click();
-          }
-        }
-      });
-    }
-  }
-</script>

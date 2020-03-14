@@ -195,3 +195,7 @@ table td > .badge {
   background-color: #c3c3c3;
   box-shadow: 0 0 0 0.2rem rgba(195,195,195,.25)
 }
+
+.question-grade {
+  margin-right: 5px;
+}
