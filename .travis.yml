@@ -14,7 +14,7 @@ before_install:
   - sh ./tools/build-plbase-if-needed.sh
   - docker build -t pltest .
 script:
-  - 'if [[ "$TRAVIS_PULL_REQUEST" != "false" && ! ( "$TRAVIS_BRANCH" =~ ^dependabot/ ) && ! ( "$TRAVIS_PULL_REQUEST_BRANCH" =~ ^dependabot/ ) ]]; then sh ./tools/verify-changelog.sh; fi'
+  #- 'if [[ "$TRAVIS_PULL_REQUEST" != "false" && ! ( "$TRAVIS_BRANCH" =~ ^dependabot/ ) && ! ( "$TRAVIS_PULL_REQUEST_BRANCH" =~ ^dependabot/ ) ]]; then sh ./tools/verify-changelog.sh; fi'
   - docker run -itd --name=test_container pltest /bin/bash
   - docker exec -it test_container /PrairieLearn/docker/lint_js.sh
   - docker exec -it test_container /PrairieLearn/docker/lint_python.sh
