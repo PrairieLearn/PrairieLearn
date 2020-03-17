@@ -43,7 +43,7 @@
       <% } else { %>
       <div class="row">
           <div class="col-sm-6">
-              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit mr-1">Save only</button><% } %>
+              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit">Save only</button><% } %>
               <% if (showGradeButton) { %>
                   <% if (question_context == 'student_homework') { %>
                       <button class="btn btn-primary question-grade disable-on-submit float-left mr-1">Save & Grade
@@ -55,7 +55,7 @@
                           <% } %>
                       </button>
                   <% } else { %>
-                      <button class="btn btn-primary question-grade disable-on-submit float-left">Save & Grade</button>
+                      <button class="btn btn-primary question-grade disable-on-submit float-left mr-1">Save & Grade</button>
                   <% } %>
               <% } %>
               <% if (showManualGradingMsg) { %>
