@@ -57,7 +57,7 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-              <span class="badge badge-pill badge-danger news-item-count"><%= news_item_notification_count %></span>
+              <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
             <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -68,7 +68,7 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
             <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
               News
               <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-                <span class="badge badge-pill badge-danger news-item-link-count"><%= news_item_notification_count %></span>
+                <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
               <% } %>
             </a>
         </div>

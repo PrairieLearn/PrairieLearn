@@ -779,6 +779,15 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
                 let refLink = use.getAttribute("xlink:href");
                 let refElement = $(refLink)[0];
                 let replacement = $(refElement.outerHTML)[0];
+
+                /* Copy over any attributes on the link */
+                for (let i = 0; i < use.attributes.length; i++) {
+                    let attrib = use.attributes.item(i);
+                    if (attrib.name.toLowerCase() !== "xlink:href") {
+                        replacement.setAttribute(attrib.name, attrib.value);
+                    }
+                }
+
                 /* Replace the reference with the actual value */
                 use.parentNode.replaceChild(replacement, use);
             });
