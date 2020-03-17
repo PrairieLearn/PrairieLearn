@@ -15,7 +15,7 @@ The server code in the `generate()` function will define the list of variables t
 These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as a separate key in `params`. Each variable dictionary has the following format:
 ```json
 {
-	"name": "(name of the variable)",
+    "name": "(name of the variable)",
     "description": "(Human readable description of the variable)",
     "type": "(Human readable type of the variable)
 }
