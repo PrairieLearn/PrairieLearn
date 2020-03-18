@@ -77,6 +77,12 @@
 
   * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
 
+  * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
+
+  * Add support for editing from bare git repo (Tim Bretl).
+  
+  * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -212,10 +218,20 @@
   * Fix in-browser add/copy of course instances to ensure user has `Instructor` role (Tim Bretl).
 
   * Fix permissions on issues page (Tim Bretl).
-  
+
   * Fix angle tolerance checks for vectors in `pl-drawing` element (Nicolas Nytko).
-  
+
   * Fix unique element checking in default grader for `pl-drawing` element (Nicolas Nytko).
+
+  * Fix math rendering in `pl-drawing` element on Safari (Nicolas Nytko).
+
+  * Fix server jobs so that errors are handled only once (Tim Bretl).
+
+  * Fix course instance access check (Tim Bretl).
+
+  * Fix `pl-string-input` incorrectly displaying whitespace and special characters (Nicolas Nytko).
+
+  * Fix gradebook and question statistics download links (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 

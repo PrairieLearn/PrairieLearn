@@ -26,7 +26,7 @@
                         <span class="text-white">Questions</span>
                     </div>
                     <div class="col-auto">
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse) && (! locals.needToSync)) { %>
                         <form class="d-inline" name="add-question-form" method="POST">
                             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                             <button name="__action" value="add_question" class="btn btn-sm btn-light"><i class="fa fa-plus" aria-hidden="true"></i>
@@ -46,6 +46,7 @@
                             <th>QID</th>
                             <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
                             <th data-placeholder="Choose tag">Tags</th>
+                            <th class="filter-select filter-exact" data-placeholder="Choose version">Version</th>
                             <% if (locals.course_instance) { %>
                             <th data-placeholder="Choose assessment">Assessments</th>
                             <% } %>
@@ -67,6 +68,9 @@
                             </td>
                             <td class="align-middle">
                                 <%- include('../partials/tags', {tags: question.tags}); %>
+                            </td>
+                            <td class="align-middle">
+                                <%- include('../partials/types', {type: question.display_type}); %>
                             </td>
                             <% if (locals.course_instance) { %>
                             <td class="align-middle">
@@ -98,7 +102,7 @@
                                     <% }); %>
                                 },
                                 <% if (locals.course_instance) { %>
-                                4: {
+                                5: {
                                     <% all_assessments.forEach(function(assessment) { %>
                                     "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
                                         return /\b<%= assessment.label %>\b/.test(e);
