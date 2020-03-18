@@ -44,7 +44,7 @@ zilles@illinois.edu,describeFibonacci,100,42987,{},{},{"ans": "calculates the n-
 
 This CSV file has two blank columns at the end, ready for the percentage score (0 to 100) and optional feedback. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, which is convenient for re-grading or doing optional manual grading after an autograder has already done a first pass.
 
-If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the Downloads page. The scores and feedback should still be entered into the CSV file.
+If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
 
 ## Uploading the scores and feedback
