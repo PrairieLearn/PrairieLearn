@@ -228,11 +228,11 @@ def render(element_html, data):
     return html
 
 
-def get_format_string(is_complex=False, allow_frac=False, message=None):
+def get_format_string(is_complex=False, allow_fractions=False, message=None):
     params = {
         'complex': is_complex,
         'format_error': True,
-        'allow_fractions': allow_frac,
+        'allow_fractions': allow_fractions,
         'format_error_message': message
     }
     with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
