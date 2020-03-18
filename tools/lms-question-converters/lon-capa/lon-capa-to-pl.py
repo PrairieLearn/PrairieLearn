@@ -121,26 +121,26 @@ def extract_elements(root):
 
     for item in root.findall('.//numericalresponse'):
         # print item.tag
-        out_str += '<pl_number_input answers_name="val" comparison="sigfig" digits="2" label="$c=$"/>\n'
+        out_str += '<pl-number-input answers-name="val" comparison="sigfig" digits="2" label="$c=$"></pl-number-input>\n'
 
     answers = []
     for item in root.findall('.//foil'):
         text = item.text
         for child in item:
             if child.tag == 'img':
-                text += '<pl_figure file_name="' + child.attrib['src'][4:] + '" />'
+                text += '<pl-figure file-name="' + child.attrib['src'][4:] + '"></pl-figure>'
             else:
                 text += child.text
         text = translate_variables_line(text.strip())
         answers.append({ 'text': text, 'correct': item.attrib['value'] == 'true' })
 
     if len(answers) > 0:
-        out_str += '\n<pl_multiple_choice answers_name="answer" weight="1">\n'
+        out_str += '\n<pl-multiple-choice answers-name="answer" weight="1">\n'
         for entry in answers:
             correctness = 'true' if entry['correct'] else 'false'
-            out_str += '  <pl_answer correct="' + correctness + '">' + entry['text'] +'</pl_answer>\n'
+            out_str += '  <pl-answer correct="' + correctness + '">' + entry['text'] +'</pl-answer>\n'
 
-        out_str += '</pl_multiple_choice>\n'
+        out_str += '</pl-multiple-choice>\n'
 
     return out_str
     
@@ -189,11 +189,11 @@ def generate_pl_question(question_dir, xml_filename):
 
     # generate question.html
     with open(question_dir + '/question.html', 'w') as out_file:
-        out_file.write('<pl_question_panel>\n')
+        out_file.write('<pl-question-panel>\n')
         out_file.write('  <p>\n')
         out_file.write(text)
         out_file.write('  </p>\n')
-        out_file.write('</pl_question_panel>\n')
+        out_file.write('</pl-question-panel>\n')
 
         out_file.write(extract_elements(root))
 
