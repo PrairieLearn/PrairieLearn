@@ -5,9 +5,10 @@
     <% } else { %>
     <div class="row">
       <div class="col-sm-6">
+          <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit" name="__action" value="save">Save only</button><% } %>
           <% if (showGradeButton) { %>
               <% if (question_context == 'student_homework') { %>
-                  <button class="btn btn-primary question-grade disable-on-submit" name="__action" value="grade">Save & Grade
+                  <button class="btn btn-primary question-grade disable-on-submit float-left mr-1" name="__action" value="grade">Save & Grade
                       <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
                           <span class="badge">
                               <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
@@ -16,13 +17,12 @@
                       <% } %>
                   </button>
               <% } else { %>
-                  <button class="btn btn-primary question-grade disable-on-submit" name="__action" value="grade">Save & Grade</button>
+                  <button class="btn btn-primary question-grade disable-on-submit float-left mr-1" name="__action" value="grade">Save & Grade</button>
               <% } %>
           <% } %>
           <% if (showManualGradingMsg) { %>
           This question will be manually graded.
           <% } %>
-          <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit" name="__action" value="save">Save only</button><% } %>
       </div>
       <div class="col-sm-6">
         <span class="float-right">
@@ -43,9 +43,10 @@
       <% } else { %>
       <div class="row">
           <div class="col-sm-6">
+              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit">Save only</button><% } %>
               <% if (showGradeButton) { %>
                   <% if (question_context == 'student_homework') { %>
-                      <button class="btn btn-primary question-grade disable-on-submit">Save & Grade
+                      <button class="btn btn-primary question-grade disable-on-submit float-left mr-1">Save & Grade
                           <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
                               <span class="badge">
                                   <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
@@ -54,13 +55,12 @@
                           <% } %>
                       </button>
                   <% } else { %>
-                      <button class="btn btn-primary question-grade disable-on-submit">Save & Grade</button>
+                      <button class="btn btn-primary question-grade disable-on-submit float-left mr-1">Save & Grade</button>
                   <% } %>
               <% } %>
               <% if (showManualGradingMsg) { %>
               This question will be manually graded.
               <% } %>
-              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit">Save only</button><% } %>
           </div>
         <div class="col-sm-6">
           <span class="float-right">
