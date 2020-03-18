@@ -5,7 +5,7 @@ from functools import wraps
 from code_feedback import Feedback
 import pygments
 from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
+from pygments.formatters import Terminal256Formatter
 
 
 class DoNotRun(Exception):
@@ -60,6 +60,6 @@ def not_repeated(f):
 
 def print_student_code(st_code='user_code.py'):
     with open(st_code, 'r', encoding='utf-8') as f:
-        contents = f.read()
-        formatted = pygments.highlight(contents, PythonLexer(), TerminalFormatter(bg='dark'))
+        contents = f.read().strip()
+        formatted = pygments.highlight(contents, PythonLexer(), Terminal256Formatter(style='monokai'))
         Feedback.add_feedback(formatted)

@@ -25,6 +25,7 @@ class PrairieTestResult(unittest.TestResult):
         self.results = []
         self.buffer = False #True
         self.done_grading = False
+        self.grading_succeeded = True
 
     def startTest(self, test):
         unittest.TestResult.startTest(self, test)
@@ -54,11 +55,16 @@ class PrairieTestResult(unittest.TestResult):
         elif isinstance(err[1], UserCodeFailed):
             # Student code raised Exception
             tr_list = traceback.format_exception(*err[1].err)
+            name = 'Your code raised an Exception'
             self.done_grading = True
-            self.results.append({'name': 'Your code raised an Exception',
+            if isinstance(err[1].err[1], SyntaxError):
+                self.grading_succeeded = False
+                name = 'Your code has a syntax error'
+                
+            self.results.append({'name': name,
                                  'max_points': 1,
                                  'points': 0})
-            Feedback.set_name('Your code raised an Exception')
+            Feedback.set_name(name)
             Feedback.add_feedback(''.join(tr_list))
             Feedback.add_feedback('\n\nYour code:\n\n')
             print_student_code()
@@ -68,6 +74,7 @@ class PrairieTestResult(unittest.TestResult):
             if not test_id.startswith('test'):
                 # Error in setup code -- not recoverable
                 self.done_grading = True
+                self.grading_succeeded = False
                 self.results = []
                 self.results.append({'name': 'Internal Grading Error',
                                      'max_points': 1,
@@ -96,3 +103,6 @@ class PrairieTestResult(unittest.TestResult):
 
     def getResults(self):
         return self.results
+
+    def getGradable(self):
+        return self.grading_succeeded

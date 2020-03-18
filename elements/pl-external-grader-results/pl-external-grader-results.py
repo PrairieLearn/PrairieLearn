@@ -35,15 +35,6 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render_plot(image_data):
-    html_params = {
-        'plot': True,
-        'image_data': image_data
-    }
-    with open('pl-external-grader-results.mustache', 'r', encoding='utf-8') as f:
-        return chevron.render(f, html_params).strip()
-
-
 def render(element_html, data):
     if data['panel'] == 'submission':
         html_params = {'submission': True, 'graded': True, 'uuid': pl.get_uuid()}
@@ -52,6 +43,12 @@ def render(element_html, data):
         html_params['graded'] = bool(feedback)
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
+
+        if 'results' in feedback and 'gradable' in feedback['results']:
+            html_params['invalid'] = not feedback['results']['gradable']
+        else:
+            html_params['invalid'] = False
+
         if not grading_succeeded:
             html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:
@@ -69,9 +66,9 @@ def render(element_html, data):
                 num_images = results.get('num_images', 0)
                 images_data = []
                 for img_num in range(num_images):
-                    image = results.get('image_' + str(img_num))
-                    images_data.append(render_plot(image))
-                html_params['images_data'] = '\n'.join(images_data)
+                    images_data.append(results.get('image_' + str(img_num)))
+                html_params['images_data'] = images_data
+                html_params['has_images'] = num_images > 0
                 html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or (num_images > 0))
 
                 results_tests = results.get('tests', None)
@@ -104,10 +101,16 @@ def render(element_html, data):
                         test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
+                        test['show_points'] = not tests_missing_points
                         if not tests_missing_points:
                             test['max_points'] = results_test.get('max_points')
                             test['points'] = results_test.get('points')
                             correct = test['max_points'] == test['points']
+
+                            # Don't show points for test cases that are 0/0
+                            if correct and test['max_points'] == 0:
+                                test['show_points'] = False
+
                             test['results_color'] = '#4CAF50' if correct else '#F44336'
                             test['results_icon'] = 'fa-check' if correct else 'fa-times'
                         test['imgsrcs'] = []

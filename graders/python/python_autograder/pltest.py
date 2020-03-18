@@ -38,11 +38,15 @@ if __name__ == '__main__':
         # Run the tests with our custom setup
         loader = TestLoader()
         all_results = []
+        gradable = True
         for i in range(Test.total_iters):
             suite = loader.loadTestsFromTestCase(Test)
             result = PrairieTestResult()
             suite.run(result)
             all_results.append(result.getResults())
+            if not result.getGradable():
+                gradable = False
+                break
 
         if len(all_results) > 1:
             # Combine results into big dict and then back to list of dicts
@@ -78,6 +82,7 @@ if __name__ == '__main__':
         grading_result['tests'] = results
         grading_result['score'] = float(earned_points) / float(max_points)
         grading_result['succeeded'] = True
+        grading_result['gradable'] = gradable
         grading_result['max_points'] = max_points
         if text_output:
             grading_result['output'] = text_output
@@ -99,9 +104,6 @@ if __name__ == '__main__':
                     has_img = False
 
         grading_result['num_images'] = all_img_num
-
-        with open('results_test.json', mode='w') as out:
-            json.dump({'a':1, 'b':2}, out)
         with open(output_fname, mode='w', encoding='utf-8') as out:
             json.dump(grading_result, out)
     except:

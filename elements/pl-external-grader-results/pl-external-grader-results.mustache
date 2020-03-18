@@ -1,9 +1,3 @@
-{{#plot}}
-    <li class="list-group-item">
-        <div><strong>Figure</strong></div>
-        <img src="{{image_data}}"/>
-    </li>
-{{/plot}}
 {{#graded}}
 <div class="pl-external-grader-results">
   {{^grading_succeeded}}
@@ -17,15 +11,20 @@
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3 class="mt-2">
-      Score:
-      <span style="color: {{results_color}}">
-      {{#points}}
-      <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
-      {{/points}}
-      {{^points}}
-      <strong>{{score}}%</strong>
-      {{/points}}
-      </span>
+      {{#invalid}}
+          <p> <i style="color: #F44336" class="fas fa-exclamation-triangle"></i> Not Graded </p>
+      {{/invalid}}
+      {{^invalid}}
+          Score:
+          <span style="color: {{results_color}}">
+              {{#points}}
+                  <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
+              {{/points}}
+              {{^points}}
+                  <strong>{{score}}%</strong>
+              {{/points}}
+          </span>
+      {{/invalid}}
     </h3>
     {{#has_message_or_output_or_image}}
       {{#has_message}}
@@ -40,11 +39,16 @@
           <pre class="output text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
       {{/has_output}}
-      {{#images_data}}
+      {{#has_images}}
           <ul class="list-group list-group-flush">
-              {{{ images_data }}}
+              {{#images_data}}
+                  <li class="list-group-item">
+                      <div><strong>Figure</strong></div>
+                      <img src="{{.}}"/>
+                  </li>
+              {{/images_data}}
           </ul>
-      {{/images_data}}
+      {{/has_images}}
     {{/has_message_or_output_or_image}}
     <h3>Test Results</h3>
     {{^has_tests}}
@@ -59,10 +63,10 @@
           <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
             <div class="mr-auto">
               <span class="card-title">
-                {{^tests_missing_points}}
+                {{#show_points}}
                   <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
                   <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
-                {{/tests_missing_points}}
+                {{/show_points}}
                 <span style="margin-left: 5px;">{{name}}</span>
               </span>
             </div>
@@ -75,10 +79,10 @@
               {{#has_description}}
                 <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
               {{/has_description}}
-              {{^tests_missing_points}}
+              {{#show_points}}
                 <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
                 <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
-              {{/tests_missing_points}}
+              {{/show_points}}
               {{#has_message}}
                 <li class="list-group-item">
                   <div><strong>Message</strong></div>
