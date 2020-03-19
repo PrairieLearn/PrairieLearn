@@ -50,17 +50,19 @@ window.PLFileEditor = function(uuid, options) {
         let editor = this.editor;
         let conv = new showdown.Converter();
 
-        function update_preview() {
+        let update_preview = function() {
             let text = editor.getValue();
             if (text.trim().length == 0) {
                 preview.innerHTML = default_preview_text;
             } else {
                 preview.innerHTML = conv.makeHtml(editor.getValue());
-                if (text.includes('$') || text.includes('\\(') || text.includes('\\)')) {
+                if (text.includes('$') ||
+                    text.includes('\\(') || text.includes('\\)') ||
+                    text.includes('\\[') || text.includes('\\]')) {
                     MathJax.typesetPromise();
                 }
             }
-        }
+        };
         editor.session.on('change', function() {
             update_preview();
         });
