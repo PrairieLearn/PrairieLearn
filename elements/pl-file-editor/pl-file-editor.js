@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace */
+/* global ace, showdown, MathJax */
 
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
@@ -44,8 +44,8 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setOption('maxLines', Infinity);
     }
 
-    const default_preview_text = "<p>Begin typing to preview</p>"
-    if (options.preview == "markdown") {
+    const default_preview_text = '<p>Begin typing to preview</p>';
+    if (options.preview == 'markdown') {
         let preview = this.element.find('.preview')[0];
         let editor = this.editor;
         let conv = new showdown.Converter();
@@ -61,7 +61,7 @@ window.PLFileEditor = function(uuid, options) {
                 }
             }
         }
-        editor.session.on('change', function(delta) {
+        editor.session.on('change', function() {
             update_preview();
         });
 
