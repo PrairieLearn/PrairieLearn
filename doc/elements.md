@@ -258,6 +258,7 @@ Attribute | Type | Default | Description
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Example implementations
 

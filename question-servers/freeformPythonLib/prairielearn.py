@@ -10,6 +10,7 @@ from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
 import colors
+import unicodedata
 
 
 def to_json(v):
@@ -1006,3 +1007,27 @@ def get_uuid():
     Returns the string representation of a new random UUID.
     """
     return str(uuid.uuid4())
+
+
+def escape_unicode_string(string):
+    """
+    escape_unicode_string(string)
+
+    Combs through any string and replaces invisible/unprintable characters with a
+    text representation of their hex id: <U+xxxx>
+
+    A character is considered invisible if its category is "control" or "format", as
+    reported by the 'unicodedata' library.
+
+    More info on unicode categories:
+    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
+    """
+
+    def escape_unprintable(x):
+        category = unicodedata.category(x)
+        if category == 'Cc' or category == 'Cf':
+            return f'<U+{ord(x):x}>'
+        else:
+            return x
+
+    return ''.join(map(escape_unprintable, string))

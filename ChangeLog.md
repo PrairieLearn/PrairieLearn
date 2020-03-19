@@ -125,6 +125,8 @@
 
   * Change size limit for form data to account for increase from encoding (Nathan Bowman).
 
+  * Change styling for invalid input and `pl-string-input` for increased clarity. (Nicolas Nytko)
+
   * Fix dead letter cron job for `async` v3 (Matt West).
 
   * Fix deadlock when syncing course staff (Nathan Walters).
