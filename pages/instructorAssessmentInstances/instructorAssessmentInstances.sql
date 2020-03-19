@@ -34,7 +34,8 @@ WITH results AS (
     SET
         open = true,
         date_limit = NULL,
-        auto_close = FALSE
+        auto_close = FALSE,
+        modified_at = now()
     WHERE
         ai.id = $assessment_instance_id
     RETURNING
