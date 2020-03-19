@@ -84,7 +84,7 @@ window.PLFileEditor.prototype.updatePreview = function(html_contents) {
             MathJax.typesetPromise();
         }
     }
-}
+};
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
     var that = this;
