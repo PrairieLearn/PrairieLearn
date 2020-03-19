@@ -1,5 +1,6 @@
 /* eslint-env browser,jquery */
 /* global ace */
+
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
     this.element = $(elementId);
@@ -41,6 +42,33 @@ window.PLFileEditor = function(uuid, options) {
     if (options.autoResize) {
         this.editor.setAutoScrollEditorIntoView(true);
         this.editor.setOption('maxLines', Infinity);
+    }
+
+    const default_preview_text = "<p>Begin typing to preview</p>"
+    if (options.preview == "markdown") {
+        let preview = this.element.find('.preview')[0];
+        let editor = this.editor;
+        let conv = new showdown.Converter();
+
+        function update_preview() {
+            let text = editor.getValue();
+            if (text.trim().length == 0) {
+                preview.innerHTML = default_preview_text;
+            } else {
+                preview.innerHTML = conv.makeHtml(editor.getValue());
+                if (text.includes('$') || text.includes('\\(') || text.includes('\\)')) {
+                    MathJax.typesetPromise();
+                }
+            }
+        }
+        editor.session.on('change', function(delta) {
+            update_preview();
+        });
+
+        update_preview();
+    } else {
+        let preview = this.element.find('.preview')[0];
+        preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
     }
 
     var currentContents = '';
