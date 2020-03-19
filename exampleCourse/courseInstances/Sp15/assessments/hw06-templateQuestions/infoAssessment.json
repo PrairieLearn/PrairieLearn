@@ -1,9 +1,9 @@
 {
     "uuid": "597176b9-9145-4226-8a77-d0973bad80df",
     "type": "Homework",
-    "title": "PrairieLearn question templates",
+    "title": "Template homework - copy this to start a new HW",
     "set": "Homework",
-    "number": "6",
+    "number": "1",
     "allowAccess": [
         {
             "role": "Instructor",
