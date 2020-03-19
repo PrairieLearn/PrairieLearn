@@ -1,0 +1,22 @@
+{
+    "uuid": "c5c1394d-6864-4d1a-b0b9-91a5452dca0a",
+    "type": "Homework",
+    "title": "PrairieLearn question templates",
+    "set": "Homework",
+    "number": "6",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "templateCheckbox", "points": 1, "maxPoints": 2},
+                {"id": "templateFixedMultipleChoice", "points": 1},
+                {"id": "templateRandomMultipleChoice", "points": 1, "maxPoints": 4}
+            ]
+        }
+    ]
+}
