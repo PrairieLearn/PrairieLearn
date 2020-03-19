@@ -219,7 +219,31 @@ describe('Instructor Assessment Downloads', function() {
         });
     });
 
-    describe('9. Check allSubmissions CSV file', function() {
+    describe('9. Check submissionsForManualGrading CSV file', function() {
+        it('should have download link', function() {
+            elemList = locals.$("a:contains('submissions_for_manual_grading.csv')");
+            assert.lengthOf(elemList, 1);
+        });
+        it('should succeed to download', function(callback) {
+            request({url: locals.siteUrl + elemList[0].attribs.href}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should contain correct data', function() {
+            let data = csvParse(page, {columns: true, cast: true});
+            assert.equal(data[0]['uid'], 'dev@illinois.edu');
+            assert.equal(data[0]['qid'], 'addNumbers');
+        });
+    });
+
+    describe('10. Check allSubmissions CSV file', function() {
         it('should have download link', function() {
             elemList = locals.$("a:contains('all_submissions.csv')");
             assert.lengthOf(elemList, 1);
@@ -245,7 +269,7 @@ describe('Instructor Assessment Downloads', function() {
         });
     });
 
-    describe('10. Check finalSubmissions CSV file', function() {
+    describe('11. Check finalSubmissions CSV file', function() {
         it('should have download link', function() {
             elemList = locals.$("a:contains('final_submissions.csv')");
             assert.lengthOf(elemList, 1);
@@ -273,7 +297,7 @@ describe('Instructor Assessment Downloads', function() {
         });
     });
 
-    describe('11. Check bestSubmissions CSV file', function() {
+    describe('12. Check bestSubmissions CSV file', function() {
         it('should have download link', function() {
             elemList = locals.$("a:contains('best_submissions.csv')");
             assert.lengthOf(elemList, 1);

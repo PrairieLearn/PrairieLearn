@@ -249,7 +249,7 @@
           <tbody>
             <% log.forEach(function(row) { %>
             <tr>
-              <td><%= row.formatted_date %></td>
+              <td class="text-nowrap"><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
               <td>
