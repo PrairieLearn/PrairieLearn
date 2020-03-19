@@ -44,30 +44,18 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setOption('maxLines', Infinity);
     }
 
-    const default_preview_text = '<p>Begin typing to preview</p>';
     if (options.preview == 'markdown') {
-        let preview = this.element.find('.preview')[0];
-        let editor = this.editor;
-        let conv = new showdown.Converter();
+        let renderer = new showdown.Converter();
 
-        let update_preview = function() {
-            let text = editor.getValue();
-            if (text.trim().length == 0) {
-                preview.innerHTML = default_preview_text;
-            } else {
-                preview.innerHTML = conv.makeHtml(editor.getValue());
-                if (text.includes('$') ||
-                    text.includes('\\(') || text.includes('\\)') ||
-                    text.includes('\\[') || text.includes('\\]')) {
-                    MathJax.typesetPromise();
-                }
-            }
-        };
-        editor.session.on('change', function() {
-            update_preview();
+        this.editor.session.on('change', () => {
+            this.updatePreview(renderer.makeHtml(this.editor.getValue()));
         });
-
-        update_preview();
+        this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+    } else if (options.preview == 'html') {
+        this.editor.session.on('change', () => {
+            this.updatePreview(this.editor.getValue());
+        });
+        this.updatePreview(this.editor.getValue());
     } else {
         let preview = this.element.find('.preview')[0];
         preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
@@ -81,6 +69,22 @@ window.PLFileEditor = function(uuid, options) {
 
     this.initRestoreOriginalButton();
 };
+
+window.PLFileEditor.prototype.updatePreview = function(html_contents) {
+    const default_preview_text = '<p>Begin typing to preview</p>';
+    let preview = this.element.find('.preview')[0];
+
+    if (html_contents.trim().length == 0) {
+        preview.innerHTML = default_preview_text;
+    } else {
+        preview.innerHTML = html_contents;
+        if (html_contents.includes('$') ||
+            html_contents.includes('\\(') || html_contents.includes('\\)') ||
+            html_contents.includes('\\[') || html_contents.includes('\\]')) {
+            MathJax.typesetPromise();
+        }
+    }
+}
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
     var that = this;
