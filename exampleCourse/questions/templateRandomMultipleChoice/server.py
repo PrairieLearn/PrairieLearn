@@ -2,62 +2,50 @@ import random
 
 def generate(data):
 
-    # Create a list of planets and their order
+    # Create a list of question prompts and the corresponding answers
     scenarios = [
         {
-            "name": "Mercury",
-            "order": "closest"
+            "question": "closest",
+            "answer": "Mercury",
         },
         {
-            "name": "Venus",
-            "order": "2nd"
+            "question": "2nd",
+            "answer": "Venus",
         },
         {
-            "name": "Earth",
-            "order": "3rd"
+            "question": "3rd",
+            "answer": "Earth",
         },
         {
-            "name": "Mars",
-            "order": "4th"
+            "question": "4th",
+            "answer": "Mars",
         },
         {
-            "name": "Jupiter",
-            "order": "5th"
+            "question": "5th",
+            "answer": "Jupiter",
         },
         {
-            "name": "Saturn",
-            "order": "6th"
+            "question": "6th",
+            "answer": "Saturn",
         }, 
         {
-            "name": "Uranus",
-            "order": "7th"
+            "question": "7th",
+            "answer": "Uranus",
         }, 
         {
-            "name": "Neptune",
-            "order": "farthest"
+            "question": "farthest",
+            "answer": "Neptune",
         }
     ]
     
-    # Randomly pick one scenario
-    active_scenario = random.choice(scenarios)
-    correct_scenario_name = active_scenario['name']
+    # Randomize the order of the scenarios
+    random.shuffle(scenarios)
     
-    # Obtain all data structure names
-    scenario_names = [entry['name'] for entry in scenarios]
+    # First shuffled scenario is the one we will take as correct
+    data['params']['question_prompt'] = scenarios[0]['question']
+    data['params']['correct_answer'] = scenarios[0]['answer']
 
-    # Remove correct answer name from list.
-    scenario_names.remove(correct_scenario_name)
-
-    # Randomize distractor scenarios
-    random.shuffle(scenario_names)
-    
-    # Store customized prompt
-    data['params']['custom_prompt'] = active_scenario['order']
-    
-    # Select three distractors
-    data['params']['wrong_scenario1'] = scenario_names[0]
-    data['params']['wrong_scenario2'] = scenario_names[1]
-    data['params']['wrong_scenario3'] = scenario_names[2]
-
-    # Store the correct scenario
-    data['params']['correct_scenario'] = correct_scenario_name
+    # Next three shuffled scenarios are the distractors
+    data['params']['wrong_answer1'] = scenarios[1]['question']
+    data['params']['wrong_answer2'] = scenarios[2]['question']
+    data['params']['wrong_answer3'] = scenarios[3]['question']
