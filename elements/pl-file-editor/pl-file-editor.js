@@ -71,7 +71,7 @@ window.PLFileEditor = function(uuid, options) {
 };
 
 window.PLFileEditor.prototype.updatePreview = function(html_contents) {
-    const default_preview_text = '<p>Begin typing to preview</p>';
+    const default_preview_text = '<p>Begin typing above to preview</p>';
     let preview = this.element.find('.preview')[0];
 
     if (html_contents.trim().length == 0) {
