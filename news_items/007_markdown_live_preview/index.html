@@ -1,0 +1,38 @@
+
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+</style>
+
+<p>
+  Thanks to <a href="https://github.com/nicknytko">Nicolas Nytko</a>
+  (CS BS '19, CS MS '21), the <tt>pl-file-editor</tt> element now
+  supports live preview for students answering questions in Markdown
+  with LaTeX equations. To use live preview,
+  set <tt>preview="markdown"</tt> like this:
+</p>
+
+<div class="d-flex justify-content-center">
+  <div class="card mb-4 style="width: 50%;"">
+    <div class="card-header">
+      <tt>question.html</tt>
+    </div>
+    <div class="card-body">
+      <pre class="mb-0">&lt;pl-file-editor file-name="ans.md" ace-mode="ace/mode/markdown" preview="markdown"&gt;
+&lt;/pl-file-editor&gt;</pre>
+    </div>
+  </div>
+</div>
+
+<p>
+  When students type their answers in the text editor, their file will
+  be saved as Markdown for grading and they will see a live-updating
+  preview:
+</p>
+
+<img src="markdown_preview.png" width="833px">
