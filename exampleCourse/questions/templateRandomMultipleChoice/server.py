@@ -40,7 +40,7 @@ def generate(data):
     
     # Randomly pick one scenario
     active_scenario = random.choice(scenarios)
-    correct_scenario_name = active_planet['name']
+    correct_scenario_name = active_scenario['name']
     
     # Obtain all data structure names
     scenario_names = [entry['name'] for entry in scenarios]
