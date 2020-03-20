@@ -14,6 +14,22 @@ class UserCodeFailed(Exception):
 
 def execute_code(fname_ref, fname_student, include_plt=False,
                  console_output_fname=None, test_iter_num=0):
+    """
+    execute_code(fname_ref, fname_student)
+
+    Helper function for running user code.
+
+    - fname_ref: Filename for the reference (answer) code.
+    - fname_student: Filename for the submitted student answer code.
+    - include_plt: If true, plots will be included in grading results.
+    - console_output_fname: Filename to redirect console output to.
+    - test_iter_num: The iteration number of this test, when test cases are run multiple times. 
+
+    Returns:
+    - ref_result: A named tuple with reference variables 
+    - student_result: A named tuple with submitted student variables
+    - plot_value: Any plots made by the student
+    """
 
     with open('/grade/data/data.json') as f:
         data = json.load(f)

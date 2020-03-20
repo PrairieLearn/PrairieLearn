@@ -1,8 +1,7 @@
 import unittest
 from types import FunctionType
 from collections import namedtuple
-from pl_helpers import (points, name, save_plot, print_student_code,
-                        not_repeated)
+from pl_helpers import (points, name, save_plot, print_student_code, not_repeated)
 from pl_execute import execute_code
 from code_feedback import Feedback
 
@@ -12,6 +11,12 @@ matplotlib.use('Agg')
 
 
 class PrairieLearnTestCase(unittest.TestCase):
+    """
+    Base class for test suites, using the Python unittest library.
+    Handles automatic setup and teardown of testing logic.
+
+    Methods here do not need to be overridden by test suites.
+    """
 
     include_plt = False
     student_code_string = 'test_print_student_code'
@@ -21,12 +26,11 @@ class PrairieLearnTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ref_result, student_result, plot_value = execute_code(
-                                                     "filenames/ans.py",
-                                                     cls.student_code_file,
-                                                     cls.include_plt,
-                                                     "output.txt",
-                                                     cls.iter_num)
+        """
+        On start, run the user code and generate answer tuples.
+        """
+        ref_result, student_result, plot_value = execute_code("filenames/ans.py", cls.student_code_file, cls.include_plt,
+                                                              "output.txt", cls.iter_num)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
         cls.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())
@@ -38,6 +42,10 @@ class PrairieLearnTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """ 
+        Close all plots and increment the iteration number on test finish
+        """
+
         if cls.include_plt:
             cls.plt.close('all')
         cls.iter_num += 1
@@ -46,15 +54,17 @@ class PrairieLearnTestCase(unittest.TestCase):
     @classmethod
     def display_plot(cls):
         axes = cls.plt.gca()
-        if axes.get_lines() \
-          or axes.collections \
-          or axes.patches \
-          or axes.images:
+        if axes.get_lines() or axes.collections or axes.patches or axes.images:
             save_plot(cls.plt, cls.iter_num)
 
 
     @classmethod
     def get_total_points(cls):
+        """
+        Get the total number of points awarded by this test suite, including
+        cases where the test suite is run multiple times.
+        """
+
         methods = [y for x, y in cls.__dict__.items()
                    if type(y == FunctionType) and
                       x.startswith('test_') and
@@ -71,11 +81,20 @@ class PrairieLearnTestCase(unittest.TestCase):
 
 
     def setUp(self):
-        self.points = None
+        """
+        On test start, initialise the points and set up the code feedback library
+        to provide feedback for this test.
+        """
+
+        self.points = 0
         Feedback.set_test(self)
 
 
     def run(self, result=None):
+        """
+        Run the actual test suite, saving the results in 'result'.
+        """
+
         test_id = self.id().split('.')[-1]
         if not result.done_grading or test_id == self.student_code_string:
             super(PrairieLearnTestCase, self).run(result)
@@ -89,7 +108,10 @@ class PrairieLearnTestCase(unittest.TestCase):
 
 
 class PrairieLearnTestCaseWithPlot(PrairieLearnTestCase):
-
+    """
+    Test suite that includes plot grading.  Will automatically check plots
+    for appropriate labels.
+    """
     include_plt = True
 
     @name('Check plot labels')
@@ -99,22 +121,23 @@ class PrairieLearnTestCaseWithPlot(PrairieLearnTestCase):
         xlabel = axes.get_xlabel()
         ylabel = axes.get_ylabel()
         points = 0
+
         if xlabel:
-            points += 0.333
+            points += 1
             Feedback.add_feedback('Plot has xlabel')
         else:
             Feedback.add_feedback('Plot is missing xlabel')
 
         if title:
-            points += 0.334
+            points += 1
             Feedback.add_feedback('Plot has title')
         else:
             Feedback.add_feedback('Plot is missing title')
 
         if ylabel:
-            points += 0.333
+            points += 1
             Feedback.add_feedback('Plot has ylabel')
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_points(points)
+        Feedback.set_points(points / 3.0)

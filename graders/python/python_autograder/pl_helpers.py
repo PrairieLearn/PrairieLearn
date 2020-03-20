@@ -13,6 +13,10 @@ class DoNotRun(Exception):
 
 
 def save_plot(plt, iternum=0):
+    """
+    Save plot(s) to files as png images.
+    """
+
     for i in plt.get_fignums():
         plt.figure(i)
         fig = plt.gcf()
@@ -26,6 +30,10 @@ def save_plot(plt, iternum=0):
 
 
 def points(points):
+    """
+    Set the number of points that a test case should award.
+    """
+
     def decorator(f):
         f.__dict__['points'] = points
         return f
@@ -33,6 +41,10 @@ def points(points):
 
 
 def name(name):
+    """
+    Set the name of a test case, this will appear on the "results" tab.
+    """
+
     def decorator(f):
         @wraps(f)
         def wrapped(Test_instance):
@@ -47,6 +59,10 @@ def name(name):
 
 
 def not_repeated(f):
+    """
+    Marks this test as running only once, if the test suite is to be run multiple times.
+    """
+
     @wraps(f)
     def wrapped(Test_instance):
         if Test_instance.iter_num > 0:
@@ -59,6 +75,10 @@ def not_repeated(f):
 
 
 def print_student_code(st_code='user_code.py'):
+    """
+    Print the student's code, with syntax highlighting.
+    """
+
     with open(st_code, 'r', encoding='utf-8') as f:
         contents = f.read().strip()
         formatted = pygments.highlight(contents, PythonLexer(), Terminal256Formatter(style='monokai'))

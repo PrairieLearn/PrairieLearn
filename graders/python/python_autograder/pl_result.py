@@ -6,7 +6,11 @@ from pl_helpers import print_student_code, DoNotRun
 
 
 class PrairieTestResult(unittest.TestResult):
-
+    """
+    Helper class for generating results of a test suite using the Python
+    unittest library.
+    """
+    
     error_message = ('The grading code failed -- sorry about that!\n\n'
                      'This may be an issue with your code.\nIf so, you can '
                      'take a look at the traceback below to help debug.\n'
@@ -23,7 +27,7 @@ class PrairieTestResult(unittest.TestResult):
     def __init__(self):
         unittest.TestResult.__init__(self)
         self.results = []
-        self.buffer = False #True
+        self.buffer = False
         self.done_grading = False
         self.grading_succeeded = True
 

@@ -8,16 +8,36 @@ This file documents the default Python autograder included in the `prairielearn/
 
 The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific Python autograder detailed in this document, `"image"` should be set to `"prairielearn/grader-python"` and `"entrypoint"` should point to `"/python_autograder/run.sh"` in the `"externalGradingOptions"` dictionary.
 
+A full `info.json` file should look something like:
+
+```javascript
+{
+    "uuid": "...",
+    "title": "...",
+    "topic": "...",
+    "tags": [...],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+    }
+}
+```
+
 ### `server.py`
 
 The server code in the `generate()` function will define the list of variables that will be passed to the autograded student code `names_for_user`, and also those that will be passed from the student code to the test code `names_from_user`.  Only variables listed in `names_for_user` will be accessible by the user from the setup code; only variables listed in `names_from_user` will be accessible by the test cases from the user code.
 
 These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as a separate key in `params`. Each variable dictionary has the following format:
+
 ```json
 {
     "name": "(name of the variable)",
     "description": "(Human readable description of the variable)",
-    "type": "(Human readable type of the variable)
+    "type": "(Human readable type of the variable)"
 }
 ```
 
@@ -40,6 +60,93 @@ def generate(data):
 ```
 
 ### `question.html`
+
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively, and thus the question markup should be structured as:
+
+```html
+<pl-question-panel>
+	<pl-file-editor file_name="user_code.py"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+	<pl-external-grading-results></pl-external-grading-results>
+</pl-submission-panel>
+```
+
+By default, the grader will look for a gradable file named `user_code.py`, but this can be changed in the test suite.
+
+Expected variables can also be displayed to the user with the `<pl-variable-description>` element.  By setting the `variables_category` attribute to either `names_for_user` or `names_from_user`, both sets of variables can be shown.
+
+Full example:
+
+```html
+<pl-question-panel>
+  <p> ... Question prompt ... </p>
+
+  <p>The setup code gives the following variables:</p>
+  <p><pl-variable-description variables_category="names_for_user"></pl-variable-description></p>
+
+  <p>Your code snippet should define the following variables:</p>
+  <pl-variable-description variables_category="names_from_user"></pl-variable-description>
+  <pl-file-editor
+    file_name="user_code.py"
+    ace_mode="ace/mode/python"
+    source-file-name="tests/initial_code.py"></pl-file-editor>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results />
+</pl-submission-panel>
+```
+
+### `tests/setup_code.py`
+
+This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.
+
+### `tests/test.py`
+
+The test cases for each coding problem are defined as methods of a `test` class contained in the aptly named `test.py` file.  The class will have one of the following signatures, depending if you require plots from the student:
+
+```python
+## No plot grading
+class Test(PrairieLearnTestCase):
+
+## Plot grading enabled
+class Test(PrairieLearnTestCaseWithPlot):
+```
+
+Each test case is a separate method in the class, the names of these functions are arbitrary and are unimportant to the autograding code.
+
+Adding a name and point value to the test case is done by means of python decorators:
+`@points(val)` and `@name(name of the test case)`.  These will control the name of the case and the points awarded in the "Test Results" dropdown menu that are shown when a student submits a solution.  An example of a definition:
+
+```python
+@points(10)
+@name("Cool test case")
+def test_0(self):
+```
+
+Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively.  There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`.  These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
+
+At the end of the test case, set the correctness of the answer using `feedback.set_points()`.  This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct.  By default, if no points are given the test case will be marked incorrect.
+
+The overall structure of a test case should look something like:
+
+```python
+@points(10)
+@name("name of the test case")
+def test_0(self):
+   if feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
+       Feedback.set_points(1)
+	else:
+		Feedback.set_points(0)
+``` 
+
+## General Tips and Gotchas
+
+Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly. 
+
+Be careful not to switch the ordering of the student and reference arguments.  The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
 
 # Overview
 

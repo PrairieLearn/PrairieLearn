@@ -6,6 +6,12 @@ from collections import defaultdict
 from pl_result import PrairieTestResult
 
 
+"""
+The main python entrypoint for the autograder framework.
+Loads and executes test cases.
+"""
+
+
 def add_files(results):
     BASE_DIR = "/grade/run/"
 
