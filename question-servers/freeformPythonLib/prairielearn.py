@@ -462,11 +462,11 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
         result = result.replace('[', '')
         result = result.replace(']', '')
         # Cast to a vector: c(1, 2, 3, 4, 5, 6)
-        result = f"c({result})"
+        result = f'c({result})'
         if A.ndim == 2:
             nrow = A.shape[0]
             ncol = A.shape[1]
-            result = f"matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)"
+            result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
         return result
     else:
         raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
