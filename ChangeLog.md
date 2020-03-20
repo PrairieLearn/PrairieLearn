@@ -78,7 +78,7 @@
   * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
   * Add support for editing from bare git repo (Tim Bretl).
-  
+
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
@@ -124,6 +124,8 @@
   * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
 
   * Change size limit for form data to account for increase from encoding (Nathan Bowman).
+
+  * Change where individual assessment instances appear (they now have their own page), removing a clutter of assessment attempts that were filling up student's course pages. (David Mitchell and Nikita Agarwal, HackIllinois)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 

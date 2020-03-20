@@ -13,7 +13,7 @@
     <div id="content" class="container">
 
       <%- include('../partials/advertisement'); %>
-      
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Assessments</div>
 
@@ -56,10 +56,8 @@
                     }) %>
               </td>
               <td class="text-center align-middle">
-                <% if (row.assessment_instance_id) { %>
+                <% if (row.assessment_instance_id || row.multiple_instance_header) { %>
                     <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
-                <% } else if (row.multiple_instance_header) { %>
-                  <%- include('../partials/scorebar', {score: row.multiple_instance_score_highest}) %>
                 <% } else { %>
                     Not started
                 <% } %>
