@@ -182,10 +182,44 @@ event_log AS (
     UNION
     (
         SELECT
+            3.7 AS event_order,
+            'Manual grading results'::TEXT AS event_name,
+            'blue2'::TEXT AS event_color,
+            gj.graded_at AS date,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
+            q.qid,
+            q.id AS question_id,
+            iq.id AS instance_question_id,
+            v.id as variant_id,
+            v.number as variant_number,
+            jsonb_build_object(
+                'correct', gj.correct,
+                'score', gj.score,
+                'feedback', gj.feedback,
+                'submitted_answer', s.submitted_answer,
+                'submission_id', s.id
+            ) AS data
+        FROM
+            grading_jobs AS gj
+            JOIN submissions AS s ON (s.id = gj.submission_id)
+            JOIN variants AS v ON (v.id = s.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            JOIN questions AS q ON (q.id = aq.question_id)
+            LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        WHERE
+            iq.assessment_instance_id = $assessment_instance_id
+            AND gj.grading_method = 'Manual'
+            AND gj.graded_at IS NOT NULL
+    )
+    UNION
+    (
+        SELECT
             4 AS event_order,
             'Grade submission'::TEXT AS event_name,
             'orange3'::TEXT AS event_color,
-            s.graded_at AS date,
+            gj.graded_at AS date,
             u.user_id AS auth_user_id,
             u.uid AS auth_user_uid,
             q.qid,
@@ -210,7 +244,8 @@ event_log AS (
             LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
-            AND s.graded_at IS NOT NULL
+            AND gj.grading_method = 'Internal'
+            AND gj.graded_at IS NOT NULL
     )
     UNION
     (

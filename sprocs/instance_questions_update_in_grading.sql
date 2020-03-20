@@ -17,7 +17,8 @@ BEGIN
     SET
         status = 'grading',
         points_in_grading = new_values.points,
-        score_perc_in_grading = new_values.score_perc
+        score_perc_in_grading = new_values.score_perc,
+        modified_at = now()
     WHERE
         iq.id = instance_question_id;
 END;

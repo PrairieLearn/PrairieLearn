@@ -137,7 +137,7 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -157,9 +157,14 @@ def render(element_html, data):
                     html_params['a_sub'] = sub_latex
             else:
                 html_params['a_sub'] = sub_latex
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -251,7 +256,8 @@ def parse(element_html, data):
                     A[i, j] = a_sub_parsed
 
     if invalid_format:
-        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
+            data['format_errors'][name] = chevron.render(f, {'format_error': True}).strip()
         data['submitted_answers'][name] = None
     else:
         data['submitted_answers'][name] = pl.to_json(A)
@@ -402,11 +408,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
             format_errors = data['format_errors'].get(each_entry_name, None)
             if format_errors is None:
-                display_array += ' <td class="allborder"> '
+                display_array += '<td class="allborder"><code class="user-output">'
             else:
-                display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-            display_array += escape(raw_submitted_answer)
-            display_array += ' </td> '
+                display_array += '<td class="allborder"><code class="user-output-invalid">'
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+            display_array += '</code></td> '
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
@@ -417,11 +423,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 format_errors = data['format_errors'].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += ' <td class="allborder"> '
+                    display_array += '<td class="allborder"><code class="user-output">'
                 else:
-                    display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-                display_array += escape(raw_submitted_answer)
-                display_array += ' </td> '
+                    display_array += '<td class="allborder"><code class="user-output-invalid">'
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+                display_array += '</code></td> '
             display_array += '</tr>'
         display_array += '</table>'
 

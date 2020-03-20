@@ -10,15 +10,20 @@ $(function() {
         aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}},
         minLines: {{#min_lines}}{{min_lines}}{{/min_lines}}{{^min_lines}}undefined{{/min_lines}},
         maxLines: {{#max_lines}}{{max_lines}}{{/max_lines}}{{^max_lines}}undefined{{/max_lines}},
-        autoResize: {{#auto_resize}}{{auto_resize}}{{/auto_resize}}{{^auto_resize}}undefined{{/auto_resize}}
+        autoResize: {{#auto_resize}}{{auto_resize}}{{/auto_resize}}{{^auto_resize}}undefined{{/auto_resize}},
+        preview: {{#preview}}"{{preview}}"{{/preview}}{{^preview}}undefined{{/preview}}
     });
 });
 </script>
-<div id="file-editor-{{uuid}}">
+<div id="file-editor-{{uuid}}" class="mathjax_ignore">
     <input type="hidden" name="{{name}}">
     <div class="card">
         <div class="card-header">{{file_name}}</div>
         <div class="editor"></div>
+        {{#preview}}
+            <div class="card-footer">Preview</div>
+            <div class="preview p-2 mathjax_process"></div>
+        {{/preview}}
         <div class="card-footer d-flex">
             <div class="ml-auto">
                 <button type="button" class="btn btn-outline-secondary btn-sm restore-original" tabindex="-1" type="button">Restore original file</button>

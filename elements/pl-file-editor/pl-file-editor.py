@@ -13,6 +13,7 @@ SOURCE_FILE_NAME_DEFAULT = None
 MIN_LINES_DEFAULT = None
 MAX_LINES_DEFAULT = None
 AUTO_RESIZE_DEFAULT = 'true'
+PREVIEW_DEFAULT = None
 
 
 def get_answer_name(file_name):
@@ -28,7 +29,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
@@ -56,6 +57,7 @@ def render(element_html, data):
     min_lines = pl.get_integer_attrib(element, 'min-lines', MIN_LINES_DEFAULT)
     max_lines = pl.get_integer_attrib(element, 'max-lines', MAX_LINES_DEFAULT)
     auto_resize = pl.get_string_attrib(element, 'auto-resize', AUTO_RESIZE_DEFAULT)
+    preview = pl.get_string_attrib(element, 'preview', PREVIEW_DEFAULT)
 
     # If auto_resize is set but min_lines isn't, the height of the
     # file editor area will be set to 1 line. Thus, we need to set
@@ -73,6 +75,7 @@ def render(element_html, data):
         'min_lines': min_lines,
         'max_lines': max_lines,
         'auto_resize': auto_resize,
+        'preview': preview,
         'uuid': uuid
     }
 
