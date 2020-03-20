@@ -56,7 +56,7 @@ window.PLFileEditor = function(uuid, options) {
             this.updatePreview(this.editor.getValue());
         });
         this.updatePreview(this.editor.getValue());
-    } else {
+    } else if (options.preview !== undefined) {
         let preview = this.element.find('.preview')[0];
         preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
     }
