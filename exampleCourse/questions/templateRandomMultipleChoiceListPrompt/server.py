@@ -33,7 +33,7 @@ def generate(data):
             "answer": "Uranus",
         }, 
         {
-            "question": "farthest to",
+            "question": "farthest from",
             "answer": "Neptune",
         }
     ]
@@ -42,7 +42,8 @@ def generate(data):
     random.shuffle(scenarios)
     
     # First shuffled scenario is the one we will take as correct
-    data['params']['question_prompt'] = scenarios[0]['question']
+    question_prompt = f"Which planet is {scenarios[0]['question']} the sun?"
+    data['params']['question_prompt'] = question_prompt
     data['params']['correct_answer'] = scenarios[0]['answer']
 
     # Next three shuffled scenarios are the distractors
