@@ -18,7 +18,7 @@ router.get('/', function(req, res, next) {
         assessment_id: res.locals.assessment.id,
         authz_data: res.locals.authz_data,
         user_id: res.locals.user.user_id,
-        req_date: res.locals.req_date
+        req_date: res.locals.req_date,
     };
 
     if (res.locals.assessment.multiple_instance) {
