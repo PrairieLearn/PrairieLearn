@@ -14,8 +14,9 @@
         {
             "questions": [
                 {"id": "templateCheckbox", "points": 1, "maxPoints": 2},
-                {"id": "templateFixedMultipleChoice", "points": 1},
-                {"id": "templateRandomMultipleChoice", "points": 1, "maxPoints": 4}
+                {"id": "templateFixedMultipleChoiceSingleAnswer", "points": 1},
+                {"id": "templateFixedMultipleChoiceManyAnswers", "points": 1},
+                {"id": "templateRandomMultipleChoiceListPrompt", "points": 1, "maxPoints": 4}
             ]
         }
     ]
