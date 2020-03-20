@@ -5,35 +5,35 @@ def generate(data):
     # Create a list of question prompts and the corresponding answers
     scenarios = [
         {
-            "question": "closest",
+            "question": "closest to",
             "answer": "Mercury",
         },
         {
-            "question": "2nd",
+            "question": "2nd away from",
             "answer": "Venus",
         },
         {
-            "question": "3rd",
+            "question": "3rd away from",
             "answer": "Earth",
         },
         {
-            "question": "4th",
+            "question": "4th away from",
             "answer": "Mars",
         },
         {
-            "question": "5th",
+            "question": "5th away from",
             "answer": "Jupiter",
         },
         {
-            "question": "6th",
+            "question": "6th away from",
             "answer": "Saturn",
         }, 
         {
-            "question": "7th",
+            "question": "7th away from",
             "answer": "Uranus",
         }, 
         {
-            "question": "farthest",
+            "question": "farthest to",
             "answer": "Neptune",
         }
     ]
@@ -46,6 +46,6 @@ def generate(data):
     data['params']['correct_answer'] = scenarios[0]['answer']
 
     # Next three shuffled scenarios are the distractors
-    data['params']['wrong_answer1'] = scenarios[1]['question']
-    data['params']['wrong_answer2'] = scenarios[2]['question']
-    data['params']['wrong_answer3'] = scenarios[3]['question']
+    data['params']['wrong_answer1'] = scenarios[1]['answer']
+    data['params']['wrong_answer2'] = scenarios[2]['answer']
+    data['params']['wrong_answer3'] = scenarios[3]['answer']
