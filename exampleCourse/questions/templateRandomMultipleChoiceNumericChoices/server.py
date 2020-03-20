@@ -2,11 +2,11 @@ import random
 
 def generate(data):
 
-    # Sample a random decimal number in the hundreths place between 0.1 and 5
-    a = round(random.uniform(0.1, 5), 2)
+    # Sample a random decimal number in the tenths place between 1.1 and 5
+    a = round(random.uniform(1.1, 5), 1)
 
-    # Sample a random decimal number in the hundreths place between 5.1 and 10
-    b = round(random.uniform(5.1, 10), 2)
+    # Sample an integer number between 6 and 11
+    b = random.randint(6, 11)
 
     # Put these two decimal numbers into data['params']
     data['params']['a'] = a
@@ -18,8 +18,7 @@ def generate(data):
     # Put the product into data['params']
     data['params']['correct_answer'] = c
     
-    # Generate four distractors by changing the operation
-    data['params']['wrong_answer1'] = a * b + .05
-    data['params']['wrong_answer2'] = a / b
-    data['params']['wrong_answer3'] = b - a
-    data['params']['wrong_answer4'] = a + b
+    # Generate three distractors by changing the operation
+    data['params']['wrong_answer1'] = a * (b - 1)
+    data['params']['wrong_answer2'] = b - a
+    data['params']['wrong_answer3'] = a + b
