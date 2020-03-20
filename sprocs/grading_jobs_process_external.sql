@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION
         received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz,
+        succeeded boolean,
         gradable boolean
     ) RETURNS void
 AS $$
@@ -65,7 +66,7 @@ BEGIN
     RETURNING *
     INTO grading_job;
 
-    IF gradable = FALSE THEN
+    IF succeeded = FALSE OR gradable = FALSE THEN
         UPDATE submissions
         SET
             gradable = FALSE,
@@ -76,6 +77,16 @@ BEGIN
             UPDATE instance_questions
             SET status = 'saved'::enum_instance_question_status
             WHERE id = instance_question_id;
+        END IF;
+
+        IF succeeded = FALSE THEN
+            -- Automatically add an issue if the grading job was unsuccessful
+
+            PERFORM issues_insert_for_variant(
+                    variant_id, 'Broken autograder question',
+                    'Unsuccessful external grading job', false,
+                    true, jsonb_build_object('grading_job_id', grading_job_id, 'feedback', feedback),
+                    '{}'::jsonb, grading_job.auth_user_id);
         END IF;
     ELSE
         UPDATE submissions

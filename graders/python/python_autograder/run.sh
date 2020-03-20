@@ -64,7 +64,7 @@ fi
 if [ ! -s results.json ]
 then
   # Let's attempt to keep everything from dying completely
-  echo '{"succeeded": false, "gradable": false, "score": 0.0, "message": "The autograder has failed. Please contact course staff and have them check the logs for this submission."}' > results.json
+  echo '{"succeeded": false, "score": 0.0, "message": "The autograder has failed. Please contact course staff and have them check the logs for this submission."}' > results.json
 fi
 
 echo "[run] autograder completed"
