@@ -69,6 +69,7 @@ BEGIN
     IF succeeded = FALSE OR gradable = FALSE THEN
         UPDATE submissions
         SET
+            graded_at = grading_job.graded_at,
             gradable = FALSE,
             feedback = grading_jobs_process_external.feedback
         WHERE id = grading_job.submission_id;
