@@ -258,6 +258,7 @@ Attribute | Type | Default | Description
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Example implementations
 
@@ -598,6 +599,7 @@ Attribute | Type | Default | description
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
 
 #### Details
 

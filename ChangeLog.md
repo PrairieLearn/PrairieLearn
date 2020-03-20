@@ -126,6 +126,7 @@
   * Change size limit for form data to account for increase from encoding (Nathan Bowman).
 
   * Change where individual assessment instances appear (they now have their own page), removing a clutter of assessment attempts that were filling up student's course pages. (David Mitchell and Nikita Agarwal, HackIllinois)
+  * Change styling for invalid input and `pl-string-input` for increased clarity. (Nicolas Nytko)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 

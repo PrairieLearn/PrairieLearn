@@ -14,6 +14,7 @@ columns
     incremental_submission_score_array: double precision[]
     last_submission_score: double precision
     max_submission_score: double precision
+    modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
     number_attempts: integer not null default 0
     open: boolean default true
@@ -36,6 +37,7 @@ indexes
     instance_questions_pkey: PRIMARY KEY (id) USING btree (id)
     instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
     instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
+    instance_questions_modified_at_key: USING btree (modified_at)
 
 foreign-key constraints
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

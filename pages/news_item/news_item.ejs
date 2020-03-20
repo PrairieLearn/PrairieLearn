@@ -25,6 +25,9 @@
           by <%- news_item.author %>
           <% } %>
         </i>
+        <% if (news_item.show_student_badge) { %>
+            <span class="badge badge-secondary ml-2">Visible to students</span>
+        <% } %>
       </p>
 
       <%- news_item_html %>
