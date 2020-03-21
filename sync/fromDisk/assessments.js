@@ -111,11 +111,17 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         let assessmentQuestionNumber = 0;
         assessmentParams.alternativeGroups = zones.map((zone) => {
             return zone.questions.map((question) => {
+                if (!allowRealTimeGrading && Array.isArray(question.points)) {
+                    throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for a question if real-time grading is disabled`);
+                }
                 let alternatives;
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
+                        if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
+                            throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for an alternative if real-time grading is disabled`);
+                        }
                         return {
                             qid: alternative.id,
                             maxPoints: alternative.maxPoints || question.maxPoints,
