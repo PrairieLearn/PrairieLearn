@@ -138,8 +138,8 @@ The overall structure of a test case should look something like:
 def test_0(self):
    if feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
        Feedback.set_points(1)
-	else:
-		Feedback.set_points(0)
+   else:
+       Feedback.set_points(0)
 ``` 
 
 ## General Tips and Gotchas
