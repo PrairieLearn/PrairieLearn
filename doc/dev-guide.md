@@ -52,7 +52,7 @@ PrairieLearn
 |   +-- index.js       # entry point for all sproc initialization
 |   `-- ...            # one JS file per sproc, executed by index.js
 +-- sync               # code to load on-disk course config into DB
-`-- tests              # unit tests, currently unused
+`-- tests              # unit and integration tests
 ```
 
 
