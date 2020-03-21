@@ -82,6 +82,11 @@
             "description": "Whether to keep the value of a question constant after a student solves it correctly.",
             "type": "boolean",
             "default": false
+        },
+        "allowRealTimeGrading": {
+            "description": "Disables realtime grading via the \"Grade\" button while the assessment is being taken.",
+            "type": "boolean",
+            "default": true
         }
     },
     "definitions": {
