@@ -80,6 +80,8 @@
   * Add support for editing from bare git repo (Tim Bretl).
   
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
+  
+  * Add extra `/course*` mount points (Tim Yang).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
