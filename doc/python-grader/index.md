@@ -142,6 +142,8 @@ def test_0(self):
        Feedback.set_points(0)
 ``` 
 
+Note that `Feedback.set_points()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_points(0.5)` is run, the student will be awarded 5 points.
+
 ## General Tips and Gotchas
 
 Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly. 
