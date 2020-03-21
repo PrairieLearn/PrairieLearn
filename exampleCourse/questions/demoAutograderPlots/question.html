@@ -1,6 +1,6 @@
 <pl-question-panel>
   <p>
-    This question uses the built-in methods in <code>code_feedback.py</code> to check Matplotlib plots.  The <code>check_plot()</code> function can be used to check correctness of plots, with an optional parameter <code>check_axes_scale</code> to check if the student plot has the same axis scales as the reference solution.
+    This question uses the built-in methods in <code>code_feedback.py</code> to check Matplotlib plots.  The <code>Feedback.check_plot()</code> function can be used to check correctness of plots, with an optional keyword argument <code>check_axes_scale</code> to check if the student plot has the same axis scales as the reference solution.
   </p>
   <p>
     Plot the function
@@ -9,10 +9,10 @@
   </p>
   
   <p>The setup code gives the following variables:</p>
-  <p><pl-variable-description variables_category="names_for_user"></pl-variable-description></p>
+  <p><pl-variable-description variables-category="names_for_user"></pl-variable-description></p>
   
   <p>Your code snippet should define the following variables:</p>
-  <pl-variable-description variables_category="names_from_user"></pl-variable-description>
+  <pl-variable-description variables-category="names_from_user"></pl-variable-description>
   <pl-file-editor
     file-name="user_code.py"
     ace-mode="ace/mode/python"
@@ -20,5 +20,5 @@
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grader-results />
+  <pl-external-grader-results></pl-external-grader-results>
 </pl-submission-panel>

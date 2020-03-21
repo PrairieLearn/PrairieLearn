@@ -1,19 +1,14 @@
 <pl-question-panel>
   <p>
-    This question uses the built-in methods in <code>code_feedback.py</code> to check Pandas dataframes for correctness <i>(special thanks to Wade Fagen-Ulmschneider!)</i>.  By default, rows can be in any order as long as the correct data is present.  There is also an option to display the student input in the feedback tab (<code>display_input</code>, default false).
+    This question uses the built-in method, <code>Feedback.check_dataframe()</code> in <code>code_feedback.py</code> to check Pandas dataframes for correctness <i>(special thanks to Wade Fagen-Ulmschneider!)</i>.  By default, rows can be in any order as long as the correct data is present.  There is also an option to display the student input in the feedback tab (using the <code>display_input</code> keyword argument, default false).
   </p>
   <p>
     Create a Pandas DataFrame, <code>df</code>, that matches the following format:
     <pl-python-variable params-name="df"></pl-python-variable>
   </p>
 
-  <!--
-  <p>The setup code gives the following variables:</p>
-  <p><pl-variable-description variables_category="names_for_user"></pl-variable-description></p>
-  -->
-
   <p>Your code snippet should define the following variables:</p>
-  <pl-variable-description variables_category="names_from_user"></pl-variable-description>
+  <pl-variable-description variables-category="names_from_user"></pl-variable-description>
   <pl-file-editor
     file-name="user_code.py"
     ace-mode="ace/mode/python"
@@ -21,5 +16,5 @@
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grader-results />
+  <pl-external-grader-results></pl-external-grader-results>
 </pl-submission-panel>
