@@ -66,9 +66,7 @@ class PrairieLearnTestCase(unittest.TestCase):
         """
 
         methods = [y for x, y in cls.__dict__.items()
-                   if type(y == FunctionType) and
-                      x.startswith('test_') and
-                      'points' in y.__dict__]
+                   if callable(y) and hasattr(y, '__dict__') and x.startswith('test_') and 'points' in y.__dict__]
         if cls.total_iters == 1:
             total = sum([m.__dict__['points'] for m in methods])
         else:

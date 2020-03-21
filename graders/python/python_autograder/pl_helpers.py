@@ -48,7 +48,7 @@ def name(name):
     def decorator(f):
         @wraps(f)
         def wrapped(Test_instance):
-            Feedback.set_name(name)
+            Feedback.set_name(f.__name__)
             if (Test_instance.total_iters > 1 and
                getattr(Test_instance, 'print_iteration_prefix', True)):
                 Feedback.add_iteration_prefix(Test_instance.iter_num)

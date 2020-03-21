@@ -10,7 +10,7 @@ class PrairieTestResult(unittest.TestResult):
     Helper class for generating results of a test suite using the Python
     unittest library.
     """
-    
+
     error_message = ('The grading code failed -- sorry about that!\n\n'
                      'This may be an issue with your code.\nIf so, you can '
                      'take a look at the traceback below to help debug.\n'
@@ -36,10 +36,11 @@ class PrairieTestResult(unittest.TestResult):
         options = getattr(test, test._testMethodName).__func__.__dict__
         points = options.get('points', 1)
         name = options.get('name', test.shortDescription())
+        filename = test._testMethodName
 
         if name is None:
             name = test._testMethodName
-        self.results.append({'name': name, 'max_points': points})
+        self.results.append({'name': name, 'max_points': points, 'filename': filename})
 
     def addSuccess(self, test):
         unittest.TestResult.addSuccess(self, test)
@@ -64,11 +65,12 @@ class PrairieTestResult(unittest.TestResult):
             if isinstance(err[1].err[1], SyntaxError):
                 self.grading_succeeded = False
                 name = 'Your code has a syntax error'
-                
+
             self.results.append({'name': name,
+                                 'filename': 'error',
                                  'max_points': 1,
                                  'points': 0})
-            Feedback.set_name(name)
+            Feedback.set_name('error')
             Feedback.add_feedback(''.join(tr_list))
             Feedback.add_feedback('\n\nYour code:\n\n')
             print_student_code()
@@ -81,9 +83,10 @@ class PrairieTestResult(unittest.TestResult):
                 self.grading_succeeded = False
                 self.results = []
                 self.results.append({'name': 'Internal Grading Error',
+                                     'filename': 'error',
                                      'max_points': 1,
                                      'points': 0})
-                Feedback.set_name('Internal Grading Error')
+                Feedback.set_name('error')
                 Feedback.add_feedback(self.major_error_message +
                                       ''.join(tr_list))
             else:

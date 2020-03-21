@@ -115,7 +115,7 @@ class Test(PrairieLearnTestCase):
 class Test(PrairieLearnTestCaseWithPlot):
 ```
 
-Each test case is a separate method in the class, the names of these functions are arbitrary and are unimportant to the autograding code.
+Each test case is a separate method in the class, the names of these functions must be prefixed with `test_`, but any name that follows is arbitrary.  Test cases are run in sorted order by the `unittest` library, so one convention that can be used is to give tests numeric names to ensure their running order.
 
 Adding a name and point value to the test case is done by means of python decorators:
 `@points(val)` and `@name(name of the test case)`.  These will control the name of the case and the points awarded in the "Test Results" dropdown menu that are shown when a student submits a solution.  An example of a definition:

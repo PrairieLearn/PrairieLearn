@@ -21,14 +21,14 @@ def add_files(results):
         if os.path.exists(image_fname):
             with open(image_fname, 'r') as content_file:
                 imgsrc = content_file.read()
-            test["files"].append({"name":"image_" + test["name"] + ".png",
+            test["files"].append({"name":"image_" + test["filename"] + ".png",
                                   "imgsrc":imgsrc})
             os.remove(image_fname)
-        feedback_fname = BASE_DIR + "feedback_" + test["name"] + ".txt"
+        feedback_fname = BASE_DIR + "feedback_" + test["filename"] + ".txt"
         if os.path.exists(feedback_fname):
             with open(feedback_fname, 'r', encoding='utf-8') as content_file:
                 text_output = content_file.read()
-            test["files"].append({"name":"feedback_" + test["name"] + ".txt",
+            test["files"].append({"name":"feedback_" + test["filename"] + ".txt",
                                   "text_output":text_output})
             os.remove(feedback_fname)
 
@@ -56,17 +56,17 @@ if __name__ == '__main__':
 
         if len(all_results) > 1:
             # Combine results into big dict and then back to list of dicts
-            results_dict = defaultdict(lambda: [0, 0])
+            results_dict = defaultdict(lambda: {'max_points': 0, 'points': 0})
             for res_list in all_results:
                 for res in res_list:
                     this_result = results_dict[res['name']]
-                    this_result[0] += res['points']
-                    this_result[1] += res['max_points']
+                    this_result['points'] += res['points']
+                    this_result['max_points'] += res['max_points']
+                    this_result['filename'] = res['filename']
+                    this_result['name'] = res['name']
             results = []
             for key in results_dict:
-                all_points = results_dict[key]
-                results.append({'name': key, 'points': all_points[0],
-                                'max_points': all_points[1]})
+                results.append(results_dict[key])
         else:
             results = all_results[0]
 
