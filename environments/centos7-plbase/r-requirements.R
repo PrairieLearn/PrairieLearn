@@ -52,7 +52,8 @@ pkg_list = c(
   'rpart',
   'rpart.plot',
   'rsample',
-  'kableExtra'
+  'kableExtra',
+  'quantreg'
 )
 
 # Determine what packages are NOT installed already.

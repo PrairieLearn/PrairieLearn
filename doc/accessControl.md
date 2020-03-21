@@ -193,14 +193,13 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
     {
         "mode": "Exam",
         "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59"
+        "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
     },
     {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59",
+        "startDate": "2020-03-31T11:00:00",
+        "endDate": "2020-03-31T11:59:59",
         "timeLimitMin": 50
     }
 ],
@@ -208,6 +207,7 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 
 The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, TAs can access the assessment at any time. Second, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit between Sept 7th to Sept 10th. Third, a defined set of students (remote students) can take the exam for full credit between the same dates. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
 
+The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
 ## Homework example
 

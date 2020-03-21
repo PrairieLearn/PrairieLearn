@@ -9,6 +9,7 @@
         });
     });
 </script>
+
 <span class="form-inline d-inline-block ml-2 pl-matrix-component-span-fullwidth">
     <div id="pl-matrix-component-input-{{uuid}}" class="input-group">
         <span class="input-group-prepend">
@@ -34,7 +35,7 @@
 
 <div class="d-inline-block ml-2">
 
-{{#parse_error}}
+{{#error}}
 <script>
     $(function(){
         $('#pl-matrix-component-input-submission-{{uuid}} [data-toggle="popover"]').popover({
@@ -44,15 +45,30 @@
         });
     });
 </script>
-<span id="pl-matrix-component-input-submission-{{uuid}}">
-    {{#label}}<span>{{label}}</span>{{/label}}
-    <a role="button" class="btn btn-light btn-sm" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID
-      <span><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-  </a>
-</span>
-{{/parse_error}}
+<span id="pl-matrix-component-input-submission-{{uuid}}" class="pl-matrix-component-input-invalid">
 
-{{^parse_error}}
+{{#parse_error}}
+    {{#label}}<span>{{label}}</span>{{/label}}
+
+    {{#raw_submitted_answer}}{{{raw_submitted_answer}}}{{/raw_submitted_answer}}
+    
+    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+{{/parse_error}}
+{{#missing_input}}
+    {{#label}}<span>{{label}}</span>{{/label}}
+
+    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+{{/missing_input}}
+            
+</span>
+{{/error}}
+
+{{^error}}
 {{#a_sub}}
 {{#label}}{{label}}{{/label}}
 {{a_sub}}
@@ -61,7 +77,7 @@
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/a_sub}}
 {{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
-{{/parse_error}}
+{{/error}}
 
 </div>
 
@@ -92,3 +108,14 @@ No symbolic expressions (those that involve fractions, square roots, variables, 
 {{#shortformat}}
 {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figures){{/sigfig}}{{#decdig}}({{digits}} digits after decimal){{/decdig}}
 {{/shortformat}}
+
+{{#format_error}}
+    <p> Invalid format: one or more entries of the submitted answer could not be interpreted as a decimal  number.  No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted. </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output">5</code> &nbsp; <code class="user-output">-17.3</code> &nbsp; <code class="user-output">4.25e7</code> </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output">2/3</code> &nbsp; <code class="user-output">6+9</code> &nbsp; <code class="user-output">4*10^7</code> &nbsp; <code class="user-output">3*pi</code> &nbsp; <code class="user-output">3.6i</code> </p>
+    <hr>
+    <small>
+        <p> You must enter all the components of the matrix. </p>
+        <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> number.  These numbers lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
+    </small>
+{{/format_error}}

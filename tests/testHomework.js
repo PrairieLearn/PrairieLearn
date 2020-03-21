@@ -716,8 +716,8 @@ describe('Homework assessment', function() {
             });
         });
         describe('the submission panel contents', function() {
-            it('should contain "INVALID"', function() {
-                elemList = locals.$('div.submission-body :contains("INVALID")');
+            it('should contain "Invalid"', function() {
+                elemList = locals.$('div.submission-body :contains("Invalid")');
                 assert.isAtLeast(elemList.length, 1);
             });
         });

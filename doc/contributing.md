@@ -5,7 +5,7 @@
 
 ## GitHub: distributed model
 
-**Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure you to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
+**Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure how to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
 
 Next, clone your forked repository to your local machine and set up the main repository as an "upstream" repository:
 
@@ -67,7 +67,7 @@ The keyword must be either `Add`, `Remove`, `Fix`, or `Change`. For example:
 ```
   * Fix broken popovers in input elements (Tim Bretl).
 ```
-One empty line must separate each item in the ChangeLog. Items should be ordered first by category (`Add`, `Remove`, `Fix`, `Change`) and then chronologically, with the most recent item appearing at the end of each category list. Travis CI has been configured to fail if you issue a PR without updating the ChangeLog.
+One empty line must separate each item in the ChangeLog. Items should be ordered first by category (`Add`, `Remove`, `Fix`, `Change`) and then chronologically, with the most recent item appearing at the end of each category list.
 
 
 ## Branches and tags

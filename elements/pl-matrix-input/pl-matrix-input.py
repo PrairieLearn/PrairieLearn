@@ -1,6 +1,5 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
 import numpy as np
 import random
 import math
@@ -92,7 +91,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         if raw_submitted_answer is not None:
-            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+            html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -104,7 +103,7 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -119,10 +118,13 @@ def render(element_html, data):
 
             # Format answer as a string
             html_params['a_sub'] = pl.string_from_2darray(a_sub, language=format_type, digits=12, presentation_type='g')
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -137,6 +139,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -189,6 +193,12 @@ def render(element_html, data):
     return html
 
 
+def get_format_string(message):
+    params = {'format_error': True, 'format_error_message': message}
+    with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, params).strip()
+
+
 def parse(element_html, data):
     # By convention, this function returns at the first error found
 
@@ -199,14 +209,14 @@ def parse(element_html, data):
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = get_format_string('No submitted answer.')
         data['submitted_answers'][name] = None
         return
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, info) = pl.string_to_2darray(a_sub, allow_complex=allow_complex)
     if a_sub_parsed is None:
-        data['format_errors'][name] = info['format_error']
+        data['format_errors'][name] = get_format_string(info['format_error'])
         data['submitted_answers'][name] = None
         return
 

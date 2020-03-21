@@ -3,7 +3,6 @@ from html import escape
 import chevron
 import math
 import prairielearn as pl
-import numpy as np
 import random
 
 
@@ -93,7 +92,7 @@ def render(element_html, data):
             'uuid': pl.get_uuid()
         }
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -105,10 +104,13 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:d}'.format(a_sub)
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -123,6 +125,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -151,16 +155,27 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    if a_sub.strip() == '':
+        opts = {
+            'format_error': True,
+            'format_error_message': 'the submitted answer was blank.'
+        }
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, opts).strip()
+        data['format_errors'][name] = format_str
+        data['submitted_answers'][name] = None
+        return
+
     # Convert to integer
     try:
         a_sub_parsed = pl.string_to_integer(a_sub)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
-        if not np.isfinite(a_sub_parsed):
-            raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
-        data['format_errors'][name] = 'Invalid format. The submitted answer was not an integer.'
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, {'format_error': True}).strip()
+        data['format_errors'][name] = format_str
         data['submitted_answers'][name] = None
 
 

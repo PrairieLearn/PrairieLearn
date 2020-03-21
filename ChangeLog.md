@@ -78,6 +78,8 @@
   * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
   * Add support for editing from bare git repo (Tim Bretl).
+  
+  * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -122,6 +124,8 @@
   * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
 
   * Change size limit for form data to account for increase from encoding (Nathan Bowman).
+
+  * Change styling for invalid input and `pl-string-input` for increased clarity. (Nicolas Nytko)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -230,6 +234,8 @@
   * Fix gradebook and question statistics download links (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
+  
+  * Remove introduction alert at the top of `homework` assessments (Tim Yang).
 
 * __3.2.0__ - 2019-08-05
 

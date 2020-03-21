@@ -33,6 +33,7 @@ Attribute | Type | Default | Description
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
 `tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
+`disregard-extra-elements` | boolean | false | If true, extra elements are ignored if they match the same reference object.  Otherwise, multiple matching elements will reduce the awarded points.
 
 
 ## `pl-drawing-initial` element
