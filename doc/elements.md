@@ -258,6 +258,7 @@ Attribute | Type | Default | Description
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Example implementations
 
@@ -598,6 +599,7 @@ Attribute | Type | Default | description
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
 
 #### Details
 
@@ -989,7 +991,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 ## `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
-supported programming languages (e.g. MATLAB, Mathematica, or Python).
+supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 #### Sample Element
 
@@ -1032,6 +1034,7 @@ Attribute | Type | Default | Description
 `show-matlab` | boolean | true | Toggles the display of the Matlab tab.
 `show-mathematica` | boolean | true | Toggles the display of the Mathematica tab.
 `show-python` | boolean | true | Toggles the display of the Python tab.
+`show-r` | boolean | true | Toggles the display of the R tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
@@ -1045,7 +1048,7 @@ Attribute | Type | Default | Description
 #### Details
 
 This element displays a list of variables inside `<pre>` tags that are formatted for import into
-either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be
+either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
 text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Below
 are samples of the format displayed under each language tab.
@@ -1068,6 +1071,13 @@ A = [1.23; 4.56]; (* matrix *)
 import numpy as np
 
 A = np.array([[1.23], [4.56]]) # matrix
+```
+
+**R format:**
+
+```
+A = c(1.23, 4.56) # vector
+A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.

@@ -503,9 +503,9 @@ FROM
 * To write a callback-style function that internally uses async/await code, use this pattern:
 
 ```javascript
-util = require('util');
+const util = require('util');
 function oldFunction(x1, x2, callback) {
-    util.callbackify(() => {
+    util.callbackify(async () => {
         # here we can use async/await code
         y1 = await f(x1);
         y2 = await f(x2);

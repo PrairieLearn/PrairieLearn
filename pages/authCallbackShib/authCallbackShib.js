@@ -17,7 +17,8 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
     if (!authUid) return next(new Error('No authUid'));
 
     // catch bad Shibboleth data
-    if (authUid == '(null)') return next(new Error('authUid is (null)'));
+    const authError = 'Your account is not registered for this service. Please contact your course instructor or IT support.';
+    if (authUid == '(null)') return next(new Error(authError));
 
     var params = [
         authUid,

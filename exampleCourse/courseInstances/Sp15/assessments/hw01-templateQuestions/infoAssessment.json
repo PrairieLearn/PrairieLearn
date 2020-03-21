@@ -1,0 +1,24 @@
+{
+    "uuid": "597176b9-9145-4226-8a77-d0973bad80df",
+    "type": "Homework",
+    "title": "Template homework - copy this to start a new HW",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "templateCheckbox", "points": 1, "maxPoints": 2},
+                {"id": "templateFixedMultipleChoiceSingleAnswer", "points": 1},
+                {"id": "templateFixedMultipleChoiceManyAnswers", "points": 1, "maxPoints": 2},
+                {"id": "templateRandomMultipleChoiceListPrompt", "points": 1, "maxPoints": 4},
+                {"id": "templateRandomMultipleChoiceNumericChoices", "points": 1, "maxPoints": 4}
+            ]
+        }
+    ]
+}

@@ -5,7 +5,7 @@
 
 ## GitHub: distributed model
 
-**Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure you to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
+**Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure how to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
 
 Next, clone your forked repository to your local machine and set up the main repository as an "upstream" repository:
 

@@ -73,7 +73,7 @@ module.exports = {
             {
                 name: 'calculateAssessmentQuestionStats',
                 module: require('./calculateAssessmentQuestionStats'),
-                intervalSec: 'daily',
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCalculateAssessmentQuestionStatsSec,
             },
             {
                 name: 'calculateAssessmentMode',

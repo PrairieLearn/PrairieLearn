@@ -10,6 +10,7 @@ from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
 import colors
+import unicodedata
 
 
 def to_json(v):
@@ -388,6 +389,14 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
 
         { ..., ..., ... }
 
+    If language is 'r' and A is a 2D ndarray, the string looks like this:
+
+        matrix(c(., ., .), nrow=NUM_ROWS, ncol=NUM_COLS, byrow = TRUE)
+
+    If A is a 1D ndarray, the string looks like this:
+
+        c(., ., .)
+
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -437,8 +446,30 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
         result = result.replace('[', '{')
         result = result.replace(']', '}')
         return result
+    elif language == 'r':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        # Given as: [[1, 2, 3], [4, 5, 6]]
+        result = result.replace('[', '')
+        result = result.replace(']', '')
+        # Cast to a vector: c(1, 2, 3, 4, 5, 6)
+        result = f'c({result})'
+        if A.ndim == 2:
+            nrow = A.shape[0]
+            ncol = A.shape[1]
+            result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
 
 
 # Deprecated version, keeping for backwards compatibility
@@ -1006,3 +1037,27 @@ def get_uuid():
     Returns the string representation of a new random UUID.
     """
     return str(uuid.uuid4())
+
+
+def escape_unicode_string(string):
+    """
+    escape_unicode_string(string)
+
+    Combs through any string and replaces invisible/unprintable characters with a
+    text representation of their hex id: <U+xxxx>
+
+    A character is considered invisible if its category is "control" or "format", as
+    reported by the 'unicodedata' library.
+
+    More info on unicode categories:
+    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
+    """
+
+    def escape_unprintable(x):
+        category = unicodedata.category(x)
+        if category == 'Cc' or category == 'Cf':
+            return f'<U+{ord(x):x}>'
+        else:
+            return x
+
+    return ''.join(map(escape_unprintable, string))
