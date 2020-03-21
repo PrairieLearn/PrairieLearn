@@ -56,6 +56,10 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.__action == 'grade' || req.body.__action == 'save') {
+        if (req.body.__action == 'grade' && !res.locals.assessment.allow_real_time_grading) {
+            next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+            return;
+        }
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
