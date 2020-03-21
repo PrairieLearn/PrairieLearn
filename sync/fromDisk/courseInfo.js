@@ -23,4 +23,4 @@ module.exports.sync = (courseInfo, course_id, callback) => {
         courseInfo.timezone = result.rows[0].display_timezone;
         callback(null);
     });
-}
+};

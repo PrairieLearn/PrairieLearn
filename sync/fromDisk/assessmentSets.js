@@ -17,4 +17,4 @@ module.exports.sync = function(courseInfo, callback) {
         ];
         await sqldb.callAsync('sync_assessment_sets', params);
     })(callback);
-}
+};
