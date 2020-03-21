@@ -104,7 +104,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             return zone.questions.map((question) => {
                 let alternatives;
                 if (_(question).has('alternatives')) {
-                    if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
+                    if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
                         return {
