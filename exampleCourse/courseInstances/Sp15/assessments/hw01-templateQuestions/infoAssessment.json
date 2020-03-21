@@ -16,7 +16,7 @@
                 {"id": "templateCheckbox", "points": 1, "maxPoints": 2},
                 {"id": "templateMultipleChoiceSingleCorrect", "points": 1},
                 {"id": "templateMultipleChoiceMultipleCorrect", "points": 1, "maxPoints": 2},
-                {"id": "templateMultipleChoiceList", "points": 1, "maxPoints": 4},
+                {"id": "templateMultipleChoiceFromList", "points": 1, "maxPoints": 4},
                 {"id": "templateMultipleChoiceNumeric", "points": 1, "maxPoints": 4}
             ]
         }
