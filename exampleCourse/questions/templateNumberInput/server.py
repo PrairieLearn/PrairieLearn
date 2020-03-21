@@ -1,4 +1,4 @@
-import random
+import random, math
 
 def generate(data):
 
@@ -13,12 +13,7 @@ def generate(data):
     data['params']['b'] = b
 
     # Compute the product of these two numbers
-    c = a * b
+    c = math.sqrt(a**2 + b**2)
 
     # Put the product into data['params']
     data['params']['correct_answer'] = c
-    
-    # Generate three distractors by changing the operation
-    data['params']['wrong_answer1'] = a * (b - 1)
-    data['params']['wrong_answer2'] = b - a
-    data['params']['wrong_answer3'] = a + b
