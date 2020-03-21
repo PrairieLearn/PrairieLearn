@@ -1,6 +1,3 @@
-import numpy as np
-import prairielearn as pl
-import json
 
 
 def generate(data):
