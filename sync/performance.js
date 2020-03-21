@@ -32,5 +32,5 @@ module.exports = function(scopeName) {
         start,
         end,
         timedFunc,
-    }
-}
+    };
+};
