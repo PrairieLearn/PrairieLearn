@@ -27,7 +27,7 @@ docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course -v C:\GitHub\pl-
 On MacOS/Linux:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course -v /Users/mwest/git/pl-xc101:/course prairielearn/prairielearn
+docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course -v /Users/mwest/git/pl-xc101:/course2 prairielearn/prairielearn
 ```
 
 If you are using Docker for Windows then you will need to first give Docker permission to access the C: drive (or whichever drive your course directory is on). This can be done by right-clicking on the Docker "whale" icon in the taskbar, choosing "Settings", and granting shared access to the C: drive.
