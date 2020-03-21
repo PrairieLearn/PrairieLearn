@@ -16,7 +16,7 @@ docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 
 * Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
 
-* Step 5: To use your own course, use the `-v` flag to point your own course directory to the Docker `/course` directory on Windows (replace the precise course path with your own):
+* Step 5: To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory (replace the precise path with your own) on Windows:
 
 ```sh
 docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn
