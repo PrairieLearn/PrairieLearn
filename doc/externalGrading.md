@@ -167,11 +167,14 @@ Your grading process must write its results to `/grade/results/results.json`. Th
 
 As long as those two fields are present, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on.
 
+The optional boolean `gradable` can be added to the results object and indicates if the tests were able to run, but the input was invalid or formatted incorrectly.  For example, `gradable` can be set to false if the student code has a syntax error, in which case the code will not be graded and the student will not be penalised an attempt.  The omission of this field is equivalent to assuming that the input was gradable (`gradable=True`).
+
 The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
 ```json
 {
    "succeeded": true,
+   "gradable": true,
    "score": 0.25,
    "message": "Tests completed successfully.",
    "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
