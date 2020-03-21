@@ -8,16 +8,16 @@ VARIABLES_CATEGORY_DEFAULT = None
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ['variables_category'], [])
+    pl.check_attribs(element, ['variables-category'], [])
 
-    variables_category = pl.get_string_attrib(element, 'variables_category', VARIABLES_CATEGORY_DEFAULT)
+    variables_category = pl.get_string_attrib(element, 'variables-category', VARIABLES_CATEGORY_DEFAULT)
     if variables_category is not None and variables_category not in ['names_for_user', 'names_from_user']:
         raise Exception(f'Unknown variable category: "{variables_category}". Must be one of {",".join(["names_for_user", "names_from_user"])}')
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    variables_category = pl.get_string_attrib(element, 'variables_category', VARIABLES_CATEGORY_DEFAULT)
+    variables_category = pl.get_string_attrib(element, 'variables-category', VARIABLES_CATEGORY_DEFAULT)
     names_user_description = data['params'][variables_category]
 
     has_names_user_description = False

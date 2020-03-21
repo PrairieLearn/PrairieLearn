@@ -1,6 +1,5 @@
 import numpy as np
 import prairielearn as pl
-import json
 import pandas as pd
 
 

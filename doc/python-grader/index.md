@@ -65,7 +65,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 ```html
 <pl-question-panel>
-	<pl-file-editor file_name="user_code.py"></pl-file-editor>
+	<pl-file-editor file-name="user_code.py"></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>
@@ -84,10 +84,10 @@ Full example:
   <p> ... Question prompt ... </p>
 
   <p>The setup code gives the following variables:</p>
-  <p><pl-variable-description variables_category="names_for_user"></pl-variable-description></p>
+  <p><pl-variable-description variables-category="names_for_user"></pl-variable-description></p>
 
   <p>Your code snippet should define the following variables:</p>
-  <pl-variable-description variables_category="names_from_user"></pl-variable-description>
+  <pl-variable-description variables-category="names_from_user"></pl-variable-description>
   <pl-file-editor
     file_name="user_code.py"
     ace_mode="ace/mode/python"
