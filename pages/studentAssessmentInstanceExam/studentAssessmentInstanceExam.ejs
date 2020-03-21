@@ -72,14 +72,26 @@
         </div>
   
         <div class="card-body">
+          <% if (!assessment.allow_real_time_grading) { %>
+            <div class="alert alert-warning">
+              Real-time grading has been disabled for this assessment. You will not be able to grade your reponses as you go.
+            </div>
+          <% } %>
           <div class="row align-items-center">
-            <div class="col-md-3 col-sm-6">
-              <% include('../partials/pointsFormatter'); %>
-              Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
-            </div>
-            <div class="col-md-3 col-sm-6">
-              <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
-            </div>
+            <% if (!assessment.allow_real_time_grading && assessment_instance.open) { %>
+              <div class="col-md-6 col-sm-12">
+                <% include('../partials/pointsFormatter'); %>
+                Total points: <%= getStringFromFloat(assessment_instance.max_points) %>
+              </div>
+            <% } else { %>
+              <div class="col-md-3 col-sm-6">
+                <% include('../partials/pointsFormatter'); %>
+                Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
+              </div>
+              <div class="col-md-3 col-sm-6">
+                <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
+              </div>
+            <% } %>
             <div class="col-md-6 col-sm-12">
                 <% if (assessment_instance.open) { %>
                     Assessment is <strong>open</strong> and you can answer questions.
@@ -181,7 +193,8 @@
         </table>
   
         <div class="card-footer">
-          <form name="grade-form" method="POST" class="form-inline">
+          <% if (assessment.allow_real_time_grading) { %>
+            <form name="grade-form" method="POST" class="form-inline">
               <input type="hidden" name="__action" value="grade">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <% if (savedAnswers > 0) { %>
@@ -189,19 +202,32 @@
               <% } else { %>
                 <button type="submit" class="btn btn-info disabled" disabled>No saved answers to grade</button>
               <% } %>
-              </form>
-          <p>
-          <ul>
+            </form>
+            <ul>
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
               <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                  <li>After you have answered all the questions completely, click here:
-                      <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-                  </li>
+                <li>
+                  After you have answered all the questions completely, click here:
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                </li>
               <% } else { %>
-                  <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
               <% } %>
-          </ul>
+            </ul>
+          <% } else { %>
+            <ul>
+              <li>Submit your answer to each question with the <strong>Save</strong> button on the question page.</li>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+                <li>
+                  After you have answered all the questions completely, click here:
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                </li>
+              <% } else { %>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
+              <% } %>
+            </ul>
+          <% } %>
         </div>
       </div>
 
