@@ -14,10 +14,10 @@
         {
             "questions": [
                 {"id": "templateCheckbox", "points": 1, "maxPoints": 2},
-                {"id": "templateFixedMultipleChoiceSingleAnswer", "points": 1},
-                {"id": "templateFixedMultipleChoiceManyAnswers", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomMultipleChoiceListPrompt", "points": 1, "maxPoints": 4},
-                {"id": "templateRandomMultipleChoiceNumericChoices", "points": 1, "maxPoints": 4}
+                {"id": "templateMultipleChoiceSingleCorrect", "points": 1},
+                {"id": "templateMultipleChoiceMultipleCorrect", "points": 1, "maxPoints": 2},
+                {"id": "templateMultipleChoiceList", "points": 1, "maxPoints": 4},
+                {"id": "templateMultipleChoiceNumeric", "points": 1, "maxPoints": 4}
             ]
         }
     ]
