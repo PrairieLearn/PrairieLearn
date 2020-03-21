@@ -19,6 +19,6 @@ def generate(data):
     data['params']['correct_answer'] = c
     
     # Generate three distractors by changing the operation
-    data['params']['wrong_answer1'] = a * (b - 1)
+    data['params']['wrong_answer1'] = (a - 1) * b
     data['params']['wrong_answer2'] = b - a
-    data['params']['wrong_answer3'] = a + b
+    data['params']['wrong_answer3'] = (a + 1) * b
