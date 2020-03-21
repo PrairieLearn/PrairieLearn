@@ -35,4 +35,4 @@ module.exports.sync = function(courseInstance, callback) {
         ];
         await sqldb.callAsync('sync_course_staff', params);
     })(callback);
-}
+};

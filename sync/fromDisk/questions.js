@@ -71,4 +71,4 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             questionDB[idMapping.qid].id = idMapping.id;
         });
     })(callback);
-}
+};

@@ -84,7 +84,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 password: _(accessRule).has('password') ? accessRule.password : null,
                 seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
                 exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-            }
+            };
         });
 
         const zones = assessment.zones || [];
@@ -109,11 +109,11 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         let alternativeGroupNumber = 0;
         let assessmentQuestionNumber = 0;
-        assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
-            return zone.questions.map((question, questionIndex) => {
+        assessmentParams.alternativeGroups = zones.map((zone) => {
+            return zone.questions.map((question) => {
                 let alternatives;
                 if (_(question).has('alternatives')) {
-                    if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
+                    if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
                         return {
@@ -134,7 +134,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             points: question.points,
                             forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false,
                             triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : 1,
-                        }
+                        },
                     ];
                 } else {
                     throw error.make(400, 'Must specify either "id" or "alternatives" in question', {question});
@@ -181,7 +181,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
                     assessmentQuestionNumber++;
                     // Loop up the ID of this question based on its QID
-                    const question = questionDB[alternative.qid]
+                    const question = questionDB[alternative.qid];
                     if (!question) {
                         throw new Error(`Invalid QID in assessment ${assessment.tid}: ${alternative.qid}`);
                     }
@@ -195,7 +195,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         tries_per_variant: alternative.triesPerVariant,
                         question_id: questionId,
                         number_in_alternative_group: alternativeIndex + 1,
-                    }
+                    };
 
                 });
 
@@ -214,7 +214,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         course_instance_id: courseInstance.courseInstanceId,
         course_id: courseInfo.courseId,
         check_access_rules_exam_uuid: config.checkAccessRulesExamUuid,
-    }
+    };
 }
 
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
@@ -231,7 +231,7 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             .each(function(assessments, uuid) {
                 if (assessments.length > 1) {
                     const directories = assessments.map(a => a.directory).join(', ');
-                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`)
+                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`);
                 }
             });
 
@@ -246,4 +246,4 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         await sqldb.callOneRowAsync('sync_assessments', syncParams);
         perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     })(callback);
-}
+};
