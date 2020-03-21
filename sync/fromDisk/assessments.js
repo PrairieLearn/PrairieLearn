@@ -100,8 +100,8 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         let alternativeGroupNumber = 0;
         let assessmentQuestionNumber = 0;
-        assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
-            return zone.questions.map((question, questionIndex) => {
+        assessmentParams.alternativeGroups = zones.map((zone) => {
+            return zone.questions.map((question) => {
                 let alternatives;
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));

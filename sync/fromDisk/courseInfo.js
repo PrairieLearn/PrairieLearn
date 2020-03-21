@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');

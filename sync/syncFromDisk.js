@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const async = require('async');
 
 const namedLocks = require('../lib/named-locks');

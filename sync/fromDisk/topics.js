@@ -42,7 +42,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             description: 'Auto-generated from use in a question; add this topic to your courseInfo.json file to customize',
         })));
 
-        const topicsParams = topics.map((topic, index) => ({
+        const topicsParams = topics.map((topic) => ({
             name: topic.name,
             color: topic.color,
             description: topic.description,
