@@ -43,6 +43,14 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
         let allowIssueReporting = true;
         if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
+        const allowRealTimeGrading = _.has(assessment, 'allowRealTimeGrading') ? assessment.allowRealTimeGrading : true;
+
+        // Because of how Homework-type assessments work, we don't allow
+        // real-time grading to be disabled for them.
+        if (!allowRealTimeGrading && assessment.type === 'Homework') {
+            throw new Error(`Assessment "${assessment.tid}" cannot disable real-time grading; that is only possible for Exam-type assessments.`)
+        }
+
         const assessmentParams = {
             tid: tid,
             uuid: assessment.uuid,
@@ -54,7 +62,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             multiple_instance: assessment.multipleInstance ? true : false,
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
-            allow_real_time_grading: _.has(assessment, 'allowRealTimeGrading') ? assessment.allowRealTimeGrading : true,
+            allow_real_time_grading: allowRealTimeGrading,
             auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
             max_points: assessment.maxPoints,
             set_name: assessment.set,
