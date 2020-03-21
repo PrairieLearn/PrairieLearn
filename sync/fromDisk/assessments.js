@@ -54,6 +54,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             multiple_instance: assessment.multipleInstance ? true : false,
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
+            allow_real_time_grading: _.has(assessment, 'allowRealTimeGrading') ? assessment.allowRealTimeGrading : true,
             auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
             max_points: assessment.maxPoints,
             set_name: assessment.set,
