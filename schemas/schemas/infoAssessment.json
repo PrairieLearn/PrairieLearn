@@ -166,6 +166,11 @@
                             }
                         }
                     }
+                },
+                "showClosedAssessment": {
+                    "description": "If set, prevents the assessment from being viewed once it has been closed",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
