@@ -36,7 +36,11 @@ user_ids AS (
 ),
 course_users AS (
 <<<<<<< HEAD
+<<<<<<< HEAD
     SELECT u.user_id,u.uid,u.uin,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
+=======
+    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
+>>>>>>> parent of 68edb2c07... Add UIN to Gradebook #1304
 =======
     SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
 >>>>>>> parent of 68edb2c07... Add UIN to Gradebook #1304
