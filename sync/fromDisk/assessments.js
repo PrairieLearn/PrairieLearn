@@ -40,10 +40,8 @@ const perf = require('../performance')('assessments');
  */
 function buildSyncData(courseInfo, courseInstance, questionDB) {
     const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
-        // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
-        let allowIssueReporting = true;
-        if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
-        const allowRealTimeGrading = _.has(assessment, 'allowRealTimeGrading') ? assessment.allowRealTimeGrading : true;
+        const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
+        const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
 
         // Because of how Homework-type assessments work, we don't allow
         // real-time grading to be disabled for them.
@@ -63,11 +61,11 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
             allow_real_time_grading: allowRealTimeGrading,
-            auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
+            auto_close: !!_.get(assessment, 'autoClose', true),
             max_points: assessment.maxPoints,
             set_name: assessment.set,
             text: assessment.text,
-            constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
+            constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         };
 
         const allowAccess = assessment.allowAccess || [];
