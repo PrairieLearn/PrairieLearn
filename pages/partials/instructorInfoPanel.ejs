@@ -1,4 +1,4 @@
-<% if (authz_data.has_instructor_view || locals.is_administrator) { %>
+<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
 <div class="card mb-4 border-warning">
   <div class="card-header bg-warning">Instructor information</div>
   <div class="card-body">
