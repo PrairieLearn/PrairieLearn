@@ -2,7 +2,15 @@
     "courseDirs": [
         "/PrairieLearn/exampleCourse",
         "/PrairieLearn/testCourse",
-        "/course"
+        "/course",
+        "/course2",
+        "/course3",
+        "/course4",
+        "/course5",
+        "/course6",
+        "/course7",
+        "/course8",
+        "/course9"
     ],
     "filesRoot": "/files"
 }
