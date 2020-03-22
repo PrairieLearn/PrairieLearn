@@ -8,7 +8,7 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             .groupBy('uuid')
             .each(function(courseInstances, uuid) {
                 if (courseInstances.length > 1) {
-                    const directories = courseInstances.map(ci => ci.directory).join(', ')
+                    const directories = courseInstances.map(ci => ci.directory).join(', ');
                     throw new Error(`UUID ${uuid} is used in multiple course instances: ${directories}`);
                 }
             });
@@ -43,4 +43,4 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             courseInstanceDB[courseInstanceParam.short_name].courseInstanceId = newCourseInstanceIds[index];
         });
     })(callback);
-}
+};

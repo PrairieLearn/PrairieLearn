@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -23,4 +22,4 @@ module.exports.sync = (courseInfo, course_id, callback) => {
         courseInfo.timezone = result.rows[0].display_timezone;
         callback(null);
     });
-}
+};
