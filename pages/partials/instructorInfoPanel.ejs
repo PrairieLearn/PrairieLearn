@@ -15,7 +15,7 @@
   <div class="d-flex flex-wrap">
     <div class="pr-1">QID:</div>
     <div>
-      <% if (authz_data.has_instructor_view) { %>
+      <% if (locals.course_instance) { %>
       <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
       <% } else { %>
       <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
