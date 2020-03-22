@@ -21,7 +21,7 @@
             <td><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
           </tr>
         <% } else { %>
-          <ty>
+          <tr>
             <td>Points:</td>
             <td>
               <% include('../partials/pointsFormatter'); %>
@@ -31,7 +31,7 @@
                 <%= getStringFromFloat(instance_question.points) %> / <%= getStringFromFloat(assessment_question.max_points) %>
               <% } %>
             </td>
-          </ty>
+          </tr>
         <% } %>
       <% } else if (assessment.type === 'Homework') { %>
         <tr>
