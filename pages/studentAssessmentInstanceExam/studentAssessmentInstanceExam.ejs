@@ -214,7 +214,7 @@
                   <% if (assessment_instance.open) { %>
                     <%= getStringFromFloat(instance_question.max_points) %>
                   <% } else { %>
-                    <%= getStringFromFloat(instance_question.points) %> / <%= getStringFromFloat(instance_question.max_points) %>
+                    <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                   <% } %>
                 </td>
               <% } %>
