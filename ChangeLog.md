@@ -80,8 +80,10 @@
   * Add support for editing from bare git repo (Tim Bretl).
   
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
-  
+
   * Add `disable-on-submit` support for v3 questions to prevent accidental duplicate submissions (Tim Yang).
+
+  * Add extra `/course*` mount points (Tim Yang).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
@@ -236,6 +238,8 @@
   * Fix gradebook and question statistics download links (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
+  
+  * Remove introduction alert at the top of `homework` assessments (Tim Yang).
 
 * __3.2.0__ - 2019-08-05
 

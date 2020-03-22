@@ -220,10 +220,12 @@ def grade(element_html, data):
     # Remove the leading and trailing characters
     if (remove_leading_trailing):
         a_sub = a_sub.strip()
+        a_tru = a_tru.strip()
 
     # Remove the blank spaces between characters
     if (remove_spaces):
         a_sub = a_sub.replace(' ', '')
+        a_tru = a_tru.replace(' ', '')
 
     # Modify string case for submission and true answer to be lower.
     if (ignore_case):
