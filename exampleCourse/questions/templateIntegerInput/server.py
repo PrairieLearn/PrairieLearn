@@ -10,7 +10,7 @@ def generate(data):
     option = random.randint(0,len(angles_radians)-1)
 
     # Put the angle in radians into data['params']
-    data['params']['angles_radians'] = angles_radians[option]
+    data['params']['angle_radians'] = angles_radians[option]
 
     # Put the correct answer into data['correct_answers']
-    data['correct_answers']['angles_degrees'] = angles_degrees[option]
+    data['correct_answers']['angle_degrees'] = angles_degrees[option]

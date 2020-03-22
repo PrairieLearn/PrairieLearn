@@ -20,7 +20,7 @@
                 {"id": "templateMultipleChoiceFromList", "points": 1, "maxPoints": 4},
                 {"id": "templateMultipleChoiceNumeric", "points": 1, "maxPoints": 4},
                 {"id": "templateMultipleChoiceTrueFalseFromList", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomMultipleChoiceWithFigure", "points": 1, "maxPoints": 4}
+                {"id": "templateMultipleChoiceWithFigure", "points": 1, "maxPoints": 4}
             ]
         },
         {
@@ -33,10 +33,10 @@
             "title": "Numerical questions",
             "questions": [
                 {"id": "templateNumberInput", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomIntegerInput", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomNumberInput", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomNumberInputTips", "points": 1, "maxPoints": 2},
-                {"id": "templateRandomIntegerInputWithDynamicFigure", "points": 1, "maxPoints": 4}
+                {"id": "templateIntegerInput", "points": 1, "maxPoints": 2},
+                {"id": "templateNumberInputGradingMethod", "points": 1, "maxPoints": 2},
+                {"id": "templateNumberInputTips", "points": 1, "maxPoints": 2},
+                {"id": "templateIntegerInputWithDynamicFigure", "points": 1, "maxPoints": 4}
             ]
         }
     ]
