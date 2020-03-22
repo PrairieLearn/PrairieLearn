@@ -28,9 +28,9 @@ or on MacOS/Linux:
 docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course prairielearn/prairielearn
 ```
 
-To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course:/course -v /path/to/course2:course2`). There are nine available mount points in the Docker: `/course`, `/course2`, `/course3`, ..., `/course9`.
-
 If you are using Docker for Windows then you will need to first give Docker permission to access the C: drive (or whichever drive your course directory is on). This can be done by right-clicking on the Docker "whale" icon in the taskbar, choosing "Settings", and granting shared access to the C: drive.
+
+To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course:/course -v /path/to/course2:course2`). There are nine available mount points in the Docker: `/course`, `/course2`, `/course3`, ..., `/course9`.
 
 If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/course`.
 
