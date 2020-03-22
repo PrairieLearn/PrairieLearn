@@ -27,6 +27,7 @@ DECLARE
     assessment_instance_id bigint;
     grading_method enum_grading_method;
     new_correct boolean;
+    new_graded_at timestamp with time zone;
 BEGIN
     -- ######################################################################
     -- get the related objects
@@ -53,9 +54,16 @@ BEGIN
 
     new_correct = (new_score >= 1.0);
 
+    -- Only update the graded_at time if the submission is gradable
+    IF new_gradable != NULL THEN
+        new_graded_at = now();
+    ELSE
+        new_graded_at = null;
+    END IF;
+
     UPDATE submissions AS s
     SET
-        graded_at = now(),
+        graded_at = new_graded_at,
         gradable = new_gradable,
         broken = new_broken,
         format_errors = new_format_errors,
@@ -68,6 +76,18 @@ BEGIN
         grading_method = main.grading_method
     WHERE
         s.id = submission_id;
+
+    IF new_gradable = FALSE THEN
+        -- If the submission is ungradable then we should stop here
+
+        IF assessment_instance_id IS NOT NULL THEN
+            UPDATE instance_questions
+            SET status = 'saved'::enum_instance_question_status
+            WHERE id = instance_question_id;
+        END IF;
+
+        RETURN;
+    END IF;
 
     -- ######################################################################
     -- update the variant

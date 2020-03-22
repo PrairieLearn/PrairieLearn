@@ -5,7 +5,9 @@ CREATE OR REPLACE FUNCTION
         feedback jsonb,
         received_time timestamptz,
         start_time timestamptz,
-        finish_time timestamptz
+        finish_time timestamptz,
+        succeeded boolean,
+        gradable boolean
     ) RETURNS void
 AS $$
 DECLARE
@@ -64,21 +66,45 @@ BEGIN
     RETURNING *
     INTO grading_job;
 
-    UPDATE submissions
-    SET
-        graded_at = grading_job.graded_at,
-        score = grading_job.score,
-        correct = grading_job.correct,
-        feedback = grading_job.feedback
-    WHERE id = grading_job.submission_id;
+    IF succeeded = FALSE OR gradable = FALSE THEN
+        UPDATE submissions
+        SET
+            gradable = FALSE,
+            feedback = grading_jobs_process_external.feedback
+        WHERE id = grading_job.submission_id;
 
-    -- ######################################################################
-    -- update all parent objects
+        IF assessment_instance_id IS NOT NULL THEN
+            UPDATE instance_questions
+            SET status = 'saved'::enum_instance_question_status
+            WHERE id = instance_question_id;
+        END IF;
 
-    PERFORM variants_update_after_grading(variant_id, grading_job.correct);
-    IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
-        PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        IF succeeded = FALSE THEN
+            -- Automatically add an issue if the grading job was unsuccessful
+
+            PERFORM issues_insert_for_variant(
+                    variant_id, 'Broken autograder question',
+                    'Unsuccessful external grading job', false,
+                    true, jsonb_build_object('grading_job_id', grading_job_id, 'feedback', feedback),
+                    '{}'::jsonb, grading_job.auth_user_id);
+        END IF;
+    ELSE
+        UPDATE submissions
+        SET
+            graded_at = grading_job.graded_at,
+            score = grading_job.score,
+            correct = grading_job.correct,
+            feedback = grading_job.feedback
+        WHERE id = grading_job.submission_id;
+
+        -- ######################################################################
+        -- update all parent objects
+
+        PERFORM variants_update_after_grading(variant_id, grading_job.correct);
+        IF assessment_instance_id IS NOT NULL THEN
+           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
+           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

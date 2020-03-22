@@ -11,15 +11,20 @@
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3 class="mt-2">
-      Score:
-      <span style="color: {{results_color}}">
-      {{#points}}
-      <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
-      {{/points}}
-      {{^points}}
-      <strong>{{score}}%</strong>
-      {{/points}}
-      </span>
+      {{#invalid}}
+          <p> Invalid, not graded </p>
+      {{/invalid}}
+      {{^invalid}}
+          Score:
+          <span style="color: {{results_color}}">
+              {{#points}}
+                  <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
+              {{/points}}
+              {{^points}}
+                  <strong>{{score}}%</strong>
+              {{/points}}
+          </span>
+      {{/invalid}}
     </h3>
     {{#has_message_or_output}}
       {{#has_message}}

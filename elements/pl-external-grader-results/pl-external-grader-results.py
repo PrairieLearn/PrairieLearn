@@ -43,6 +43,12 @@ def render(element_html, data):
         html_params['graded'] = bool(feedback)
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
+
+        gradable = True
+        if 'results' in feedback and 'gradable' in feedback['results']:
+            gradable = feedback['results']['gradable']
+        html_params['invalid'] = not gradable
+
         if not grading_succeeded:
             html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:
