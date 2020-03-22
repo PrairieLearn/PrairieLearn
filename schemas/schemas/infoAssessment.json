@@ -84,7 +84,7 @@
             "default": false
         },
         "allowRealTimeGrading": {
-            "description": "Disables realtime grading via the \"Grade\" button while the assessment is being taken.",
+            "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
             "type": "boolean",
             "default": true
         }
