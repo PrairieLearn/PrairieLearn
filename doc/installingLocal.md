@@ -15,7 +15,7 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 
 ```sh
 cd PrairieLearn
-npm install
+npm ci
 ```
 
 * Create the file `PrairieLearn/config.json`:
