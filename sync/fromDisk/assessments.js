@@ -48,7 +48,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         // Because of how Homework-type assessments work, we don't allow
         // real-time grading to be disabled for them.
         if (!allowRealTimeGrading && assessment.type === 'Homework') {
-            throw new Error(`Assessment "${assessment.tid}" cannot disable real-time grading; that is only possible for Exam-type assessments.`)
+            throw new Error(`Assessment "${assessment.tid}" cannot disable real-time grading; that is only possible for Exam-type assessments.`);
         }
 
         const assessmentParams = {
