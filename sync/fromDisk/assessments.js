@@ -40,9 +40,15 @@ const perf = require('../performance')('assessments');
  */
 function buildSyncData(courseInfo, courseInstance, questionDB) {
     const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
-        // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
-        let allowIssueReporting = true;
-        if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
+        const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
+        const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
+
+        // Because of how Homework-type assessments work, we don't allow
+        // real-time grading to be disabled for them.
+        if (!allowRealTimeGrading && assessment.type === 'Homework') {
+            throw new Error(`Assessment "${assessment.tid}" cannot disable real-time grading; that is only possible for Exam-type assessments.`);
+        }
+
         const assessmentParams = {
             tid: tid,
             uuid: assessment.uuid,
@@ -54,11 +60,12 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             multiple_instance: assessment.multipleInstance ? true : false,
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
-            auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
+            allow_real_time_grading: allowRealTimeGrading,
+            auto_close: !!_.get(assessment, 'autoClose', true),
             max_points: assessment.maxPoints,
             set_name: assessment.set,
             text: assessment.text,
-            constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
+            constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -102,11 +109,17 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         let assessmentQuestionNumber = 0;
         assessmentParams.alternativeGroups = zones.map((zone) => {
             return zone.questions.map((question) => {
+                if (!allowRealTimeGrading && Array.isArray(question.points)) {
+                    throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for a question if real-time grading is disabled`);
+                }
                 let alternatives;
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
+                        if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
+                            throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for an alternative if real-time grading is disabled`);
+                        }
                         return {
                             qid: alternative.id,
                             maxPoints: alternative.maxPoints || question.maxPoints,

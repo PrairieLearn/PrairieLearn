@@ -6,7 +6,15 @@
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">Save only</button><% } %>
+          <% if (showSaveButton) { %>
+            <button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">
+              <% if (showGradeButton) { %>
+                Save only
+              <% } else { %>
+                Save
+              <% } %>
+            </button>
+          <% } %>
           <% if (showGradeButton) { %>
               <% if (question_context == 'student_homework') { %>
                   <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
@@ -44,7 +52,15 @@
       <div class="row">
         <div class="col d-flex justify-content-between">
           <span class="d-flex">
-              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit order-2">Save only</button><% } %>
+              <% if (showSaveButton) { %>
+                <button class="btn btn-info question-save disable-on-submit order-2">
+                  <% if (showGradeButton) { %>
+                    Save only
+                  <% } else { %>
+                    Save
+                  <% } %>
+                </button>
+              <% } %>
               <% if (showGradeButton) { %>
                   <% if (question_context == 'student_homework') { %>
                       <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
