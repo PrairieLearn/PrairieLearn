@@ -1,4 +1,4 @@
--- BLOCK select_exam2
+-- BLOCK select_exam8
 SELECT
     a.id
 FROM

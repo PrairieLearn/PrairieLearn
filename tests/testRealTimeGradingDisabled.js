@@ -65,7 +65,7 @@ describe('Exam assessment with real-time grading disabled', function() {
 
   before('set up testing server', async function() {
     await util.promisify(helperServer.before().bind(this))();
-    const results = await sqldb.queryOneRowAsync(sql.select_exam2, []);
+    const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
