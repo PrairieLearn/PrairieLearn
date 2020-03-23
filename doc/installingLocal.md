@@ -21,7 +21,7 @@ npm ci
 If you don't have `npm` installed on your computer, you can use the version that comes pre-installed in the Docker image:
 
 ```sh
-docker run -it -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
+docker run -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
 ```
 
 The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If your terminal is currently in this folder, you can replace this with `` `pwd` `` to auto-fill the path.
