@@ -79,6 +79,8 @@
 
   * Add support for editing from bare git repo (Tim Bretl).
   
+  * Add instructor panel to `course` question pages (Tim Yang).
+  
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
   
   * Add extra `/course*` mount points (Tim Yang).
