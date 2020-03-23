@@ -11,10 +11,10 @@
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3 class="mt-2">
-      {{#invalid}}
+      {{^gradable}}
           <p> Invalid, not graded </p>
-      {{/invalid}}
-      {{^invalid}}
+      {{/gradable}}
+      {{#gradable}}
           Score:
           <span style="color: {{results_color}}">
               {{#points}}
@@ -24,7 +24,7 @@
                   <strong>{{score}}%</strong>
               {{/points}}
           </span>
-      {{/invalid}}
+      {{/gradable}}
     </h3>
     {{#has_message_or_output}}
       {{#has_message}}

@@ -47,7 +47,7 @@ def render(element_html, data):
         gradable = True
         if 'results' in feedback and 'gradable' in feedback['results']:
             gradable = feedback['results']['gradable']
-        html_params['invalid'] = not gradable
+        html_params['gradable'] = gradable
 
         if not grading_succeeded:
             html_params['message'] = ansi_to_html(feedback.get('message', None))
