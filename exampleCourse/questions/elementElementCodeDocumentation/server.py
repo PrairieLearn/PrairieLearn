@@ -27,7 +27,7 @@ def generate(data):
     # Symbolic
     x, y = sympy.symbols('x y')
     data['correct_answers']['symbolic_math'] = pl.to_json(x + y + 1)
-    
+
     # Matrix Fill in the Blank
     data['correct_answers']['matrixA'] = pl.to_json(np.matrix('1 2; 3 4'))
     
