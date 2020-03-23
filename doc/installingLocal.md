@@ -47,7 +47,22 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 If needed, you can run the container with a different command:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn COMMAND
+docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn COMMAND
 ```
 
 This can be used to, e.g., run scripts distributed with PrairieLearn.
+
+#### Development from the shell
+
+When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container.  This can be done by starting the container into a shell environment and starting the server manually:
+
+```sh
+docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+/PrairieLearn/docker/init.sh
+```
+
+Then when you make any changes to the server, you can close it `<ctrl-C>` and re-run the init script to see those changes:
+
+```sh
+/PrairieLearn/docker/init.sh
+```
