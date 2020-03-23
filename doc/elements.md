@@ -343,7 +343,7 @@ import sympy
 def generate(data):
   
   # Declare math symbols
-  sympy.var('x y')
+  x, y = sympy.symbols('x y')
 
   # Describe the equation
   z = x + y + 1
