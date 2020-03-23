@@ -52,7 +52,7 @@ PrairieLearn
 |   +-- index.js       # entry point for all sproc initialization
 |   `-- ...            # one JS file per sproc, executed by index.js
 +-- sync               # code to load on-disk course config into DB
-`-- tests              # unit tests, currently unused
+`-- tests              # unit and integration tests
 ```
 
 
@@ -68,7 +68,7 @@ npm run lint -s
 
 * The above tests are run by the CI server on every push to GitHub.
 
-* The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `exampleCourse`, and then emulate a client web broswer that answers questions on assessments. If a test fails then the it is often easiest to debug but recreating the error by doing questions yourself against a locally-running server.
+* The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web broswer that answers questions on assessments. If a test fails then the it is often easiest to debug but recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
