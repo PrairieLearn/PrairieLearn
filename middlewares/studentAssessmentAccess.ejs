@@ -22,7 +22,9 @@
 
             <div class="card-body">
 
-                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
+                <% if (prompt == 'closedAssessmentNotViewable') { %>
+                    Assessment is <strong>closed</strong> and is no longer available.
+                <% } else if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
 
                     <div class="row align-items-center">
                       <div class="col-md-3 col-sm-6">
@@ -33,12 +35,12 @@
                         <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
                       </div>
                       <div class="col-md-6 col-sm-12 text-right">
-                          Assessment is <strong>closed</strong> and is no longer available
+                          Assessment is <strong>closed</strong> and is no longer available.
                       </div>
                     </div>
 
                     <% if (authz_data.mode == 'SEB') { %>
-                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a>
+                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a></p>
                     <% } %>
 
                 <% } else if (prompt == 'SEB') { %>

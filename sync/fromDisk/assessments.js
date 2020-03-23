@@ -82,6 +82,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 password: _(accessRule).has('password') ? accessRule.password : null,
                 seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
                 exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+                show_closed_assessment: !!_(accessRule).get('showClosedAssessment', true),
             };
         });
 
