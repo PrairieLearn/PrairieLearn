@@ -40,13 +40,17 @@
       </p>
       <p><strong> Issue status: </strong>
         <% if (issue.open) { %>
-        <span class="badge badge-danger" data-toggle="collapse" href="#">
-          Open
-        </span>
+        <small>
+          <a href="<%= commonQueries.allOpenQuery %>" class="mr-3 text-white">
+            <i class="fa fa-exclamation-circle"></i> <%= openCount %> open
+          </a>
+        </small>
         <% } else { %>
-          <span class="badge badge-success" data-toggle="collapse" href="#">
-            Closed
-          </span>
+        <small>
+          <a href="<%= commonQueries.allClosedQuery %>" class="text-white">
+            <i class="fa fa-check-circle"></i> <%= closedCount %> closed
+          </a>
+        </small>
         <% } %>
       </p>
       <div class="collapse" id="issue-course-data-<%= iIssue %>">
