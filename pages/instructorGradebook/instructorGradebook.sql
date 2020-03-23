@@ -35,15 +35,7 @@ user_ids AS (
     (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
 ),
 course_users AS (
-<<<<<<< HEAD
-<<<<<<< HEAD
     SELECT u.user_id,u.uid,u.uin,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
-=======
-    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
->>>>>>> parent of 68edb2c07... Add UIN to Gradebook #1304
-=======
-    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
->>>>>>> parent of 68edb2c07... Add UIN to Gradebook #1304
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
