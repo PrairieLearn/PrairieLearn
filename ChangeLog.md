@@ -82,7 +82,9 @@
   * Add instructor panel to `course` question pages (Tim Yang).
   
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
-  
+
+  * Add `disable-on-submit` support for v3 questions to prevent accidental duplicate submissions (Tim Yang).
+
   * Add extra `/course*` mount points (Tim Yang).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
