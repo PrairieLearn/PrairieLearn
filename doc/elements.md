@@ -332,7 +332,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-<pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
 ```
 
 **server.py**
