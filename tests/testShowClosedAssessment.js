@@ -91,7 +91,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         assert.lengthOf(response.$('a:contains("Question 1")'), 0);
 
         // we should have the "assessment closed" message
-        const msg = response.$('div.assessment-closed-message');
+        const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Assessment .* is no longer available/);
     });
@@ -106,6 +106,6 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
         assert.equal(response.status, 403);
 
-        assert.lengthOf(response.$('div.assessment-closed-message'), 1);
+        assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
     });
 });
