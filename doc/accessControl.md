@@ -209,6 +209,31 @@ The above `allowAccess` directive is appropriate for an `Exam` being taken by on
 
 The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
+## All online exams with time accommodations example
+
+```json
+"allowAccess": [
+    {
+        "mode": "Public",
+        "uids": ["dres_student1@illinois.edu", "dres_student2@illinois.edu"],
+        "credit": 100,
+        "startDate": "2020-03-31T14:00:00",
+        "endDate": "2020-03-31T15:59:00",
+        "timeLimitMin": 100
+    },
+    {
+        "mode": "Public",
+        "role": "Student",
+        "credit": 100,
+        "startDate": "2020-03-31T14:00:00",
+        "endDate": "2020-03-31T14:59:00",
+        "timeLimitMin": 50
+    }
+],
+```
+
+This is an example of access rules for an assessment being offered online to students with a time limit, where some students need extended time (DRES accommodations). Note that the individual student rules are listed before the catch-all `"role": "Student"` rule. If a student matches multiple rules with the same `credit` (like `dres_student1@illinos.edu`), the first matched rule is taken. Configure the order of your rules top to bottom to go from specific to generic.
+
 ## Homework example
 
 ```json
