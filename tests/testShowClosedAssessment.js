@@ -17,7 +17,7 @@ const helperClient = require('./helperClient');
  * from `testExam.js` in favor of experimenting with a different way of writing
  * PrairieLearn tests.
  */
-describe('Exam assessment with real-time grading disabled', function() {
+describe('Exam assessment with showCloseAssessment access rule', function() {
     this.timeout(60000);
 
     const context = {};
@@ -58,7 +58,8 @@ describe('Exam assessment with real-time grading disabled', function() {
         // save the questionUrl for later
         const questionUrl = response.$('a:contains("Question 1")').attr('href');
         context.questionUrl = `${context.siteUrl}${questionUrl}`;
-        
+
+        console.log(response.text());
         helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name="time-limit-finish-form"]');
     });
 
@@ -82,7 +83,7 @@ describe('Exam assessment with real-time grading disabled', function() {
         assert.match(msg[0].text(), /Assessment .* is no longer available/);
     });
 
-    step('check the assessment instance is closed', async () {
+    step('check the assessment instance is closed', async () => {
         const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
         assert.equal(results.rowCount, 1);
         assert.equal(results.rows[0].open, false);
