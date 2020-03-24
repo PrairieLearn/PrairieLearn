@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<%- include('../partials/head'); %>
+</head>
+<body>
+<%- include('../partials/navbar', {navPage: 'adminDashboard'}); %>
+
+<%
+function linkify(row, col) {
+
+  var href= null;
+
+  if (col == 'course_id') {
+    href = urlPrefix + '/course/' + row[col];
+  } else if (col == 'course_instance_id') {
+    href = urlPrefix + '/course_instance/' + row[col];
+  } else if (col == 'assessment_id' && 'course_instance_id' in row) {
+    href = urlPrefix + '/course_instance/' + row['course_instance_id'] + '/instructor/assessment/' + row[col];
+  }
+
+  if (href) { %>
+<a href="<%= href %>"><%= row[col] %></a>
+<% } else { %>
+<%= row[col] %>
+<% } }; %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 bg-light">
+            <h1>Dashboard</h1>
+            As of <%= req_date_present %>
+            <ul>
+                <% queries.forEach(function(q) { %>
+                <li><a href="#<%= q.SQLFilename%>"><%= q.SQLFilename %></a>
+                <span class="badge badge-pill badge-info"><%= q.rowCount %></span></li>
+                <% }); %>
+            </ul>
+        </div>
+    <div class="col-md-10">
+
+<% queries.forEach(function(q) { 
+   var columns = [];
+%>
+
+<h2 id="<%= q.SQLFilename %>"><%= q.SQLFilename %>
+    <span class="badge badge-pill badge-info"><%= q.rowCount %></span></h2>
+<span class="badge badge-secondary"
+    title="<%= q.SQLstring %>">SQL</span>
+<table class="table">
+    <thead>
+        <tr>
+    <% q.fields.forEach(function(field) { %>
+        <th><%= field.name %></th>
+    <% columns.push(field.name); 
+        }); %>
+    </tr></thead>
+    <tbody>
+    <% q.rows.forEach(function(row) { %>
+
+    <tr>
+        <% columns.forEach(function(col) { %>
+        <td>
+            <% if (col.match(/(date|time)$/)) { %>
+              <%= row[col] %>
+            <% } else if (typeof(row[col]) == 'object') { %>
+            <code><%= JSON.stringify(row[col]); %></code>
+              <% } else if (['assessment_id', 'course_id', 'course_instance_id'].includes(col)) { 
+                    linkify(row, col);
+                 } else { %>
+              <%= row[col] %>
+            <% } %>
+        </td> 
+            
+        <% }); %>
+    </tr>
+    <% }); %>
+</tbody>
+</table>
+
+<% }); %>
+</div>
+</div>
