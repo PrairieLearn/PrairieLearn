@@ -97,7 +97,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         html_params['display_append_span'] = html_params['show_info'] or suffix
-            
+
         if display == 'inline':
             html_params['inline'] = True
         elif display == 'block':
