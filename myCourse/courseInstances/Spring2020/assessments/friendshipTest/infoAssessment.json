@@ -1,0 +1,18 @@
+{
+  "uuid": "d1fa492f-86ee-467d-8e64-72bbdbb38b6f",
+  "type": "Homework",
+  "title": "Friendship Test",
+  "set": "Homework",
+  "number": "1",
+  "allowAccess": [],
+  "zones": [
+    {
+      "title": "questions",
+      "questions": [
+        {"id": "books", "points": 10},
+        {"id": "foodServings", "points": 10},
+        {"id": "pizza", "points": 10}
+      ]
+    }
+  ]
+}

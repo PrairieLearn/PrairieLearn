@@ -1,0 +1,10 @@
+{
+  "uuid": "e6fc28a4-8571-4240-b9d4-1a4d01abf71f",
+  "title": "Pizza Toppings",
+  "topic": "misc",
+  "singleVariant": true,
+  "partialCredit": false,
+  "type": "v3",
+  "tags": ["MC", "v3"],
+  "thumbnail": "/images/pizza.jpg"
+}

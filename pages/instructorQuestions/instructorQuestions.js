@@ -60,6 +60,7 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
+    res.sendFile("questions/pizza/pizza.jpg", {root: res.locals.course.path,});
 });
 
 router.post('/', (req, res, next) => {

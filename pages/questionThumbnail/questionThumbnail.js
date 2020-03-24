@@ -8,10 +8,9 @@ router.get('/*', function(req, res, _next) {
         res.locals.course.path,
         'questions',
         res.locals.question.directory,
-        'clientFilesQuestion',
     );
     console.log(clientFilesDir);
-    res.sendFile(filename, {root: clientFilesDir});
+    res.sendFile("pizza.jpg", {root: clientFilesDir});
 });
 
 module.exports = router;
