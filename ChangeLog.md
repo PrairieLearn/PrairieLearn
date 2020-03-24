@@ -87,6 +87,10 @@
 
   * Add extra `/course*` mount points (Tim Yang).
 
+  * Add R vector/matrix support in `pl-variable-output` (James Balamuta).
+
+  * Add example course question templates (James Balamuta).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -238,6 +242,8 @@
   * Fix `pl-string-input` incorrectly displaying whitespace and special characters (Nicolas Nytko).
 
   * Fix gradebook and question statistics download links (Tim Bretl).
+
+  * Fix `demoRandomPlot` by updating the matlibplot subplot code (James Balamuta).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
   
