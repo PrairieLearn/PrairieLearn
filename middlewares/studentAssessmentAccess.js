@@ -92,7 +92,7 @@ function badSEB(req, res) {
     //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
     res.locals.SEBUrl = config.SEBDownloadUrl;
     res.locals.prompt = 'SEB';
-    return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    return res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function checkUserAgent(res, userAgent) {
