@@ -32,7 +32,7 @@
                       <div class="col-md-3 col-sm-6">
                         <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
                       </div>
-                      <div class="col-md-6 col-sm-12 text-right">
+                      <div class="col-md-6 col-sm-12 text-right assessment-closed-message">
                           Assessment is <strong>closed</strong> and is no longer available.
                       </div>
                     </div>
@@ -54,7 +54,9 @@
                     </a>
 
                 <% } else { %>
-                    Assessment is <strong>closed</strong> and is no longer available.
+                    <div class="assessment-closed-message">
+                        Assessment is <strong>closed</strong> and is no longer available.
+                    </div>
                 <% } %>
             </div> <!-- panel-body -->
         </div>
