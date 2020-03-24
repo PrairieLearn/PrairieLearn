@@ -309,6 +309,8 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
