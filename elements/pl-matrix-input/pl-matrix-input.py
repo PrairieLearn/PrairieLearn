@@ -13,12 +13,14 @@ RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_COMPLEX_DEFAULT = False
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -73,6 +75,8 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid()
         }
 

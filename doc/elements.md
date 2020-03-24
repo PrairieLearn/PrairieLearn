@@ -540,6 +540,8 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Details
 
