@@ -363,6 +363,8 @@
 
   * Change logging format for new `winston` version (Matt West).
 
+  * Change doc for installing natively to be MacOS-specific and improve it (Tim Bretl).
+
   * Change instructor gradebook to have more optimized HTML for a smaller response (Nathan Walters).
 
   * Change "timeout" external grader error to sound like the student's code is at fault (Matt West).
