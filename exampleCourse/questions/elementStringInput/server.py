@@ -14,7 +14,6 @@ def generate(data):
 
     d = ''.join(str(e) for e in list1)
     e = 'cAsE iNsEnSiTiVe'
-
     f = 'small'
 
     data["params"]["a"] = a
