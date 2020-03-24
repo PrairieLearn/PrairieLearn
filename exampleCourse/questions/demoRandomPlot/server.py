@@ -20,7 +20,6 @@ def file(data):
         if fmax-fmin>12:
             ax.set_yticks([y for y in range(fmin,fmax+4,4)], minor = True)
             ax.set_yticklabels([y for y in range(fmin,fmax+4,4)], fontsize=14)
-            #ax.axes().yaxis.grid(True, 'minor')
         else:
             ax.set_yticks([y for y in range(fmin,fmax+1,1)], minor = True)
             ax.set_yticklabels([y for y in range(fmin,fmax+1,1)], fontsize=14)
