@@ -121,6 +121,5 @@ function checkUserAgent(res, userAgent) {
 }
 
 function closedAssessmentNotViewable(res) {
-    res.locals.prompt = 'closedAssessmentNotViewable';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
