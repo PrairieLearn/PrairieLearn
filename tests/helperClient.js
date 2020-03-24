@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 
-module.exports = {}
+module.exports = {};
 
 /**
  * A wrapper around node-fetch that provides a few features:
