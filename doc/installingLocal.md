@@ -11,20 +11,13 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 git clone https://github.com/PrairieLearn/PrairieLearn.git
 ```
 
-* Install the Node.js packages:
-
-```sh
-cd PrairieLearn
-npm ci
-```
-
-If you don't have `npm` installed on your computer, you can use the version that comes pre-installed in the Docker image:
+* Install the Node.js packages.  This will use the version of `npm` that is pre-installed in the Docker image, so you don't need your own copy installed.
 
 ```sh
 docker run -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
 ```
 
-The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If your terminal is currently in this folder, you can replace this with `` `pwd` `` to auto-fill the path.
+The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If you're in the root of the source directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/PrairieLearn`.
 
 * Create the file `PrairieLearn/config.json`:
 
@@ -50,19 +43,31 @@ If needed, you can run the container with a different command:
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn COMMAND
 ```
 
-This can be used to, e.g., run scripts distributed with PrairieLearn.
-
-#### Development from the shell
-
-When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container.  This can be done by starting the container into a shell environment and starting the server manually:
+This can be used to, e.g., run scripts distributed with PrairieLearn by opening a bash shell:
 
 ```sh
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
-/PrairieLearn/docker/init.sh
 ```
 
-Then when you make any changes to the server, you can close it `<ctrl-C>` and re-run the init script to see those changes:
+### Server from shell
+
+When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container.  This can be done by starting the server manually from a shell instance, then restarting the server when changes are made.
 
 ```sh
 /PrairieLearn/docker/init.sh
+```
+
+Then when any modifications are made, you can close the server with `<ctrl-C>` and re-run the init script.
+
+### Tests from shell
+
+The linters and tests for the Python and JavaScript code can be run with the following commands in a shell instance:
+
+```sh
+cd /PrairieLearn
+./docker/start_postgres.sh
+./docker/lint_js.sh
+./docker/lint_python.sh
+./docker/test_js.sh
+./docker/test_python.sh
 ```
