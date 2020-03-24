@@ -126,14 +126,22 @@
     $(document).ready(() => {
         // Set form state on load and submit
         var initialForm = getForm();
-        form.submit(() => { initialForm = getForm(); });
+        form.submit(() => {
+            initialForm = getForm();
+        });
 
         // Check form state on unload
         $(window).bind('beforeunload', (event) => {
             const currentForm = getForm();
             if(initialForm != currentForm) {
-                (event || window.event).returnValue = null;
-                return null;
+                // MDN recommendation (not fully supported)
+                (event || window.event).preventDefault();
+
+                // Chrome legacy
+                (event || window.event).returnValue = '';
+
+                // Fallback
+                return '';
             }
         });
     });
