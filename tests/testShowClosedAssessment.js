@@ -25,6 +25,10 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl= `${context.baseUrl}/course_instance/1`;
 
+    const headers = {
+        cookie: 'pl_test_user=test_student', // need student mode to get a timed exam (instructor override bypasses this)
+    };
+
     before('set up testing server', async function() {
         await util.promisify(helperServer.before().bind(this))();
         const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
@@ -33,8 +37,18 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
     });
     after('shut down testing server', helperServer.after);
 
+    // we need to access the homepage to create the test_student user in the DB
+    step('visit home page', async () => {
+        const response = await helperClient.fetchCheerio(context.baseUrl, { headers });
+        assert.isTrue(response.ok);
+    });
+
+    step('enroll the test student user in the course', async () => {
+        await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
+    });
+
     step('visit start exam page', async () => {
-        const response = await helperClient.fetchCheerio(context.assessmentUrl);
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
 
         assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -47,7 +61,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
             __action: 'newInstance',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form });
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});
         assert.isTrue(response.ok);
 
         // We should have been redirected to the assessment instance
@@ -59,7 +73,6 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         const questionUrl = response.$('a:contains("Question 1")').attr('href');
         context.questionUrl = `${context.siteUrl}${questionUrl}`;
 
-        console.log(response.text());
         helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name="time-limit-finish-form"]');
     });
 
@@ -68,11 +81,11 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
             __action: 'timeLimitFinish',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form });
-        assert.isTrue(response.ok);
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        assert.equal(response.status, 403);
 
         // We should have been redirected back to the same assessment instance
-        assert.equal(response.url, context.assessmentInstanceUrl);
+        assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
 
         // we should not have any questions
         assert.lengthOf(response.$('a:contains("Question 1")'), 0);
@@ -80,7 +93,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         // we should have the "assessment closed" message
         const msg = response.$('div.assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg[0].text(), /Assessment .* is no longer available/);
+        assert.match(msg.text(), /Assessment .* is no longer available/);
     });
 
     step('check the assessment instance is closed', async () => {
@@ -90,8 +103,8 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
     });
 
     step('check that accessing a question gives the "assessment closed" message', async () => {
-        const response = await helperClient.fetchCheerio(context.questionUrl);
-        assert.isTrue(response.ok);
+        const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+        assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.assessment-closed-message'), 1);
     });
