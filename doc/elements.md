@@ -421,6 +421,8 @@ Attribute | Type | Default | Description
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
