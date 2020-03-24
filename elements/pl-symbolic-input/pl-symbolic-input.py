@@ -15,6 +15,8 @@ LABEL_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
 
 
 def get_variables_list(variables_string):
@@ -28,7 +30,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -81,6 +83,8 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid(),
             'allow_complex': allow_complex,
         }
