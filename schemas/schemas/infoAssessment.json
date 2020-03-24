@@ -168,7 +168,7 @@
                     }
                 },
                 "showClosedAssessment": {
-                    "description": "If true, prevents the assessment from being viewed once it has been closed",
+                    "description": "Whether the student can view the assessment after it has been closed",
                     "type": "boolean",
                     "default": true
                 }
