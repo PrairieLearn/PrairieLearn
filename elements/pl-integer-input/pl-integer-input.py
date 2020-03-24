@@ -11,12 +11,14 @@ CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -55,6 +57,8 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid()
         }
 
@@ -71,6 +75,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['display_append_span'] = html_params['show_info'] or suffix
 
         if display == 'inline':
             html_params['inline'] = True
