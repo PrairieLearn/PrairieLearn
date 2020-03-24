@@ -17,6 +17,7 @@ pages:
   - 'Question configuration': 'question.md'
   - 'Elements for Writing Questions': 'elements.md'
   - 'Access control': 'accessControl.md'
+  - 'Remote exams': 'remoteExams.md'
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
   - 'Regrading assessments': 'regrading.md'

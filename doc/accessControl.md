@@ -184,6 +184,8 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 
 ## Exam with remote students example
 
+**See [Remote Exams](remoteExams.md) for more detailed examples.**
+
 ```json
 "allowAccess": [
     {
