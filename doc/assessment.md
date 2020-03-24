@@ -143,7 +143,7 @@ PrairieLearn is designed to give students immediate feedback on their work. Howe
 
 To disable real-time grading for an assessment, add `"allowRealTimeGrading": false` to the assessment's `infoAssessment.json` file. This will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Note that real-time grading can only be disabled for `Exam` assessments, as immediate feedback is a core part of the `Homework` experience.
 
-An assessment without real-time grading will not show any score information during the exam, but after a [time limit](accessControl.md#time-limits) runs out the assessment with auto-grade and show students exactly which questions they got correct/incorrect. To prevent this, set the [`showClosedAssessment` access rule restriction](accessControl.md#showinghiding-closed-assessments).
+An assessment without real-time grading will not show any score information during the exam, but after the [time limit](accessControl.md#time-limits) runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. To prevent this, set the [`showClosedAssessment` access rule restriction](accessControl.md#showinghiding-closed-assessments).
 
 Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
 
