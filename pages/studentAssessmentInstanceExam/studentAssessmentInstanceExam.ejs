@@ -16,7 +16,7 @@
       });
     </script>
 
-    <div id="honorCodeModal" class="modal fade" tabindex="-1" role="dialog">
+    <div id="honorCodeModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="PrairieLearn Honor Code">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -26,22 +26,38 @@
             </button>
           </div>
           <div class="modal-body">
-            <ul class="pr-4">
-                <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</li>
-                <li>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</li>
-                <li>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</li>
-                <li>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</li>
-                <li>Tempus imperdiet nulla malesuada pellentesque elit eget gravida cum sociis.</li>
+            <div class="alert alert-secondary">
+              This exam must only be completed using what is provided by the exam and what is otherwise allowed by the instructor.
+            </div>
+            <strong>I agree to</strong>
+            <ul class="pr-3">
+              <li>complete this exam without disallowed assistance,</li>
+              <li>report any suspected violations, and</li>
+              <li>forfeit my scores if I do not comply with this honor code.</li>
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            <button type="button" class="btn btn-success" data-dismiss="modal">I understand and agree to comply</button>
+            <button type="button" class="btn btn-danger" id="honorCodeDecline">I refuse to comply</button>
           </div>
         </div>
       </div>
     </div>
     <script>
-      $(function() {$('#honorCodeModal').modal({})})
+      const popup = $('#honorCodeModal')
+      const decline = $('#honorCodeDecline')
+
+      // Call popup and autofocus
+      popup.modal({})
+      popup.on('shown.bs.modal', () => {
+        popup.trigger('focus')
+      })
+
+      // Go back upon decline
+      decline.on('click', (event) => {
+        event.preventDefault();
+        window.history.back();
+      });
     </script>
 
     <div id="confirmFinishModal" class="modal fade">
