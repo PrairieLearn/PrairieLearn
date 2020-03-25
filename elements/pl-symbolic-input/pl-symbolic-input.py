@@ -17,6 +17,7 @@ ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 15 # Minimum size to show the placeholder text
 
 
 def get_variables_list(variables_string):
@@ -54,7 +55,8 @@ def render(element_html, data):
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
-
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
+    
     operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
 
@@ -83,10 +85,11 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
-            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'size': size,
             'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid(),
             'allow_complex': allow_complex,
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD
         }
 
         partial_score = data['partial_scores'].get(name, {'score': None})

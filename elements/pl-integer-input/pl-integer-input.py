@@ -13,6 +13,7 @@ SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 4 # Minimum size to show the placeholder text
 
 
 def prepare(element_html, data):
@@ -35,7 +36,8 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
-
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
+    
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -57,8 +59,9 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
-            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'size': size,
             'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD,
             'uuid': pl.get_uuid()
         }
 
