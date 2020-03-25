@@ -9,7 +9,7 @@ This page lists sample assessment configurations for remote exams, where student
 This configuration is good when:
 
 * Almost all students take the exam at the same time
-* Some students have accommodations, such as 1.5x time -- **these students must be listed first in the access rules**
+* Some students have accommodations, such as 1.5x time &mdash; **these students must be listed first in the access rules**
 * Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
 Some notes about this configuration:
