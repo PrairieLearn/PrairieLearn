@@ -3,6 +3,8 @@
 
 This page lists sample assessment configurations for remote exams, where students are not physically present in the same location as the proctors.
 
+**See the [Access control](accessControl.md) page for details on `allowAccess` rules.**
+
 
 ## Synchronous, timed exams
 
@@ -15,6 +17,7 @@ This configuration is good when:
 Some notes about this configuration:
 
 * The exam window (70 minutes, `startDate` to `endDate`) has been set to be 10 minutes longer than the exam time limit (60 minutes). If a student starts the exam late, then the countdown timer on their exam will show the full exam time limit (60 minutes). However, they will not be able to access the exam past the `endDate` time under any circumstances. See [PL issue #2217](https://github.com/PrairieLearn/PrairieLearn/issues/2217) for details.
+* If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and just login to PrairieLearn again, and continuing taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
 * Remember to extend both `endDate` **and** `timeLimitMin` for students with extra-time accommodations.
 * Students who are scheduled for a conflict exam will be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict timeslot.
 * After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
