@@ -109,7 +109,8 @@ BEGIN
                 seb_config,
                 exam_uuid,
                 start_date,
-                end_date)
+                end_date,
+                show_closed_assessment)
             (
                 SELECT
                     new_assessment_id,
@@ -123,7 +124,8 @@ BEGIN
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone)
+                    input_date(access_rule->>'end_date', ci.display_timezone),
+                    (access_rule->>'show_closed_assessment')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -141,7 +143,8 @@ BEGIN
                 uids = EXCLUDED.uids,
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date;
+                end_date = EXCLUDED.end_date,
+                show_closed_assessment = EXCLUDED.show_closed_assessment;
         END LOOP;
 
         -- Delete excess access rules

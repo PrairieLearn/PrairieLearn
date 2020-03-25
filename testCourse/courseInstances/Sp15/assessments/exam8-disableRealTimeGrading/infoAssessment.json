@@ -8,7 +8,9 @@
     "allowAccess": [
         {
             "mode": "Public",
-            "credit": 100
+            "credit": 100,
+            "timeLimitMin": 50,
+            "showClosedAssessment": false
         }
     ],
     "zones": [

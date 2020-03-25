@@ -11,9 +11,10 @@
             "credit": 100
         },
         {
-            "mode": "Exam",
+            "mode": "Public",
             "credit": 100,
-            "examUuid": "edd569e8-5075-4c35-88f9-28c5feaad0cb"
+            "timeLimitMin": 5,
+            "showClosedAssessment": false
        }
     ],
     "zones": [
