@@ -37,26 +37,28 @@
             </ul>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-success" data-dismiss="modal">I understand and agree to comply</button>
-            <button type="button" class="btn btn-danger" id="honorCodeDecline">I refuse to comply</button>
+            <button type="button" class="btn btn-success" data-dismiss="modal" id="honorCodeAgree">I understand and agree to comply</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">I refuse to comply</button>
           </div>
         </div>
       </div>
     </div>
     <script>
-      const popup = $('#honorCodeModal')
-      const decline = $('#honorCodeDecline')
+      const modal = $('#honorCodeModal');
+      const agree = $('#honorCodeAgree');
 
-      // Call popup and autofocus
-      popup.modal({})
-      popup.on('shown.bs.modal', () => {
-        popup.trigger('focus')
-      })
+      // Call modal and autofocus
+      modal.modal({});
+      modal.on('shown.bs.modal', () => {
+        modal.trigger('focus');
+      });
 
-      // Go back upon decline
-      decline.on('click', (event) => {
-        event.preventDefault();
-        window.history.back();
+      // Go back unless agree
+      modal.on('hide.bs.modal', (event) => {
+        if(!$(document.activeElement).is(agree)) {
+          (event || window.event).preventDefault();
+          window.history.back();
+        }
       });
     </script>
 
