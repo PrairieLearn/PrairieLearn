@@ -82,9 +82,7 @@
   * Add instructor panel to `course` question pages (Tim Yang).
   
   * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
-
-  * Add `disable-on-submit` support for v3 questions to prevent accidental duplicate submissions (Tim Yang).
-
+  
   * Add extra `/course*` mount points (Tim Yang).
 
   * Add R vector/matrix support in `pl-variable-output` (James Balamuta).
