@@ -18,7 +18,7 @@ Some notes about this configuration:
 * Remember to extend both `endDate` **and** `timeLimitMin` for students with extra-time accommodations.
 * Students who are scheduled for a conflict exam will be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict timeslot.
 * After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
-* If a student closes their webbrowser before the exam is complete, their exam will not automatically close. This is not a security problem because it will automatically close if they try and access it again. All exams will auto-close 6 hours after the end of the exam window.
+* If a student closes their web browser before the exam is complete, their exam will not automatically close. This is not a security problem because it will automatically close if they try to access it again. All exams will auto-close 6 hours after the end of the exam window.
 * Before downloading final scores, either wait 6 hours after the end of the final exam window, or check and manually close any open exams on the "Students" page under the assessment in PrairieLearn.
 
 ```json
