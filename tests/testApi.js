@@ -409,11 +409,11 @@ describe('API', function() {
         });
     });
 
-    describe('12. GET to API for Exam 1 instance question', function() {
+    describe('12. GET to API for Exam 1 instance questions', function() {
         it('should load successfully', function(callback) {
-            locals.apiInstnceQuestionUrl = locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
+            locals.apiInstanceQuestionUrl = locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
             const options = {
-                url: locals.apiInstnceQuestionUrl,
+                url: locals.apiInstanceQuestionUrl,
                 headers: {
                     'Private-Token': locals.api_token,
                 },
