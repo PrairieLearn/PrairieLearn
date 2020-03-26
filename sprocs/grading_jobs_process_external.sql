@@ -74,7 +74,7 @@ BEGIN
 
         IF assessment_instance_id IS NOT NULL THEN
             UPDATE instance_questions
-            SET status = 'saved'::enum_instance_question_status
+            SET status = 'invalid'::enum_instance_question_status
             WHERE id = instance_question_id;
         END IF;
     ELSE

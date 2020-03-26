@@ -52,13 +52,13 @@ BEGIN
     -- ######################################################################
     -- update the submission
 
-    new_correct = (new_score >= 1.0);
+    new_correct := (new_score >= 1.0);
 
     -- Only update the graded_at time if the submission is gradable
-    IF new_gradable != NULL THEN
-        new_graded_at = now();
+    IF new_gradable != FALSE THEN
+        new_graded_at := now();
     ELSE
-        new_graded_at = null;
+        new_graded_at := null;
     END IF;
 
     UPDATE submissions AS s
@@ -82,7 +82,7 @@ BEGIN
 
         IF assessment_instance_id IS NOT NULL THEN
             UPDATE instance_questions
-            SET status = 'saved'::enum_instance_question_status
+            SET status = 'invalid'::enum_instance_question_status
             WHERE id = instance_question_id;
         END IF;
 
