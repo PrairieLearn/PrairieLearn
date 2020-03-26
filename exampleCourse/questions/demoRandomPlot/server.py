@@ -11,20 +11,22 @@ def file(data):
         f = data['params']['m']*x+data['params']['b']
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        plt.plot(x,f)
-        plt.xticks([x for x in range(-5,6,1)], fontsize=14)
+        ax.plot(x,f)
+        ax.set_xticks([x for x in range(-5,6,1)])
+        ax.set_xticklabels([x for x in range(-5,6,1)], fontsize=14)
+        
         fmin = int(numpy.floor(min(f))-1)
         fmax = int(numpy.ceil(max(f))+1)
         if fmax-fmin>12:
-            plt.yticks([y for y in range(fmin,fmax+4,4)], fontsize=14)
-            plt.axes().set_yticks([y for y in range(fmin,fmax+1,1)], minor=True)
-            plt.axes().yaxis.grid(True, 'minor')
+            ax.set_yticks([y for y in range(fmin,fmax+4,4)], minor = True)
+            ax.set_yticklabels([y for y in range(fmin,fmax+4,4)], fontsize=14)
         else:
-            plt.yticks([y for y in range(fmin,fmax+1,1)], fontsize=14)
-        plt.grid()
-        plt.xlabel('$x$', fontsize=18)
-        plt.ylabel('$f(x)$', fontsize=18)
-        plt.autoscale(enable=True, tight=True)
+            ax.set_yticks([y for y in range(fmin,fmax+1,1)], minor = True)
+            ax.set_yticklabels([y for y in range(fmin,fmax+1,1)], fontsize=14)
+        ax.grid()
+        ax.set_xlabel('$x$', fontsize=18)
+        ax.set_ylabel('$f(x)$', fontsize=18)
+        ax.autoscale(enable=True, tight=True)
         fig.set_tight_layout(True)
 
         # Save the figure and return it as a buffer

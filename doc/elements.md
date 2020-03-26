@@ -309,6 +309,8 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
@@ -332,7 +334,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-<pl-symbolic-input answers-name="symbolic_math" label="$z =$"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
 ```
 
 **server.py**
@@ -343,7 +345,7 @@ import sympy
 def generate(data):
   
   # Declare math symbols
-  sympy.var('x y')
+  x, y = sympy.symbols('x y')
 
   # Describe the equation
   z = x + y + 1
@@ -364,6 +366,8 @@ Attribute | Type | Default | Description
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Details
 
@@ -421,6 +425,8 @@ Attribute | Type | Default | Description
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
@@ -534,6 +540,7 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Details
 
@@ -991,7 +998,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 ## `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
-supported programming languages (e.g. MATLAB, Mathematica, or Python).
+supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 #### Sample Element
 
@@ -1034,6 +1041,7 @@ Attribute | Type | Default | Description
 `show-matlab` | boolean | true | Toggles the display of the Matlab tab.
 `show-mathematica` | boolean | true | Toggles the display of the Mathematica tab.
 `show-python` | boolean | true | Toggles the display of the Python tab.
+`show-r` | boolean | true | Toggles the display of the R tab.
 
 Attributes for `<variable>` (one of these for each variable to display):
 
@@ -1047,7 +1055,7 @@ Attribute | Type | Default | Description
 #### Details
 
 This element displays a list of variables inside `<pre>` tags that are formatted for import into
-either MATLAB, Mathematica, or Python (the user can switch between them). Each variable must be
+either MATLAB, Mathematica, Python, or R (the user can switch between them). Each variable must be
 either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the
 text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Below
 are samples of the format displayed under each language tab.
@@ -1070,6 +1078,13 @@ A = [1.23; 4.56]; (* matrix *)
 import numpy as np
 
 A = np.array([[1.23], [4.56]]) # matrix
+```
+
+**R format:**
+
+```
+A = c(1.23, 4.56) # vector
+A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
 
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.

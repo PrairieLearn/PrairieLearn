@@ -82,6 +82,11 @@
             "description": "Whether to keep the value of a question constant after a student solves it correctly.",
             "type": "boolean",
             "default": false
+        },
+        "allowRealTimeGrading": {
+            "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
+            "type": "boolean",
+            "default": true
         }
     },
     "definitions": {
@@ -161,6 +166,11 @@
                             }
                         }
                     }
+                },
+                "showClosedAssessment": {
+                    "description": "Whether the student can view the assessment after it has been closed",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
@@ -205,7 +215,7 @@
                     "$ref": "#/definitions/points"
                 },
                 "maxPoints": {
-                    "$ref": "#/definitions/points"
+                    "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
                     "$ref": "#/definitions/questionId"
@@ -241,7 +251,7 @@
                     "$ref": "#/definitions/points"
                 },
                 "maxPoints": {
-                    "$ref": "#/definitions/points"
+                    "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
                     "$ref": "#/definitions/questionId"
@@ -267,13 +277,13 @@
             ]
         },
         "pointsSingle": {
-            "description": "A single points value.",
+            "description": "A single point value.",
             "type": "number",
             "minimum": 0,
             "default": 1
         },
         "pointsList": {
-            "description": "An array of points values.",
+            "description": "An array of point values.",
             "type": "array",
             "minItems": 1,
             "items": {

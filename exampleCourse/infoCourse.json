@@ -7,6 +7,7 @@
     },
     "assessmentSets": [],
     "topics": [
+        {"name": "Template", "color": "orange2", "description": "Templates to copy as the start for a new question."},
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
         {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},

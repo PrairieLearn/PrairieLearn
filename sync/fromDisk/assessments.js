@@ -40,9 +40,15 @@ const perf = require('../performance')('assessments');
  */
 function buildSyncData(courseInfo, courseInstance, questionDB) {
     const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
-        // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
-        let allowIssueReporting = true;
-        if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
+        const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
+        const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
+
+        // Because of how Homework-type assessments work, we don't allow
+        // real-time grading to be disabled for them.
+        if (!allowRealTimeGrading && assessment.type === 'Homework') {
+            throw new Error(`Assessment "${assessment.tid}" cannot disable real-time grading; that is only possible for Exam-type assessments.`);
+        }
+
         const assessmentParams = {
             tid: tid,
             uuid: assessment.uuid,
@@ -54,11 +60,12 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             multiple_instance: assessment.multipleInstance ? true : false,
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
-            auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
+            allow_real_time_grading: allowRealTimeGrading,
+            auto_close: !!_.get(assessment, 'autoClose', true),
             max_points: assessment.maxPoints,
             set_name: assessment.set,
             text: assessment.text,
-            constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
+            constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -75,7 +82,8 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 password: _(accessRule).has('password') ? accessRule.password : null,
                 seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
                 exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-            }
+                show_closed_assessment: !!_(accessRule).get('showClosedAssessment', true),
+            };
         });
 
         const zones = assessment.zones || [];
@@ -100,13 +108,19 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         let alternativeGroupNumber = 0;
         let assessmentQuestionNumber = 0;
-        assessmentParams.alternativeGroups = zones.map((zone, zoneIndex) => {
-            return zone.questions.map((question, questionIndex) => {
+        assessmentParams.alternativeGroups = zones.map((zone) => {
+            return zone.questions.map((question) => {
+                if (!allowRealTimeGrading && Array.isArray(question.points)) {
+                    throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for a question if real-time grading is disabled`);
+                }
                 let alternatives;
                 if (_(question).has('alternatives')) {
-                    if (_(question).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question}));
+                    if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
                     alternatives = _.map(question.alternatives, function(alternative) {
+                        if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
+                            throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for an alternative if real-time grading is disabled`);
+                        }
                         return {
                             qid: alternative.id,
                             maxPoints: alternative.maxPoints || question.maxPoints,
@@ -125,7 +139,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             points: question.points,
                             forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false,
                             triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : 1,
-                        }
+                        },
                     ];
                 } else {
                     throw error.make(400, 'Must specify either "id" or "alternatives" in question', {question});
@@ -172,7 +186,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
                     assessmentQuestionNumber++;
                     // Loop up the ID of this question based on its QID
-                    const question = questionDB[alternative.qid]
+                    const question = questionDB[alternative.qid];
                     if (!question) {
                         throw new Error(`Invalid QID in assessment ${assessment.tid}: ${alternative.qid}`);
                     }
@@ -186,7 +200,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         tries_per_variant: alternative.triesPerVariant,
                         question_id: questionId,
                         number_in_alternative_group: alternativeIndex + 1,
-                    }
+                    };
 
                 });
 
@@ -205,7 +219,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
         course_instance_id: courseInstance.courseInstanceId,
         course_id: courseInfo.courseId,
         check_access_rules_exam_uuid: config.checkAccessRulesExamUuid,
-    }
+    };
 }
 
 module.exports.sync = function(courseInfo, courseInstance, questionDB, callback) {
@@ -222,7 +236,7 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
             .each(function(assessments, uuid) {
                 if (assessments.length > 1) {
                     const directories = assessments.map(a => a.directory).join(', ');
-                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`)
+                    throw new Error(`UUID ${uuid} is used in multiple assessments: ${directories}`);
                 }
             });
 
@@ -237,4 +251,4 @@ module.exports.sync = function(courseInfo, courseInstance, questionDB, callback)
         await sqldb.callOneRowAsync('sync_assessments', syncParams);
         perf.end(`syncAssessments${courseInstance.courseInstanceId}Sproc`);
     })(callback);
-}
+};
