@@ -14,12 +14,13 @@ RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_PARTIAL_CREDIT_DEFAULT = False
+ALLOW_FRACTIONS_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -30,6 +31,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
     allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -74,6 +76,7 @@ def render(element_html, data):
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
+        info_params['allow_fractions'] = allow_fractions
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
@@ -210,9 +213,76 @@ def render(element_html, data):
     return html
 
 
+def parse_entry(name, data, allow_fractions):
+    parsed = 0.0
+    valid = False
+
+    # Get submitted answer or return parse_error if it does not exist
+    a_sub = data['submitted_answers'].get(name, None)
+    if a_sub is None:
+        data['format_errors'][name] = 'No submitted answer.'
+        data['submitted_answers'][name] = None
+        return (parsed, valid)
+
+    if a_sub.strip() == '':
+        data['format_errors'][name] = 'Answer was blank.'
+        data['submitted_answers'][name] = None
+        return (parsed, valid)
+
+    # support FANCY division characters
+    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
+    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
+
+    if a_sub.count('/') == 1:
+        # Specially handle fractions.
+
+        if allow_fractions:
+            a_sub_splt = a_sub.split('/')
+            try:
+                a_parse_l = pl.string_to_number(a_sub_splt[0], allow_complex=False)
+                a_parse_r = pl.string_to_number(a_sub_splt[1], allow_complex=False)
+
+                if a_parse_l is None or not np.isfinite(a_parse_l):
+                    raise ValueError('the numerator could not be interpreted as a decimal number.')
+                if a_parse_r is None or not np.isfinite(a_parse_r):
+                    raise ValueError('the denominator could not be interpreted as a decimal number.')
+
+                a_frac = a_parse_l / a_parse_r
+                if not np.isfinite(a_frac):
+                    raise ValueError('The submitted answer is not a finite number.')
+
+                parsed = pl.to_json(a_frac)
+                valid = True
+                data['submitted_answers'][name] = parsed
+            except ZeroDivisionError:
+                data['format_errors'][name] = '(Division by zero)'
+                data['submitted_answers'][name] = None
+            except Exception as error:
+                data['format_errors'][name] = f'(Invalid format - {str(error)})'
+                data['submitted_answers'][name] = None
+        else:
+            data['format_errors'][name] = '(No fractional answers)'
+            data['submitted_answers'][name] = None
+    else:
+        # Not a fraction, just convert to float or complex
+        try:
+            a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
+            if a_sub_parsed is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(a_sub_parsed):
+                raise ValueError('invalid submitted answer (not finite)')
+            data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
+        except Exception as error:
+            data['format_errors'][name] = f'(Invalid format - {str(error)})'
+            data['submitted_answers'][name] = None
+
+    return (parsed, valid)
+
+
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
     # Get true answer
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
@@ -232,32 +302,15 @@ def parse(element_html, data):
     for i in range(m):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
-            a_sub = data['submitted_answers'].get(each_entry_name, None)
-            if a_sub is None:
-                data['submitted_answers'][each_entry_name] = None
-                data['format_errors'][each_entry_name] = '(No submitted answer)'
-                invalid_format = True
-            elif not a_sub:
-                data['submitted_answers'][each_entry_name] = None
-                data['format_errors'][each_entry_name] = '(Invalid blank entry)'
-                invalid_format = True
+            value, valid = parse_entry(each_entry_name, data, allow_fractions)
+            if valid:
+                A[i, j] = value
             else:
-                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
-                if a_sub_parsed is None:
-                    data['submitted_answers'][each_entry_name] = None
-                    data['format_errors'][each_entry_name] = '(Invalid format)'
-                    invalid_format = True
-                elif not np.isfinite(a_sub_parsed):
-                    data['submitted_answers'][each_entry_name] = None
-                    data['format_errors'][each_entry_name] = '(Invalid format - not finite)'
-                    invalid_format = True
-                else:
-                    data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
-                    A[i, j] = a_sub_parsed
+                invalid_format = True
 
     if invalid_format:
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
-            data['format_errors'][name] = chevron.render(f, {'format_error': True}).strip()
+            data['format_errors'][name] = chevron.render(f, {'format_error': True, 'allow_fractions': allow_fractions}).strip()
         data['submitted_answers'][name] = None
     else:
         data['submitted_answers'][name] = pl.to_json(A)
