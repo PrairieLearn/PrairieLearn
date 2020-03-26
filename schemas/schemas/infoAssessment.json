@@ -87,6 +87,11 @@
             "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
             "type": "boolean",
             "default": true
+        },
+        "requireHonorCode": {
+            "description": "Requires the student to accept an honor code before starting exam assessments.",
+            "type": "boolean",
+            "default": true
         }
     },
     "definitions": {

@@ -42,7 +42,8 @@ BEGIN
             assessment_set_id,
             constant_question_value,
             allow_issue_reporting,
-            allow_real_time_grading)
+            allow_real_time_grading,
+            require_honor_code)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -62,7 +63,8 @@ BEGIN
                 (SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id),
                 (assessment->>'constant_question_value')::boolean,
                 (assessment->>'allow_issue_reporting')::boolean,
-                (assessment->>'allow_real_time_grading')::boolean
+                (assessment->>'allow_real_time_grading')::boolean,
+                (assessment->>'require_honor_code')::boolean
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -81,7 +83,8 @@ BEGIN
             assessment_set_id = EXCLUDED.assessment_set_id,
             constant_question_value = EXCLUDED.constant_question_value,
             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
-            allow_real_time_grading = EXCLUDED.allow_real_time_grading
+            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
+            require_honor_code = EXCLUDED.require_honor_code
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;

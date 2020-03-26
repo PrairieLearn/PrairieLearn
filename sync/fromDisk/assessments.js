@@ -42,6 +42,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
     const assessments = Object.entries(courseInstance.assessmentDB).map(([tid, assessment]) => {
         const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
         const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
+        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
 
         // Because of how Homework-type assessments work, we don't allow
         // real-time grading to be disabled for them.
@@ -61,6 +62,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             shuffle_questions: assessment.shuffleQuestions ? true : false,
             allow_issue_reporting: allowIssueReporting,
             allow_real_time_grading: allowRealTimeGrading,
+            require_honor_code: requireHonorCode,
             auto_close: !!_.get(assessment, 'autoClose', true),
             max_points: assessment.maxPoints,
             set_name: assessment.set,
