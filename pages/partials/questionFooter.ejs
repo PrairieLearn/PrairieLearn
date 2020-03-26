@@ -131,14 +131,18 @@
         });
 
         // Check form state on unload
-        $(window).bind('beforeunload', (event) => {
-            const currentForm = getForm();
-            if(initialForm != currentForm) {
+        $(window).bind('beforeunload', (e) => {
+            const isSameForm = initialForm == getForm();
+
+            // allowQuestionUnload: pages/partials/countdown.ejs
+            if(!isSameForm && !window.allowQuestionUnload) {
+                const event = e || window.event;
+
                 // MDN recommendation (not fully supported)
-                (event || window.event).preventDefault();
+                event.preventDefault();
 
                 // Chrome legacy
-                (event || window.event).returnValue = '';
+                event.returnValue = '';
 
                 // Fallback
                 return '';

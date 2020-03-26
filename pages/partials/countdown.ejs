@@ -48,6 +48,7 @@ process) in milliseconds as the variable "serverRemainingMS".
 </form>
 
 <script>
+  window.allowQuestionUnload = false;
   var clientStart;
   if (window.performance && window.performance.timing && window.performance.timing.responseStart) {
       clientStart = window.performance.timing.responseStart;
@@ -81,6 +82,8 @@ process) in milliseconds as the variable "serverRemainingMS".
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
+          // do not trigger unsaved warning dialog
+          window.allowQuestionUnload = true;
           document.forms['time-limit-finish-form'].submit();
       }
   };
