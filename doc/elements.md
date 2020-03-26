@@ -309,6 +309,8 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
@@ -364,6 +366,8 @@ Attribute | Type | Default | Description
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Details
 
@@ -421,6 +425,8 @@ Attribute | Type | Default | Description
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
+`size` | integer | 35 | Size of the input box.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Example implementations
 
@@ -534,6 +540,7 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
 #### Details
 
