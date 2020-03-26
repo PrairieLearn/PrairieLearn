@@ -88,6 +88,7 @@
   * Add R vector/matrix support in `pl-variable-output` (James Balamuta).
 
   * Add example course question templates (James Balamuta).
+
   * Add extra `/course*` mount points (Tim Yang).
   
   * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
