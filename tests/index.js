@@ -26,6 +26,7 @@ require('./testInstructorAssessment');
 require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
+require('./testRealTimeGradingDisabled');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testApi');

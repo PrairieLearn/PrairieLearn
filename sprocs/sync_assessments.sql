@@ -41,7 +41,8 @@ BEGIN
             text,
             assessment_set_id,
             constant_question_value,
-            allow_issue_reporting)
+            allow_issue_reporting,
+            allow_real_time_grading)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -60,7 +61,8 @@ BEGIN
                 assessment->>'text',
                 (SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id),
                 (assessment->>'constant_question_value')::boolean,
-                (assessment->>'allow_issue_reporting')::boolean
+                (assessment->>'allow_issue_reporting')::boolean,
+                (assessment->>'allow_real_time_grading')::boolean
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -78,7 +80,8 @@ BEGIN
             text = EXCLUDED.text,
             assessment_set_id = EXCLUDED.assessment_set_id,
             constant_question_value = EXCLUDED.constant_question_value,
-            allow_issue_reporting = EXCLUDED.allow_issue_reporting
+            allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+            allow_real_time_grading = EXCLUDED.allow_real_time_grading
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
@@ -106,7 +109,8 @@ BEGIN
                 seb_config,
                 exam_uuid,
                 start_date,
-                end_date)
+                end_date,
+                show_closed_assessment)
             (
                 SELECT
                     new_assessment_id,
@@ -120,7 +124,8 @@ BEGIN
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone)
+                    input_date(access_rule->>'end_date', ci.display_timezone),
+                    (access_rule->>'show_closed_assessment')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -138,7 +143,8 @@ BEGIN
                 uids = EXCLUDED.uids,
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date;
+                end_date = EXCLUDED.end_date,
+                show_closed_assessment = EXCLUDED.show_closed_assessment;
         END LOOP;
 
         -- Delete excess access rules

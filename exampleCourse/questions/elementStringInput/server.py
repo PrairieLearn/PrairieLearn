@@ -14,12 +14,14 @@ def generate(data):
 
     d = ''.join(str(e) for e in list1)
     e = 'cAsE iNsEnSiTiVe'
+    f = 'small'
 
     data["params"]["a"] = a
     data["params"]["b"] = b
     data["params"]["c"] = c
     data["params"]["d"] = d
     data["params"]["e"] = e
+    data["params"]["f"] = f
     data["params"]["stringname"] = stringname
 
     data["correct_answers"]["ans1"] = a*stringname
@@ -28,3 +30,4 @@ def generate(data):
     data["correct_answers"]["ans4"] = d
     data["correct_answers"]["ans5"] = "blank"
     data["correct_answers"]["ans6"] = e
+    data["correct_answers"]["ans7"] = f

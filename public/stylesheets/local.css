@@ -109,6 +109,10 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
     white-space: nowrap;
 }
 
+pre {
+    overflow-wrap: normal;
+}
+
 /**************
  * Submissions
  **************/
@@ -202,12 +206,12 @@ table td > .badge {
     white-space: pre;
     color: #444;
     background: #F0F0F0;
-    
+
     padding-top: 4px;
     padding-bottom: 4px;
     padding-left: 2px;
     padding-right: 2px;
-    
+
     border-radius: 2px;
     border-color: #ccc;
     border-width: 1px;
@@ -239,4 +243,4 @@ table td > .badge {
     border-color: #6c757d;
     margin-left: 5px;
     background: #fff;
-} 
+}
