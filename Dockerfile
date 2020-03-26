@@ -12,7 +12,6 @@ COPY . /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
 RUN chmod +x /PrairieLearn/docker/init.sh \
-    && mv /PrairieLearn/docker/config.json /PrairieLearn \
     && mkdir /course{,{2..9}} \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
