@@ -531,15 +531,15 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 ]);
 
 //app.use('/pl/course_instance/:course_instance_id/instructor/questionThumbnail', require('.pages'))
-app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/questionThumbnail/', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/questionThumbnail/questionThumbnail'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/questionThumbnail/', [
-  require('./middlewares/selectAndAuthzInstructorQuestion'),
-  require('./pages/questionThumbnail/questionThumbnail'),
-]);
+//app.use('/pl/course/:course_id/course_admin/', [
+    //require('./middlewares/selectAndAuthzInstanceQuestion'),
+    //require('./middlewares/studentAssessmentAccess'),
+    //require('./pages/questionThumbnail/questionThumbnail'),
+//]);
+// app.use('/pl/course/:course_id/instructor/question/:question_id/questionThumbnail/', [
+//   require('./middlewares/selectAndAuthzInstructorQuestion'),
+//   require('./pages/questionThumbnail/questionThumbnail'),
+// ]);
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
@@ -738,9 +738,15 @@ app.use('/pl/course/:course_id/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
 ]);
+//app.use('/pl/course/:course_id/course_admin/questions/questionThumbnail', require('./pages/questionThumbnail/questionThumbnail'));
+//app.use('pl/course/:course_id/course_admin/questions/questionThumbnail', [
+//  function(req, res, next) {res.locals.navSubPage = 'questions/questionThumbnail'; next();},
+//  require('./pages/questionThumbnail/questionThumbnail'),
+//]);
 app.use('/pl/course/:course_id/course_admin/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorQuestions/instructorQuestions'),
+    require('./pages/questionThumbnail/questionThumbnail')
 ]);
 app.use('/pl/course/:course_id/course_admin/syncs', [
     function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},
