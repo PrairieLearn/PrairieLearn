@@ -4,8 +4,11 @@
 <head>
 <%- include('../partials/head'); %>
 <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+<link href="/stylesheets/highlight-default.css" rel="stylesheet" />
 <script src="/javascripts/jquery.tablesorter.min.js"></script>
 <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+<script src="/javascripts/highlight.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 </head>
 
 <body>
@@ -69,7 +72,7 @@ function linkify(row, col) {
   aria-expanded="false" aria-controls="SQL-<%= qIndex %>">SQL</button>
 <button class="btn btn-xs btn-info" onClick="window.scrollTo(0,0);">Return to top</button>
 <div id="SQL-<%= qIndex %>" class="collapse">
-<pre><code>
+<pre><code class="sql">
 <%= q.SQLstring %>
 </code></pre>
 </div>
