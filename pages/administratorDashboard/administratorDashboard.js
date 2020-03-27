@@ -20,6 +20,7 @@ router.get('/:dashboard([^/]*)?', function(req, res, next) {
 
     var params = {
         req_date: res.locals.req_date,
+        timezone: 'US/Central', // FIXME: Get this from somewhere?
     };
     res.locals.queries = [];
     res.locals.req_date_present = moment(res.locals.req_date).format('llll');
