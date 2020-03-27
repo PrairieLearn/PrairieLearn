@@ -167,3 +167,7 @@ Here is the assessment page for a closed exam with real-time grading disabled:
 ![Closed assessment with real-time grading disabled](assessment-grading-disabled-closed.png)
 
 Note that after the exam has closed and been graded, more information about points will be visible.
+
+## Honor code and identity verification
+
+By default, `Exam` assessments require the student to agree to an honor code and certify their identity before starting the assessment. To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
