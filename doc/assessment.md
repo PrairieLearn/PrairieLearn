@@ -168,7 +168,7 @@ Here is the assessment page for a closed exam with real-time grading disabled:
 
 Note that after the exam has closed and been graded, more information about points will be visible.
 
-## Honor code and identity verification
+## Honor code
 
 By default, `Exam` assessments require students to certify their identity and pledge an honor code before starting the assessment:
 
