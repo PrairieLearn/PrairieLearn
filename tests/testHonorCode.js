@@ -28,13 +28,13 @@ const fetchCheerio = async (url, options = {}) => {
   const text = await response.text();
   response.$ = cheerio.load(text);
   // response.text() can only be called once, which we already did.
-  // patch this so consumers can use it as normal.
+  // Patch this so consumers can use it as normal.
   response.text = () => text;
   return response;
 };
 
 /**
- * This test validates the exam landing page with `requireHonorCode` disabled.
+ * This test validates the exam landing page in response `requireHonorCode`.
  * It is deliberately written separately from `testExam.js` as a start to
  * breaking tests out of that monolith. It does not reuse existing conventions
  * from `testExam.js` in favor of experimenting with a different way of writing
