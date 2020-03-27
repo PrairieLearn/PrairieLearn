@@ -33,28 +33,16 @@
           <% } %>
 
           <% if (locals.assessment.require_honor_code) { %>
-          <div class="test-class-honor-code">
-            <div class="card card-secondary mb-4">
-              <div class="card-header font-weight-bold py-2">I agree to&hellip;</div>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item py-2">complete this exam using only what is provided by the exam and what is otherwise allowed by the instructor,</li>
-                <li class="list-group-item py-2">report any suspected violations, and</li>
-                <li class="list-group-item py-2">forfeit my scores if I do not comply with this honor code.</li>
-              </ul>
-            </div>
+          <div class="card card-secondary mb-4 test-class-honor-code">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item py-2">I certify that I am <%= user.name %> and I am allowed to take this exam in <%= course.short_name %> (<%= course_instance.short_name %>).</li>
+              <li class="list-group-item py-2">I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.</li>
+            </ul>
 
-            <div class="card card-secondary mb-4">
-              <div class="card-header font-weight-bold py-2">I certify that&hellip;</div>
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item py-2">I am <%= user.name %>, and</li>
-                <li class="list-group-item py-2">I am allowed to take this exam in <%= course.short_name %> (<%= course_instance.short_name %>).</li>
-              </ul>
-            </div>
-
-            <div class="d-flex justify-content-center mb-2">
+            <div class="card-footer text-center border-top-0">
               <span class="form-check d-inline">
                 <input type="checkbox" class="form-check-input" id="agree-certify">
-                <label class="form-check-label font-weight-bold" for="agree-certify">I agree to and certify the above</label>
+                <label class="form-check-label font-weight-bold" for="agree-certify">I agree to and certify the above.</label>
               </span>
             </div>
           </div>
