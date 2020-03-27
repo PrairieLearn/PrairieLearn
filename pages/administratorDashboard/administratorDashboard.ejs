@@ -28,7 +28,7 @@ function linkify(row, col) {
 <a href="<%= href %>"><%= row[col] %></a>
   <% } else { %>
 <%= row[col] %>
-  <% } 
+  <% }
 }; %>
 
 <div class="container-fluid">
@@ -57,21 +57,28 @@ function linkify(row, col) {
     <div class="row">
     <div class="col-12">
 
-<% queries.forEach(function(q) { 
+<% queries.forEach(function(q, qIndex) {
    var columns = [];
 %>
 
-<h2 id="<%= q.SQLFilename %>"><%= q.SQLFilename %>
-    <span class="badge badge-pill badge-info"><%= q.rowCount %></span></h2>
-<span class="badge badge-secondary"
-    title="<%= q.SQLstring %>">SQL</span>
+<h2 id="<%= q.SQLFilename %>">
+    <%= q.SQLFilename %>
+    <span class="badge badge-pill badge-info"><%= q.rowCount %></span>
+</h2>
+<button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#SQL-<%= qIndex %>"
+  aria-expanded="false" aria-controls="SQL-<%= qIndex %>">SQL</button>
 <button class="btn btn-xs btn-info" onClick="window.scrollTo(0,0);">Return to top</button>
+<div id="SQL-<%= qIndex %>" class="collapse">
+<pre><code>
+<%= q.SQLstring %>
+</code></pre>
+</div>
 <table class="table tablesorter">
     <thead>
         <tr>
     <% q.fields.forEach(function(field) { %>
         <th><%= field.name %></th>
-    <% columns.push(field.name); 
+    <% columns.push(field.name);
         }); %>
     </tr></thead>
     <tbody>
@@ -84,13 +91,13 @@ function linkify(row, col) {
               <%= row[col] %>
             <% } else if (typeof(row[col]) == 'object') { %>
             <code><%= JSON.stringify(row[col]); %></code>
-              <% } else if (['assessment_id', 'course_id', 'course_instance_id'].includes(col)) { 
+              <% } else if (['assessment_id', 'course_id', 'course_instance_id'].includes(col)) {
                     linkify(row, col);
                  } else { %>
               <%= row[col] %>
             <% } %>
-        </td> 
-            
+        </td>
+
         <% }); %>
     </tr>
     <% }); %>

@@ -1,10 +1,11 @@
-SELECT c.short_name,ci.long_name,a.title,
+SELECT
+    c.short_name,ci.long_name,a.title,a.type,
     a.id as assessment_id,
     a.course_instance_id,
     ci.course_id,
-    format_date_full_compact(aar.end_date, $timezone) as start_date,
-    aar.end_date,
-    aar.end_date - aar.start_date AS duration,
+    format_date_full_compact(aar.start_date, config_select('display_timezone')) as start_date,
+    format_date_full_compact(aar.end_date, config_select('display_timezone')) as end_date,
+    format_interval_short(aar.end_date - aar.start_date) AS duration,
     aar.role,
     aar.uids,
     (SELECT count(*) FROM enrollments WHERE course_instance_id=ci.id AND role='Student') as enrollments
