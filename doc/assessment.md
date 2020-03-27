@@ -170,4 +170,4 @@ Note that after the exam has closed and been graded, more information about poin
 
 ## Honor code and identity verification
 
-By default, `Exam` assessments require the student to agree to an honor code and certify their identity before starting the assessment. To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
+By default, `Exam` assessments require the student to pledge an honor code and certify identity before starting the assessment. To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
