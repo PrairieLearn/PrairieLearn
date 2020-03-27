@@ -32,9 +32,9 @@
           </p>
           <% } %>
 
-          <!-- #require_honor_code -->
+          <% if (locals.assessment.require_honor_code) { %>
           <div class="card card-secondary mb-4">
-            <div class="card-header py-2">I agree to&hellip;</div>
+            <div class="card-header font-weight-bold py-2">I agree to&hellip;</div>
             <ul class="list-group list-group-flush">
               <li class="list-group-item py-2">complete this exam using only what is provided by the exam and what is otherwise allowed by the instructor,</li>
               <li class="list-group-item py-2">report any suspected violations, and</li>
@@ -43,7 +43,7 @@
           </div>
 
           <div class="card card-secondary mb-4">
-            <div class="card-header py-2">I certify that&hellip;</div>
+            <div class="card-header font-weight-bold py-2">I certify that&hellip;</div>
             <ul class="list-group list-group-flush">
               <li class="list-group-item py-2">I am <%= user.name %>, and</li>
               <li class="list-group-item py-2">I am allowed to take this exam in <%= course.short_name %> (<%= course_instance.short_name %>).</li>
@@ -53,15 +53,15 @@
           <div class="d-flex justify-content-center mb-2">
             <span class="form-check d-inline">
               <input type="checkbox" class="form-check-input" id="agree-certify">
-              <label class="form-check-label" for="agree-certify">I agree to and certify the above</label>
+              <label class="form-check-label font-weight-bold" for="agree-certify">I agree to and certify the above</label>
             </span>
           </div>
-          <!-- /require_honor_code -->
+          <% } %>
 
           <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
             <input type="hidden" name="__action" value="newInstance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
+            <button id="start-assessment" type="submit" class="btn btn-primary"<% if (locals.assessment.require_honor_code) { %> disabled<% } %>>Start assessment</button>
           </form>
 
           <script>
