@@ -1,4 +1,3 @@
-const util = require('util');
 const assert = require('chai').assert;
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
@@ -69,6 +68,8 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
 
   step('get default exam info', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam1, []);
+    context.assessmentId = results.rows[0].id;
+    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
   step('visit default exam landing page', async () => {
@@ -85,6 +86,8 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
 
   step('get `"requireHonorCode": false` exam info', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam2, []);
+    context.assessmentId = results.rows[0].id;
+    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
   step('visit `"requireHonorCode": false` exam landing page', async () => {
