@@ -33,6 +33,7 @@ pages:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
   - 'Installing natively': 'installingNative.md'
+  - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
