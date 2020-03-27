@@ -5,6 +5,7 @@
     "set": "Exam",
     "number": "2",
     "allowRealTimeGrading": false,
+    "requireHonorCode": false,
     "allowAccess": [
         {
             "role": "TA",
