@@ -7,7 +7,7 @@ FROM
 WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'E'
-    AND a.number = '1';
+    AND a.number = $number;
 
 -- BLOCK select_exam2
 SELECT
