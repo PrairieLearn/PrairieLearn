@@ -67,7 +67,7 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
   after('shut down testing server', helperServer.after);
 
   step('get default exam info', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam1, []);
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '1'});
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
