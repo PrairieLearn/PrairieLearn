@@ -176,3 +176,5 @@ By default, `Exam` assessments require students to certify their identity and pl
 * I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.
 
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
+
+The text of the honor code was based on the University of Maryland's [Honor Pledge](https://www.studentconduct.umd.edu/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code [McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
