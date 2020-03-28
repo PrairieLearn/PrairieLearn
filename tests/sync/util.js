@@ -126,6 +126,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
+ * @property {boolean} requireHonorCode
  * @property {boolean} multipleInstance
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
