@@ -41,8 +41,8 @@
 
             <div class="card-footer text-center border-top-0 py-2">
               <span class="form-check d-inline">
-                <input type="checkbox" class="form-check-input" id="agree-certify">
-                <label class="form-check-label font-weight-bold" for="agree-certify">I certify and pledge the above.</label>
+                <input type="checkbox" class="form-check-input" id="certify-pledge">
+                <label class="form-check-label font-weight-bold" for="certify-pledge">I certify and pledge the above.</label>
               </span>
             </div>
           </div>
@@ -55,12 +55,12 @@
           </form>
 
           <script>
-            const agree = $('#agree-certify')[0];
+            const certify = $('#certify-pledge')[0];
             const start = $('#start-assessment')[0];
             const form = $('#confirm-form')[0];
 
-            agree.onchange = () => {
-              start.disabled = !agree.checked;
+            certify.onchange = () => {
+              start.disabled = !certify.checked;
             };
 
             form.onsubmit = () => {
