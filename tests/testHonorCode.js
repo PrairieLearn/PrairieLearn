@@ -33,14 +33,7 @@ const fetchCheerio = async (url, options = {}) => {
   return response;
 };
 
-/**
- * This test validates the exam landing page in response `requireHonorCode`.
- * It is deliberately written separately from `testExam.js` as a start to
- * breaking tests out of that monolith. It does not reuse existing conventions
- * from `testExam.js` in favor of experimenting with a different way of writing
- * PrairieLearn tests.
- */
-describe('Exam assessment with `requireHonorCode` disabled', function() {
+describe('Exam assessment response to `requireHonorCode`', function() {
   this.timeout(60000);
 
   const context = {};
@@ -48,21 +41,7 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  /**
-   * Utility function that extracts a CSRF token from a `__csrf_token` input
-   * that is a descendent of the `parentSelector`, if one is specified.
-   * The token will also be persisted to `context.__csrf_token`.
-   */
-  const extractAndSaveCSRFToken = ($, parentSelector = '') => {
-    const csrfTokenInput = $(`${parentSelector} input[name="__csrf_token"]`);
-    assert.lengthOf(csrfTokenInput, 1);
-    const csrfToken = csrfTokenInput.val();
-    assert.isString(csrfToken);
-    context.__csrf_token = csrfToken;
-    return csrfToken;
-  };
-
-  after('set up testing server', helperServer.before);
+  before('set up testing server', helperServer.before);
 
   after('shut down testing server', helperServer.after);
 
@@ -80,8 +59,6 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
 
     // We should see the honor code div by default
     assert.lengthOf(response.$('div.test-suite-honor-code'), 1);
-
-    extractAndSaveCSRFToken(response.$, 'form');
   });
 
   step('get `"requireHonorCode": false` exam info', async () => {
@@ -98,7 +75,5 @@ describe('Exam assessment with `requireHonorCode` disabled', function() {
 
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-suite-honor-code'), 0);
-
-    extractAndSaveCSRFToken(response.$, 'form');
   });
 });
