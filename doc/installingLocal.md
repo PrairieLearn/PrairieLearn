@@ -27,6 +27,12 @@ By default, PrairieLearn will load `exampleCourse`, `testCourse`, and any course
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
+By default, PrairieLearn does not monitor for server-side changes, so it will **not** automatically restart the node server when you change the node source. To enable automatic live-reloading of server-side changes, use the `-e` flag to set the `NODEMON=true` environment variable:
+
+```sh
+docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
+```
+
 ### Running a Specific Branch
 
 By default, the above command will run PrairieLearn from the `master` branch on GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
@@ -53,13 +59,17 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 
 ### Server from shell
 
-When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container.  This can be done by starting the server manually from a shell instance, then restarting the server when changes are made.
+When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container. This can be done either
+
+* automatically by using the `-e NODEMON=true` setting as described earlier,
+
+* or manually by starting the server from a shell instance:
 
 ```sh
 /PrairieLearn/docker/init.sh
 ```
 
-Then when any modifications are made, you can close the server with `<ctrl-C>` and re-run the init script.
+and when any modifications are made, you can close the server with `<ctrl-C>` and re-run the init script.
 
 ### Tests from shell
 
