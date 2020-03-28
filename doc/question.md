@@ -87,6 +87,18 @@ def generate(data):
 
 ```
 
+The `server.py` functions are:
+
+Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
+--- | --- | --- | --- | ---
+`generate()` | `data` (dict) | `params`, `correct_answers` | `variant_seed`, `options` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
+`prepare()` | `data` (dict) | `params`, `correct_answers` | `variant_seed`, `options` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
+`render()` | `html` (string) | | `params`, `correct_answers`, `submitted_answers`, `format_errors`, `partial_scores`, `score`, `feedback` `variant_seed`, `options`, `raw_submitted_answers`, `editable`, `panel` | Render the HTML for one panel and return it as a string.
+`parse()` | `data` (dict) | `submitted_answers`, `format_errors` | `params`, `correct_answers`, `variant_seed`, `options`, `raw_submitted_answers` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
+`grade()` | `data` (dict) | `params`, `correct_answers`, `submitted_answers`, `format_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+`file()` | string, byte-like, file-like | | `params`, `correct_answers`, `variant_seed`, `options`, `filename` | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used.
+`test()` | `data` (dict), `Exception` | `format_errors`, `raw_submitted_answers`, `partial_scores`, `score` | `params`, `correct_answers`, `variant_seed`, `options`, `feedback`, `gradable` | 
+
 ## Question `question.html`
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
