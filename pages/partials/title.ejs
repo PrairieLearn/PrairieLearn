@@ -1,0 +1,19 @@
+<%
+    var navTrace = new Array();
+
+    if (typeof pageTitle !== 'undefined') {
+        navTrace.push(pageTitle);
+    }
+    // If page is associated with a particular course,
+    // always display the short name, e.g. QA 101
+    if (typeof course !== 'undefined'
+    && typeof course.short_name !== 'undefined') {
+        navTrace.push(course.short_name);
+    }
+%>
+<title>
+    <% if (navTrace.length > 0) { %>
+        <%= navTrace.join(" - ") + " | " %>
+    <% } %>
+    PrairieLearn
+</title>
