@@ -15,7 +15,7 @@ pages:
   - 'Course instance configuration': 'courseInstance.md'
   - 'Assessment configuration': 'assessment.md'
   - 'Question configuration': 'question.md'
-  - 'Elements for Writing Questions': 'elements.md'
+  - 'Elements for writing questions': 'elements.md'
   - 'Access control': 'accessControl.md'
   - 'Remote exams': 'remoteExams.md'
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
