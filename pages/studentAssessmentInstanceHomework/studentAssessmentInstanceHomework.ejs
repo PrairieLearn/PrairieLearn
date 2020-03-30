@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageTitle: assessment_set.abbreviation + assessment.number.toString()}); %>
   </head>
   <body>
     <script>
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
-  
+
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
