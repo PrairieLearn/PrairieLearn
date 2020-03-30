@@ -648,7 +648,7 @@ function foo(p, callback) {
 
 * Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
-* If we are in a function that does not have an active callback (perhaps we already called it) then we should log errors with the following pattern. Note that the first string argument to `logger.error()` is mandatory.
+* If we are in a function that does not have an active callback (perhaps we already called it) then we should log errors with the following pattern. Note that the first string argument to `logger.error()` is mandatory. Failure to provide a string argument will result in `error: undefined` being logged to the console.
 
 ```javascript
 function foo(p) {
