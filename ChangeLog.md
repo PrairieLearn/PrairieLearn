@@ -78,7 +78,6 @@
   * Add explanation of `None` role in documentation and instructor gradebook view (James Balamuta).
 
   * Add support for editing from bare git repo (Tim Bretl).
-
   
   * Add instructor panel to `course` question pages (Tim Yang).
   

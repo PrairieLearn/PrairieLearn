@@ -72,6 +72,13 @@
               start.disabled = !certify.checked;
             };
 
+            form.onsubmit = () => {
+                start.disabled = true;
+                start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';
+            };
+          </script>
+
+        </div> <!-- card-body -->
         <% if (assessment.multiple_instance && rows.length > 0) { %>
           <table class="table table-sm table-hover">
             <thead>
@@ -118,13 +125,6 @@
             </tbody>
           </table>
         <% } %>
-
-            form.onsubmit = () => {
-                start.disabled = true;
-                start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';
-            };
-          </script>
-        </div> <!-- card-body -->
       </div>
     </div>
   </body>
