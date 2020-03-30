@@ -648,6 +648,17 @@ function foo(p, callback) {
 
 * Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
+* If we are in a function that does not have an active callback (perhaps we already called it) then we should log errors with the following pattern. Note that the first string argument to `logger.error()` is mandatory. Failure to provide a string argument will result in `error: undefined` being logged to the console.
+
+```javascript
+function foo(p) {
+    bar(p, function(err, result) {
+        if (ERR(err, e => logger.error('Error in bar()', e);
+        ...
+    });
+}
+```
+
 * Don't call a `callback` function inside a try block, especially if there is also a `callback` call in the catch handler. Otherwise exceptions thrown much later will show up incorrectly as a double-callback or just in the wrong place. For example:
 
 ```javascript
@@ -736,6 +747,17 @@ router.post('/', function(req, res, next) {
 ```
 
 * The `res.locals.__csrf_token` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
+
+
+## Logging errors
+
+* We use [Winston](https://github.com/winstonjs/winston) for logging to the console and to files. To use this, require `lib/logger` and call `logger.info()`, `logger.error()`, etc.
+
+* To show a message on the console, use `logger.info()`.
+
+* To log just to the log files, but not to the console, use `logger.verbose()`.
+
+* All `logger` functions have a mandatory first argument that is a string, and an optional second argument that is an object containing useful information. It is important to always provide a string as the first argument.
 
 
 ## Coding style

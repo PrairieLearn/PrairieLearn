@@ -104,7 +104,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         // to load and store the current commit hash in the database
         const syncStage2 = () => {
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 syncStage3();
             });
         };

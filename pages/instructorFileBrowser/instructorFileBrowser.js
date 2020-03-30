@@ -355,7 +355,7 @@ router.post('/*', function(req, res, next) {
             editor.canEdit((err) => {
                 if (ERR(err, next)) return;
                 editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         res.redirect(req.originalUrl);
@@ -391,7 +391,7 @@ router.post('/*', function(req, res, next) {
                 editor.canEdit((err) => {
                     if (ERR(err, next)) return;
                     editor.doEdit((err, job_sequence_id) => {
-                        if (ERR(err, (e) => logger.error(e))) {
+                        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                         } else {
                             if (req.body.was_viewing_file) {
@@ -433,7 +433,7 @@ router.post('/*', function(req, res, next) {
                 editor.canEdit((err) => {
                     if (ERR(err, next)) return;
                     editor.doEdit((err, job_sequence_id) => {
-                        if (ERR(err, (e) => logger.error(e))) {
+                        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                         } else {
                             res.redirect(req.originalUrl);
