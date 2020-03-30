@@ -636,6 +636,18 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
+// questionThumbnail
+app.use('/pl/course/:course_id/course_admin/questions/questionThumbnail', [
+    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/questions/questionThumbnail', [
+    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
+
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
@@ -738,15 +750,9 @@ app.use('/pl/course/:course_id/course_admin/issues', [
     function(req, res, next) {res.locals.navSubPage = 'issues'; next();},
     require('./pages/instructorIssues/instructorIssues'),
 ]);
-//app.use('/pl/course/:course_id/course_admin/questions/questionThumbnail', require('./pages/questionThumbnail/questionThumbnail'));
-//app.use('pl/course/:course_id/course_admin/questions/questionThumbnail', [
-//  function(req, res, next) {res.locals.navSubPage = 'questions/questionThumbnail'; next();},
-//  require('./pages/questionThumbnail/questionThumbnail'),
-//]);
 app.use('/pl/course/:course_id/course_admin/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorQuestions/instructorQuestions'),
-    require('./pages/questionThumbnail/questionThumbnail')
 ]);
 app.use('/pl/course/:course_id/course_admin/syncs', [
     function(req, res, next) {res.locals.navSubPage = 'syncs'; next();},

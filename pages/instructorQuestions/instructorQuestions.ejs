@@ -62,7 +62,7 @@
                                 <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
                             </td>
                             <td class="align-middle">
-                                <image src="<%= urlPrefix %>/course_admin/questions/<%= question.qid %>/<%= question.qid %>.jpg" width="100" height="100"/>
+                                <image src="<%= urlPrefix %>/course_admin/questions/questionThumbnail/<%= question.qid %>" width="100" height="100"/>
                             </td>
                             <td class="align-middle">
                                 <%= question.qid %>
