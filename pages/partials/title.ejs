@@ -1,13 +1,12 @@
 <%
-    var navTrace = new Array();
+    const navTrace = [];
 
     if (typeof pageTitle !== 'undefined') {
         navTrace.push(pageTitle);
     }
     // If page is associated with a particular course,
     // always display the short name, e.g. QA 101
-    if (typeof course !== 'undefined'
-    && typeof course.short_name !== 'undefined') {
+    if (typeof course !== 'undefined') {
         navTrace.push(course.short_name);
     }
 %>
