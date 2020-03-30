@@ -57,7 +57,7 @@ This can be used to, e.g., run scripts distributed with PrairieLearn by opening 
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 ```
 
-### Server from shell
+#### Server from shell
 
 When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container. This can be done either
 
@@ -71,7 +71,7 @@ When making local changes to server-side code, it is faster to restart only the 
 
 and when any modifications are made, you can close the server with `<ctrl-C>` and re-run the init script.
 
-### Tests from shell
+#### Tests from shell
 
 The linters and tests for the Python and JavaScript code can be run with the following commands in a shell instance:
 
@@ -82,4 +82,22 @@ cd /PrairieLearn
 ./docker/lint_python.sh
 ./docker/test_js.sh
 ./docker/test_python.sh
+```
+
+### Connecting to an Existing Docker
+
+The previous shells were launched in their own containers. If you want to open a shell in a Docker container that is *already running*, you can find the container's name and connect to it.
+
+1. Find the name of your running PrairieLearn container:
+
+```sh
+docker ps --format '{{.Image}}: {{.Names}}'
+```
+
+This will output your running container(s) in the form `<container_image>: <container_name>`. Find the `prairielearn/prairielearn: <container_name>` line and copy its `<container_name>` (e.g., `adoring_gauss`).
+
+2. Open a shell in `<container_name>`:
+
+```sh
+docker exec -it <container_name> /bin/bash
 ```
