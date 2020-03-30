@@ -845,7 +845,7 @@ module.exports = {
                 cache.get(cacheKey, (err, cachedData) => {
                     // We don't actually want to fail if the cache has an error; we'll
                     // just render the panel as normal
-                    ERR(err, (e) => logger.error(e));
+                    ERR(err, (e) => logger.error('Error in cache.get()', e));
                     if (!err && cachedData !== null) {
                         const {
                             courseIssues,
@@ -870,7 +870,7 @@ module.exports = {
                     // If for some reason we failed to get a cache key, don't
                     // actually fail the request, just skip the cache entirely
                     // and render as usual
-                    ERR(err, e => logger.error(e));
+                    ERR(err, e => logger.error('Error in _getCacheKey()', e));
                     if (err || !cacheKey) {
                         doRender(null);
                     } else {
