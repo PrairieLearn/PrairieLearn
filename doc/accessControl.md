@@ -29,18 +29,19 @@ The general format of `allowAccess` is:
 
 Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restiction is available for the respective objects.
 
-Access restriction | courseInstance | assessment | Meaning | Example
----                | ---            | ---        | ---     | ---
-`role`             | ✓ | ✓ | Require at least this role to access.                               | `"role": "TA"`
-`uids`             | ✓ | ✓ | Require one of the UIDs in the array to access.                     | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
-`startDate`        | ✓ | ✓ | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
-`endDate`          | ✓ | ✓ | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
-`institution`      | ✓ |   | Only people from this institution (or "Any" or "LTI").              | `"institution": "UIUC"`
-`mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
-`credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
-`timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
-`password`         |   | ✓ | Password required to start an assessment (only for Exams).          | `"password": "mysecret"`
-`examUuid`         |   | ✓ | Exam scheduler UUID that students must register for.                | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
+Access restriction                                          | courseInstance | assessment | Meaning | Example
+---                                                         | --- | --- | --- | ---
+[`role`](#roles)                                            | ✓ | ✓ | Require at least this role to access. | `"role": "TA"`
+`uids`                                                      | ✓ | ✓ | Require one of the UIDs in the array to access. | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
+[`startDate`](#dates)                                       | ✓ | ✓ | Only allow access after this date. | `"startDate": "2015-01-19T00:00:01"`
+[`endDate`](#dates)                                         | ✓ | ✓ | Only access access before this date. | `"endDate": "2015-05-13T23:59:59"`
+[`institution`](#institutions)                              | ✓ |   | Only people from this institution (or "Any" or "LTI"). | `"institution": "UIUC"`
+[`mode`](#server-modes)                                     |   | ✓ | Only allow access from this server mode. | `"mode": "Exam"`
+[`credit`](#credit)                                         |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
+[`timeLimitMin`](#time-limits)                              |   | ✓ | Time limit in minutes to complete an assessment (only for Exams). | `"timeLimitMin": 60`
+[`password`](#passwords)                                    |   | ✓ | Password required to start an assessment (only for Exams). | `"password": "mysecret"`
+[`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
+[`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -135,6 +136,26 @@ To require that students are taking a particular exam in the Computer-Based Test
 
 Note that in this case the `startDate` and `endDate` should *NOT* be specified. These will be automatically determined by the scheduler app and should not be set in PrairieLearn.
 
+## Showing/hiding closed assessments
+
+When using [time limits](#time-limits), an assessment will "close" when the time limit runs out. When an assesment closes it automatially grades all saved answers and compute the new total score. By default, at this point students can still view the entire exam, see which questions they got correct/incorrect, and look at the questions themselves.
+
+To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59",
+        "timeLimitMin": 50,
+        "showClosedAssessment": false,
+        "credit": 100
+    }
+]
+```
+
+The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `showClosedAssessment` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
+
 ## Course instance example
 
 ```json
@@ -184,6 +205,8 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 
 ## Exam with remote students example
 
+**See [Remote Exams](remoteExams.md) for more detailed examples.**
+
 ```json
 "allowAccess": [
     {
@@ -193,14 +216,13 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
     {
         "mode": "Exam",
         "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59"
+        "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
     },
     {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59",
+        "startDate": "2020-03-31T11:00:00",
+        "endDate": "2020-03-31T11:59:59",
         "timeLimitMin": 50
     }
 ],
@@ -208,6 +230,7 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 
 The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, TAs can access the assessment at any time. Second, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit between Sept 7th to Sept 10th. Third, a defined set of students (remote students) can take the exam for full credit between the same dates. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
 
+The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
 ## Homework example
 

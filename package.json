@@ -105,6 +105,8 @@
         "jsdoc": "^3.6.3",
         "json-stable-stringify": "^1.0.1",
         "mocha": "^7.1.0",
+        "mocha-steps": "^1.3.0",
+        "node-fetch": "^2.6.0",
         "nyc": "^15.0.0",
         "request": "^2.88.2",
         "sinon": "^9.0.0",
@@ -112,7 +114,7 @@
     },
     "scripts": {
         "start": "node server.js",
-        "start-nodemon": "nodemon server.js",
+        "start-nodemon": "npx nodemon -L server.js",
         "test": "nyc --reporter=lcov mocha tests/index.js",
         "test-nocoverage": "mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",

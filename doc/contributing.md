@@ -67,7 +67,7 @@ The keyword must be either `Add`, `Remove`, `Fix`, or `Change`. For example:
 ```
   * Fix broken popovers in input elements (Tim Bretl).
 ```
-One empty line must separate each item in the ChangeLog. Items should be ordered first by category (`Add`, `Remove`, `Fix`, `Change`) and then chronologically, with the most recent item appearing at the end of each category list. Travis CI has been configured to fail if you issue a PR without updating the ChangeLog.
+One empty line must separate each item in the ChangeLog. Items should be ordered first by category (`Add`, `Remove`, `Fix`, `Change`) and then chronologically, with the most recent item appearing at the end of each category list.
 
 
 ## Branches and tags

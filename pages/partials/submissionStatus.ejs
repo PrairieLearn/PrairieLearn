@@ -3,7 +3,7 @@
         <% if (submission.gradable) { %>
             <span class="badge badge-info">saved, not graded</span>
         <% } else { %>
-            <span class="badge badge-danger">invalid, not graded</span>
+            <span class="badge badge-danger">invalid, not gradable</span>
         <% } %>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>

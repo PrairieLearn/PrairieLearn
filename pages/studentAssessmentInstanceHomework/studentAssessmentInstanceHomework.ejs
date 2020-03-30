@@ -46,23 +46,11 @@
             </div>
           </div>
 
+          <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">
-            <p class="mb-0"><small>
-              Answer questions in any order. Questions can be repeated and not all
-              questions must be completed. Answering a question
-              correctly will increase its score by its current
-              value<%= (assessment.constant_question_value ? '.' : ', and will also increase its value.') %> Answering
-              a question incorrectly will reset its value. Total
-              points is the sum of all question
-              points.
-            </small></p>
-            <% if (assessment_text_templated) { %>
-            <hr>
-            <div class="well well-sm">
               <%- assessment_text_templated %>
-            </div>
-            <% } %>
           </div>
+          <% } %>
         </div>
 
         <table class="table table-sm table-hover">

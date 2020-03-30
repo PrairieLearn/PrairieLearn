@@ -68,13 +68,13 @@ process) in milliseconds as the variable "serverRemainingMS".
       countdownProgressBar.css('width', perc + '%');
       if (remainingSec >= 180) {
           countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-primary');
+          countdownProgressBar.attr('class', 'progress-bar bg-primary');
       } else if (remainingSec >= 60) {
           countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-warning');
+          countdownProgressBar.attr('class', 'progress-bar bg-warning');
       } else {
           countdownDisplay.text(remainingSec + ' sec');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-danger');
+          countdownProgressBar.attr('class', 'progress-bar bg-danger');
       }
 
       if (remainingMS > 500) {
