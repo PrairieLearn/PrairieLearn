@@ -20,7 +20,7 @@
 /site/
 
 # JSDoc generated HTML
-/doc/code-docs/
+/docs/code-docs/
 
 # Config files
 /v1/backend/config.json
