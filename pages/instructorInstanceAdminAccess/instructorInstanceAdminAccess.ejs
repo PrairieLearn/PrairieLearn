@@ -4,19 +4,13 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-
     <%- include('../partials/navbar'); %>
+    <%- include('../partials/navtabs'); %>
     <div id="content" class="container-fluid">
-        <%- include('../partials/navtabs'); %>
-
-        <!-- ###################################################################### -->
-        <!-- ###################################################################### -->
-
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex align-items-center">
             <%= course_instance.long_name %> course instance access rules
           </div>
-
           <div class="table-responsive">
             <table class="table table-sm table-hover">
               <thead>

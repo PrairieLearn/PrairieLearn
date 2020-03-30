@@ -6,18 +6,15 @@
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>
+    <%- include('../partials/navtabs'); %>
     <div id="content" class="container">
-      <%- include('../partials/navtabs'); %>
-
       <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/news_items" role="button">
         <i class="fa fa-arrow-left" aria-hidden="true"></i>
         Back to news list
       </a>
-
       <h1>
         <%= news_item.title %>
       </h1>
-
       <p class="text-muted">
         <i>
           Posted on <%= news_item.formatted_date %>

@@ -6,14 +6,12 @@
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_items'}); %>
+    <%- include('../partials/navtabs'); %>
     <div id="content" class="container">
-      <%- include('../partials/navtabs'); %>
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           News
         </div>
-
         <% if (news_items.length == 0) { %>
         <div class="card-body">
           <div class="text-center text-muted">No news items</div>

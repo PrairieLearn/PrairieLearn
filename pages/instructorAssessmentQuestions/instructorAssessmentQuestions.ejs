@@ -8,14 +8,12 @@
   </head>
   <body>
     <%- include('../partials/navbar'); %>
+    <%- include('../partials/instructorAssessmentTabs'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/instructorAssessmentTabs'); %>
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Questions
         </div>
-
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <thead>
