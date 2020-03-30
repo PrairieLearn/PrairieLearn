@@ -96,7 +96,7 @@ async.series([
                 return next(null);
             });
             request.on('error', (err) => {
-                logger.error(`Error submitting job ${n}!`, err);
+                logger.error(`Error submitting job ${n}`, err);
                 return next(err);
             });
         }, (err) => {
