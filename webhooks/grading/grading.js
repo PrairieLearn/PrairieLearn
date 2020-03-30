@@ -36,7 +36,7 @@ router.post('/', function(req, res, next) {
         };
 
         sqldb.queryOneRow(sql.update_grading_received_time, params, (err, _result) => {
-            if (ERR(err, (err) => logger.error('Error in update_grading_received_time', err))) return;
+            if (ERR(err, (err) => logger.error('Error in sql.update_grading_received_time', err))) return;
             externalGradingSocket.gradingJobStatusUpdated(jobId);
         });
 
