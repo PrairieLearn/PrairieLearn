@@ -14,16 +14,6 @@ This configuration is good when:
 * Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
 * Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
-Some notes about this configuration:
-
-* The exam window (70 minutes, `startDate` to `endDate`) has been set to be 10 minutes longer than the exam time limit (60 minutes). If a student starts the exam late, then the countdown timer on their exam will show the full exam time limit (60 minutes). However, they will not be able to access the exam past the `endDate` time under any circumstances. See [PL issue #2217](https://github.com/PrairieLearn/PrairieLearn/issues/2217) for details.
-* If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and just login to PrairieLearn again, and continuing taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
-* Remember to extend both `endDate` *and* `timeLimitMin` for students with extra-time accommodations.
-* Students who are scheduled for a conflict exam will be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict timeslot.
-* After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
-* If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
-* Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-
 ```json
 "allowAccess": [
     {
@@ -59,6 +49,16 @@ Some notes about this configuration:
 ],
 ```
 
+Some notes about this configuration:
+
+* The exam window (70 minutes, `startDate` to `endDate`) has been set to be 10 minutes longer than the exam time limit (60 minutes). If a student starts the exam late, then the countdown timer on their exam will show the full exam time limit (60 minutes). However, they will not be able to access the exam past the `endDate` time under any circumstances. See [PL issue #2217](https://github.com/PrairieLearn/PrairieLearn/issues/2217) for details.
+* If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and just login to PrairieLearn again, and continuing taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
+* Remember to extend both `endDate` *and* `timeLimitMin` for students with extra-time accommodations.
+* Students who are scheduled for a conflict exam will be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict timeslot.
+* After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
+* If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
+* Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
+
 ## Asynchronous, timed exams
 
 This configuration is good when:
@@ -67,11 +67,6 @@ This configuration is good when:
 * Once a student starts working on the exam, they have limited time (1 hour in the example below)
 * Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
 * There is no need for conflict exams because students can choose their own time
-
-Some notes about this configuration:
-
-* All of the the [notes above](#synchronous-timed-exams) still apply
-* It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
 
 ```json
 "allowAccess": [
@@ -98,3 +93,8 @@ Some notes about this configuration:
     }
 ],
 ```
+
+Some notes about this configuration:
+
+* All of the the [notes above](#synchronous-timed-exams) still apply
+* It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
