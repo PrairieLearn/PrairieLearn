@@ -1,0 +1,1 @@
+ALTER TABLE grading_jobs ADD COLUMN IF NOT EXISTS gradable BOOLEAN DEFAULT true;
