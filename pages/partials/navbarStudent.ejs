@@ -1,24 +1,28 @@
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Course title ---------------------------------------------------------------->
+<!-- Course title (links to assessments) -->
+<li class="nav-item">
+    <a class="nav-link" href="<%= urlPrefix %>/assessments"><%= course.short_name %>, <%= course_instance.short_name %></a>
+</li>
 
-      <li class="nav-item mr-4"><span class="navbar-text"><%= course.short_name %>, <%= course_instance.short_name %></span></li>
+<!-- Assessments link -->
+<li class="nav-item <% if (navPage == "assessments") { %>active<% } %>">
+    <a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a>
+</li>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Main pages ------------------------------------------------------------------>
+<!-- Gradebook link -->
+<li class="nav-item <% if (navPage == "gradebook") { %>active<% } %>">
+    <a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a>
+</li>
 
-      <li class="nav item <% if (navPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a></li>
-      <li class="nav item <% if (navPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+<% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
+    <!-- Assessment instance label, e.g. E1 -->
+    <li class="nav-item <% if (navPage == "assessment_instance") { %>active<% } %>">
+        <a class="nav-link" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a>
+    </li>
+<% } %>
 
-      <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
-      <li class="nav item <% if (navPage == "assessment_instance") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
-      <% } %>
-
-      <% if (typeof authz_data != 'undefined') { %>
-      <% if (authz_data.mode == 'Exam') { %>
-      <li class="nav item <% if (navPage == "report_cheating") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/report_cheating">Report cheating</a></li>
-      <% } %>
-      <% } %>
+<% if (typeof authz_data != 'undefined' && authz_data.mode == 'Exam') { %>
+    <!-- Report cheating link -->
+    <li class="nav-item <% if (navPage == "report_cheating") { %>active<% } %>">
+        <a class="nav-link" href="<%= urlPrefix %>/report_cheating">Report cheating</a>
+    </li>
+<% } %>
