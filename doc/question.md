@@ -97,7 +97,6 @@ Function | Return object | modifiable `data` keys | unmodifiable `data` keys | D
 `parse()` | `data` (dict) | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
 `grade()` | `data` (dict) | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
 `file()` | string, byte-like, file-like | | `correct_answers`, `filename`, `options`, `params`, `variant_seed` | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used.
-`test()` | `data` (dict), `Exception` | `format_errors`, `partial_scores`, `raw_submitted_answers`, `score` | `correct_answers`, `feedback`, `gradable`, `options`, `params`, `variant_seed` | 
 
 ## Question `question.html`
 
