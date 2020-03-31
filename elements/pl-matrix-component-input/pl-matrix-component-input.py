@@ -252,8 +252,8 @@ def parse_entry(name, data, allow_fractions):
                     raise ValueError('The submitted answer is not a finite number.')
 
                 parsed = pl.to_json(a_frac)
-                valid = True
                 data['submitted_answers'][name] = parsed
+                valid = True
             except ZeroDivisionError:
                 data['format_errors'][name] = '(Division by zero)'
                 data['submitted_answers'][name] = None
@@ -272,6 +272,7 @@ def parse_entry(name, data, allow_fractions):
             if not np.isfinite(a_sub_parsed):
                 raise ValueError('invalid submitted answer (not finite)')
             data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
+            valid = True
         except Exception as error:
             data['format_errors'][name] = f'(Invalid format - {str(error)})'
             data['submitted_answers'][name] = None
