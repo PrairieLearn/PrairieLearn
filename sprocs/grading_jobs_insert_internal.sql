@@ -54,16 +54,9 @@ BEGIN
 
     new_correct := (new_score >= 1.0);
 
-    -- Only update the graded_at time if the submission is gradable
-    IF new_gradable != FALSE THEN
-        new_graded_at := now();
-    ELSE
-        new_graded_at := null;
-    END IF;
-
     UPDATE submissions AS s
     SET
-        graded_at = new_graded_at,
+        graded_at = now(),
         gradable = new_gradable,
         broken = new_broken,
         format_errors = new_format_errors,
@@ -76,18 +69,6 @@ BEGIN
         grading_method = main.grading_method
     WHERE
         s.id = submission_id;
-
-    IF new_gradable = FALSE THEN
-        -- If the submission is ungradable then we should stop here
-
-        IF assessment_instance_id IS NOT NULL THEN
-            UPDATE instance_questions
-            SET status = 'invalid'::enum_instance_question_status
-            WHERE id = instance_question_id;
-        END IF;
-
-        RETURN;
-    END IF;
 
     -- ######################################################################
     -- update the variant
@@ -103,20 +84,32 @@ BEGIN
 
     INSERT INTO grading_jobs AS gj
         (submission_id,     score,     v2_score, correct,     feedback,
-            partial_scores, auth_user_id,  grading_method)
+            partial_scores, auth_user_id,  grading_method, gradable)
     VALUES
         (submission_id, new_score, new_v2_score, new_correct, new_feedback,
-        new_partial_scores, authn_user_id, grading_method)
+        new_partial_scores, authn_user_id, grading_method, new_gradable)
     RETURNING gj.*
     INTO grading_job;
 
-    -- ######################################################################
-    -- update all parent objects
+    IF new_gradable = FALSE THEN
+        -- ######################################################################
+        -- If the submission is ungradable then we shouldn't update grades
+        -- and use up an attempt
 
-    PERFORM variants_update_after_grading(variant_id, grading_job.correct);
-    IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
-        PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        IF assessment_instance_id IS NOT NULL THEN
+            UPDATE instance_questions
+            SET status = 'invalid'::enum_instance_question_status
+            WHERE id = instance_question_id;
+        END IF;
+    ELSE
+        -- ######################################################################
+        -- update all parent objects
+
+        PERFORM variants_update_after_grading(variant_id, grading_job.correct);
+        IF assessment_instance_id IS NOT NULL THEN
+           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
+           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

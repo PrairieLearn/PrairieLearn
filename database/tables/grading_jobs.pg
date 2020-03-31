@@ -5,7 +5,7 @@ columns
     feedback: jsonb
     gradable: boolean
     graded_at: timestamp with time zone
-    graded_by: bigint
+    graded_by: bigint default true
     grading_finished_at: timestamp with time zone
     grading_method: enum_grading_method
     grading_received_at: timestamp with time zone

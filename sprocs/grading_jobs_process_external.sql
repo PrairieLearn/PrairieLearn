@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION
         received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz,
-        gradable boolean
+        new_gradable boolean
     ) RETURNS void
 AS $$
 DECLARE
@@ -58,6 +58,7 @@ BEGIN
         grading_received_at = received_time,
         grading_started_at = start_time,
         grading_finished_at = finish_time,
+        gradable = new_gradable,
         score = grading_jobs_process_external.score,
         correct = (grading_jobs_process_external.score >= 1.0),
         feedback = grading_jobs_process_external.feedback
@@ -65,7 +66,7 @@ BEGIN
     RETURNING *
     INTO grading_job;
 
-    IF gradable = FALSE THEN
+    IF new_gradable = FALSE THEN
         UPDATE submissions
         SET
             gradable = FALSE,
