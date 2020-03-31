@@ -1,14 +1,20 @@
-<ul class="nav nav-tabs mb-4" id="navtabsInstructorQuestion">
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "file_view") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/file_view"><i class="fa fa-edit"></i> Files</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "preview") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/preview"><i class="fas fa-tv"></i> Preview</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "settings") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/settings"><i class="fas fa-cog"></i> Settings</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link <% if (navSubPage == "statistics") { %>active<% } %>" href="<%= urlPrefix %>/question/<%= question.id %>/statistics"><i class="fas fa-chart-bar"></i> Statistics</a>
-  </li>
-</ul>
+<%- include('navtab', {
+    activeSubPage:  'file_view',
+    urlSuffix:      '/question/'+question.id+'/file_view',
+    iconClasses:    'fa fa-edit',
+    tabLabel:       'Files'}) %>
+<%- include('navtab', {
+    activeSubPage:  'preview',
+    urlSuffix:      '/question/'+question.id+'/preview',
+    iconClasses:    'fas fa-tv',
+    tabLabel:       'Preview'}) %>
+<%- include('navtab', {
+    activeSubPage:  'settings',
+    urlSuffix:      '/question/'+question.id+'/settings',
+    iconClasses:    'fas fa-cog',
+    tabLabel:       'Settings'}) %>
+<%- include('navtab', {
+    activeSubPage:  'statistics',
+    urlSuffix:      '/question/'+question.id+'/statistics',
+    iconClasses:    'fas fa-chart-bar',
+    tabLabel:       'Statistics'}) %>
