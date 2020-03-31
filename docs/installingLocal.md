@@ -84,7 +84,7 @@ cd /PrairieLearn
 ./docker/test_python.sh
 ```
 
-### Connecting to an Existing Docker
+### Connecting to an existing Docker container
 
 The previous shells were launched in their own containers. If you want to open a shell in a Docker container that is *already running*, you can find the container's name and connect to it.
 
