@@ -185,6 +185,14 @@ table td > .badge {
   transform: translate(0, -12.5%);
 }
 
+/* Used to give table rows the same padding as Bootstrap card headers */
+.card table tr td:first-child, .card table tr th:first-child {
+    padding-left: 1.25rem;
+}
+.card table tr td:last-child, .card table tr th:last-child {
+    padding-right: 1.25rem;
+}
+
 /* Custom button styles that look better in input groups */
 .btn.btn-med-light {
   color: #212529;
