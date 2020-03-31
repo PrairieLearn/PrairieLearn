@@ -27,7 +27,6 @@ DECLARE
     assessment_instance_id bigint;
     grading_method enum_grading_method;
     new_correct boolean;
-    new_graded_at timestamp with time zone;
 BEGIN
     -- ######################################################################
     -- get the related objects
@@ -52,7 +51,7 @@ BEGIN
     -- ######################################################################
     -- update the submission
 
-    new_correct := (new_score >= 1.0);
+    new_correct = (new_score >= 1.0);
 
     UPDATE submissions AS s
     SET
