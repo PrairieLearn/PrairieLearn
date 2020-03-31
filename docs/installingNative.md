@@ -25,19 +25,19 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 
 ```sh
 cd PrairieLearn
-npm install
+npm ci
 ```
 
 On OS X, it is possible that this process will fail on `node-gyp rebuild` during the install of `mcrypt`. In this case, use the following command instead:
 
 ```sh
-npm install --python=PATH_TO_PYTHON2
+npm ci --python=PATH_TO_PYTHON2
 ```
 
 For example, this might be:
 
 ```sh
-npm install --python=/usr/bin/python2.7
+npm ci --python=/usr/bin/python2.7
 ```
 
 * Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:

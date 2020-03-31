@@ -503,8 +503,8 @@ The question will only be graded when all matrix components are entered.
 ## `pl-matrix-input` element
 
 A `pl-matrix-input` element displays an input field that accepts a matrix
-(i.e., a 2-D array) expressed either in a supported programming language
-format (e.g. MATLAB or Python's numpy).
+(i.e., a 2-D array) expressed in a supported programming language
+format (either MATLAB or Python's numpy).
 
 #### Sample Element
 

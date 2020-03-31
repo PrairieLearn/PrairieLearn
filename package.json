@@ -114,7 +114,7 @@
     },
     "scripts": {
         "start": "node server.js",
-        "start-nodemon": "nodemon server.js",
+        "start-nodemon": "npx nodemon -L server.js",
         "test": "nyc --reporter=lcov mocha tests/index.js",
         "test-nocoverage": "mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",

@@ -169,3 +169,14 @@ Here is the assessment page for a closed exam with real-time grading disabled:
 ![Closed assessment with real-time grading disabled](assessment-grading-disabled-closed.png)
 
 Note that after the exam has closed and been graded, more information about points will be visible.
+
+## Honor code
+
+By default, `Exam` assessments require students to certify their identity and pledge an honor code before starting the assessment:
+
+* I certify that I am `name` and I am allowed to take this assessment.
+* I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.
+
+To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
+
+The text of the honor code was based on the University of Maryland's [Honor Pledge](https://www.studentconduct.umd.edu/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.

@@ -7,7 +7,7 @@
 !api/
 !cron/
 !database/
-!doc/
+!docs/
 !docker/
 !elements/
 !exampleCourse/
