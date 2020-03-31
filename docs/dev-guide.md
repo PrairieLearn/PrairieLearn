@@ -29,7 +29,7 @@ PrairieLearn
 +-- cron               # jobs to be periodically executed, one file per job
 |   +-- index.js       # entry point for all cron jobs
 |   `-- ...            # one JS file per cron job, executed by index.js
-+-- doc                # documentation
++-- docs               # documentation
 +-- exampleCourse      # example content for a course
 +-- lib                # miscellaneous helper code
 +-- middlewares        # Express.js middleware, one per file
