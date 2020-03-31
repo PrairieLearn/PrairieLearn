@@ -97,11 +97,7 @@ app.set('trust proxy', 'loopback');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
-app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
-app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
-app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
-app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
+app.use(function(req, res, next) {config.setLocals(res.locals); next();});
 
 if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
