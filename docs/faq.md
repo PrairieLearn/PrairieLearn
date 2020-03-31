@@ -2,7 +2,7 @@
 
 Have a question or issue that wasn't listed here but you think it should be? 
 
-Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/doc/faq.md)** to the FAQ.
+Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
