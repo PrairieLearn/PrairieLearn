@@ -33,7 +33,7 @@ By default, PrairieLearn does not monitor for server-side changes, so it will **
 docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
-### Running a Specific Branch
+### Running a specific branch
 
 By default, the above command will run PrairieLearn from the `master` branch on GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
 
@@ -43,7 +43,7 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 
 Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
 
-### Running Commands in Docker
+### Running commands in Docker
 
 If needed, you can run the container with a different command:
 
