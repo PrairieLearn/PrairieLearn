@@ -1,4 +1,4 @@
-<div class="mb-3">
+<div class="mb-4">
     <nav class="navbar navbar-dark bg-dark navbar-expand-md">
         <!-- Home link -->
         <a class="navbar-brand" href="<%= homeUrl %>">
@@ -113,15 +113,17 @@
             </ul>
         </div>
     </nav>
-    <% const navPagesTabs = {
+    <% // Mapping navPage to navtab sets
+    const navPagesTabs = {
         instance_admin: 'instructorInstanceAdminTabs',
         course_admin: 'instructorCourseAdminTabs',
         assessment: 'instructorAssessmentTabs',
         question: 'instructorQuestionTabs'
     };
+    // If navPage matches any of the keys in navPagesTabs, include the page given by its value
     if (typeof navPage != 'undefined' && Object.keys(navPagesTabs).includes(navPage)) { %>
         <!-- Instructor navigation tabs -->
-        <ul class="nav nav-tabs" id="navtabsInstructor">
+        <ul class="nav nav-tabs pt-2 px-3" id="navtabsInstructor">
             <%- include(navPagesTabs[navPage]); %>
         </ul>
     <% } %>
