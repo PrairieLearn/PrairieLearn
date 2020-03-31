@@ -113,16 +113,16 @@
             </ul>
         </div>
     </nav>
-    <!-- Instructor navigation tabs -->
-    <% if (typeof navPage != 'undefined') { %>
-        <% if (navPage == 'instance_admin') { %>
-            <%- include('instructorInstanceAdminTabs'); %>
-        <% } else if (navPage == 'course_admin') { %>
-            <%- include('instructorCourseAdminTabs'); %>
-        <% } else if (navPage == 'assessment') { %>
-            <%- include('instructorAssessmentTabs'); %>
-        <% } else if (navPage == 'question') { %>
-            <%- include('instructorQuestionTabs'); %>
-        <% } %>
+    <% const navPagesTabs = {
+        instance_admin: 'instructorInstanceAdminTabs',
+        course_admin: 'instructorCourseAdminTabs',
+        assessment: 'instructorAssessmentTabs',
+        question: 'instructorQuestionTabs'
+    };
+    if (typeof navPage != 'undefined' && Object.keys(navPagesTabs).includes(navPage)) { %>
+        <!-- Instructor navigation tabs -->
+        <ul class="nav nav-tabs" id="navtabsInstructor">
+            <%- include(navPagesTabs[navPage]); %>
+        </ul>
     <% } %>
 </div>
