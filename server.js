@@ -249,7 +249,7 @@ if (config.devMode) {
 }
 
 // all pages under /pl/course_instance require authorization
-app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseInstance')); // sets res.locals.course and res.locals.courseInstance
+app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseOrInstance')); // sets res.locals.course and res.locals.courseInstance
 app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
 app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
 
@@ -281,7 +281,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res,
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
 
 // all pages under /pl/course require authorization
-app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', require('./middlewares/authzCourseOrInstance')); // set res.locals.course
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));

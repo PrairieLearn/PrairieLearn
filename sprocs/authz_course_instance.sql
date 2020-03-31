@@ -9,30 +9,38 @@ CREATE OR REPLACE FUNCTION
     ) returns jsonb
 AS $$
 DECLARE
-    role enum_role;
+    course_instance_role enum_course_instance_role;
     permissions_course_instance jsonb;
+    is_enrolled_with_access boolean;
 BEGIN
-    SELECT e.role INTO role
+    SELECT cip.course_instance_role INTO course_instance_role
+    FROM
+        course_permissions AS cp
+        JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id AND cip.course_instance_id = authz_course_instance.course_instance_id)
+    WHERE
+        cp.user_id = authz_course_instance.user_id;
+
+    IF NOT FOUND THEN
+        course_instance_role := 'None';
+    END IF;
+
+    PERFORM
+        *
     FROM
         enrollments AS e
         JOIN users AS u ON (u.user_id = e.user_id)
     WHERE
         u.user_id = authz_course_instance.user_id
         AND e.course_instance_id = authz_course_instance.course_instance_id
-        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, u.institution_id, req_date);
+        AND check_course_instance_access(authz_course_instance.course_instance_id, u.uid, u.institution_id, req_date);
 
-    IF NOT FOUND THEN
-        role := 'None';
-    END IF;
-
-    IF is_administrator THEN
-        role := 'Instructor';
-    END IF;
+    is_enrolled_with_access := FOUND;
 
     permissions_course_instance := jsonb_build_object(
-        'role', role,
-        'has_instructor_view', role >= 'TA',
-        'has_instructor_edit', role >= 'Instructor'
+        'course_instance_role', course_instance_role,
+        'has_course_instance_permission_view', course_instance_role >= 'Student Data Viewer',
+        'has_course_instance_permission_edit', course_instance_role >= 'Student Data Editor',
+        'is_enrolled_with_access', is_enrolled_with_access
     );
     RETURN permissions_course_instance;
 END;

@@ -1,11 +1,11 @@
 DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, timestamptz);
 DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, timestamptz);
 DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, bigint, timestamptz);
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, text, bigint, bigint, timestamptz);
 
 CREATE OR REPLACE FUNCTION
     check_course_instance_access_rule (
         course_instance_access_rule course_instance_access_rules,
-        role enum_role,
         uid text,
         user_institution_id bigint,
         course_institution_id bigint,
@@ -15,12 +15,6 @@ DECLARE
     available boolean := TRUE;
     user_result record;
 BEGIN
-    IF course_instance_access_rule.role IS NOT NULL THEN
-        IF role < course_instance_access_rule.role THEN
-            available := FALSE;
-        END IF;
-    END IF;
-
     IF course_instance_access_rule.uids IS NOT NULL THEN
         IF uid != ALL (course_instance_access_rule.uids) THEN
             available := FALSE;
