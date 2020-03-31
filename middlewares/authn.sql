@@ -1,33 +1,15 @@
 -- BLOCK select_user
 SELECT
     to_jsonb(u.*) AS user,
-    (adm.id IS NOT NULL) AS is_administrator
+    to_jsonb(i.*) AS institution,
+    (adm.id IS NOT NULL) AS is_administrator,
+    (SELECT count(*) FROM news_item_notifications WHERE user_id = $user_id) AS news_item_notification_count
 FROM
     users AS u
     LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
+    JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
     u.user_id = $user_id;
-
--- BLOCK insert_user
-WITH insert_result AS (
-    INSERT INTO users
-        (uid, name, uin, provider)
-    VALUES
-        ($uid, $name, $uin, $provider)
-    ON CONFLICT (uid) DO UPDATE
-    SET
-        uid = EXCLUDED.uid,
-        name = EXCLUDED.name,
-        uin = EXCLUDED.uin,
-        provider = EXCLUDED.provider
-    RETURNING *
-)
-SELECT
-    to_jsonb(u.*) AS user,
-    (adm.id IS NOT NULL) AS is_administrator
-FROM
-    insert_result AS u
-    LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id);
 
 -- BLOCK enroll_user_as_instructor
 INSERT INTO enrollments

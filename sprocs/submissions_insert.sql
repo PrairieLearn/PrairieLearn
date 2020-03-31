@@ -99,11 +99,14 @@ BEGIN
         SET
             status = 'saved',
             duration = duration + delta,
-            first_duration = coalesce(first_duration, delta)
+            first_duration = coalesce(first_duration, delta),
+            modified_at = now()
         WHERE id = instance_question_id;
 
         UPDATE assessment_instances AS ai
-        SET duration = ai.duration + delta
+        SET
+            duration = ai.duration + delta,
+            modified_at = now()
         FROM instance_questions AS iq
         WHERE
             iq.id = instance_question_id

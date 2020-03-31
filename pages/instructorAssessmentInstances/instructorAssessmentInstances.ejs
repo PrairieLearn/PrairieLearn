@@ -13,7 +13,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
       <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
@@ -89,10 +89,10 @@
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
           <div class="ml-auto">
-            <a class="btn btn-sm btn-light" role="button" tabindex="0"
+            <button type="button" class="btn btn-sm btn-light" tabindex="0"
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
-            </a>
+            </button>
           </div>
         </div>
 
@@ -227,6 +227,18 @@
               <% }); %>
             </tbody>
           </table>
+          
+          <div class="card-footer">
+            <small>
+              <strong>Roles:</strong>
+              <ul>
+                 <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
+                 <li><strong>TA</strong> is a teaching assisstant. They can see the data of all users, but can only edit their own information.</li>
+                 <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
+                 <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
+              </ul>
+            </small>
+          </div>
         </div>
         <script>
           $(function(){

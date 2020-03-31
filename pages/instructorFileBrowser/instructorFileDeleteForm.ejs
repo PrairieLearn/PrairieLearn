@@ -1,0 +1,12 @@
+<form name="instructor-file-delete-form-<%= file.id %>" method="POST">
+  <p>
+    Are you sure you want to delete <strong><%= file.name %></strong>?
+  </p>
+  <input type="hidden" name="__action" value="delete_file">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="file_path" value="<%= file.path %>">
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#instructorFileDeleteForm-<%= file.id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Delete</button>
+  </div>
+</form>

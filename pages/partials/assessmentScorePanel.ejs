@@ -2,6 +2,11 @@
 
 <div class="card mb-4" id="assessment-score-panel">
   <div class="card-header bg-secondary"><a class="text-white" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></div>
+  <div class="card-body">
+    <div class="d-flex justify-content-center">
+      <a class="btn btn-info" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/">Assessment overview</a>
+    </div>
+  </div>
   <table class="table table-sm">
     <tbody>
       <tr>

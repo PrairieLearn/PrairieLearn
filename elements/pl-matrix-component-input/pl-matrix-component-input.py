@@ -7,6 +7,15 @@ import chevron
 import random
 
 
+WEIGHT_DEFAULT = 1
+LABEL_DEFAULT = None
+COMPARISON_DEFAULT = 'relabs'
+RTOL_DEFAULT = 1e-2
+ATOL_DEFAULT = 1e-8
+DIGITS_DEFAULT = 2
+ALLOW_PARTIAL_CREDIT_DEFAULT = False
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -18,8 +27,8 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
     allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
 
     if data['panel'] == 'question':
@@ -43,22 +52,22 @@ def render(element_html, data):
         input_array = createTableForHTMLDisplay(m, n, name, label, data, 'input')
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-            atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+            atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
             if (rtol < 0):
                 raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
             if (atol < 0):
                 raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
             info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
@@ -128,7 +137,7 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -148,9 +157,14 @@ def render(element_html, data):
                     html_params['a_sub'] = sub_latex
             else:
                 html_params['a_sub'] = sub_latex
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -163,17 +177,17 @@ def render(element_html, data):
             a_tru = np.array(a_tru)
 
             # Get comparison parameters and create the display data
-            comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+            comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-                atol = pl.get_float_attrib(element, 'atol', 1e-8)
+                rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+                atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='g', digits=12) + '$'
             elif comparison == 'sigfig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='sigfig', digits=digits) + '$'
             elif comparison == 'decdig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 latex_data = '$' + pl.latex_from_2darray(a_tru, presentation_type='f', digits=digits) + '$'
             else:
                 raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
@@ -242,7 +256,8 @@ def parse(element_html, data):
                     A[i, j] = a_sub_parsed
 
     if invalid_format:
-        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
+            data['format_errors'][name] = chevron.render(f, {'format_error': True}).strip()
         data['submitted_answers'][name] = None
     else:
         data['submitted_answers'][name] = pl.to_json(A)
@@ -251,20 +266,20 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
 
     # Get weight
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-        atol = pl.get_float_attrib(element, 'atol', 1e-8)
+        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+        atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
     elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     elif comparison == 'decdig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
 
@@ -323,8 +338,8 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -393,11 +408,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
             format_errors = data['format_errors'].get(each_entry_name, None)
             if format_errors is None:
-                display_array += ' <td class="allborder"> '
+                display_array += '<td class="allborder"><code class="user-output">'
             else:
-                display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-            display_array += escape(raw_submitted_answer)
-            display_array += ' </td> '
+                display_array += '<td class="allborder"><code class="user-output-invalid">'
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+            display_array += '</code></td> '
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
@@ -408,11 +423,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 format_errors = data['format_errors'].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += ' <td class="allborder"> '
+                    display_array += '<td class="allborder"><code class="user-output">'
                 else:
-                    display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-                display_array += escape(raw_submitted_answer)
-                display_array += ' </td> '
+                    display_array += '<td class="allborder"><code class="user-output-invalid">'
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+                display_array += '</code></td> '
             display_array += '</tr>'
         display_array += '</table>'
 

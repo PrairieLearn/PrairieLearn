@@ -1,23 +1,32 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
 import numpy as np
 import random
 import math
 import chevron
 
 
+WEIGHT_DEFAULT = 1
+LABEL_DEFAULT = None
+COMPARISON_DEFAULT = 'relabs'
+RTOL_DEFAULT = 1e-2
+ATOL_DEFAULT = 1e-8
+DIGITS_DEFAULT = 2
+ALLOW_COMPLEX_DEFAULT = False
+SHOW_HELP_TEXT_DEFAULT = True
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
 
     if '_pl_matrix_input_format' in data['submitted_answers']:
         format_type = data['submitted_answers']['_pl_matrix_input_format'].get(name, 'matlab')
@@ -29,28 +38,28 @@ def render(element_html, data):
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+        comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-            atol = pl.get_float_attrib(element, 'atol', 1e-8)
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+            atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
             if (rtol < 0):
                 raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
             if (atol < 0):
                 raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
             info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
-            digits = pl.get_integer_attrib(element, 'digits', 2)
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             if (digits < 0):
                 raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
+        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
@@ -65,6 +74,7 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid()
         }
 
@@ -83,7 +93,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         if raw_submitted_answer is not None:
-            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+            html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -95,7 +105,7 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -110,10 +120,13 @@ def render(element_html, data):
 
             # Format answer as a string
             html_params['a_sub'] = pl.string_from_2darray(a_sub, language=format_type, digits=12, presentation_type='g')
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -129,6 +142,8 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
+
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -139,19 +154,19 @@ def render(element_html, data):
             a_tru = np.array(a_tru)
 
             # Get comparison parameters
-            comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+            comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-                atol = pl.get_float_attrib(element, 'atol', 1e-8)
+                rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+                atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=12, presentation_type='g')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=12, presentation_type='g')
             elif comparison == 'sigfig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=digits, presentation_type='sigfig')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='sigfig')
             elif comparison == 'decdig':
-                digits = pl.get_integer_attrib(element, 'digits', 2)
+                digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
                 matlab_data = pl.string_from_2darray(a_tru, language='matlab', digits=digits, presentation_type='f')
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='f')
             else:
@@ -180,24 +195,30 @@ def render(element_html, data):
     return html
 
 
+def get_format_string(message):
+    params = {'format_error': True, 'format_error_message': message}
+    with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, params).strip()
+
+
 def parse(element_html, data):
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = get_format_string('No submitted answer.')
         data['submitted_answers'][name] = None
         return
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, info) = pl.string_to_2darray(a_sub, allow_complex=allow_complex)
     if a_sub_parsed is None:
-        data['format_errors'][name] = info['format_error']
+        data['format_errors'][name] = get_format_string(info['format_error'])
         data['submitted_answers'][name] = None
         return
 
@@ -215,7 +236,7 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -245,18 +266,18 @@ def grade(element_html, data):
         return
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
+    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
 
     # Compare submitted answer with true answer
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-        atol = pl.get_float_attrib(element, 'atol', 1e-8)
+        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+        atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
         correct = pl.is_correct_ndarray2D_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_sf(a_sub, a_tru, digits)
     elif comparison == 'decdig':
-        digits = pl.get_integer_attrib(element, 'digits', 2)
+        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
@@ -270,7 +291,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]

@@ -515,7 +515,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
                     deltaMove.y * (Math.PI / 180),
                     deltaMove.x * (Math.PI / 180),
                     0,
-                    'XYZ'
+                    'XYZ',
                 ));
             // Rotation to be applied by mouse motion (in world frame) - note that
             // ".inverse()" modifies qCamera in place, so the order here matters

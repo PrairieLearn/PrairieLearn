@@ -1,0 +1,15 @@
+columns
+    id: bigint not null default nextval('institutions_id_seq'::regclass)
+    long_name: text not null
+    short_name: text not null
+    uid_regexp: text
+
+indexes
+    institutions_pkey: PRIMARY KEY (id) USING btree (id)
+    institutions_long_name_key: UNIQUE (long_name) USING btree (long_name)
+    institutions_short_name_key: UNIQUE (short_name) USING btree (short_name)
+
+referenced by
+    institution_authn_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    pl_courses: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    users: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL

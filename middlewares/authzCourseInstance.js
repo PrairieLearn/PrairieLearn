@@ -1,7 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
-var logger = require('../lib/logger');
 var config = require('../lib/config');
 var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
@@ -15,7 +14,7 @@ module.exports = function(req, res, next) {
         course_instance_id: req.params.course_instance_id,
         is_administrator: res.locals.is_administrator,
         req_date: res.locals.req_date,
-        ip: req.headers['x-forwarded-for'] || req.ip,
+        ip: req.ip,
         force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
     };
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
@@ -25,6 +24,8 @@ module.exports = function(req, res, next) {
         var authn_mode = result.rows[0].mode;
         res.locals.course = result.rows[0].course;
         res.locals.course_instance = result.rows[0].course_instance;
+        res.locals.courses = result.rows[0].courses;
+        res.locals.course_instances = result.rows[0].course_instances;
 
         var permissions_course_instance = result.rows[0].permissions_course_instance;
         var permissions_course = result.rows[0].permissions_course;
@@ -51,8 +52,6 @@ module.exports = function(req, res, next) {
             has_course_permission_own: permissions_course.has_course_permission_own,
         };
         res.locals.user = res.locals.authz_data.user;
-        // FIXME: debugging for #422
-        logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // check whether we are requesting user data override
         if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode && !req.cookies.pl_requested_date) {
@@ -84,17 +83,52 @@ module.exports = function(req, res, next) {
             };
             sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+                if (result.rowCount == 0) {
+                    // The effective user has been denied access. For a real user, two things would be true:
+                    //
+                    //  1) authn_user would exist
+                    //  2) authz_data would not exist
+                    //
+                    // Unfortunately, for the effective user, both authn_user and authz_data exist but are
+                    // "wrong" in the sense that they are consistent with the real user and not the effective
+                    // user. This screws up various things on the error page.
+                    //
+                    // As a fix for now, we will remove authz_data and will set a flag saying that the
+                    // effective user has been denied access to the course instance - this will allow, for
+                    // example, the user dropdown in the navbar to be hidden. It is likely that a better
+                    // solution can be found when this code is all rewritten.
+                    delete res.locals.authz_data;
+                    res.locals.effective_user_has_no_access_to_course_instance = true;
 
-                _.assign(res.locals.authz_data, result.rows[0]);
+                    // Tell the real user what happened and how to reset the effective user.
+                    let err = error.make(403, 'Access denied');
+                    err.info =  `<p>You have changed the effective user to one with these properties:</p>` +
+                                `<div class="container"><pre class="bg-dark text-white rounded p-2">` +
+                                `uid = ${params.requested_uid}\n` +
+                                `role = ${params.requested_role}\n` +
+                                `mode = ${params.requested_mode}\n` +
+                                `</pre></div>` +
+                                `<p>This user does not have access to the course instance <code>${res.locals.course_instance.short_name}</code> (with long name "${res.locals.course_instance.long_name}").` +
+                                `<p>To reset the effective user, return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
+                    return next(err);
+                }
+
+                res.locals.authz_data.user = result.rows[0].user;
+                res.locals.authz_data.role = result.rows[0].role;
+                res.locals.authz_data.mode = result.rows[0].mode;
                 res.locals.req_date = result.rows[0].req_date;
-                // remove all course permissions if we are emulating another user
-                res.locals.authz_data.course_role = 'None';
-                res.locals.authz_data.has_course_permission_view = false;
-                res.locals.authz_data.has_course_permission_edit = false;
-                res.locals.authz_data.has_course_permission_own = false;
-                // FIXME: debugging for #422
-                logger.debug('Overridden authz_data', res.locals.authz_data);
+
+                // Make sure that we never grant extra permissions
+                res.locals.authz_data.has_instructor_view = res.locals.authz_data.has_instructor_view && result.rows[0].has_instructor_view;
+                res.locals.authz_data.has_instructor_edit = res.locals.authz_data.has_instructor_edit && result.rows[0].has_instructor_edit;
+                res.locals.authz_data.has_course_permission_view = res.locals.authz_data.has_course_permission_view && result.rows[0].permissions_course.has_course_permission_view;
+                res.locals.authz_data.has_course_permission_edit = res.locals.authz_data.has_course_permission_edit && result.rows[0].permissions_course.has_course_permission_edit;
+                res.locals.authz_data.has_course_permission_own = res.locals.authz_data.has_course_permission_own && result.rows[0].permissions_course.has_course_permission_own;
+
+                // NOTE: When this code is all rewritten, you may want to throw an error if
+                // the user tries to emulate another user with greater permissions, so that
+                // it is clear why these permissions aren't granted.
+
                 res.locals.user = res.locals.authz_data.user;
                 next();
             });

@@ -1,6 +1,5 @@
 columns
     id: bigint not null default nextval('question_tags_id_seq'::regclass)
-    number: integer
     question_id: bigint not null
     tag_id: bigint not null
 

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <%- include('../partials/head'); %>
+    <style>
+        .popover{
+            max-width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                sanitize: false
+            })
+        });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+        <%- include('../partials/navtabs'); %>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex">
+                Assessment <%= assessment.tid %>
+            </div>
+            <table class="table table-sm table-hover two-column-description">
+                <tbody>
+                    <tr><th>Title</th><td><%= assessment.title %></td></tr>
+                    <tr><th>Type</th><td><%= assessment.type %></td></tr>
+                    <tr><th>Set</th><td><%= assessment_set.name %> (<%= assessment_set.abbreviation %>)</td></tr>
+                    <tr><th>Number</th><td><%= assessment.number %></td></tr>
+                    <tr><th>AID</th>
+                        <td>
+                            <span class="pr-2"><%= assessment.tid %></span>
+                            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                            <button id="changeAidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change AID" data-content="<%= include('../partials/changeIdForm', {id_label: 'AID', buttonID: 'changeAidButton', id_old: assessment.tid, ids: tids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                <i class="fa fa-i-cursor"></i>
+                                <span>Change AID</span>
+                            </button>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                    <tr><th>Configuration</th>
+                        <td>
+                            <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view/<%= infoAssessmentPath %>">
+                                infoAssessment.json
+                            </a>
+                            <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_edit/<%= infoAssessmentPath %>">
+                                <i class="fa fa-edit"></i>
+                                <span>Edit</span>
+                            </a>
+                        </td>
+                    </tr>
+                    <% } %>
+                </tbody>
+            </table>
+            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-auto">
+                        <form name="copy-assessment-form" class="form-inline" method="POST">
+                            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                            <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Make a copy of this assessment</button>
+                        </form>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteAssessmentModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this assessment</button>
+                    </div>
+                    <div class="modal fade" id="deleteAssessmentModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessment">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" id="deleteAssessmentModalLabel">Delete assessment</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>
+                                        Are you sure you want to delete the assessment <strong><%= assessment.tid %></strong>?
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <form name="delete-assessment-form" method="POST">
+                                        <input type="hidden" name="__action" value="delete_assessment">
+                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</body>
+
+</html>

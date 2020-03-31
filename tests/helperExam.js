@@ -43,8 +43,8 @@ module.exports = {
                 locals.baseUrl = locals.siteUrl + '/pl';
                 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
                 locals.instructorBaseUrl = locals.courseInstanceBaseUrl + '/instructor';
-                locals.instructorAssessmentsUrl = locals.instructorBaseUrl + '/assessments';
-                locals.instructorGradebookUrl = locals.instructorBaseUrl + '/gradebook';
+                locals.instructorAssessmentsUrl = locals.instructorBaseUrl + '/instance_admin/assessments';
+                locals.instructorGradebookUrl = locals.instructorBaseUrl + '/instance_admin/gradebook';
                 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
                 locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
                 locals.isStudentPage = true;
@@ -119,16 +119,12 @@ module.exports = {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain "Please wait"', function() {
-                elemList = locals.$('p.lead:contains("Please wait")');
-                assert.lengthOf(elemList, 1);
-            });
             it('should contain "Exam 1"', function() {
                 elemList = locals.$('p.lead strong:contains("Exam 1")');
                 assert.lengthOf(elemList, 1);
             });
-            it('should contain "XC 101"', function() {
-                elemList = locals.$('p.lead strong:contains("XC 101")');
+            it('should contain "QA 101"', function() {
+                elemList = locals.$('p.lead strong:contains("QA 101")');
                 assert.lengthOf(elemList, 1);
             });
             it('should have a CSRF token', function() {

@@ -1,32 +1,11 @@
+const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-function asyncCall(sql, params) {
-    return new Promise((resolve, reject) => {
-        sqldb.call(sql, params, (err, result) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(result);
-            }
-        });
-    });
-}
-
-function safeAsync(func, callback) {
-    new Promise(async () => {
-        try {
-            callback(await func());
-        } catch (err) {
-            callback(err);
-        }
-    });
-};
-
 function getDuplicates(arr) {
-    const seen = {};
+    const seen = new Set();
     return arr.filter(v => {
-        const present = seen[v];
-        seen[v] = true;
+        const present = seen.has(v);
+        seen.add(v);
         return present;
     });
 }
@@ -36,7 +15,7 @@ function getDuplicatesByKey(arr, key) {
 }
 
 module.exports.sync = function(courseInfo, questionDB, callback) {
-    safeAsync(async () => {
+    callbackify(async () => {
         const tags = courseInfo.tags || [];
 
         // First, do a sanity check for duplicate tag names. Because of how the
@@ -44,9 +23,26 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         // duplicates are present.
         const duplicateNames = getDuplicatesByKey(tags, 'name');
         if (duplicateNames.length > 0) {
-            const duplicateNamesJoined = duplicateNames.join(', ')
+            const duplicateNamesJoined = duplicateNames.join(', ');
             throw new Error(`Duplicate tag names found: ${duplicateNamesJoined}. Tag names must be unique within the course.`);
         }
+
+        // We'll create placeholder tags for tags that aren't specified in
+        // infoCourse.json.
+        const knownTagNames = new Set(tags.map(tag => tag.name));
+        const missingTagNames = new Set();
+        Object.values(questionDB).forEach(q => {
+            (q.tags || []).forEach(tag => {
+                if (!knownTagNames.has(tag)) {
+                    missingTagNames.add(tag);
+                }
+            });
+        });
+        tags.push(...[...missingTagNames].map(name => ({
+            name,
+            color: 'gray1',
+            description: 'Auto-generated from use in a question; add this tag to your courseInfo.json file to customize',
+        })));
 
         // Aggregate all tags into a form that we can pass in one go to our sproc
         // Since all this data will be sent over the wire, we'll send it in a
@@ -66,7 +62,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             JSON.stringify(paramTags),
             courseInfo.courseId,
         ];
-        const res = await asyncCall('sync_course_tags', tagParams);
+        const res = await sqldb.callAsync('sync_course_tags', tagParams);
 
         // We'll get back a single row containing an array of IDs of the tags
         // in order.
@@ -97,6 +93,6 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             paramQuestionTags.push([question.id, tags.map(tag => tagIdsByName[tag])]);
         }
 
-        await asyncCall('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
-    }, callback);
-}
+        await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
+    })(callback);
+};

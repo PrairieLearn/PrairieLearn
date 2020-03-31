@@ -9,6 +9,22 @@ import pyquaternion
 import math
 
 
+BODY_POSITION_DEFAULT = [0, 0, 0]
+BODY_ORIENTATION_DEFAULT = 'body-pose-format'
+CAMERA_POSITION_DEFAULT = [5, 2, 2]
+BODY_CANTRANSLATE_DEFAULT = True
+BODY_CANROTATE_DEFAULT = True
+CAMERA_CANMOVE_DEFAULT = True
+ANSWER_POSE_FORMAT_DEFAULT = 'rpy'
+TEXT_POSE_FORMAT_DEFAULT = 'matrix'
+SHOW_POSE_IN_QUESTION_DEFAULT = True
+SHOW_POSE_IN_CORRECT_ANSWER_DEFAULT = True
+SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT = True
+TOL_TRANSLATION_DEFAULT = 0.5
+TOL_ROTATION_DEFAULT = 5
+GRADE_DEFAULT = True
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
@@ -122,20 +138,20 @@ def render(element_html, data):
 
     uuid = pl.get_uuid()
 
-    body_position = get_position(element, 'body-position', default=[0, 0, 0])
-    body_orientation = get_orientation(element, 'body-orientation', 'body-pose-format')
-    camera_position = get_position(element, 'camera-position', default=[5, 2, 2], must_be_nonzero=True)
-    body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', True)
-    body_canrotate = pl.get_boolean_attrib(element, 'body-canrotate', True)
-    camera_canmove = pl.get_boolean_attrib(element, 'camera-canmove', True)
-    text_pose_format = pl.get_string_attrib(element, 'text-pose-format', 'matrix')
+    body_position = get_position(element, 'body-position', default=BODY_POSITION_DEFAULT)
+    body_orientation = get_orientation(element, 'body-orientation', BODY_ORIENTATION_DEFAULT)
+    camera_position = get_position(element, 'camera-position', default=CAMERA_POSITION_DEFAULT, must_be_nonzero=True)
+    body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', BODY_CANTRANSLATE_DEFAULT)
+    body_canrotate = pl.get_boolean_attrib(element, 'body-canrotate', BODY_CANROTATE_DEFAULT)
+    camera_canmove = pl.get_boolean_attrib(element, 'camera-canmove', CAMERA_CANMOVE_DEFAULT)
+    text_pose_format = pl.get_string_attrib(element, 'text-pose-format', TEXT_POSE_FORMAT_DEFAULT)
     if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
         raise Exception('attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
 
     if data['panel'] == 'question':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
-        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', SHOW_POSE_IN_QUESTION_DEFAULT)
 
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
@@ -186,11 +202,11 @@ def render(element_html, data):
         with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
         if not will_be_graded:
             return ''
 
-        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-submitted-answer', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-submitted-answer', SHOW_POSE_IN_SUBMITTED_ANSWER_DEFAULT)
 
         # Get submitted answer
         pose = data['submitted_answers'].get(answer_name)
@@ -239,11 +255,11 @@ def render(element_html, data):
         with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
         if not will_be_graded:
             return ''
 
-        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-correct-answer', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-correct-answer', SHOW_POSE_IN_CORRECT_ANSWER_DEFAULT)
 
         # Get submitted answer
         pose = data['submitted_answers'].get(answer_name, None)
@@ -262,7 +278,7 @@ def render(element_html, data):
             return ''
 
         # Convert correct answer to Quaternion, then to [x, y, z, w]
-        f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
+        f = pl.get_string_attrib(element, 'answer-pose-format', ANSWER_POSE_FORMAT_DEFAULT)
         p, q = parse_correct_answer(f, a)
         p = p.tolist()
         q = np.roll(q.elements, -1).tolist()
@@ -331,7 +347,7 @@ def grade(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answer-name')
 
     # Check if this element is intended to produce a grade
-    will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+    will_be_graded = pl.get_boolean_attrib(element, 'grade', GRADE_DEFAULT)
     if not will_be_graded:
         return
 
@@ -358,7 +374,7 @@ def grade(element_html, data):
     q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
 
     # Get format of correct answer
-    f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
+    f = pl.get_string_attrib(element, 'answer-pose-format', ANSWER_POSE_FORMAT_DEFAULT)
 
     # Get correct position (as np.array([x, y, z])) and orientation (as Quaternion)
     p_tru, q_tru = parse_correct_answer(f, a)
@@ -370,8 +386,8 @@ def grade(element_html, data):
     error_in_rotation = np.abs((q_tru.inverse * q_sub).degrees)
 
     # Get tolerances
-    tol_translation = pl.get_float_attrib(element, 'tol-translation', 0.5)
-    tol_rotation = pl.get_float_attrib(element, 'tol-rotation', 5)
+    tol_translation = pl.get_float_attrib(element, 'tol-translation', TOL_TRANSLATION_DEFAULT)
+    tol_rotation = pl.get_float_attrib(element, 'tol-rotation', TOL_ROTATION_DEFAULT)
     if (tol_translation <= 0):
         raise Exception('tol_translation must be a positive real number: {:g}'.format(tol_translation))
     if (tol_rotation <= 0):

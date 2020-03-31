@@ -8,6 +8,18 @@ import math
 import python_helper_sympy as phs
 
 
+WEIGHT_DEFAULT = 1
+CORRECT_ANSWER_DEFAULT = None
+VARIABLES_DEFAULT = None
+LABEL_DEFAULT = None
+DISPLAY_DEFAULT = 'inline'
+ALLOW_COMPLEX_DEFAULT = False
+IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
+
+
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -19,17 +31,17 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
     if correct_answer is not None:
         if name in data['correct-answers']:
             raise Exception('duplicate correct-answers variable name: %s' % name)
         data['correct-answers'][name] = correct_answer
 
-    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     if not (imaginary_unit == 'i' or imaginary_unit == 'j'):
         raise Exception('imaginary-unit-for-display must be either i or j')
 
@@ -37,23 +49,24 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    label = pl.get_string_attrib(element, 'label', None)
-    variables_string = pl.get_string_attrib(element, 'variables', None)
+    label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
+    variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
     variables = get_variables_list(variables_string)
-    display = pl.get_string_attrib(element, 'display', 'inline')
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
-    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
+    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
+
+    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    constants = ['pi', 'e']
 
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
-        operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
-        constants = ', '.join(['pi, e'])
-
         info_params = {
             'format': True,
-            'variables': variables_string,
+            'variables': variables,
             'operators': operators,
             'constants': constants,
             'allow_complex': allow_complex,
@@ -72,8 +85,11 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': size,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid(),
             'allow_complex': allow_complex,
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD
         }
 
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -103,13 +119,14 @@ def render(element_html, data):
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
+
         html_params = {
             'submission': True,
             'label': label,
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             a_sub = data['submitted_answers'][name]
             if isinstance(a_sub, str):
                 # this is for backward-compatibility
@@ -118,10 +135,29 @@ def render(element_html, data):
                 a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
             a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params['a_sub'] = sympy.latex(a_sub)
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
+            # Use the existing format text in the invalid popup.
+            info_params = {
+                'format': True,
+                'variables': variables,
+                'operators': operators,
+                'constants': constants,
+                'allow_complex': allow_complex,
+            }
+            with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
+                info = chevron.render(f, info_params).strip()
+
+            # Render invalid popup
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
+            with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
+                parse_error += chevron.render(f, {'format_error': True, 'format_string': info}).strip()
+
+            html_params['parse_error'] = parse_error
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -143,6 +179,8 @@ def render(element_html, data):
             html_params['block'] = True
         else:
             raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -175,9 +213,9 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
-    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', 'i')
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -191,6 +229,9 @@ def parse(element_html, data):
         # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
         # for exponentiation. In python, only the latter can be used.
         a_sub = a_sub.replace('^', '**')
+
+        # Replace unicode minus with hyphen minus wherever it occurs
+        a_sub = a_sub.replace(u'\u2212', '-')
 
         # Strip whitespace
         a_sub = a_sub.strip()
@@ -281,9 +322,9 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
-    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -323,7 +364,7 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', 1)
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if result == 'correct':

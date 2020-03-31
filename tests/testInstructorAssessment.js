@@ -488,7 +488,7 @@ describe('Instructor assessment editing', function() {
             assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
         });
         it('should contain button to edit score', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.edit-score');
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td button.edit-score');
             assert.lengthOf(elemList, 1);
         });
         it('should contain the assessment instance id in a data tag', function() {

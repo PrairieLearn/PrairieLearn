@@ -3,6 +3,10 @@ import lxml.html
 import numpy as np
 
 
+DIGITS_DEFAULT = 2
+PRESENTATION_TYPE_DEFAULT = 'f'
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['params-name']
@@ -14,9 +18,9 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get the number of digits to output
-    digits = pl.get_integer_attrib(element, 'digits', 2)
+    digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     # Get the presentation type
-    presentation_type = pl.get_string_attrib(element, 'presentation-type', 'f')
+    presentation_type = pl.get_string_attrib(element, 'presentation-type', PRESENTATION_TYPE_DEFAULT)
 
     var_name = pl.get_string_attrib(element, 'params-name')
     # Get value of variable, raising exception if variable does not exist

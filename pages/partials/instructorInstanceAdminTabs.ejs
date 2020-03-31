@@ -3,11 +3,18 @@
     <a class="nav-link <% if (navSubPage == "access" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/access"><i class="far fa-calendar-alt"></i> Access</a>
   </li>
   <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "assessments" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/assessments"><i class="fa fa-list"></i> Assessments</a>
+  </li>
+  <li class="nav-item">
+      <a class="nav-link <% if (navSubPage == "file_view" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/file_view"><i class="fa fa-edit"></i> Files</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "gradebook" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/gradebook"><i class="fas fa-balance-scale"></i> Gradebook</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link <% if (navSubPage == "lti" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/lti"><i class="fas fa-graduation-cap"></i> LTI</a>
   </li>
-  <% if (!locals.course.options.isExampleCourse) { %>
-      <li class="nav-item">
-        <a class="nav-link <% if (navSubPage == "edit" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/edit?file=courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json"><i class="fa fa-edit"></i> Edit</a>
-      </li>
-  <% } %>
+  <li class="nav-item">
+    <a class="nav-link <% if (navSubPage == "settings" && navPage == "instance_admin") { %>active<% } %>" href="<%= urlPrefix %>/instance_admin/settings"><i class="fas fa-cog"></i> Settings</a>
+  </li>
 </ul>

@@ -1,8 +1,8 @@
-/doc/
+/docs/
 /node_modules/
 /public/
 /exampleCourse/
-/sync/
+/testCourse/
 /question-servers/default-calculation/
 /coverage/
 /out/

@@ -9,11 +9,12 @@ if [[ -f /efs/container/config.json ]] ; then
 else
     # we are running in local development mode
     docker/start_postgres.sh
+    docker/gen_ssl.sh
 
     # Uncomment to start redis to test message passing
     # redis-server --daemonize yes
 
-    if [[ -n $NODEMON ]] && [[ $NODEMON == "true" ]]; then
+    if [[ $NODEMON == "true" ]]; then
         npm run start-nodemon
     else
         npm start

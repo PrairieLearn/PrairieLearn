@@ -106,6 +106,13 @@ module.exports = {
                             // TODO remove once everyone is using the new version
                             if (elementType === 'core') {
                                 elements[elementName.replace(/-/g, '_')] = info;
+                                
+                                if ('additionalNames' in info) {
+                                    info.additionalNames.forEach(name => {
+                                        elements[name] = info;
+                                        elements[name.replace(/-/g, '_')] = info;
+                                    });
+                                }
                             }
                             callback(null);
                         });
@@ -838,7 +845,7 @@ module.exports = {
                 cache.get(cacheKey, (err, cachedData) => {
                     // We don't actually want to fail if the cache has an error; we'll
                     // just render the panel as normal
-                    ERR(err, (e) => logger.error(e));
+                    ERR(err, (e) => logger.error('Error in cache.get()', e));
                     if (!err && cachedData !== null) {
                         const {
                             courseIssues,
@@ -863,7 +870,7 @@ module.exports = {
                     // If for some reason we failed to get a cache key, don't
                     // actually fail the request, just skip the cache entirely
                     // and render as usual
-                    ERR(err, e => logger.error(e));
+                    ERR(err, e => logger.error('Error in _getCacheKey()', e));
                     if (err || !cacheKey) {
                         doRender(null);
                     } else {
@@ -1030,12 +1037,12 @@ module.exports = {
                         dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
                         dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
                         dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
-                        dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
-                        dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
+                        dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
+                        dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
-                        dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
-                        dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
+                        dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
+                        dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elements/${file}`));
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                             // It's important that any library-style scripts come first

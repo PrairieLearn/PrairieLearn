@@ -10,7 +10,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
       <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
@@ -44,10 +44,10 @@
 
         <div class="card-body">
           <p>
-            <a class="btn btn-primary" role="button" tabindex="0"
+            <button type="button" class="btn btn-primary" tabindex="0"
                data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
               <i class="fa fa-sync" aria-hidden="true"></i> Regrade all assessment instances
-            </a>
+            </button>
           </p>
           <p class="small">
             To regrade assessment instances for specific students, use

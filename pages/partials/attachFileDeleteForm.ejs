@@ -1,0 +1,15 @@
+<form name="attach-file-delete-form" method="POST">
+  <p>
+    Are you sure you want to delete <strong><%= file.display_filename %></strong>?
+  </p>
+  <input type="hidden" name="__action" value="delete_file">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <% if (variant) { %>
+  <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+  <% } %>
+  <input type="hidden" name="file_id" value="<%= file.id %>">
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Delete</button>
+  </div>
+</form>

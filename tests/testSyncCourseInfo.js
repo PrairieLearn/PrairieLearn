@@ -9,7 +9,8 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var logger = require('./dummyLogger');
-var courseDir = 'exampleCourse';
+var courseDir = 'testCourse';
+
 var course_id = 1;
 
 describe('sync/fromDisk/courseInfo', function() {
@@ -28,7 +29,7 @@ describe('sync/fromDisk/courseInfo', function() {
     after('shut down testing DB', helperDb.after);
 
     describe('sprocs/select_or_insert_course_by_path', function() {
-        it('should use id 1 for exampleCourse', function(callback) {
+        it('should use id 1 for testCourse', function(callback) {
             sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
                 if (ERR(err, callback)) return;
                 if (course_id != result.rows[0].course_id) {
@@ -49,7 +50,7 @@ describe('sync/fromDisk/courseInfo', function() {
     });
 
     describe('the "pl_courses" table', function() {
-        it('should contain XC 101', function(callback) {
+        it('should contain QA 101', function(callback) {
             sqldb.queryOneRow(sql.select_course, [], function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);

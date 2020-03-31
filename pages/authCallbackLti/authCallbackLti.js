@@ -75,8 +75,8 @@ router.post('/', function(req, res, next) {
         // OAuth validation succeeded, next look up and store user authn data
         //
 
-        debug('lti parameters' + parameters);
-        debug('lti sql query ' + ltiresult);
+        debug('lti parameters', parameters);
+        debug('lti sql query ', ltiresult);
 
         if (!parameters.user_id) {
             return next(error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.'));
@@ -107,7 +107,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id,
-                provider: 'lti',
+                authn_provider_name: 'LTI',
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
@@ -123,6 +123,8 @@ router.post('/', function(req, res, next) {
                 role,
             };
 
+            debug('lti enroll params ', params);
+
             sqldb.queryZeroOrOneRow(sql.enroll, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
@@ -134,32 +136,35 @@ router.post('/', function(req, res, next) {
                     resource_link_title: parameters.resource_link_title || '',
                     resource_link_description: parameters.resource_link_description || '',
                 };
+                debug('lti link upsert params', params);
                 sqldb.queryOneRow(sql.upsert_current_link, params, function(err, result) {
                     if (ERR(err, next)) return;
 
                     // Do we have an assessment linked to this resource_link_id?
-                    if (result.rows[0].assessment_id && parameters.lis_result_sourcedid) {
+                    if (result.rows[0].assessment_id) {
 
-                        // Save outcomes here
-                        var params = {
-                            user_id: tokenData.user_id,
-                            assessment_id: result.rows[0].assessment_id,
-                            lis_result_sourcedid: parameters.lis_result_sourcedid,
-                            lis_outcome_service_url: parameters.lis_outcome_service_url,
-                            lti_credential_id: ltiresult.id,
-                        };
+                        if ('lis_result_sourcedid' in parameters) {
+                            // Save outcomes here
+                            var params = {
+                                user_id: tokenData.user_id,
+                                assessment_id: result.rows[0].assessment_id,
+                                lis_result_sourcedid: parameters.lis_result_sourcedid,
+                                lis_outcome_service_url: parameters.lis_outcome_service_url,
+                                lti_credential_id: ltiresult.id,
+                            };
 
-                        sqldb.query(sql.upsert_outcome, params, function(err, _outcome_result) {
-                            if (ERR(err, next)) return;
+                            sqldb.query(sql.upsert_outcome, params, function(err, _outcome_result) {
+                                if (ERR(err, next)) return;
+                            });
+                        }
 
-                                redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
-                                res.redirect(redirUrl);
-                        });
+                        redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
+                        res.redirect(redirUrl);
                     } else {
                         // No linked assessment
 
                         if (role != 'Student') {
-                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/admin/lti`;
+                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
                         } else {
                             // Show an error that the assignment is unavailable
                             return next(error.make(400, 'Assignment not available yet'));

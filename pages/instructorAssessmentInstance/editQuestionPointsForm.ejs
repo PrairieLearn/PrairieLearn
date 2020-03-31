@@ -9,8 +9,8 @@
     </div>
   </div>
   <p><small>This will also recalculate the total points and total score at 100% credit. This change will be overwritten if the question is answered again by the student.</small></p>
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Change</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Change</button>
+  </div>
 </form>

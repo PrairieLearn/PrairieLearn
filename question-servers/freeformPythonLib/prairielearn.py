@@ -4,10 +4,13 @@ import to_precision
 import numpy as np
 import uuid
 import sympy
+import pandas
 from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
+import colors
+import unicodedata
 
 
 def to_json(v):
@@ -50,6 +53,8 @@ def to_json(v):
                 row.append(str(v[i, j]))
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
+    elif isinstance(v, pandas.DataFrame):
+        return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
     else:
         return v
 
@@ -112,6 +117,12 @@ def from_json(v):
                     return M
                 else:
                     raise Exception('variable of type sympy_matrix should have value, variables, and shape')
+            elif v['_type'] == 'dataframe':
+                if ('_value' in v) and ('index' in v['_value']) and ('columns' in v['_value']) and ('data' in v['_value']):
+                    val = v['_value']
+                    return pandas.DataFrame(index=val['index'], columns=val['columns'], data=val['data'])
+                else:
+                    raise Exception('variable of type dataframe should have value with index, columns, and data')
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
     return v
@@ -279,16 +290,26 @@ def get_color_attrib(element, name, *args):
     Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
     or '#1a2b3c'), or the (optional) default value. If the default value is
     not provided and the attribute is missing then an exception is thrown. If
-    the attribute is not a valid RGB string then an exception is thrown.
+    the attribute is not a valid RGB string then it will be checked against various
+    named colours.  If the attribute is still not valid an exception is thrown.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
-        return val
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            return val
+
     match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
     if match:
         return val
     else:
-        raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
+        named_color = colors.get_css_color(val)
+        if named_color is not None:
+            return named_color
+        else:
+            raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 
 
 def numpy_to_matlab(A, ndigits=2, wtype='f'):
@@ -310,9 +331,9 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
-                if i < m - 1:
-                    A_str += ', '
+            A_str += '{:.{indigits}{iwtype}}'.format(A[i], indigits=ndigits, iwtype=wtype)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:
@@ -368,6 +389,14 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
 
         { ..., ..., ... }
 
+    If language is 'r' and A is a 2D ndarray, the string looks like this:
+
+        matrix(c(., ., .), nrow=NUM_ROWS, ncol=NUM_COLS, byrow = TRUE)
+
+    If A is a 1D ndarray, the string looks like this:
+
+        c(., ., .)
+
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -417,8 +446,30 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
         result = result.replace('[', '{')
         result = result.replace(']', '}')
         return result
+    elif language == 'r':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        # Given as: [[1, 2, 3], [4, 5, 6]]
+        result = result.replace('[', '')
+        result = result.replace(']', '')
+        # Cast to a vector: c(1, 2, 3, 4, 5, 6)
+        result = f'c({result})'
+        if A.ndim == 2:
+            nrow = A.shape[0]
+            ncol = A.shape[1]
+            result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
 
 
 # Deprecated version, keeping for backwards compatibility
@@ -476,12 +527,12 @@ def numpy_to_matlab_sf(A, ndigits=2):
         m = s[0]
         A_str = '['
         for i in range(0, m):
-                if np.iscomplexobj(A[i]):
-                    A_str += _string_from_complex_sigfig(A[i], ndigits)
-                else:
-                    A_str += to_precision.to_precision(A[i], ndigits)
-                if i < m - 1:
-                    A_str += ', '
+            if np.iscomplexobj(A[i]):
+                A_str += _string_from_complex_sigfig(A[i], ndigits)
+            else:
+                A_str += to_precision.to_precision(A[i], ndigits)
+            if i < m - 1:
+                A_str += ', '
         A_str += ']'
         return A_str
     else:
@@ -986,3 +1037,27 @@ def get_uuid():
     Returns the string representation of a new random UUID.
     """
     return str(uuid.uuid4())
+
+
+def escape_unicode_string(string):
+    """
+    escape_unicode_string(string)
+
+    Combs through any string and replaces invisible/unprintable characters with a
+    text representation of their hex id: <U+xxxx>
+
+    A character is considered invisible if its category is "control" or "format", as
+    reported by the 'unicodedata' library.
+
+    More info on unicode categories:
+    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
+    """
+
+    def escape_unprintable(x):
+        category = unicodedata.category(x)
+        if category == 'Cc' or category == 'Cf':
+            return f'<U+{ord(x):x}>'
+        else:
+            return x
+
+    return ''.join(map(escape_unprintable, string))

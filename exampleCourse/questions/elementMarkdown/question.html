@@ -1,0 +1,70 @@
+<pl-question-panel>
+<markdown>
+# Hello, world!
+
+**Markdown**? *In your question?* ***It's more likely than you might think!***
+
+Here, enjoy some cute dogs from [this Markdown link!](https://www.goodhousekeeping.com/life/pets/g3413/cute-dog-pictures/)
+
+Let's check out some math! $c^2 = a^2 + b^2$
+
+Golden Ratio is:
+
+$$\phi = \frac{1+\sqrt{5}}{2}$$
+
+Need to use `$` outside of math-mode? Place inside inline code.
+So, excel formulas would look like: `$A$1`, `B$5`, `$C9`, `D2`.
+
+```
+Inline `code` has `back-ticks around` it.
+```
+
+Inline `code` has `back-ticks around` it.
+
+Code blocks without a language specified have no syntax highlighting. 
+
+```
+<h1>This code doesn't have syntax highlighting</h1>
+```
+
+```cpp
+class Example {
+    Example() {
+        printf("Hello, world!");
+    }
+};
+```
+
+```html
+<h1>Hello, world!</h1>
+```
+
+You can also highlight specific lines of code with `pl-code`. *Neat, huh?*
+
+```cpp{4-6,9}
+#include <iostream>
+
+class Example {
+    Example() {
+        std::cout << "Hello, world!" << std::endl;
+    }
+
+    Example(std::string name) {
+        stc::cout << "Hello, " << name << std::endl;
+    }
+};
+```
+</markdown>
+</pl-question-panel>
+
+<p>Is markdown cool?</p>
+
+<pl-multiple-choice answers-name="mc">
+  <pl-answer correct="true"><markdown>`std::cout << "yes!" << std::endl;`</markdown></pl-answer>
+  <pl-answer><markdown>`console.log('no')`</markdown></pl-answer>
+  <pl-answer><markdown>
+```cpp
+std::cout << "Definitely not" << std::endl;
+```
+  </markdown></pl-answer>
+</pl-multiple-choice>

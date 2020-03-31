@@ -140,16 +140,12 @@ describe('Zone grading exam assessment', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain "Please wait"', function() {
-                elemList = locals.$('p.lead:contains("Please wait")');
-                assert.lengthOf(elemList, 1);
-            });
             it('should contain "Exam 5"', function() {
                 elemList = locals.$('p.lead strong:contains("Exam 5")');
                 assert.lengthOf(elemList, 1);
             });
-            it('should contain "XC 101"', function() {
-                elemList = locals.$('p.lead strong:contains("XC 101")');
+            it('should contain "QA 101"', function() {
+                elemList = locals.$('p.lead strong:contains("QA 101")');
                 assert.lengthOf(elemList, 1);
             });
             it('should have a CSRF token', function() {

@@ -1,0 +1,49 @@
+<form class="needs-validation" name="instructor-file-upload-form-<%= file.id %>" method="POST" enctype="multipart/form-data" novalidate>
+  <% if (file.info) { %>
+  <div class="form-group">
+    <%- file.info %>
+  </div>
+  <% } %>
+
+  <div class="form-group">
+    <div class="custom-file">
+      <input type="file" name="file" class="custom-file-input" id="attachFileInput-<%= file.id %>" required>
+      <label class="custom-file-label" for="attachFileInput-<%= file.id %>">Choose file</label>
+      <div class="invalid-feedback">
+        Please choose a file
+      </div>
+      <small id="emailHelp" class="form-text text-muted">Max file size: <%= config.fileUploadMaxBytesFormatted %></small>
+  </div>
+
+  <div class="form-group">
+    <input type="hidden" name="__action" value="upload_file">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <% if (file.path) { %>
+      <input type="hidden" name="file_path" value="<%= file.path %>">
+    <% } else { %>
+      <input type="hidden" name="working_path" value="<%= file.working_path %>">
+    <% } %>
+    <div class="text-right">
+      <button type="button" class="btn btn-secondary" onclick="$('#instructorFileUploadForm-<%= file.id %>').popover('hide')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload file</button>
+    </div>
+  </div>
+</form>
+
+<script>
+    $(function() {
+        // make the file inputs display the file name
+        $(document).on('change', '.custom-file-input', function () {
+          let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
+          $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
+        });
+
+        $('form[name="instructor-file-upload-form-<%= file.id %>"]').submit(function(event) {
+          if ($(this).get(0).checkValidity() === false) {
+              event.preventDefault();
+              event.stopPropagation();
+          }
+          $(this).addClass('was-validated');
+        });
+    });
+</script>

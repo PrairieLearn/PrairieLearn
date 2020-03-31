@@ -1,0 +1,59 @@
+<form name="instructor-file-rename-form-<%= file.id %>" method="POST" class="needs-validation" novalidate>
+  <input type="hidden" name="__action" value="rename_file">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="working_path" value="<%= file.dir %>">
+  <% if (file_browser.isFile) { %>
+    <input type="hidden" name="was_viewing_file" value="true">
+  <% } %>
+  <input type="hidden" name="old_file_name" value="<%= file.name %>">
+  <div class="container p-0 mb-4">
+    Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. If you want to move the file to a different directory, you can specify a relative path that is delimited by a forward slash and that includes "<code>..</code>".
+  </div>
+  <div class="form-group">
+      <label for="renameFileInput">Path:</label>
+      <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?" required>
+      <div class="invalid-feedback" id="invalidMessage-<%= file.id %>">
+      </div>
+  </div>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#instructorFileRenameForm-<%= file.id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Change</button>
+  </div>
+</form>
+
+<script>
+    $(function() {
+        const validate = function() {
+            let element = $('input[name="new_file_name"]');
+            let elementDOM = element.get(0);
+            let new_file_name = $(element).val();
+
+            if (new_file_name === "<%= file.name %>") {
+                elementDOM.setCustomValidity('Must be changed');
+                $('#invalidMessage-<%= file.id %>').text('Must be changed');
+                return;
+            }
+
+            elementDOM.setCustomValidity('');
+            if (elementDOM.validity.patternMismatch) {
+                $('#invalidMessage-<%= file.id %>').text('Please match required format.');
+            } else if (elementDOM.validity.valueMissing) {
+                $('#invalidMessage-<%= file.id %>').text('Please choose a name');
+            } else {
+                $('#invalidMessage-<%= file.id %>').text('');
+            }
+        }
+
+        $('input[name="new_file_name"]').on('input', validate);
+        $('input[name="new_file_name"]').on('change', validate);
+
+        $('form[name="instructor-file-rename-form-<%= file.id %>"]').submit(function(event) {
+            validate();
+            if ($(this).get(0).checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            $(this).addClass('was-validated');
+        });
+    });
+</script>

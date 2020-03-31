@@ -12,7 +12,7 @@ module.exports = {
     init(callback) {
         const lockName = 'sprocs';
         logger.verbose(`Waiting for lock ${lockName}`);
-        namedLocks.waitLock(lockName, (err, lock) => {
+        namedLocks.waitLock(lockName, {}, (err, lock) => {
             if (ERR(err, callback)) return;
             logger.verbose(`Acquired lock ${lockName}`);
             this._initWithLock((err) => {
@@ -35,6 +35,7 @@ module.exports = {
             'array_and_number.sql',
             'array_avg.sql',
             'array_var.sql',
+            'base64_safe_decode.sql',
             'histogram.sql',
             'array_histogram.sql',
             'format_interval.sql',
@@ -44,8 +45,11 @@ module.exports = {
             'format_date_full.sql',
             'format_date_full_compact.sql',
             'format_date_full_compact_ms.sql',
+            'format_date_only_no_tz.sql',
             'input_date.sql',
             'interval_hist_thresholds.sql',
+            'jsonb_array_to_text_array.sql',
+            'jsonb_array_to_double_precision_array.sql',
             'check_course_instance_access_rule.sql',
             'check_course_instance_access.sql',
             'check_assessment_access_rule.sql',
@@ -65,10 +69,7 @@ module.exports = {
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
-            'course_instances_with_uuid_elsewhere.sql',
-            'questions_with_uuid_elsewhere.sql',
             'questions_select.sql',
-            'assessments_with_uuid_elsewhere.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
             'admin_assessment_question_number.sql',
@@ -82,6 +83,8 @@ module.exports = {
             'courses_insert.sql',
             'courses_update_column.sql',
             'courses_delete.sql',
+            'courses_user_can_edit.sql',
+            'course_instances_instructor_can_view.sql',
             'select_or_insert_course_by_path.sql',
             'assessment_instances_delete.sql',
             'assessment_instances_delete_all.sql',
@@ -97,8 +100,7 @@ module.exports = {
             'instance_questions_lock.sql',
             'instance_questions_ensure_open.sql',
             'instance_questions_select_variant.sql',
-            'instance_questions_update_points.sql',
-            'instance_questions_update_score_perc.sql',
+            'instance_questions_update_score.sql',
             'submissions_lock.sql',
             'submissions_select.sql',
             'submissions_insert.sql',
@@ -116,8 +118,11 @@ module.exports = {
             'config_select.sql',
             'users_select_or_insert.sql',
             'users_select_or_insert_lti.sql',
+            'users_is_course_staff.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
+            'files_insert.sql',
+            'files_delete.sql',
             'issues_insert_for_variant.sql',
             'issues_insert_for_assessment.sql',
             'issues_update_open.sql',
@@ -142,8 +147,16 @@ module.exports = {
             'access_tokens_insert.sql',
             'access_tokens_delete.sql',
             'assessment_instances_points.sql',
+            'sync_news_items.sql',
             'sync_course_tags.sql',
             'sync_question_tags.sql',
+            'sync_questions.sql',
+            'sync_assessments.sql',
+            'sync_course_staff.sql',
+            'sync_assessment_sets.sql',
+            'sync_topics.sql',
+            'sync_course_instances.sql',
+            'lock_timeout_set.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

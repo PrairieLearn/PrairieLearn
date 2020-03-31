@@ -8,17 +8,22 @@ module.exports = function(err, req, res, _next) {
     var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     var errorId = _.times(12, function() {return _.sample(chars);}).join('');
 
-    res.status(err.status || 500);
+    err.status = err.status || 500;
+    res.status(err.status);
     var referrer = req.get('Referrer') || null;
-    logger.info('Error page', {
-        msg: err.message,
-        id: errorId,
-        status: err.status,
-        stack: err.stack,
-        data: jsonStringifySafe(err.data),
-        referrer: referrer,
-        response_id: res.locals.response_id,
-    });
+    logger.log(
+        (err.status >= 500) ? 'error' : 'info',
+        'Error page',
+        {
+            msg: err.message,
+            id: errorId,
+            status: err.status,
+            stack: err.stack,
+            data: jsonStringifySafe(err.data),
+            referrer: referrer,
+            response_id: res.locals.response_id,
+        },
+    );
 
     const sqlPos = _.get(err, ['data', 'sqlError', 'position'], null);
     let sqlQuery = _.get(err, ['data', 'sql'], null);
@@ -53,7 +58,7 @@ module.exports = function(err, req, res, _next) {
     } else {
         // production error handler
         // no stacktraces leaked to user
-        templateData.error = {message: err.message};
+        templateData.error = {message: err.message, info: err.info};
         res.render(path.join(__dirname, 'error'), templateData);
     }
 };

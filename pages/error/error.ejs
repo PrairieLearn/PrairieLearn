@@ -13,6 +13,11 @@
 
         <div class="card-body">
           <h4><%= error.message %></h4>
+
+          <% if (error.info) { %>
+          <%- error.info %>
+          <% } %>
+
           <p>
             Error ID: <code><%= id %></code>
           </p>
