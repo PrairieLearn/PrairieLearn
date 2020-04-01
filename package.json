@@ -87,7 +87,7 @@
         "tar": "^6.0.1",
         "three": "^0.115.0",
         "tmp-promise": "^2.0.2",
-        "unified": "^8.4.2",
+        "unified": "^9.0.0",
         "unified-stream": "^1.0.6",
         "unist-util-visit": "^2.0.2",
         "uuid": "^3.4.0",
