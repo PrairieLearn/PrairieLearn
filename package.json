@@ -41,7 +41,7 @@
         "handlebars": "^4.7.3",
         "highlight.js": "^9.18.1",
         "http-status": "^1.4.2",
-        "isbinaryfile": "^4.0.4",
+        "isbinaryfile": "^4.0.5",
         "javascript-natural-sort": "^0.7.1",
         "jju": "^1.3.0",
         "jquery": "^3.4.1",
