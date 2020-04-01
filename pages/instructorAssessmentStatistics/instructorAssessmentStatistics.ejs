@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {navTrace: [
+            'Statistics',
+            assessment_label
+        ]}); %>
     <script src="/javascripts/lodash.min.js"></script>
     <script src="/javascripts/d3.min.js"></script>
     <script src="/localscripts/histogram.js"></script>

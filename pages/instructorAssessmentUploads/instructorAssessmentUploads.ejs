@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {navTrace: [
+            'Uploads',
+            assessment_label
+        ]}); %>
   </head>
   <body>
     <script>

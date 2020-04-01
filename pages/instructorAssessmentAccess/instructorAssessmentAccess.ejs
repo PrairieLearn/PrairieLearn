@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {navTrace: [
+            'Access',
+            assessment_label]}); %>
   </head>
   <body>
     <%- include('../partials/navbar'); %>

@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {navTrace: [
+            'Students',
+            assessment_label
+        ]}); %>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/javascripts/jquery.tablesorter.min.js"></script>
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>

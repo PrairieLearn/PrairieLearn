@@ -2,7 +2,10 @@
 <html>
 
 <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {navTrace: [
+            'Settings',
+            assessment_label
+        ]}); %>
     <style>
         .popover{
             max-width: 50%;
