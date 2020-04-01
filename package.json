@@ -93,7 +93,7 @@
         "uuid": "^3.4.0",
         "viz.js": "^2.1.2",
         "winston": "^3.2.1",
-        "yargs": "^15.2.0",
+        "yargs": "^15.3.1",
         "yargs-parser": "^17.1.0"
     },
     "devDependencies": {
