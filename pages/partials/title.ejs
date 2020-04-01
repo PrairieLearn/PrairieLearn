@@ -1,6 +1,12 @@
 <%
     const fullNavTrace = (typeof navTrace == 'undefined') ? [] : navTrace;
 
+    // If pageNote is defined, add it in parenthesis
+    // after the first navTrace entry
+    if (fullNavTrace.length > 0 && typeof pageNote !== 'undefined') {
+        fullNavTrace[0] += ' (' + pageNote + ')';
+    }
+
     // If page is associated with a particular course,
     // always display the short name, e.g. QA 101
     if (typeof course !== 'undefined') {
