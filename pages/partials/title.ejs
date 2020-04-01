@@ -1,18 +1,23 @@
 <%
-    const navTrace = [];
+    const fullNavTrace = (typeof navTrace == 'undefined') ? [] : navTrace;
 
-    if (typeof pageTitle !== 'undefined') {
-        navTrace.push(pageTitle);
-    }
     // If page is associated with a particular course,
     // always display the short name, e.g. QA 101
     if (typeof course !== 'undefined') {
-        navTrace.push(course.short_name);
+        var courseName = course.short_name;
+        // If an instructor is viewing, always display the
+        // short course instance name, e.g. fa19
+        if (typeof navbarType !== 'undefined'
+        && navbarType == 'instructor'
+        && typeof course_instance !== 'undefined') {
+            courseName += ', ' + course_instance.short_name;
+        }
+        fullNavTrace.push(courseName);
     }
 %>
 <title>
-    <% if (navTrace.length > 0) { %>
-        <%= navTrace.join(" - ") + " | " %>
+    <% if (fullNavTrace.length > 0) { %>
+        <%= fullNavTrace.join(" - ") + " | " %>
     <% } %>
     PrairieLearn
 </title>
