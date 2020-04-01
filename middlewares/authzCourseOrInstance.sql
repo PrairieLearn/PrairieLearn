@@ -4,7 +4,9 @@ SELECT
     to_jsonb(c.*) AS course,
     to_jsonb(ci.*) AS course_instance,
     permissions_course.*,
-    permissions_course_instance.*
+    permissions_course_instance.*,
+    courses_with_staff_access($authn_user_id, $is_administrator) AS courses,
+    course_instances_with_staff_access($authn_user_id, $is_administrator, coalesce($course_id, ci.course_id)) AS course_instances
 FROM
     pl_courses AS c
     LEFT JOIN course_instances AS ci ON (c.id = ci.course_id) AND (ci.id = $course_instance_id) AND (ci.deleted_at IS NULL)
@@ -17,25 +19,6 @@ WHERE
             (permissions_course->>'course_role')::enum_course_role > 'None'
             OR (permissions_course_instance->>'is_enrolled_with_access')::boolean IS TRUE
         );
-
--- BLOCK select_authz_data_old
-SELECT
-    coalesce($force_mode, ip_to_mode($ip, $req_date)) AS mode,
-    permissions_course_instance,
-    authz_course($authn_user_id, c.id, $is_administrator) AS permissions_course,
-    to_jsonb(c.*) AS course,
-    to_jsonb(ci.*) AS course_instance,
-    courses_user_can_edit($authn_user_id, $is_administrator) AS courses,
-    course_instances_instructor_can_view($authn_user_id, $is_administrator, $req_date, c.id) AS course_instances
-FROM
-    course_instances AS ci
-    JOIN pl_courses AS c ON (c.id = ci.course_id)
-    JOIN LATERAL authz_course_instance($authn_user_id, ci.id, $is_administrator, $req_date) AS permissions_course_instance ON TRUE
-WHERE
-    ci.id = $course_instance_id
-    AND ci.deleted_at IS NULL
-    AND c.deleted_at IS NULL
-    AND (permissions_course_instance->>'role')::enum_role > 'None';
 
 -- BLOCK ensure_enrollment
 INSERT INTO enrollments

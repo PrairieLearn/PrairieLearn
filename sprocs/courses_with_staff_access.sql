@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    courses_user_can_access (
+    courses_with_staff_access (
         IN user_id bigint,
         IN is_administrator boolean,
         OUT courses jsonb
