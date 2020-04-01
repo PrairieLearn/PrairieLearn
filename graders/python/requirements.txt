@@ -14,5 +14,5 @@ requests==2.23.0
 colormath==3.0.0
 nltk==3.4.5
 beautifulsoup4==4.8.2
-bokeh==1.4.0
+bokeh==2.0.1
 folium==0.10.1
