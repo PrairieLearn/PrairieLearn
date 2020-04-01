@@ -213,73 +213,6 @@ def render(element_html, data):
     return html
 
 
-def parse_entry(name, data, allow_fractions):
-    parsed = 0.0
-    valid = False
-
-    # Get submitted answer or return parse_error if it does not exist
-    a_sub = data['submitted_answers'].get(name, None)
-    if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
-        data['submitted_answers'][name] = None
-        return (parsed, valid)
-
-    if a_sub.strip() == '':
-        data['format_errors'][name] = 'Answer was blank.'
-        data['submitted_answers'][name] = None
-        return (parsed, valid)
-
-    # support FANCY division characters
-    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
-    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
-
-    if a_sub.count('/') == 1:
-        # Specially handle fractions.
-
-        if allow_fractions:
-            a_sub_splt = a_sub.split('/')
-            try:
-                a_parse_l = pl.string_to_number(a_sub_splt[0], allow_complex=False)
-                a_parse_r = pl.string_to_number(a_sub_splt[1], allow_complex=False)
-
-                if a_parse_l is None or not np.isfinite(a_parse_l):
-                    raise ValueError('the numerator could not be interpreted as a decimal number.')
-                if a_parse_r is None or not np.isfinite(a_parse_r):
-                    raise ValueError('the denominator could not be interpreted as a decimal number.')
-
-                a_frac = a_parse_l / a_parse_r
-                if not np.isfinite(a_frac):
-                    raise ValueError('The submitted answer is not a finite number.')
-
-                parsed = pl.to_json(a_frac)
-                data['submitted_answers'][name] = parsed
-                valid = True
-            except ZeroDivisionError:
-                data['format_errors'][name] = '(Division by zero)'
-                data['submitted_answers'][name] = None
-            except Exception as error:
-                data['format_errors'][name] = f'(Invalid format - {str(error)})'
-                data['submitted_answers'][name] = None
-        else:
-            data['format_errors'][name] = '(No fractional answers)'
-            data['submitted_answers'][name] = None
-    else:
-        # Not a fraction, just convert to float or complex
-        try:
-            a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
-            if a_sub_parsed is None:
-                raise ValueError('invalid submitted answer (wrong type)')
-            if not np.isfinite(a_sub_parsed):
-                raise ValueError('invalid submitted answer (not finite)')
-            data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
-            valid = True
-        except Exception as error:
-            data['format_errors'][name] = f'(Invalid format - {str(error)})'
-            data['submitted_answers'][name] = None
-
-    return (parsed, valid)
-
-
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -303,11 +236,15 @@ def parse(element_html, data):
     for i in range(m):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
-            value, valid = parse_entry(each_entry_name, data, allow_fractions)
-            if valid:
+            a_sub = data['submitted_answers'].get(each_entry_name, None)
+            value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex=False)
+            if value is not None:
                 A[i, j] = value
+                data['submitted_answers'][each_entry_name] = newdata['submitted_answers']
             else:
                 invalid_format = True
+                data['format_errors'][each_entry_name] = newdata['format_errors']
+                data['submitted_answers'][each_entry_name] = None
 
     if invalid_format:
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
