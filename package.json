@@ -31,7 +31,7 @@
         "detect-mocha": "^0.1.0",
         "diff": "^4.0.2",
         "dockerode": "^3.1.0",
-        "ejs": "^3.0.1",
+        "ejs": "^3.0.2",
         "express": "^4.17.1",
         "fabric": "^3.6.2",
         "file-type": "^14.1.4",
