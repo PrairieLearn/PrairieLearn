@@ -88,7 +88,7 @@
         "three": "^0.115.0",
         "tmp-promise": "^2.0.2",
         "unified": "^8.4.2",
-        "unified-stream": "^1.0.5",
+        "unified-stream": "^1.0.6",
         "unist-util-visit": "^2.0.2",
         "uuid": "^3.4.0",
         "viz.js": "^2.1.2",
