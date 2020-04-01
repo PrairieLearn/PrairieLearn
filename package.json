@@ -33,7 +33,7 @@
         "dockerode": "^3.1.0",
         "ejs": "^3.0.2",
         "express": "^4.17.1",
-        "fabric": "^3.6.2",
+        "fabric": "^3.6.3",
         "file-type": "^14.1.4",
         "filesize": "^6.1.0",
         "fs-extra": "^8.1.0",
