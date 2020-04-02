@@ -1,63 +1,34 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
+const asyncHandler = require('express-async-handler')
+const fsPromises = require('fs').promises;
 const path = require('path');
-const async = require('async');
-const moment = require('moment');
+const util = require('util');
+const _ = require('lodash');
+
 const { sqldb } = require('@prairielearn/prairielib');
+const csvMaker = require('../../lib/csv-maker');
+const jsonLoad = require('../../lib/json-load');
 
-router.get('/:dashboard([^/]*)?', function(req, res, next) {
+const queriesDir = 'admin_queries';
 
-    if (typeof req.params.dashboard == 'undefined') {
-        res.redirect(req.baseUrl + '/main');
-        return;
+router.get('/:query', asyncHandler(async (req, res, next) => {
+    res.locals.jsonFilename = req.params.query + '.json'
+    res.locals.sqlFilename = req.params.query + '.sql'
+
+    res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
+    res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {encoding: 'utf8'});
+    res.locals.result = await sqldb.queryAsync(res.locals.sql, []);
+
+    if (req.query._format == 'json') {
+        res.attachment(req.params.query + '.json');
+        res.send(res.locals.result.rows);
+    } else if (req.query._format == 'csv') {
+        res.attachment(req.params.query + '.csv');
+        res.send(await csvMaker.resultToCsvAsync(res.locals.result));
+    } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
-    var dashboard = req.params.dashboard;
-    res.locals.dashboardName = dashboard;
-    res.locals.otherDashboards = [];
-    res.locals.baseUrl = req.baseUrl;
-
-    var params = {
-        req_date: res.locals.req_date,
-    };
-    res.locals.queries = [];
-    // Consider getting the data from the database (or formatted with the same sprocs)
-    res.locals.req_date_present = moment(res.locals.req_date).format('llll');
-
-    // Other dashboards
-    fs.readdir(__dirname, { withFileTypes: true }, (err, files) => {
-        if (ERR(err, next)) return;
-
-        res.locals.otherDashboards = files
-            .filter(file => file.isDirectory())
-            .sort()
-            .map(file => file.name);
-
-        fs.readdir(path.join(__dirname, dashboard), (err, files) => {
-            if (ERR(err, next)) return;
-
-            const regex = /\.sql$/;
-            files = files
-                .filter(file => regex.test(file))
-                .sort();
-
-            async.eachSeries(files, (file, done) => {
-
-                var sql = fs.readFileSync(path.join(__dirname, dashboard, file), 'utf8');
-                sqldb.query(sql, params, function(err, result) {
-                    if (ERR(err, done)) return;
-                    result.SQLFilename = file;
-                    result.SQLstring = sql;
-                    res.locals.queries.push(result);
-                    done();
-                });
-            }, (err) => {
-                if (ERR(err, next)) return;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
-        });
-    });
-});
+}));
 
 module.exports = router;
