@@ -1,3 +1,10 @@
+WITH available_course_instances AS (
+    SELECT ci.*
+    FROM
+        course_instances AS ci
+    
+)
+
 SELECT
     c.short_name AS course,
     c.id AS course_id,
