@@ -32,6 +32,8 @@
       function render(row, col) {
           if (row[col] == null) {
               %> <td></td> <%
+          } else if (info.resultFormats && info.resultFormats[col] == 'pre') {
+              %> <td><pre><%= row[col] %></pre></td> <%
           } else if (col == 'course_id' && 'course' in row) {
               %> <%
           } else if (col == 'course' && 'course_id' in row) {
@@ -56,9 +58,14 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <tt><%= sqlFilename %></tt>
+          <h5 class="font-weight-bold text-monospace"><%= sqlFilename %></h5>
+
+          <button class="btn btn-xs btn-light ml-2" type="button" data-toggle="collapse" data-target="#sql-query"
+                  aria-expanded="false" aria-controls="sql-query">Show SQL <i class="fas fa-caret-down"></i></button>
+          <span class="ml-4"><%= info.description %></span>
 
           <div class="ml-auto">
+            <span class="badge badge-light"><%= result.rowCount %> rows</span>
             <a href="?_format=json" role="button" class="btn btn-sm btn-light">
               <i class="fas fa-download" aria-hidden="true"></i> JSON
             </a>
@@ -69,11 +76,7 @@
         </div>
 
         <div class="card-body">
-          <p><%= info.description %></p>
           <p>
-            <%= result.rowCount %> rows
-            <button class="btn btn-xs btn-secondary ml-2" type="button" data-toggle="collapse" data-target="#sql-query"
-                    aria-expanded="false" aria-controls="sql-query">Show SQL <i class="fas fa-caret-down"></i></button>
             <div id="sql-query" class="collapse">
               <pre><code class="sql"><%= sql %></code></pre>
             </div>
@@ -113,9 +116,11 @@
     $(function() {
         $(".tablesorter").tablesorter({
             theme: "bootstrap",
-            widgets: ["columns"],
+            widthFixed: true,
+            headerTemplate: '{content} {icon}',
+            widgets: ["uitheme", "zebra"],
             widgetOptions: {
-                columns: ["primary", "secondary", "tertiary"],
+                zebra: ["even", "odd"],
             },
         });
     });
