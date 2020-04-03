@@ -98,8 +98,6 @@ which will output multiple columns of information about your running container(s
 
 ```
 CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
-4be50d160d49  catracker-devcontainer     "sleep infinity"     5 hours ago  Up 5 hours                          determined_cori
-c681714bea9a  catracker-postgres         "docker-entrypoin…"  5 hours ago  Up 5 hours  5432/tcp                tender_wu
 e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
 ```
 
