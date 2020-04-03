@@ -88,18 +88,26 @@ cd /PrairieLearn
 
 The previous shells were launched in their own containers. If you want to open a shell in a Docker container that is *already running*, you can find the container's name and connect to it.
 
-1. Find the name of your running PrairieLearn container:
+1. Find the name of your running PrairieLearn container by running
 
 ```sh
-docker ps --format '{{.Image}}: {{.Names}}'
+docker ps
 ```
 
-This will output your running container(s) in the form `<container_image>: <container_name>`. Find the `prairielearn/prairielearn: <container_name>` line and copy its `<container_name>` (e.g., `adoring_gauss`).
+which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-2. Open a shell in `<container_name>`:
+```
+CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
+4be50d160d49  catracker-devcontainer     "sleep infinity"     5 hours ago  Up 5 hours                          determined_cori
+c681714bea9a  catracker-postgres         "docker-entrypoin…"  5 hours ago  Up 5 hours  5432/tcp                tender_wu
+e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+```
+
+
+2. Open a shell in your PrairieLearn container by running
 
 ```sh
-docker exec -it <container_name> /bin/bash
+docker exec -it CONTAINER_NAME /bin/bash
 ```
 
 ### Using tmux in a container
