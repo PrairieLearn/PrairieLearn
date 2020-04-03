@@ -94,7 +94,7 @@
         "viz.js": "^2.1.2",
         "winston": "^3.2.1",
         "yargs": "^15.3.1",
-        "yargs-parser": "^17.1.0"
+        "yargs-parser": "^18.1.2"
     },
     "devDependencies": {
         "chai": "^4.1.2",
