@@ -163,11 +163,11 @@ The following is an example of a well-structured course layout:
 
 ## Grading results
 
-Your grading process must write its results to `/grade/results/results.json`. The result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating point number in the range [0.0, 1.0].
+Your grading process must write its results to `/grade/results/results.json`. If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating point number in the range [0.0, 1.0].  If the submission is not gradable (see below) then the `score` field is unneeded.
 
 As long as this field is present you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on.
 
-The optional boolean `gradable` can be added to the results object and set to `false` to indicate that the input was invalid or formatted incorrectly, for example if it has a syntax error that prevented compilation.  If `"gradable": false` is set then the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.  The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
+The boolean `gradable` can be added to the results object and set to `false` to indicate that the input was invalid or formatted incorrectly, for example if it has a syntax error that prevented compilation.  If `"gradable": false` is set then the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.  The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
 
 The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
