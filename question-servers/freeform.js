@@ -8,6 +8,7 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const he = require('he');
 
 const schemas = require('../schemas');
 const logger = require('../lib/logger');
@@ -285,6 +286,24 @@ module.exports = {
         });
     },
 
+    _escapeCodeSnippets: function(html) {
+        /* Escape special characters inside of code snippets. Specifically
+           handles <pl-code> and <code> tags.  We run this before the markdown
+           renderer because that will automatically escape characters for us. */
+
+        const regex_plcode = /<pl-code(.*?)>(.*?)<\/pl-code>/gms;
+        const regex_code = /<code>(.*?)<\/code>/gms;
+
+        let plcode_replace = (match, attrib, contents) => {
+            return `<pl-code ${attrib}>${he.encode(contents)}</pl-code>`;
+        };
+        let code_replace = (match, contents) => {
+            return `<code>${he.encode(contents)}</code>`;
+        };
+
+        return html.replace(regex_plcode, plcode_replace).replace(regex_code, code_replace);
+    },
+
     execTemplate: function(htmlFilename, data, callback) {
         fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
             if (ERR(err, callback)) return;
@@ -297,11 +316,16 @@ module.exports = {
             }
             if (ERR(err, callback)) return;
             try {
-                html = markdown.processQuestion(html);
+                html = module.exports._escapeCodeSnippets(html);
             } catch (e) {
                 err = e;
             }
             if (ERR(err, callback)) return;
+            try {
+                html = markdown.processQuestion(html);
+            } catch (e) {
+                err = e;
+            }
             let $;
             try {
                 $ = cheerio.load(html, {
