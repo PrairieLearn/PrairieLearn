@@ -33,7 +33,7 @@ By default, PrairieLearn does not monitor for server-side changes, so it will **
 docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
-### Running a Specific Branch
+### Running a specific branch
 
 By default, the above command will run PrairieLearn from the `master` branch on GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
 
@@ -43,7 +43,7 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 
 Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
 
-### Running Commands in Docker
+### Running commands in Docker
 
 If needed, you can run the container with a different command:
 
@@ -57,7 +57,7 @@ This can be used to, e.g., run scripts distributed with PrairieLearn by opening 
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 ```
 
-### Server from shell
+#### Server from shell
 
 When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container. This can be done either
 
@@ -71,7 +71,7 @@ When making local changes to server-side code, it is faster to restart only the 
 
 and when any modifications are made, you can close the server with `<ctrl-C>` and re-run the init script.
 
-### Tests from shell
+#### Tests from shell
 
 The linters and tests for the Python and JavaScript code can be run with the following commands in a shell instance:
 
@@ -83,3 +83,41 @@ cd /PrairieLearn
 ./docker/test_js.sh
 ./docker/test_python.sh
 ```
+
+### Connecting to an existing Docker container
+
+The previous shells were launched in their own containers. If you want to open a shell in a Docker container that is *already running*, you can find the container's name and connect to it.
+
+1. Find the name of your running PrairieLearn container by running
+
+```sh
+docker ps
+```
+
+which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
+
+```
+CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
+e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+```
+
+
+2. Open a shell in your PrairieLearn container by running
+
+```sh
+docker exec -it CONTAINER_NAME /bin/bash
+```
+
+### Using tmux in a container
+
+While developing, you might need or want to run multiple programs simultaneously (e.g., querying in `psql` without killing the `node` server). Rather than repeatedly canceling and restarting programs back and forth, you can use a terminal multiplexer like `tmux` to keep them running simultaneously.
+
+The PrairieLearn Docker images are built with `tmux` installed. If you start a container with a shell then you can first run `tmux` before running other commands.
+
+Tmux creates virtual windows which run simultaneously (you only see one window at a time). Tmux is controlled by typing a `Ctrl-b` and then another key. The basic commands are:
+
+* `Ctrl-b` `c` - create a new window
+* `Ctrl-b` `0` - switch to window number 0 (also `Ctrl-b` `1` switches to window 1, etc.)
+* `Ctrl-b` `d` - detaches from tmux back to the original shell, which you can exit to terminate the container
+
+Google `tmux` for tutorials that demonstrate many more capabilities.
