@@ -101,3 +101,15 @@ This will output your running container(s) in the form `<container_image>: <cont
 ```sh
 docker exec -it <container_name> /bin/bash
 ```
+
+### Using tmux in a container
+
+The PrairieLearn Docker images are built with `tmux` installed. If you start a container with a shell then you can first run `tmux` before running other commands.
+
+Tmux creates virtual windows which run simultaneously (you only see one window at a time). Tmux is controlled by typing a `Ctrl-b` and then another key. The basic commands are:
+
+* `Ctrl-b` `c` - create a new window
+* `Ctrl-b` `0` - switch to window number 0 (also `Ctrl-b` `1` switches to window 1, etc.)
+* `Ctrl-b` `d` - detaches from tmux back to the original shell, which you can exit to terminate the container
+
+Google `tmux` for tutorials that demonstrate many more capabilities.
