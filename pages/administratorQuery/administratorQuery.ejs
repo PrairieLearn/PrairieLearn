@@ -14,9 +14,9 @@
 
     <%
       // hide *_id columns if we are going to hide them later
-      function renderHeader(fields, col) {
+      function renderHeader(columns, col) {
           const row = {};
-          fields.forEach(f => {row[f.name] = true;});
+          columns.forEach(c => {row[c] = true;});
 
           if (col == 'course_id' && 'course' in row) {
               %> <%
@@ -58,16 +58,32 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h5 class="font-weight-bold text-monospace"><%= sqlFilename %></h5>
+          <span class="font-weight-bold text-monospace"><%= sqlFilename %></span>
+            <button class="btn btn-xs btn-light ml-2 my-n2" type="button" data-toggle="collapse" data-target="#sql-query"
+                    aria-expanded="false" aria-controls="sql-query">Show SQL <i class="fas fa-caret-down"></i></button>
+          <span class="ml-3">&mdash;</span>
+          <span class="ml-3"><%= info.description %></span>
+        </div>
 
-          <button class="btn btn-xs btn-light ml-2" type="button" data-toggle="collapse" data-target="#sql-query"
-                  aria-expanded="false" aria-controls="sql-query">Show SQL <i class="fas fa-caret-down"></i></button>
-          <span class="ml-4"><%= info.description %></span>
+        <div id="sql-query" class="collapse">
+          <pre m-0 p-0><code class="sql"><%= sql %></code></pre>
+        </div>
+
+        <div class="card-body">
+          <form name="run-query-form" method="POST">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> Run query</button>
+          </form>
+        </div>
+
+        <% if (typeof result != 'undefined') { %>
+        <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
+          Query run at: <%= formatted_date %>
 
           <div class="ml-auto">
-            <% if (typeof result != 'undefined') { %>
-            <span class="badge badge-light"><%= result.rowCount %> rows</span>
-            <% } %>
+            <span class="mr-2">
+              <%= result.rowCount %> <%= (result.rowCount == 1) ? 'row' : 'rows' %>
+            </span>
             <a href="?_format=json" role="button" class="btn btn-sm btn-light">
               <i class="fas fa-download" aria-hidden="true"></i> JSON
             </a>
@@ -77,26 +93,13 @@
           </div>
         </div>
 
-        <div class="card-body">
-          <p>
-            <div id="sql-query" class="collapse">
-              <pre><code class="sql"><%= sql %></code></pre>
-            </div>
-          </p>
-          <form name="run-query-form" method="POST">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button type="submit" class="btn btn-primary">Run query</button>
-          </form>
-        </div>
-
-        <% if (typeof result != 'undefined') { %>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped tablesorter">
 
             <thead>
               <tr>
-                <% result.fields.forEach(field => { %>
-                <%- renderHeader(result.fields, field.name) %>
+                <% result.columns.forEach(col => { %>
+                <%- renderHeader(result.columns, col) %>
                 <% }); %>
               </tr>
             </thead>
@@ -104,8 +107,8 @@
             <tbody>
               <% result.rows.forEach(row => { %>
               <tr>
-                <% result.fields.forEach(field => { %>
-                <%- render(row, field.name) %>
+                <% result.columns.forEach(col => { %>
+                <%- render(row, col) %>
                 <% }); %>
               </tr>
               <% }); %>

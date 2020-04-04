@@ -45,25 +45,32 @@ router.post('/:query', asyncHandler(async (req, res, next) => {
         result: null,
     };
     try {
-        params.result = await sqldb.queryAsync(querySql, []);
+        const result = await sqldb.queryAsync(querySql, []);
+        params.result = JSON.stringify({
+            rowCount: result.rowCount,
+            columns: _.map(result.fields, f => f.name),
+            rows: result.rows,
+        });
     } catch (err) {
         params.error = err.toString();
     }
 
     const result = await sqldb.queryOneRowAsync(sql.insert_query_run, params);
     const query_run_id = result.rows[0].id;
-    res.redirect(req.originalUrl + '/result/' + query_run_id);
+    res.redirect(`${res.locals.urlPrefix}/administrator/query/${req.params.query}/result/${query_run_id}`);
 }));
 
 router.get('/:query/result/:query_run_id', asyncHandler(async (req, res, next) => {
     res.locals.jsonFilename = req.params.query + '.json'
+    res.locals.sqlFilename = req.params.query + '.sql'
     res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
 
-    const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, [req.params.query_run_id]);
+    const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {query_run_id: req.params.query_run_id});
 
-    res.locals.sql = query_run.sql
-    res.locals.params = query_run.params;
-    res.locals.result = query_run.result;
+    res.locals.formatted_date = query_run.rows[0].formatted_date;
+    res.locals.sql = query_run.rows[0].sql;
+    res.locals.params = query_run.rows[0].params;
+    res.locals.result = query_run.rows[0].result;
 
     if (req.query._format == 'json') {
         res.attachment(req.params.query + '.json');
