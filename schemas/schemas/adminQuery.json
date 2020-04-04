@@ -5,14 +5,14 @@
     "type": "object",
     "additionalProperties": false,
     "required": [
-        "description",
+        "description"
     ],
     "properties": {
         "description": {
             "description": "Brief one-line description of the query.",
             "type": "string"
         },
-        "resultsFormat": {
+        "resultFormats": {
             "description": "Custom formats for result columns.",
             "type": "object",
             "additionalProperties": {
@@ -25,7 +25,7 @@
             "type": "array",
             "items": {
                 "type": "object",
-                "additionalProperties": false
+                "additionalProperties": false,
                 "required": ["name", "description"],
                 "properties": {
                     "name": {
@@ -34,6 +34,10 @@
                     },
                     "description": {
                         "description": "Brief one-line description of the parameter.",
+                        "type": "string"
+                    },
+                    "default": {
+                        "description": "Default value.",
                         "type": "string"
                     }
                 }

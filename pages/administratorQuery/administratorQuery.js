@@ -21,17 +21,20 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
     res.locals.sqlFilename = req.params.query + '.sql'
 
     res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
-    const schema = await fsPromises.readFile(schemaFilename);
+    const schema = await jsonLoad.readJSONAsync(schemaFilename);
     await jsonLoad.validateJSONAsync(res.locals.info, schema);
     res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {encoding: 'utf8'});
-    res.locals.params = [];
 
+    res.locals.has_query_run = false;
     if (req.query.query_run_id) {
         const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {query_run_id: req.query.query_run_id});
 
+        res.locals.has_query_run = true;
+        res.locals.query_run_id = req.query.query_run_id;
         res.locals.formatted_date = query_run.rows[0].formatted_date;
         res.locals.sql = query_run.rows[0].sql;
         res.locals.params = query_run.rows[0].params;
+        res.locals.error = query_run.rows[0].error;
         res.locals.result = query_run.rows[0].result;
     }
 
@@ -53,16 +56,17 @@ router.post('/:query', asyncHandler(async (req, res, next) => {
     const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
     const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {encoding: 'utf8'});
 
+    const queryParams = _.pick(req.body, _.map(info.params || {}, p => p.name));
     const params = {
         name: req.params.query,
         sql: querySql,
-        params: {},
+        params: JSON.stringify(queryParams),
         authn_user_id: res.locals.authn_user.user_id,
         error: null,
         result: null,
     };
     try {
-        const result = await sqldb.queryAsync(querySql, []);
+        const result = await sqldb.queryAsync(querySql, queryParams);
         params.result = JSON.stringify({
             rowCount: result.rowCount,
             columns: _.map(result.fields, f => f.name),
