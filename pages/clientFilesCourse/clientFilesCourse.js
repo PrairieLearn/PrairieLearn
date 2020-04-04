@@ -8,7 +8,6 @@ router.get('/*', function(req, res, _next) {
         res.locals.course.path,
         'clientFilesCourse',
     );
-    console.log(clientFilesDir);
     res.sendFile(filename, {root: clientFilesDir});
 });
 

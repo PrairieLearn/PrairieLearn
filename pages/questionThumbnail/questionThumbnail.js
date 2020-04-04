@@ -10,22 +10,6 @@ router.get('/*', function(req, res, _next) {
         'questions',
         filename,
     );
-    // fs.access(path.join(clientFilesDir, 'thumbnail.jpg'), fs.F_OK, (err) => {
-    //     if (!err) {
-    //         res.sendFile("thumbnail.jpg", {root: clientFilesDir});
-    //     }
-    // });
-    // fs.access(path.join(clientFilesDir, 'thumbnail.png'), fs.F_OK, (err) => {
-    //     if (!err) {
-    //         res.sendFile("thumbnail.png", {root: clientFilesDir});
-    //     }
-    // });
-    // fs.access(path.join(clientFilesDir, 'thumbnail.jpeg'), fs.F_OK, (err) => {
-    //     if (!err) {
-    //         res.sendFile("thumbnail.jpeg", {root: clientFilesDir});
-    //     }
-    // });
-
     try {
         if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.jpg'))) {
             res.sendFile("thumbnail.jpg", {root: clientFilesDir});

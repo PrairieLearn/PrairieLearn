@@ -530,16 +530,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
-//app.use('/pl/course_instance/:course_instance_id/instructor/questionThumbnail', require('.pages'))
-//app.use('/pl/course/:course_id/course_admin/', [
-    //require('./middlewares/selectAndAuthzInstanceQuestion'),
-    //require('./middlewares/studentAssessmentAccess'),
-    //require('./pages/questionThumbnail/questionThumbnail'),
-//]);
-// app.use('/pl/course/:course_id/instructor/question/:question_id/questionThumbnail/', [
-//   require('./middlewares/selectAndAuthzInstructorQuestion'),
-//   require('./pages/questionThumbnail/questionThumbnail'),
-// ]);
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),

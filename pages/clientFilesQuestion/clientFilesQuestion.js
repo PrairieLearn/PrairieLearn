@@ -10,7 +10,6 @@ router.get('/*', function(req, res, _next) {
         res.locals.question.directory,
         'clientFilesQuestion',
     );
-    console.log(clientFilesDir);
     res.sendFile(filename, {root: clientFilesDir});
 });
 
