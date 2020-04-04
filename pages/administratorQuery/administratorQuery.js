@@ -38,6 +38,12 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
         res.locals.result = query_run.rows[0].result;
     }
 
+    if (!res.locals.has_query_run && res.locals.info.params == null) {
+        // if we don't have any params, do an immediate POST to run the query
+        req.method = 'POST'
+        return next();
+    }
+
     if (req.query.format == 'json') {
         res.attachment(req.params.query + '.json');
         res.send(res.locals.result.rows);
