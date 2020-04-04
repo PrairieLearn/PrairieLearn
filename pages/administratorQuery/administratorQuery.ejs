@@ -71,6 +71,19 @@
 
         <div class="card-body">
           <form name="run-query-form" method="POST">
+            <% if (info.params) { %>
+            <% info.params.forEach(param => { %>
+            <div class="form-row align-items-center">
+              <div class="col-auto">
+                <label for="param-<%= param.name %>"><%= param.name %></label>
+              </div>
+              <div class="col">
+                <input class="form-control" type="text" id="param-<%= param.name %>" aria-describedby="param-<%= param.name %>-help">
+                <small id="param-<%= param.name %>-help" class="form-text text-muted"><%= param.description %></small>
+              </div>
+            </div>
+            <% }); %>
+            <% } %>
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-play"></i>
