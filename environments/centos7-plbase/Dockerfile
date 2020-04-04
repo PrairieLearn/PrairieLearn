@@ -23,6 +23,7 @@ RUN yum -y install \
         make \
         openssl \
         dos2unix \
+        tmux \
         readline-devel        `# needed for rpy2` \
         libcurl-devel         `# needed for rvest (for R)` \
         openssl-devel         `# needed for rvest (for R)` \

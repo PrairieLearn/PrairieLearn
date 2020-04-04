@@ -483,6 +483,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Details
 
@@ -503,8 +504,8 @@ The question will only be graded when all matrix components are entered.
 ## `pl-matrix-input` element
 
 A `pl-matrix-input` element displays an input field that accepts a matrix
-(i.e., a 2-D array) expressed either in a supported programming language
-format (e.g. MATLAB or Python's numpy).
+(i.e., a 2-D array) expressed in a supported programming language
+format (either MATLAB or Python's numpy).
 
 #### Sample Element
 
