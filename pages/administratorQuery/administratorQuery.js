@@ -26,7 +26,24 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
     res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {encoding: 'utf8'});
     res.locals.params = [];
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    if (req.query.query_run_id) {
+        const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {query_run_id: req.query.query_run_id});
+
+        res.locals.formatted_date = query_run.rows[0].formatted_date;
+        res.locals.sql = query_run.rows[0].sql;
+        res.locals.params = query_run.rows[0].params;
+        res.locals.result = query_run.rows[0].result;
+    }
+
+    if (req.query.format == 'json') {
+        res.attachment(req.params.query + '.json');
+        res.send(res.locals.result.rows);
+    } else if (req.query.format == 'csv') {
+        res.attachment(req.params.query + '.csv');
+        res.send(await csvMaker.resultToCsvAsync(res.locals.result));
+    } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    }
 }));
 
 router.post('/:query', asyncHandler(async (req, res, next) => {
@@ -57,30 +74,7 @@ router.post('/:query', asyncHandler(async (req, res, next) => {
 
     const result = await sqldb.queryOneRowAsync(sql.insert_query_run, params);
     const query_run_id = result.rows[0].id;
-    res.redirect(`${res.locals.urlPrefix}/administrator/query/${req.params.query}/result/${query_run_id}`);
-}));
-
-router.get('/:query/result/:query_run_id', asyncHandler(async (req, res, next) => {
-    res.locals.jsonFilename = req.params.query + '.json'
-    res.locals.sqlFilename = req.params.query + '.sql'
-    res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
-
-    const query_run = await sqldb.queryOneRowAsync(sql.select_query_run, {query_run_id: req.params.query_run_id});
-
-    res.locals.formatted_date = query_run.rows[0].formatted_date;
-    res.locals.sql = query_run.rows[0].sql;
-    res.locals.params = query_run.rows[0].params;
-    res.locals.result = query_run.rows[0].result;
-
-    if (req.query._format == 'json') {
-        res.attachment(req.params.query + '.json');
-        res.send(res.locals.result.rows);
-    } else if (req.query._format == 'csv') {
-        res.attachment(req.params.query + '.csv');
-        res.send(await csvMaker.resultToCsvAsync(res.locals.result));
-    } else {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    res.redirect(`${req.baseUrl}/${req.path}?query_run_id=${query_run_id}`);
 }));
 
 module.exports = router;
