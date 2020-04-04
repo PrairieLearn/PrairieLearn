@@ -6,5 +6,5 @@ CREATE TABLE query_runs (
     sql text NOT NULL,
     params jsonb,
     result jsonb,
-    user_id bigint NOT NULL REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+    authn_user_id bigint NOT NULL REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );

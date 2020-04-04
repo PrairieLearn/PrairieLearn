@@ -65,7 +65,9 @@
           <span class="ml-4"><%= info.description %></span>
 
           <div class="ml-auto">
+            <% if (typeof result != 'undefined') { %>
             <span class="badge badge-light"><%= result.rowCount %> rows</span>
+            <% } %>
             <a href="?_format=json" role="button" class="btn btn-sm btn-light">
               <i class="fas fa-download" aria-hidden="true"></i> JSON
             </a>
@@ -81,8 +83,13 @@
               <pre><code class="sql"><%= sql %></code></pre>
             </div>
           </p>
+          <form name="run-query-form" method="POST">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button type="submit" class="btn btn-primary">Run query</button>
+          </form>
         </div>
 
+        <% if (typeof result != 'undefined') { %>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped tablesorter">
 
@@ -106,6 +113,7 @@
             
           </table>
         </div>
+        <% } %>
       </div>
 
     </div>
