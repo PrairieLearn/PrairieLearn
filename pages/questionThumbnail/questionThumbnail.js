@@ -28,7 +28,7 @@ router.get('/*', function(req, res, _next) {
             return;
         }
     } catch (err) {}
-    res.sendFile("images/defaultThumbnail.png", {root: "public"});
+    res.sendStatus(404);
 });
 
 module.exports = router;
