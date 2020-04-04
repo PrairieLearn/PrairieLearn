@@ -28,10 +28,6 @@
                 "v3"
             ]
         },
-        "thumbnail": {
-            "description": "Path to question thumbnail.",
-            "type": "string"
-        },
         "title": {
             "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
             "type": "string"

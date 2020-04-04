@@ -18,7 +18,6 @@ columns
     single_variant: boolean default false
     template_directory: text
     title: text
-    thumbnail: text
     topic_id: bigint
     type: enum_question_type
     uuid: uuid not null
