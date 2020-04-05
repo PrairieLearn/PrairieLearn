@@ -12,19 +12,19 @@ router.get('/*', function(req, res, _next) {
     );
     try {
         if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.jpg'))) {
-            res.sendFile("thumbnail.jpg", {root: clientFilesDir});
+            res.sendFile('thumbnail.jpg', {root: clientFilesDir});
             return;
         }
     } catch (err) {}
     try {
         if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.png'))) {
-            res.sendFile("thumbnail.png", {root: clientFilesDir});
+            res.sendFile('thumbnail.png', {root: clientFilesDir});
             return;
         }
     } catch (err) {}
     try {
         if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.jpeg'))) {
-            res.sendFile("thumbnail.jpeg", {root: clientFilesDir});
+            res.sendFile('thumbnail.jpeg', {root: clientFilesDir});
             return;
         }
     } catch (err) {}
