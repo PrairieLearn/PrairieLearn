@@ -91,6 +91,10 @@
 
   * Add support for pages to set their own titles in browser tabs via `res.locals.navTrace` (David Mitchell)
 
+  * Add extra `/course*` mount points (Tim Yang).
+  
+  * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
