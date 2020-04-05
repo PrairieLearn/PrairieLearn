@@ -118,6 +118,7 @@ A complete `question.html` and `server.py` example looks like:
 
 ```python
 # server.py
+import random
 
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
