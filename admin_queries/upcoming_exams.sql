@@ -26,8 +26,9 @@ SELECT
     ci.id AS course_instance_id,
     aset.abbreviation || a.number || ': ' || a.title AS assessment,
     a.id AS assessment_id,
-    format_date_full_compact(arwnd.start_date, config_select('display_timezone')) as start_date,
-    format_date_full_compact(arwnd.end_date, config_select('display_timezone')) as end_date,
+    format_date_full_compact(arwnd.start_date, config_select('display_timezone')) AS start_date,
+    format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
+    format_interval(arwnd.end_date - arwnd.start_date) AS duration,
     arwnd.student_count
 FROM
     access_rules_with_near_date AS arwnd
@@ -37,6 +38,6 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-    
+    arwnd.student_count > 100
 ORDER BY arwnd.start_date
 LIMIT 100;
