@@ -29,4 +29,9 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
-    awsc.submission_count DESC;
+    awsc.submission_count DESC,
+    i.short_name,
+    c.short_name,
+    ci.short_name,
+    assessment,
+    a.id;

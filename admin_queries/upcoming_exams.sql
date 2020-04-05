@@ -39,5 +39,11 @@ FROM
     JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
     arwnd.student_count > 100
-ORDER BY arwnd.start_date
+ORDER BY
+    arwnd.start_date,
+    i.short_name,
+    c.short_name,
+    ci.short_name,
+    assessment,
+    a.id;
 LIMIT 100;
