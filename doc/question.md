@@ -65,39 +65,6 @@ Property | Type | Description
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
-## Question `server.py`
-
-The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answer. A complete `server.py` example looks like:
-
-```python
-import random
-
-def generate(data):
-    # random mass (m) and acceleration (a)
-    m = random.randint(3, 10)
-    a = random.randint(3, 9)
-    data["params"]["m"] = m
-    data["params"]["a"] = a
-
-    # correct force
-    F = m * a
-    data["correct_answers"]["F"] = F
-
-    return data
-
-```
-
-The `server.py` functions are:
-
-Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
---- | --- | --- | --- | ---
-`generate()` | | `correct_answers`, `params` | `options`, `variant_seed` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
-`prepare()` | | `correct_answers`, `params` | `options`, `variant_seed` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
-`render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.
-`parse()` | | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
-`grade()` | | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
-`file()` | `object` (string, byte-like, file-like) | | `correct_answers`, `filename`, `options`, `params`, `variant_seed` | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used.
-
 ## Question `question.html`
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
@@ -120,6 +87,78 @@ The `question.html` is regular HTML, with four special features:
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+
+## Question `server.py`
+
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answer. The `server.py` functions are:
+
+Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
+--- | --- | --- | --- | ---
+`generate()` | | `correct_answers`, `params` | `options`, `variant_seed` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
+`prepare()` | | `correct_answers`, `params` | `options`, `variant_seed` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
+`render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.
+`parse()` | | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
+`grade()` | | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+`file()` | `object` (string, byte-like, file-like) | | `correct_answers`, `filename`, `options`, `params`, `variant_seed` | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used.
+
+A complete `question.html` and `server.py` example looks like:
+
+```html
+<!-- question.html -->
+
+<pl-question-panel>
+  <!-- params.x is defined by data["params"]["x"] in server.py's `generate()`. -->
+  <!-- params.operation defined by in data["params"]["operation"] in server.py's `generate()`. -->
+  If $x = {{params.x}}$ and $y$ is {{params.operation}} $x$, what is $y$?
+</pl-question-panel>
+
+<!-- y is defined by data["correct_answer"]["y"] in server.py's `generate()`. -->
+<pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+```
+
+```python
+# server.py
+
+def generate(data):
+    # Generate random parameters for the question and store them in the data["params"] dict:
+    data["params"]["x"] = random.randint(5, 10)
+    data["params"]["operation"] = random.choice(["double", "triple"])
+
+    # Also compute the correct answer (if there is one) and store in the data["correct_answer"] dict:
+    if data["params"]["operation"] == "double"
+        data["correct_answer"]["y"] = 2 * data["params"]["x"]
+    else:
+        data["correct_answer"]["y"] = 3 * data["params"]["x"]
+
+    def prepare(data):
+    # This function will run after all elements have run `generate()`.
+    # We can alter any of the element data here, but this is rarely needed.
+
+    def parse(data):
+    # data["raw_submitted_answer"][NAME] is the exact raw answer submitted by the student.
+    # data["submitted_answer"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
+    # data["format_errors"][NAME] is the answer format error (if any) from elements.
+    # We can modify or delete format errors if we have custom logic (rarely needed).
+    # If there are format errors then the submission is "invalid" and is not graded.
+
+    # As an example, we will reject negative numbers for "y":
+    if "y" not in data["format_errors"]: # check we don't already have a format error
+        if data["submitted_answers"]["y"] < 0
+            data["format_errors"]["y"] = "Negative numbers are not allowed"
+
+    def grade(data):
+    # All elements will have already graded their answers (if any) before this point.
+    # data["partial_scores"][NAME] is the individual element scores (0 to 1).
+    # data["score"] is the total score for the question (0 to 1).
+    # We can modify or delete any of these if we have a custom grading method.
+    # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
+
+    # As an example, we will give half points for incorrect answers larger than "x":
+    if data["score"] == 0: # only if not already correct
+        if data["submitted_answers"]["y"] > data["params"]["x"]:
+            data["partial_scores"]["y"] = 0.5
+            data["score"] = 0.5
+```
 
 ## The `singleVariant` option for non-randomized questions
 
