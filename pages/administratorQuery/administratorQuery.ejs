@@ -75,7 +75,10 @@
             <% info.params.forEach(param => { %>
             <div class="form-group">
               <label for="param-<%= param.name %>"><%= param.name %></label>
-              <input class="form-control" type="text" id="param-<%= param.name %>" aria-describedby="param-<%= param.name %>-help"
+              <input class="form-control" type="text"
+                     id="param-<%= param.name %>"
+                     aria-describedby="param-<%= param.name %>-help"
+                     autocomplete="off"
                      name="<%= param.name %>"
                      <% if (typeof params != 'undefined' && params[param.name] != null) { %>
                      value="<%= params[param.name] %>"
