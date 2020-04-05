@@ -163,6 +163,40 @@ def grade(data):
             data["score"] = 0.5
 ```
 
+## Generating dynamic files
+
+You can dynamically generate file objects using `file()`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
+
+```html
+<!-- question.html -->
+
+<p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
+<img src="{{options.client_files_question_dynamic_url}}/fig.png" />
+```
+
+```python
+# server.py
+
+import random, io, matplotlib.pyplot as plt
+
+def generate(data):
+    data["params"]["a"] = random.choice([0.25, 0.5, 1, 2, 4])
+
+def file(data):
+    # We should look at data["filename"], generate the corresponding file,
+    # and return the contents of the file as a string, bytes-like, or file-like object.
+    # We can access data["params"].
+    # As an example, we will generate the "fig.png" figure.
+
+    if data["filename"] == "fig.png":                # check for the appropriate filename
+        plt.plot([0, data["params"]["a"]], [0, 1])   # plot a line with slope "a"
+        buf = io.BytesIO()                           # make a bytes object (a buffer)
+        plt.savefig(buf, format="png")               # save the figure data into the buffer
+        return buf
+```
+
+You can also use this functionality in file-based elements (`pl-figure`, `pl-file-download`) by setting `type="dynamic"`.
+
 ## The `singleVariant` option for non-randomized questions
 
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
