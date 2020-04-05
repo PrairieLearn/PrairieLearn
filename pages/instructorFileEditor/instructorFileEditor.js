@@ -663,7 +663,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _pullFromRemoteHash = () => {
             debug(`${job_sequence_id}: _pullFromRemoteHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 _checkHash();
             });
         };
@@ -885,7 +885,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _updateCommitHash = () => {
             debug(`${job_sequence_id}: _updateCommitHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 if (fileEdit.needToSync) {
                     _syncFromDisk();
                 } else {
