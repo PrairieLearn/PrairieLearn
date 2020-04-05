@@ -1,16 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const asyncHandler = require('express-async-handler')
+const asyncHandler = require('express-async-handler');
 const fsPromises = require('fs').promises;
 const path = require('path');
-const util = require('util');
 const _ = require('lodash');
 
 const jsonLoad = require('../../lib/json-load');
 
 const queriesDir = 'admin_queries';
 
-router.get('/', asyncHandler(async (req, res, next) => {
+router.get('/', asyncHandler(async (req, res, _next) => {
     const fileList = await fsPromises.readdir(queriesDir);
     const jsonList = _.filter(fileList, f => /\.json$/.test(f));
     res.locals.queries = await Promise.all(jsonList.map(async f => {

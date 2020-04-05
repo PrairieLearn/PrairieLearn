@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const asyncHandler = require('express-async-handler')
+const asyncHandler = require('express-async-handler');
 const fsPromises = require('fs').promises;
 const path = require('path');
-const util = require('util');
 const _ = require('lodash');
 
 const csvMaker = require('../../lib/csv-maker');
@@ -17,8 +16,8 @@ const queriesDir = 'admin_queries';
 const schemaFilename = 'schemas/schemas/adminQuery.json';
 
 router.get('/:query', asyncHandler(async (req, res, next) => {
-    res.locals.jsonFilename = req.params.query + '.json'
-    res.locals.sqlFilename = req.params.query + '.sql'
+    res.locals.jsonFilename = req.params.query + '.json';
+    res.locals.sqlFilename = req.params.query + '.sql';
 
     res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
     const schema = await jsonLoad.readJSONAsync(schemaFilename);
@@ -40,7 +39,7 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
 
     if (!res.locals.has_query_run && res.locals.info.params == null) {
         // if we don't have any params, do an immediate POST to run the query
-        req.method = 'POST'
+        req.method = 'POST';
         return next();
     }
 
@@ -55,9 +54,9 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
     }
 }));
 
-router.post('/:query', asyncHandler(async (req, res, next) => {
-    const jsonFilename = req.params.query + '.json'
-    const sqlFilename = req.params.query + '.sql'
+router.post('/:query', asyncHandler(async (req, res, _next) => {
+    const jsonFilename = req.params.query + '.json';
+    const sqlFilename = req.params.query + '.sql';
 
     const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
     const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {encoding: 'utf8'});
