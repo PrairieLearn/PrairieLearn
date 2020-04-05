@@ -4,7 +4,7 @@ import random
 import numpy
 
 def file(data):
-    if data['filename']=='figure.png':
+    if data['filename']=='my-mpl-figure':
 
         # Create the figure
         x = numpy.linspace(-5,5)

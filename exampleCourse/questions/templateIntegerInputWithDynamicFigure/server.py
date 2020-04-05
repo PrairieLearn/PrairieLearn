@@ -28,7 +28,7 @@ def file(data):
 
     ## This creates a dynamic figure (either a circle or diamond)
     ## depending on the parameters d and p defined in the 'generate' function
-    if data['filename']=='figure0.png':
+    if data['filename']=='my-mpl-figure':
 
         d = data['params']['d']
         p = data['params']['p']
