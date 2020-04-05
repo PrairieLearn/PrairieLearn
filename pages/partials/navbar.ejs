@@ -135,7 +135,7 @@ const navPagesTabs = {
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && Object.keys(navPagesTabs).includes(navPage)) { %>
     <!-- Instructor navigation tabs -->
-    <ul class="nav nav-tabs pt-2 px-3 bg-light">
+    <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         <%- include(navPagesTabs[navPage]); %>
     </ul>
 <% } %>
