@@ -16,7 +16,7 @@ require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
 require('./testAdministrator');
-require('./testAdministratorQuery');
+require('./testAdministratorQueries');
 require('./testFileEditor');
 require('./testCourseEditor');
 require('./testGetHomepage');
