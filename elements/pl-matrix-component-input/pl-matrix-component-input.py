@@ -389,7 +389,7 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
 
     if format == 'output-invalid':
 
-        display_array = '<table class="table-no-row-padding">'
+        display_array = '<table>'
         display_array += '<tr>'
         display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
@@ -439,7 +439,7 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         else:
             score_message = ''
 
-        display_array = '<table class="table-no-row-padding">'
+        display_array = '<table>'
         display_array += '<tr>'
         # Add the prefix
         if label is not None:
@@ -484,7 +484,7 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array += '</table>'
 
     elif format == 'input':
-        display_array = '<table class="table-no-row-padding">'
+        display_array = '<table>'
         display_array += '<tr>'
         # Add first row
         display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
