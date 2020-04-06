@@ -11,23 +11,23 @@ router.get('/*', function(req, res, _next) {
         filename,
     );
     if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.jpg'))) {
-        res.sendFile('thumbnail.jpg', {root: clientFilesDir});
+        res.sendFile('thumbnail.jpg', {maxAge: 86400000 * 30, root: clientFilesDir});
         return;
     }
     if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.png'))) {
-        res.sendFile('thumbnail.png', {root: clientFilesDir});
+        res.sendFile('thumbnail.png', {maxAge: 86400000 * 30, root: clientFilesDir});
         return;
     }
     if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.jpeg'))) {
-        res.sendFile('thumbnail.jpeg', {root: clientFilesDir});
+        res.sendFile('thumbnail.jpeg', {maxAge: 86400000 * 30, root: clientFilesDir});
         return;
     }
     if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.svg'))) {
-        res.sendFile('thumbnail.svg', {root: clientFilesDir});
+        res.sendFile('thumbnail.svg', {maxAge: 86400000 * 30, root: clientFilesDir});
         return;
     }
     if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.gif'))) {
-        res.sendFile('thumbnail.gif', {root: clientFilesDir});
+        res.sendFile('thumbnail.gif', {maxAge: 86400000 * 30, root: clientFilesDir});
         return;
     }
     res.sendStatus(404);
