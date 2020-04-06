@@ -14,13 +14,7 @@ SELECT
             e.role <= $authn_role
     ) AS available_uids;
 
--- BLOCK add_and_enroll
-WITH rows as (
-    INSERT INTO users (uid, name) VALUES ($uid, $uid)
-    ON CONFLICT (uid) DO UPDATE SET uid=$uid /* needed for the return */
-    RETURNING user_id
-)
+-- BLOCK enroll
 INSERT INTO enrollments (user_id, course_instance_id, role)
-    SELECT user_id, $course_instance_id, 'Student'
-    FROM rows
+VALUES ($user_id, $course_instance_id, 'Student')
 ON CONFLICT DO NOTHING;

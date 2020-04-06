@@ -20,7 +20,7 @@ router.get('/', function(req, res, next) {
     sqldb.queryOneRow(sql.select, params, function(err, result) {
         if (ERR(err, next)) return;
         _.assign(res.locals, result.rows[0]);
-        
+
         res.locals.ipaddress = req.ip;
         // Trim out IPv6 wrapper on IPv4 addresses
         if (res.locals.ipaddress.substr(0, 7) == '::ffff:') {
@@ -40,15 +40,24 @@ router.post('/', function(req, res, next) {
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeUid') {
         if (config.devMode) {
-            // Add the user in devmode to test access rules
-            var params = {
-                uid: req.body.pl_requested_uid,
-                course_instance_id: res.locals.course_instance.id,
-            };
-            sqldb.query(sql.add_and_enroll, params, function(err) {
+            // In devmode, if necessary, add the user and enroll to test access rules
+            var params = [
+                req.body.pl_requested_uid, //uid
+                null, //name
+                null, //uin,
+                'dev',
+            ];
+            sqldb.call('users_select_or_insert', params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
-                res.redirect(req.originalUrl);
+                var params = {
+                    user_id: result.rows[0].user_id,
+                    course_instance_id: res.locals.course_instance.id,
+                };
+                sqldb.queryZeroOrOneRow(sql.enroll, params, function(err) {
+                    if (ERR(err, next)) return;
+                    res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
+                    res.redirect(req.originalUrl);
+                });
             });
         } else {
             res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
