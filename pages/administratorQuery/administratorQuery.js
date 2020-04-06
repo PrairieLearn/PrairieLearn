@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const _ = require('lodash');
+const hljs = require('highlight.js');
 
 const csvMaker = require('../../lib/csv-maker');
 const jsonLoad = require('../../lib/json-load');
@@ -23,6 +24,7 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
     const schema = await jsonLoad.readJSONAsync(schemaFilename);
     await jsonLoad.validateJSONAsync(res.locals.info, schema);
     res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {encoding: 'utf8'});
+    res.locals.sqlHighlighted = hljs.highlight('sql', res.locals.sql).value;
 
     res.locals.has_query_run = false;
     if (req.query.query_run_id) {
