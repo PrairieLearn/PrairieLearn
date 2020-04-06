@@ -10,13 +10,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 
-/**
- * This test validates the behavior of exams with real-time grading disabled.
- * It was deliberately written separately from `testExam.js` as a start to
- * breaking tests out of that monolith. It does not reuse existing conventions
- * from `testExam.js` in favor of experimenting with a different way of writing
- * PrairieLearn tests.
- */
 describe('Exam assessment with real-time grading disabled', function() {
   this.timeout(60000);
 

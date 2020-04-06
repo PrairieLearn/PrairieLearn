@@ -787,6 +787,8 @@ app.use('/pl/course/:course_id/question/:question_id/text', [
 
 app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
+app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
+app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
