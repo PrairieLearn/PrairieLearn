@@ -45,5 +45,5 @@ ORDER BY
     c.short_name,
     ci.short_name,
     assessment,
-    a.id;
+    a.id
 LIMIT 100;
