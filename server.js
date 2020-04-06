@@ -627,14 +627,12 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 ]);
 
 // questionThumbnail
-app.use('/pl/course/:course_id/course_admin/questionThumbnail', [
-    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
-    require('./middlewares/studentAssessmentAccess'),
+app.use('/pl/course/:course_id/course_admin/question_thumbnail', [
+    function(req, res, next) {next();},
     require('./pages/questionThumbnail/questionThumbnail'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/questionThumbnail', [
-    function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
-    require('./middlewares/studentAssessmentAccess'),
+app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/question_thumbnail', [
+    function(req, res, next) {next();},
     require('./pages/questionThumbnail/questionThumbnail'),
 ]);
 

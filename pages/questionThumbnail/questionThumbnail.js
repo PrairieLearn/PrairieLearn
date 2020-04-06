@@ -22,6 +22,14 @@ router.get('/*', function(req, res, _next) {
         res.sendFile('thumbnail.jpeg', {root: clientFilesDir});
         return;
     }
+    if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.svg'))) {
+        res.sendFile('thumbnail.svg', {root: clientFilesDir});
+        return;
+    }
+    if (fs.existsSync(path.join(clientFilesDir, 'thumbnail.gif'))) {
+        res.sendFile('thumbnail.gif', {root: clientFilesDir});
+        return;
+    }
     res.sendStatus(404);
 });
 
