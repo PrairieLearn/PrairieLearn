@@ -483,6 +483,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
+`allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 
 #### Details
 
@@ -915,9 +916,9 @@ Attribute | Type | Default | Description
 `directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
 `width` | number | `None` | Width of image (e.g., '250px').
 
-#### Details
+#### Dynamically generated figures
 
-If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `figure.png`:
+If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, to generate the `figure.png` for the dynamic `pl-figure` above, this code might appear in `server.py` to generate a "fake" `figure.png`:
 
 ```python
 def file(data):

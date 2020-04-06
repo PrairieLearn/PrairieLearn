@@ -631,6 +631,80 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
+def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+    """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
+
+    Parses a string containing a decimal number with support for answers expressing
+    as a fraction.
+
+    Returns a tuple with the parsed value in the first entry and a dictionary with
+    the intended value of "data" in the second entry.
+
+    On successful parsing, "data" will contain a 'submitted_answers' key that is the
+    JSON encoded parsed answer.
+
+    If parsing failed, the first entry will be 'None' and the "data" entry will
+    contain a 'format_errors' key.
+    """
+    data = {}
+    value = None
+
+    if a_sub is None:
+        data['format_errors'] = 'No submitted answer.'
+        return (value, data)
+
+    if a_sub.strip() == '':
+        data['format_errors'] = 'The submitted answer was blank.'
+        return (value, data)
+
+    # support FANCY division characters
+    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
+    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
+
+    or_complex = ' (or complex) ' if allow_complex else ' '
+
+    if a_sub.count('/') == 1:
+        # Specially handle fractions.
+
+        if allow_fractions:
+            a_sub_splt = a_sub.split('/')
+            try:
+                a_parse_l = string_to_number(a_sub_splt[0], allow_complex=allow_complex)
+                a_parse_r = string_to_number(a_sub_splt[1], allow_complex=allow_complex)
+
+                if a_parse_l is None or not np.isfinite(a_parse_l):
+                    raise ValueError(f'The numerator could not be interpreted as a decimal{ or_complex }number.')
+                if a_parse_r is None or not np.isfinite(a_parse_r):
+                    raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
+
+                a_frac = a_parse_l / a_parse_r
+                if not np.isfinite(a_frac):
+                    raise ValueError('The submitted answer is not a finite number.')
+
+                value = a_frac
+                data['submitted_answers'] = to_json(value)
+            except ZeroDivisionError:
+                data['format_errors'] = 'Your expression resulted in a division by zero.'
+            except Exception as error:
+                data['format_errors'] = f'Invalid format: {str(error)}'
+        else:
+            data['format_errors'] = 'Fractional answers are not allowed in this input.'
+    else:
+        # Not a fraction, just convert to float or complex
+        try:
+            a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
+            if a_sub_parsed is None:
+                raise ValueError(f'The submitted answer could not be interpreted as a decimal{ or_complex }number.')
+            if not np.isfinite(a_sub_parsed):
+                raise ValueError('The submitted answer is not a finite number.')
+            value = a_sub_parsed
+            data['submitted_answers'] = to_json(value)
+        except Exception as error:
+            data['format_errors'] = f'Invalid format: {str(error)}'
+
+    return (value, data)
+
+
 def string_to_2darray(s, allow_complex=True):
     """string_to_2darray(s)
 
