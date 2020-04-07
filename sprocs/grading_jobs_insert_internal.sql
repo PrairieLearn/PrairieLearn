@@ -53,6 +53,11 @@ BEGIN
 
     new_correct = (new_score >= 1.0);
 
+    IF new_gradable = FALSE THEN
+        new_score := null;
+        new_partial_scores := '{}'::json;
+    END IF;
+
     UPDATE submissions AS s
     SET
         graded_at = now(),

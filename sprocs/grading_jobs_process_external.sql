@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION
         grading_job_id bigint,
         score double precision,
         feedback jsonb,
+        format_errors jsonb,
         received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz,
@@ -70,7 +71,10 @@ BEGIN
         UPDATE submissions
         SET
             gradable = FALSE,
-            feedback = grading_jobs_process_external.feedback
+            feedback = grading_jobs_process_external.feedback,
+            format_errors = grading_jobs_process_external.format_errors,
+            score = null,
+            partial_scores = '{}'::json
         WHERE id = grading_job.submission_id;
 
         IF assessment_instance_id IS NOT NULL THEN
