@@ -29,7 +29,9 @@ SELECT
     format_date_full_compact(arwnd.start_date, config_select('display_timezone')) AS start_date,
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
     format_interval(arwnd.end_date - arwnd.start_date) AS duration,
-    arwnd.student_count
+    arwnd.student_count,
+    aq.question_count,
+    aq.ext_q_count
 FROM
     access_rules_with_near_date AS arwnd
     JOIN assessments AS a ON (a.id = arwnd.assessment_id)
@@ -37,6 +39,15 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN institutions AS i ON (i.id = c.institution_id)
+    JOIN (
+        SELECT
+            aq.assessment_id,
+            count(*) AS question_count,
+            count(*) FILTER(WHERE q.external_grading_enabled = TRUE) AS ext_q_count
+         FROM assessment_questions AS aq
+         JOIN questions q ON (q.id = aq.question_id)
+         GROUP BY aq.assessment_id
+    ) AS aq ON (a.id = aq.assessment_id)
 WHERE
     arwnd.student_count > 100
 ORDER BY
