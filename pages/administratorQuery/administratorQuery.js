@@ -85,7 +85,7 @@ router.post('/:query', asyncHandler(async (req, res, _next) => {
 
     const result = await sqldb.queryOneRowAsync(sql.insert_query_run, params);
     const query_run_id = result.rows[0].id;
-    res.redirect(`${req.baseUrl}/${req.path}?query_run_id=${query_run_id}`);
+    res.redirect(`${req.baseUrl}${req.path}?query_run_id=${query_run_id}`);
 }));
 
 module.exports = router;
