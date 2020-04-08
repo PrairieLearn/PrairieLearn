@@ -1,8 +1,14 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
+from html import escape, unescape
 import chevron
 import os
+
+import pygments
+import pygments.lexers
+import pygments.lexer
+import pygments.formatter
+from pygments.token import Token
 
 LANGUAGE_DEFAULT = None
 NO_HIGHLIGHT_DEFAULT = False
@@ -10,27 +16,6 @@ SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
-
-# To add a new language, we need to download a new build of
-# public/javascripts/highlight.js
-#
-# This comes from https://highlightjs.org/download/
-#
-# To download a new build, here's a handy JS script to auto-check the correct
-# language boxes. Run this script in the browser JavaScript console on the
-# highlight.js download page. The list of languages in this script should match
-# the list below in python code.
-#
-###############################################################################
-# const languages = [`armasm`, `bash`, `cpp`, `csharp`, `css`, `excel`, `fortran`, `go`, `haskell`, `html`, `ini`, `java`, `javascript`, `json`, `julia`, `makefile`, `markdown`, `mathematica`, `matlab`, `mipsasm`, `objectivec`, `ocaml`, `perl`, `php`, `python`, `r`, `ruby`, `rust`, `shell`, `sql`, `tex`, `x86asm`, `yaml`];
-# document.querySelectorAll('input[type="checkbox"]').forEach(input => {
-#     if (languages.indexOf(input.name.replace(".js", "")) >= 0) {
-#         input.checked = true;
-#     } else {
-#         input.checked = false;
-#     }
-# });
-###############################################################################
 
 allowed_languages = [
     'armasm',
@@ -70,10 +55,90 @@ allowed_languages = [
 ]
 
 
+class NoHighlightingLexer(pygments.lexer.Lexer):
+    def __init__(self, **options):
+        pygments.lexer.Lexer.__init__(self, **options)
+        self.compress = options.get('compress', '')
+        self.name = "No Highlighting Lexer"
+        self.aliases = ["none"]
+        self.filenames = ["*.none"]
+        self.mimetypes = []
+
+    def get_tokens_unprocessed(self, text):
+        return [(0, Token.Text, text)]
+
+
+class HljsFormatter(pygments.formatter.Formatter):
+    def __init__(self, **options):
+        pygments.formatter.Formatter.__init__(self, **options)
+        self.highlight_lines = options.get('highlight_lines', [])
+        self.highlight_color = options.get('highlight_color', HIGHLIGHT_LINES_COLOR_DEFAULT)
+
+    def parse_lines(self, token_source):
+        lines = []
+        current_line = []
+        for token, value in token_source:
+            if token in Token.Text and str(value) == '\n' or str(value) == '\r\n':
+                lines.append(current_line)
+                current_line = []
+            else:
+                current_line.append((token, value))
+
+        if len(current_line) > 0:
+            lines.append(current_line)
+
+        return lines
+            
+        
+    def format(self, tokensource, outfile):
+        lines = self.parse_lines(tokensource)
+
+        for lineno, line in enumerate(lines):
+            if (lineno + 1) in self.highlight_lines:
+                highlight = True
+                outfile.write(f'<span class="pl-code-highlighted-line" style="background-color: {self.highlight_color}">')
+            else:
+                highlight = False
+                
+            for ttype, value in line:
+                cls = None
+                if ttype in Token.Keyword:
+                    cls = 'hljs-keyword'
+                elif ttype in Token.Name.Function:
+                    cls = 'hljs-title' 
+                elif ttype in Token.Name.Class:
+                    cls = 'hljs-title'
+                elif ttype in Token.Name.Tag:
+                    cls = 'hljs-name'
+                elif ttype in Token.Literal.Number:
+                    cls = 'hljs-number'
+                elif ttype in Token.Literal.String:
+                    cls = 'hljs-string'
+                elif ttype in Token.Literal:
+                    cls = 'hljs-literal'
+                elif ttype in Token.Comment.Preproc:
+                    cls = 'hljs-meta hljs-meta-keyword'
+                elif ttype in Token.Comment.PreprocFile:
+                    cls = 'hljs-meta hljs-meta-string'
+                elif ttype in Token.Comment:
+                    cls = 'hljs-comment'
+                elif ttype in Token.Generic:
+                    cls = 'hljs-text'
+
+                outfile.write(f'<span class="{cls}" pygment-token="{str(ttype)}">')
+                outfile.write(escape(value))
+                outfile.write('</span>')
+
+            if highlight:
+                outfile.write('</span>')
+            elif lineno != len(lines) - 1:
+                outfile.write('\n')
+
+
 def parse_highlight_lines(highlight_lines):
     """
-    Parses a string like "1", "1-4", "1-3,5,7-8" into lists of tuples like
-    [(1,1)], [(1,4)], and [(1,3),(5,5),(7,8)]
+    Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
+    [1], [1,2,3,4], and [1,2,3,5,7,8]
     """
     lines = []
     components = highlight_lines.split(',')
@@ -81,7 +146,7 @@ def parse_highlight_lines(highlight_lines):
         component = component.strip()
         try:
             line = int(component)
-            lines.append((line, line))
+            lines.append(line)
         except ValueError:
             # Try parsing as "##-###"
             numbers = component.split('-')
@@ -90,39 +155,11 @@ def parse_highlight_lines(highlight_lines):
             try:
                 start = int(numbers[0])
                 end = int(numbers[1])
-                lines.append((start, end))
+                for i in range(start, end+1):
+                    lines.append(i)
             except ValueError:
                 return None
     return lines
-
-
-def line_should_be_highlighted(line_number, lines_to_highlight):
-    """
-    Takes an array like that produced by parse_highlight_lines and determines
-    if a line of code satisfies the range.
-    """
-    for pair in lines_to_highlight:
-        start, end = pair
-        if line_number >= start and line_number <= end:
-            return True
-    return False
-
-
-def highlight_lines_in_code(code, highlight_lines, color):
-    lines_to_highlight = parse_highlight_lines(highlight_lines)
-    code_lines = code.splitlines()
-    line_number = 1
-    result_lines = ''
-    for line in code_lines:
-        if line_should_be_highlighted(line_number, lines_to_highlight):
-            if len(line.strip()) == 0:
-                # insert line break to prevent collapsing the line
-                line = '<br>'
-            result_lines += '<span class="pl-code-highlighted-line" style="background-color: ' + color + ';">' + line + '\n</span>'
-        else:
-            result_lines += line + '\n'
-        line_number += 1
-    return result_lines
 
 
 def prepare(element_html, data):
@@ -133,7 +170,10 @@ def prepare(element_html, data):
 
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
-        if language not in allowed_languages:
+        try:
+            lexer = pygments.lexers.get_lexer_by_name(language)
+        except:
+            allowed_languages = map(pygments.lexers.get_all_lexers(), lambda tup: tup[1][0])
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
 
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
@@ -166,7 +206,13 @@ def render(element_html, data):
         code = ''
         for line in f.readlines():
             code += line
-        code = code[:-1]
+
+        # Chop off ending newlines
+        if code[:-2] == '\r\n':
+            code = code[:-2]
+        if code[:-1] == '\n':
+            code = code[:-1]
+
         f.close()
         # Automatically escape code in file source (important for: html/xml).
         code = escape(code)
@@ -185,13 +231,21 @@ def render(element_html, data):
             code = code[2:]
         elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
             code = code[1:]
+            
+    if specify_language:
+        lexer = pygments.lexers.get_lexer_by_name(language)
+    else:
+        lexer = NoHighlightingLexer()
 
     if highlight_lines is not None:
-        code = highlight_lines_in_code(code, highlight_lines, highlight_lines_color)
+       highlight_lines = parse_highlight_lines(highlight_lines)
+       formatter = HljsFormatter(highlight_lines=highlight_lines, highlight_color=highlight_lines_color)
+    else:
+       formatter = HljsFormatter()
+    
+    code = pygments.highlight(unescape(code), lexer, formatter)
 
     html_params = {
-        'specify_language': specify_language,
-        'language': language,
         'no_highlight': no_highlight,
         'code': code,
         'prevent_select': prevent_select,

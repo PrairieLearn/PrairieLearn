@@ -16,3 +16,4 @@ ansi2html==1.5.2
 scikit-learn==0.22.2.post1
 nltk==3.4.5
 tzlocal==2.0.0
+Pygments==2.6.1

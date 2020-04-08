@@ -1,11 +1,8 @@
 {
     "controller": "pl-code.py",
     "dependencies": {
-        "coreScripts": [
-            "highlight.js"
-        ],
-        "coreStyles": [
-            "highlight-default.css"
+        "nodeModulesStyles": [
+            "highlight.js/styles/default.css"
         ],
         "elementScripts": [
             "pl-code.js"
