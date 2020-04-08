@@ -88,8 +88,8 @@ class HljsFormatter(pygments.formatter.Formatter):
             lines.append(current_line)
 
         return lines
-            
-        
+
+
     def format(self, tokensource, outfile):
         lines = self.parse_lines(tokensource)
 
@@ -99,13 +99,13 @@ class HljsFormatter(pygments.formatter.Formatter):
                 outfile.write(f'<span class="pl-code-highlighted-line" style="background-color: {self.highlight_color}">')
             else:
                 highlight = False
-                
+
             for ttype, value in line:
                 cls = None
                 if ttype in Token.Keyword:
                     cls = 'hljs-keyword'
                 elif ttype in Token.Name.Function:
-                    cls = 'hljs-title' 
+                    cls = 'hljs-title'
                 elif ttype in Token.Name.Class:
                     cls = 'hljs-title'
                 elif ttype in Token.Name.Tag:
@@ -231,18 +231,18 @@ def render(element_html, data):
             code = code[2:]
         elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
             code = code[1:]
-            
+
     if specify_language:
         lexer = pygments.lexers.get_lexer_by_name(language)
     else:
         lexer = NoHighlightingLexer()
 
     if highlight_lines is not None:
-       highlight_lines = parse_highlight_lines(highlight_lines)
-       formatter = HljsFormatter(highlight_lines=highlight_lines, highlight_color=highlight_lines_color)
+        highlight_lines = parse_highlight_lines(highlight_lines)
+        formatter = HljsFormatter(highlight_lines=highlight_lines, highlight_color=highlight_lines_color)
     else:
-       formatter = HljsFormatter()
-    
+        formatter = HljsFormatter()
+
     code = pygments.highlight(unescape(code), lexer, formatter)
 
     html_params = {
