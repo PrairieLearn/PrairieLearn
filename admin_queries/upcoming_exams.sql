@@ -16,6 +16,7 @@ WITH access_rules_with_near_date AS (
         AND (aar.role IS NULL OR aar.role = 'Student')
         AND aar.credit >= 100
         AND a.type = 'Exam'
+        AND a.deleted_at IS NULL
     ORDER BY a.id, aar.start_date
 )
 SELECT
@@ -30,8 +31,8 @@ SELECT
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
     format_interval(arwnd.end_date - arwnd.start_date) AS duration,
     arwnd.student_count,
-    aq.question_count,
-    aq.ext_q_count
+    aqc.question_count,
+    aqc.external_grading_qc
 FROM
     access_rules_with_near_date AS arwnd
     JOIN assessments AS a ON (a.id = arwnd.assessment_id)
@@ -39,15 +40,17 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN institutions AS i ON (i.id = c.institution_id)
-    JOIN (
+    LEFT JOIN LATERAL (
         SELECT
-            aq.assessment_id,
             count(*) AS question_count,
-            count(*) FILTER(WHERE q.external_grading_enabled = TRUE) AS ext_q_count
-         FROM assessment_questions AS aq
-         JOIN questions q ON (q.id = aq.question_id)
-         GROUP BY aq.assessment_id
-    ) AS aq ON (a.id = aq.assessment_id)
+            count(*) FILTER (WHERE q.grading_method = 'External') AS external_grading_qc
+         FROM
+             assessment_questions AS aq
+             JOIN questions q ON (q.id = aq.question_id)
+         WHERE
+             aq.assessment_id = a.id
+             AND aq.deleted_at IS NULL
+    ) AS aqc ON TRUE
 WHERE
     arwnd.student_count > 100
 ORDER BY
