@@ -51,11 +51,12 @@ BEGIN
     -- ######################################################################
     -- update the submission
 
-    new_correct = (new_score >= 1.0);
-
     IF new_gradable = FALSE THEN
         new_score := null;
         new_partial_scores := null;
+        new_correct := null;
+    ELSE
+        new_correct := (new_score >= 1.0);
     END IF;
 
     UPDATE submissions AS s

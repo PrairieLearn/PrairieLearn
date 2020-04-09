@@ -16,6 +16,7 @@ DECLARE
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
+    new_correct boolean;
 BEGIN
     PERFORM grading_jobs_lock(grading_job_id);
 
@@ -53,6 +54,13 @@ BEGIN
     -- ######################################################################
     -- store the grading information
 
+    IF new_gradable = FALSE THEN
+        score := null;
+        new_correct := null;
+    ELSE
+        new_correct := (score >= 1.0);
+    END IF;
+
     UPDATE grading_jobs
     SET
         graded_at = now(),
@@ -61,7 +69,7 @@ BEGIN
         grading_finished_at = finish_time,
         gradable = new_gradable,
         score = grading_jobs_process_external.score,
-        correct = (grading_jobs_process_external.score >= 1.0),
+        correct = new_correct,
         feedback = grading_jobs_process_external.feedback
     WHERE id = grading_job_id
     RETURNING *
