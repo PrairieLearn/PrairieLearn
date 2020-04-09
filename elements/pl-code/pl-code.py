@@ -7,7 +7,8 @@ import os
 import pygments
 import pygments.lexers
 import pygments.lexer
-import pygments.formatter
+import pygments.formatters
+import pygments.util
 from pygments.token import Token
 
 LANGUAGE_DEFAULT = None
@@ -17,122 +18,41 @@ PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
 
-allowed_languages = [
-    'armasm',
-    'bash',
-    'cpp',
-    'csharp',
-    'css',
-    'excel',
-    'fortran',
-    'go',
-    'haskell',
-    'html',
-    'ini',
-    'java',
-    'javascript',
-    'json',
-    'julia',
-    'makefile',
-    'markdown',
-    'mathematica',
-    'matlab',
-    'mipsasm',
-    'objectivec',
-    'ocaml',
-    'perl',
-    'php',
-    'plaintext',
-    'python',
-    'r',
-    'ruby',
-    'rust',
-    'shell',
-    'sql',
-    'tex',
-    'x86asm',
-    'yaml',
-]
-
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
+    """
+    Dummy lexer for when syntax highlighting is not wanted, but we still
+    want to run it through the highlighter for styling and code escaping.
+    """
     def __init__(self, **options):
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get('compress', '')
-        self.name = "No Highlighting Lexer"
-        self.aliases = ["none"]
-        self.filenames = ["*.none"]
-        self.mimetypes = []
 
     def get_tokens_unprocessed(self, text):
         return [(0, Token.Text, text)]
 
 
-class HljsFormatter(pygments.formatter.Formatter):
+class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
+    """
+    Subclass of the default HTML formatter to provide more flexibility
+    with highlighted lines.
+    """
     def __init__(self, **options):
-        pygments.formatter.Formatter.__init__(self, **options)
-        self.highlight_lines = options.get('highlight_lines', [])
-        self.highlight_color = options.get('highlight_color', HIGHLIGHT_LINES_COLOR_DEFAULT)
+        pygments.formatters.HtmlFormatter.__init__(self, **options)
+        self.hl_color = options.get('hl_color', HIGHLIGHT_LINES_COLOR_DEFAULT)
 
-    def parse_lines(self, token_source):
-        lines = []
-        current_line = []
-        for token, value in token_source:
-            if token in Token.Text and str(value) == '\n' or str(value) == '\r\n':
-                lines.append(current_line)
-                current_line = []
+    def _highlight_lines(self, tokensource):
+        """
+        Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
+        Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"
+        """
+        for i, (t, value) in enumerate(tokensource):
+            if t != 1:
+                yield t, value
+            if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
+                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.hl_color}">{value}</span>'
             else:
-                current_line.append((token, value))
-
-        if len(current_line) > 0:
-            lines.append(current_line)
-
-        return lines
-
-
-    def format(self, tokensource, outfile):
-        lines = self.parse_lines(tokensource)
-
-        for lineno, line in enumerate(lines):
-            if (lineno + 1) in self.highlight_lines:
-                highlight = True
-                outfile.write(f'<span class="pl-code-highlighted-line" style="background-color: {self.highlight_color}">')
-            else:
-                highlight = False
-
-            for ttype, value in line:
-                cls = None
-                if ttype in Token.Keyword:
-                    cls = 'hljs-keyword'
-                elif ttype in Token.Name.Function:
-                    cls = 'hljs-title'
-                elif ttype in Token.Name.Class:
-                    cls = 'hljs-title'
-                elif ttype in Token.Name.Tag:
-                    cls = 'hljs-name'
-                elif ttype in Token.Literal.Number:
-                    cls = 'hljs-number'
-                elif ttype in Token.Literal.String:
-                    cls = 'hljs-string'
-                elif ttype in Token.Literal:
-                    cls = 'hljs-literal'
-                elif ttype in Token.Comment.Preproc:
-                    cls = 'hljs-meta hljs-meta-keyword'
-                elif ttype in Token.Comment.PreprocFile:
-                    cls = 'hljs-meta hljs-meta-string'
-                elif ttype in Token.Comment:
-                    cls = 'hljs-comment'
-                elif ttype in Token.Generic:
-                    cls = 'hljs-text'
-
-                outfile.write(f'<span class="{cls}" pygment-token="{str(ttype)}">')
-                outfile.write(escape(value))
-                outfile.write('</span>')
-
-            if highlight:
-                outfile.write('</span>')
-            elif lineno != len(lines) - 1:
-                outfile.write('\n')
+                yield 1, value
 
 
 def parse_highlight_lines(highlight_lines):
@@ -155,7 +75,7 @@ def parse_highlight_lines(highlight_lines):
             try:
                 start = int(numbers[0])
                 end = int(numbers[1])
-                for i in range(start, end+1):
+                for i in range(start, end + 1):
                     lines.append(i)
             except ValueError:
                 return None
@@ -171,8 +91,8 @@ def prepare(element_html, data):
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
         try:
-            lexer = pygments.lexers.get_lexer_by_name(language)
-        except:
+            pygments.lexers.get_lexer_by_name(language)
+        except pygments.util.ClassNotFound:
             allowed_languages = map(pygments.lexers.get_all_lexers(), lambda tup: tup[1][0])
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
 
@@ -237,11 +157,16 @@ def render(element_html, data):
     else:
         lexer = NoHighlightingLexer()
 
+    formatter_opts = {
+        'style': 'friendly',
+        'cssclass': 'mb-2 rounded',
+        'prestyles': 'padding: 0.5rem; margin-bottom: 0px',
+        'noclasses': True
+    }
     if highlight_lines is not None:
-        highlight_lines = parse_highlight_lines(highlight_lines)
-        formatter = HljsFormatter(highlight_lines=highlight_lines, highlight_color=highlight_lines_color)
-    else:
-        formatter = HljsFormatter()
+        formatter_opts['hl_lines'] = parse_highlight_lines(highlight_lines)
+        formatter_opts['hl_color'] = highlight_lines_color
+    formatter = HighlightingHtmlFormatter(**formatter_opts)
 
     code = pygments.highlight(unescape(code), lexer, formatter)
 
