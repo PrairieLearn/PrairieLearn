@@ -3,11 +3,9 @@
   <head>
     <%- include('../partials/head'); %>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <link href="/stylesheets/highlight-default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
     <script src="/javascripts/jquery.tablesorter.min.js"></script>
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
-    <script src="/javascripts/highlight.js"></script>
-    <script>hljs.initHighlightingOnLoad();</script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'adminQueries'}); %>
@@ -66,7 +64,7 @@
         </div>
 
         <div id="sql-query" class="collapse">
-          <pre m-0 p-0><code class="sql"><%= sql %></code></pre>
+          <pre class="m-0 p-2 bg-light border-bottom"><code class="sql"><%- sqlHighlighted %></code></pre>
         </div>
 
         <div class="card-body">

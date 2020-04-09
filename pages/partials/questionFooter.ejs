@@ -119,11 +119,11 @@
 <% } %>
 
 <script>
-    const form = $('form.question-form');
-    const getForm = () => form.serialize();
-
     // Wait for DOM (ace, file upload, etc.)
     $(document).ready(() => {
+        const form = $('form.question-form');
+        const getForm = () => form.serialize();
+
         // Set form state on load and submit
         var initialForm = getForm();
         form.submit(() => {

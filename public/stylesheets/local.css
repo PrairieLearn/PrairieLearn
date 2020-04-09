@@ -186,10 +186,16 @@ table td > .badge {
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */
-.card table tr td:first-child, .card table tr th:first-child {
+.card > table tr td:first-child,
+.card > table tr th:first-child,
+.card > .table-responsive > table tr td:first-child,
+.card > .table-responsive > table tr th:first-child {
     padding-left: 1.25rem;
 }
-.card table tr td:last-child, .card table tr th:last-child {
+.card > table tr td:last-child,
+.card > table tr th:last-child,
+.card > .table-responsive > table tr td:last-child,
+.card > .table-responsive > table tr th:last-child {
     padding-right: 1.25rem;
 }
 
