@@ -1,9 +1,6 @@
 {
     "controller": "pl-code.py",
     "dependencies": {
-        "nodeModulesStyles": [
-            "highlight.js/styles/default.css"
-        ],
         "elementScripts": [
             "pl-code.js"
         ],
