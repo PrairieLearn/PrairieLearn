@@ -31,8 +31,8 @@ SELECT
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
     format_interval(arwnd.end_date - arwnd.start_date) AS duration,
     arwnd.student_count,
-    aq.question_count,
-    aq.external_grading_q
+    aqc.question_count,
+    aqc.external_grading_q
 FROM
     access_rules_with_near_date AS arwnd
     JOIN assessments AS a ON (a.id = arwnd.assessment_id)
