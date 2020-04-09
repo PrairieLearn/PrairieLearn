@@ -32,7 +32,7 @@ SELECT
     format_interval(arwnd.end_date - arwnd.start_date) AS duration,
     arwnd.student_count,
     aqc.question_count,
-    aqc.external_grading_q
+    aqc.external_grading_qc
 FROM
     access_rules_with_near_date AS arwnd
     JOIN assessments AS a ON (a.id = arwnd.assessment_id)
@@ -43,7 +43,7 @@ FROM
     LEFT JOIN LATERAL (
         SELECT
             count(*) AS question_count,
-            count(*) FILTER (WHERE q.grading_method = 'External') AS external_grading_q
+            count(*) FILTER (WHERE q.grading_method = 'External') AS external_grading_qc
          FROM
              assessment_questions AS aq
              JOIN questions q ON (q.id = aq.question_id)
