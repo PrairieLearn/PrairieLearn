@@ -74,7 +74,7 @@ BEGIN
             feedback = grading_jobs_process_external.feedback,
             format_errors = grading_jobs_process_external.format_errors,
             score = null,
-            partial_scores = '{}'::json
+            partial_scores = null
         WHERE id = grading_job.submission_id;
 
         IF assessment_instance_id IS NOT NULL THEN

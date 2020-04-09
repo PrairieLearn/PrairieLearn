@@ -55,7 +55,7 @@ def render(element_html, data):
         grader_format_errors = format_errors.get('_external_grader', [])
         html_params['format_errors'] = grader_format_errors
         html_params['has_format_errors'] = len(grader_format_errors) > 0
-        
+
         if not grading_succeeded:
             html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:

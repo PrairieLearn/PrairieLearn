@@ -29,7 +29,7 @@ digraph question_flow {
     open_variant [label="Open variant:\l\lvariant.broken = false\lvariant.open = true"];
     closed_variant [label="Closed variant:\l\lvariant.broken = false\lvariant.open = false"];
     broken_submission [label="Broken submission:\l\lsubmission.broken = true"];
-    ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false"];
+    ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false\lsubmission.score = null\lsubmission.partial_scores = null"];
     gradable_submission [label="Gradable submission:\l\lsubmission.broken = false\lsubmission.gradable = true"];
     graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmision.score = <value>\lsubmission.feedback = <value>"];
 

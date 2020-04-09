@@ -55,7 +55,7 @@ BEGIN
 
     IF new_gradable = FALSE THEN
         new_score := null;
-        new_partial_scores := '{}'::json;
+        new_partial_scores := null;
     END IF;
 
     UPDATE submissions AS s
