@@ -21,6 +21,7 @@ columns
     topic_id: bigint
     type: enum_question_type
     uuid: uuid not null
+    thumbnail: text
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)

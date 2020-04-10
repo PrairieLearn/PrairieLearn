@@ -3,8 +3,8 @@ var express = require('express');
 var fs = require('fs');
 var router = express.Router();
 
-router.get('/*', function(req, res, _next) {
-    var filename = req.params[0];
+router.get('/:qid', function(req, res, _next) {
+    var filename = req.params['qid'];
     var clientFilesDir = path.join(
         res.locals.course.path,
         'questions',

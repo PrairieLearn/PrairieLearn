@@ -20,6 +20,7 @@ SELECT
     (aset.abbreviation || a.number) as assessment_label,
     aq.*,
     q.qid,
+    q.thumbnail,
     q.title AS question_title,
     row_to_json(top) AS topic,
     q.id AS question_id,

@@ -118,6 +118,7 @@
             <thead>
               <tr>
                 <th class="text-center">Question</th>
+                <th class="text-center">Thumbnail</th>
                 <th class="text-center">Mean score</th>
                 <th class="text-center">Discrimination</th>
                 <th class="text-center">Attempts</th>
@@ -131,6 +132,11 @@
                   <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
                     <%= row.assessment_question_number %>. <%= row.question_title %>
                   </a>
+                </td>
+                <td>
+                  <% if (row.thumbnail != null) { %>
+                  <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= row.qid %>" onerror="this.style.display='none'" width="64" height="64"/>
+                  <% } %>
                 </td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>

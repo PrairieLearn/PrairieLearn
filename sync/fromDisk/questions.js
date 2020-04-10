@@ -1,6 +1,8 @@
 const _ = require('lodash');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const path = require('path');
+const fs = require('fs');
 
 const logger = require('../../lib/logger');
 const perf = require('../performance')('question');
@@ -23,7 +25,47 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         // for syncing
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
-
+            var thumbnailPath = null;
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.jpg"))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpg");
+            }
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.png"))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.png");
+            }
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg"))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg");
+            }
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.svg"))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.svg");
+            }
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.gif"))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.gif");
+            }
+            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.jpg"), fs.constants.F_OK, (err) => {
+            //     if (!err) {
+            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpg");
+            //     }
+            // });
+            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.png"), fs.constants.F_OK, (err) => {
+            //     if (!err) {
+            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.png");
+            //     }
+            // });
+            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg"), fs.constants.F_OK, (err) => {
+            //     if (!err) {
+            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg");
+            //     }
+            // });
+            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.svg"), fs.constants.F_OK, (err) => {
+            //     if (!err) {
+            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.svg");
+            //     }
+            // });
+            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.gif"), fs.constants.F_OK, (err) => {
+            //     if (!err) {
+            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.gif");
+            //     }
+            // });
             let partialCredit;
             if (q.partialCredit != null) {
                 partialCredit = q.partialCredit;
@@ -52,6 +94,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
+                thumbnail: thumbnailPath,
             };
         });
 

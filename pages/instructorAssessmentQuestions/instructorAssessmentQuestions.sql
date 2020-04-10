@@ -39,6 +39,7 @@ tags_list AS (
 )
 SELECT
     aq.*,q.qid,q.title,tags_list.tags_string,row_to_json(top) AS topic,
+    q.thumbnail,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
     tags_for_question(q.id) AS tags,

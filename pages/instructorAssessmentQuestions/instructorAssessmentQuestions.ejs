@@ -21,6 +21,7 @@
             <thead>
               <tr>
                 <th></th>
+                <th>Thumbnail</th>
                 <th>QID</th>
                 <th>Topic</th>
                 <th>Tags</th>
@@ -79,6 +80,11 @@
                     <%= question.title %>
                     <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
                   </a>
+                </td>
+                <td>
+                  <% if (question.thumbnail != null) { %>
+                  <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= question.qid %>" onerror="this.style.display='none'" width="64" height="64" />
+                  <% } %>
                 </td>
                 <td><%= question.qid %></td>
                 <td><%- include('../partials/topic', {topic: question.topic}); %></td>

@@ -635,6 +635,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/questio
     function(req, res, next) {next();},
     require('./pages/questionThumbnail/questionThumbnail'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_thumbnail', [
+    function(req, res, next) {next();},
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
 
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
