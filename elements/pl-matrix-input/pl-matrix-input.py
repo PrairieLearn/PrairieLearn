@@ -303,7 +303,7 @@ def test(element_html, data):
     # Wrap true answer in ndarray (if it already is one, this does nothing)
     a_tru = np.array(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if random.choice([True, False]):
         # matlab
         if result == 'correct':

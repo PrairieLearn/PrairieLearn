@@ -248,7 +248,6 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -257,11 +256,7 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    if allow_blank:
-        # no invalid answer implemented when allow-blank="true"
-        result = random.choices(['correct', 'incorrect'], [5, 5])[0]
-    else:
-        result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
 
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru
