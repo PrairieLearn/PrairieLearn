@@ -133,7 +133,7 @@ const navPagesTabs = {
     question: 'navTabs/instructorQuestion'
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
-if (typeof navPage != 'undefined' && Object.hasOwnProperty(navPagesTabs, navPage)) { %>
+if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
     <!-- Instructor navigation tabs -->
     <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         <%- include(navPagesTabs[navPage]); %>
