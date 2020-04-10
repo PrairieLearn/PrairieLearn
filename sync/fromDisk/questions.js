@@ -25,22 +25,22 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         // for syncing
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
-            
+
             var thumbnailPath = null;
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.jpg"))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpg");
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpg'))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.jpg');
             }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.png"))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.png");
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.png'))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.png');
             }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg"))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg");
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpeg'))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.jpeg');
             }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.svg"))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.svg");
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.svg'))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.svg');
             }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.gif"))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.gif");
+            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.gif'))) {
+                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.gif');
             }
             let partialCredit;
             if (q.partialCredit != null) {
