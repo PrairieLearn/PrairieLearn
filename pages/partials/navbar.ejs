@@ -127,10 +127,10 @@ if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
 </nav>
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {
-    instance_admin: 'instructorInstanceAdminTabs',
-    course_admin: 'instructorCourseAdminTabs',
-    assessment: 'instructorAssessmentTabs',
-    question: 'instructorQuestionTabs'
+    instance_admin: 'navTabs/instructorInstanceAdmin',
+    course_admin: 'navTabs/instructorCourseAdmin',
+    assessment: 'navTabs/instructorAssessment',
+    question: 'navTabs/instructorQuestion'
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && Object.keys(navPagesTabs).includes(navPage)) { %>
