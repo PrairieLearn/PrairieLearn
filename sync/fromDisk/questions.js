@@ -25,6 +25,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         // for syncing
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
+            
             var thumbnailPath = null;
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.jpg"))) {
                 thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpg");
@@ -41,31 +42,6 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, "thumbnail.gif"))) {
                 thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.gif");
             }
-            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.jpg"), fs.constants.F_OK, (err) => {
-            //     if (!err) {
-            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpg");
-            //     }
-            // });
-            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.png"), fs.constants.F_OK, (err) => {
-            //     if (!err) {
-            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.png");
-            //     }
-            // });
-            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg"), fs.constants.F_OK, (err) => {
-            //     if (!err) {
-            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.jpeg");
-            //     }
-            // });
-            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.svg"), fs.constants.F_OK, (err) => {
-            //     if (!err) {
-            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.svg");
-            //     }
-            // });
-            // fs.access(path.join(courseInfo.questionsDir, qid, "thumbnail.gif"), fs.constants.F_OK, (err) => {
-            //     if (!err) {
-            //       thumbnailPath = path.join(courseInfo.questionsDir, qid, "thumbnail.gif");
-            //     }
-            // });
             let partialCredit;
             if (q.partialCredit != null) {
                 partialCredit = q.partialCredit;
