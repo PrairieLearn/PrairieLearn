@@ -134,7 +134,7 @@
                   </a>
                 </td>
                 <td>
-                  <% if (row.thumbnail != null) { %>
+                  <% if (row.thumbnail) { %>
                   <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= row.qid %>" onerror="this.style.display='none'" width="64" height="64"/>
                   <% } %>
                 </td>

@@ -17,7 +17,7 @@ columns
     qid: text
     single_variant: boolean default false
     template_directory: text
-    thumbnail: text
+    thumbnail: boolean
     title: text
     topic_id: bigint
     type: enum_question_type

@@ -1,1 +1,1 @@
-ALTER TABLE questions ADD COLUMN thumbnail TEXT;
+ALTER TABLE questions ADD COLUMN thumbnail BOOLEAN;

@@ -26,21 +26,21 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
 
-            var thumbnailPath = null;
+            var thumbnailPresence = false;
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpg'))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.jpg');
+                thumbnailPresence = true;
             }
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.png'))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.png');
+                thumbnailPresence = true;
             }
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpeg'))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.jpeg');
+                thumbnailPresence = true;
             }
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.svg'))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.svg');
+                thumbnailPresence = true;
             }
             if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.gif'))) {
-                thumbnailPath = path.join(courseInfo.questionsDir, qid, 'thumbnail.gif');
+                thumbnailPresence = true;
             }
             let partialCredit;
             if (q.partialCredit != null) {
@@ -70,7 +70,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
-                thumbnail: thumbnailPath,
+                thumbnail: thumbnailPresence,
             };
         });
 
