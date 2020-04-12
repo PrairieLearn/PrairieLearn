@@ -48,6 +48,7 @@ process) in milliseconds as the variable "serverRemainingMS".
 </form>
 
 <script>
+  window.allowQuestionUnload = false;
   var clientStart;
   if (window.performance && window.performance.timing && window.performance.timing.responseStart) {
       clientStart = window.performance.timing.responseStart;
@@ -68,19 +69,21 @@ process) in milliseconds as the variable "serverRemainingMS".
       countdownProgressBar.css('width', perc + '%');
       if (remainingSec >= 180) {
           countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-primary');
+          countdownProgressBar.attr('class', 'progress-bar bg-primary');
       } else if (remainingSec >= 60) {
           countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-warning');
+          countdownProgressBar.attr('class', 'progress-bar bg-warning');
       } else {
           countdownDisplay.text(remainingSec + ' sec');
-          countdownProgressBar.attr('class', 'progress-bar progress-bar-danger');
+          countdownProgressBar.attr('class', 'progress-bar bg-danger');
       }
 
       if (remainingMS > 500) {
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
+          // do not trigger unsaved warning dialog
+          window.allowQuestionUnload = true;
           document.forms['time-limit-finish-form'].submit();
       }
   };

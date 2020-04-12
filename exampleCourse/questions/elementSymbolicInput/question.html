@@ -45,3 +45,16 @@
         <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which we change display attributes
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text="false"</code> removes the button for the help popup.  This box below has <code>size=5</code> instead of the default <code>size=35</code>.</p>
+            <p>Write an expression for the first derivative of $\frac{1}{2} x^2$.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false" label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
+    </div>
+</div>

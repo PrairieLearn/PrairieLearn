@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');

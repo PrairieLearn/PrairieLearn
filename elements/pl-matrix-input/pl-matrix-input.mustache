@@ -14,14 +14,26 @@
         <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{label}}</label>
     </span>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-matrix-input-{{uuid}}-label" placeholder="{{shortinfo}}" />
+    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-matrix-input-{{uuid}}-label" placeholder="{{shortinfo}}" />
     <div class="input-group-append">
+        {{#show_info}}
         <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
-            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+        <i class="fa fa-question-circle" aria-hidden="true"></i>
+        {{/show_info}}
+        {{^show_info}}
+        <span class="d-flex align-items-center">
+        {{/show_info}}
+
+        {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+        {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+        {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+        {{#show_info}}
         </a>
+        {{/show_info}}
+        {{#show_info}}
+        </span>
+        {{/show_info}}
     </div>
 </div>
 {{/question}}
