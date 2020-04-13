@@ -105,7 +105,7 @@ The `question.html` is regular HTML, with four special features:
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
-   
+
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
@@ -124,6 +124,30 @@ By default, all questions award partial credit. For example, if there are two nu
 To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](elements.md) also provide more fine-grained control over partial credit.
 
 In general, it is strongly recommended to leave partial credit enabled for all questions.
+
+## The `thumbnail` image
+
+To add a thumbnail to your question, add a `thumbnail.jpg` image to your question folder. Supported file
+types are:
+
+* `thumbnail.jpg`
+* `thumbnail.jpeg`
+* `thumbnail.png`
+* `thumbnail.svg`
+* `thumbnail.gif`
+
+For example, adding a thumbnail to the fossilFuelsRadio question would look like:
+
+```text
+questions
+|
+|-- fossilFuelsRadio          # first question, id is "fossilFuelsRadio"
+|   |
+|   +-- info.json             # metadata for the fossilFuelsRadio question
+|   +-- thumbnail.jpg         # thumbnail image associated with this question
+|   +-- server.py             # secret server-side code (optional)
+|   `-- question.html         # HTML template for the question
+```
 
 ## Using Markdown in questions
 
