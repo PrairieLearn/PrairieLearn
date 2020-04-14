@@ -6,8 +6,6 @@ const router = express.Router();
 const error = require('@prairielearn/prairielib/error');
 const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
-const cache = require('../../lib/cache');
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
