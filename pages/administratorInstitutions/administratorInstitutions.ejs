@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <style>
+    canvas {
+      border: none;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .chart-container {
+      width: 100%;
+    }
+    .chart-container:not(:last-child) {
+      margin-bottom: 2rem;
+    }
+    @media (min-width: 768px) {
+      .chart-container {
+        width: 50%;
+      }
+      .chart-container:not(:last-child) {
+        margin-bottom: 0;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'institutions'}); %>
+    <div id="content" class="container-fluid">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Institutions
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped">
+            <thead>
+              <tr>
+                <th>Short name</th>
+                <th>Long name</th>
+                <th>UID regexp</th>
+                <th>Authn providers</th>
+            </thead>
+            <tbody>
+              <% institutions.forEach(function(inst, i) { %>
+              <tr>
+                 <td><%= inst.short_name %></td>
+                 <td><%= inst.long_name %></td>
+                 <td><code><%= inst.uid_regexp %></code></td>
+                 <td><%= inst.authn_providers.join(', ') %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer">
+          <small>
+            To change institutions, edit the <strong><tt>institutions</tt></strong> table.
+            To change the allowed authentication providers, edit the <strong><tt>institution_authn_providers</tt></strong> table.
+          </small>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
