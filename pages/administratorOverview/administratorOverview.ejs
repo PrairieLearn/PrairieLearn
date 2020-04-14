@@ -41,38 +41,6 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
-      <!-- Config ---------------------------------------------------------------------->
-
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Server configuration</div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped">
-            <thead>
-              <tr>
-                <th>Key</th>
-                <th>Value</th>
-            </thead>
-            <tbody>
-              <% configs.forEach(function(config, i) { %>
-              <tr>
-                <td><%= config.key %></td>
-                <td><%= config.value %></td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="card-footer">
-          <small>
-            Edit values in the <strong><tt>config</tt></strong> table.
-          </small>
-        </div>
-      </div>
-
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
       <!-- Administrators -------------------------------------------------------------->
 
       <div class="card mb-4">
@@ -127,6 +95,38 @@
             instance. They are automatically Owners of every course
             and Instructors of every course instance. They can add and
             remove other administrators.
+          </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Config ---------------------------------------------------------------------->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Server configuration</div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Value</th>
+            </thead>
+            <tbody>
+              <% configs.forEach(function(config, i) { %>
+              <tr>
+                <td><%= config.key %></td>
+                <td><%= config.value %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Edit values in the <strong><tt>config</tt></strong> table.
           </small>
         </div>
       </div>
