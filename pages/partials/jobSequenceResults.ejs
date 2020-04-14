@@ -69,6 +69,9 @@
                 Started at <%= job.start_date_formatted %><% if (job_sequence.user_uid) { %> by <%= job_sequence.user_uid %><% } %><% if (job_sequence.authn_user_uid != job_sequence.user_uid) { %> (really <%= job_sequence.authn_user_uid %>)<% } %><% if (job.finish_date_formatted) { %>, finished at <%= job.finish_date_formatted %><% } %>
             </p>
             <p class="mb-1">
+                Please feel free to navigate away from this page. If any issues arise they will appear under the "Issues" page.
+            </p>
+            <p class="mb-1">
                 <%- include('../partials/jobStatus', {status: job.status}); %>
                 <% if (job.status == 'Running') { %><i class="fa fa-sync fa-spin fa-fw"></i><% } %>
             </p>
