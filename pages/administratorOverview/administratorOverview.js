@@ -39,55 +39,6 @@ router.post('/', (req, res, next) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'courses_insert') {
-        let params = [
-            req.body.institution_id,
-            req.body.short_name,
-            req.body.title,
-            req.body.display_timezone,
-            req.body.path,
-            req.body.repository,
-            res.locals.authn_user.user_id,
-        ];
-        sqlDb.call('courses_insert', params, (err, _result) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'courses_update_column') {
-        let params = [
-            req.body.course_id,
-            req.body.column_name,
-            req.body.value,
-            res.locals.authn_user.user_id,
-        ];
-        sqlDb.call('courses_update_column', params, (err, _result) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'courses_delete') {
-        let params = {
-            course_id: req.body.course_id,
-        };
-        sqlDb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
-            if (ERR(err, next)) return;
-            if (result.rowCount != 1) return next(new Error('course not found'));
-
-            var short_name = result.rows[0].short_name;
-            if (req.body.confirm_short_name != short_name) {
-                return next(new Error('deletion aborted: confirmation string "'
-                                      + req.body.confirm_short_name
-                                      + '" did not match expected value of "' + short_name + '"'));
-            }
-
-            var params = [
-                req.body.course_id,
-                res.locals.authn_user.user_id,
-            ];
-            sqlDb.call('courses_delete', params, (err, _result) => {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
-        });
     } else if (req.body.__action === 'invalidate_question_cache') {
         cache.reset((err) => {
             if (ERR(err, next)) return;
