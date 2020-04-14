@@ -10,18 +10,6 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
-select_courses AS (
-    SELECT
-        coalesce(
-            jsonb_agg(jsonb_set(to_jsonb(c), '{institution}', to_jsonb(i)) ORDER BY i.short_name, c.short_name, c.title, c.id),
-            '[]'::jsonb
-        ) AS courses
-    FROM
-        pl_courses AS c
-        JOIN institutions AS i ON (i.id = c.institution_id)
-    WHERE
-        c.deleted_at IS NULL
-),
 select_networks AS (
     SELECT
         coalesce(
@@ -56,43 +44,17 @@ select_question_render_cache_stats AS (
         page_view_logs AS pvl
     WHERE
         pvl.date > now() - interval '1 day'
-),
-select_institutions_with_authn_providers AS (
-    SELECT
-        i.*,
-        coalesce(
-            jsonb_agg(ap.name ORDER BY ap.name),
-            '[]'::jsonb
-        ) AS authn_providers
-    FROM
-        institutions AS i
-        LEFT JOIN institution_authn_providers AS iap ON (iap.institution_id = i.id)
-        LEFT JOIN authn_providers AS ap ON (ap.id = iap.authn_provider_id)
-    GROUP BY i.id
-),
-select_institutions AS (
-    SELECT
-        coalesce(
-            jsonb_agg(i ORDER BY i.short_name),
-            '[]'::jsonb
-        ) AS institutions
-    FROM
-        select_institutions_with_authn_providers AS i
 )
 SELECT
     administrator_users,
-    courses,
     networks,
     configs,
-    question_render_cache_stats,
-    institutions
+    question_render_cache_stats
 FROM
     select_administrator_users,
-    select_courses,
     select_networks,
     select_config,
-    select_question_render_cache_stats,
-    select_institutions;
+    select_question_render_cache_stats;
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
