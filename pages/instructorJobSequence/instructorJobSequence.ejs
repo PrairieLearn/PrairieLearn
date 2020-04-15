@@ -7,6 +7,9 @@
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container-fluid">
+      <div class="row"><div class="col-12">
+          <a href="javascript:history.back();">Go back</a>
+      </div></div>
       <%- include('../partials/jobSequenceResults', {job_sequence_enable_live_update: true}) %>
     </div>
   </body>
