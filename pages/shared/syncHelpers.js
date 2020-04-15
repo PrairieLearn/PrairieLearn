@@ -1,11 +1,15 @@
 const ERR = require('async-stacktrace');
 const fs = require('fs');
+const async = require('async');
+const AWS = require('aws-sdk');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
+const dockerUtil = require('../../lib/dockerUtil');
+const debug = require('debug')('prairielearn:syncHelpers');
 
 
 module.exports.pullAndUpdate = function(locals, callback) {
@@ -227,5 +231,59 @@ module.exports.gitStatus = function(locals, callback) {
 
         // Start the first job.
         statusStage1();
+    });
+};
+
+module.exports.ECRupdate = function(locals, callback) {
+    if (!config.externalGradingImageRepository) {
+        return callback(new Error('externalGradingImageRepository not defined'));
+    }
+
+    if (!AWS.config.credentials) {
+        return callback(new Error('AWS credentials not defined'));
+    }
+
+    dockerUtil.setupDockerAuth((err, auth) => {
+        if (ERR(err, callback)) return;
+
+        const options = {
+            course_id: locals.course.id,
+            user_id: locals.user.user_id,
+            authn_user_id: locals.authz_data.authn_user.user_id,
+            type: 'images_sync',
+            description: 'Sync Docker images from Docker Hub to PL registry',
+        };
+        serverJobs.createJobSequence(options, function(err, job_sequence_id) {
+            if (ERR(err, callback)) return;
+            callback(null, job_sequence_id);
+
+            var lastIndex = locals.images.length - 1;
+            async.eachOfSeries(locals.images || [], (image, index, done) => {
+                if (ERR(err, done)) return;
+
+                var jobOptions = {
+                    course_id: locals.course ? locals.course.id : null,
+                    type: 'image_sync',
+                    description: 'Pull image from Docker Hub and push to PL registry',
+                    job_sequence_id,
+                };
+
+                if (index == lastIndex) {
+                    jobOptions.last_in_sequence = true;
+                }
+
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (ERR(err, done)) return;
+                    debug('successfully created job ', {job_sequence_id});
+
+                    // continue executing here to launch the actual job
+                    dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
+                        if (ERR(err, done)) return;
+                        job.succeed();
+                        done(null);
+                    });
+                });
+            });
+        });
     });
 };

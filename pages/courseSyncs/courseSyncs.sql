@@ -9,6 +9,25 @@ FROM
     JOIN users AS u on (u.user_id = js.user_id)
 WHERE
     c.id = $course_id
-    AND (js.type = 'sync' OR js.type = 'git_status')
+    AND (js.type = 'sync' OR js.type = 'git_status' OR js.type = 'images_sync')
 ORDER BY
     js.start_date DESC, js.id;
+
+-- BLOCK question_images
+SELECT
+    external_grading_image,
+    jsonb_agg(jsonb_build_object(
+        'id', q.id,
+        'qid', q.qid
+    ) ORDER BY q.qid) AS questions,
+    'N/A' AS pushedat
+FROM
+    questions AS q
+WHERE
+    q.course_id = $course_id
+    AND q.deleted_at IS NULL
+    AND external_grading_image IS NOT NULL
+GROUP BY
+    external_grading_image
+ORDER BY
+    external_grading_image
