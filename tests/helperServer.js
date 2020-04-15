@@ -80,6 +80,10 @@ module.exports = {
                     callback(null);
                 },
                 function(callback) {
+                    server.appSetup();
+                    callback(null);
+                },
+                function(callback) {
                     debug('before(): start server');
                     server.startServer(function(err) {
                         if (ERR(err, callback)) return;
