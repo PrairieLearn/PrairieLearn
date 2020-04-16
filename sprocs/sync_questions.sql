@@ -58,7 +58,7 @@ BEGIN
             question->>'external_grading_entrypoint',
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean,
-            (question->>'thumbnail')::boolean
+            question->>'thumbnail'::text
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
