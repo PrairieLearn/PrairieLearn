@@ -1,6 +1,5 @@
 var path = require('path');
 var express = require('express');
-var fs = require('fs');
 var router = express.Router();
 
 router.get('/:qid/:filename', function(req, res, _next) {
