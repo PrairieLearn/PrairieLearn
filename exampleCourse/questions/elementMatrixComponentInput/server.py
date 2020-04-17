@@ -25,3 +25,14 @@ def generate(data):
     data["correct_answers"]["out5"] = pl.to_json(y)
 
     return data
+
+def grade(data):
+    data["partial_scores"]["out6"] = {'score': 1.0}
+
+    score = 0.0
+    total = 0.0
+    for partial in data["partial_scores"].values():
+        total += 1.0
+        score += partial['score']
+
+    data["score"] = score / total
