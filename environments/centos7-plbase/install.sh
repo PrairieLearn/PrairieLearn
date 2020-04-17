@@ -6,6 +6,7 @@ yum -y install \
     https://centos7.iuscommunity.org/ius-release.rpm
 
 yum -y update
+
 yum -y install \
     postgresql11-server \
     postgresql11-contrib \

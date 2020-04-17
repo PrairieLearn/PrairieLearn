@@ -8,7 +8,6 @@ ENV PYTHONIOENCODING=UTF-8
 # r-requirements.R        - list of R packages that should be installed from the Rstudio CRAN mirror
 COPY install.sh python-requirements.txt r-requirements.R /
 
-RUN chmod +x /install.sh \
-    && /install.sh
+RUN /bin/bash /install.sh
 
 CMD /bin/bash
