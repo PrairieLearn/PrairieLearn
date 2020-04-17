@@ -74,7 +74,6 @@ These dependencies are specified in the `info.json` file, and can be configured 
 
 ```json
 {
-    [ ... ]
     "dependencies": {
         "coreScripts": [
             "d3.min.js"
