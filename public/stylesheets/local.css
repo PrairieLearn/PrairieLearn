@@ -153,6 +153,13 @@ a.badge {
   text-decoration: none;
 }
 
+.navbar {
+    align-items: baseline;
+}
+
+/*****************
+ * Brand label ("PrairieLearn" text)
+ *****************/
 .navbar-brand {
   position: relative;
 }
