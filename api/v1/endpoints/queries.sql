@@ -78,6 +78,38 @@ SELECT
 FROM
     object_data;
 
+-- BLOCK select_assessment_access_rules
+WITH object_data AS (
+    SELECT
+        a.id AS assessment_id,
+        a.tid AS assessment_name,
+        a.title as assessment_title,
+        aar.credit,
+        aar.end_date,
+        aar.id as id,
+        aar.mode,
+        aar.number,
+        aar.role,
+        aar.start_date,
+        aar.time_limit_min,
+        aar.uids
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
+    WHERE
+        ci.id = $course_instance_id
+        AND a.id = $assessment_id
+        AND aar.assessment_id = $assessment_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY assessment_id, id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
 -- BLOCK select_instance_questions
 WITH object_data AS (
     SELECT
