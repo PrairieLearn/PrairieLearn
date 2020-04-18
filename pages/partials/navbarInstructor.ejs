@@ -30,8 +30,8 @@
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
-        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
-            <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
+        <li class="nav-item btn-group">
+            <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <span class="mr-1">
                     <i class="fas fa-circle"></i>
                 </span>
@@ -59,8 +59,8 @@
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-            <li class="nav-item btn-group <% if (navPage == "assessment") { %>active<% } %>">
-                <a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
+            <li class="nav-item btn-group">
+                <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <span class="mr-1">
                         <i class="fas fa-circle"></i>
                     </span>
