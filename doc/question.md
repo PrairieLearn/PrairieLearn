@@ -127,8 +127,7 @@ In general, it is strongly recommended to leave partial credit enabled for all q
 
 ## The `thumbnail` image
 
-To add a thumbnail to your question, add a `thumbnail.jpg` image to your question folder. Supported file
-types are:
+To add a thumbnail to your question, add a `thumbnail.jpg` image to your question folder. The thumbnail will appear on the `instructorQuestions`, `instructorAssessmentQuestions`, and `instructorAssessmentQuestionStatistics` pages. Supported file types are:
 
 * `thumbnail.jpg`
 * `thumbnail.jpeg`

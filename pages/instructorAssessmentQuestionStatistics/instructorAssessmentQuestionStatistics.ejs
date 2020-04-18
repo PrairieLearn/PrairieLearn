@@ -135,7 +135,7 @@
                 </td>
                 <td>
                   <% if (row.thumbnail != null) { %>
-                  <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= row.qid %>/<%= row.thumbnail %>" onerror="this.style.display='none'" width="64" height="64"/>
+                  <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= row.qid %>" onerror="this.style.display='none'" width="64" height="64"/>
                   <% } %>
                 </td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
