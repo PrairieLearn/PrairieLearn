@@ -41,6 +41,7 @@
                 {"id": "elementSymbolicInput",            "points": 2, "maxPoints": 10},
                 {"id": "elementStringInput",              "points": 2, "maxPoints": 10},
                 {"id": "elementMatrixComponentInput",     "points": 2, "maxPoints": 10},
+                {"id": "elementSymbolicMatrixComponentInput",     "points": 2, "maxPoints": 10},
                 {"id": "elementMatrixLatex",              "points": 2, "maxPoints": 10},
                 {"id": "elementPrairieDrawFigure",        "points": 2, "maxPoints": 10},
                 {"id": "elementVariableOutput",           "points": 2, "maxPoints": 10},

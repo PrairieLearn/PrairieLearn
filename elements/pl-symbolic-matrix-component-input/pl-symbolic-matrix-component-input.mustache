@@ -1,0 +1,115 @@
+
+{{#question}}
+<script>
+    $(function() {
+        $('#pl-symbolic-matrix-component-input-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-symbolic-matrix-component-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+<span class="form-inline d-inline-block ml-2 pl-symbolic-matrix-component-span-fullwidth">
+    <div id="pl-symbolic-matrix-component-input-{{uuid}}" class="input-group">
+        <span class="input-group-prepend">
+            {{#label}}<label class="input-group-text" id="basic-addon2">{{label}}</label>{{/label}}
+        </span>
+        <div class="form-control" >
+            {{{input_array}}}
+        </div>
+        <div class="input-group-append">
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            </a>
+        </div>
+    </div>
+</span>
+{{/question}}
+
+{{#submission}}
+
+<div class="d-inline-block ml-2">
+
+{{#parse_error}}
+<script>
+    $(function(){
+        $('#pl-symbolic-matrix-component-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            template: '<div class="popover pl-symbolic-matrix-component-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+
+        $('#pl-symbolic-matrix-component-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
+            MathJax.typesetPromise();
+        });
+    });
+</script>
+<span id="pl-symbolic-matrix-component-input-submission-{{uuid}}">
+    {{#label}}<span>{{label}}</span>{{/label}}
+    <a role="button" class="btn btn-light btn-sm" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID
+      <span><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+  </a>
+</span>
+{{/parse_error}}
+
+{{^parse_error}}
+{{#a_sub}}
+{{#label}}{{label}}{{/label}}
+{{a_sub}}
+{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/a_sub}}
+{{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
+{{/parse_error}}
+
+</div>
+
+{{/submission}}
+
+{{#answer}}
+{{#show_correct_answer}}
+<div class="d-inline-block ml-2" id="pl-symbolic-matrix-component-input-answer-{{uuid}}">
+    {{#label}}<span>{{label}}</span>{{/label}}
+    <samp id="latex-data-{{uuid}}">{{latex_data}}</samp>
+</div>
+{{/show_correct_answer}}
+{{^show_correct_answer}}
+(Hidden)
+{{/show_correct_answer}}
+{{/answer}}
+
+{{#format}}
+<p>
+<strong>You must enter something for each cell of the matrix.</strong> Please don't leave any cells blank.
+Each component of your answer must be a symbolic expression. For best results, try to use rational numbers; for example, <code>1/2</code> instead of <code>0.5</code>.
+<hr>
+<h5><small class='text-uppercase'>Allowable Operators</small></h5>
+<pre>{{operators}}</pre>
+<p>All operations must be explicit - examples of valid expressions are <code>cos(1)</code> and <code>2*(3)</code>. Examples of invalid expressions are <code>cos 1</code> and <code>2(3)</code>. Note that either <code>^</code> or <code>**</code> can be used for exponentiation. For example, <code>2**3</code> is the same as: <code>2*2*2</code></p>
+<hr>
+<h5><small class='text-uppercase'>Allowable Constants</small></h5>
+<pre>{{constants}}</pre>
+<hr>
+<h5><small class='text-uppercase'>Complex Numbers</small></h5>
+{{^allow_complex}}<strong>For this input field, complex numbers are not allowed.</strong>{{/allow_complex}}
+{{#allow_complex}}
+<p>Either <code>i</code> or <code>j</code> can be used to denote the imaginary unit. Examples of valid complex numbers are <code>1 + 2 * i</code> and <code>-3 * j</code>.</p>
+{{/allow_complex}}
+<hr>
+<h5><small class='text-uppercase'>Allowable Variables</small></h5>
+{{^variables}}<strong>For this input field, variables are not allowed.</strong>{{/variables}}
+{{#variables}}
+<pre>{{variables}}</pre>
+<p><strong>Be sure to explicitly multiply variables by coefficients.</strong> For example, if <code>x</code> is an acceptable variable, you could write <code>2*x</code>, but <em>not</em> "2x". If x and y are acceptable variables, you could input the expression <code>2*x*x*x&nbsp;+&nbsp;5*y</code> as: <code>2*x**3&nbsp;+&nbsp;5*y</code></p>
+{{/variables}}
+</p>
+{{/format}}
+
+{{#shortformat}}
+symbolic expression matrix component
+{{/shortformat}}
