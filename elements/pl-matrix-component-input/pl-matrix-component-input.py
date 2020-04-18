@@ -233,8 +233,17 @@ def parse(element_html, data):
     # Get dimensions of the input matrix
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
-        m = pl.get_integer_attrib(element, 'rows')
-        n = pl.get_integer_attrib(element, 'columns')
+        m = pl.get_integer_attrib(element, 'rows', None)
+        if m is None:
+            raise Exception('Number of rows is not set in pl-matrix-component with no correct answer.')
+        if m < 1:
+            raise Exception('Number of rows in pl-matrix-component must be strictly positive.')
+
+        n = pl.get_integer_attrib(element, 'columns', None)
+        if n is None:
+            raise Exception('Number of columns is not set in pl-matrix-component with no correct answer.')
+        if n < 1:
+            raise Exception('Number of rows in pl-matrix-component must be strictly positive.')
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
