@@ -35,6 +35,7 @@ def prepare(element_html, data):
         if n < 1:
             raise Exception('Number of columns in pl-matrix-component-input must be strictly positive.')
 
+
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
