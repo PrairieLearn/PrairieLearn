@@ -22,7 +22,18 @@ def prepare(element_html, data):
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions', 'rows', 'columns']
     pl.check_attribs(element, required_attribs, optional_attribs)
-
+    name = pl.get_string_attrib(element, 'answers-name')
+    if name not in data['correct_answers']:
+        m = pl.get_integer_attrib(element, 'rows', None)
+        if m is None:
+            raise Exception('Number of rows is not set in pl-matrix-component-input with no correct answer.')
+        if m < 1:
+            raise Exception('Number of rows in pl-matrix-component-input must be strictly positive.')
+        n = pl.get_integer_attrib(element, 'columns', None)
+        if n is None:
+            raise Exception('Number of columns is not set in pl-matrix-component-input with no correct answer.')
+        if n < 1:
+            raise Exception('Number of columns in pl-matrix-component-input must be strictly positive.')
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -40,16 +51,7 @@ def render(element_html, data):
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is None:
             m = pl.get_integer_attrib(element, 'rows', None)
-            if m is None:
-                raise Exception('Number of rows is not set in pl-matrix-component-input with no correct answer.')
-            if m < 1:
-                raise Exception('Number of rows in pl-matrix-component-input must be strictly positive.')
-
             n = pl.get_integer_attrib(element, 'columns', None)
-            if n is None:
-                raise Exception('Number of columns is not set in pl-matrix-component-input with no correct answer.')
-            if n < 1:
-                raise Exception('Number of columns in pl-matrix-component-input must be strictly positive.')
         else:
             if np.isscalar(a_tru):
                 raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.' % name)
@@ -234,16 +236,7 @@ def parse(element_html, data):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
         m = pl.get_integer_attrib(element, 'rows', None)
-        if m is None:
-            raise Exception('Number of rows is not set in pl-matrix-component with no correct answer.')
-        if m < 1:
-            raise Exception('Number of rows in pl-matrix-component must be strictly positive.')
-
         n = pl.get_integer_attrib(element, 'columns', None)
-        if n is None:
-            raise Exception('Number of columns is not set in pl-matrix-component with no correct answer.')
-        if n < 1:
-            raise Exception('Number of rows in pl-matrix-component must be strictly positive.')
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
