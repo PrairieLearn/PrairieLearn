@@ -20,6 +20,7 @@ const url = require('url');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
+const configLoader = require('./lib/config-loader');
 const load = require('./lib/load');
 const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
@@ -68,7 +69,7 @@ if (config.startServer) {
         configFilename = argv['config'];
     }
 
-    config.loadConfig(configFilename);
+    configLoader.load(config, configFilename);
 
     if (config.logFilename) {
         logger.addFileLogging(config.logFilename);
@@ -97,7 +98,7 @@ app.set('trust proxy', 'loopback');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {config.setLocals(res.locals); next();});
+app.use(function(req, res, next) {configLoader.setLocals(config, res.locals); next();});
 
 if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
@@ -209,6 +210,7 @@ app.use(require('./middlewares/authn')); // authentication, set res.locals.authn
 app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
+app.use(require('./middlewares/renderAsync'));
 
 // load accounting for authenticated accesses
 app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});
@@ -332,8 +334,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics', [
     function(req, res, next) {res.locals.navSubPage = 'question_statistics'; next();},
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/downloads', [
@@ -365,7 +365,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 
@@ -390,13 +389,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview', [
     function(req, res, next) {res.locals.navSubPage = 'preview'; next();},
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
     function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_edit', [
@@ -669,13 +665,10 @@ app.use('/pl/course/:course_id/question/:question_id/settings', [
 ]);
 app.use('/pl/course/:course_id/question/:question_id/preview', [
     function(req, res, next) {res.locals.navSubPage = 'preview'; next();},
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
 ]);
 app.use('/pl/course/:course_id/question/:question_id/statistics', [
     function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionStatistics/instructorQuestionStatistics'),
 ]);
 app.use('/pl/course/:course_id/question/:question_id/file_edit', [

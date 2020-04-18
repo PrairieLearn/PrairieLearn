@@ -2,13 +2,17 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const async = require('async');
-const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const sanitizeName = require('../../lib/sanitize-name');
+const assessmentStatDescriptions = require('../../lib/assessmentStatDescriptions');
+
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const filenames = function(locals) {
@@ -19,12 +23,9 @@ const filenames = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
+    _.assign(res.locals, filenames(res.locals));
+    res.locals.stat_descriptions = assessmentStatDescriptions;
     async.series([
-        (callback) => {
-            debug('set filenames');
-            _.assign(res.locals, filenames(res.locals));
-            callback(null);
-        },
         (callback) => {
             sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -58,8 +59,8 @@ router.get('/:filename', function(req, res, next) {
             var questionStatsList = result.rows;
             var csvData = [];
             var csvHeaders = ['Course', 'Instance', 'Assessment', 'Question number', 'QID', 'Question title'];
-            Object.keys(res.locals.stat_descriptions).forEach(key => {
-                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+            Object.keys(assessmentStatDescriptions).forEach(key => {
+                csvHeaders.push(assessmentStatDescriptions[key].non_html_title);
             });
 
             csvData.push(csvHeaders);
