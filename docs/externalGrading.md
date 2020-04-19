@@ -262,7 +262,7 @@ docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e H
 
 **Note** the following about `HOST_JOBS_DIR` on PowerShell:
 
-* Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Uesrs\Tim\pl_ag_jobs`)
+* Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`)
 * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
 
 ##### Common issues
@@ -288,7 +288,7 @@ error: handleGraderErrorUnable to launch Docker container for grading: (HTTP cod
 This error can occur when `HOST_JOBS_DIR` cannot be accessed.
 
 1. Verify that the `pl_ag_jobs` directory was created successfully.
-2. Verify that you are using Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Uesrs\Tim\pl_ag_jobs`).
+2. Verify that you are using Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
 
 #### Running locally (native, not on Docker)
 
