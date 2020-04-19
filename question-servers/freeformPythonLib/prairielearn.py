@@ -762,10 +762,6 @@ def string_to_2darray(s, allow_complex=True):
         #   Example:
         #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
 
-        # Return error if there are any commas
-        if ',' in s:
-            return (None, {'format_error': 'Commas cannot be used as delimiters in an expression with single brackets.'})
-
         # Split on semicolon
         s = s.split(';')
 
@@ -776,8 +772,8 @@ def string_to_2darray(s, allow_complex=True):
         if (m == 0):
             return (None, {'format_error': 'Matrix has no rows.'})
 
-        # Get number of columns by splitting first row on space
-        n = len(s[0].split())
+        # Get number of columns by splitting first row on space (treat comma as space)
+        n = len(s[0].replace(',', ' ').split())
 
         # Return error if first row has no columns
         if (n == 0):
@@ -789,8 +785,8 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space
-            s_row = s[i].split()
+            # Split on space (treat comma as space)
+            s_row = s[i].replace(',', ' ').split()
 
             # Return error if current row has more or less columns than first row
             if (len(s_row) != n):
@@ -948,8 +944,8 @@ def matlab_to_numpy(a):
         if (m == 0):
             return (None, 'Matrix has no rows.')
 
-        # Get number of columns by splitting first row on space
-        n = len(a[0].split())
+        # Get number of columns by splitting first row on space (treat comma as space)
+        n = len(a[0].replace(',', ' ').split())
 
         # Return error if first row has no columns
         if (n == 0):
@@ -961,8 +957,8 @@ def matlab_to_numpy(a):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space
-            s = a[i].split()
+            # Split on space (treat comma as space)
+            s = a[i].replace(',', ' ').split()
 
             # Return error if current row has more or less columns than first row
             if (len(s) != n):
