@@ -8,6 +8,8 @@ This page lists sample assessment configurations for remote exams, where student
 
 ## Synchronous, timed exams
 
+This is the **recommended configuration**.
+
 This configuration is good when:
 
 * Almost all students take the exam at the same time
@@ -60,6 +62,8 @@ Some notes about this configuration:
 * Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
 
 ## Asynchronous, timed exams
+
+This is **NOT** the recommended configuration, but it simplifies exam administration and gives students more flexibility, at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
 
 This configuration is good when:
 
