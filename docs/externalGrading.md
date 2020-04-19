@@ -267,28 +267,37 @@ docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e H
 
 ##### Windows errors and quirks
 
-Windows users might see problems running grading jobs:
+###### `exec user process caused "no such file or directory"`
+
+This error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
+graded question:
 
 ```bash
 standard_init_linux.go:207: exec user process caused "no such file or directory"
 ```
 
-This error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
-graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line
+One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
 format instead of converting them for Windows (which breaks mapping them back into docker). 
 This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
+###### `invalid mode: /grade`
+
+This error occurs when `HOST_JOBS_DIR` cannot be accessed:
 
 ```sh
 error: Error processing external grading job 1
 error: handleGraderErrorUnable to launch Docker container for grading: (HTTP code 500) server error - invalid mode: /grade
 ```
 
-This error can occur when `HOST_JOBS_DIR` cannot be accessed.
-
 1. Verify that the `pl_ag_jobs` directory was created successfully.
-2. Verify that you are using Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
+2. Verify the following quirks about `HOST_JOBS_DIR`:
+    - Use Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
+    - Spell out the full path without using `$HOME` (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=$HOME/pl_ag_jobs`).
+3. Verify your Windows/Docker shared access:
+    _ Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
+    - If still not working, restart Docker.
+    - If still not working, restart Windows.
 
 #### Running locally (native, not on Docker)
 
