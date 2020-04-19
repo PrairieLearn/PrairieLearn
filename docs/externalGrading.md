@@ -265,7 +265,7 @@ docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e H
 * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`)
 * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
 
-##### Common issues
+##### Windows errors and quirks
 
 Windows users might see problems running grading jobs:
 
