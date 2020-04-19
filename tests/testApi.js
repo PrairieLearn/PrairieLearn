@@ -461,7 +461,7 @@ describe('API', function() {
             locals.json = JSON.parse(page);
         });
         it('should have two access rules', function() {
-            assert.lengthOf(locals.json, 7);
+            assert.lengthOf(locals.json, 2);
         });
     });
 });
