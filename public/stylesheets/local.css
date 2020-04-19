@@ -180,6 +180,13 @@ a.badge {
   transform: translate(0px, 0px);
 }
 
+/* Supports a color accent at the tops of nav tabs, github-style */
+.nav-tabs.pl-nav-tabs-bar .nav-link.active {
+    border-top-color: var(--primary);
+    border-top-width: 0.2rem;
+    padding-top: 0.4rem;
+}
+
 /* Used to help vertically center badges in table cells */
 table td > .badge {
   transform: translate(0, -12.5%);

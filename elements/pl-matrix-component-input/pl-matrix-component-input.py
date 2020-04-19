@@ -20,8 +20,20 @@ ALLOW_FRACTIONS_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions', 'rows', 'columns']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+    if name not in data['correct_answers']:
+        m = pl.get_integer_attrib(element, 'rows', None)
+        if m is None:
+            raise Exception('Number of rows is not set in pl-matrix-component-input with no correct answer.')
+        if m < 1:
+            raise Exception('Number of rows in pl-matrix-component-input must be strictly positive.')
+        n = pl.get_integer_attrib(element, 'columns', None)
+        if n is None:
+            raise Exception('Number of columns is not set in pl-matrix-component-input with no correct answer.')
+        if n < 1:
+            raise Exception('Number of columns in pl-matrix-component-input must be strictly positive.')
 
 
 def render(element_html, data):
@@ -39,17 +51,18 @@ def render(element_html, data):
         # Get true answer
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is None:
-            raise Exception('No value in data["correct_answers"] for variable %s in pl-matrix-component-input element' % name)
+            m = pl.get_integer_attrib(element, 'rows', None)
+            n = pl.get_integer_attrib(element, 'columns', None)
         else:
             if np.isscalar(a_tru):
                 raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.' % name)
             else:
                 a_tru = np.array(a_tru)
 
-        if a_tru.ndim != 2:
-            raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.' % name)
-        else:
-            m, n = np.shape(a_tru)
+            if a_tru.ndim != 2:
+                raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.' % name)
+            else:
+                m, n = np.shape(a_tru)
 
         input_array = createTableForHTMLDisplay(m, n, name, label, data, 'input')
 
@@ -123,8 +136,10 @@ def render(element_html, data):
             'uuid': pl.get_uuid()
         }
 
-        a_tru = pl.from_json(data['correct_answers'].get(name, None))
-        m, n = np.shape(a_tru)
+        if parse_error is None:
+            a_submitted = pl.from_json(data['submitted_answers'].get(name, None))
+            if a_submitted is not None and len(a_submitted.shape) == 2:
+                m, n = np.shape(a_submitted)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -218,16 +233,18 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
-    # Get true answer
+    # Get dimensions of the input matrix
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
-        return
-    a_tru = np.array(a_tru)
-    if a_tru.ndim != 2:
-        raise ValueError('true answer must be a 2D array')
+        m = pl.get_integer_attrib(element, 'rows', None)
+        n = pl.get_integer_attrib(element, 'columns', None)
     else:
-        m, n = np.shape(a_tru)
-        A = np.empty([m, n])
+        a_tru = np.array(a_tru)
+        if a_tru.ndim != 2:
+            raise ValueError('true answer must be a 2D array')
+        else:
+            m, n = np.shape(a_tru)
+    A = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
