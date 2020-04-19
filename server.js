@@ -12,7 +12,7 @@ const https = require('https');
 const blocked = require('blocked');
 const blockedAt = require('blocked-at');
 const onFinished = require('on-finished');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const multer = require('multer');
 const filesize = require('filesize');
@@ -97,11 +97,7 @@ app.set('trust proxy', 'loopback');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
-app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
-app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
-app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
-app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
+app.use(function(req, res, next) {config.setLocals(res.locals); next();});
 
 if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
@@ -805,6 +801,8 @@ app.use('/pl/course/:course_id/question/:question_id/text', [
 
 app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
+app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
+app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

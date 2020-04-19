@@ -47,8 +47,8 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
               <h4 class="modal-title">Time limit expired</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
               <p>Your time limit expired and your assessment is now finished.</p>
@@ -72,28 +72,54 @@
         </div>
   
         <div class="card-body">
+          <% if (!assessment.allow_real_time_grading) { %>
+            <div class="alert alert-warning">
+              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later.
+            </div>
+          <% } %>
           <div class="row align-items-center">
-            <div class="col-md-3 col-sm-6">
-              <% include('../partials/pointsFormatter'); %>
-              Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
-            </div>
-            <div class="col-md-3 col-sm-6">
-              <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
-            </div>
-            <div class="col-md-6 col-sm-12">
-                <% if (assessment_instance.open) { %>
-                    Assessment is <strong>open</strong> and you can answer questions.
-                    <p>
-                    Available credit: <%= authz_result.credit_date_string %>
-                    <%- include('../partials/studentAccessRulesPopover', {
-                      accessRules: authz_result.access_rules,
-                      assessmentSetName: assessment_set.name,
-                      assessmentNumber: assessment.number,
-                    }); %>
-                <% } else { %>
-                    Assessment is <strong>closed</strong> and you cannot answer questions.
-                <% } %>
-            </div>
+            <% if (!assessment.allow_real_time_grading && assessment_instance.open) { %>
+              <div class="col-md-3 col-sm-12">
+                <% include('../partials/pointsFormatter'); %>
+                Total points: <%= getStringFromFloat(assessment_instance.max_points) %>
+              </div>
+              <div class="col-md-9 col-sm-12">
+                  <% if (assessment_instance.open) { %>
+                      Assessment is <strong>open</strong> and you can answer questions.
+                      <br>
+                      Available credit: <%= authz_result.credit_date_string %>
+                      <%- include('../partials/studentAccessRulesPopover', {
+                        accessRules: authz_result.access_rules,
+                        assessmentSetName: assessment_set.name,
+                        assessmentNumber: assessment.number,
+                      }); %>
+                  <% } else { %>
+                      Assessment is <strong>closed</strong> and you cannot answer questions.
+                  <% } %>
+              </div>
+            <% } else { %>
+              <div class="col-md-3 col-sm-6">
+                <% include('../partials/pointsFormatter'); %>
+                Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
+              </div>
+              <div class="col-md-3 col-sm-6">
+                <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
+              </div>
+              <div class="col-md-6 col-sm-12">
+                  <% if (assessment_instance.open) { %>
+                      Assessment is <strong>open</strong> and you can answer questions.
+                      <p>
+                      Available credit: <%= authz_result.credit_date_string %>
+                      <%- include('../partials/studentAccessRulesPopover', {
+                        accessRules: authz_result.access_rules,
+                        assessmentSetName: assessment_set.name,
+                        assessmentNumber: assessment.number,
+                      }); %>
+                  <% } else { %>
+                      Assessment is <strong>closed</strong> and you cannot answer questions.
+                  <% } %>
+              </div>
+            <% } %>
           </div>
   
           <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
@@ -128,18 +154,23 @@
           <thead>
             <tr>
               <th>Question</th>
-              <th class="text-center">
-                Best submission
-                <%- include('../partials/examQuestionHelpBestSubmission'); %>
-              </th>
-              <th class="text-center">
-                Available points
-                <%- include('../partials/examQuestionHelpAvailablePoints'); %>
-              </th>
-              <th class="text-center">
-                Awarded points
-                <%- include('../partials/examQuestionHelpAwardedPoints'); %>
-              </th>
+              <% if (assessment.allow_real_time_grading) { %>
+                <th class="text-center">
+                  Best submission
+                  <%- include('../partials/examQuestionHelpBestSubmission'); %>
+                </th>
+                <th class="text-center">
+                  Available points
+                  <%- include('../partials/examQuestionHelpAvailablePoints'); %>
+                </th>
+                <th class="text-center">
+                  Awarded points
+                  <%- include('../partials/examQuestionHelpAwardedPoints'); %>
+                </th>
+              <% } else { %>
+                <th class="text-center">Submission status</th>
+                <th class="text-center">Points</th>
+              <% } %>
             </tr>
           </thead>
           <tbody>
@@ -172,36 +203,62 @@
                   <i class="fas fa-paperclip"></i>
                 <% } %>
               </td>
+
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-              <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
-              <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
+              <% if (assessment.allow_real_time_grading) { %>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
+              <% } else { %>
+                <td class="text-center">
+                  <% include('../partials/pointsFormatter'); %>
+                  <% if (assessment_instance.open) { %>
+                    <%= getStringFromFloat(instance_question.max_points) %>
+                  <% } else { %>
+                    <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                  <% } %>
+                </td>
+              <% } %>
             </tr>
           <% }); %>
           </tbody>
         </table>
   
         <div class="card-footer">
-          <form name="grade-form" method="POST" class="form-inline">
+          <% if (assessment.allow_real_time_grading) { %>
+            <form name="grade-form" method="POST" class="form-inline">
               <input type="hidden" name="__action" value="grade">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <% if (savedAnswers > 0) { %>
-                <button type="submit" class="btn btn-info">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
+                <button type="submit" class="btn btn-info my-2">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
               <% } else { %>
-                <button type="submit" class="btn btn-info disabled" disabled>No saved answers to grade</button>
+                <button type="submit" class="btn btn-info my-2 disabled" disabled>No saved answers to grade</button>
               <% } %>
-              </form>
-          <p>
-          <ul>
+            </form>
+            <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
               <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                  <li>After you have answered all the questions completely, click here:
-                      <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-                  </li>
+                <li>
+                  After you have answered all the questions completely, click here:
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                </li>
               <% } else { %>
-                  <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
               <% } %>
-          </ul>
+            </ul>
+          <% } else { %>
+            <ul class="my-1">
+              <li>Submit your answer to each question with the <strong>Save</strong> button on the question page.</li>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+                <li>
+                  After you have answered all the questions completely, click here:
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                </li>
+              <% } else { %>
+                <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
+              <% } %>
+            </ul>
+          <% } %>
         </div>
       </div>
 

@@ -109,6 +109,10 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
     white-space: nowrap;
 }
 
+pre {
+    overflow-wrap: normal;
+}
+
 /**************
  * Submissions
  **************/
@@ -181,6 +185,20 @@ table td > .badge {
   transform: translate(0, -12.5%);
 }
 
+/* Used to give table rows the same padding as Bootstrap card headers */
+.card > table tr td:first-child,
+.card > table tr th:first-child,
+.card > .table-responsive > table tr td:first-child,
+.card > .table-responsive > table tr th:first-child {
+    padding-left: 1.25rem;
+}
+.card > table tr td:last-child,
+.card > table tr th:last-child,
+.card > .table-responsive > table tr td:last-child,
+.card > .table-responsive > table tr th:last-child {
+    padding-right: 1.25rem;
+}
+
 /* Custom button styles that look better in input groups */
 .btn.btn-med-light {
   color: #212529;
@@ -202,12 +220,12 @@ table td > .badge {
     white-space: pre;
     color: #444;
     background: #F0F0F0;
-    
+
     padding-top: 4px;
     padding-bottom: 4px;
     padding-left: 2px;
     padding-right: 2px;
-    
+
     border-radius: 2px;
     border-color: #ccc;
     border-width: 1px;
@@ -239,4 +257,4 @@ table td > .badge {
     border-color: #6c757d;
     margin-left: 5px;
     background: #fff;
-} 
+}

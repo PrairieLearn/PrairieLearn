@@ -17,3 +17,5 @@ def generate(data):
     data["correct_answers"]["c_1"] = c
     data["correct_answers"]["c_2"] = c
     data["correct_answers"]["c_3"] = c
+    data["correct_answers"]["c_4"] = c
+    data["correct_answers"]["c_5"] = c
