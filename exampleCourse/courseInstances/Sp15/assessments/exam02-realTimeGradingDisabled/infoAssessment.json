@@ -13,7 +13,7 @@
         {
             "mode": "Public",
             "credit": 100,
-            "timeLimitMin": 30,
+            "timeLimitMin": 5,
             "showClosedAssessment": false
        }
     ],
