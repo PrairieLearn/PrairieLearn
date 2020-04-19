@@ -38,7 +38,7 @@ BEGIN
                     END)
             ELSE 'None'
         END AS credit_date_string,
-        aar.time_limit_min,
+        LEAST(aar.time_limit_min, extract(epoch FROM aar.end_date - now()) / 60)::integer AS time_limit_min,
         aar.password,
         aar.mode,
         aar.seb_config,
