@@ -439,9 +439,9 @@ describe('API', function() {
 
     describe('13. GET to API for Exam 1 access rules', function() {
         it('should load successfully', function(callback) {
-            locals.apiAccessRulesUrl = locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/assessment_access_rules`;
+            locals.apiAssessmentAccessRulesUrl = locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_access_rules`;
             const options = {
-                url: locals.apiAccessRulesUrl,
+                url: locals.apiAssessmentAccessRulesUrl,
                 headers: {
                     'Private-Token': locals.api_token,
                 },
