@@ -262,7 +262,7 @@ docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e H
 
 **Note** the following about `HOST_JOBS_DIR` on PowerShell:
 
-* Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`)
+* Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`).
 * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
 
 ##### Windows errors and quirks
