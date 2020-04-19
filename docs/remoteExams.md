@@ -98,3 +98,31 @@ Some notes about this configuration:
 
 * All of the the [notes above](#synchronous-timed-exams) still apply
 * It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
+
+## Post-graded exams
+
+[Disabling real-time grading](assessment.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Having real-time grading disabled means that students are unable to re-attempt questions.
+
+This configuration is good when:
+
+* The exam only contains multiple-choice questions. Disabling real-time grading with more complex questions (even just numeric-answer questions) is not recommended, because it's hard for students to get numeric answers exactly correct on the first attempt.
+
+* You have a scantron exam you would like to port to PrairieLearn.
+
+* You want to prevent students from finding out which questions they answered correctly _during_ an exam. To continue hiding answers _after_ the exam is over, use the `allowAccess` setting `"showClosedAssessment": false` in addition to the top-level `allowRealTimeGrading` setting.
+
+```json
+"allowRealTimeGrading": false,
+"allowAccess": [
+    {
+        "role": "TA",
+        "credit": 100
+    },
+    {
+        "mode": "Public",
+        "credit": 100,
+        "timeLimitMin": 30,
+        "showClosedAssessment": false
+   }
+],
+```
