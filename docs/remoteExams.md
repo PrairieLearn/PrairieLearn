@@ -8,7 +8,7 @@ This page lists sample assessment configurations for remote exams, where student
 
 ## Synchronous, timed exams
 
-**We recommend exams to be run using a synchronous timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit. 
+**We recommend exams to be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit. 
 
 This configuration is good when:
 
