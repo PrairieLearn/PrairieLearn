@@ -106,7 +106,7 @@ module.exports = {
                             // TODO remove once everyone is using the new version
                             if (elementType === 'core') {
                                 elements[elementName.replace(/-/g, '_')] = info;
-                                
+
                                 if ('additionalNames' in info) {
                                     info.additionalNames.forEach(name => {
                                         elements[name] = info;
@@ -961,7 +961,18 @@ module.exports = {
                             courseElementScripts: [],
                             clientFilesCourseStyles: [],
                             clientFilesCourseScripts: [],
+                            clientFilesQuestionStyles: [],
+                            clientFilesQuestionScripts: [],
                         };
+
+                        /* Question dependencies are checked via schema on sync-time, so there's no need for sanity checks here. */
+                        for (let type in question.dependencies) {
+                            for (let dep of question.dependencies[type]) {
+                                if (!_.includes(dependencies[type], dep)) {
+                                    dependencies[type].push(dep);
+                                }
+                            }
+                        }
 
                         // Gather dependencies for all rendered elements
                         allRenderedElementNames.forEach((elementName) => {
@@ -1039,6 +1050,8 @@ module.exports = {
                         dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
+                        dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
+                        dependencies.clientFilesQuestionScripts.forEach((file) => scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
                         dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                         dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
