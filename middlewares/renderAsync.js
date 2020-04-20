@@ -1,9 +1,10 @@
 const { spawn, Pool, Worker } = require('threads');
 
-const pool = Pool(() => spawn(new Worker("./renderAsyncWorker")));
+const pool = Pool(() => spawn(new Worker('./renderAsyncWorker')));
 
-//await pool.completed()
-//await pool.terminate()
+// FIXME
+// await pool.completed()
+// await pool.terminate()
 
 module.exports = function(req, res, next) {
     res.renderAsync = function(filename, data) {

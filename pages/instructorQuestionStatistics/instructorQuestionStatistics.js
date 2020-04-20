@@ -3,8 +3,6 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const sanitizeName = require('../../lib/sanitize-name');
