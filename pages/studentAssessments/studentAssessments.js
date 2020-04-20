@@ -17,7 +17,7 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.rows = result.rows;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 

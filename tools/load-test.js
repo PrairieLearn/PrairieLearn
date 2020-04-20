@@ -6,6 +6,7 @@ const assert = require('assert');
 const yargs = require('yargs');
 
 const config = require('../lib/config');
+const configLoader = require('../lib/config-loader');
 const csrf = require('../lib/csrf');
 
 
@@ -56,7 +57,7 @@ const argv = yargs
       .strict()
       .argv;
 
-config.loadConfig(argv.config);
+configLoader.load(config, argv.config);
 
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 let questionTitle;

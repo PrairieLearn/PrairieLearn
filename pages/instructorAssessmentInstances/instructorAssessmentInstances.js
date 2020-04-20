@@ -19,7 +19,7 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         res.locals.user_scores = result.rows;
         debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 

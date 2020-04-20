@@ -40,7 +40,7 @@ router.get('/', (req, res, next) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
 
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
             });
         });

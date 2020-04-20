@@ -9,12 +9,13 @@
 const ERR = require('async-stacktrace');
 const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 const config = require('../lib/config');
+const configLoader = require('../lib/config-loader');
 const logger = require('../lib/logger');
 const readline = require('readline');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-config.loadConfig('config.json');
+configLoader.load(config, 'config.json');
 
 var pgConfig = {
     user: config.postgresqlUser,

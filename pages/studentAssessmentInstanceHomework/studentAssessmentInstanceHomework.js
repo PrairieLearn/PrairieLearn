@@ -55,7 +55,7 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_text_templated = assessment_text_templated;
 
                 debug('rendering EJS');
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
     });
