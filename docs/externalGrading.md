@@ -238,36 +238,67 @@ Running PrairieLearn locally with externally graded question support looks somet
 - Create an empty directory to use to share job data between containers. 
     - This can live anywhere, but needs to be created first and referenced in 
       the docker launch command.
+    - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
 ```bash
-mkdir ${HOME}/pl_ag_jobs
+mkdir "$HOME/pl_ag_jobs"
 ```
 
-- Modify your PL docker run call to look something like:
+- Modify your PL docker run call to include the jobs directory.
+
+On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
 ```sh
 docker run -it --rm -p 3000:3000 \
-    -v ${PWD}:/course `# Map your current directly in as course content` \
-    -v ${HOME}/pl_ag_jobs:/jobs `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v "$PWD":/course `# Map your current directory in as course content` \
+    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
+    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
     prairielearn/prairielearn 
 ```
 
-**Note:** The sequence above is verified to work on Windows 10 as well as MacOS and Linux docker. 
+On Windows PowerShell, `cd` to your course directory and copy the following command **except** with your own username in `HOST_JOBS_DIR`:
+```sh
+docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn 
+```
 
-##### Common issues
+**Note** the following about `HOST_JOBS_DIR` on PowerShell:
 
-Windows users might see problems running grading jobs. The most common issue is the:
+* Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`).
+* Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
+
+##### Windows errors and quirks
+
+###### `exec user process caused "no such file or directory"`
+
+This error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
+graded question:
 
 ```bash
 standard_init_linux.go:207: exec user process caused "no such file or directory"
 ```
 
-The error occurs during grading as a result of an OS new-line incompatibility with the `entrypoint` script in the externally
-graded question. One solution for this is to make a `.gitattributes` files in your PL repository with the line
+One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
 format instead of converting them for Windows (which breaks mapping them back into docker). 
 This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
+###### `invalid mode: /grade`
+
+This error occurs when `HOST_JOBS_DIR` cannot be accessed:
+
+```sh
+error: Error processing external grading job 1
+error: handleGraderErrorUnable to launch Docker container for grading: (HTTP code 500) server error - invalid mode: /grade
+```
+
+1. Verify that the `pl_ag_jobs` directory was created successfully.
+2. Verify the following quirks about `HOST_JOBS_DIR`:
+    - Use Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
+    - Spell out the full path without using `$HOME` (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=$HOME/pl_ag_jobs`).
+3. Verify your Windows/Docker shared access:
+    _ Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
+    - If still not working, restart Docker.
+    - If still not working, restart Windows.
+
 #### Running locally (native, not on Docker)
 
-When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically. By default, they are stored in `$HOME/pl_ag_jobs` on Unix-based systems and `$USERPROFILE/pl_ag_jobs` on Windows. However, if you run PrairieLearn with a an environment variable `JOBS_DIR=/abs/path/to/my/custom/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker.
+When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs` on Unix-based systems and `$USERPROFILE/.pljobs` on Windows. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.
