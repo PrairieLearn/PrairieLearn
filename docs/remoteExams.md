@@ -63,7 +63,7 @@ Some notes about this configuration:
 
 ## Asynchronous, timed exams
 
-This is **NOT** the recommended configuration, but it simplifies exam administration and gives students more flexibility, at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
+We do **NOT** recommend exams to be run using an asynchronous, timed configuration. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
 
 This configuration is good when:
 
