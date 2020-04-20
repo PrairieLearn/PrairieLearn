@@ -105,7 +105,7 @@ Some notes about this configuration:
 
 ## Post-graded exams
 
-This is **NOT** the recommended configuration, but it's good for mimicking pen-and-paper exams.
+We do **NOT** recommend exams to be run using a post-graded configuration. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students, but it's good for mimicking traditional pen-and-paper exams.
 
 This configuration is good when:
 
