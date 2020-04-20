@@ -68,7 +68,7 @@ For details see the [format specification for question `info.json`](https://gith
 
 ### Question Dependencies
 
-Your quesition can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be de-duped and loaded onto the page.
+Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be de-duped and loaded onto the page.
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
