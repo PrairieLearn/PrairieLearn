@@ -140,6 +140,13 @@ def render(element_html, data):
             a_submitted = pl.from_json(data['submitted_answers'].get(name, None))
             if a_submitted is not None and len(a_submitted.shape) == 2:
                 m, n = np.shape(a_submitted)
+        else:
+            a_tru = pl.from_json(data['correct_answers'].get(name, None))
+            if a_tru is not None and len(a_tru.shape) == 2:
+                m, n = np.shape(a_tru)
+            else:
+                m = pl.get_integer_attrib(element, 'rows', None)
+                n = pl.get_integer_attrib(element, 'columns', None)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
