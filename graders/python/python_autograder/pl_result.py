@@ -27,6 +27,8 @@ class PrairieTestResult(unittest.TestResult):
     def __init__(self):
         unittest.TestResult.__init__(self)
         self.results = []
+        self.format_errors = []
+        self.main_feedback = ''
         self.buffer = False
         self.done_grading = False
         self.grading_succeeded = True
@@ -62,15 +64,16 @@ class PrairieTestResult(unittest.TestResult):
             tr_list = traceback.format_exception(*err[1].err)
             name = 'Your code raised an Exception'
             self.done_grading = True
-            if isinstance(err[1].err[1], SyntaxError):
+            if isinstance(err[1].err[1], SyntaxError) or isinstance(err[1].err[1], NameError):
                 self.grading_succeeded = False
-                name = 'Your code has a syntax error'
-
-            self.results.append({'name': name,
-                                 'filename': 'error',
-                                 'max_points': 1,
-                                 'points': 0})
-            Feedback.set_name('error')
+                self.format_errors.append('Your code has a syntax error.')
+                Feedback.set_main_output()
+            else:
+                self.results.append({'name': name,
+                                     'filename': 'error',
+                                     'max_points': 1,
+                                     'points': 0})
+                Feedback.set_name('error')
             Feedback.add_feedback(''.join(tr_list))
             Feedback.add_feedback('\n\nYour code:\n\n')
             print_student_code()
@@ -94,6 +97,7 @@ class PrairieTestResult(unittest.TestResult):
                 unittest.TestResult.addError(self, test, err)
                 self.results[-1]['points'] = 0
                 Feedback.add_feedback(self.error_message + ''.join(tr_list))
+
 
     def addFailure(self, test, err):
         unittest.TestResult.addFailure(self, test, err)

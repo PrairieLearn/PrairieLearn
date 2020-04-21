@@ -74,7 +74,7 @@ def not_repeated(f):
     return wrapped
 
 
-def print_student_code(st_code='user_code.py'):
+def print_student_code(st_code='user_code.py', as_feedback=True):
     """
     Print the student's code, with syntax highlighting.
     """
@@ -82,4 +82,7 @@ def print_student_code(st_code='user_code.py'):
     with open(st_code, 'r', encoding='utf-8') as f:
         contents = f.read().strip()
         formatted = pygments.highlight(contents, PythonLexer(), Terminal256Formatter(style='monokai'))
-        Feedback.add_feedback(formatted)
+        if as_feedback:
+            Feedback.add_feedback(formatted)
+        else:
+            return formatted

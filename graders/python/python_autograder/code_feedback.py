@@ -31,12 +31,20 @@ class GradingComplete(Exception):
 
 class Feedback:
     test_name = None
+    feedback_file = None
     prefix_message = "\nFeedback for case %d\n---------------------\n"
     buffer = ''
 
     @classmethod
     def set_name(cls, name):
         cls.test_name = name
+        cls.feedback_file = "feedback_" + name
+        cls.buffer = ''
+
+    @classmethod
+    def set_main_output(cls):
+        cls.test_name = "output"
+        cls.feedback_file = "output"
         cls.buffer = ''
 
     @classmethod
@@ -62,7 +70,7 @@ class Feedback:
 
         Adds some text to the feedback output for the current test.
         """
-        with open("/grade/run/feedback_" + cls.test_name + ".txt", 'a+',
+        with open("/grade/run/" + cls.feedback_file + ".txt", 'a+',
                   encoding='utf-8') as f:
             f.write(cls.buffer + text)
             f.write('\n')

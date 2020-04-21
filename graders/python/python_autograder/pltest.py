@@ -44,6 +44,7 @@ if __name__ == '__main__':
         # Run the tests with our custom setup
         loader = TestLoader()
         all_results = []
+        format_errors = []
         gradable = True
         for i in range(Test.total_iters):
             suite = loader.loadTestsFromTestCase(Test)
@@ -52,6 +53,7 @@ if __name__ == '__main__':
             all_results.append(result.getResults())
             if not result.getGradable():
                 gradable = False
+                format_errors = result.format_errors
                 break
 
         if len(all_results) > 1:
@@ -92,6 +94,8 @@ if __name__ == '__main__':
         grading_result['max_points'] = max_points
         if text_output:
             grading_result['output'] = text_output
+        if len(format_errors) > 0:
+            grading_result['format_errors'] = format_errors
 
         all_img_num = 0
         for img_iter in range(Test.total_iters):

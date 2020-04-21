@@ -1,12 +1,12 @@
 {{#graded}}
-<div class="pl-external-grader-results mt-4">
+<div class="pl-external-grader-results">
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="output text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
@@ -33,20 +33,30 @@
         {{/format_errors}}
         </div>
     {{/has_format_errors}}
-    {{#has_message_or_output}}
+    {{#has_message_or_output_or_image}}
       {{#has_message}}
         <div class="card">
           <div class="card-header">Message</div>
-          <pre class="output text-white p-3 mb-0"><code>{{{message}}}</code></pre>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{message}}}</code></pre>
         </div>
       {{/has_message}}
       {{#has_output}}
         <div class="card mt-4">
           <div class="card-header">Output</div>
-          <pre class="output text-white p-3 mb-0"><code>{{{output}}}</code></pre>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
       {{/has_output}}
-    {{/has_message_or_output}}
+      {{#has_images}}
+          <ul class="list-group list-group-flush">
+              {{#images_data}}
+                  <li class="list-group-item">
+                      <div><strong>Figure</strong></div>
+                      <img src="{{.}}"/>
+                  </li>
+              {{/images_data}}
+          </ul>
+      {{/has_images}}
+    {{/has_message_or_output_or_image}}
     {{#has_tests}}
       <h3>Test Results</h3>
       <div class="mt-3">
