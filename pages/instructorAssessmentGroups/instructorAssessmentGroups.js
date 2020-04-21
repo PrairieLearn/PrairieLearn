@@ -5,6 +5,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const error = require('@prairielearn/prairielib/error');
+const groupUpload = require('../../lib/group-upload');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -25,7 +26,12 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.__action == 'open') {
+    if (req.body.__action == 'upload_instance_groups') {
+        groupUpload.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
