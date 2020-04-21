@@ -43,7 +43,8 @@ BEGIN
             constant_question_value,
             allow_issue_reporting,
             allow_real_time_grading,
-            require_honor_code)
+            require_honor_code,
+            groupwork)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -64,7 +65,8 @@ BEGIN
                 (assessment->>'constant_question_value')::boolean,
                 (assessment->>'allow_issue_reporting')::boolean,
                 (assessment->>'allow_real_time_grading')::boolean,
-                (assessment->>'require_honor_code')::boolean
+                (assessment->>'require_honor_code')::boolean,
+                (assessment->>'groupwork')::boolean
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -89,6 +91,19 @@ BEGIN
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
+
+        INSERT INTO group_type
+            (assessment_id,
+            grouptype,
+            max,
+            min)
+        (
+            SELECT
+                new_assessment_id,
+                (assessment->>'grouptype')::integer,
+                (assessment->>'groupmax')::integer,
+                (assessment->>'groupmin')::integer
+        );
 
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP
