@@ -92,6 +92,26 @@
             "description": "Requires the student to accept an honor code before starting exam assessments.",
             "type": "boolean",
             "default": true
+        },
+        "groupwork": {
+            "description": "To set whether this is a group work.",
+            "type": "boolean",
+            "default": false
+        },
+        "groupmax": {
+            "description": "max number of students in a group",
+            "type": "integer",
+            "default": 1
+        },
+        "groupmin": {
+            "description": "min number of students in a group",
+            "type": "integer",
+            "default": 1
+        },
+        "grouptype": {
+            "description": "1 = assigned_by_instructor, 2 = assigned_by_system, 3 = pair_up_by_students",
+            "type": "integer",
+            "default": 0
         }
     },
     "definitions": {
