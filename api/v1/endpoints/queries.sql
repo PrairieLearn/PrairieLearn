@@ -114,7 +114,7 @@ WITH object_data AS (
 SELECT
     coalesce(jsonb_agg(
         to_jsonb(object_data)
-        ORDER BY assessment_access_rule_number
+        ORDER BY assessment_access_rule_number, assessment_access_rule_id
     ), '[]'::jsonb) AS item
 FROM
     object_data;
