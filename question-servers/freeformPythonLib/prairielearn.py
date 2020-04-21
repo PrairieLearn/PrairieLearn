@@ -772,8 +772,18 @@ def string_to_2darray(s, allow_complex=True):
         if (m == 0):
             return (None, {'format_error': 'Matrix has no rows.'})
 
-        # Get number of columns by splitting first row on space (treat comma as space)
-        n = len(s[0].replace(',', ' ').split())
+        # Regex to split rows a la MATLAB
+        matlab_delimiter_regex = re.compile(r'\s*[\s|,]\s*')
+
+        # Get number of columns by splitting first row
+        tokens = re.split(matlab_delimiter_regex, s[0])
+        n = len(tokens)
+
+        # Ignore first/last if empty (occurs when row leads/trails with valid delimiter)
+        if not tokens[0]:
+            n -= 1
+        if not tokens[-1]:
+            n -= 1
 
         # Return error if first row has no columns
         if (n == 0):
@@ -785,8 +795,14 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space (treat comma as space)
-            s_row = s[i].replace(',', ' ').split()
+            # Split row
+            s_row = re.split(matlab_delimiter_regex, s[i])
+
+            # Ignore first/last if empty (occurs when row leads/trails with valid delimiter)
+            if not s_row[0]:
+                s_row.pop(0)
+            if not s_row[-1]:
+                s_row.pop(-1)
 
             # Return error if current row has more or less columns than first row
             if (len(s_row) != n):
