@@ -41,7 +41,7 @@ router.get('/:assessment_id', (req, res, next) => {
 
 router.get('/:assessment_id/assessment_instances', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_id: req.params.assessment_id,
         assessment_instance_id: null,
     };

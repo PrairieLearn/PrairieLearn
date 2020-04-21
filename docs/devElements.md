@@ -153,7 +153,7 @@ Property | Description
 `elementStyles` | The styles required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `elementScripts` | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
-`clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
+`clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
 
 You can also find the types of dependencies defined in these schema files:
 
