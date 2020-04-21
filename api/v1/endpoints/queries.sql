@@ -37,6 +37,7 @@ WITH object_data AS (
         ai.id AS assessment_instance_id,
         a.id AS assessment_id,
         a.tid AS assessment_name,
+        a.title AS assessment_title,
         (aset.abbreviation || a.number) AS assessment_label,
         aset.abbreviation AS assessment_set_abbreviation,
         a.number AS assessment_number,
@@ -84,12 +85,16 @@ WITH object_data AS (
         a.id AS assessment_id,
         a.tid AS assessment_name,
         a.title AS assessment_title,
+        (aset.abbreviation || a.number) AS assessment_label,
+        aset.abbreviation AS assessment_set_abbreviation,
+        a.number AS assessment_number,
         aar.credit,
-        aar.end_date,
+        format_date_iso8601(aar.end_date, ci.display_timezone) AS end_date,
         aar.exam_uuid,
         aar.id AS assessment_access_rule_id,
         aar.mode,
         aar.number,
+        aar.number AS assessment_access_rule_number,
         aar.password,
         aar.role,
         aar.seb_config,
@@ -100,6 +105,7 @@ WITH object_data AS (
     FROM
         assessments AS a
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
     WHERE
         ci.id = $course_instance_id
@@ -108,7 +114,7 @@ WITH object_data AS (
 SELECT
     coalesce(jsonb_agg(
         to_jsonb(object_data)
-        ORDER BY assessment_id, assessment_access_rule_id
+        ORDER BY assessment_access_rule_number
     ), '[]'::jsonb) AS item
 FROM
     object_data;
