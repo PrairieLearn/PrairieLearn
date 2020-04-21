@@ -46,6 +46,22 @@
             </div>
           </div>
 
+          <div class="alert alert-secondary mb-0">
+            This is a group homework.</p>
+            <b>Members: </b>First Last (Netid), First Last (Netid), First Last (Netid)
+          </div>
+          </p>
+          <div class="row">
+            <div class="col-sm-6">
+              <span class="form-inline d-inline-block ml-2">
+                <input name="memberid" type="text" class="form-control rounded-right" size="10" aria-describedby="basic-addon1" placeholder="Netid">          
+              </span>
+              <button class="btn btn-primary question-grade disable-on-submit" name="__action" value="grade">Add</button>
+              <button class="btn btn-secondary question-grade disable-on-submit" name="__action" value="grade">Remove</button>
+            </div>
+          </div>
+          </p>
+
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">
               <%- assessment_text_templated %>
