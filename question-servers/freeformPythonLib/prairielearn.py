@@ -785,7 +785,7 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space (treat comma as space)
+            # Split on space
             s_row = s[i].split()
 
             # Return error if current row has more or less columns than first row
