@@ -322,6 +322,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
+    function(req, res, next) {res.locals.navSubPage = 'groups'; next();},
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},
     require('./pages/instructorAssessmentAccess/instructorAssessmentAccess'),

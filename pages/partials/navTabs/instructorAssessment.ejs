@@ -44,6 +44,11 @@
     iconClasses:    'fas fa-users',
     tabLabel:       'Students'}) %>
 <%- include('navTab', {
+    activeSubPage:  'groups',
+    urlSuffix:      '/assessment/'+assessment.id+'/groups',
+    iconClasses:    'fas fa-users',
+    tabLabel:       'Groups'}) %>
+<%- include('navTab', {
     activeSubPage:  'uploads',
     urlSuffix:      '/assessment/'+assessment.id+'/uploads',
     iconClasses:    'fas fa-upload',
