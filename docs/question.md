@@ -62,8 +62,51 @@ Property | Type | Description
 `singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
 `partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
 `externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
+`dependencies` | object | External JavaScript or CSS dependencies to load.  See below.  (Optional; default: `{}`)
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
+
+### Question Dependencies
+
+Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be de-duped and loaded onto the page.
+
+These dependencies are specified in the `info.json` file, and can be configured as follows:
+
+```json
+{
+    "dependencies": {
+        "coreScripts": [
+            "d3.min.js"
+        ],
+        "nodeModulesScripts": [
+            "three/build/three.min.js"
+        ],
+        "clientFilesQuestionScripts": [
+            "my-question-script.js"
+        ],
+        "clientFilesQuestionStyles": [
+            "my-question-style.css"
+        ],
+        "clientFilesCourseStyles": [
+            "courseStylesheet1.css",
+            "courseStylesheet2.css"
+        ]
+    }
+}
+```
+
+The different types of dependency properties available are summarized in this table:
+
+Property | Description
+--- | ---
+`coreStyles` |  The styles required by this question, relative to `[PrairieLearn directory]/public/stylesheets`.
+`coreScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/public/javascripts`.
+`nodeModulesStyles` | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.
+`nodeModulesScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.
+`clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
+`clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
+`clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
+`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`. 
 
 ## Question `question.html`
 

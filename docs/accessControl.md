@@ -154,7 +154,7 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 ]
 ```
 
-The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `showClosedAssessment` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
+The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
 
 ## Course instance example
 

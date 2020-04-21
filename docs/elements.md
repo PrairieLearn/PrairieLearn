@@ -771,45 +771,7 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The `language` can be one of the following values.
-
-`language` value | Description
---- | ---
-`armasm` | ARM Assembly
-`bash` | Bash
-`cpp` | C++
-`csharp` | C#
-`css` | CSS
-`excel` | Excel
-`fortran` | Fortran
-`go` | Go
-`haskell` | Haskell
-`html` | HTML,XML
-`ini` | Ini
-`java` | Java
-`javascript` | JavaScript
-`json` | JSON
-`julia` | Julia
-`makefile` | Makefile
-`markdown` | Markdown
-`mathematica` | Mathematica
-`matlab` | Matlab
-`mipsasm` | MIPS Assembly
-`objectivec` | Objective-C
-`ocaml` | OCaml
-`perl` | Perl
-`php` | PHP
-`python` | Python
-`r` | R
-`ruby` | Ruby
-`rust` | Rust
-`shell` | Shell Session
-`sql` | SQL
-`tex` | TeX
-`x86asm` | Intel x86 Assembly
-`yaml` | YAML
-
-Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
+The `pl-code` element uses the _Pygments_ library for syntax highlighting, a full list of supported languages can be found [here](https://pygments.org/languages/).
 
 #### Example implementations
 
