@@ -21,7 +21,6 @@ router.get('/', (req, res, next) => {
     });
 });
 
-
 router.get('/:assessment_id', (req, res, next) => {
     const params = {
         course_instance_id: res.locals.course_instance.id,
