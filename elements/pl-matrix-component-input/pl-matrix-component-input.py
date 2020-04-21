@@ -379,7 +379,7 @@ def test(element_html, data):
                 feedback.update({each_entry_name: 'incorrect'})
             elif result == 'invalid':
                 if random.choice([True, False]):
-                    data['raw_submitted_answers'][each_entry_name] = '1,2'
+                    data['raw_submitted_answers'][each_entry_name] = '1,,2'
                     data['format_errors'][each_entry_name] = '(Invalid format)'
                 else:
                     data['raw_submitted_answers'][name] = ''

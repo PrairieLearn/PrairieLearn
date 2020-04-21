@@ -315,7 +315,7 @@ def test(element_html, data):
         elif result == 'invalid':
             # FIXME: add more invalid expressions, make text of format_errors
             # correct, and randomize
-            data['raw_submitted_answers'][name] = '[1, 2, 3]'
+            data['raw_submitted_answers'][name] = '[1,, 2, 3]'
             data['format_errors'][name] = 'invalid'
         else:
             raise Exception('invalid result: %s' % result)
