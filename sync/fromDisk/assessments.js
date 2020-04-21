@@ -68,6 +68,10 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
+            groupwork: assessment.groupwork || false,
+            groupmax: assessment.groupmax || 1,
+            groupmin: assessment.groupmin || 1,
+            grouptype: assessment.grouptype || 0
         };
 
         const allowAccess = assessment.allowAccess || [];
