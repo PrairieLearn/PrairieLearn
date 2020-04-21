@@ -3,10 +3,11 @@
 # Based on Matt West's randexam python script
 # Version 0.0.1 by Lawrence Angrave
 # Version 0.0.2 edited by Harry Dankowicz with additional export of tikz figures
+# Version 0.1.0 edited by Dave Mussulman to convert to PL v3 question types
 
 
-VERSION = "0.0.2"
-RELEASE_DATE = "alpha 2"
+VERSION = "0.1.0"
+RELEASE_DATE = "2020-03-20"
 
 import re, random, sys, itertools, string, csv, os, difflib, subprocess, collections, time, uuid
 import smtplib, email.mime.text, email.mime.multipart, email.mime.application, getpass
@@ -25,11 +26,11 @@ def main():
     LIBRARY_FILENAME = sys.argv[1]
     topic = sys.argv[2]
     OUTPUT_DIRECTORY = sys.argv[3]
-    
+
     mkdirOrDie(OUTPUT_DIRECTORY)
-       
+
     init_logging( os.path.join(OUTPUT_DIRECTORY, 'log.txt') )
-    
+
     library = read_library(LIBRARY_FILENAME)
     check_library(library)
 
@@ -221,7 +222,7 @@ def read_library(input_filename):
         def file_die(msg):
             die("%s:%d: ERROR: %s" % (input_filename, i_line + 1, msg))
         file_log("read line: \"%s\"" % line)
-            
+
         match_name = None
         match = None
         for library_regexp in library_regexps:
@@ -274,7 +275,7 @@ def read_library(input_filename):
                 state.variant.correct_answers.append(state.answer.body)
             else:
                 state.variant.incorrect_answers.append(state.answer.body)
-            if(len(state.variant.answers) > 5) : 
+            if(len(state.variant.answers) > 5) :
               print "Too many answers at line %d" % state.answer.line_number
               exit(1)
         def append_to_preamble():
@@ -432,7 +433,7 @@ def mkdirOrDie(dir):
 def escapeJsonString(s):
     s = s.replace("\n","").replace("\[","$$").replace("\]","$$") # Harry modified
     return s.replace("\\","\\\\").replace("\"","\\\"") # Harry modified
-    
+
 ######################################################################
 def printJsonKeyValue(out_f, key, value):
    escapedValue = escapeJsonString(value)
@@ -452,30 +453,29 @@ def printJsonKeyValueArray(out_f, key, values):
 
 ######################################################################
 def export_one_question(question_base_directory, qi, question, i_variant, variant, topic, tags):
-   
+
    question_name = "%s_q_%d" % (topic, qi)
-   
+
    if(len(question.variants)>1):
        question_name =  "%s_v%d" % (question_name, i_variant+1)
 
    question_directory = os.path.join(question_base_directory , question_name)
-   
+   clientFilesQuestion_directory = os.path.join(question_directory, 'clientFilesQuestion')
+
    mkdirOrDie( question_directory )
-   
+
    question_json_file = os.path.join( question_directory, 'info.json')
-   
+   question_html_file = os.path.join( question_directory, 'question.html')
+
    uuidString = str( uuid.uuid5(uuid.NAMESPACE_DNS, "%s%s%d" % (variant.body , '\n'.join(variant.correct_answers) , qi ) ))
-   q_type = "MultipleChoice";
-   if( len(variant.correct_answers) > 1):
-      q_type = "Checkbox"
-   
+
    text = variant.body.rstrip()
    nofig = text.count("\\begin{center}")
-   files = ["client.js"]
-   while (nofig>0): 
+   while (nofig>0):
+      mkdirOrDie( clientFilesQuestion_directory )
       start = text.find("\\begin{center}")
       end   = text.find("\\end{center}")
-      figure_file = os.path.join( question_directory, 'figure')
+      figure_file = os.path.join( clientFilesQuestion_directory, 'figure')
       latex_file = figure_file + '.tex'
       with open(latex_file, 'w') as latex_f:
           latex_f.write("\\documentclass[11pt]{amsart}\n")
@@ -483,43 +483,63 @@ def export_one_question(question_base_directory, qi, question, i_variant, varian
           latex_f.write("\\usetikzlibrary{snakes,shapes,arrows,shapes.misc}\n")
           latex_f.write("\\pgfrealjobname{figure}\n")
           latex_f.write("\\begin{document}\n")
-          latex_f.write("\\beginpgfgraphicnamed{%s}" % question_name) 
+          latex_f.write("\\beginpgfgraphicnamed{%s}" % question_name)
           latex_f.write(text[start+14:end-1])
           latex_f.write("\n")
           latex_f.write("\\endpgfgraphicnamed\n")
           latex_f.write("\\end{document}\n")
       nofig = nofig-1
       log_and_print("generating figure for question %s" % question_name)
-      os.system('pdflatex -jobname=' + question_name + " -output-directory=" + question_directory + " -interaction=nonstopmode" + " %s" % figure_file)
-      figure_file = os.path.join( question_directory, question_name)
+      os.system('pdflatex -jobname=' + question_name + " -output-directory=" + clientFilesQuestion_directory + " -interaction=nonstopmode" + " %s" % figure_file)
+      figure_file = os.path.join( clientFilesQuestion_directory, question_name)
       os.system('gs -dNOCACHE -q -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r300 -sOutputFile=%s %s' % (figure_file + '.png', figure_file + '.pdf'))
       log_and_print("finished generating figure\n")
-      fig_html = "<p></p><img src=\"<% print(questionFile(\"" + question_name + ".png\")) %>\" width=\"400px\" class=\"img-responsive center-block\" /><p></p>"
+      fig_html = "<p><pl-figure file-name=\"%s.png\"></pl-figure><p>" % question_name
+
       text = text.replace(text[start:end+13],fig_html)
-      files =  files + [question_name + ".png"]
+
    with open(question_json_file, 'w') as out_f:
       out_f.write("{\n")
-      
+
       printJsonKeyValue(out_f, "uuid", uuidString)
       printJsonKeyValue(out_f, "title", "Question")
       printJsonKeyValue(out_f, "topic", topic)
       printJsonKeyValueArray(out_f, "tags", tags)
-      printJsonKeyValueArray(out_f, "clientFiles", files)
-      printJsonKeyValue(out_f, "type", q_type)
-
-      out_f.write("\"options\": {\n")     
-      printJsonKeyValue(out_f,"text", text)
-      printJsonKeyValueArray(out_f, "correctAnswers", variant.correct_answers)
-      printJsonKeyValueArray(out_f, "incorrectAnswers", variant.incorrect_answers)
-      out_f.write("\"numberAnswers\": %d\n" % len(variant.answers) )
-      out_f.write("}\n") # end of options object
+      out_f.write('"type": "v3"\n')
       out_f.write("}") # end of question object
-      return question_name
-      
+
+   with open(question_html_file, 'w') as out_f:
+       out_f.write("<pl-question-panel>\n")
+       out_f.write(text)
+       out_f.write("\n</pl-question-panel>\n")
+
+       element = False
+       if( len(variant.correct_answers) > 1):
+          element = "pl-checkbox"
+       elif ( len(variant.correct_answers) == 1):
+          element = "pl-multiple-choice"
+
+       if (element):
+           out_f.write("<%s answers-name=\"ans\">\n" % element)
+
+           for a in variant.answers:
+               out_f.write("<pl-answer")
+               if (a.correct):
+                   out_f.write(" correct=\"true\"")
+               out_f.write(">%s</pl-answer>\n" % a.body)
+
+           out_f.write("</%s>\n" % element)
+
+       if (variant.solution):
+          out_f.write("\n<pl-answer-panel><br><br>\n")
+          out_f.write(variant.solution)
+          out_f.write("\n</pl-answer-panel>\n")
+
+   return question_name
 
 def write_qids(OUTPUT_DIRECTORY, topic, qids):
     qid_file = os.path.join( OUTPUT_DIRECTORY, "%s_qids.txt" % topic)
-     
+
     with open(qid_file, 'w') as out_f:
         out_f.write("\"")
         out_f.write('\",\n\"'.join(qids))
@@ -536,17 +556,17 @@ def export_library(OUTPUT_DIRECTORY,library, topic,tags,LIBRARY_FILENAME):
         log_and_print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
         for question in zone.questions:
             for (i_variant, variant) in enumerate(question.variants):
-                
+
                 qids.append( export_one_question(question_base_directory, qi, question, i_variant, variant, topic, tags) )
 
             total_points += question.points
             qi = qi + 1
-    
-    write_qids(OUTPUT_DIRECTORY, topic,qids)         
+
+    write_qids(OUTPUT_DIRECTORY, topic,qids)
     log_and_print("Total points: %g" % total_points)
 
     log("Successfully exported library")
-    
+
     #log_and_print("testing latex on %s" % LIBRARY_FILENAME)
     #os.system('pdflatex ' + LIBRARY_FILENAME + " %s" % OUTPUT_DIRECTORY)
     #log_and_print("finished testing latex")

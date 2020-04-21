@@ -16,15 +16,28 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control pl-string-input-input" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{{raw_submitted_answer}}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{placeholder}}" />
+        <input name="{{name}}" type="text" class="form-control pl-string-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{{raw_submitted_answer}}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{placeholder}}" />
         <span class="input-group-append">
-            {{#suffix}}<span class="input-group-text">{{suffix}}</span>{{/suffix}}
-            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="String" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
+
+            {{#show_info}}
+                <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="String" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-            </a>
+            {{/show_info}}
+            {{^show_info}}
+                <span class="d-flex align-items-center">
+            {{/show_info}}
+            
+            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            {{#show_info}}
+                </a>
+            {{/show_info}}
+            {{^show_info}}
+                </span>
+            {{/show_info}}
         </span>
     </span>
 {{#inline}}</span>{{/inline}}

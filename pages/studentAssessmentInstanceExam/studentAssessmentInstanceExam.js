@@ -34,6 +34,10 @@ router.post('/', function(req, res, next) {
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
         var closeExam;
         if (req.body.__action == 'grade') {
+            if (!res.locals.assessment.allow_real_time_grading) {
+                next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+                return;
+            }
             closeExam = false;
         } else if (req.body.__action == 'finish') {
             closeExam = true;

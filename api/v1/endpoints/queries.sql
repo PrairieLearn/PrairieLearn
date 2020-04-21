@@ -78,6 +78,32 @@ SELECT
 FROM
     object_data;
 
+-- BLOCK select_instance_questions
+WITH object_data AS (
+    SELECT
+        q.id AS question_id,
+        q.qid AS question_name,
+        iq.id AS instance_question_id,
+        iq.number AS instance_question_number,
+        aq.max_points AS assessment_question_max_points,
+        iq.points AS instance_question_points,
+        iq.score_perc AS instance_question_score_perc
+    FROM
+        assessment_instances AS ai
+        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+    WHERE
+        ai.id = $assessment_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY instance_question_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
 -- BLOCK select_submissions
 WITH object_data AS (
     SELECT

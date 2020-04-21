@@ -1,4 +1,5 @@
-<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4">
+<div class="mb-4">
+<nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">
     <span class="navbar-brand-label">PrairieLearn</span>
     <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
@@ -124,3 +125,18 @@ if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
 </ul>
 </div>
 </nav>
+<% // Mapping navPage to navtab sets
+const navPagesTabs = {
+    instance_admin: 'navTabs/instructorInstanceAdmin',
+    course_admin: 'navTabs/instructorCourseAdmin',
+    assessment: 'navTabs/instructorAssessment',
+    question: 'navTabs/instructorQuestion'
+};
+// If navPage matches any of the keys in navPagesTabs, include the page given by its value
+if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
+    <!-- Instructor navigation tabs -->
+    <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
+        <%- include(navPagesTabs[navPage]); %>
+    </ul>
+<% } %>
+</div>
