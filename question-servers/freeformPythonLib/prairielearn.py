@@ -762,7 +762,7 @@ def string_to_2darray(s, allow_complex=True):
         #   Example:
         #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
 
-        # Split on semicolon (treat comma as space)
+        # Split on semicolon
         s = s.replace(',', ' ').split(';')
 
         # Get number of rows
@@ -785,7 +785,7 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space
+            # Split on space (treat comma as space)
             s_row = s[i].split()
 
             # Return error if current row has more or less columns than first row
