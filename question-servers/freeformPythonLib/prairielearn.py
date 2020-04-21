@@ -779,10 +779,10 @@ def string_to_2darray(s, allow_complex=True):
         tokens = re.split(matlab_delimiter_regex, s[0])
         n = len(tokens)
 
-        # Ignore first/last if empty (occurs when row leads/trails with valid delimiter)
-        if not tokens[0]:
+        # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+        if n > 0 and not tokens[0]:
             n -= 1
-        if not tokens[-1]:
+        if n > 0 and not tokens[-1]:
             n -= 1
 
         # Return error if first row has no columns
@@ -798,14 +798,14 @@ def string_to_2darray(s, allow_complex=True):
             # Split row
             s_row = re.split(matlab_delimiter_regex, s[i])
 
-            # Ignore first/last if empty (occurs when row leads/trails with valid delimiter)
-            if not s_row[0]:
+            # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+            if s_row and not s_row[0]:
                 s_row.pop(0)
-            if not s_row[-1]:
+            if s_row and not s_row[-1]:
                 s_row.pop(-1)
 
             # Return error if current row has more or less columns than first row
-            if (len(s_row) != n):
+            if len(s_row) != n:
                 return (None, {'format_error': 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1)})
 
             # Iterate over columns
