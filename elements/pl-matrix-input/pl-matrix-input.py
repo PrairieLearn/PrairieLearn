@@ -330,7 +330,7 @@ def test(element_html, data):
                     '[1; 2, 3]',
                     '[1, 2; 3]',
                 ],
-                'imbalanced brackets': [
+                'unbalanced brackets': [
                     '[1 2 3',
                     '1 2 3]',
                     '[1, 2, 3',
