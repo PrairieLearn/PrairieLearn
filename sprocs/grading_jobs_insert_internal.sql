@@ -45,7 +45,7 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
     IF grading_method != 'Internal' THEN
-        RAISE EXCEPTION 'grading_method is not Internal for submisison_id: %', submission_id;
+        RAISE EXCEPTION 'grading_method is not Internal for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################

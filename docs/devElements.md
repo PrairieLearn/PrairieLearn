@@ -81,7 +81,7 @@ Key | Type | Description
 `data["options"]` | dict | Any options associated with the question.
 `data["raw_submitted_answers"]` | dict | The answer submitted by the student before parsing.
 `data["editable"]` | boolean | Whether the question is currently in an editable state.
-`data["panel"]` | string | Which panel is being rendered (`question`, `submisison`, or `answer`).
+`data["panel"]` | string | Which panel is being rendered (`question`, `submission`, or `answer`).
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
