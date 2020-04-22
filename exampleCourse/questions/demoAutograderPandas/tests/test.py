@@ -7,6 +7,6 @@ class Test(PrairieLearnTestCase):
     @name("df")
     def test_0(self):
         if feedback.check_dataframe("df", self.ref.df, self.st.df, display_input=True):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)

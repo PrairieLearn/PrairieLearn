@@ -7,27 +7,27 @@ from functools import wraps
 class Test(PrairieLearnTestCase):
     @points(1)
     @name('Check fib(0)')
-    def test_zero(self):
+    def test_0(self):
         user_val = feedback.call_user(self.st.fib, 0)
         if feedback.check_scalar("fib(0)", 0, user_val):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)
 
     @points(1)
     @name('Check fib(1)')
-    def test_one(self):
+    def test_1(self):
         user_val = feedback.call_user(self.st.fib, 1)
         if feedback.check_scalar("fib(1)", 1, user_val):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)
 
     @points(3)
     @name('Check fibonacci of an integer > 1')
-    def test_integer(self):
+    def test_2(self):
         user_val = feedback.call_user(self.st.fib, 7)
         if feedback.check_scalar("fib(1)", 13, user_val):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)

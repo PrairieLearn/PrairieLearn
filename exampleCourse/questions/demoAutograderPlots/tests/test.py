@@ -7,6 +7,6 @@ class Test(PrairieLearnTestCaseWithPlot):
     @name("plot")
     def test_0(self):
         if feedback.check_plot('plot', self.ref.plot, self.st.plot, check_axes_scale='xy'):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)

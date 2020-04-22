@@ -52,7 +52,26 @@ class Feedback:
         cls.test = test
 
     @classmethod
+    def set_percent(cls, percentage):
+        """
+        Feedback.set_percent(percentage)
+
+        Set the percent correctness for the test case, should be a floating point value between 0 and 1.
+        """
+        if percentage < 0:
+            percentage = 0.0
+        elif percentage > 1:
+            percentage = 1.0
+
+        cls.test.points = percentage
+        
+    @classmethod
     def set_points(cls, points):
+        """
+        Feedback.set_points(points)
+
+        Deprecated, don't use this because it's mis-named in my opinion.
+        """
         cls.test.points = points
 
     @classmethod

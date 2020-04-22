@@ -101,7 +101,10 @@ class PrairieLearnTestCase(unittest.TestCase):
     @not_repeated
     @points(0)
     @name('Student Code')
-    def test_print_student_code(self):
+    def test_zzz_print_student_code(self):
+        """
+        Test cases are alphabetically ordered, so add a buncha z's in the name to display student code last
+        """
         print_student_code(self.student_code_file)
 
 

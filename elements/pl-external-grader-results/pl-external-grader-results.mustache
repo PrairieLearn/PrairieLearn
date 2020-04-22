@@ -104,12 +104,12 @@
                   <li class="list-group-item">
                       {{#text_outputs}}
                           {{#feedback}}
-                              <p><div><strong>Feedback</strong></div></p>
-                              <p><pre class="bg-dark text-white rounded p-3 mb-0">{{{.}}}</pre></p>
+                              <div class="mt-1 mb-3"><strong>Feedback</strong></div>
+                              <pre class="bg-dark text-white rounded p-3 mb-2">{{{.}}}</pre>
                           {{/feedback}}
                           {{#code_output}}
-                              <p><div><strong>Code Output</strong></div></p>
-                              <p><pre class="bg-dark text-white rounded p-3 mb-0">{{{.}}}</pre></p>
+                              <div class="mt-1 mb-3"><strong>Code Output</strong></div>
+                              <pre class="bg-dark text-white rounded p-3 mb-2">{{{.}}}</pre>
                           {{/code_output}}
                       {{/text_outputs}}
                   </li>
