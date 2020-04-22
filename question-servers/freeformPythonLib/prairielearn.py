@@ -722,7 +722,7 @@ def string_to_2darray(s, allow_complex=True):
     number_of_left_brackets = s.count('[')
     number_of_right_brackets = s.count(']')
     if number_of_left_brackets != number_of_right_brackets:
-        return (None, {'format_error': 'Unbalanced square brackets.'})
+        return (None, {'format_error': 'Imbalanced square brackets.'})
 
     # If there are no brackets, treat as scalar
     if number_of_left_brackets == 0:
