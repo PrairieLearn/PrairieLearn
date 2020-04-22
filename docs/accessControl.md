@@ -98,7 +98,7 @@ For students taking remote exams it can be helpful to have an enforced time limi
 ]
 ```
 
-The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits.
+The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate`, not `timeLimitMin`.
 
 **Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
 
