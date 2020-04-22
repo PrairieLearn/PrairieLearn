@@ -964,7 +964,7 @@ def matlab_to_numpy(a):
         matlab_delimiter_regex = re.compile(r'\s*[\s|,]\s*')
 
         # Get number of columns by splitting first row
-        tokens = re.split(matlab_delimiter_regex, s[0])
+        tokens = re.split(matlab_delimiter_regex, a[0])
         n = len(tokens)
 
         # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
@@ -984,7 +984,7 @@ def matlab_to_numpy(a):
         for i in range(0, m):
 
             # Split row
-            s = re.split(matlab_delimiter_regex, s[i])
+            s = re.split(matlab_delimiter_regex, a[i])
 
             # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
             if s and not s[0]:
