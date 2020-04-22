@@ -22,13 +22,15 @@
               <h4 class="modal-title" id="deleteAssessmentInstanceModalLabel">Delete assessment instance</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to delete assessment
-              instance <span class="modal-number"></span>
-              of <strong><%= assessment_set.name
-              %> <%= assessment.number %></strong>
-              for <strong><span class="modal-name"></span></strong>
-              (<span class="modal-uid"></span>) with a score
-              of <span class="modal-score-perc"></span>%?
+              Are you sure you want to delete assessment instance
+              <span class="modal-number"></span> of
+              <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong> for
+              <strong><span class="modal-name"></span></strong>
+              (<span class="modal-uid"></span>) started at
+              <strong><span class="modal-date"></span></strong> with a
+              score of
+              <strong><span class="modal-score-perc"></span>%</strong>?
             </div>
             <div class="modal-footer">
               <form name="delete-form" method="POST">
@@ -49,12 +51,14 @@
             var uid = button.data('uid'); // Extract info from data-* attributes
             var name = button.data('name');
             var number = button.data('number');
+            var date_formatted = button.data('date-formatted');
             var score_perc = button.data('score-perc');
             var assessment_instance_id = button.data('assessment-instance-id');
             var modal = $(this);
             modal.find('.modal-uid').text(uid);
             modal.find('.modal-name').text(name);
             modal.find('.modal-number').text(number);
+            modal.find('.modal-date').text(date_formatted);
             modal.find('.modal-score-perc').text(score_perc);
             modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
         });
@@ -104,6 +108,7 @@
                 <th class="text-center">Role</th>
                 <th class="text-center">Instance</th>
                 <th class="text-center">Score</th>
+                <th class="text-center">Date started</th>
                 <th class="text-center">Duration</th>
                 <th class="text-center">Remaining</th>
                 <th class="text-center"></th>
@@ -118,6 +123,7 @@
                 <td class="text-center"><%= row.role %></td>
                 <td class="text-center"><%= row.number %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center"><%= row.date_formatted %></td>
                 <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center"><%= row.time_remaining %></td>
                 <td class="text-center">
@@ -185,6 +191,7 @@
                          data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
                          data-uid="<%= row.uid %>" data-name="<%= row.name %>"
                          data-number="<%= row.number %>"
+                         data-date-formatted="<%= row.date_formatted %>"
                          data-score-perc="<%= Math.floor(row.score_perc) %>"
                          data-assessment-instance-id="<%= row.assessment_instance_id %>"
                          >
