@@ -34,7 +34,7 @@ digraph question_flow {
     ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false\lsubmission.score = null\lsubmission.partial_scores = null"];
     gradable_grading_job [label="Grading job:\l\lgrading_job.gradable = true\lgrading_job.date = <value>\lgrading_job.score = <value>\lgrading_job.partial_scores = <value>\lgrading_job.correct = <value>"];
     gradable_submission [label="Gradable submission:\l\lsubmission.broken = false\lsubmission.gradable = true"];
-    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmision.score = <value>\lsubmission.feedback = <value>"];
+    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmission.score = <value>\lsubmission.feedback = <value>"];
 
     start -> generating;
     generating -> broken_variant [label="question\lcode error"];
