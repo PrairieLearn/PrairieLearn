@@ -960,8 +960,18 @@ def matlab_to_numpy(a):
         if (m == 0):
             return (None, 'Matrix has no rows.')
 
-        # Get number of columns by splitting first row on space (treat comma as space)
-        n = len(a[0].replace(',', ' ').split())
+        # Regex to split rows a la MATLAB
+        matlab_delimiter_regex = re.compile(r'\s*[\s|,]\s*')
+
+        # Get number of columns by splitting first row
+        tokens = re.split(matlab_delimiter_regex, s[0])
+        n = len(tokens)
+
+        # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+        if n > 0 and not tokens[0]:
+            n -= 1
+        if n > 0 and not tokens[-1]:
+            n -= 1
 
         # Return error if first row has no columns
         if (n == 0):
@@ -973,8 +983,14 @@ def matlab_to_numpy(a):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space (treat comma as space)
-            s = a[i].replace(',', ' ').split()
+            # Split row
+            s = re.split(matlab_delimiter_regex, s[i])
+
+            # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+            if s and not s[0]:
+                s.pop(0)
+            if s and not s[-1]:
+                s.pop(-1)
 
             # Return error if current row has more or less columns than first row
             if (len(s) != n):
