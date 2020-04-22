@@ -773,7 +773,7 @@ def string_to_2darray(s, allow_complex=True):
             return (None, {'format_error': 'Matrix has no rows.'})
 
         # Regex to split rows a la MATLAB
-        matlab_delimiter_regex = re.compile(r'\s*[\s|,]\s*')
+        matlab_delimiter_regex = re.compile(r'\s*[\s,]\s*')
 
         # Get number of columns by splitting first row
         tokens = re.split(matlab_delimiter_regex, s[0])
