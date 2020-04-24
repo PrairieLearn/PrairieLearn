@@ -1,11 +1,11 @@
-var ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 
-var config = require('../lib/config');
-var csrf = require('../lib/csrf');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const config = require('../lib/config');
+const csrf = require('../lib/csrf');
+const authLib = require('../lib/auth');
+const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     res.locals.is_administrator = false;
@@ -35,19 +35,16 @@ module.exports = function(req, res, next) {
             return next(new Error('invalid load_test_token'));
         }
 
-        let params = [
-            'loadtest@prairielearn.org',
-            'Load Test',
-            '999999999',
-            'dev',
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
-            if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.authn_institution = result.rows[0].institution;
-            res.locals.authn_provider_name = 'LoadTest';
-            res.locals.is_administrator = result.rows[0].is_administrator;
+        let params = {
+            uid: 'loadtest@prairielearn.org',
+            name: 'Load Test',
+            uin: '999999999',
+            provider: 'LoadTest',
+        };
 
+        authLib.set_pl_authn(res, params, (err, user, authnToken) => {
+            if (ERR(err, next)) return;
+            authLib.set_locals_authn(res, user, authnToken);
             let params = {
                 uid: 'loadtest@prairielearn.org',
                 course_short_name: 'XC 101',
@@ -65,36 +62,19 @@ module.exports = function(req, res, next) {
 
         // bypass auth for local /pl/ serving
         if (config.authType === 'none') {
-            var authUid = 'dev@illinois.edu';
-            var authName = 'Dev User';
-            var authUin = '000000000';
-
-            if (req.cookies.pl_test_user == 'test_student') {
-                authUid = 'student@illinois.edu';
-                authName = 'Student User';
-                authUin = '000000001';
-            }
-            let params = {
-                uid: authUid,
-                name: authName,
-                uin: authUin,
-                provider: 'dev',
-            };
-            sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+            return authLib.devmodeLogin(req, res, (err, _dbUser, _authnData) => {
                 if (ERR(err, next)) return;
-                res.locals.authn_user = result.rows[0].user;
-                res.locals.is_administrator = result.rows[0].is_administrator;
                 next();
             });
-            return;
         }
 
-        // not in authType == none
         // if no authn cookie then redirect to the login page
         res.cookie('preAuthUrl', req.originalUrl);
         res.redirect('/pl/login');
         return;
     }
+
+    // Validate auth cookie
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
     if (authnData == null || authnData.authn_provider_name == null) { // force re-authn if authn_provider_name is missing (for upgrade)
         // if authn cookie check failed then clear the cookie and redirect to login
@@ -103,17 +83,6 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    let params = {
-        user_id: authnData.user_id,
-    };
-    sqldb.query(sql.select_user, params, (err, result) => {
-        if (ERR(err, next)) return;
-        if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
-        res.locals.authn_user = result.rows[0].user;
-        res.locals.authn_institution = result.rows[0].institution;
-        res.locals.authn_provider_name = authnData.authn_provider_name;
-        res.locals.is_administrator = result.rows[0].is_administrator;
-        res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
-        next();
-    });
+    // Get authn data from database, put in res.locals
+    authLib.set_locals_authn(res, authnData, next);
 };
