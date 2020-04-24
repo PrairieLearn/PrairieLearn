@@ -75,7 +75,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 By default, the grader will look for a gradable file named `user_code.py`, but this can be changed in the test suite.
 
-Expected variables can also be displayed to the user with the `<pl-variable-description>` element.  By setting the `variables_category` attribute to either `names_for_user` or `names_from_user`, both sets of variables can be shown.
+Expected variables can also be displayed to the user with the `<pl-external-grader-variables>` element.  By setting the `variables-name` attribute to either `names_for_user` or `names_from_user`, both sets of variables can be shown.
 
 Full example:
 
@@ -84,10 +84,10 @@ Full example:
   <p> ... Question prompt ... </p>
 
   <p>The setup code gives the following variables:</p>
-  <p><pl-variable-description variables-category="names_for_user"></pl-variable-description></p>
+  <p><pl-external-grader-variables variables-category="names_for_user"></pl-external-grader-variables></p>
 
   <p>Your code snippet should define the following variables:</p>
-  <pl-variable-description variables-category="names_from_user"></pl-variable-description>
+  <pl-external-grader-variables variables-category="names_from_user"></pl-external-grader-variables>
   <pl-file-editor
     file_name="user_code.py"
     ace_mode="ace/mode/python"
@@ -140,13 +140,13 @@ def test_0(self):
        Feedback.set_points(1)
    else:
        Feedback.set_points(0)
-``` 
+```
 
 Note that `Feedback.set_points()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_points(0.5)` is run, the student will be awarded 5 points.
 
 ## General Tips and Gotchas
 
-Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly. 
+Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
 
 Be careful not to switch the ordering of the student and reference arguments.  The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
 

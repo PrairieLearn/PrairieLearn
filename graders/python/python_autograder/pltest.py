@@ -35,7 +35,7 @@ def add_files(results):
 
 if __name__ == '__main__':
     try:
-        from filenames.test import Test
+        from filenames.test import Test as test_case
 
         with open('filenames/output-fname.txt', 'r') as f:
             output_fname = f.read()
@@ -46,8 +46,8 @@ if __name__ == '__main__':
         all_results = []
         format_errors = []
         gradable = True
-        for i in range(Test.total_iters):
-            suite = loader.loadTestsFromTestCase(Test)
+        for i in range(test_case.total_iters):
+            suite = loader.loadTestsFromTestCase(test_case)
             result = PrairieTestResult()
             suite.run(result)
             all_results.append(result.getResults())
@@ -73,7 +73,7 @@ if __name__ == '__main__':
             results = all_results[0]
 
         # Compile total number of points
-        max_points = Test.get_total_points()
+        max_points = test_case.get_total_points()
         earned_points = sum([test['points'] for test in results])
 
         # load output files to results
@@ -98,7 +98,7 @@ if __name__ == '__main__':
             grading_result['format_errors'] = format_errors
 
         all_img_num = 0
-        for img_iter in range(Test.total_iters):
+        for img_iter in range(test_case.total_iters):
             img_num = 0
             has_img = True
             while has_img:

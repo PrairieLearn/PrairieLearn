@@ -56,6 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
+- ['pl-external-grader-variables'](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1252,6 +1253,64 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
+## `pl-external-grading-variables` element
+
+Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
+
+```json
+[
+	{
+    	"name": "variable 1",
+        "description": "A human readable description of this variable",
+        "type": "A human readable type of this variable"
+    },
+    {
+    	"name": "variable 2",
+        "...": "..."
+    }
+]
+```
+
+#### Sample Element
+
+![](elements/pl-external-grader-variables.png)
+
+**question.html**
+```html
+<p>The setup code gives the following variables:</p>
+<pl-external-grader-variables variables-name="names_for_user"></pl-external-grader-variables>
+
+<p>Your code snippet should define the following variables:</p>
+<pl-external-grader-variables variables-name="names_from_user"></pl-external-grader-variables>
+```
+
+**server.py**
+```python
+def generate(data):
+    data["params"]["names_for_user"] = [
+        {"name": "n", "description": "Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+        {"name": "A", "description": "Matrix $\mathbf{A}$.", "type": "numpy array"},
+        {"name": "b", "description": "Vector $\mathbf{b}$.", "type": "numpy array"}
+    ]
+    data["params"]["names_from_user"] = [
+        {"name": "x", "description": "Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+    ]
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`variables-name` | string | `None` | The list of variables to display, the format for which is given above.
+
+#### Example implementations
+
+- [demoCodeEditorAutograded]
+- [demoCodeUploadAutograded]
+- [demoAutograderSquare]
+- [demoAutograderNumpy]
+- [demoAutograderPandas]
+- [demoAutograderPlots]
 
 ## Conditional Elements
 
