@@ -369,7 +369,7 @@ def test(element_html, data):
     else:
         m, n = np.shape(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'incorrect'], [5, 5, 1])[0]
+    result = data['test_type']
 
     number_of_correct = 0
     feedback = {}
