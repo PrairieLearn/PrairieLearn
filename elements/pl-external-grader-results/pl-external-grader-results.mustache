@@ -48,12 +48,12 @@
       {{/has_output}}
       {{#has_images}}
           <ul class="list-group list-group-flush">
-              {{#images_data}}
+              {{#images}}
                   <li class="list-group-item">
                       <div><strong>Figure</strong></div>
                       <img src="{{.}}"/>
                   </li>
-              {{/images_data}}
+              {{/images}}
           </ul>
       {{/has_images}}
     {{/has_message_or_output_or_image}}
@@ -88,40 +88,20 @@
                 <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
                 <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
               {{/show_points}}
-              {{#has_message}}
-                <li class="list-group-item">
-                  <div><strong>Message</strong></div>
-                  <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
-                </li>
-              {{/has_message}}
-              {{#has_output}}
-                <li class="list-group-item">
-                  <div><strong>Output</strong></div>
-                  <pre class="output text-white rounded p-3 mb-0"><code>{{{output}}}</code></pre>
-                </li>
-              {{/has_output}}
-              {{#has_text_outputs}}
+              {{#has_feedback}}
                   <li class="list-group-item">
-                      {{#text_outputs}}
-                          {{#feedback}}
-                              <div class="mt-1 mb-3"><strong>Feedback</strong></div>
-                              <pre class="bg-dark text-white rounded p-3 mb-2">{{{.}}}</pre>
-                          {{/feedback}}
-                          {{#code_output}}
-                              <div class="mt-1 mb-3"><strong>Code Output</strong></div>
-                              <pre class="bg-dark text-white rounded p-3 mb-2">{{{.}}}</pre>
-                          {{/code_output}}
-                      {{/text_outputs}}
+                      <div class="mt-1 mb-3"><strong>Feedback</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{feedback}}}</pre>
                   </li>
-              {{/has_text_outputs}}
-              {{#has_imgsrcs}}
+              {{/has_feedback}}
+              {{#has_images}}
                   <li class="list-group-item">
+                      {{#images}}
                       <div><strong>Figure</strong></div>
-                      {{#imgsrcs}}
-                          <img src="{{.}}"/>
-                      {{/imgsrcs}}
+                      <img src="{{.}}"/>
+                      {{/images}}
                   </li>
-              {{/has_imgsrcs}}
+              {{/has_images}}
             </ul>
           </div>
         </div>

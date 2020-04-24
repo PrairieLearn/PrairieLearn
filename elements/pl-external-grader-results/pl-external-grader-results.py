@@ -69,14 +69,9 @@ def render(element_html, data):
                 html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
                 html_params['output'] = ansi_to_html(results.get('output', None))
-
-                num_images = results.get('num_images', 0)
-                images_data = []
-                for img_num in range(num_images):
-                    images_data.append(results.get('image_' + str(img_num)))
-                html_params['images_data'] = images_data
-                html_params['has_images'] = num_images > 0
-                html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or (num_images > 0))
+                html_params['images'] = results.get('images', [])
+                html_params['has_images'] = len(html_params['images']) > 0
+                html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or html_params['has_images'])
 
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
@@ -102,10 +97,8 @@ def render(element_html, data):
                         test = {}
                         test['index'] = index
                         test['name'] = results_test.get('name', '')
-                        test['has_message'] = bool(results_test.get('message', None))
-                        test['message'] = ansi_to_html(results_test.get('message', None))
-                        test['has_output'] = bool(results_test.get('output', None))
-                        test['output'] = ansi_to_html(results_test.get('output', None))
+                        test['has_feedback'] = bool(results_test.get('feedback', None))
+                        test['feedback'] = ansi_to_html(results_test.get('feedback', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
                         test['show_points'] = not tests_missing_points
@@ -120,23 +113,8 @@ def render(element_html, data):
 
                             test['results_color'] = '#4CAF50' if correct else '#F44336'
                             test['results_icon'] = 'fa-check' if correct else 'fa-times'
-                        test['imgsrcs'] = []
-                        test['text_outputs'] = {'feedback': [], 'code_output': []}
-                        for f in results_test.get('files', []):
-                            if (f['name'][-3:] == 'png'):
-                                test['imgsrcs'].append(f['imgsrc'])
-                            if ('feedback' in f['name']):
-                                test['text_outputs']['feedback'].append(ansi_to_html(f['text_output']))
-                            if ('output' in f['name']):
-                                test['text_outputs']['code_output'].append(ansi_to_html(f['text_output']))
-
-                        test['has_imgsrcs'] = True
-                        if not test['imgsrcs']:
-                            test['has_imgsrcs'] = False
-
-                        test['has_text_outputs'] = True
-                        if not test['text_outputs']:
-                            test['has_text_outputs'] = False
+                        test['images'] = results_test.get('images', [])
+                        test['has_images'] = len(test['images']) > 0
                         tests.append(test)
 
                     html_params['tests'] = tests

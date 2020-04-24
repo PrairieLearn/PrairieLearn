@@ -21,15 +21,15 @@ def add_files(results):
         if os.path.exists(image_fname):
             with open(image_fname, 'r') as content_file:
                 imgsrc = content_file.read()
-            test["files"].append({"name":"image_" + test["filename"] + ".png",
-                                  "imgsrc":imgsrc})
+            if not 'images' in test:
+                test['images'] = []
+            test['images'].append(imgsrc)
             os.remove(image_fname)
         feedback_fname = BASE_DIR + "feedback_" + test["filename"] + ".txt"
         if os.path.exists(feedback_fname):
             with open(feedback_fname, 'r', encoding='utf-8') as content_file:
-                text_output = content_file.read()
-            test["files"].append({"name":"feedback_" + test["filename"] + ".txt",
-                                  "text_output":text_output})
+                text_feedback = content_file.read()
+            test['feedback'] = text_feedback
             os.remove(feedback_fname)
 
 
@@ -97,23 +97,23 @@ if __name__ == '__main__':
         if len(format_errors) > 0:
             grading_result['format_errors'] = format_errors
 
+        # Save images
+        grading_result['images'] = []
         all_img_num = 0
         for img_iter in range(test_case.total_iters):
             img_num = 0
-            has_img = True
-            while has_img:
+            while True:
+                # Save each image as image_{test iteration}_{image number}
                 img_in = "image_%d_%d.png" % (img_iter, img_num)
                 if os.path.exists(img_in):
                     with open(img_in, 'r') as content_file:
                         img_out = "image_%d" % all_img_num
-                        grading_result[img_out] = content_file.read()
+                        grading_result['images'].append(content_file.read())
                     os.remove("/grade/run/%s" % img_in)
-                    img_num += 1
-                    all_img_num += 1
+                    img_num += 1; all_img_num += 1
                 else:
-                    has_img = False
+                    break
 
-        grading_result['num_images'] = all_img_num
         with open(output_fname, mode='w', encoding='utf-8') as out:
             json.dump(grading_result, out)
     except:
