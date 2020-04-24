@@ -130,6 +130,77 @@
                     "type": "boolean"
                 }
             }
+        },
+        "dependencies": {
+            "description": "The question's client-side dependencies.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "coreStyles": {
+                    "description": "The styles required by this question from /public/stylesheets.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /public/stylesheets.",
+                        "type": "string"
+                    }
+                },
+                "coreScripts": {
+                    "description": "The scripts required by this question from /public/javascripts.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /public/javascripts.",
+                        "type": "string"
+                    }
+                },
+                "nodeModulesStyles": {
+                    "description": "The styles required by this question from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
+                "nodeModulesScripts": {
+                    "description": "The scripts required by this question from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesCourseStyles": {
+                    "description": "The styles required by this question from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesCourseScripts": {
+                    "description": "The styles required by this question from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesQuestionStyles": {
+                    "description": "The styles required by this question from clientFilesQuestion.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in the clientFilesQuestion.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesQuestionScripts": {
+                    "description": "The scripts required by this question from clientFilesQuestion.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in the clientFilesQuestion.",
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }

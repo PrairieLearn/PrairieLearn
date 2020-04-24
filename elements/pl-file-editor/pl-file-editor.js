@@ -1,5 +1,6 @@
 /* eslint-env browser,jquery */
-/* global ace */
+/* global ace, showdown, MathJax */
+
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
     this.element = $(elementId);
@@ -43,6 +44,23 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setOption('maxLines', Infinity);
     }
 
+    if (options.preview == 'markdown') {
+        let renderer = new showdown.Converter();
+
+        this.editor.session.on('change', () => {
+            this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+        });
+        this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+    } else if (options.preview == 'html') {
+        this.editor.session.on('change', () => {
+            this.updatePreview(this.editor.getValue());
+        });
+        this.updatePreview(this.editor.getValue());
+    } else if (options.preview !== undefined) {
+        let preview = this.element.find('.preview')[0];
+        preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
+    }
+
     var currentContents = '';
     if (options.currentContents) {
         currentContents = this.b64DecodeUnicode(options.currentContents);
@@ -50,6 +68,22 @@ window.PLFileEditor = function(uuid, options) {
     this.setEditorContents(currentContents);
 
     this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.updatePreview = function(html_contents) {
+    const default_preview_text = '<p>Begin typing above to preview</p>';
+    let preview = this.element.find('.preview')[0];
+
+    if (html_contents.trim().length == 0) {
+        preview.innerHTML = default_preview_text;
+    } else {
+        preview.innerHTML = html_contents;
+        if (html_contents.includes('$') ||
+            html_contents.includes('\\(') || html_contents.includes('\\)') ||
+            html_contents.includes('\\[') || html_contents.includes('\\]')) {
+            MathJax.typesetPromise();
+        }
+    }
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function() {

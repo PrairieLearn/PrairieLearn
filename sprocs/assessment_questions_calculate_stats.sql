@@ -71,7 +71,7 @@ quintile_scores_as_array AS (
 ),
 aq_stats AS (
     SELECT
-        greatest(0, least(100, avg(question_stats_by_user.score_perc)))                     AS mean_question_score,
+        least(100, greatest(0, avg(question_stats_by_user.score_perc)))                     AS mean_question_score,
         sqrt(var_pop(question_stats_by_user.score_perc))                                    AS question_score_variance,
         corr(question_stats_by_user.score_perc, assessment_scores_by_user.score_perc) * 100 AS discrimination,
         avg(question_stats_by_user.some_submission_perc)                                    AS some_submission_perc,
@@ -102,7 +102,6 @@ aq_stats AS (
         question_stats_by_user
         JOIN assessment_scores_by_user USING (user_id)
 )
-
 UPDATE assessment_questions AS aq
 SET
     quintile_question_scores                      = quintile_scores_as_array.scores,

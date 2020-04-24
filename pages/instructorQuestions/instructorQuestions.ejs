@@ -18,7 +18,6 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-        <%- include('../partials/navtabs'); %>
         <div class="card mb-4">
             <div class="card-header bg-primary">
                 <div class="row align-items-center justify-content-between">
@@ -46,6 +45,7 @@
                             <th>QID</th>
                             <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
                             <th data-placeholder="Choose tag">Tags</th>
+                            <th class="filter-select filter-exact" data-placeholder="Choose version">Version</th>
                             <% if (locals.course_instance) { %>
                             <th data-placeholder="Choose assessment">Assessments</th>
                             <% } %>
@@ -67,6 +67,9 @@
                             </td>
                             <td class="align-middle">
                                 <%- include('../partials/tags', {tags: question.tags}); %>
+                            </td>
+                            <td class="align-middle">
+                                <%- include('../partials/types', {type: question.display_type}); %>
                             </td>
                             <% if (locals.course_instance) { %>
                             <td class="align-middle">
@@ -98,7 +101,7 @@
                                     <% }); %>
                                 },
                                 <% if (locals.course_instance) { %>
-                                4: {
+                                5: {
                                     <% all_assessments.forEach(function(assessment) { %>
                                     "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
                                         return /\b<%= assessment.label %>\b/.test(e);

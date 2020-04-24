@@ -1,0 +1,43 @@
+{
+    "uuid": "597176b9-9145-4226-8a77-d0973bad80df",
+    "type": "Homework",
+    "title": "Template homework - copy this to start a new HW",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "title": "Multiple-choice questions",
+            "questions": [
+
+                {"id": "templateMultipleChoiceSingleCorrect", "points": 1},
+                {"id": "templateMultipleChoiceMultipleCorrect", "points": 1, "maxPoints": 2},
+                {"id": "templateMultipleChoiceFromList", "points": 1, "maxPoints": 4},
+                {"id": "templateMultipleChoiceNumeric", "points": 1, "maxPoints": 4},
+                {"id": "templateMultipleChoiceTrueFalseFromList", "points": 1, "maxPoints": 2},
+                {"id": "templateMultipleChoiceWithFigure", "points": 1, "maxPoints": 4}
+            ]
+        },
+        {
+            "title": "Checkbox questions",
+            "questions": [
+                {"id": "templateCheckbox", "points": 1, "maxPoints": 2}
+            ]
+        },
+        {
+            "title": "Numerical questions",
+            "questions": [
+                {"id": "templateNumberInput", "points": 1, "maxPoints": 2},
+                {"id": "templateIntegerInput", "points": 1, "maxPoints": 2},
+                {"id": "templateNumberInputGradingMethod", "points": 1, "maxPoints": 2},
+                {"id": "templateNumberInputTips", "points": 1, "maxPoints": 2},
+                {"id": "templateIntegerInputWithDynamicFigure", "points": 1, "maxPoints": 4}
+            ]
+        }
+    ]
+}

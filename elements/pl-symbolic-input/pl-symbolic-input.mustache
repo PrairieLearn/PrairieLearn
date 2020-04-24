@@ -16,14 +16,27 @@
             <span class="input-group-text">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
+        <input name="{{name}}" type="text" class="form-control pl-symbolic-input-input {{^show_info}}rounded-right{{/show_info}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} {{#show_placeholder}}placeholder="{{shortinfo}}"{{/show_placeholder}} />
         <span class="input-group-append">
-            <a role="button" class="btn btn-light border" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            {{#show_info}}
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            {{/show_info}}
+            {{^show_info}}
+            <span style="display: flex; align-items: center;">
+            {{/show_info}}
+            
+            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            {{#show_info}}
             </a>
+            {{/show_info}}
+            {{^show_info}}
+            </span>
+            {{/show_info}}
         </span>
     </span>
 {{#inline}}</span>{{/inline}}
@@ -32,7 +45,8 @@
 
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
-{{#parse_error}}
+{{#error}}
+        
 <script>
     $(function(){
         $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').popover({
@@ -47,17 +61,34 @@
     });
 </script>
 <span id="pl-symbolic-input-submission-{{uuid}}">
+
+{{#parse_error}}
     {{#label}}<span>{{label}}</span>{{/label}}
-    <a role="button" class="btn btn-light btn-sm" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID <span><i class="fa fa-question-circle" aria-hidden="true"></i></span></a>
-</span>
+    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    
+    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
 {{/parse_error}}
-{{^parse_error}}
+{{#missing_input}}
+    {{#label}}<span>{{label}}</span>{{/label}}
+
+    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+{{/missing_input}}
+    
+</span>
+
+{{/error}}
+{{^error}}
 {{#label}}<span>{{label}}</span>{{/label}}
 ${{a_sub}}$
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-{{/parse_error}}
+{{/error}}
 {{#inline}}</span>{{/inline}}
 {{/submission}}
 
@@ -67,21 +98,29 @@ ${{a_tru}}$
 {{/answer}}
 
 {{#format}}
-Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
-{{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}
-<hr>
-<h5><small class='text-uppercase'>Allowable Operators</small></h5>
-<pre>{{operators}}</pre>
-<p>All operations must be explicit - examples of valid expressions are <code>cos(1)</code> and <code>2*(3)</code>. Examples of invalid expressions are <code>cos 1</code> and <code>2(3)</code>. Note that either <code>^</code> or <code>**</code> can be used for exponentiation.</p>
-<hr>
-<h5><small class='text-uppercase'>Allowable Constants</small></h5>
-<pre>{{constants}}</pre>{{#variables}}
-{{#allow_complex}}<p>Either <code>i</code> or <code>j</code> can be used to denote the imaginary unit. Examples of valid complex numbers are <code>1 + 2 * i</code> and <code>-3 * j</code>.</p>{{/allow_complex}}
-<hr>
-<h5><small class='text-uppercase'>Allowable Variables</small></h5>
-<pre>{{variables}}</pre>{{/variables}}
+<p>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
+{{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
+
+<p>
+    <strong>Allowable variables, constants, and operators:</strong><br>
+    {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+    {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+    {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
+</p>
+
+<p>All operations must be explicit:</p>
+
+<p> Example <i>valid</i> inputs: <code class="user-output">2*3</code> &nbsp; <code class="user-output">cos(1)</code> </p>
+<p> Example <i>invalid</i> inputs: <code class="user-output">2(3)</code> &nbsp; <code class="user-output">cos 1</code> </p>
+
+<p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
 {{/format}}
 
 {{#shortformat}}
 symbolic expression
 {{/shortformat}}
+
+{{#format_error}}
+    <hr>
+    {{{ format_string }}}
+{{/format_error}}

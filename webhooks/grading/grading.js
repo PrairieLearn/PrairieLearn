@@ -36,7 +36,7 @@ router.post('/', function(req, res, next) {
         };
 
         sqldb.queryOneRow(sql.update_grading_received_time, params, (err, _result) => {
-            if (ERR(err, (err) => logger.error(err))) return;
+            if (ERR(err, (err) => logger.error('Error in sql.update_grading_received_time', err))) return;
             externalGradingSocket.gradingJobStatusUpdated(jobId);
         });
 
@@ -94,18 +94,17 @@ router.post('/', function(req, res, next) {
                         ResponseContentType: 'application/json',
                     };
                     new AWS.S3().getObject(params, (err, s3Data) => {
-                        if (ERR(err, (err) => logger.error(err))) return;
+                        if (ERR(err, (err) => logger.error('Error in AWS.S3().getObject()', err))) return;
                         processResults(jobId, s3Data.Body);
                         callback(null);
                     });
                 }
             },
         ], (err) => {
-            if (ERR(err, (err) => logger.error(err))) return;
+            if (ERR(err, (err) => logger.error('Error in processing grading result', err))) return;
         });
     } else {
-        logger.error('Invalid grading event received:');
-        logger.error(data);
+        logger.error('Invalid grading event received:', data);
         return next(new Error(`Unknown grading event: ${data.event}`));
     }
 });

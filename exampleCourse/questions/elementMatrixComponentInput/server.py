@@ -11,7 +11,8 @@ def generate(data):
     sf = 2
     B = np.round(A,sf)
     x =  np.array([[1,2,3,4]])
-    long_matrix = np.array([[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]])
+    long_matrix = np.arange(1, 21).reshape((1, 20))
+    y = (2.0 ** -np.arange(1, 5)).reshape((1, 4))
 
     data["params"]["sf"] = sf
     data["params"]["in"] = pl.to_json(B)
@@ -21,5 +22,6 @@ def generate(data):
     data["correct_answers"]["out2"] = pl.to_json(B)
     data["correct_answers"]["out3"] = pl.to_json(x)
     data["correct_answers"]["out4"] = pl.to_json(long_matrix)
+    data["correct_answers"]["out5"] = pl.to_json(y)
 
     return data

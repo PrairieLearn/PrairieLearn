@@ -10,6 +10,7 @@ from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
 import colors
+import unicodedata
 
 
 def to_json(v):
@@ -388,6 +389,14 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
 
         { ..., ..., ... }
 
+    If language is 'r' and A is a 2D ndarray, the string looks like this:
+
+        matrix(c(., ., .), nrow=NUM_ROWS, ncol=NUM_COLS, byrow = TRUE)
+
+    If A is a 1D ndarray, the string looks like this:
+
+        c(., ., .)
+
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -437,8 +446,30 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
         result = result.replace('[', '{')
         result = result.replace(']', '}')
         return result
+    elif language == 'r':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        # Given as: [[1, 2, 3], [4, 5, 6]]
+        result = result.replace('[', '')
+        result = result.replace(']', '')
+        # Cast to a vector: c(1, 2, 3, 4, 5, 6)
+        result = f'c({result})'
+        if A.ndim == 2:
+            nrow = A.shape[0]
+            ncol = A.shape[1]
+            result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python", "matlab", or "mathematica"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
 
 
 # Deprecated version, keeping for backwards compatibility
@@ -598,6 +629,80 @@ def string_to_number(s, allow_complex=True):
     except Exception:
         # If that didn't work, return None
         return None
+
+
+def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+    """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
+
+    Parses a string containing a decimal number with support for answers expressing
+    as a fraction.
+
+    Returns a tuple with the parsed value in the first entry and a dictionary with
+    the intended value of "data" in the second entry.
+
+    On successful parsing, "data" will contain a 'submitted_answers' key that is the
+    JSON encoded parsed answer.
+
+    If parsing failed, the first entry will be 'None' and the "data" entry will
+    contain a 'format_errors' key.
+    """
+    data = {}
+    value = None
+
+    if a_sub is None:
+        data['format_errors'] = 'No submitted answer.'
+        return (value, data)
+
+    if a_sub.strip() == '':
+        data['format_errors'] = 'The submitted answer was blank.'
+        return (value, data)
+
+    # support FANCY division characters
+    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
+    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
+
+    or_complex = ' (or complex) ' if allow_complex else ' '
+
+    if a_sub.count('/') == 1:
+        # Specially handle fractions.
+
+        if allow_fractions:
+            a_sub_splt = a_sub.split('/')
+            try:
+                a_parse_l = string_to_number(a_sub_splt[0], allow_complex=allow_complex)
+                a_parse_r = string_to_number(a_sub_splt[1], allow_complex=allow_complex)
+
+                if a_parse_l is None or not np.isfinite(a_parse_l):
+                    raise ValueError(f'The numerator could not be interpreted as a decimal{ or_complex }number.')
+                if a_parse_r is None or not np.isfinite(a_parse_r):
+                    raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
+
+                a_frac = a_parse_l / a_parse_r
+                if not np.isfinite(a_frac):
+                    raise ValueError('The submitted answer is not a finite number.')
+
+                value = a_frac
+                data['submitted_answers'] = to_json(value)
+            except ZeroDivisionError:
+                data['format_errors'] = 'Your expression resulted in a division by zero.'
+            except Exception as error:
+                data['format_errors'] = f'Invalid format: {str(error)}'
+        else:
+            data['format_errors'] = 'Fractional answers are not allowed in this input.'
+    else:
+        # Not a fraction, just convert to float or complex
+        try:
+            a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
+            if a_sub_parsed is None:
+                raise ValueError(f'The submitted answer could not be interpreted as a decimal{ or_complex }number.')
+            if not np.isfinite(a_sub_parsed):
+                raise ValueError('The submitted answer is not a finite number.')
+            value = a_sub_parsed
+            data['submitted_answers'] = to_json(value)
+        except Exception as error:
+            data['format_errors'] = f'Invalid format: {str(error)}'
+
+    return (value, data)
 
 
 def string_to_2darray(s, allow_complex=True):
@@ -1006,3 +1111,27 @@ def get_uuid():
     Returns the string representation of a new random UUID.
     """
     return str(uuid.uuid4())
+
+
+def escape_unicode_string(string):
+    """
+    escape_unicode_string(string)
+
+    Combs through any string and replaces invisible/unprintable characters with a
+    text representation of their hex id: <U+xxxx>
+
+    A character is considered invisible if its category is "control" or "format", as
+    reported by the 'unicodedata' library.
+
+    More info on unicode categories:
+    https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
+    """
+
+    def escape_unprintable(x):
+        category = unicodedata.category(x)
+        if category == 'Cc' or category == 'Cf':
+            return f'<U+{ord(x):x}>'
+        else:
+            return x
+
+    return ''.join(map(escape_unprintable, string))

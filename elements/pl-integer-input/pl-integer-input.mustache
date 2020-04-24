@@ -16,17 +16,30 @@
             <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{label}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" placeholder="{{shortinfo}}" />
+        <input name="{{name}}" type="text" class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" {{#show_placeholder}}placeholder="{{shortinfo}}"{{/show_placeholder}} />
         <span class="input-group-append">
             {{#suffix}}
-            <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
+            <span class="input-group-text {{^show_info}}rounded-right{{/show_info}}" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
             {{/suffix}}
-            <a role="button" class="btn btn-light border" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
-                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            {{#show_info}}
+            <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            {{/show_info}}
+            {{^show_info}}
+            <span class="d-flex align-items-center">
+            {{/show_info}}
+            
+            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+            {{#show_info}}
             </a>
+            {{/show_info}}
+            {{^show_info}}
+            </span>
+            {{/show_info}}
         </span>
     </span>
 {{#inline}}</span>{{/inline}}
@@ -35,7 +48,8 @@
 
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
-{{#parse_error}}
+{{#error}}
+        
 <script>
     $(function(){
         $('#pl-integer-input-submission-{{uuid}} [data-toggle="popover"]').popover({
@@ -46,18 +60,35 @@
     });
 </script>
 <span id="pl-integer-input-submission-{{uuid}}">
+
+{{#parse_error}}
     {{#label}}<span>{{label}}</span>{{/label}}
-    <a role="button" class="btn btn-light btn-sm" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID <span><i class="fa fa-question-circle" aria-hidden="true"></i></span></a>
-</span>
+    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+
+    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
 {{/parse_error}}
-{{^parse_error}}
+{{#missing_input}}
+    {{#label}}<span>{{label}}</span>{{/label}}
+
+    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
+    
+    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
+{{/missing_input}}
+    
+</span>
+
+{{/error}}
+{{^error}}
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-{{/parse_error}}
+{{/error}}
 {{#inline}}</span>{{/inline}}
 {{/submission}}
 
@@ -79,3 +110,20 @@ Scientific notation is not accepted.
 {{#shortformat}}
 integer
 {{/shortformat}}
+
+{{#format_error}}
+    <p> Invalid format:
+        {{#format_error_message}}
+            {{{ format_error_message }}}
+        {{/format_error_message}}
+        {{^format_error_message}}
+            the submitted answer could not be interpreted as an integer.  No symbolic input, fractions, or scientific notation are allowed.
+        {{/format_error_message}}
+    </p>
+    <p> Example <i>valid</i> inputs: <code class="user-output">5</code> &nbsp; <code class="user-output">-17</code> </p>
+    <p> Example <i>invalid</i> inputs: <code class="user-output">6+9</code> &nbsp; <code class="user-output">3.7</code> &nbsp; <code class="user-output">3*pi</code> &nbsp; <code class="user-output">6e19</code> </p>
+    <hr>
+    <small>
+        <p> The submitted answer must be formatted as an integer. </p>
+    </small>
+{{/format_error}}

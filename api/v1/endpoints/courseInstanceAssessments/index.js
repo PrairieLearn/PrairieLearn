@@ -41,11 +41,22 @@ router.get('/:assessment_id', (req, res, next) => {
 
 router.get('/:assessment_id/assessment_instances', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_id: req.params.assessment_id,
         assessment_instance_id: null,
     };
     sqldb.queryOneRow(sql.select_assessment_instances, params, (err, result) => {
+        if (ERR(err, next)) return;
+        res.status(200).send(result.rows[0].item);
+    });
+});
+
+router.get('/:assessment_id/assessment_access_rules', (req, res, next) => {
+    const params = {
+        course_instance_id: res.locals.course_instance.id,
+        assessment_id: req.params.assessment_id,
+    };
+    sqldb.queryOneRow(sql.select_assessment_access_rules, params, (err, result) => {
         if (ERR(err, next)) return;
         res.status(200).send(result.rows[0].item);
     });

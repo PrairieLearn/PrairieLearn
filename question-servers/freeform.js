@@ -106,7 +106,7 @@ module.exports = {
                             // TODO remove once everyone is using the new version
                             if (elementType === 'core') {
                                 elements[elementName.replace(/-/g, '_')] = info;
-                                
+
                                 if ('additionalNames' in info) {
                                     info.additionalNames.forEach(name => {
                                         elements[name] = info;
@@ -375,6 +375,7 @@ module.exports = {
         err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
         err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
         err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
+        err = checkProp('test_type',             'string',  ['test'],                             []);                         if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -845,7 +846,7 @@ module.exports = {
                 cache.get(cacheKey, (err, cachedData) => {
                     // We don't actually want to fail if the cache has an error; we'll
                     // just render the panel as normal
-                    ERR(err, (e) => logger.error(e));
+                    ERR(err, (e) => logger.error('Error in cache.get()', e));
                     if (!err && cachedData !== null) {
                         const {
                             courseIssues,
@@ -870,7 +871,7 @@ module.exports = {
                     // If for some reason we failed to get a cache key, don't
                     // actually fail the request, just skip the cache entirely
                     // and render as usual
-                    ERR(err, e => logger.error(e));
+                    ERR(err, e => logger.error('Error in _getCacheKey()', e));
                     if (err || !cacheKey) {
                         doRender(null);
                     } else {
@@ -961,7 +962,18 @@ module.exports = {
                             courseElementScripts: [],
                             clientFilesCourseStyles: [],
                             clientFilesCourseScripts: [],
+                            clientFilesQuestionStyles: [],
+                            clientFilesQuestionScripts: [],
                         };
+
+                        /* Question dependencies are checked via schema on sync-time, so there's no need for sanity checks here. */
+                        for (let type in question.dependencies) {
+                            for (let dep of question.dependencies[type]) {
+                                if (!_.includes(dependencies[type], dep)) {
+                                    dependencies[type].push(dep);
+                                }
+                            }
+                        }
 
                         // Gather dependencies for all rendered elements
                         allRenderedElementNames.forEach((elementName) => {
@@ -1039,6 +1051,8 @@ module.exports = {
                         dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
+                        dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
+                        dependencies.clientFilesQuestionScripts.forEach((file) => scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
                         dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                         dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
@@ -1182,7 +1196,7 @@ module.exports = {
         });
     },
 
-    test: function(variant, question, course, callback) {
+    test: function(variant, question, course, test_type, callback) {
         debug(`test()`);
         if (variant.broken) return callback(new Error('attemped to test broken variant'));
         module.exports.getContext(question, course, (err, context) => {
@@ -1201,6 +1215,7 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: {},
                 gradable: true,
+                test_type: test_type,
             };
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;

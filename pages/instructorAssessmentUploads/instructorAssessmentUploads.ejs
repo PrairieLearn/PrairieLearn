@@ -17,7 +17,6 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
         <div class="modal-dialog" role="document">
@@ -86,7 +85,7 @@
           <table class="table">
             <tr>
               <td style="width: 1%">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadInstanceQuestionScoresModal">
+                <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#uploadInstanceQuestionScoresModal">
                   <i class="fas fa-upload"></i> Upload new question scores
                 </button>
               </td>
@@ -102,7 +101,7 @@
             </tr>
             <tr>
               <td style="width: 1%">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadAssessmentInstanceScoresModal">
+                <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#uploadAssessmentInstanceScoresModal">
                   <i class="fas fa-upload"></i> Upload new total scores
                 </button>
               </td>

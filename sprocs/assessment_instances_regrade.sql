@@ -55,7 +55,8 @@ BEGIN
             points = aq.max_points,
             score_perc = 100,
             points_in_grading = 0,
-            score_perc_in_grading = 0
+            score_perc_in_grading = 0,
+            modified_at = now()
         FROM
             assessment_questions AS aq
             JOIN questions AS q ON (q.id = aq.question_id)

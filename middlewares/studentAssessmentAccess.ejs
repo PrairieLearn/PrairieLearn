@@ -16,7 +16,7 @@
     <%- include('../pages/partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
         <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
+            <div class="card-header bg-primary text-white">
                 <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
             </div>
 
@@ -32,13 +32,13 @@
                       <div class="col-md-3 col-sm-6">
                         <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
                       </div>
-                      <div class="col-md-6 col-sm-12 text-right">
-                          Assessment is <strong>closed</strong> and is no longer available
+                      <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                          Assessment is <strong>closed</strong> and is no longer available.
                       </div>
                     </div>
 
                     <% if (authz_data.mode == 'SEB') { %>
-                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a>
+                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a></p>
                     <% } %>
 
                 <% } else if (prompt == 'SEB') { %>
@@ -53,6 +53,10 @@
                         Launch into the Safe Exam Browser
                     </a>
 
+                <% } else { %>
+                    <div class="test-suite-assessment-closed-message">
+                        Assessment is <strong>closed</strong> and is no longer available.
+                    </div>
                 <% } %>
             </div> <!-- panel-body -->
         </div>

@@ -46,7 +46,7 @@ module.exports = (req, res, next) => {
                 token_id: result.rows[0].token_id,
             };
             sqldb.query(sql.update_token_last_used, lastUsedParams, (err) => {
-                if (ERR(err, (e) => logger.error(e)));
+                if (ERR(err, (e) => logger.error('Error in sql.update_token_last_used', e)));
             });
         }
     });

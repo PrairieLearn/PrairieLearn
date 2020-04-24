@@ -58,8 +58,8 @@ to add a placeholder indicating the expected input is of type "string".</p>
 
 <pl-question-panel>
 <p> 5) The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
-  receiving the <code>INVALID</code> error. Leave the box below empty, and notice
-that you will not receive the <code>INVALID</code> feedback (and hence the question is graded). </p>
+  receiving the <code>Invalid</code> error. Leave the box below empty, and notice
+that you will not receive the <code>Invalid</code> feedback (and hence the question is graded). </p>
 </pl-question-panel>
 
 <p>
@@ -72,11 +72,25 @@ that you will not receive the <code>INVALID</code> feedback (and hence the quest
 This will autoconvert both the student answer and the correct answer to lower case.  Entering the string below with any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
 
 <pl-code language="python">
-  "{{params.e}}"
+"{{params.e}}"
 </pl-code>
 </pl-question-panel>
   
 <p>
 <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
 </pl-string-input>
+</p>
+
+<pl-question-panel>
+    <p>
+        7) The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text="false"</code> removes the button for the help popup.  This box below has <code>size=5</code> instead of the default <code>size=35</code>.
+    </p>
+
+<pl-code language="python">
+"{{params.f}}"
+</pl-code>
+</pl-question-panel>
+
+<p>
+    <pl-string-input answers-name="ans7" label="Small box = " show-help-text="false" size="5"></pl-string-input>
 </p>

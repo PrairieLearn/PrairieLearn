@@ -18,6 +18,7 @@ CREATE OR REPLACE FUNCTION
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
         OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
+        OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -41,6 +42,7 @@ BEGIN
         aar.password,
         aar.mode,
         aar.seb_config,
+        aar.show_closed_assessment,
         aar.id
     INTO
         authorized,
@@ -50,6 +52,7 @@ BEGIN
         password,
         mode,
         seb_config,
+        show_closed_assessment,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
@@ -72,6 +75,7 @@ BEGIN
         password = NULL;
         mode = NULL;
         seb_config = NULL;
+        show_closed_assessment = TRUE;
     END IF;
 
     -- Override if we are an Instructor
@@ -84,6 +88,7 @@ BEGIN
         password = NULL;
         mode = NULL;
         seb_config = NULL;
+        show_closed_assessment = TRUE;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),

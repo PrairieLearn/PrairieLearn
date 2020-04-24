@@ -70,9 +70,24 @@
     </h5>
     <pl-question-panel>
         <p>
-            This is a very long vector, it should be able to scroll.
+            This is a very long vector, it should be able to scroll.  Enter the vector whose values are increasing integers in the range $1$ to $20$ (inclusive).
         </p>
     </pl-question-panel>
      <pl-matrix-component-input answers-name="out4" label="${\bf x} = $" comparison="relabs" atol="0" rtol="1e-6" allow-partial-credit="true">
+    </pl-matrix-component-input>
+</div>
+
+<div class="mb-2" >
+    <h5>
+        5.
+    </h5>
+    <pl-question-panel>
+        <p>
+            Enter the vector
+            $${\bf y} = \begin{bmatrix} \frac{1}{2} & \frac{1}{4} & \frac{1}{8} & \frac{1}{16} \end{bmatrix}$$
+            With the attribute <code>allow-fractions="true"</code> (which is true by default), entries can be submitted as the quotient of two decimal numbers.
+        </p>
+    </pl-question-panel>
+    <pl-matrix-component-input answers-name="out5" label="${\bf y} = $" allow-partial-credit="true">
     </pl-matrix-component-input>
 </div>
