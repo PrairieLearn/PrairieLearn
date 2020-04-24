@@ -97,8 +97,10 @@ def render(element_html, data):
                         test = {}
                         test['index'] = index
                         test['name'] = results_test.get('name', '')
-                        test['has_feedback'] = bool(results_test.get('feedback', None))
-                        test['feedback'] = ansi_to_html(results_test.get('feedback', None))
+                        test['has_message'] = bool(results_test.get('message', None))
+                        test['message'] = ansi_to_html(results_test.get('message', None))
+                        test['has_output'] = bool(results_test.get('output', None))
+                        test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
                         test['show_points'] = not tests_missing_points

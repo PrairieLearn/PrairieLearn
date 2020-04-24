@@ -88,12 +88,18 @@
                 <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
                 <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
               {{/show_points}}
-              {{#has_feedback}}
+              {{#has_message}}
                   <li class="list-group-item">
-                      <div class="mt-1 mb-3"><strong>Feedback</strong></div>
-                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{feedback}}}</pre>
+                      <div class="mt-1 mb-3"><strong>Message</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{message}}}</pre>
                   </li>
-              {{/has_feedback}}
+              {{/has_message}}
+              {{#has_output}}
+                  <li class="list-group-item">
+                      <div class="mt-1 mb-3"><strong>Output</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{output}}}</pre>
+                  </li>
+              {{/has_output}}
               {{#has_images}}
                   <li class="list-group-item">
                       {{#images}}

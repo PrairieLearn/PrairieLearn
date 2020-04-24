@@ -29,7 +29,7 @@ def add_files(results):
         if os.path.exists(feedback_fname):
             with open(feedback_fname, 'r', encoding='utf-8') as content_file:
                 text_feedback = content_file.read()
-            test['feedback'] = text_feedback
+            test['message'] = text_feedback
             os.remove(feedback_fname)
 
 
