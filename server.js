@@ -202,8 +202,10 @@ app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib')
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
-app.use('/pl/devlogin', require('./pages/authLoginDev/authLoginDev'));
 app.use('/pl/login', require('./pages/authLogin/authLogin'));
+if (config.devMode) {
+    app.use('/pl/devlogin', require('./pages/authLoginDev/authLoginDev'));
+}
 // disable SEB until we can fix the mcrypt issues
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -234,7 +236,10 @@ app.use('/', require('./pages/home/home'));
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/settings', require('./pages/userSettings/userSettings'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
-app.use('/pl/logout', require('./pages/authLogout/authLogout'));
+app.use('/pl/logout', [
+    require('./middlewares/clearCookies'),
+    require('./pages/authLogout/authLogout'),
+]);
 app.use('/pl/password', require('./pages/authPassword/authPassword'));
 app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
 app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
