@@ -89,7 +89,7 @@ module.exports = function(req, res, next) {
             return;
         }
 
-        // not in autoType == none
+        // not in authType == none
         // if no authn cookie then redirect to the login page
         res.cookie('preAuthUrl', req.originalUrl);
         res.redirect('/pl/login');
