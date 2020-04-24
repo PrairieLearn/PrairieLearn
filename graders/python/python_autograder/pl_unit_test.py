@@ -19,7 +19,7 @@ class PrairieLearnTestCase(unittest.TestCase):
     """
 
     include_plt = False
-    student_code_string = 'test_print_student_code'
+    student_code_string = 'test_zzz_print_student_code'
     student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
