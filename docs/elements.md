@@ -1301,7 +1301,7 @@ def generate(data):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`variables-name` | string | `None` | The list of variables to display, the format for which is given above.
+`params-name` | string | `None` | Name of variable specification in `data['params']` to display, the format for which is given above.
 
 #### Example implementations
 
