@@ -1259,13 +1259,13 @@ Displays variables that are given to the student, or expected for the student to
 
 ```json
 [
-	{
-    	"name": "variable 1",
+    {
+        "name": "variable 1",
         "description": "A human readable description of this variable",
         "type": "A human readable type of this variable"
     },
     {
-    	"name": "variable 2",
+        "name": "variable 2",
         "...": "..."
     }
 ]
