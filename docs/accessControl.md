@@ -98,7 +98,7 @@ For students taking remote exams it can be helpful to have an enforced time limi
 ]
 ```
 
-The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate`, not `timeLimitMin`.
+The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`.
 
 **Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
 
@@ -270,4 +270,3 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ```
 
 This `allowAccess` directive is suitable for a `Homework` assessment. It gives TAs access for the entire semester. Students can see the homework starting on Oct 12th, and the homework for them goes through four different stages: (1) they will earn a bonus 10% if they complete the homework before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework but not earn more points until the end of semester (Dec 15th).
-
