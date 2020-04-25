@@ -3,24 +3,24 @@ import lxml.html
 import chevron
 
 
-VARIABLES_NAME_DEFAULT = None
+PARAMS_NAME_DEFAULT = None
 
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ['variables-name'], [])
+    pl.check_attribs(element, ['params-name'], [])
 
-    variables_name = pl.get_string_attrib(element, 'variables-name', VARIABLES_NAME_DEFAULT)
-    if variables_name is None:
-        raise Exception(f'Attribute "variables-name" is not defined.')
-    if variables_name not in data['params']:
-        raise Exception(f"Variable name {variables_name} does not exist in data['params'].")
+    params_name = pl.get_string_attrib(element, 'params-name', PARAMS_NAME_DEFAULT)
+    if params_name is None:
+        raise Exception(f'Attribute "params-name" is not defined.')
+    if params_name not in data['params']:
+        raise Exception(f"Variable name {params_name} does not exist in data['params'].")
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    variables_name = pl.get_string_attrib(element, 'variables-name', VARIABLES_NAME_DEFAULT)
-    names_user_description = data['params'][variables_name]
+    params_name = pl.get_string_attrib(element, 'params-name', PARAMS_NAME_DEFAULT)
+    names_user_description = data['params'][params_name]
     has_names_user_description = len(names_user_description) > 0
 
     html_params = {

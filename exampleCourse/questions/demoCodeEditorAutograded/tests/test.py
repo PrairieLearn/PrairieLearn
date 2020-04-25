@@ -27,7 +27,7 @@ class Test(PrairieLearnTestCase):
     @name('Check fibonacci of an integer > 1')
     def test_2(self):
         user_val = feedback.call_user(self.st.fib, 7)
-        if feedback.check_scalar("fib(1)", 13, user_val):
+        if feedback.check_scalar("fib(7)", 13, user_val):
             feedback.set_percent(1)
         else:
             feedback.set_percent(0)
