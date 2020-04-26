@@ -1,8 +1,6 @@
 const _ = require('lodash');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const path = require('path');
-const fs = require('fs');
 
 const logger = require('../../lib/logger');
 const perf = require('../performance')('question');
