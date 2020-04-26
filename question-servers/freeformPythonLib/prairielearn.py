@@ -750,9 +750,9 @@ def string_to_2darray(s, allow_complex=True):
     s_before_left = s_before_left.strip()
     s_after_right = s_after_right.strip()
     if s_before_left:
-        return (None, {'format_error': f'Non-empty text "{s_before_left}" before outer brackets.'})
+        return (None, {'format_error': f'Non-empty text "{escape_unicode_string(s_before_left)}" before outer brackets.'})
     if s_after_right:
-        return (None, {'format_error': f'Non-empty space "{s_after_right}" after outer brackets.'})
+        return (None, {'format_error': f'Non-empty space "{escape_unicode_string(s_after_right)}" after outer brackets.'})
 
     # If there is only one set of brackets, treat as MATLAB format
     if number_of_left_brackets == 1:
@@ -828,7 +828,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry "{s_row[j]}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
+                    return (None, {'format_error': f'Entry "{escape_unicode_string(s_row[j])}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
 
         # Return resulting ndarray with no error
         return (A, {'format_type': 'matlab'})
@@ -855,7 +855,7 @@ def string_to_2darray(s, allow_complex=True):
 
             # Return error if there is anything but space before left bracket
             if s_before_left:
-                return (None, {'format_error': f'Non-empty text "{s_before_left}" before left bracket in row {len(s_row)} of matrix.'})
+                return (None, {'format_error': f'Non-empty text "{escape_unicode_string(s_before_left)}" before left bracket in row {len(s_row)} of matrix.'})
 
             # Return error if there are improperly nested brackets
             if ('[' in s_between_left_and_right) or (']' in s_between_left_and_right):
@@ -865,7 +865,7 @@ def string_to_2darray(s, allow_complex=True):
             if (len(s_row) == number_of_left_brackets - 1):
                 # Return error if it is the last row and there is anything but space after right bracket
                 if s_after_right:
-                    return (None, {'format_error': f'Non-empty text "{s_after_right}" after right bracket in row {len(s_row)} of matrix.'})
+                    return (None, {'format_error': f'Non-empty text "{escape_unicode_string(s_after_right)}" after right bracket in row {len(s_row)} of matrix.'})
                 else:
                     s = s_after_right
             else:
@@ -925,7 +925,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry "{s_row[i][j]}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
+                    return (None, {'format_error': f'Entry "{escape_unicode_string(s_row[i][j])}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
