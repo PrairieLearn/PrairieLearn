@@ -925,7 +925,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry "{escape_unicode_string(s_row[i][j])}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
+                    return (None, {'format_error': f'Entry <code class="user-output-invalid">{html.escape(escape_unicode_string(s_row[i][j]))}</code> at ({i + 1}, {j + 1}) of matrix has invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
