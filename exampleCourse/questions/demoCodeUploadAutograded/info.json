@@ -11,5 +11,9 @@
         "image": "prairielearn/grader-python",
         "serverFilesCourse": ["python_autograder/"],
         "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh"
+    },
+    "thumbnail": {
+        "filename": "thumbnails/code.jpeg",
+        "location": "clientFilesCourse"
     }
 }

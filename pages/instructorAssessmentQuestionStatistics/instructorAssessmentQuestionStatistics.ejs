@@ -117,8 +117,8 @@
           <table id="questionsTable" class="table table-sm table-hover tablesorter">
             <thead>
               <tr>
+                <th class="text-center" width="50">Thumbnail</th>
                 <th class="text-center">Question</th>
-                <th class="text-center">Thumbnail</th>
                 <th class="text-center">Mean score</th>
                 <th class="text-center">Discrimination</th>
                 <th class="text-center">Attempts</th>
@@ -129,14 +129,14 @@
               <% questions.forEach(function(row, i) { %>
               <tr>
                 <td>
+                  <% if (row.filename != null) { %>
+                  <image src="<%= urlPrefix %>/<%= row.location %>/<%= row.filename %>" onerror="this.style.display='none'" width="50" height="50"/>
+                  <% } %>
+                </td>
+                <td>
                   <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
                     <%= row.assessment_question_number %>. <%= row.question_title %>
                   </a>
-                </td>
-                <td>
-                  <% if (row.thumbnail != null) { %>
-                  <image src="<%= urlPrefix %>/assessment/<%= assessment.id %>/question_thumbnail/<%= row.question_id %>" onerror="this.style.display='none'" width="64" height="64"/>
-                  <% } %>
                 </td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>

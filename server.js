@@ -607,6 +607,9 @@ app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourse/clientFilesCourse'),
 ]);
+app.use('/pl/course/:course_id/clientFilesCourse', [
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+]);
 app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
@@ -620,20 +623,6 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
-]);
-
-// questionThumbnail
-app.use('/pl/course/:course_id/course_admin/question_thumbnail', [
-    function(req, res, next) {next();},
-    require('./pages/questionThumbnail/questionThumbnail'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/question_thumbnail', [
-    function(req, res, next) {next();},
-    require('./pages/questionThumbnail/questionThumbnail'),
-]);
-app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_thumbnail', [
-    function(req, res, next) {next();},
-    require('./pages/questionThumbnail/questionThumbnail'),
 ]);
 
 // generatedFiles

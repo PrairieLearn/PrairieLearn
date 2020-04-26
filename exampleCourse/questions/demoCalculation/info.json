@@ -3,5 +3,9 @@
     "title": "Demo: Simple calculation to add numbers",
     "topic": "Algebra",
     "tags": ["mwest", "fa17", "tpl101", "v3"],
-    "type": "v3"
+    "type": "v3",
+    "thumbnail": {
+        "filename": "thumbnails/demo.jpeg",
+        "location": "clientFilesCourse"
+    }
 }

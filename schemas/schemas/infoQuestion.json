@@ -52,6 +52,24 @@
                 "type": "string"
             }
         },
+        "thumbnail": {
+            "description": "Filename and location associated with the question.",
+            "type": "object",
+            "required": [
+                "filename",
+                "location"
+            ],
+            "properties": {
+                "filename": {
+                    "description": "Filename of the thumbnail.",
+                    "type": "string"
+                },
+                "location": {
+                    "description": "Directory of the filename.",
+                    "type": "string"
+                }
+            }
+        },
         "clientFiles": {
             "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
             "type": "array",

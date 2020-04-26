@@ -26,21 +26,11 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
         const questionsParam = Object.keys(questionDB).map(qid => {
             const q = questionDB[qid];
 
-            var thumbnailPath = null;
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpg'))) {
-                thumbnailPath = 'thumbnail.jpg';
-            }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.png'))) {
-                thumbnailPath = 'thumbnail.png';
-            }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.jpeg'))) {
-                thumbnailPath = 'thumbnail.jpeg';
-            }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.svg'))) {
-                thumbnailPath = 'thumbnail.svg';
-            }
-            if (fs.existsSync(path.join(courseInfo.questionsDir, qid, 'thumbnail.gif'))) {
-                thumbnailPath = 'thumbnail.gif';
+            let filename = null;
+            let location = null;
+            if (q.thumbnail != null) {
+                filename = q.thumbnail.filename;
+                location = q.thumbnail.location;
             }
             let partialCredit;
             if (q.partialCredit != null) {
@@ -70,7 +60,8 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
-                thumbnail: thumbnailPath,
+                filename: filename,
+                location: location,
             };
         });
 

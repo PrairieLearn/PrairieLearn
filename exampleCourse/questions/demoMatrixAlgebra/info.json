@@ -3,5 +3,9 @@
     "title": "Demo: Matrix algebra",
     "topic": "Linear algebra",
     "tags": ["tbretl", "v3"],
-    "type": "v3"
+    "type": "v3",
+    "thumbnail": {
+        "filename": "thumbnails/demo.jpeg",
+        "location": "clientFilesCourse"
+    }
 }

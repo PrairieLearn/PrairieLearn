@@ -62,6 +62,7 @@ Property | Type | Description
 `singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
 `partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
 `externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
+`thumbnail` | object | Contains a filename and directory location of a thumbnail associated with this question. (Optional; default: none)
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
@@ -214,25 +215,22 @@ In general, it is strongly recommended to leave partial credit enabled for all q
 
 ## The `thumbnail` image
 
-To add a thumbnail to your question, add a `thumbnail.jpg` image to your question folder. The thumbnail will appear on the `instructorQuestions`, `instructorAssessmentQuestions`, and `instructorAssessmentQuestionStatistics` pages. Supported file types are:
+To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location.
 
-* `thumbnail.jpg`
-* `thumbnail.jpeg`
-* `thumbnail.png`
-* `thumbnail.svg`
-* `thumbnail.gif`
+Example:
 
-For example, adding a thumbnail to the fossilFuelsRadio question would look like:
-
-```text
-questions
-|
-|-- fossilFuelsRadio          # first question, id is "fossilFuelsRadio"
-|   |
-|   +-- info.json             # metadata for the fossilFuelsRadio question
-|   +-- thumbnail.jpg         # thumbnail image associated with this question
-|   +-- server.py             # secret server-side code (optional)
-|   `-- question.html         # HTML template for the question
+```json
+{
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "title": "Newton's third law",
+    "topic": "Forces",
+    "tags": ["secret", "Fa18"],
+    "type": "v3",
+    "thumbnail": {
+        "filename": "physics.jpeg",
+        "location": "clientFilesCourse"
+    }
+}
 ```
 
 ## Using Markdown in questions

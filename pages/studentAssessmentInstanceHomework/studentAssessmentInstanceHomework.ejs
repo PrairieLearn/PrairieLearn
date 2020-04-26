@@ -8,7 +8,7 @@
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
-  
+
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
@@ -56,6 +56,7 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
+              <th width="50">Thumbnail</th>
               <th>Question</th>
               <th class="text-center">Value</th>
               <th class="text-center">History</th>
@@ -66,7 +67,8 @@
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
-              <th colspan="4">
+              <th width="50" style="visibility:hidden;">Thumbnail</th>
+              <th colspan="5">
                 <%= question.zone_title %>
                 <% if (question.zone_has_max_points) { %>
                     &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
@@ -84,6 +86,13 @@
             </tr>
             <% } %>
             <tr>
+              <td>
+                <% if (question.filename != null) { %>
+                <image src="<%= urlPrefix %>/<%= question.location %>/<%= question.filename %>" width="50" height="50"/>
+                <% } else { %>
+                <div style="height:50px;"></div>
+                <% } %>
+              </td>
               <td>
                 <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>
