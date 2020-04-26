@@ -828,7 +828,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry ({i + 1}, {j + 1}) of matrix "{s_row[j]}" has invalid format.'})
+                    return (None, {'format_error': f'Entry "{s_row[j]}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
 
         # Return resulting ndarray with no error
         return (A, {'format_type': 'matlab'})
@@ -906,7 +906,7 @@ def string_to_2darray(s, allow_complex=True):
                 try:
                     # Check if entry is empty
                     if not s_row[i][j].strip():
-                        return (None, {'format_error': f'Entry ({i + 1}, {j + 1}) of matrix is empty.'})
+                        return (None, {'format_error': f'Entry at ({i + 1}, {j + 1}) of matrix is empty.'})
 
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
@@ -925,7 +925,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry ({i + 1}, {j + 1}) of matrix "{s_row[i][j]}" has invalid format.'})
+                    return (None, {'format_error': f'Entry "{s_row[i][j]}" at ({i + 1}, {j + 1}) of matrix has invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
