@@ -770,7 +770,7 @@ def string_to_2darray(s, allow_complex=True):
 
         # Return error if there are no rows (i.e., the matrix is empty)
         if (m == 0):
-            return (None, {'format_error': 'Matrix has no rows.'})
+            return (None, {'format_error': 'The matrix has no rows.'})
 
         # Regex to split rows a la MATLAB
         matlab_delimiter_regex = re.compile(r'\s*[\s,]\s*')
@@ -787,7 +787,7 @@ def string_to_2darray(s, allow_complex=True):
 
         # Return error if first row has no columns
         if (n == 0):
-            return (None, {'format_error': 'First row of matrix has no columns.'})
+            return (None, {'format_error': 'Row 1 of the matrix has no columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((m, n))
@@ -806,7 +806,7 @@ def string_to_2darray(s, allow_complex=True):
 
             # Return error if current row has more or less columns than first row
             if len(s_row) != n:
-                return (None, {'format_error': f'Rows 1 and {i + 1} of matrix have a different number of columns.'})
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
             # Iterate over columns
             for j in range(0, n):
@@ -828,7 +828,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[j])} at ({i + 1}, {j + 1}) of matrix has invalid format.'})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has invalid format.'})
 
         # Return resulting ndarray with no error
         return (A, {'format_type': 'matlab'})
@@ -855,23 +855,23 @@ def string_to_2darray(s, allow_complex=True):
 
             # Return error if there is anything but space before left bracket
             if s_before_left:
-                return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before left bracket in row {len(s_row)} of matrix.'})
+                return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before the left bracket in row {len(s_row)} of the matrix.'})
 
             # Return error if there are improperly nested brackets
             if ('[' in s_between_left_and_right) or (']' in s_between_left_and_right):
-                return (None, {'format_error': f'Improperly nested brackets in row {len(s_row)} of matrix.'})
+                return (None, {'format_error': f'Improperly nested brackets in row {len(s_row)} of the matrix.'})
 
             # Check if we are in the last row
             if (len(s_row) == number_of_left_brackets - 1):
                 # Return error if it is the last row and there is anything but space after right bracket
                 if s_after_right:
-                    return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_after_right)} after right bracket in row {len(s_row)} of matrix.'})
+                    return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_after_right)} after the right bracket in row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right
             else:
                 # Return error if it is not the last row and there is no comma after right bracket
                 if s_after_right[0] != ',':
-                    return (None, {'format_error': f'No comma after row {len(s_row)} of matrix.'})
+                    return (None, {'format_error': f'No comma after row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right[1:]
         number_of_rows = len(s_row)
@@ -885,7 +885,7 @@ def string_to_2darray(s, allow_complex=True):
         for i in range(0, number_of_rows):
             # Return error if row has no columns
             if not s_row[i]:
-                return (None, {'format_error': f'Row {i + 1} of matrix has no columns.'})
+                return (None, {'format_error': f'Row {i + 1} of the matrix has no columns.'})
 
             # Splitting on a comma always returns a list with at least one element
             s_row[i] = s_row[i].split(',')
@@ -895,7 +895,7 @@ def string_to_2darray(s, allow_complex=True):
             if number_of_columns is None:
                 number_of_columns = n
             elif number_of_columns != n:
-                return (None, {'format_error': f'Rows 1 and {i + 1} of matrix have a different number of columns.'})
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((number_of_rows, number_of_columns))
@@ -906,7 +906,7 @@ def string_to_2darray(s, allow_complex=True):
                 try:
                     # Check if entry is empty
                     if not s_row[i][j].strip():
-                        return (None, {'format_error': f'Entry at ({i + 1}, {j + 1}) of matrix is empty.'})
+                        return (None, {'format_error': f'Entry at location (row={i + 1}, column={j + 1}) in the matrix is empty.'})
 
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
@@ -925,7 +925,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[i][j])} at ({i + 1}, {j + 1}) of matrix has invalid format.'})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
