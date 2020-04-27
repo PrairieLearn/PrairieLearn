@@ -103,7 +103,7 @@ Note that the `<pl-external-grader-variables>` element is for purely decorative 
 
 ### `tests/setup_code.py`
 
-This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.
+This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.  The code in this file is run only _once_ total for both student and reference code.  If you need to run some code before each (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before both.  `repeated_setup()` will always be run after the setup code itself is run.
 
 ### `tests/test.py`
 

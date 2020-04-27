@@ -2,6 +2,8 @@ import sys
 import os
 import json
 import numpy as np
+import numpy.random
+import random
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
@@ -10,6 +12,11 @@ class UserCodeFailed(Exception):
     def __init__(self, err, *args):
         self.err = err
         super(UserCodeFailed, self).__init__(err, *args)
+
+
+def set_random_seed(seed=None):
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 def execute_code(fname_ref, fname_student, include_plt=False,
@@ -49,7 +56,9 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     if repeated_setup_name not in str_setup:
         repeated_setup_name = 'pass'
 
-    prev = sys.stdout
+    # Seed student code and answer code with same seed
+    seed = random.randint(0, (2 ** 32) - 1)
+
     setup_code = {'test_iter_num': test_iter_num, 'data': data}
     # make all the variables in setup_code.py available to ans.py
     exec(str_setup, setup_code)
@@ -72,6 +81,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         if not (i=='__builtins__' or isinstance(j, ModuleType) or
                 i in names_for_user):
             ref_code[i] = j
+    set_random_seed(seed)
     exec(str_ref, ref_code)
     # ref_code contains the correct answers
 
@@ -94,8 +104,13 @@ def execute_code(fname_ref, fname_student, include_plt=False,
             student_code[i] = j
     student_code = deepcopy(student_code)
 
+    ## Execute student code
+    previous_stdout = sys.stdout
     if console_output_fname:
         sys.stdout = open(console_output_fname, 'w', encoding='utf-8')
+
+    set_random_seed(seed)
+
     try:
         exec(str_student, student_code)
         err = None
@@ -110,8 +125,9 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     if err is not None:
         raise UserCodeFailed(err)
 
+    # Redirect stdout back to normal
     sys.stdout.flush()
-    sys.stdout = prev
+    sys.stdout = previous_stdout
 
     ref_result = {}
     for i,j in ref_code.items():
@@ -134,4 +150,6 @@ def execute_code(fname_ref, fname_student, include_plt=False,
             import matplotlib.pyplot
             plot_value = matplotlib.pyplot
 
+    # Re-seed before running tests
+    set_random_seed()
     return ref_result, student_result, plot_value

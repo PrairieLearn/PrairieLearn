@@ -1311,6 +1311,7 @@ Attribute | Type | Default | Description
 - [demoAutograderNumpy]
 - [demoAutograderPandas]
 - [demoAutograderPlots]
+- [demoAutograderRandom]
 
 ## Conditional Elements
 
@@ -1553,3 +1554,4 @@ Attribute | Type | Default | Description
 [demoAutograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy
 [demoAutograderPandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas
 [demoAutograderPlots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots
+[demoAutograderRandom]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderRandom
