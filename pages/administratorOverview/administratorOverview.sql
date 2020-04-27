@@ -10,15 +10,6 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
-select_config AS (
-    SELECT
-        coalesce(
-            jsonb_agg(to_json(c) ORDER BY c.key),
-            '[]'::jsonb
-        ) AS configs
-    FROM
-        config AS c
-),
 select_question_render_cache_stats AS (
     SELECT
         jsonb_build_object(
@@ -32,11 +23,9 @@ select_question_render_cache_stats AS (
 )
 SELECT
     administrator_users,
-    configs,
     question_render_cache_stats
 FROM
     select_administrator_users,
-    select_config,
     select_question_render_cache_stats;
 
 -- BLOCK select_course
