@@ -4,10 +4,20 @@
     iconClasses:    'fas fa-user-shield',
     tabLabel:       'Administrators'}); %>
 <%- include('navTab', {
+    activeSubPage:  'server',
+    urlSuffix:      '/administrator/server',
+    iconClasses:    'fas fa-server',
+    tabLabel:       'Server'}); %>
+<%- include('navTab', {
     activeSubPage:  'course_management',
     urlSuffix:      '/administrator/courses',
     iconClasses:    'fa fa-chalkboard',
     tabLabel:       'Course Management'}); %>
+<%- include('navTab', {
+    activeSubPage:  'networks',
+    urlSuffix:      '/administrator/networks',
+    iconClasses:    'fas fa-network-wired',
+    tabLabel:       'Exam Networks'}); %>
 <%- include('navTab', {
     activeSubPage:  'queries',
     urlSuffix:      '/administrator/queries',
