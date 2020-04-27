@@ -148,6 +148,27 @@ def test_0(self):
 
 Note that `Feedback.set_percent()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_percent(0.5)` is run, the student will be awarded 5 points.
 
+#### Code Feedback
+
+The code feedback library contains built-in functions for checking correctness of various datatypes.  Here is a nonexhaustive list of them, for a more complete reference refer to the source file [on GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/code_feedback.py).  Note that all functions will perform some sort of sanity checking on user input and will not fail if, for example, the student does not define an input variable.
+
+- `check_numpy_array_features(name, ref, data)`
+ Checks that a numpy array has the same shape and datatype as the reference solution.  Does *not* check values against the reference.
+- `check_numpy_array_allclose(name, ref, data, rtol=1e-05, atol=1e-08)`
+ Checks that a numpy array has the same shape and datatype as the reference solution, also checks values to see if they are close using specified `rtol` and `atol`.
+- `check_list(name, ref, data, entry_type=None)`
+ Checks that a list has the same length as the reference solution.  If `entry_type` is not `None`, can optionally check if each element has that type.  Does *not* check values against the reference.
+- `check_tuple(name, ref, data)`
+ Checks that a tuple has the same length and values as the reference solution.
+- `check_scalar(name, ref, data, rtol=1e-5, atol=1e-8)`
+ Checks that a scalar value is close to the reference solution using specified `rtol` and `atol`.
+- `call_user(f, *args, **kwargs)`
+ Calls a user defined function with specific `args` and `kwargs`.
+- `check_dataframe(name, ref, data, subset_columns=None)`
+ Checks that a Pandas DataFrame has the same contents as the reference solution.  Can optionally check for a subset of columns by giving a list of column names to `subset_columns`.
+
+Most of these functions have a `accuracy_critical` and `report_failure` keyword argument.  If `accuracy_critical` is set to true (default), the grading job will halt if this check fails (similar to an assert).  If `report_failure` is true (default), feedback will be displayed to the student if this check fails.  The `name` argument is used when displaying feedback.
+
 ## General Tips and Gotchas
 
 Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
