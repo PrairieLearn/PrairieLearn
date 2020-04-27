@@ -10,21 +10,6 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
-select_networks AS (
-    SELECT
-        coalesce(
-            jsonb_agg(jsonb_build_object(
-                    'network', n.network,
-                    'start_date', coalesce(format_date_full_compact(lower(n.during), config_select('display_timezone')), '—'),
-                    'end_date', coalesce(format_date_full_compact(upper(n.during), config_select('display_timezone')), '—'),
-                    'location', n.location,
-                    'purpose', n.purpose
-                ) ORDER BY n.during, n.network),
-            '[]'::jsonb
-        ) AS networks
-    FROM
-        exam_mode_networks AS n
-),
 select_config AS (
     SELECT
         coalesce(
@@ -47,12 +32,10 @@ select_question_render_cache_stats AS (
 )
 SELECT
     administrator_users,
-    networks,
     configs,
     question_render_cache_stats
 FROM
     select_administrator_users,
-    select_networks,
     select_config,
     select_question_render_cache_stats;
 
