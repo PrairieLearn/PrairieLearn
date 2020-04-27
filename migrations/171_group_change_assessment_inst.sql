@@ -10,13 +10,14 @@ CREATE TABLE IF NOT EXISTS group_type(
     min           INT    NOT NULL
 );
 CREATE TABLE IF NOT EXISTS groups(
-    id BIGSERIAL PRIMARY KEY     NOT NULL,    
+    id BIGSERIAL PRIMARY KEY     NOT NULL,
     group_name TEXT,
-    group_type bigint REFERENCES group_type(id) ON DELETE CASCADE ON UPDATE CASCADE
+    group_type_id bigint REFERENCES group_type(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS group_user (
   id BIGSERIAL PRIMARY KEY     NOT NULL,
   group_id bigint REFERENCES groups(id) NOT NULL,
-  uid text REFERENCES users(uid) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+  user_id bigint REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+  UNIQUE(group_id, user_id)
 );
