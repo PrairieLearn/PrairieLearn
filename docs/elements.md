@@ -1305,12 +1305,12 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demoCodeEditorAutograded](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeEditorAutograded)
-- [demoCodeUploadAutograded](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadAutograded)
-- [demoAutograderSquare](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderSquare)
-- [demoAutograderNumpy](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy)
-- [demoAutograderPandas](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas)
-- [demoAutograderPlots](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots)
+- [demoCodeEditorAutograded]
+- [demoCodeUploadAutograded]
+- [demoAutograderSquare]
+- [demoAutograderNumpy]
+- [demoAutograderPandas]
+- [demoAutograderPlots]
 
 ## Conditional Elements
 
@@ -1549,3 +1549,7 @@ Attribute | Type | Default | Description
 [elementSymbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementSymbolicInput
 [elementThreeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementThreeJS
 [elementVariableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementVariableOutput
+[demoAutograderSquare]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderSquare
+[demoAutograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy
+[demoAutograderPandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas
+[demoAutograderPlots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots
