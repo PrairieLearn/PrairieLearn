@@ -99,6 +99,8 @@ Full example:
 </pl-submission-panel>
 ```
 
+Note that the `<pl-external-grader-variables>` element is for purely decorative purposes only, `names_for_user` or `names_from_user` or both can be omitted without any negative results.
+
 ### `tests/setup_code.py`
 
 This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.
@@ -115,6 +117,8 @@ class Test(PrairieLearnTestCase):
 class Test(PrairieLearnTestCaseWithPlot):
 ```
 
+These classes themselves extend `unittest.TestCase`, so any functionality from there is also available.
+
 Each test case is a separate method in the class, the names of these functions must be prefixed with `test_`, but any name that follows is arbitrary.  Test cases are run in sorted order by the `unittest` library, so one convention that can be used is to give tests numeric names to ensure their running order.
 
 Adding a name and point value to the test case is done by means of python decorators:
@@ -128,7 +132,7 @@ def test_0(self):
 
 Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively.  There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`.  These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
 
-At the end of the test case, set the correctness of the answer using `feedback.set_points()`.  This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct.  By default, if no points are given the test case will be marked incorrect.
+At the end of the test case, set the correctness of the answer using `feedback.set_percent()`.  This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct.  By default, if no points are given the test case will be marked incorrect.
 
 The overall structure of a test case should look something like:
 
@@ -137,18 +141,38 @@ The overall structure of a test case should look something like:
 @name("name of the test case")
 def test_0(self):
    if feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
-       Feedback.set_points(1)
+       Feedback.set_percent(1)
    else:
-       Feedback.set_points(0)
+       Feedback.set_percent(0)
 ```
 
-Note that `Feedback.set_points()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_points(0.5)` is run, the student will be awarded 5 points.
+Note that `Feedback.set_percent()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_percent(0.5)` is run, the student will be awarded 5 points.
 
 ## General Tips and Gotchas
 
 Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
 
 Be careful not to switch the ordering of the student and reference arguments.  The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
+
+## Banning/Disallowing library functions
+
+One can hook into library in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
+
+By creating a `not_allowed` function that only raises an error when called:
+
+```python
+def not_allowed(*args, **kwargs):
+    raise RuntimeError("Calling this function is not allowed")
+```
+
+and then setting library functions equal to `not_allowed`:
+
+```python
+numpy.linalg.inv = not_allowed
+numpy.linalg.pinv = not_allowed
+```
+
+the `inv` and `pinv` functions will be effectively banned from use.  This will survive library reimports.
 
 # Overview
 

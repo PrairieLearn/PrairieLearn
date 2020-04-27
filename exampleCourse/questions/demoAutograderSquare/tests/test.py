@@ -10,7 +10,7 @@ class Test(PrairieLearnTestCaseWithPlot):
     @points(10)
     @name("x_sq")
     def test_0(self):
-        points = 0
         if feedback.check_scalar('x_sq', self.ref.x_sq, self.st.x_sq, accuracy_critical=False):
-            points += 1
-        feedback.set_percent(points)
+            feedback.set_percent(1)
+        else:
+            feedback.set_percent(0)

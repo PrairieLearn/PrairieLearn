@@ -56,7 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
-- ['pl-external-grader-variables'](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
+- [`pl-external-grader-variables`](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1253,7 +1253,7 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
-## `pl-external-grading-variables` element
+## `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
 
@@ -1305,12 +1305,12 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demoCodeEditorAutograded]
-- [demoCodeUploadAutograded]
-- [demoAutograderSquare]
-- [demoAutograderNumpy]
-- [demoAutograderPandas]
-- [demoAutograderPlots]
+- [demoCodeEditorAutograded](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeEditorAutograded)
+- [demoCodeUploadAutograded](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadAutograded)
+- [demoAutograderSquare](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderSquare)
+- [demoAutograderNumpy](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy)
+- [demoAutograderPandas](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas)
+- [demoAutograderPlots](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots)
 
 ## Conditional Elements
 

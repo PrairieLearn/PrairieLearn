@@ -181,6 +181,7 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
    "score": 0.25,
    "message": "Tests completed successfully.",
    "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
+   "images": ["data:image/png;base64,...", "data:image/jpeg;base64,..."],
    "tests": [
       {
          "name": "Test 1",
@@ -196,11 +197,14 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
          "points": 0,
          "max_points": 3,
          "message": "Make sure that your code is doing the thing correctly.",
-         "output": "Running test...\nYour output did not match the expected output."
+         "output": "Running test...\nYour output did not match the expected output.",
+         "images": ["data:image/gif;base64,...", "data:image/png;base64,..."],
       }
    ]
 }
 ```
+
+Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array.  These values should be formatted as standard HTML base64 images like `"data:[mimetype];base64,[contents]"`.
 
 A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`, and relevant documentation [here](python-grader/index.md).
 
