@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS group_configs (
     maximum INT,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp with time zone
---);
+);
 
 CREATE TABLE IF NOT EXISTS groups (
     id BIGSERIAL PRIMARY KEY,
