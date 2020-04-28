@@ -141,4 +141,4 @@ class PrairieLearnTestCaseWithPlot(PrairieLearnTestCase):
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_points(points / 3.0)
+        Feedback.set_percent(points / 3.0)
