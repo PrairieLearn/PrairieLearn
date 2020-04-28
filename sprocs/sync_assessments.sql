@@ -86,7 +86,8 @@ BEGIN
             constant_question_value = EXCLUDED.constant_question_value,
             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
             allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-            require_honor_code = EXCLUDED.require_honor_code
+            require_honor_code = EXCLUDED.require_honor_code,
+            groupwork = EXCLUDED.groupwork    
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
@@ -103,7 +104,14 @@ BEGIN
                 (assessment->>'grouptype')::integer,
                 (assessment->>'groupmax')::integer,
                 (assessment->>'groupmin')::integer
-        );
+        )
+        ON CONFLICT (assessment_id) DO UPDATE
+        SET
+            grouptype = EXCLUDED.grouptype,
+            max = EXCLUDED.max,
+            min = EXCLUDED.min
+        WHERE
+            group_type.assessment_id = new_assessment_id;
 
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP

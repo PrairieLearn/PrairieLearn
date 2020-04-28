@@ -1,9 +1,10 @@
-DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,bigint,enum_mode,integer,timestamp with time zone);
+DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,boolean,bigint,enum_mode,integer,timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_insert(
         IN assessment_id bigint,
         IN user_id bigint,
+        IN groupwork boolean,
         IN authn_user_id bigint,
         IN mode enum_mode,
         IN time_limit_min integer DEFAULT NULL,
@@ -18,6 +19,7 @@ DECLARE
     number integer := 1;
     date_limit timestamptz := NULL;
     auto_close boolean := FALSE;
+    groupId bigint;
 BEGIN
     -- ######################################################################
     -- get the assessment
@@ -26,19 +28,56 @@ BEGIN
 
     -- ######################################################################
     -- determine the "number" of the new assessment instance
+    IF groupwork THEN
+        SELECT group_id
+        INTO  groupId
+        FROM  group_user as gu
+        WHERE gu.user_id = assessment_instances_insert.user_id;
+        
+        IF assessment.multiple_instance THEN
+            SELECT coalesce(max(ai.number), 0) + 1
+            INTO number
+            FROM assessment_instances AS ai
+            WHERE
+                ai.assessment_id = assessment_instances_insert.assessment_id
+                AND ai.group_id = groupId;
+        END IF;
+        -- if a.multiple_instance is FALSE then we use
+        -- number = 1 so we will error on INSERT if there
+        -- are existing assessment_instances
+        
+        -- ######################################################################
+        -- do the actual insert
 
-    IF assessment.multiple_instance THEN
-        SELECT coalesce(max(ai.number), 0) + 1
-        INTO number
-        FROM assessment_instances AS ai
-        WHERE
-            ai.assessment_id = assessment_instances_insert.assessment_id
-            AND ai.user_id = assessment_instances_insert.user_id;
+
+        INSERT INTO assessment_instances
+                (auth_user_id, assessment_id, group_id, mode, auto_close, date_limit, number)
+        VALUES (authn_user_id, assessment_id, groupId, mode, auto_close, date_limit, number)
+        RETURNING id
+        INTO assessment_instance_id;
+    ELSE 
+         IF assessment.multiple_instance THEN
+            SELECT coalesce(max(ai.number), 0) + 1
+            INTO number
+            FROM assessment_instances AS ai
+            WHERE
+                ai.assessment_id = assessment_instances_insert.assessment_id
+                AND ai.user_id = assessment_instances_insert.user_id;
+        END IF;
+        -- if a.multiple_instance is FALSE then we use
+        -- number = 1 so we will error on INSERT if there
+        -- are existing assessment_instances
+        
+        -- ######################################################################
+        -- do the actual insert
+
+
+        INSERT INTO assessment_instances
+                (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
+        VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
+        RETURNING id
+        INTO assessment_instance_id;
     END IF;
-
-    -- if a.multiple_instance is FALSE then we use
-    -- number = 1 so we will error on INSERT if there
-    -- are existing assessment_instances
 
     -- ######################################################################
     -- determine other properties
@@ -51,14 +90,7 @@ BEGIN
         auto_close := TRUE;
     END IF;
 
-    -- ######################################################################
-    -- do the actual insert
 
-    INSERT INTO assessment_instances
-            (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
-    VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
-    RETURNING id
-    INTO assessment_instance_id;
 
     -- ######################################################################
     -- start a record of the last access time

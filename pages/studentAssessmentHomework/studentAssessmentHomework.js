@@ -25,13 +25,14 @@ router.get('/', function(req, res, next) {
         assessment_id: res.locals.assessment.id,
         user_id: res.locals.user.user_id,
     };
+
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             debug('no assessment instance');
 
             const time_limit_min = null;
-            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
                 if (ERR(err, next)) return;
                 debug('redirecting');
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
