@@ -7,6 +7,6 @@ class Test(PrairieLearnTestCase):
     @name("x")
     def test_0(self):
         if feedback.check_numpy_array_allclose("x", self.ref.x, self.st.x):
-            feedback.set_points(1)
+            feedback.set_percent(1)
         else:
-            feedback.set_points(0)
+            feedback.set_percent(0)
