@@ -19,10 +19,15 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_groups, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.groups_rows = result.rows;
+        //debug('render page');
+        //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+    sqldb.query(sql.not_assigned_users, params, function(err, result) {
+        if (ERR(err, next)) return;
+        res.locals.not_assigned_users_rows = result.rows;
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
-    
 });
 
 router.post('/', function(req, res, next) {
@@ -31,6 +36,15 @@ router.post('/', function(req, res, next) {
         groupUpload.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.__action == 'delete_all') {
+        const params = [
+            res.locals.assessment.id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_groups_delete_all', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
@@ -74,15 +88,6 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
-        });
-    } else if (req.body.__action == 'delete_all') {
-        const params = [
-            res.locals.assessment.id,
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('assessment_instances_delete_all', params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'regrade') {
         const assessment_id = res.locals.assessment.id;

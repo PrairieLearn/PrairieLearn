@@ -19,6 +19,21 @@ FROM (SELECT
 GROUP BY GID, groupname
 ORDER BY GID, groupname;
 
+-- BLOCK not_assigned_users
+SELECT uid
+FROM ((SELECT user_id
+FROM 
+    assessments AS a
+    JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
+WHERE a.id = $assessment_id)
+EXCEPT
+(SELECT user_id
+FROM
+    group_type AS gt
+    JOIN groups as gr ON (gt.id = gr.group_type_id)
+    JOIN group_user as gu ON (gu.group_id = gr.id)
+WHERE gt.assessment_id = $assessment_id)) temp
+JOIN users u ON u.user_id = temp.user_id;
 
 -- BLOCK open
 WITH results AS (

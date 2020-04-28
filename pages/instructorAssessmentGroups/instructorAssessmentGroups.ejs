@@ -88,14 +88,14 @@
         });
       </script>
 
-      <div class="modal fade" id="deleteAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllAssessmentInstances">
+      <div class="modal fade" id="deleteAllGroupsModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllAssessmentInstances">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="deleteAllAssessmentInstancesModalLabel">Delete all assessment instances</h4>
+              <h4 class="modal-title" id="deleteAllGroupsModalLabel">Delete all arranged groups</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to delete all assessment instances
+              Are you sure you want to delete all arranged groups
               for <strong><%= assessment_set.name %>
               <%= assessment.number %></strong>? This cannot be
               undone.
@@ -117,7 +117,7 @@
           <%= assessment_set.name %> <%= assessment.number %>: Groups
           <div class="ml-auto">
             <button type="button" class="btn btn-sm btn-light" tabindex="0"
-               data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
+               data-toggle="modal" data-target="#deleteAllGroupsModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
             </button>
           </div>
@@ -143,7 +143,6 @@
             </tr>
           </table>
         </div>
-
         <div class="table-responsive">
           <table id="usersTable" class="table table-sm table-hover tablesorter">
             <thead>
@@ -272,12 +271,19 @@
           
           <div class="card-footer">
             <small>
+              <strong>Not yet assigned students:</strong>
+                <ul>
+                  <% not_assigned_users_rows.forEach(function(row, iRow) {%>
+                  <li><%= row.uid %></li>
+                  <% }); %>
+                </ul>
+
               <strong>Actions:</strong>
               <ul>
                 <li><strong>Upload CSV to arrange (for entire class): </strong>Done</li>
                 <li><strong>Auto arrange groups (for entire class): </strong>...</li>
                 <li><strong>Auto arrange groups (for not-assigned students): </strong>...</li>
-                <li><strong>Delete all groups: </strong>...</li>
+                <li><strong>Delete all groups: </strong>Done</li>
               </ul>
 
               <strong>Group Management</strong>

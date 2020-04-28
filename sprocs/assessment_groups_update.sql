@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS instance_groups_update(bigint,text, text);
+DROP FUNCTION IF EXISTS assessment_groups_update(bigint,text, text);
 
 CREATE OR REPLACE FUNCTION
-    instance_groups_update(
+    assessment_groups_update(
         IN arg_assessment_id bigint,          -- must provide assessment_id
         IN arg_groupname text,
         IN arg_uid text
