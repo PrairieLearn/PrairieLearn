@@ -8,6 +8,7 @@ numpy==1.18.2
 pandas==1.0.3
 pycryptodome==3.9.7
 pyquaternion==0.9.5
+regex==2020.4.4
 scipy==1.4.1
 sympy==1.5.1
 rpy2==3.2.7
