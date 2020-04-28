@@ -148,6 +148,10 @@ def test_0(self):
 
 Note that `Feedback.set_percent()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_percent(0.5)` is run, the student will be awarded 5 points.
 
+#### Multiple Iterations
+
+By setting the `total_iters` class variable, the test suite can be run for multiple iterations.  To prevent a specific test case from being run multiple times, you can add the `@not_repeated` decorator to it.
+
 #### Code Feedback
 
 The code feedback library contains built-in functions for checking correctness of various datatypes.  Here is a nonexhaustive list of them, for a more complete reference refer to the source file [on GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/python/python_autograder/code_feedback.py).  Note that all functions will perform some sort of sanity checking on user input and will not fail if, for example, the student does not define an input variable.
