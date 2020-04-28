@@ -38,7 +38,7 @@ function getLoadStats(callback) {
 }
 
 function sendStatsToCloudWatch(stats, callback) {
-    const cloudwatch = new AWS.CloudWatch();
+    const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
     const dimensions = [{Name: 'By Queue', Value: config.externalGradingJobsQueueName}];
     const params = {
         // AWS limits to 20 items within each MetricData list
@@ -340,7 +340,7 @@ function setAutoScalingGroupCapacity(stats, callback) {
     if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return callback(null);
     if (stats.desired_instances == stats.instance_count) return callback(null);
 
-    const autoscaling = new AWS.AutoScaling();
+    const autoscaling = new AWS.AutoScaling(config.awsServiceGlobalOptions);
     const params = {
         AutoScalingGroupName: config.externalGradingAutoScalingGroupName,
         DesiredCapacity: stats.desired_instances,
