@@ -35,6 +35,14 @@ FROM
 WHERE gt.assessment_id = $assessment_id)) temp
 JOIN users u ON u.user_id = temp.user_id;
 
+-- BLOCK assessment_list
+SELECT tid
+FROM assessments
+WHERE course_instance_id IN (SELECT course_instance_id
+                            FROM assessments
+                            WHERE id = $assessment_id)
+ORDER BY tid;
+
 -- BLOCK open
 WITH results AS (
     UPDATE assessment_instances AS ai

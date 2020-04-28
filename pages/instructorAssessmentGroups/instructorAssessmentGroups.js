@@ -5,7 +5,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const error = require('@prairielearn/prairielib/error');
-const groupUpload = require('../../lib/group-upload');
+const groupUpdate = require('../../lib/group-update');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -16,6 +16,12 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     debug('GET /');
     const params = {assessment_id: res.locals.assessment.id};
+    sqldb.query(sql.assessment_list, params, function(err, result) {
+        if (ERR(err, next)) return;
+        res.locals.assessment_list_rows = result.rows;
+        //debug('render page');
+        //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
     sqldb.query(sql.select_groups, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.groups_rows = result.rows;
@@ -32,8 +38,8 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.__action == 'upload_instance_groups') {
-        groupUpload.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
+    if (req.body.__action == 'upload_assessment_groups') {
+        groupUpdate.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
