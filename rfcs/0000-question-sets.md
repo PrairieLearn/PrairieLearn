@@ -63,7 +63,7 @@ In the future, one could build a feature that allows an authorized user to expor
 The following guarantees should exist:
 
 * There is no ambiguity between whether a question belongs to a course or a question set.
-* Syncing a new version question set should not break any existing assessments that reference questions from it.
+* Syncing a new version of a question set should not break any existing assessments that reference questions from it.
 * There should never be an assessment on a production instance that references a question that does not exist.
 
 The following facts and behaviors ensure those guarantees:
@@ -147,4 +147,4 @@ Perhaps permissions should exist at the course level - a PrairieLearn admin can 
 
 ## Discovery
 
-At first, the existencen of question sets will probably be shared directly between staff from courses. However, this word-of-mouth does not scale well. There should be a way to see what question sets exist, both globally and on a particular instance of PrairieLearn.
+At first, the existence of question sets will probably be shared directly between staff from courses. However, this word-of-mouth does not scale well. There should be a way to see what question sets exist, both globally and on a particular instance of PrairieLearn.
