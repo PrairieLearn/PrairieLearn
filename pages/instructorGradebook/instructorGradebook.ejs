@@ -55,6 +55,7 @@
             <thead>
               <tr>
                 <th>UID</th>
+                <th>UIN</th>
                 <th>Name</th>
                 <th>Role</th>
                 <% course_assessments.forEach(function(assessment) { %>
@@ -66,6 +67,7 @@
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
                 <td><%= row.uid %></td>
+                <td><%= row.uin %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
                 <% row.scores.forEach(function(score, iScore) { %>

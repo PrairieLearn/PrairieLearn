@@ -1,7 +1,7 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.uin, u.name, coalesce(e.role, 'None'::enum_role) AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -26,12 +26,13 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.user_id, ai.number, ai.id;
+    e.role DESC, u.uid, u.uin, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_instance_questions
 SELECT
     u.uid,
+    u.uin,
     u.name,
     e.role,
     (aset.name || ' ' || a.number) AS assessment_label,
@@ -59,7 +60,7 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    u.uid, ai.number, q.qid, iq.number, iq.id;
+    u.uid, u.uin, ai.number, q.qid, iq.number, iq.id;
 
 
 -- BLOCK submissions_for_manual_grading
@@ -75,6 +76,7 @@ WITH final_assessment_instances AS (
 )
 SELECT DISTINCT ON (ai.id, q.qid)
     u.uid,
+    u.uin,
     q.qid,
     iq.score_perc AS old_score_perc,
     s.id AS submission_id,
@@ -96,6 +98,7 @@ ORDER BY ai.id, q.qid, s.date DESC;
 WITH all_submissions AS (
     SELECT
         u.uid,
+        u.uin,
         u.name,
         e.role,
         (aset.name || ' ' || a.number) AS assessment_label,
@@ -166,6 +169,7 @@ final_assessment_instances AS (
 submissions_with_files AS (
     SELECT DISTINCT ON (ai.id, q.qid)
         u.uid,
+        u.uin,
         q.qid,
         s.id AS submission_id,
         s.submitted_answer,
@@ -186,6 +190,7 @@ submissions_with_files AS (
 all_files AS (
     SELECT
         uid,
+        uin,
         qid,
         submission_id,
         (CASE
@@ -209,6 +214,7 @@ all_files AS (
 SELECT
     (
         uid
+        || '_' || uin
         || '_' || qid
         || '_' || submission_id
         || '_' || filename
@@ -220,7 +226,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    uid, qid, filename, submission_id
+    uid, uin, qid, filename, submission_id
 LIMIT
     $limit
 OFFSET
@@ -232,6 +238,7 @@ WITH all_submissions_with_files AS (
     SELECT
         s.id AS submission_id,
         u.uid,
+        u.uin,
         ai.number AS assessment_instance_number,
         q.qid,
         v.number AS variant_number,
@@ -295,6 +302,7 @@ all_files AS (
 SELECT
     (
         uid
+        || '_' || uin
         || '_' || assessment_instance_number
         || '_' || qid
         || '_' || variant_number
@@ -309,7 +317,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    uid, assessment_instance_number, qid, variant_number, date
+    uid, uin, assessment_instance_number, qid, variant_number, date
 LIMIT
     $limit
 OFFSET
