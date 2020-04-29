@@ -45,7 +45,7 @@ Shareable courses will be modeled identically to normal courses: as GitHub repos
 
 ## Usage across multiple PrairieLearn instances.
 
-By design, PrairieLearn is a decentrilized system. There are now several production instances running at different universities, and dozens (if not hundreds) of individuals run PrairieLearn on their computers for local course development. The architecture of shareable courses needs to take this decentralized nature into account.
+By design, PrairieLearn is a decentralized system. There are now several production instances running at different universities, and dozens (if not hundreds) of individuals run PrairieLearn on their computers for local course development. The architecture of shareable courses needs to take this decentralized nature into account.
 
 Making a shareable course available to an institution's instance of PrairieLearn will be as simple as syncing it like a normal course. Updates to shareable courses are also handled via syncing.
 
