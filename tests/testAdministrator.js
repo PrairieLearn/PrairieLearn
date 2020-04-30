@@ -78,11 +78,11 @@ describe('Administrator pages', function() {
             locals.$ = cheerio.load(page);
         });
         it('should contain default institution', function() {
-            elemList = locals.$('td:contains("Default")');
+            elemList = locals.$('#institutions td:first-child:contains("Default")');
             assert.lengthOf(elemList, 1);
         });
         it('should contain course QA 101', function() {
-            elemList = locals.$('td:contains("QA 101")');
+            elemList = locals.$('#courses td:contains("QA 101")');
             assert.lengthOf(elemList, 1);
         });
     });
