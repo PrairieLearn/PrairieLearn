@@ -98,7 +98,7 @@ This is the current state of PrairieLearn. "Sharing" a question involves manuall
 
 ## Share questions directly from courses
 
-Instead of having a special entity that stores shared questions, one could share questions directly from an existing course. From a technical perspective this is likely easier than the proposal of dedicated shareable courses.
+Instead of having a special flag to indicate a shareable course, one could share questions directly from any existing course. From a technical perspective this is slightly easier than the proposal of dedicated shareable courses.
 
 The first drawback to this solution is that it makes it hard to ensure the previously-mentioned consistency guarantees. Since a normal course is a self-contained unit, questions can be renamed and deleted at will as long as all references to the question within the course change at the same time. This is by design, as it allows courses to reorganize their course material as time goes on. However, with dedicated shareable courses, a question's ID becomes a part of the "interface" of the course.
 
@@ -122,11 +122,6 @@ To ensure safety guarantees, once a question in a shareable course exists, it ca
 Deprecated questions could render a warning in instructor views of the question, on a question's row in an assessment overview, or in other useful locations across PrairieLearn.
 
 # Unresolved questions and concerns
-
-## Feature name
-
-With the existence of assessment sets, "set" might become too much of an overloaded term if used for this feature. A name like "question collections" may be more appropriate.
-
 ## Shareable course IDs
 
 Shareable course IDs are how questions from shareable courses are referenced in assessments. Ideally, these IDs should have the following properties:
@@ -141,7 +136,7 @@ Because they must be human readable, a shareable course's UUID is unsuitable as 
 
 As with normal courses, access to shareable courses should be carefully controlled. It should also be consistent: if I'm staff for a course instance, I should be able to access shareable courses that are referenced by my courses' assignments. It's not clear how this access should be requested, granted, or managed.
 
-These permissions should likely not live in a shareable courses's repo - they're liekly going to be specific to the instance of PrairieLearn a course is running on.
+These permissions should likely not live in a shareable courses's repo - they're likely going to be specific to the instance of PrairieLearn a course is running on.
 
 Perhaps permissions should exist at the course level - a PrairieLearn admin can grant course X the ability to use and view shareable course Y. That permission would be transitive: if I'm course staff for course X, and course X has the ability to use shareable course Y, then I should be able to view and use anything in shareable course Y.
 
