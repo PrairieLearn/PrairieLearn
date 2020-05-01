@@ -93,18 +93,16 @@
   </div>
 <% } %>
 <script>
-    $('form.question-form').on('submit', function(e) {
+    $('form.question-form').on('submit', function() {
         if (!$(this).data('submitted')) {
             $(this).data('submitted', true);
 
-            var form = $(this);
-            form.find('.disable-on-submit').each(function(index) {
+            $(this).find('.disable-on-submit').each(function() {
                 // Create a disabled clone of the submit button
                 $(this).clone(false).removeAttr('id').prop('disabled', true).insertBefore($(this));
 
-                // Hide the actual submit button and move it to the beginning of the form
+                // Hide the actual submit button
                 $(this).hide();
-                form.prepend($(this));
             });
         }
     });
