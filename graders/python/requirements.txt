@@ -4,7 +4,7 @@ numpy==1.18.2
 pandas==1.0.3
 scipy==1.4.1
 sympy==1.5.1
-Pillow==7.0.0
+Pillow==7.1.2
 pygraphviz==1.5
 defusedxml==0.6.0
 openpyxl==3.0.3
