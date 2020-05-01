@@ -8,6 +8,8 @@ This page lists sample assessment configurations for remote exams, where student
 
 ## Synchronous, timed exams
 
+**We recommend exams to be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit. 
+
 This configuration is good when:
 
 * Almost all students take the exam at the same time
@@ -61,6 +63,8 @@ Some notes about this configuration:
 
 ## Asynchronous, timed exams
 
+We do **NOT** recommend exams to be run using an asynchronous, timed configuration. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
+
 This configuration is good when:
 
 * Students can choose when to take the exam over a long period (typically about 24 hours)
@@ -98,3 +102,60 @@ Some notes about this configuration:
 
 * All of the the [notes above](#synchronous-timed-exams) still apply
 * It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
+
+## Post-graded exams
+
+We do **NOT** recommend exams to be run using a post-graded configuration. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students, but it's good for mimicking traditional pen-and-paper exams.
+
+This configuration is good when:
+
+* You want to mimic a pen-and-paper exam as much as possible.
+* You have a Scantron exam you would like to convert to PrairieLearn.
+* You want to prevent students from finding out which questions they answered correctly.
+* The exam only contains multiple-choice questions or very simple numeric questions. More complex questions need to allow students multiple attempts, which this configuration disables by turning off real-time grading.
+
+```json
+"allowRealTimeGrading": false,
+"allowAccess": [
+    {
+        "role": "TA",
+        "credit": 100
+    },
+    {
+        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2020-04-20T11:00:00",
+        "endDate": "2020-04-20T12:40:00",
+        "timeLimitMin": 90,
+        "showClosedAssessment": false
+    },
+    {
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2020-04-20T11:00:00",
+        "endDate": "2020-04-20T12:10:00",
+        "timeLimitMin": 60,
+        "showClosedAssessment": false
+    },
+    {
+        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2020-04-20T23:00:00",
+        "endDate": "2020-04-21T00:10:00",
+        "timeLimitMin": 60,
+        "showClosedAssessment": false
+    }
+],
+```
+
+Some notes about this configuration:
+
+* All of the the [notes above for synchronous, timed exams](#synchronous-timed-exams) still apply.
+* The only change between this configuration and the [synchronous, timed](#synchronous-timed-exams) configuration above is the addition of the `"allowRealTimeGrading": false`. [Disabling real-time grading](assessment.md#disabling-real-time-grading) will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden.
+* When they are doing the exam, students can save answers to a question as many times as they like. When the exam finishes, the most recent saved answer for each question (if any) will be graded. Any earlier saved answers will be ignored.
+* With this configuration students will never see their grading results for specific questions. This is because `"allowRealTimeGrading": false` disallows grading _during_ the exam, and `"showClosedAssessment": false` hides per-question grading results _after_ the exam is over.
+* Students will be shown their total exam score as soon as the exam is over. There is currently no way to prevent this in PrairieLearn, but it is intended to add a feature to prevent even total score access by students: https://github.com/PrairieLearn/PrairieLearn/issues/2181
+* Having real-time grading disabled means that students are unable to re-attempt questions. This means you should not include complex numeric or programming questions, because students will often need multiple attempts at a question after grading feedback to correct minor typos and errors.
+* It's possible to also combine this configuration with [asynchronous, timed](#asynchronous-timed-exams) by adding `"allowRealTimeGrading": false` to that configuration above.

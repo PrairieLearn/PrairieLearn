@@ -26,8 +26,9 @@ router.get('/', (req, res, next) => {
         if (ERR(err, next)) return;
         res.locals.assessment_instance_stats = result.rows;
 
-        sqlDb.queryOneRow(sql.select_formatted_duration, params, (err, result) => {
+        sqlDb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
             if (ERR(err, next)) return;
+            res.locals.assessment_instance_date_formatted = result.rows[0].assessment_instance_date_formatted;
             res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
             const params = {assessment_instance_id: res.locals.assessment_instance.id};

@@ -90,6 +90,14 @@ if __name__ == '__main__':
 
         with open('results.json', mode='w') as out:
             json.dump(grading_result, out)
+    except (SyntaxError, NameError):
+        grading_result = {}
+        grading_result['gradable'] = False
+        grading_result['format_errors'] = "Your code has a syntax error."
+        grading_result['output'] = traceback.format_exc()
+
+        with open('results.json', mode='w') as out:
+            json.dump(grading_result, out)
     except:
         # Last-ditch effort to capture meaningful error information
         grading_result = {}

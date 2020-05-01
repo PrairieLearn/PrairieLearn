@@ -6,7 +6,6 @@
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/instructorAssessmentTabs'); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -161,7 +160,9 @@
                   re-upload (see the "Upload" tab). For each student
                   and each question, only the most recent submission
                   from the most recent assessment instance is
-                  included.
+                  included. Files are stripped from the submitted
+                  answer in the CSV and are available
+                  as <tt><%= filesForManualGradingZipFilename %></tt>.
                 </td>
               </tr>
               <tr>

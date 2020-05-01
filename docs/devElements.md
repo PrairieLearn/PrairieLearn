@@ -81,7 +81,7 @@ Key | Type | Description
 `data["options"]` | dict | Any options associated with the question.
 `data["raw_submitted_answers"]` | dict | The answer submitted by the student before parsing.
 `data["editable"]` | boolean | Whether the question is currently in an editable state.
-`data["panel"]` | string | Which panel is being rendered (`question`, `submisison`, or `answer`).
+`data["panel"]` | string | Which panel is being rendered (`question`, `submission`, or `answer`).
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
@@ -103,6 +103,7 @@ Function | Return object | modifiable `data` keys | unmodifiable `data` keys | D
 `render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.
 `parse()` | | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
 `grade()` | | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+`test()` | | `format_errors`, `partial_scores`, `score`, `raw_submitted_answers` | `gradable`, `test_type` | Creates a test submission for this element, used when running tests from the "Settings" panel.  Should set a value in `data['raw_submitted_answers'][var]` and expected score in `data['partial_scores'][var]` (or `data['format_errors'][var]` if `invalid`).  The type of input to test is given in `data['test_type']` and can be one of `correct`, `incorrect`, or `invalid`.
 
 The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to change any of the modifiable values in `data` (see above table) and these changes will be persisted to the database. No function is allowed to add or delete keys in `data`.
 
@@ -153,7 +154,7 @@ Property | Description
 `elementStyles` | The styles required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `elementScripts` | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
-`clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
+`clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
 
 You can also find the types of dependencies defined in these schema files:
 

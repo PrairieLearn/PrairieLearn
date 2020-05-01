@@ -43,6 +43,19 @@ def render(element_html, data):
         html_params['graded'] = bool(feedback)
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
+
+        # Gradable
+        gradable = True
+        if 'results' in feedback and 'gradable' in feedback['results']:
+            gradable = feedback['results']['gradable']
+        html_params['gradable'] = gradable
+
+        # Format Errors
+        format_errors = data.get('format_errors', {})
+        grader_format_errors = format_errors.get('_external_grader', [])
+        html_params['format_errors'] = grader_format_errors
+        html_params['has_format_errors'] = len(grader_format_errors) > 0
+
         if not grading_succeeded:
             html_params['message'] = ansi_to_html(feedback.get('message', None))
         else:

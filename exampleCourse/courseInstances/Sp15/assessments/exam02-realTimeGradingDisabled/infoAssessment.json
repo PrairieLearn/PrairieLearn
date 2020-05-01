@@ -19,64 +19,76 @@
     ],
     "zones": [
         {
-            "title": "Fundamental questions",
+            "title": "Freebie",
             "questions": [
                 {
                     "numberChoose": 1,
-                    "points": 25,
+                    "points": 5,
                     "alternatives": [
-                        {"id": "demoCalculation"},
-                        {"id": "demoMatrixAlgebra"}
-                    ]
-                },
-                {
-                    "numberChoose": 1,
-                    "points": 25,
-                    "alternatives": [
-                        {"id": "demoFixedCheckbox"},
-                        {"id": "demoRandomPlot"}
+                        {"id": "demoCustomElement"}
                     ]
                 }
             ]
         },
         {
-            "title": "Intermediate questions",
+            "title": "Warm-up",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": 25,
+                    "alternatives": [
+                        {"id": "demoStudentNames"},
+                        {"id": "demoStudentFaces"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": 25,
+                    "alternatives": [
+                        {"id": "templateCheckbox"},
+                        {"id": "templateMultipleChoiceMultipleCorrect"}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Places",
             "questions": [
                 {
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "demoMatrixComplexAlgebra"},
-                        {"id": "demoRandomCheckbox"}
+                        {"id": "templateMultipleChoiceWithFigure"},
+                        {"id": "templateMultipleChoiceSingleCorrect"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": 10,
                     "alternatives": [
-                        {"id": "demoRandomMultipleChoice"},
-                        {"id": "demoStudentFaces"}
+                        {"id": "templateMultipleChoiceTrueFalseFromList"},
+                        {"id": "templateMultipleChoiceFromList"}
                     ]
                 }
            ]
         },
         {
-            "title": "Advanced questions",
+            "title": "Math",
             "questions": [
                 {
                     "numberChoose": 1,
                     "points": 5,
                     "alternatives": [
-                        {"id": "demoRandomDataFrame"},
-                        {"id": "demoRandomSymbolic"}
+                        {"id": "templateMultipleChoiceNumeric"},
+                        {"id": "demoRandomCheckbox"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": 5,
                     "alternatives": [
-                        {"id": "demoCustomElement"},
-                        {"id": "demoCustomGradeFunction"}
+                        {"id": "demoFixedCheckbox"},
+                        {"id": "demoRandomMultipleChoice"}
                     ]
                 }
             ]

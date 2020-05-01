@@ -771,45 +771,11 @@ Attribute | Type | Default | Description
 
 #### Details
 
-The `language` can be one of the following values.
+The `pl-code` element uses the _Pygments_ library for syntax highlighting, a full list of supported languages can be found [here](https://pygments.org/languages/).
 
-`language` value | Description
---- | ---
-`armasm` | ARM Assembly
-`bash` | Bash
-`cpp` | C++
-`csharp` | C#
-`css` | CSS
-`excel` | Excel
-`fortran` | Fortran
-`go` | Go
-`haskell` | Haskell
-`html` | HTML,XML
-`ini` | Ini
-`java` | Java
-`javascript` | JavaScript
-`json` | JSON
-`julia` | Julia
-`makefile` | Makefile
-`markdown` | Markdown
-`mathematica` | Mathematica
-`matlab` | Matlab
-`mipsasm` | MIPS Assembly
-`objectivec` | Objective-C
-`ocaml` | OCaml
-`perl` | Perl
-`php` | PHP
-`python` | Python
-`r` | R
-`ruby` | Ruby
-`rust` | Rust
-`shell` | Shell Session
-`sql` | SQL
-`tex` | TeX
-`x86asm` | Intel x86 Assembly
-`yaml` | YAML
+##### Common Pitfalls
 
-Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering.  To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
 
 #### Example implementations
 

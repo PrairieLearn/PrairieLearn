@@ -880,6 +880,8 @@ if (config.startServer) {
             logger.verbose('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
             var idleErrorHandler = function(err) {
                 logger.error('idle client error', err);
+                // https://github.com/PrairieLearn/PrairieLearn/issues/2396
+                process.exit(1);
             };
             sqldb.init(pgConfig, idleErrorHandler, function(err) {
                 if (ERR(err, callback)) return;

@@ -88,7 +88,7 @@ cd /PrairieLearn
 
 The previous shells were launched in their own containers. If you want to open a shell in a Docker container that is *already running*, you can find the container's name and connect to it.
 
-1. Find the name of your running PrairieLearn container by running
+* Find the name of your running PrairieLearn container by running
 
 ```sh
 docker ps
@@ -102,7 +102,7 @@ e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 
 ```
 
 
-2. Open a shell in your PrairieLearn container by running
+* Open a shell in your PrairieLearn container by running
 
 ```sh
 docker exec -it CONTAINER_NAME /bin/bash

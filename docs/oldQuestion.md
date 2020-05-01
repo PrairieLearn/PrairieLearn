@@ -264,6 +264,43 @@ The part in the box shown to the student after the question has been graded.
 ```
 
 
+## Accessing files from code via RequireJS
+
+These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries. There is never a need to put a library file into both the client and server directories, because it can just go only into the client directory and be accessed directly from there by both `client.js` and `server.js`.
+
+The basic form of a `library.js` file is:
+
+```javascript
+define([<DEPENDENT-LIBRARIES-PATHS>], function(<DEPENDENT-LIBRARY-VARS>) {
+
+    var library = {};
+
+    library.add = function(arg1, arg2) {
+        return arg1 + arg2;
+    };
+
+    // more library functions go here
+
+    return library;
+});
+```
+
+To use this `library.js` file inside a question's `client.js` or `server.js` file:
+
+```javascript
+define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
+
+    var sum = library.add(3, 5); // sets sum to 8
+
+});
+```
+
+
+## Deprecated access modes
+
+To support old code, `clientFilesCourse` is also accessible as `clientFiles` and `clientCode`, while `serverFilesCourse` is accessible as `serverCode`.
+
+
 ## Library code and other files
 
 See [clientFiles and serverFiles](clientServerFiles.md) for information on accessing `clientFiles` and `serverFiles` directories from within question code.

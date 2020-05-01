@@ -2,6 +2,7 @@ columns
     client_files: text[] default ARRAY[]::text[]
     course_id: bigint not null
     deleted_at: timestamp with time zone
+    dependencies: jsonb not null default '{}'::jsonb
     directory: text
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
