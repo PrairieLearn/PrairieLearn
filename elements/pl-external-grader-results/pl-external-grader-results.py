@@ -43,11 +43,12 @@ def render(element_html, data):
         html_params['graded'] = bool(feedback)
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
+        results = feedback.get('results', None)
 
         # Gradable
         gradable = True
-        if 'results' in feedback and 'gradable' in feedback['results']:
-            gradable = feedback['results']['gradable']
+        if results is not None and 'gradable' in results:
+            gradable = results['gradable']
         html_params['gradable'] = gradable
 
         # Format Errors
