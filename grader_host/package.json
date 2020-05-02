@@ -30,7 +30,7 @@
     "js-yaml": "3.13.1",
     "lodash": "4.17.15",
     "s3-streamlogger": "1.6.1",
-    "tmp": "0.1.0",
+    "tmp": "0.2.1",
     "winston": "3.2.1",
     "winston-aws-cloudwatch": "3.0.0"
   },
