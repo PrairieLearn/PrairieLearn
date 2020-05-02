@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  height: 100%;
+  overflow: auto;
+}
+th, td {
+    text-align: center;
+    background-color: white
+}
+table {
+  position: relative;
+  overflow: hidden;
+  height: 400px;
+}
+
+thead {
+  position: relative;
+  display: block;
+  overflow: visible;
+  max-width: 97vw;
+}
+
+tr th:nth-child(1), th:nth-child(2), th:nth-child(3) {
+  position: relative;
+}
+tbody {
+  position: relative;
+  display: block;
+  max-width: 97vw;
+  height: 100%;
+  overflow: scroll;
+}
+
+th, td {
+  text-align: center;
+  min-width: 150px;
+  max-width: 150px;
+  overflow: auto;
+}
+
+tbody tr td:nth-child(1), td:nth-child(2), td:nth-child(3) {
+  position: relative;
+}
+
+.inner {
+  overflow: hidden;
+}
