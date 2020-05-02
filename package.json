@@ -111,7 +111,7 @@
         "nyc": "^15.0.0",
         "request": "^2.88.2",
         "sinon": "^9.0.2",
-        "tmp": "0.1.0"
+        "tmp": "0.2.1"
     },
     "scripts": {
         "start": "node server.js",
