@@ -35,14 +35,14 @@ user_ids AS (
     (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
 ),
 course_users AS (
-    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
+    SELECT u.user_id,u.uid,u.uin,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
         LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
 ),
 scores AS (
-    SELECT u.user_id,u.uid,u.user_name,u.role,
+    SELECT u.user_id,u.uid,u.uin,u.user_name,u.role,
         a.id AS assessment_id,a.assessment_order_by,a.assessment_set_number,
         s.score_perc, s.assessment_instance_id
     FROM
@@ -50,7 +50,7 @@ scores AS (
         CROSS JOIN course_assessments AS a
         LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
 )
-SELECT user_id,uid,user_name,role,
+SELECT user_id,uid,uin,user_name,role,
     ARRAY_AGG(
         json_build_object(
             'score_perc', score_perc,
@@ -59,5 +59,5 @@ SELECT user_id,uid,user_name,role,
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
     ) AS scores
 FROM scores
-GROUP BY user_id,uid,user_name,role
+GROUP BY user_id,uid,uin,user_name,role
 ORDER BY role DESC, uid;

@@ -257,11 +257,10 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    if allow_blank:
-        # no invalid answer implemented when allow-blank="true"
-        result = random.choices(['correct', 'incorrect'], [5, 5])[0]
-    else:
-        result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
+    if result == 'invalid' and allow_blank:
+        # We can't have an invalid submission with allow_blank, so just test correct
+        result = 'correct'
 
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru

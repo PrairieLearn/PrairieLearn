@@ -29,7 +29,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
     IF grading_method != 'External' AND grading_method != 'Manual' THEN
-        RAISE EXCEPTION 'grading_method is not External or Manual for submisison_id: %', submission_id;
+        RAISE EXCEPTION 'grading_method is not External or Manual for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################

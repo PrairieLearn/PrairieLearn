@@ -199,6 +199,9 @@ def grade(data):
     # We can modify or delete any of these if we have a custom grading method.
     # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
 
+    # grade() can also set `data['format_errors'][NAME]` if there is any reason to mark the question
+    # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
+
     # As an example, we will give half points for incorrect answers larger than "x":
     if data["score"] == 0: # only if not already correct
         if data["submitted_answers"]["y"] > data["params"]["x"]:

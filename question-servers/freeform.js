@@ -375,6 +375,7 @@ module.exports = {
         err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
         err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
         err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
+        err = checkProp('test_type',             'string',  ['test'],                             []);                         if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -1195,7 +1196,7 @@ module.exports = {
         });
     },
 
-    test: function(variant, question, course, callback) {
+    test: function(variant, question, course, test_type, callback) {
         debug(`test()`);
         if (variant.broken) return callback(new Error('attemped to test broken variant'));
         module.exports.getContext(question, course, (err, context) => {
@@ -1214,6 +1215,7 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: {},
                 gradable: true,
+                test_type: test_type,
             };
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;

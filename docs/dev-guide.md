@@ -23,7 +23,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ```text
 PrairieLearn
-+-- autograder         # files needed to autograde code on a seperate server
++-- autograder         # files needed to autograde code on a separate server
 |   `-- ...            # various scripts and docker images
 +-- config.json        # server configuration file (optional)
 +-- cron               # jobs to be periodically executed, one file per job
@@ -43,7 +43,7 @@ PrairieLearn
 |   +-- userHome       # all the code for the userHome page
 |   `-- ...            # other "instructor" and "user" pages
 +-- public             # all accessible without access control
-|   +-- javascripts    # external packages only, no modificiations
+|   +-- javascripts    # external packages only, no modifications
 |   +-- localscripts   # all local site-wide JS
 |   `-- stylesheets    # all CSS, both external and local
 +-- question-servers   # one file per question type
@@ -68,7 +68,7 @@ npm run lint -s
 
 * The above tests are run by the CI server on every push to GitHub.
 
-* The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web broswer that answers questions on assessments. If a test fails then the it is often easiest to debug but recreating the error by doing questions yourself against a locally-running server.
+* The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
@@ -280,7 +280,7 @@ FROM
 
 * Every question is a row in the `questions` table, and the `course_id` shows which course it belongs to. All the questions for a course can be thought of as the “question pool” for that course. This same pool is used for all semesters (all course instances).
 
-* Assessments are stored in the `assessments` table and each assessment row has a `course_instance_id` to indicate which course instance (and hence which course) it belongs to. An assessment is something like “Homework 1” or “Exam 3”. To determine this we can use the `asssessment_set_id` and `number` of each assessment row.
+* Assessments are stored in the `assessments` table and each assessment row has a `course_instance_id` to indicate which course instance (and hence which course) it belongs to. An assessment is something like “Homework 1” or “Exam 3”. To determine this we can use the `assessment_set_id` and `number` of each assessment row.
 
 * Each assessment has a list of questions associated with it. This list is stored in the `assessment_questions` table, where each row has a `assessment_id` and `question_id` to indicate which questions belong to which assessment. For example, there might be 20 different questions that are on “Exam 1”, and it might be the case that each student gets 5 of these questions randomly selected.
 
@@ -421,7 +421,7 @@ sqldb.beginTransaction(function(err, client, done) {
 });
 ```
 
-* Use explicit row locking whenever modifying student data related to an asseesment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
+* Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
 
 Locking function | Argument
 --- | ---
@@ -493,7 +493,7 @@ FROM
 
 * New code in PrairieLearn should use async/await whenever possible.
 
-* Older code in PrairieLearn uses the tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+* Older code in PrairieLearn uses the traditional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
 
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
@@ -608,7 +608,7 @@ function oldFunction(x, callback) {
 
 ## Stack traces with callback-style functions
 
-* Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
+* Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modifies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
 ```javascript
 // Don't do this:
@@ -687,13 +687,13 @@ function foo(p, callback) {
 
 ## Security model
 
-* We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenicated user data is stored as `res.locals.authn_user`.
+* We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenticated user data is stored as `res.locals.authn_user`.
 
 * The authentication flow is:
 
     1. We first redirect to a remote authentication service (either Shibboleth or Google OAuth2 servers). For Shibboleth this happens by the “Login to PL” button linking to `/pl/shibcallback` for which Apache handles the Shibboleth redirections. For Google the “Login to PL” button links to `/pl/auth2login` which sets up the authentication data and redirects to Google.
 
-    2. The remote authentication service redirects back to `/pl/shibcallback` (for Shibboleth) or `/pl/auth2callback` (for Google). These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browswer with the authenticated `user_id`, and then redirect to the main PL homepage.
+    2. The remote authentication service redirects back to `/pl/shibcallback` (for Shibboleth) or `/pl/auth2callback` (for Google). These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage.
 
     3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
 
@@ -841,7 +841,7 @@ Variable | Error level | Description
 `variant.broken` | Question error | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`.
 `submission.broken` | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.
 `issues` table | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.
-`submisison.gradable` | Student error | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
+`submission.gradable` | Student error | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
 `submission.format_errors` | Student error | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.
 `submission.graded_at` | None | NULL if grading has not yet occurred, otherwise a timestamp.
 `submission.score` | None | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.

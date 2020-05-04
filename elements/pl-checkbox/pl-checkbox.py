@@ -385,7 +385,7 @@ def test(element_html, data):
     number_answers = len(data['params'][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
 
     if result == 'correct':
         if len(correct_keys) == 1:

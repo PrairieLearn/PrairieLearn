@@ -93,6 +93,8 @@
   
   * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
 
+  * Add Python library regex to plbase (Nathan Bowman).
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
