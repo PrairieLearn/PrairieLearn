@@ -158,7 +158,8 @@ module.exports = {
             'sync_course_instances.sql',
             'lock_timeout_set.sql',
             'assessment_groups_update.sql',
-            'assessment_groups_delete_all.sql'
+            'assessment_groups_delete_all.sql',
+            'assessment_groups_copy.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
