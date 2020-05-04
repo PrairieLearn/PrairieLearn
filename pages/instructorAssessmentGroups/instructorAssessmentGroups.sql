@@ -6,15 +6,15 @@ SELECT
   array_to_string(array_agg(uid), ', ') AS uids
 FROM (SELECT
         gr.id AS GID,
-        gr.group_name AS groupname,
+        gr.name AS groupname,
         us.uid AS uid
     FROM
-        group_type AS gt
-        JOIN groups as gr ON (gt.id = gr.group_type_id)
-        JOIN group_user as gu ON (gu.group_id = gr.id)
+        group_configs AS gc
+        JOIN groups as gr ON (gc.id = gr.group_config_id)
+        JOIN group_users as gu ON (gu.group_id = gr.id)
         JOIN users as us ON (us.user_id = gu.user_id)
     WHERE
-        gt.assessment_id = $assessment_id
+        gc.assessment_id = $assessment_id
     ) temp
 GROUP BY GID, groupname
 ORDER BY GID, groupname;
@@ -29,14 +29,14 @@ WHERE a.id = $assessment_id)
 EXCEPT
 (SELECT user_id
 FROM
-    group_type AS gt
-    JOIN groups as gr ON (gt.id = gr.group_type_id)
-    JOIN group_user as gu ON (gu.group_id = gr.id)
-WHERE gt.assessment_id = $assessment_id)) temp
+    group_configs AS gc
+    JOIN groups as gr ON (gc.id = gr.group_config_id)
+    JOIN group_users as gu ON (gu.group_id = gr.id)
+WHERE gc.assessment_id = $assessment_id)) temp
 JOIN users u ON u.user_id = temp.user_id;
 
 -- BLOCK assessment_list
-SELECT tid
+SELECT id, tid, title
 FROM assessments
 WHERE course_instance_id IN (SELECT course_instance_id
                             FROM assessments

@@ -21,18 +21,18 @@ router.get('/', function(req, res, next) {
         res.locals.assessment_list_rows = result.rows;
         //debug('render page');
         //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-    sqldb.query(sql.select_groups, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.groups_rows = result.rows;
-        //debug('render page');
-        //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-    sqldb.query(sql.not_assigned_users, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.not_assigned_users_rows = result.rows;
-        debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        sqldb.query(sql.select_groups, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.groups_rows = result.rows;
+            //debug('render page');
+            //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            sqldb.query(sql.not_assigned_users, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.locals.not_assigned_users_rows = result.rows;
+                debug('render page');
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
+        });
     });
 });
 
@@ -66,44 +66,6 @@ router.post('/', function(req, res, next) {
             sqldb.queryOneRow(sql.open, params, function(err, _result) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
-            });
-        });
-    } else if (req.body.__action == 'close') {
-        const assessment_id = res.locals.assessment.id;
-        const assessment_instance_id = req.body.assessment_instance_id;
-        assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
-            if (ERR(err, next)) return;
-            
-            const close = true;
-            assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, function(err) {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
-        });
-    } else if (req.body.__action == 'delete') {
-        const assessment_id = res.locals.assessment.id;
-        const assessment_instance_id = req.body.assessment_instance_id;
-        assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
-            if (ERR(err, next)) return;
-            
-            const params = [
-                assessment_instance_id,
-                res.locals.authn_user.user_id,
-            ];
-            sqldb.call('assessment_instances_delete', params, function(err, _result) {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
-        });
-    } else if (req.body.__action == 'regrade') {
-        const assessment_id = res.locals.assessment.id;
-        const assessment_instance_id = req.body.assessment_instance_id;
-        assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
-            if (ERR(err, next)) return;
-            
-            regrading.regradeAssessmentInstance(assessment_instance_id, res.locals.user.user_id, res.locals.authn_user.id, function(err, job_sequence_id) {
-                if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });
         });
     } else {

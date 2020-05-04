@@ -93,25 +93,27 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        INSERT INTO group_type
-            (assessment_id,
-            grouptype,
-            max,
-            min)
+        INSERT INTO group_configs
+            (course_instance_id,
+            assessment_id,
+            type,
+            maximum,
+            minimum)
         (
             SELECT
+                new_course_instance_id,
                 new_assessment_id,
-                (assessment->>'grouptype')::integer,
+                (assessment->>'grouptype')::TEXT,
                 (assessment->>'groupmax')::integer,
                 (assessment->>'groupmin')::integer
         )
         ON CONFLICT (assessment_id) DO UPDATE
         SET
-            grouptype = EXCLUDED.grouptype,
-            max = EXCLUDED.max,
-            min = EXCLUDED.min
+            type = EXCLUDED.type,
+            maximum = EXCLUDED.maximum,
+            minimum = EXCLUDED.minimum
         WHERE
-            group_type.assessment_id = new_assessment_id;
+            group_configs.assessment_id = new_assessment_id;
 
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP

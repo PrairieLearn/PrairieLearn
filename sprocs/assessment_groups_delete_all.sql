@@ -5,16 +5,16 @@ CREATE OR REPLACE FUNCTION
     ) returns void
 AS $$
 BEGIN
-    DELETE FROM group_user gu
+    DELETE FROM group_users gu
     WHERE gu.group_id IN (SELECT gr.id
-                        FROM group_type AS gt
-                        JOIN groups AS gr ON gr.group_type_id = gt.id
-                        WHERE gt.assessment_id = assessment_groups_delete_all.assessment_id);
+                        FROM group_configs AS gc
+                        JOIN groups AS gr ON gr.group_config_id = gc.id
+                        WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id);
 
     DELETE FROM groups g
     WHERE g.id IN (SELECT gr.id
-                FROM group_type AS gt
-                JOIN groups AS gr ON gr.group_type_id = gt.id
-                WHERE gt.assessment_id = assessment_groups_delete_all.assessment_id);
+                FROM group_configs AS gc
+                JOIN groups AS gr ON gr.group_config_id = gc.id
+                WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;

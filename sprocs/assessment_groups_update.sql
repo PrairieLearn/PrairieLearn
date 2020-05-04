@@ -9,21 +9,22 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     arg_user_id bigint;
-    arg_group_type_id bigint;
+    arg_course_instance_id bigint;
+    arg_group_config_id bigint;
     arg_group_id bigint;
 BEGIN
     -- ##################################################################
-    -- get group_type_id from assessment_id
-    SELECT id
-    INTO arg_group_type_id
-    FROM group_type
+    -- get group_config_id and course_instance_id from assessment_id
+    SELECT id, course_instance_id
+    INTO arg_group_config_id, arg_course_instance_id
+    FROM group_configs
     WHERE assessment_id = arg_assessment_id;
 
     -- ##################################################################
     -- insert groups if not exist
-    IF NOT EXISTS (SELECT 1 FROM groups WHERE group_name = arg_groupname AND group_type_id = arg_group_type_id) THEN
-        INSERT INTO groups (group_name, group_type_id)
-        VALUES (arg_groupname, arg_group_type_id);
+    IF NOT EXISTS (SELECT 1 FROM groups WHERE name = arg_groupname AND group_config_id = arg_group_config_id) THEN
+        INSERT INTO groups (name, group_config_id, course_instance_id)
+        VALUES (arg_groupname, arg_group_config_id, arg_course_instance_id);
     END IF;
 
     -- ##################################################################
@@ -38,11 +39,11 @@ BEGIN
     SELECT id
     INTO arg_group_id
     FROM groups
-    WHERE group_name = arg_groupname AND group_type_id = arg_group_type_id;
+    WHERE name = arg_groupname AND group_config_id = arg_group_config_id;
 
     -- ##################################################################
     -- insert group_user
-    INSERT INTO group_user (group_id, user_id)
+    INSERT INTO group_users (group_id, user_id)
     VALUES (arg_group_id, arg_user_id);
     
 END;
