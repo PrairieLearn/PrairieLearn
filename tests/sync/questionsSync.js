@@ -121,7 +121,7 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
   });
 
-  it('fail if a nested question directory does not eventually contain an info.json file', async() => {
+  it('fails if a nested question directory does not eventually contain an info.json file', async() => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'subfolder4', 'subfolder5', 'subfolder6', 'badQuestion'];
