@@ -21,3 +21,27 @@ WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
     AND u.uid = $uid;
+
+-- BLOCK select_enrollments
+SELECT uid AS user_list
+FROM 
+    assessments AS a
+    JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
+    JOIN users u ON u.user_id = e.user_id
+WHERE a.id = $assessment_id;
+
+-- BLOCK select_not_assigned
+SELECT uid AS user_list
+FROM ((SELECT user_id
+FROM 
+    assessments AS a
+    JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
+WHERE a.id = $assessment_id)
+EXCEPT
+(SELECT user_id
+FROM
+    group_configs AS gc
+    JOIN groups as gr ON (gc.id = gr.group_config_id)
+    JOIN group_users as gu ON (gu.group_id = gr.id)
+WHERE gc.assessment_id = $assessment_id)) temp
+JOIN users u ON u.user_id = temp.user_id;

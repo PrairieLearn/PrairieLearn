@@ -43,14 +43,10 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-    } else if (req.body.__action == 'delete_all') {
-        const params = [
-            res.locals.assessment.id,
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('assessment_groups_delete_all', params, function(err, _result) {
+    } else if (req.body.__action == 'auto_assessment_groups') {
+        groupUpdate.autoGroups(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, req.body.maxnum, req.body.minnum, req.body.optradio, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'copy_assessment_groups') {
         const params = [
@@ -58,6 +54,15 @@ router.post('/', function(req, res, next) {
             req.body.inputGroupSelect01
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'delete_all') {
+        const params = [
+            res.locals.assessment.id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_groups_delete_all', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
