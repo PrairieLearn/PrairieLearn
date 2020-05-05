@@ -27,6 +27,7 @@ const questionsArray = [
     {qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12},
     {qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 8},
     {qid: 'brokenGrading', type: 'Freeform', maxPoints: 4},
+    {qid: 'subfolder/nestedQuestion', type: 'Freeform', maxPoints: 4}
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
