@@ -4,9 +4,9 @@ A mechanism for handling course content when PrairieLearn is running on multiple
 
 # Motivation and background
 
-Historically, PrairieLearn has executed on a single server with all course content stored locally on disk. This simple execution model has been very robust and has served us well for many years. However, this has made it difficult to scale PrairieLearn. "Scaling" has thus far meant "run on a bigger server. Ideally, we could autoscale PrairieLearn itself just like we do the fleet of external graders. But to do that, we need to ensure that each instance can access course content.
+Historically, PrairieLearn has executed on a single server with all course content stored locally on disk. This simple execution model has been very robust and has served us well for many years. However, this has made it difficult to scale PrairieLearn. "Scaling" has thus far meant "run on a bigger server". Ideally, we could autoscale PrairieLearn itself just like we do the fleet of external graders. But to do that, we need to ensure that each instance can access course content.
 
-One potential solution is to use a single shared network filesystem for all course content. When a new instance launches, the network filesystem would be mounted to the instance, and it could access files like normal. However, networked filesystems implementing full Posix semantics appear to be slow for our particualr use cases, namely:
+One potential solution is to use a single shared network filesystem for all course content. When a new instance launches, the network filesystem would be mounted to the instance, and it could access files like normal. However, networked filesystems implementing full Posix semantics appear to be slow for our particular use cases, namely:
 
 * Git operations
 * Large numbers of small, frequently-accessed files
@@ -19,12 +19,12 @@ Another option that's close to the existing model is to clone all repos upon ins
 
 When course content is synced, it will be broken up into a number of chunks:
 
-* One chunk containing all course custom elements
-* One chunk for `clientFilesCourse`
-* One chunk for `serverFilesCourse`
+* A chunk containing all course custom elements
+* A chunk for `clientFilesCourse`
+* A chunk for `serverFilesCourse`
 * A chunk for each course instance's `clientFilesCourseInstance`
 * A chunk for each course instance's `serverFilesCourseInstance`
-* One chunk for each question
+* A chunk for each question
 * A chunk for all question thumbnails
 
 These chunks will be uploaded to some file store with a unique, possibly deterministic ID.
