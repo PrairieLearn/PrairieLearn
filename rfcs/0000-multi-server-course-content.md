@@ -23,7 +23,6 @@ When course content is synced, it will be broken up into a number of chunks:
 * A chunk for `clientFilesCourse`
 * A chunk for `serverFilesCourse`
 * A chunk for each course instance's `clientFilesCourseInstance`
-* A chunk for each course instance's `serverFilesCourseInstance`
 * A chunk for each question
 * A chunk for all question thumbnails
 
@@ -37,7 +36,6 @@ When a server needs to use some course content, it will download the necessary c
   * Custom elements chunk
   * Question chunk
   * `serverFilesCourse` chunk
-  * Appropriate `serverFilesCourseInstance` chunk
 * Serving a file from `clientFilesCourse`
   * `clientFilesCourse` chunk
 
