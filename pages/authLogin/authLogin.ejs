@@ -76,6 +76,39 @@
             <a class="btn btn-success w-100" href="/pl/devlogin" role="button">
               <span class="font-weight-bold">DevMode by-pass</span>
             </a>
+            <button type="button" class="btn btn-success w-100" data-toggle="modal" data-target="#ltiModal">
+              <span class="font-weight-bold">DevMode LTI emulator by-pass</span>
+            </button>
+            <div class="modal" id="ltiModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">LTI login emulator</h4>
+                            <button type="button" class="close" data-dismiss="modal"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="post" action="/pl/devlogin">
+                                <label>Course instance ID
+                                    <select name="course_instance_id" class="form-control">
+                                        <% course_instances.forEach((ci) => { %>
+                                            <option value="<%= ci.course_instance_id %>"><%= ci.display_ci %></option>
+                                        <% }); %>
+                                    </select>
+                                </label>
+                                <label>Role
+                                    <select name="role" class="form-control">
+                                        <% ['Student', 'TA', 'Instructor'].forEach((role) => { %>
+                                            <option value="<%= role %>"><%= role %></option>
+                                        <% }); %>
+                                    </select>
+                                </label>
+                                <p><em>Student access will be denied if the course instance access rules don't allow it.</em></p>
+                                <input type="submit" class="btn btn-primary" value="Submit"></input>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
           <% } %>
           <% if (config.hasShib) { %>
             <a class="btn btn-shib w-100 position-relative" href="/pl/shibcallback" role="button">

@@ -1,13 +1,10 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
 
-var sqldb = require('@prairielearn/prairielib').sqlDb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
-
-var config = require('../../lib/config');
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const config = require('../../lib/config');
+const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
@@ -23,7 +20,12 @@ router.get('/', function(req, res, next) {
         // this will also need to depend on which institution we have
         // detected (e.g., UIUC doesn't want Azure during exams, but
         // ZJUI does want it).
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+        sqldb.query(sql.get_course_instances, {}, (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.course_instances = result.rows;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 
