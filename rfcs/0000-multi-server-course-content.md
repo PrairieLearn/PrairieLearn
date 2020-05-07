@@ -30,7 +30,7 @@ These chunks will be uploaded to some file store with a unique, possibly determi
 
 When a server needs to use some course content, it will download the necessary chunks to disk. Here are some common pages and the chunks necessary for them:
 
-* Viewing the course question page
+* Requesting a specific question thumbnail
   * Question thumbnails chunk
 * Viewing or grading a question
   * Custom elements chunk
@@ -54,3 +54,4 @@ Over time, the state of the world will trend towards all course files for all co
 # Potential future optimizations
 
 * The hash of a chunk's content could be stored and incorporated into its ID; this could be used to optimize syncs to only upload changes chunks. And for servers, they would only need to load a chunk again if its contents have changed.
+* We could intelligently preload chunks that we expect to be used soon. For instance, when we get a request for the course question page, we can immediately request the question thumbnails chunk for that course so that it's more likely to be ready by the time we get the request for question thumbnails.
