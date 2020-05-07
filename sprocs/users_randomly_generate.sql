@@ -25,7 +25,6 @@ BEGIN
 
         name := '';
         status := FLOOR(RANDOM() * 10);
-        --RAISE NOTICE 'Status is %', status;
 
         IF MOD(status, 2) = 1 THEN
             first_names = boy_names;
@@ -43,8 +42,6 @@ BEGIN
 
         email = LOWER(name);
         email = REPLACE(email, ' ', '.') || '@example.com';
-        --RAISE NOTICE 'Name is %', name;
-        --RAISE NOTICE 'Email is %', email;
 
         INSERT INTO users (name, uid) VALUES (name, email)
         RETURNING users.user_id INTO _user_id;
