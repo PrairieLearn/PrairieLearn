@@ -8,7 +8,7 @@
         },
         {
             "name": "course_instance_id",
-            "description": "course_instance_id to enroll (integer), can be blank to only create the users and not enroll them"
+            "description": "course_instance_id to enroll the users in (integer), can be blank to only create the users and not enroll them"
         }
     ]
 }

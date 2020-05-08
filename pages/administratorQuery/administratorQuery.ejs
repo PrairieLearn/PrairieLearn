@@ -28,11 +28,7 @@
       }
       
       function render(row, col) {
-          if (row[col] == null) {
-              %> <td></td> <%
-          } else if (info.resultFormats && info.resultFormats[col] == 'pre') {
-              %> <td><pre><%= row[col] %></pre></td> <%
-          } else if (col == 'course_id' && 'course' in row) {
+          if (col == 'course_id' && 'course' in row) {
               %> <%
           } else if (col == 'course' && 'course_id' in row) {
               %> <td><a href="<%= urlPrefix %>/course/<%= row['course_id'] %>"><%= row[col] %></a></td> <%
@@ -44,6 +40,10 @@
               %> <%
           } else if (col == 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
               %> <td><a href="<%= urlPrefix %>/course_instance/<%= row['course_instance_id'] %>/instructor/assessment/<%= row['assessment_id'] %>"><%= row[col] %></a></td> <%
+          } else if (row[col] == null) {
+              %> <td></td> <%
+          } else if (info.resultFormats && info.resultFormats[col] == 'pre') {
+              %> <td><pre><%= row[col] %></pre></td> <%
           } else if (typeof(row[col]) == 'object') {
               %> <td><tt><%= JSON.stringify(row[col]) %></tt></td> <%
           } else {
