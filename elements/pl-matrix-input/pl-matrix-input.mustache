@@ -122,17 +122,14 @@
 
 {{#format}}
 <p>
-    Your answer should be a matrix (i.e., a 2D array), or a vector (a 1D array).
-</p>
-<p>
-    A <strong>2D array</strong> can be expressed in one of two ways:
+Your answer must be a matrix (i.e., a 2D array). It can be expressed in one of two ways:
 </p>
 <ul>
     <li><strong>Matlab Format.</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space or comma. Indicate the end of each intermediate row with a semicolon. Examples: <code>[1 2 3; 4 5 6]</code> or <code>[1, 2, 3; 4, 5, 6]</code></li>
     <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <code>[[1, 2, 3], [4, 5, 6]]</code></li>
 </ul>
 <p>
-    A <strong>1D array</strong> can be expressed by enclosing the array with a single pair of square brackets.  Separate entries with a space or comma.  Note that this will generate a <i>row vector</i>, if you are trying to create a column vector use the above 2D array syntax.  Example: <code>[1,2,3]</code>
+    Note that <code>[1, 2, 3]</code> is valid Matlab input for a 1&times;3 matrix (a row vector). If you want a column vector (a 3&times;1 matrix) then you should enter <code>[1; 2; 3]</code> or <code>[[1], [2], [3]]</code>.
 </p>
 <p>
 {{#allow_complex}}
@@ -173,19 +170,11 @@ matrix {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}
     </p>
     <hr>
     <small>
-        <p>
-            Your answer should be a matrix (i.e., a 2D array), or a vector (a 1D array).
-        </p>
-        <p>
-            A <strong>2D array</strong> can be expressed in one of two ways:
-        </p>
-        <ul>
-            <li><strong>Matlab Format.</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space or comma. Indicate the end of each intermediate row with a semicolon. Examples: <code class="user-output small">[1 2 3; 4 5 6]</code> or <code class="user-output small">[1, 2, 3; 4, 5, 6]</code></li>
-            <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <code class="user-output small">[[1, 2, 3], [4, 5, 6]]</code></li>
-        </ul>
-        <p>
-            A <strong>1D array</strong> can be expressed by enclosing the array with a single pair of square brackets.  Separate entries with a space or comma.  Note that this will generate a <i>row vector</i>, if you are trying to create a column vector use the above 2D array syntax.  Example: <code class="user-output small">[1,2,3]</code>
-        </p>
-        <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> {{#complex}}or complex{{/complex}} number.  These numbers {{#complex}}(both real and complex parts){{/complex}} lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
+    <p>
+      Your answer must be a matrix (i.e., a 2D array). It can be expressed in one of two ways:
+    </p>
+    <p> <strong>Matlab Format:</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space or comma. Indicate the end of each intermediate row with a semicolon. <br> Examples: <code class="user-output small">[1 2 3; 4 5 6]</code> or <code class="user-output small">[1, 2, 3; 4, 5, 6]</code> </p>
+    <p> <strong>Python Format:</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. <br> Example: <code class="user-output small">[[1, 2, 3], [4, 5, 6]]</code> </p>
+    <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> {{#complex}}or complex{{/complex}} number.  These numbers {{#complex}}(both real and complex parts){{/complex}} lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
     </small>
 {{/format_error}}
