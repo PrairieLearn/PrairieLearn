@@ -32,8 +32,9 @@ Attribute | Type | Default | Description
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
-`tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
+`tolerance-hint` | string | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
 `disregard-extra-elements` | boolean | false | If true, extra elements are ignored if they match the same reference object.  Otherwise, multiple matching elements will reduce the awarded points.
+`hide-answer-panel`| boolean | true | If true, the correct answer will be hidden from the student.
 
 
 ## `pl-drawing-initial` element

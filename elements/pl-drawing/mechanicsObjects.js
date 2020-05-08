@@ -3,6 +3,27 @@
 var sylvester = window.Sylvester;
 var $V = Sylvester.Vector.create;
 
+const drawing_defaults = {
+    'x1': 20,
+    'y1': 20,
+    'x2': 80,
+    'y2': 20,
+    'offsetx': 2,
+    'offsety': 2,
+    'width': 30,
+    'width-rod': 20,
+    'height': 40,
+    'label': '',
+    'angle': 0,
+    'end-angle': 60,
+    'radius': 20,
+    'stroke-width': 2,
+    'selectable': false,
+    'font-size': 16,
+    'point-size': 4,
+    'force-width': 60
+}
+
 var mechanicsObjects = {};
 
 // ======================================================================================
@@ -1949,7 +1970,11 @@ mechanicsObjects.byType['arc_vector'] = mechanicsObjects.addArcVector;
 //     right: right coordinate
 //     ...: other drawing options
 
-mechanicsObjects.addArrow = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addVector = function(canvas, options, submittedAnswer, answerName) {
+    const defaults = {
+        
+    }
+    
     var obj = new this.Arrow(options);
     canvas.add(obj);
 
@@ -2000,7 +2025,8 @@ mechanicsObjects.addArrow = function(canvas, options, submittedAnswer, answerNam
     return obj;
 };
 
-mechanicsObjects.byType['arrow'] = mechanicsObjects.addArrow;
+mechanicsObjects.byType['arrow'] = mechanicsObjects.addVector;
+mechanicsObjects.byType['vector'] = mechanicsObjects.addVector;
 
 // ======================================================================================
 mechanicsObjects.addDoubleArrow = function(canvas, options, submittedAnswer, answerName) {

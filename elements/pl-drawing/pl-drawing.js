@@ -154,170 +154,6 @@
 
         /* Button handlers */
         let handlers = {};
-
-        let arc_vec_options = {
-          radius: 30,
-          stroke: '#800080',
-          strokeWidth: 3,
-          originX:'center',
-          originY: 'center',
-          padding: 30,
-          trueHandles: ['mtr'],
-          drawCenterPoint:true,
-          startAngle: 30,
-          endAngle: 230,
-          gradingName: 'arc_vector',
-          graded: true,
-        }
-
-        handlers["pl-arc-vector-CCW"] = function(options) {
-            let options2 = _.defaults(options, arc_vec_options);
-            let def = {
-                left: 0.1*canvas_width,
-                top: 0.2*canvas_width,
-                drawStartArrow: true,
-                drawEndArrow: false,
-            };
-            let opts = _.defaults(options2, def);
-            mechanicsObjects.addArcVector(canvas, opts, submittedAnswer, answerName);
-        }
-
-        handlers["pl-arc-vector-CW"] = function(options) {
-            let options2 = _.defaults(options, arc_vec_options);
-            let def = {
-              left: 0.2*canvas_width,
-              top: 0.2*canvas_width,
-              drawStartArrow: false,
-              drawEndArrow: true,
-            };
-            let opts = _.defaults(options2, def);
-            mechanicsObjects.addArcVector(canvas, opts, submittedAnswer, answerName);
-        }
-
-        handlers["pl-vector"] = function(options) {
-            let def = {
-                left: 80, //0.8*canvas_width,
-                top: 80, //0.9*canvas_height,
-                width: 60,
-                stroke: '#b71c0c',
-                strokeWidth: 3,
-    	          originX:'center',
-                originY: 'center',
-                padding: 6,
-                trueHandles: ['mtr'],
-                drawStartArrow: false,
-                drawEndArrow: true,
-                angle: 0,
-                gradingName: 'vector',
-                graded: true,
-            };
-            let opts = _.defaults(options, def);
-            mechanicsObjects.addArrow(canvas, opts, submittedAnswer, answerName);
-        }
-
-        handlers["pl-double-headed-vector"] = function(options) {
-            let def = {
-                left: 80,
-                top: 40,
-                width: 60,
-                stroke: '#b71c0c',
-                strokeWidth: 3,
-                originX:'center',
-                originY: 'center',
-                padding: 6,
-                trueHandles: ['mtr'],
-                drawStartArrow: false,
-                drawEndArrow: true,
-                angle: 0,
-                gradingName: 'double_headed_vector',
-                graded: true,
-            };
-            let opts = _.defaults(options, def);
-            mechanicsObjects.addDoubleArrow(canvas, opts, submittedAnswer, answerName);
-        }
-
-        handlers["pl-point"] = function(options) {
-            let def = {
-                left: 40, //0.8*canvas_width,
-                top: 40, //0.9*canvas_height,
-                radius: 4,
-                fill: 'blue',
-                stroke: 'blue',
-                strokeWidth: 1,
-    	        originX:'center',
-                originY: 'center',
-                padding: 12,
-                gradingName: 'point',
-                graded: true,
-            };
-            let opts = _.defaults(options, def);
-            mechanicsObjects.addCircle(canvas, opts, submittedAnswer, answerName);
-        }
-
-        handlers["pl-distributed-load"] = function(options) {
-            var width  = 80;
-            let def = {
-                left: 0.8*canvas_width,
-                top: 0.8*canvas_height,
-                width: width,
-                range: width,
-                stroke: '#0057a0',
-                strokeWidth: 3,
-                spacing: 20,
-                w1: 60,
-                w2: 60,
-                label1: '',
-                offsetx1: 0,
-                offsety1: 0,
-                label2: '',
-                offsetx2: 0,
-                offsetx2: 0,
-                angle: 0,
-                anchor_is_tail: false,
-                gradingName: 'distTrianLoad',
-                graded: true,
-            };
-
-            let opts = _.defaults(options, def);
-            mechanicsObjects.addDistTrianLoad(canvas, opts, submittedAnswer, answerName);
-        }
-
-        var etc = 0; // an easter egg...?
-        handlers["pl-controlled-line"] = function(options) {
-            let def = {
-                x1: 0.5*canvas_width - (etc==1 ? 50 : -50),
-                y1: 0.5*canvas_height - 25,
-                x2: 0.5*canvas_width - (etc==1 ? 50 : -50),
-                y2: 0.5*canvas_height + 25,
-                handleRadius: 6,
-                strokeWidth: 4,
-                stroke: 'red',
-                gradingName: "controlledLine",
-                graded: true,
-            };
-            etc = 1.0 - etc;
-            let opts = _.defaults(options, def);
-	    mechanicsObjects.addControlledLine(canvas, opts, submittedAnswer, answerName);
-        };
-
-        handlers["pl-controlled-curved-line"] = function(options) {
-            var def = {
-                x1: 0.5*canvas_width - 70,
-                y1: 0.5*canvas_height + 50,
-                x2: 0.5*canvas_width,
-                y2: 0.5*canvas_height + 120,
-                x3: 0.5*canvas_width + 70,
-                y3: 0.5*canvas_height + 50,
-                handleRadius: 6,
-                strokeWidth: 4,
-                stroke: "red",
-                gradingName: "controlledCurvedLine",
-                graded: true,
-            };
-            let opts = _.defaults(options, def);
-	    mechanicsObjects.addControlledCurvedLine(canvas, opts, submittedAnswer, answerName);
-        };
-
         handlers["help-line"] = function(options) {
             let def = {
                 left: 40,
@@ -334,9 +170,17 @@
                 graded: false,
             };
             let opts = _.defaults(options, def);
-            obj = mechanicsObjects.addLine(canvas, opts, submittedAnswer, answerName);
+            mechanicsObjects.addLine(canvas, opts, submittedAnswer, answerName);
         }
-
+        
+        handlers["add-generic"] = function(options) {
+            if (options.type in mechanicsObjects.byType) {
+                mechanicsObjects.byType[options.type].call(mechanicsObjects, canvas, options, submittedAnswer, answerName);
+            } else {
+                console.warn("No element type: " + options.type);
+            }
+        }
+        
         handlers["delete"] = function(options) {
             canvas.remove(canvas.getActiveObject());
         };
@@ -345,8 +189,13 @@
         drawing_btns.each(function(i, btn) {
             let id = btn.name;
             let opts = parseElemOptions(btn);
+            if (opts === null) {
+                opts = {};
+            }
             if (id in handlers) {
                 $(btn).click(() => handlers[id](_.clone(opts)));
+            } else {
+                $(btn).click(() => handlers['add-generic'](_.clone(opts)));
             }
         });
     }
