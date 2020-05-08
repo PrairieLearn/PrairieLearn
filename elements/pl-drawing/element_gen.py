@@ -27,6 +27,7 @@ drawing_defaults = {
     'force-width': 60
 }
 
+
 def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1, y1])
@@ -41,6 +42,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     hbox = 2 * max_perp
     pc = rpos - (wbox / 2 - max_forward) * dir
     return (pc, hbox, wbox, max_forward, max_backward)
+
 
 def gen_controlledLine(el):
     if 'draw-error-box' in el.attrib:
@@ -74,6 +76,7 @@ def gen_controlledLine(el):
         'offset_y': offset_y,
     }
     return obj
+
 
 def gen_controlledCurvedLine(el):
     if 'draw-error-box' in el.attrib:
@@ -119,6 +122,7 @@ def gen_controlledCurvedLine(el):
     }
     return obj
 
+
 def gen_roller(el):
     color = pl.get_color_attrib(el, 'color', 'brown1')
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -143,6 +147,7 @@ def gen_roller(el):
     }
     return obj
 
+
 def gen_clamped(el):
     color = pl.get_color_attrib(el, 'color', 'black')
     obj = {
@@ -163,6 +168,7 @@ def gen_clamped(el):
         'gradingName': 'clamped',
     }
     return obj
+
 
 def gen_fixed_pin(el):
     color = pl.get_color_attrib(el, 'color', 'brown1')
@@ -187,6 +193,7 @@ def gen_fixed_pin(el):
         'gradingName': 'fixed-pin',
     }
     return obj
+
 
 def gen_rod(el):
     color = pl.get_color_attrib(el, 'color', 'white')
@@ -213,6 +220,7 @@ def gen_rod(el):
         'gradingName': 'rod',
     }
     return obj
+
 
 def gen_collarrod(el):
     w = pl.get_float_attrib(el, 'width', 20)
@@ -246,6 +254,7 @@ def gen_collarrod(el):
         'gradingName': 'collarrod',
     }
     return obj
+
 
 def gen_3pointrod(el):
     color = pl.get_color_attrib(el, 'color', 'white')
@@ -300,6 +309,7 @@ def gen_3pointrod(el):
         'gradingName': 'Lshaperod',
     }
     return obj
+
 
 def gen_4pointrod(el):
     color = pl.get_color_attrib(el, 'color', 'white')
@@ -382,6 +392,7 @@ def gen_4pointrod(el):
     }
     return obj
 
+
 def gen_pulley(el):
     color = pl.get_color_attrib(el, 'color', 'gray')
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -444,6 +455,7 @@ def gen_pulley(el):
         'gradingName': 'pulley',
     }
     return obj
+
 
 def gen_vector(el):
     color = pl.get_color_attrib(el, 'color', 'red3')
@@ -512,11 +524,13 @@ def gen_vector(el):
     }
     return obj
 
+
 def gen_double_headed_vector(el):
     obj = gen_vector(el)
     obj['type'] = 'doubleArrow'
     obj['gradingName'] = 'double_headed_vector'
     return obj
+
 
 def gen_arc_vector(el):
     disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', False)
@@ -577,6 +591,7 @@ def gen_arc_vector(el):
         'gradingName': 'arc_vector',
     }
     return obj
+
 
 def gen_distributed_force(el):
     color = pl.get_color_attrib(el, 'color', 'red3')
@@ -656,6 +671,7 @@ def gen_distributed_force(el):
     }
     return obj
 
+
 def gen_point(el):
     color = pl.get_color_attrib(el, 'color', 'black')
     # Error box for grading
@@ -698,6 +714,7 @@ def gen_point(el):
     }
     return obj
 
+
 def gen_coordinates(el):
     color = pl.get_color_attrib(el, 'color', 'black')
     obj = {
@@ -726,6 +743,7 @@ def gen_coordinates(el):
         'gradingName': 'coordinates',
     }
     return obj
+
 
 def gen_dimensions(el):
     color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -786,6 +804,7 @@ def gen_dimensions(el):
     }
     return obj
 
+
 def gen_arc_dimension(el):
     color = pl.get_color_attrib(el, 'stroke-color', 'black')
     obj = {
@@ -816,6 +835,7 @@ def gen_arc_dimension(el):
     }
     return obj
 
+
 def gen_rectangle(el):
     color = pl.get_color_attrib(el, 'color', 'green1')
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -837,6 +857,7 @@ def gen_rectangle(el):
     }
     return obj
 
+
 def gen_triangle(el):
     color = pl.get_color_attrib(el, 'color', 'red1')
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -853,6 +874,7 @@ def gen_triangle(el):
         'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
     }
     return obj
+
 
 def gen_circle(el):
     color = pl.get_color_attrib(el, 'color', 'grey')
@@ -876,6 +898,7 @@ def gen_circle(el):
     }
     return obj
 
+
 def gen_polygon(el):
     pointlist = json.loads(pl.get_string_attrib(el, 'plist', '{}'))
     color = pl.get_color_attrib(el, 'color', 'white')
@@ -891,6 +914,7 @@ def gen_polygon(el):
         'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
     }
     return obj
+
 
 def gen_spring(el):
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -922,6 +946,7 @@ def gen_spring(el):
         'gradingName': 'spring',
     }
     return obj
+
 
 def gen_line(el):
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -956,6 +981,7 @@ def gen_line(el):
     }
     return obj
 
+
 def gen_arc(el):
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
     theta1 = pl.get_float_attrib(el, 'start-angle', drawing_defaults['angle']) * math.pi / 180
@@ -983,6 +1009,7 @@ def gen_arc(el):
     }
     return obj
 
+
 def gen_text(el):
     obj = {
         'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
@@ -996,6 +1023,7 @@ def gen_text(el):
         'gradingName': 'text',
     }
     return obj
+
 
 def gen_axes(el):
     if 'origin' in el.attrib:
@@ -1030,6 +1058,7 @@ def gen_axes(el):
         'gradingName': 'axes',
     }
     return obj
+
 
 def gen_graph_line(el):
     curved_line = False
@@ -1120,6 +1149,7 @@ def gen_graph_line(el):
         obj.update({'x3': x0 + x2, 'y3': y0 - y2, 'x2': x0 + x3, 'y2': y0 - y3, 'type': 'controlledCurvedLine', 'gradingName': 'controlledCurvedLine'})
 
     return obj
+
 
 gen = {
     'pl-controlled-line': gen_controlledLine,

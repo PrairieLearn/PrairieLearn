@@ -1,15 +1,16 @@
-import math
 import numpy as np
-import numpy.linalg as la
 
 tol = 0
 angtol = 0
 
+
 def abserr(x, xapp):
     return np.abs(x - xapp)
 
+
 def abserr_ang(ref, x):
     return np.abs(((np.abs(ref - x) + 180) % 360) - 180)
+
 
 def comp_controlledLine(ref, st):
     ex1, ex2 = st['x1'], st['x2']
@@ -22,6 +23,7 @@ def comp_controlledLine(ref, st):
     ) or (abserr(ex1, rx2) <= ref['offset_x'] + tol and abserr(ey1, ry2) <= ref['offset_y'] + tol and abserr(ex2, rx1) <= ref['offset_x'] + tol and abserr(ey2, ry1) <= ref['offset_y'] + tol)
     return return_bool
 
+
 def comp_controlledCurvedLine(ref, st):
     ex1, ex2, exm = st['x1'], st['x3'], st['x2']
     ey1, ey2, eym = st['y1'], st['y3'], st['y2']
@@ -31,6 +33,7 @@ def comp_controlledCurvedLine(ref, st):
     b1 = (abserr(ex1, rx1) <= ref['offset_x'] + tol and abserr(ey1, ry1) <= ref['offset_y'] + tol and abserr(ex2, rx2) <= ref['offset_x'] + tol and abserr(ey2, ry2) <= ref['offset_y'] + tol and abserr(exm, rxm) <= ref['offset_control_x'] + tol and abserr(eym, rym) <= ref['offset_control_y'] + tol)
     b2 = (abserr(ex1, rx2) <= ref['offset_x'] + tol and abserr(ey1, ry2) <= ref['offset_y'] + tol and abserr(ex2, rx1) <= ref['offset_x'] + tol and abserr(ey2, ry1) <= ref['offset_y'] + tol and abserr(exm, rxm) <= ref['offset_control_x'] + tol and abserr(eym, rym) <= ref['offset_control_y'] + tol)
     return b1 or b2
+
 
 def comp_vector(ref, st):
     epos = np.array([st['left'], st['top']]).astype(np.float64)
@@ -77,6 +80,7 @@ def comp_vector(ref, st):
         return False
 
     return True
+
 
 def comp_distLoad(ref, st):
     epos = np.array([st['left'], st['top']]).astype(np.float64)
@@ -132,6 +136,7 @@ def comp_distLoad(ref, st):
 
     return True
 
+
 def comp_arc_vector(ref, st):
     epos = np.array([st['left'], st['top']]).astype(np.float64)
     st_start_arrow = st['drawStartArrow']
@@ -151,6 +156,7 @@ def comp_arc_vector(ref, st):
 
     return True
 
+
 def comp_point(ref, st):
     epos = np.array([st['left'], st['top']]).astype(np.float64)
     rpos = np.array([ref['left'], ref['top']])
@@ -161,6 +167,7 @@ def comp_point(ref, st):
 
     return True
 
+
 comp = {
     'controlledLine': comp_controlledLine,
     'controlledCurvedLine': comp_controlledCurvedLine,
@@ -170,6 +177,7 @@ comp = {
     'distTrianLoad': comp_distLoad,
     'point': comp_point,
 }
+
 
 def set_grading_tol(tol_, angtol_):
     global tol, angtol

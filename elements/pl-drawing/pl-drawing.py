@@ -4,10 +4,6 @@ import lxml.etree
 import chevron
 import json
 import warnings
-import math
-import numpy as np
-import numpy.linalg as la
-from functools import reduce
 from attributes import attributes as element_attributes
 from element_gen import generate_element, drawing_defaults
 from element_grade import grade_element, can_grade, set_grading_tol
@@ -30,6 +26,7 @@ element_defaults = {
     'render-scale': 1.5,
     'disregard-extra-elements': False
 }
+
 
 def union_drawing_items(e1, e2):
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
@@ -168,7 +165,7 @@ def prepare(element_html, data):
             data['correct_answers'][name] = union_drawing_items(init, ans)
         else:
             data['correct_answers'][name] = ans
-            
+
 
 def render_controls(template, elem):
     if elem.tag == 'pl-controls':
@@ -229,7 +226,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
                 objects.append(obj)
                 curid += 1
             else:
-                warnings.warn('No known tag type: ' + el.tag)   
+                warnings.warn('No known tag type: ' + el.tag)
 
     return ({'objects': objects}, curid)
 
@@ -363,7 +360,7 @@ def grade(element_html, data):
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
     angtol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
     disregard_extra_elements = pl.get_boolean_attrib(element, 'disregard-extra-elements', element_defaults['disregard-extra-elements'])
-    
+
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
     reference = data['correct_answers'][name]
@@ -394,7 +391,7 @@ def grade(element_html, data):
             num_total_ref += 1
 
     set_grading_tol(tol, angtol)
-            
+
     # Loop through and check everything
     for element in student['objects']:
         if 'gradingName' not in element or not can_grade(element['gradingName']) or not element['graded']:
@@ -404,7 +401,7 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if not can_grade(ref_element['gradingName'])  or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if not can_grade(ref_element['gradingName']) or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 # Skip if the reference element is not gradable
                 continue
 
