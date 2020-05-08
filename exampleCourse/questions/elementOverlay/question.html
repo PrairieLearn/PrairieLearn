@@ -1,0 +1,45 @@
+<pl-question-panel>
+    <p>
+        The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.  This question combines the <code class="user-output">pl-drawing</code> element to serve as a background, along with the number input element.
+    </p>
+    <p>
+        Each overlayed element is wrapped with a <code class="user-output">&lt;pl-location x=... y=...&gt;</code> tag, which specifies the location of the child relative to the parent overlay element.  The optional <code class="user-output">centered="true"</code> attribute can be used to center contents about the specified location.
+    </p>
+    <p>
+        Find the missing side of the right triangle.
+    </p>
+</pl-question-panel>
+
+<pl-overlay width="{{params.canvas_width}}" height="{{params.canvas_height}}">
+    <pl-location x="0" y="0">
+        <pl-drawing width="{{params.canvas_width}}" height="{{params.canvas_height}}" gradable="false" hide-answer-panel="false">
+            <pl-drawing-initial>
+                <pl-triangle x1="{{params.tri_x1}}" y1="{{params.tri_y1}}" x2="{{params.tri_x2}}" y2="{{params.tri_y2}}" x3="{{params.tri_x3}}" y3="{{params.tri_y3}}" color="lightblue"></pl-triangle>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </pl-location>
+    <pl-location x="{{params.a_x}}" y="{{params.a_y}}" center="true">
+        {{#params.display_a}}
+        $${{params.a}}$$
+        {{/params.display_a}}
+        {{^params.display_a}}
+        <pl-number-input answers-name="a" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+        {{/params.display_a}}
+    </pl-location>
+    <pl-location x="{{params.b_x}}" y="{{params.b_y}}" center="true">
+        {{#params.display_b}}
+        $${{params.b}}$$
+        {{/params.display_b}}
+        {{^params.display_b}}
+        <pl-number-input answers-name="b" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+        {{/params.display_b}}
+    </pl-location>
+    <pl-location x="{{params.c_x}}" y="{{params.c_y}}" center="true">
+        {{#params.display_c}}
+        $${{params.c}}$$
+        {{/params.display_c}}
+        {{^params.display_c}}
+        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+        {{/params.display_c}}
+    </pl-location>
+</pl-overlay>

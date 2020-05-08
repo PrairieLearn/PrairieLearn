@@ -1795,7 +1795,7 @@ def render(element_html, data):
         'tolerance': pl.get_string_attrib(element, 'tolerance-hint', message_default),
     }
 
-    if (not (data['panel'] == 'question') and preview_mode) or data['panel'] == 'answer' and pl.get_boolean_attrib(element, 'hide-answer-panel', True):
+    if data['panel'] == 'answer' and pl.get_boolean_attrib(element, 'hide-answer-panel', True):
         return ''
 
     if preview_mode:
