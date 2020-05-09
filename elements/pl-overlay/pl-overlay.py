@@ -1,7 +1,6 @@
 import prairielearn as pl
 import lxml.html
 import chevron
-import os
 
 
 def prepare(element_html, data):
