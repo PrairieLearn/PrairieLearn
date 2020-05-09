@@ -4,5 +4,5 @@
 }
 
 :not(.form-check-inline) > .pl-multiple-choice-key-label {
-    min-width: 20px;
+    min-width: 1.25em;
 }
