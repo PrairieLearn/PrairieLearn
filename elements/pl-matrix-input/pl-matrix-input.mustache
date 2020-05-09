@@ -129,6 +129,9 @@ Your answer must be a matrix (i.e., a 2D array). It can be expressed in one of t
     <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <code>[[1, 2, 3], [4, 5, 6]]</code></li>
 </ul>
 <p>
+    Note that <code>[1, 2, 3]</code> is valid Matlab input for a 1&times;3 matrix (a row vector). If you want a column vector (a 3&times;1 matrix) then you should enter <code>[1; 2; 3]</code> or <code>[[1], [2], [3]]</code>.
+</p>
+<p>
 {{#allow_complex}}
 Each entry must be either a real number between <code>-1e308</code> and <code>1e308</code> or a complex number with both real and imaginary parts between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision real or complex number). Complex numbers must use either <code>i</code> or <code>j</code> as the imaginary unit, must place the imaginary unit after the imaginary part (e.g., <code>2j</code> not <code>j2</code>), must write the imaginary part even when <code>1</code> or <code>-1</code> (e.g., <code>1j</code> not <code>j</code>), and must write the real part before the imaginary part (e.g., <code>1+2j</code> not <code>2j+1</code>). Standard python print format is accepted for complex numbers (e.g., <code>(1+2j)</code>).
 {{/allow_complex}}
