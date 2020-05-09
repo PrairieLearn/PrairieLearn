@@ -5,8 +5,6 @@ from functools import wraps
 
 
 class Test(PrairieLearnTestCaseWithPlot):
-
-
     @points(10)
     @name("x_sq")
     def test_0(self):

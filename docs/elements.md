@@ -1278,10 +1278,10 @@ Displays variables that are given to the student, or expected for the student to
 **question.html**
 ```html
 <p>The setup code gives the following variables:</p>
-<pl-external-grader-variables variables-name="names_for_user"></pl-external-grader-variables>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
 
 <p>Your code snippet should define the following variables:</p>
-<pl-external-grader-variables variables-name="names_from_user"></pl-external-grader-variables>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
 ```
 
 **server.py**

@@ -29,9 +29,9 @@ A full `info.json` file should look something like:
 
 ### `server.py`
 
-The server code in the `generate()` function will define the list of variables that will be passed to the autograded student code `names_for_user`, and also those that will be passed from the student code to the test code `names_from_user`.  Only variables listed in `names_for_user` will be accessible by the user from the setup code; only variables listed in `names_from_user` will be accessible by the test cases from the user code.
+The server code in the `generate()` function must define the list of variables that will be passed to the autograded student code as `names_for_user`, and also those that will be passed from the student code to the test code as `names_from_user`.  Only variables listed in `names_for_user` will be accessible by the user from the setup code; only variables listed in `names_from_user` will be accessible by the test cases from the user code.
 
-These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as a separate key in `params`. Each variable dictionary has the following format:
+These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. Each variable dictionary has the following format:
 
 ```json
 {
@@ -45,18 +45,12 @@ A full example is included here, taken from the question `demoAutograderSquare`:
 
 ```python
 def generate(data):
-    names_for_user = [
-        {"name": "x", "description": "Description of the variable", "type": "float"}
+    data["params"]["names_for_user"] = [
+        {"name": "x", "description": "Description of the variable", "type": "float"},
     ]
-    names_from_user = [
-        {"name": "x_sq",
-            "description": "The square of $x$", "type": "float"}
+    data["params"]["names_from_user"] = [
+        {"name": "x_sq", "description": "The square of $x$", "type": "float"},
     ]
-
-    data["params"]["names_for_user"] = names_for_user
-    data["params"]["names_from_user"] = names_from_user
-
-    return data
 ```
 
 ### `question.html`
@@ -103,7 +97,7 @@ Note that the `<pl-external-grader-variables>` element is for purely decorative 
 
 ### `tests/setup_code.py`
 
-This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.  The code in this file is run only _once_ total for both student and reference code.  If you need to run some code before each (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before both.  `repeated_setup()` will always be run after the setup code itself is run.
+This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.  The code in this file is run only _once_ total for both student and reference code.  If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them.  `repeated_setup()` will always be run after the setup code itself is run.
 
 ### `tests/test.py`
 
@@ -173,7 +167,7 @@ The code feedback library contains built-in functions for checking correctness o
 
 Most of these functions have a `accuracy_critical` and `report_failure` keyword argument.  If `accuracy_critical` is set to true (default), the grading job will halt if this check fails (similar to an assert).  If `report_failure` is true (default), feedback will be displayed to the student if this check fails.  The `name` argument is used when displaying feedback.
 
-## General Tips and Gotchas
+## General tips and gotchas
 
 Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
 
@@ -205,7 +199,7 @@ the `inv` and `pinv` functions will be effectively banned from use.  This will s
 
 # Security
 
-On the start of a grading job, the script `run.sh` is run with `root` privileges.  This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is saved into `output-fname.txt`. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
+At the start of a grading job, the script `run.sh` is run with `root` privileges.  This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is saved into `output-fname.txt`. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
 
 The grading Python scripts will load any sensitive files into memory (setup code, answer code, test cases, and output filename) and remove them from disk before running any student code.  Users therefore do not have access to question specific code, but only general grader logic which is publicly available.
 

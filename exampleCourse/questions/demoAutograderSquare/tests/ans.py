@@ -1,3 +1,3 @@
 import numpy as np
 
-x_sq = x ** 2
+x_sq = x**2

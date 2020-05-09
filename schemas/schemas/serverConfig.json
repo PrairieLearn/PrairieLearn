@@ -125,7 +125,7 @@
             "type": "integer"
         },
         "externalGradingPullImagesFromDockerHub": {
-            "description": "If externally graded questions should automatically pull container images from DockerHub (true) or use only locally cached images (false)",
+            "description": "Whether externally graded questions should automatically pull container images from Docker Hub (true) or use only locally cached images (false)",
             "type": "boolean"
         },
         "awsRegion": {

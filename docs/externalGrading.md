@@ -171,7 +171,7 @@ The boolean `gradable` can be added to the results object and set to `false` to 
 
 If `gradable` is set to false, error messages related to the formatting of the answer can be added to the grading results by setting the `format_errors` key.  This can be either a string or an array of strings, depending on the number of error messages.
 
-The optional boolean `gradable` can be added to the results object and indicates that the input was invalid or formatted incorrectly.  For example, `gradable` can be set to false if the student code has a syntax error, in which case the code will not be graded and the student will not be penalised an attempt.  The omission of this field is equivalent to assuming that the input was gradable (`gradable=True`).
+The optional boolean `gradable` can be added to the results object and indicates that the input was invalid or formatted incorrectly.  For example, `gradable` can be set to false if the student code has a syntax error, in which case the code will not be graded and the student will not be penalised an attempt.  The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
 
 The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
