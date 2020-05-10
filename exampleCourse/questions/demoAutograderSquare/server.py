@@ -5,7 +5,7 @@ def generate(data):
 
     # Define the variables here
     names_for_user = [
-        {"name": "x", "description": "Description of the variable", "type": "float"}
+        {"name": "x", "description": "The number that needs to be squared", "type": "float"}
     ]
     names_from_user = [
         {"name": "x_sq",
