@@ -25,7 +25,7 @@ FROM ((SELECT user_id
 FROM 
     assessments AS a
     JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
-WHERE a.id = $assessment_id)
+WHERE a.id = $assessment_id AND e.role = 'Student')
 EXCEPT
 (SELECT user_id
 FROM
@@ -33,7 +33,8 @@ FROM
     JOIN groups as gr ON (gc.id = gr.group_config_id)
     JOIN group_users as gu ON (gu.group_id = gr.id)
 WHERE gc.assessment_id = $assessment_id)) temp
-JOIN users u ON u.user_id = temp.user_id;
+JOIN users u ON u.user_id = temp.user_id
+ORDER BY uid;
 
 -- BLOCK assessment_list
 SELECT id, tid, title

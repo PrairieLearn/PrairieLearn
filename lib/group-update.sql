@@ -28,7 +28,7 @@ FROM
     assessments AS a
     JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
     JOIN users u ON u.user_id = e.user_id
-WHERE a.id = $assessment_id;
+WHERE a.id = $assessment_id AND e.role = 'Student';
 
 -- BLOCK select_not_assigned
 SELECT uid AS user_list
@@ -36,7 +36,7 @@ FROM ((SELECT user_id
 FROM 
     assessments AS a
     JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
-WHERE a.id = $assessment_id)
+WHERE a.id = $assessment_id AND e.role = 'Student')
 EXCEPT
 (SELECT user_id
 FROM
