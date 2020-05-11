@@ -111,7 +111,6 @@
             </div>
           </div>
         </div>
-      
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -191,42 +190,33 @@
             </button>
           </div>
         </div>
-
-        <div class="table-responsive pb-0">
-          <table class="table">
-            <tr>
-              <td style="width: 1%">
-                <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#uploadAssessmentGroupsModal">
-                  <i class="fas fa-upload"></i> Upload
-                </button>
-              </td>
-              <td>
-                <p>
-                  Upload a CSV format file for group setting.
-                </p>
-              </td>
-              <td style="width: 1%">
-                <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#autoAssessmentGroupsModal">
-                  <i class="fas fa-robot"></i> Auto
-                </button>
-              </td>
-              <td>
-                <p>
-                  Quick group students into teams by system.
-                </p>
-              </td>
-              <td style="width: 1%">
-                <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#copyAssessmentGroupsModal">
-                  <i class="fas fa-copy"></i> Copy
-                </button>
-              </td>
-              <td>
-                <p>
-                  Copy the group setting from another assessment.
-                </p>
-              </td>
-            </tr>
-          </table>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm bg-light py-4 border" align="center">
+                    <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#uploadAssessmentGroupsModal">
+                      <i class="fas fa-upload"></i> Upload
+                    </button>
+                    <div class="mt-2">
+                      Upload a CSV format file for group setting.
+                    </div>
+                </div>
+                <div class="col-sm bg-light py-4 border" align="center">
+                    <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#autoAssessmentGroupsModal">
+                      <i class="fas fa-robot"></i> Auto
+                    </button>
+                    <div class="mt-2">
+                      Quick group students into teams by system.
+                    </div>
+                </div>
+                <div class="col-sm bg-light py-4 border" align="center">
+                    <button type="button" class="btn btn-primary text-nowrap" data-toggle="modal" data-target="#copyAssessmentGroupsModal">
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <div class="mt-2">
+                      Copy the group setting from another assessment.
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="table-responsive">
           <table id="usersTable" class="table table-sm table-hover tablesorter">
@@ -353,7 +343,7 @@
               <% }); %>
             </tbody>
           </table>
-          
+
           <div class="card-footer">
             <small>
               <strong>Not yet assigned students:</strong>
@@ -367,7 +357,7 @@
                 <li><strong>Add a group: </strong>...</li>
                 <li><strong>Merge groups: </strong>...</li>
                 <li><strong>Delete a group: </strong>...</li>
-  
+
                 <li><strong>Add a Member: </strong>...</li>
                 <li><strong>Move a Member: </strong>...</li>
                 <li><strong>Delete a Member: </strong>...</li>
