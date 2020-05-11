@@ -19,13 +19,9 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.assessment_list, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.assessment_list_rows = result.rows;
-        //debug('render page');
-        //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         sqldb.query(sql.select_groups, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.groups_rows = result.rows;
-            //debug('render page');
-            //res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             sqldb.query(sql.not_assigned_users, params, function(err, result) {
                 if (ERR(err, next)) return;
                 res.locals.not_assigned_users_rows = result.rows;
