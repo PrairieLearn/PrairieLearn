@@ -5,7 +5,7 @@ from pl_execute import UserCodeFailed
 from pl_helpers import print_student_code, DoNotRun
 
 
-class PrairieTestResult(unittest.TestResult):
+class PLTestResult(unittest.TestResult):
     """
     Helper class for generating results of a test suite using the Python
     unittest library.

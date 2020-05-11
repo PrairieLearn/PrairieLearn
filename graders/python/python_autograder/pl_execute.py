@@ -4,6 +4,7 @@ import json
 import numpy as np
 import numpy.random
 import random
+from os.path import join
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
@@ -38,19 +39,23 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     - plot_value: Any plots made by the student
     """
 
-    with open('/grade/data/data.json') as f:
+    base_dir = os.environ.get("MERGE_DIR")
+    job_dir = os.environ.get("JOB_DIR")
+    filenames_dir = os.environ.get("FILENAMES_DIR")
+
+    with open(join(job_dir, 'data', 'data.json')) as f:
         data = json.load(f)
-    with open("filenames/setup_code.py", 'r') as f:
+    with open(join(filenames_dir, 'setup_code.py'), 'r') as f:
         str_setup = f.read()
     with open(fname_ref, 'r') as f:
         str_ref = f.read()
     with open(fname_student, 'r', encoding='utf-8') as f:
         str_student = f.read()
-    with open('filenames/test.py') as f:
+    with open(join(filenames_dir, 'test.py')) as f:
         str_test = f.read()
     os.remove(fname_ref)
-    os.remove("filenames/setup_code.py")
-    os.remove("filenames/test.py")
+    os.remove(join(filenames_dir, 'setup_code.py'))
+    os.remove(join(filenames_dir, 'test.py'))
 
     repeated_setup_name = 'repeated_setup()'
     if repeated_setup_name not in str_setup:
@@ -118,9 +123,9 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = sys.exc_info()
     with open(fname_ref, 'w') as f:
         f.write(str_ref)
-    with open("filenames/setup_code.py", 'w') as f:
+    with open(join(filenames_dir, 'setup_code.py'), 'w') as f:
         f.write(str_setup)
-    with open("filenames/test.py", 'w') as f:
+    with open(join(filenames_dir, 'test.py'), 'w') as f:
         f.write(str_test)
     if err is not None:
         raise UserCodeFailed(err)

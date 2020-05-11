@@ -1,14 +1,16 @@
 import numpy as np
 import numpy.linalg as la
+from code_feedback import Feedback
 
 # set up parameters
 n = np.random.randint(4, 16)
-A = np.eye(n)
+
+# generate a random full-rank matrix by generating a random eigenvector basis and nonzero eigenvalues
+X = la.qr(np.random.random_sample((n, n)))[0]
+D = np.diag(np.random.random_sample(n) * 10 + 1)
+A = X.T @ D @ X
+
 b = np.random.random(n)
 
-# hook into inverse functions
-def not_allowed(*args, **kwargs):
-    raise RuntimeError("Calling this function is not allowed")
-
-la.inv = not_allowed
-la.pinv = not_allowed
+la.inv = Feedback.not_allowed
+la.pinv = Feedback.not_allowed

@@ -52,18 +52,18 @@ class Feedback:
         cls.test = test
 
     @classmethod
-    def set_percent(cls, percentage):
+    def set_score(cls, score):
         """
-        Feedback.set_percent(percentage)
+        Feedback.set_score(percentage)
 
-        Set the percent correctness for the test case, should be a floating point value between 0 and 1.
+        Set the score for the test case, should be a floating point value between 0 and 1.
         """
-        if percentage < 0:
-            percentage = 0.0
-        elif percentage > 1:
-            percentage = 1.0
+        if score < 0:
+            score = 0.0
+        elif score > 1:
+            score = 1.0
 
-        cls.test.points = percentage
+        cls.test.points = score
         
     @classmethod
     def set_points(cls, points):
@@ -104,6 +104,16 @@ class Feedback:
         """
         cls.add_feedback(fb_text)
         raise GradingComplete()
+
+    @staticmethod
+    def not_allowed():
+        """
+        library_function = Feedback.not_allowed
+
+        Used to hook into disallowed functions, raises an exception if
+        the student tries to call it.
+        """
+        raise RuntimeError("Calling this function is not allowed")
 
     @classmethod
     def check_numpy_array_sanity(cls, name, num_axes, data):

@@ -8,6 +8,4 @@ def generate(data):
     data["params"]["names_from_user"] = [
         {"name": "df", "description": "dataframe as described above.", "type": "Pandas DataFrame"}
     ]
-
-    df = pd.DataFrame(data={'a': [1, 2], 'b': [3, 4]})
-    data['params']['df'] = pl.to_json(df)
+    data['params']['df'] = pl.to_json(pd.DataFrame(data={'a': [1, 2], 'b': [3, 4]}))

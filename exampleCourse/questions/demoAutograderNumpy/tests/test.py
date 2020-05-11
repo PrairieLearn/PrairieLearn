@@ -1,12 +1,12 @@
 from pl_helpers import name, points, not_repeated
-from pl_unit_test import PrairieLearnTestCase
-from code_feedback import Feedback as feedback
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
 
-class Test(PrairieLearnTestCase):
+class Test(PLTestCase):
     @points(1)
     @name("x")
     def test_0(self):
-        if feedback.check_numpy_array_allclose("x", self.ref.x, self.st.x):
-            feedback.set_percent(1)
+        if Feedback.check_numpy_array_allclose("x", self.ref.x, self.st.x):
+            Feedback.set_score(1)
         else:
-            feedback.set_percent(0)
+            Feedback.set_score(0)

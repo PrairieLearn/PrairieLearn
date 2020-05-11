@@ -1257,17 +1257,13 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
 
-```json
-[
-    {
-        "name": "variable1",
-        "description": "A human readable description of this variable",
-        "type": "A human readable type of this variable"
-    },
-    {
-        "name": "variable2",
-        "...": "..."
-    }
+```python
+data["params"]["names_for_user"] = [
+    {"name": "var1", "description": "Human-readable description.", "type": "type"},
+    {"name": "var2", "description": "...", "type": "..."}
+]
+data["params"]["names_from_user"] = [
+    {"name": "result1", "description": "...", "type": "..."}
 ]
 ```
 
@@ -1288,12 +1284,12 @@ Displays variables that are given to the student, or expected for the student to
 ```python
 def generate(data):
     data["params"]["names_for_user"] = [
-        {"name": "n", "description": "Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
-        {"name": "A", "description": "Matrix $\mathbf{A}$.", "type": "numpy array"},
-        {"name": "b", "description": "Vector $\mathbf{b}$.", "type": "numpy array"}
+        {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+        {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
+        {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
     ]
     data["params"]["names_from_user"] = [
-        {"name": "x", "description": "Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+        {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
     ]
 ```
 

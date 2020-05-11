@@ -2,8 +2,10 @@ from unittest import TestLoader, TestSuite
 import json
 import traceback
 import os
+import sys
+from os.path import join
 from collections import defaultdict
-from pl_result import PrairieTestResult
+from pl_result import PLTestResult
 
 
 """
@@ -13,11 +15,11 @@ Loads and executes test cases.
 
 
 def add_files(results):
-    BASE_DIR = "/grade/run/"
+    base_dir = os.environ.get("MERGE_DIR")
 
     for test in results:
         test["files"] = test.get("files", [])
-        image_fname = BASE_DIR + "image_" + test["name"] + ".png"
+        image_fname = join(base_dir, "image_" + test["name"] + ".png")
         if os.path.exists(image_fname):
             with open(image_fname, 'r') as content_file:
                 imgsrc = content_file.read()
@@ -25,7 +27,7 @@ def add_files(results):
                 test['images'] = []
             test['images'].append(imgsrc)
             os.remove(image_fname)
-        feedback_fname = BASE_DIR + "feedback_" + test["filename"] + ".txt"
+        feedback_fname = join(base_dir, "feedback_" + test["filename"] + ".txt")
         if os.path.exists(feedback_fname):
             with open(feedback_fname, 'r', encoding='utf-8') as content_file:
                 text_feedback = content_file.read()
@@ -37,10 +39,12 @@ if __name__ == '__main__':
     try:
         from filenames.test import Test as test_case
 
-        with open('filenames/output-fname.txt', 'r') as f:
-            output_fname = f.read()
-        os.remove('filenames/output-fname.txt')
+        filenames_dir = os.environ.get("FILENAMES_DIR")
+        base_dir = os.environ.get("MERGE_DIR")
 
+        output_fname = sys.argv[1]
+        sys.argv = []
+        
         # Run the tests with our custom setup
         loader = TestLoader()
         all_results = []
@@ -48,7 +52,7 @@ if __name__ == '__main__':
         gradable = True
         for i in range(test_case.total_iters):
             suite = loader.loadTestsFromTestCase(test_case)
-            result = PrairieTestResult()
+            result = PLTestResult()
             suite.run(result)
             all_results.append(result.getResults())
             if not result.getGradable():
@@ -80,10 +84,10 @@ if __name__ == '__main__':
         add_files(results)
 
         text_output = ""
-        if os.path.exists("/grade/run/output.txt"):
-            with open("output.txt", 'r', encoding='utf-8') as content_file:
+        if os.path.exists(join(base_dir, "output.txt")):
+            with open(join(base_dir, "output.txt"), 'r', encoding='utf-8') as content_file:
                  text_output = content_file.read()
-            os.remove("/grade/run/output.txt")
+            os.remove(join(base_dir, "output.txt"))
 
         # Assemble final grading results
         grading_result = {}
@@ -104,12 +108,11 @@ if __name__ == '__main__':
             img_num = 0
             while True:
                 # Save each image as image_{test iteration}_{image number}
-                img_in = "image_%d_%d.png" % (img_iter, img_num)
+                img_in = join(base_dir, f"image_{img_iter}_{img_num}.png")
                 if os.path.exists(img_in):
                     with open(img_in, 'r') as content_file:
-                        img_out = "image_%d" % all_img_num
                         grading_result['images'].append(content_file.read())
-                    os.remove("/grade/run/%s" % img_in)
+                    os.remove(img_in)
                     img_num += 1; all_img_num += 1
                 else:
                     break

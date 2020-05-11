@@ -4,43 +4,42 @@
 # INIT
 ##########################
 
-# the directory where the job stuff is
-JOB_DIR='/grade/'
-# the other directories
-STUDENT_DIR=$JOB_DIR'student/'
-AG_DIR='/python_autograder/'
-TEST_DIR=$JOB_DIR'tests/'
-OUT_DIR=$JOB_DIR'results/'
+# the autograder directory
+AG_DIR='/python_autograder'
+
+# the parent directory containing everything about this grading job
+export JOB_DIR='/grade'
+# the job subdirectories
+STUDENT_DIR=$JOB_DIR'/student'
+TEST_DIR=$JOB_DIR'/tests'
+OUT_DIR=$JOB_DIR'/results'
 
 # where we will copy everything
-MERGE_DIR=$JOB_DIR'run/'
-# where we will put the actual student code- this depends on what the autograder expects, etc
+export MERGE_DIR=$JOB_DIR'/run'
 
 # now set up the stuff so that our run.sh can work
 mkdir $MERGE_DIR
 mkdir $OUT_DIR
 
-mv $STUDENT_DIR* $MERGE_DIR
-mv $AG_DIR* $MERGE_DIR
-mv $TEST_DIR* $MERGE_DIR
+mv $STUDENT_DIR/* $MERGE_DIR
+mv $AG_DIR/* $MERGE_DIR
+mv $TEST_DIR/* $MERGE_DIR
 
 # user does not need a copy of this script
 rm -f "$MERGE_DIR/run.sh"
-rm -rf "$JOB_DIR/shared"
 
 # we need this to include code as python modules
-echo "" > $MERGE_DIR/__init__.py
+touch $MERGE_DIR/__init__.py
 
 # Do not allow ag user to modify, rename, or delete any existing files
 chmod -R 755 "$MERGE_DIR"
 chmod 1777 "$MERGE_DIR"
 
-cd $MERGE_DIR
-
 # Create directory without sticky bit for deletable files
-mkdir filenames
-chmod 777 filenames
-mv ans.py setup_code.py test.py filenames
+export FILENAMES_DIR=$MERGE_DIR'/filenames'
+mkdir $FILENAMES_DIR
+chmod 777 $FILENAMES_DIR
+mv ans.py setup_code.py test.py $FILENAMES_DIR
 
 ##########################
 # RUN
@@ -48,27 +47,25 @@ mv ans.py setup_code.py test.py filenames
 
 echo "[run] starting autograder"
 
-# write name of the secret file to a file
-SECRET_NAME=`uuidgen`
-echo -n "$SECRET_NAME" > filenames/output-fname.txt
-chmod +r filenames/output-fname.txt
+# randomly generate the name of the results file, so that someone can't guess and write to it
+SECRET_NAME=$MERGE_DIR/`uuidgen`
 
-# we run the autograder as a limited user called ag
-su -c 'python3 pltest.py' ag
+# run the autograder as a limited user called ag
+su -c "python3 $MERGE_DIR/pl_main.py $SECRET_NAME" ag
 
-rm -f results.json
-rm -f "$OUT_DIR/results.json"
+# remove any "fake" results.json files if they exist
+rm -f $MERGE_DIR/results.json
+rm -f $OUT_DIR/results.json
+
+# copy the results file from secret if it exists
 if [ -f "$SECRET_NAME" ]; then
-  mv "$SECRET_NAME" results.json
+  mv "$SECRET_NAME" $OUT_DIR/results.json
 fi
-if [ ! -s results.json ]
+
+# if that didn't work, then print a last-ditch message
+if [ ! -s $OUT_DIR/results.json ]
 then
-  # Let's attempt to keep everything from dying completely
-  echo '{"succeeded": false, "score": 0.0, "message": "The autograder has failed. Please contact course staff and have them check the logs for this submission."}' > results.json
+  echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
 fi
 
 echo "[run] autograder completed"
-
-# get the results from the file
-cp results.json "$OUT_DIR/results.json"
-echo "[run] copied results"

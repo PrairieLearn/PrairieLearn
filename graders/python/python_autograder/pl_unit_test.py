@@ -1,4 +1,6 @@
 import unittest
+import os
+from os.path import join
 from types import FunctionType
 from collections import namedtuple
 from pl_helpers import (points, name, save_plot, print_student_code, not_repeated)
@@ -10,7 +12,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 
-class PrairieLearnTestCase(unittest.TestCase):
+class PLTestCase(unittest.TestCase):
     """
     Base class for test suites, using the Python unittest library.
     Handles automatic setup and teardown of testing logic.
@@ -29,8 +31,13 @@ class PrairieLearnTestCase(unittest.TestCase):
         """
         On start, run the user code and generate answer tuples.
         """
-        ref_result, student_result, plot_value = execute_code("filenames/ans.py", cls.student_code_file, cls.include_plt,
-                                                              "output.txt", cls.iter_num)
+        filenames_dir = os.environ.get("FILENAMES_DIR")
+        base_dir = os.environ.get("MERGE_DIR")
+        ref_result, student_result, plot_value = execute_code(join(filenames_dir, 'ans.py'),
+                                                              join(base_dir, cls.student_code_file),
+                                                              cls.include_plt,
+                                                              join(base_dir, 'output.txt'),
+                                                              cls.iter_num)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
         cls.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())
@@ -95,7 +102,7 @@ class PrairieLearnTestCase(unittest.TestCase):
 
         test_id = self.id().split('.')[-1]
         if not result.done_grading or test_id == self.student_code_string:
-            super(PrairieLearnTestCase, self).run(result)
+            super(PLTestCase, self).run(result)
 
 
     @not_repeated
@@ -108,7 +115,7 @@ class PrairieLearnTestCase(unittest.TestCase):
         print_student_code(self.student_code_file)
 
 
-class PrairieLearnTestCaseWithPlot(PrairieLearnTestCase):
+class PLTestCaseWithPlot(PLTestCase):
     """
     Test suite that includes plot grading.  Will automatically check plots
     for appropriate labels.

@@ -1,12 +1,12 @@
 from pl_helpers import name, points, not_repeated
-from pl_unit_test import PrairieLearnTestCase
-from code_feedback import Feedback as feedback
+from pl_unit_test import PLTestCase
+from code_feedback import Feedback
 
-class Test(PrairieLearnTestCase):
+class Test(PLTestCase):
     @points(1)
     @name("area")
     def test_0(self):
-        if feedback.check_scalar("area", self.ref.area, self.st.area):
-            feedback.set_percent(1)
+        if Feedback.check_scalar("area", self.ref.area, self.st.area):
+            Feedback.set_score(1)
         else:
-            feedback.set_percent(0)
+            Feedback.set_score(0)

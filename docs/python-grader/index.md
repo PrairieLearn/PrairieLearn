@@ -29,7 +29,7 @@ A full `info.json` file should look something like:
 
 ### `server.py`
 
-The server code in the `generate()` function must define the list of variables that will be passed to the autograded student code as `names_for_user`, and also those that will be passed from the student code to the test code as `names_from_user`.  Only variables listed in `names_for_user` will be accessible by the user from the setup code; only variables listed in `names_from_user` will be accessible by the test cases from the user code.
+The server code in the `generate()` function must define the list of variables or functions that will be passed to the autograded student code as `names_for_user`, and also those that will be passed from the student code to the test code as `names_from_user`.  Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
 
 These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. Each variable dictionary has the following format:
 
@@ -59,11 +59,11 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 ```html
 <pl-question-panel>
-	<pl-file-editor file-name="user_code.py"></pl-file-editor>
+  <pl-file-editor file-name="user_code.py"></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>
-	<pl-external-grading-results></pl-external-grading-results>
+  <pl-external-grading-results></pl-external-grading-results>
 </pl-submission-panel>
 ```
 
@@ -131,10 +131,12 @@ At the end of the test case, set the correctness of the answer using `feedback.s
 The overall structure of a test case should look something like:
 
 ```python
+from code_feedback import Feedback
+
 @points(10)
 @name("name of the test case")
 def test_0(self):
-   if feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
+   if Feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
        Feedback.set_percent(1)
    else:
        Feedback.set_percent(0)
@@ -169,29 +171,22 @@ Most of these functions have a `accuracy_critical` and `report_failure` keyword 
 
 ## General tips and gotchas
 
-Note that the first argument of the `feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
+Note that the first argument of the `Feedback.check_xx` functions is the name of the variable being checked, this will show up in the grader feedback if the student answers this problem incorrectly.
 
 Be careful not to switch the ordering of the student and reference arguments.  The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
 
 ## Banning/Disallowing library functions
 
-One can hook into library in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
+One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
 
-By creating a `not_allowed` function that only raises an error when called:
-
-```python
-def not_allowed(*args, **kwargs):
-    raise RuntimeError("Calling this function is not allowed")
-```
-
-and then setting library functions equal to `not_allowed`:
+By setting the library functions equal to `Feedback.not_allowed`:
 
 ```python
-numpy.linalg.inv = not_allowed
-numpy.linalg.pinv = not_allowed
+numpy.linalg.inv = Feedback.not_allowed
+numpy.linalg.pinv = Feedback.not_allowed
 ```
 
-the `inv` and `pinv` functions will be effectively banned from use.  This will survive library reimports.
+the `inv` and `pinv` functions will be effectively banned from use.  Any time the student tries to use the functions their code will raise an exception.  This will survive library reimports.
 
 # Overview
 
