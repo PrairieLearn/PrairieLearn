@@ -194,9 +194,9 @@ the `inv` and `pinv` functions will be effectively banned from use.  Any time th
 
 # Security
 
-At the start of a grading job, the script `run.sh` is run with `root` privileges.  This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is saved into `output-fname.txt`. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
+At the start of a grading job, the script `run.sh` is run with `root` privileges.  This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is passed into the grading code via command-line argument. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
 
-The grading Python scripts will load any sensitive files into memory (setup code, answer code, test cases, and output filename) and remove them from disk before running any student code.  Users therefore do not have access to question specific code, but only general grader logic which is publicly available.
+The grading Python scripts will load any sensitive files into memory (setup code, answer code, test cases) and remove them from disk before running any student code.  Command line arguments in argv are wiped as well.  Users therefore do not have access to question specific code, but only general grader logic which is publicly available.
 
 After grading, results will be written to the secret filename generated above.  If this file does not exist or the filename does not match then the grading job will fail and students will not receive points.  This is mostly a failsafe in case the grader code were to crash, but in theory could also prevent crafty students from writing their own results file.
 
