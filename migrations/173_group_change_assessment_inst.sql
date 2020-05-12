@@ -30,6 +30,12 @@ CREATE TABLE IF NOT EXISTS group_users (
 
 ALTER TABLE assessments ADD COLUMN groupwork boolean DEFAULT FALSE;
 ALTER TABLE assessment_instances ADD COLUMN group_id BIGINT REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE assessment_instances ADD CONSTRAINT uniqueGroup UNIQUE (group_id);
+ALTER TABLE assessment_instances ADD CONSTRAINT uniqueGroupAI UNIQUE (group_id);
 ALTER TABLE assessment_instances ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
 ALTER TABLE assessment_instances ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE audit_logs ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE variants ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE variants ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
+ALTER TABLE variants ALTER COLUMN user_id DROP NOT NULL;

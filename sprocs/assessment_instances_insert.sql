@@ -31,7 +31,7 @@ BEGIN
     IF groupwork THEN
         SELECT group_id
         INTO  groupId
-        FROM  group_user as gu
+        FROM  group_users as gu
         WHERE gu.user_id = assessment_instances_insert.user_id;
         
         IF assessment.multiple_instance THEN
