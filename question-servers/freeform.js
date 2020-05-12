@@ -1071,7 +1071,8 @@ module.exports = {
                             workers.returnPythonCaller(pc, (pcErr) => {
                                 if (ERR(pcErr, callback)) return;
                                 if (ERR(err, callback)) return;
-                                const cachedData = {courseIssues, fileData};
+                                const fileDataBase64 = fileData.toString('base64');
+                                const cachedData = {courseIssues, fileDataBase64};
                                 callback(null, cachedData);
                             });
                         });
@@ -1080,7 +1081,8 @@ module.exports = {
                 (cachedData, _cacheHit) => {
                     // function to process the cachedData, whether we
                     // just rendered it or whether it came from cache
-                    const {courseIssues, fileData} = cachedData;
+                    const {courseIssues, fileDataBase64} = cachedData;
+                    const fileData = Buffer.from(fileDataBase64, 'base64');
                     callback(null, courseIssues, fileData);
                 },
                 callback, // error-handling function
