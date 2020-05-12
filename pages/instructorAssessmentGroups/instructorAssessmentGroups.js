@@ -80,7 +80,43 @@ router.post('/', function(req, res, next) {
             }
         })();
         res.redirect(req.originalUrl);
-    }else if (req.body.__action == 'open') {
+    } else if (req.body.__action == 'addmember') {
+        const assessment_id = res.locals.assessment.id;
+        const gid = req.body.gid;
+        const uids = req.body.addmemberuids;
+        const uidlist = uids.split(/[ ,]+/);
+        (async () => {
+            for(const uid of uidlist){
+                if(uid != ' '){
+                    const params = [
+                        assessment_id,
+                        gid,
+                        uid,
+                    ];
+                    await sqldb.callAsync('assessment_groups_add_member', params);
+                }
+            }
+        })();
+        res.redirect(req.originalUrl);
+    } else if (req.body.__action == 'deletemember') {
+        const assessment_id = res.locals.assessment.id;
+        const gid = req.body.gid;
+        const uids = req.body.deletememberuids;
+        const uidlist = uids.split(/[ ,]+/);
+        (async () => {
+            for(const uid of uidlist){
+                if(uid != ' '){
+                    const params = [
+                        assessment_id,
+                        gid,
+                        uid,
+                    ];
+                    await sqldb.callAsync('assessment_groups_delete_member', params);
+                }
+            }
+        })();
+        res.redirect(req.originalUrl);
+    } else if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {

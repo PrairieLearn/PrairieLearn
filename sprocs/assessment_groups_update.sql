@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS assessment_groups_update(bigint,text, text);
-
 CREATE OR REPLACE FUNCTION
     assessment_groups_update(
         IN arg_assessment_id bigint,          -- must provide assessment_id
