@@ -3,6 +3,7 @@ WITH access_rules_with_near_date AS (
         a.id AS assessment_id,
         aar.start_date,
         aar.end_date,
+        aar.time_limit_min,
         coalesce(
             array_length(aar.uids, 1),
             (SELECT count(*) FROM enrollments AS e WHERE e.course_instance_id = a.course_instance_id AND e.role = 'Student')
@@ -11,8 +12,8 @@ WITH access_rules_with_near_date AS (
         assessment_access_rules AS aar
         JOIN assessments AS a ON (a.id = aar.assessment_id)
     WHERE
-        aar.start_date BETWEEN (now() - interval '24 hours') AND (now() + interval '7 days')
-        AND aar.end_date > now()
+        aar.start_date < (now() + interval '7 days')
+        AND aar.end_date BETWEEN (now() - interval '1 hour') AND (now() + interval '7 days')
         AND (aar.role IS NULL OR aar.role = 'Student')
         AND aar.credit >= 100
         AND a.type = 'Exam'
@@ -29,7 +30,8 @@ SELECT
     a.id AS assessment_id,
     format_date_full_compact(arwnd.start_date, config_select('display_timezone')) AS start_date,
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
-    format_interval(arwnd.end_date - arwnd.start_date) AS duration,
+    format_interval(arwnd.end_date - arwnd.start_date) AS window,
+    format_interval(make_interval(mins => arwnd.time_limit_min)) AS time_limit,
     arwnd.student_count,
     aqc.question_count,
     aqc.external_grading_qc
