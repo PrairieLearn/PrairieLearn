@@ -44,6 +44,8 @@ WHERE course_instance_id IN (SELECT course_instance_id
                             WHERE id = $assessment_id)
 ORDER BY tid;
 
+-- BLOCK add_a_group
+
 -- BLOCK open
 WITH results AS (
     UPDATE assessment_instances AS ai

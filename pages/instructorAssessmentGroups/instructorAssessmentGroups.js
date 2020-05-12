@@ -62,7 +62,25 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'open') {
+    } else if (req.body.__action == 'addGroup') {
+        const assessment_id = res.locals.assessment.id;
+        const groupname = req.body.groupname;
+        const uids = req.body.uids;
+        const uidlist = uids.split(/[ ,]+/);
+        (async () => {
+            for(const uid of uidlist){
+                if(uid != ' '){
+                    let params = [
+                        assessment_id,
+                        groupname,
+                        uid,
+                    ];
+                    await sqldb.callAsync('assessment_groups_update', params);
+                }
+            }
+        })();
+        res.redirect(req.originalUrl);
+    }else if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
