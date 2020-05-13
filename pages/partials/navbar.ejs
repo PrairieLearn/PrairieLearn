@@ -62,16 +62,24 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
             <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
-            <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
-            <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
-            <% } %>
+
+            <!-- News -->
             <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
               News
               <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
                 <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
               <% } %>
             </a>
+
+            <!-- Change effective user -->
+            <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
+            <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
+            <% } %>
+
+            <div class="dropdown-divider"></div>
+
+            <!-- Settings -->
+            <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
         </div>
     </li>
     <% } %>
