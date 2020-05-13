@@ -30,8 +30,8 @@
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
+        <span class="navbar-text mx-2 no-select">/</span>
         <li class="nav-item btn-group">
-            <span class="navbar-text mx-2 no-select">/</span>
             <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
@@ -57,8 +57,8 @@
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
+            <span class="navbar-text mx-2 no-select">/</span>
             <li class="nav-item btn-group">
-                <span class="navbar-text mx-2 no-select">/</span>
                 <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
