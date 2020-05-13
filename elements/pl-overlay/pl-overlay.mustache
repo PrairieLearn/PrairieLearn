@@ -1,4 +1,4 @@
-<div class="pl-overlay" style="width: {{width}}px; height: {{height}}px">
+<div class="pl-overlay {{#clip}}pl-overlay-clip{{/clip}}" style="width: {{width}}px; height: {{height}}px">
     {{#locations}}
         <div class="pl-overlay-location {{#center}}pl-overlay-location-center{{/center}}" style="left: {{x}}px; top: {{y}}px; z-index: {{z_index}};">
             {{{html}}}

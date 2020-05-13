@@ -3,6 +3,10 @@
     display: block;
 }
 
+.pl-overlay-clip {
+    overflow: hidden;
+}
+
 .pl-overlay-location {
     position: absolute;
 }

@@ -7,8 +7,12 @@ import random
 def generate(data):
     canvas_width = 600
     canvas_height = 600
-    data['params']['canvas_width'] = canvas_width
-    data['params']['canvas_height'] = canvas_height
+    # overlay size
+    data['params']['overlay_width'] = canvas_width
+    data['params']['overlay_height'] = canvas_height
+    # drawing canvas takes up 1 pixel on each border
+    data['params']['canvas_width'] = canvas_width - 2
+    data['params']['canvas_height'] = canvas_height - 2
 
     triples = [
         [3, 4, 5],

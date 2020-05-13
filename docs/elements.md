@@ -56,6 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
+- [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1256,6 +1257,60 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
+## `pl-overlay` element
+
+The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
+
+#### Sample Element
+
+![](elements/pl-overlay.png)
+
+```html
+<pl-overlay width="400" height="400" clip="false">
+    <pl-location x="0" y="0">
+        <pl-drawing width="398" height="398" hide-answer-panel="false">
+            <pl-drawing-initial>
+                <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </pl-location>
+    <pl-location x="200" y="375" center="true">
+        $$3$$
+    </pl-location>
+    <pl-location x="375" y="200" center="true">
+        $$3$$
+    </pl-location>
+    <pl-location x="170" y="170" center="true">
+        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+    </pl-location>
+</pl-overlay>
+```
+
+#### `pl-overlay` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`width` | float | - | The width of the overlay canvas in pixels.
+`height` | float | - | The height of the overlay canvas in pixels.
+`clip` | boolean | True | If true, children will be cut off when exceeding canvas boundaries.
+
+#### `pl-location` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`x` | float | - | The x coordinate of the child element (relative to the left of the canvas)
+`y` | float | - | The y coordinate of the child element (relative to the top of the canvas)
+`center` | boolean | False | If true, the contents will be centered at the given x,y coordinates.  If false, the position defines the top-left corner of the contents.
+
+#### Details
+
+An overlay is pre-defined as a "canvas" with a set width and height.  By default, elements that exceed these canvas boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to the top-left corner with the `x` and `y` attributes.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+
+#### Example Implementations
+
+- [elementOverlay]
+
+----
 
 ## Conditional Elements
 
@@ -1487,6 +1542,7 @@ Attribute | Type | Default | Description
 [elementMatrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixLatex
 [elementMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMultipleChoice
 [elementNumberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementNumberInput
+[elementOverlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementOverlay
 [elementPanels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPanels
 [elementPrairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPrairieDrawFigure
 [elementPythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPythonVariable
