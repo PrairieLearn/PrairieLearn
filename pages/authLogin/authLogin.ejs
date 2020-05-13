@@ -88,6 +88,7 @@
                         </div>
                         <div class="modal-body">
                             <form method="post" action="/pl/devlogin">
+                                <input type="hidden" name="__action" value="emulateLTI">
                                 <label>Course instance ID
                                     <select name="course_instance_id" class="form-control">
                                         <% course_instances.forEach((ci) => { %>
@@ -102,7 +103,8 @@
                                         <% }); %>
                                     </select>
                                 </label>
-                                <p><em>Student access will be denied if the course instance access rules don't allow it.</em></p>
+                                <p><em>Is your course instance not listed? Check that it
+                                  <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">allows LTI logins</a>.</em></p>
                                 <input type="submit" class="btn btn-primary" value="Submit"></input>
                             </form>
                         </div>

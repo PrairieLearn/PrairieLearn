@@ -20,12 +20,19 @@ router.get('/', function(req, res, next) {
         // this will also need to depend on which institution we have
         // detected (e.g., UIUC doesn't want Azure during exams, but
         // ZJUI does want it).
-
-        sqldb.query(sql.get_course_instances, {}, (err, result) => {
-            if (ERR(err, next)) return;
-            res.locals.course_instances = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
+        res.locals.course_instances = [];
+        if (!res.locals.devMode) {
+            return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        } else {
+            let params = {
+                req_date: res.locals.req_date,
+            };
+            sqldb.query(sql.get_course_instances, params, (err, result) => {
+                if (ERR(err, next)) return;
+                res.locals.course_instances = result.rows;
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
+        }
     });
 });
 
