@@ -157,6 +157,10 @@ a.badge {
     align-items: baseline;
 }
 
+.no-select {
+    user-select: none;
+}
+
 /*****************
  * Brand label ("PrairieLearn" text)
  *****************/
