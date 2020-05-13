@@ -20,7 +20,7 @@ assessments_with_submission_counts AS (
         sum(submission_count) AS submission_count
     FROM
         assessment_users_with_submission_counts
-    GROUP BY a.id
+    GROUP BY assessment_id
 )
 SELECT
     i.short_name AS institution,
