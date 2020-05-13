@@ -61,7 +61,7 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
               <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
             <% } %>
         </a>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
 
             <!-- News -->
             <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
@@ -80,6 +80,18 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
 
             <!-- Settings -->
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
+
+            <!-- Log out -->
+            <% if (typeof authn_user != 'undefined') { %>
+               <% if (authn_provider_name == 'Shibboleth' || authn_provider_name == 'Google' || authn_provider_name == 'Azure'
+                      || authn_provider_name == 'LTI') { %>
+                   <a class="dropdown-item" href="<%= plainUrlPrefix %>/logout">Log out</a>
+               <% } else { %>
+                   <a class="dropdown-item disabled">Log out</a>
+               <% } %>
+            <% } else { %>
+               <a class="dropdown-item disabled">Log out</a>
+            <% } %>
         </div>
     </li>
     <% } %>
@@ -128,8 +140,6 @@ if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
     <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
 <% } %>
 
-
-    <li><%- include('logout'); %></li>
 </ul>
 </div>
 </nav>
