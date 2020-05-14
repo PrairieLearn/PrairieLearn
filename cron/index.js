@@ -29,6 +29,11 @@ const jobTimeouts = {};
 module.exports = {
     init(callback) {
         debug(`init()`);
+        if (!config.cronActive) {
+            logger.verbose('cronActive is false, skipping cron initialization');
+            return callback(null);
+        }
+
         module.exports.jobs = [
             {
                 name: 'sendUnfinishedCronWarnings',

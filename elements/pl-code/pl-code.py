@@ -82,6 +82,25 @@ def parse_highlight_lines(highlight_lines):
     return lines
 
 
+def get_lexer_by_name(name):
+    """
+    Tries to find a lexer by both its proper name and any aliases it has.
+    """
+    # Search by proper class/language names
+    # This returns None if not found, and a class if found.
+    lexer_class = pygments.lexers.find_lexer_class(name)
+    if lexer_class is not None:
+        # Instantiate the class if we found it
+        return lexer_class()
+    else:
+        try:
+            # Search by language aliases
+            # This throws an Exception if it's not found, and returns an instance if found.
+            return pygments.lexers.get_lexer_by_name(name)
+        except pygments.util.ClassNotFound:
+            return None
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
@@ -90,11 +109,10 @@ def prepare(element_html, data):
 
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
-        try:
-            pygments.lexers.get_lexer_by_name(language)
-        except pygments.util.ClassNotFound:
-            allowed_languages = map(pygments.lexers.get_all_lexers(), lambda tup: tup[1][0])
-            raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
+        lexer = get_lexer_by_name(language)
+        if lexer is None:
+            allowed_languages = map(lambda tup: tup[1][0], pygments.lexers.get_all_lexers())
+            raise Exception(f'Unknown language: "{language}". Must be one of {", ".join(allowed_languages)}')
 
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     if source_file_name is not None:
@@ -153,7 +171,7 @@ def render(element_html, data):
             code = code[1:]
 
     if specify_language:
-        lexer = pygments.lexers.get_lexer_by_name(language)
+        lexer = get_lexer_by_name(language)
     else:
         lexer = NoHighlightingLexer()
 
