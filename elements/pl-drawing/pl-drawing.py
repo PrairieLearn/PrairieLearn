@@ -124,7 +124,13 @@ def prepare(element_html, data):
                     if groups.tag == 'pl-controls-group':
                         for buttons in groups:
                             if buttons.tag == 'pl-drawing-button':
-                                pl.check_attribs(buttons, required_attribs=['type'], optional_attribs=['width', 'w1', 'w2', 'anchor_is_tail', 'angle', 'stroke'])
+                                type_name = buttons.attrib.get('type', None)
+                                if type_name == 'pl-arc-vector-CCW':
+                                    type_name = 'pl-arc-vector'
+                                elif type_name == 'pl-arc-vector-CW':
+                                    type_name = 'pl-arc-vector'
+                                type_attribs = element_attributes.get(type_name, {}).keys()
+                                pl.check_attribs(buttons, required_attribs=['type'], optional_attribs=type_attribs)
                                 if buttons.attrib['type'] == 'pl-vector':
                                     if 'width' in buttons.attrib:
                                         w_button = buttons.attrib['width']
@@ -188,6 +194,8 @@ def render_controls(template, elem):
             if opts is not None:
                 opts['selectable'] = True
                 opts['evented'] = True
+                opts['gradable'] = True
+                opts['placed_by_user'] = True
             return chevron.render(template, {'render_button': True, 'button_class': elem.attrib.get('type', ''), 'options': json.dumps(opts)}).strip()
     elif elem.tag == 'pl-controls-group':
         markup = '<p><strong>' + elem.attrib.get('label', '') + '</strong></p>\n<p>'
@@ -336,7 +344,7 @@ def parse(element_html, data):
     preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
 
     if preview_mode:
-        return data
+        return
 
     try:
         data['submitted_answers'][name] = json.loads(data['submitted_answers'][name])
@@ -346,8 +354,6 @@ def parse(element_html, data):
     except json.JSONDecodeError:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = {}
-
-    return data
 
 
 def grade(element_html, data):
@@ -394,7 +400,7 @@ def grade(element_html, data):
 
     # Loop through and check everything
     for element in student['objects']:
-        if 'gradingName' not in element or not can_grade(element['gradingName']) or not element['graded']:
+        if 'gradingName' not in element or not can_grade(element['gradingName']) or 'graded' not in element or not element['graded']:
             continue
         # total number of objects inserted by students (using buttons)
         # this will disregard the initial objects placed by question authors
