@@ -74,6 +74,8 @@ The following facts and behaviors ensure those guarantees:
 
 * Once a question in a shareable course has been synced to an instance of PrairieLearn, attempting to perform a sync where the question would be renamed or deleted will be a sync error. *(Is there any special consideration necessary for local development?)*
 
+* To allow question renaming, we could add a concept of _question aliases_, which are alternative QIDs specified in the `info.json` file. In this case it would be allowed to rename a question, so long as the old name was simultaneously added as an alias. The in-browser editor could automate this by adding an alias for the old name whenever renaming a question.
+
 * When a course is synced, all questions that are referenced by its assessments will be checked. If a referenced shareable course is not available on that instance, or a question within a referenced shareable course does not exist, the sync will error. *(Note that this restriction is relaxed in local installations of PrairieLearn, where a user may not have the necessary permissions to clone the shareable course repository.)*
 
 ## Access control
