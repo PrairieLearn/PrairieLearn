@@ -3,15 +3,15 @@ import lxml.html
 import chevron
 
 
-VALIGN_DEFAULT = 'center'
+VALIGN_DEFAULT = 'middle'
 HALIGN_DEFAULT = 'center'
 CLIP_DEFAULT = True
 
 VALIGN_VALUES = ['top', 'middle', 'center', 'bottom']
 HALIGN_VALUES = ['left', 'middle', 'center', 'right']
 
-# Percent to translate each alignment by.  This is relative to the top-left corner.
-alignment_to_perc = {
+# Percent to translate each alignment by.  This is relative to the top-left corner of the element.
+ALIGNMENT_TO_PERC = {
     'top': '0%',
     'left': '0%',
     'middle': '-50%',
@@ -19,6 +19,7 @@ alignment_to_perc = {
     'bottom': '-100%',
     'right': '-100%'
 }
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -50,8 +51,8 @@ def render(element_html, data):
         x = pl.get_float_attrib(child, 'x')
         y = pl.get_float_attrib(child, 'y')
 
-        hoff = alignment_to_perc[halign]
-        voff = alignment_to_perc[valign]
+        hoff = ALIGNMENT_TO_PERC[halign]
+        voff = ALIGNMENT_TO_PERC[valign]
         transform = f'translate({hoff}, {voff})'
 
         style = f'top: {y}px; left: {x}px; transform: {transform}; z-index: {z_index}'
