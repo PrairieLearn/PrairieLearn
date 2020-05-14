@@ -1,0 +1,51 @@
+
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+ .code-block {
+     width: 65%;
+     margin-left: auto;
+     margin-right: auto;
+     overflow: hidden;
+ }
+ .code-block div {
+     padding: 0.5rem;
+     display: block;
+     margin-bottom: -1em;
+     line-height: 125%;
+ }
+</style>
+
+<p>
+    Thanks to the efforts of <a href="https://github.com/nicknytko">Nicolas Nytko</a> (CS BS '19, CS MS '22), the new <code class="user-output">pl-overlay</code> element allows you to easily place existing elements on top of each other in varying positions.  This now enables, for example, questions that require student input on specific parts of diagrams and figures:
+</p>
+
+<img class="border rounded" src="map.png" width="421px">
+
+<p>
+    Each placed element in the overlay is wrapped with a <code class="user-output">pl-location</code> tag, which lets you specify positioning and alignment relative to the overlay area.  The full source to the above example is given here:
+</p>
+
+<div class="code-block rounded">
+    <!-- Auto-generated w/ Pygments -->
+<div style="background: #f0f0f0"><pre style="line-height: 125%"><span></span>&lt;<span style="color: #062873; font-weight: bold">pl-overlay</span> <span style="color: #4070a0">width</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;400&quot;</span> <span style="color: #4070a0">height</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;600&quot;</span> <span style="color: #4070a0">clip</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;false&quot;</span>&gt;
+    &lt;<span style="color: #062873; font-weight: bold">pl-location</span> <span style="color: #4070a0">x</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;0&quot;</span> <span style="color: #4070a0">y</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;0&quot;</span> <span style="color: #4070a0">valign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;top&quot;</span> <span style="color: #4070a0">halign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;left&quot;</span>&gt;
+       &lt;<span style="color: #062873; font-weight: bold">pl-figure</span> <span style="color: #4070a0">file-name</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;map.png&quot;</span> <span style="color: #4070a0">directory</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;clientFilesQuestion&quot;</span>&gt;&lt;/<span style="color: #062873; font-weight: bold">pl-figure</span>&gt;
+    &lt;/<span style="color: #062873; font-weight: bold">pl-location</span>&gt;
+    &lt;<span style="color: #062873; font-weight: bold">pl-location</span> <span style="color: #4070a0">x</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;160&quot;</span> <span style="color: #4070a0">y</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;315&quot;</span> <span style="color: #4070a0">valign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;top&quot;</span> <span style="color: #4070a0">halign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;center&quot;</span>&gt;
+       &lt;<span style="color: #062873; font-weight: bold">pl-string-input</span> <span style="color: #4070a0">answers-name</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;string_value&quot;</span> <span style="color: #4070a0">show-help-text</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;false&quot;</span> <span style="color: #4070a0">size</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;7&quot;</span>
+                        <span style="color: #4070a0">correct-answer</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;Ukraine&quot;</span> <span style="color: #4070a0">remove-leading-trailing</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;true&quot;</span>
+                        <span style="color: #4070a0">ignore-case</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;true&quot;</span>&gt;&lt;/<span style="color: #062873; font-weight: bold">pl-string-input</span>&gt;
+    &lt;/<span style="color: #062873; font-weight: bold">pl-location</span>&gt;
+&lt;/<span style="color: #062873; font-weight: bold">pl-overlay</span>&gt;</pre></div></div>
+
+
+<hr class="mt-5">
+<p class="text-right small">
+  Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+</p>
