@@ -41,10 +41,10 @@ describe('Administrator pages', function() {
         });
     });
 
-    describe('2. view administrator server page', function() {
-        locals.administratorServerUrl = locals.baseUrl + '/administrator/server';
+    describe('2. view administrator settings page', function() {
+        locals.administratorSettingsUrl = locals.baseUrl + '/administrator/settings';
         it('should load successfully', function(callback) {
-            request(locals.administratorServerUrl, function (error, response, body) {
+            request(locals.administratorSettingsUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }
