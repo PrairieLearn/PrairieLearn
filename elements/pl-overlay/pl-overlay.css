@@ -10,7 +10,3 @@
 .pl-overlay-location {
     position: absolute;
 }
-
-.pl-overlay-location-center {
-    transform: translate(-50%, -50%);
-}

@@ -1292,7 +1292,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `width` | float | - | The width of the overlay canvas in pixels.
 `height` | float | - | The height of the overlay canvas in pixels.
-`clip` | boolean | True | If true, children will be cut off when exceeding canvas boundaries.
+`clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
 
 #### `pl-location` Customizations
 
@@ -1300,11 +1300,12 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `x` | float | - | The x coordinate of the child element (relative to the left of the canvas)
 `y` | float | - | The y coordinate of the child element (relative to the top of the canvas)
-`center` | boolean | False | If true, the contents will be centered at the given x,y coordinates.  If false, the position defines the top-left corner of the contents.
+`valign` | string | `middle` | Specifies the vertical alignment of the contents.  Can be one of `top`, `middle`, or `bottom`.
+`halign` | string | `center` | Specifies the horizontal alignment of the contents.  Can be one of `left`, `center`, or `right`.
 
 #### Details
 
-An overlay is pre-defined as a "canvas" with a set width and height.  By default, elements that exceed these canvas boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to the top-left corner with the `x` and `y` attributes.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+An overlay is pre-defined as a "overlay area" with a set width and height.  By default, elements that exceed these boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to the top-left corner with the `x` and `y` attributes.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
 #### Example Implementations
 
