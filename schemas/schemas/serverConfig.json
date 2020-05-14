@@ -97,7 +97,7 @@
             "type": "integer"
         },
         "runningInEc2": {
-            "description": "Toggle if PL is running as an AWS EC2 instance",
+            "description": "Whether PL is running as an AWS EC2 instance",
             "type": "boolean"
         },
         "externalGradingUseAws": {
