@@ -47,7 +47,8 @@
                 {"id": "elementFileEditor",               "points": 2, "maxPoints": 10},
                 {"id": "elementPythonVariable",           "points": 2, "maxPoints": 10},
                 {"id": "elementGraph",                    "points": 2, "maxPoints": 10},
-                {"id": "elementOverlay",                  "points": 2, "maxPoints": 10}
+                {"id": "elementOverlayRandom",            "points": 2, "maxPoints": 10},
+                {"id": "elementOverlayFigure",            "points": 2, "maxPoints": 10}
             ]
         }
     ]
