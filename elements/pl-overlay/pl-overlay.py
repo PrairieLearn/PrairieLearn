@@ -34,7 +34,7 @@ def prepare(element_html, data):
 
         if ('top' not in child.attrib and 'bottom' not in child.attrib) or ('top' in child.attrib and 'bottom' in child.attrib):
             raise ValueError('pl-location requires one of "top" or "bottom" attributes.')
-        
+
         valign = pl.get_string_attrib(child, 'valign', None)
         if valign is not None and valign not in VALIGN_VALUES:
             raise ValueError(f'Unknown vertical alignment "{valign}"')
@@ -48,7 +48,7 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     width = pl.get_float_attrib(element, 'width')
     height = pl.get_float_attrib(element, 'height')
-    
+
     # Assign layer index in order children are defined
     # Later defined elements will be placed on top of earlier ones
     locations = []
