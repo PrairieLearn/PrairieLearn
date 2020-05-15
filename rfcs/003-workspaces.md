@@ -31,7 +31,7 @@ These three components are implemented within the main PL executable, but for de
 ## How this works
 
 * When we want to launch a container, we bundle files, upload to S3, download to worker, spin up a container with files mounted to a known good location.
-* Run filesystem watcher on mounted directory
+* Run filesystem watcher on mounted directory.
 * When files change, we’ll do two things:
     * We’ll upload the workspace state to S3
     * We’ll push the submission state into the database (somewhere, tbd) and store errors too?
