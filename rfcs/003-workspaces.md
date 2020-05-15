@@ -39,7 +39,7 @@ These three components are implemented within the main PL executable, but for de
 ## Frontend
 
 * We’ll serve the page as two parts:
-    * An “outer part” that PrairieLearn controls - this gives us a place to show save status, and potentially show a grade button and immediate feedback in the long run. Can also show “I’ve bricked my container, pls help” button
+    * An “outer part” that PrairieLearn controls - this gives us a place to show save status, and potentially show a grade button and immediate feedback in the long run. Can also show “I’ve bricked my container, pls help” button.
     * An “inner part”, which is the page served by the container.
 
 ## Workspace container orchestration
