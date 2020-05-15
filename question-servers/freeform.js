@@ -190,9 +190,8 @@ module.exports = {
 
                 /* Populate element map */
                 extensions.forEach((extension) => {
-                    const [element, extensionDir] = extension;
-                    if (!(element in elements)) {
-                        elements[element] = {};
+                    if (!(extension[0] in elements)) {
+                        elements[extension[0]] = {};
                     }
                 });
 
@@ -220,10 +219,10 @@ module.exports = {
                     if (ERR(err, callback)) return;
                     callback(null, elements);
                 });
-            }
+            },
         ], (err, extensions) => {
             if (ERR(err, callback)) return;
-            return callback(null, extensions)
+            return callback(null, extensions);
         });
     },
     
@@ -1138,8 +1137,8 @@ module.exports = {
                             
                             /* Load any extensions if they exist */
                             if (_.has(extensions, elementName)) {
-                                for (const [extensionName, extension] of Object.entries(extensions[elementName])) {
-                                    let extension = _.cloneDeep(extensions[elementName][extensionName]);
+                                for (const extensionName of Object.keys(extensions[elementName])) {
+                                    const extension = _.cloneDeep(extensions[elementName][extensionName]);
                                     if (_.has(extension, 'extensionStyles')) {
                                         extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extension.name}/${dep}`);
                                     }
@@ -1155,7 +1154,7 @@ module.exports = {
                                         'clientFilesCourseStyles',
                                         'clientFilesCourseScripts',
                                         'extensionStyles',
-                                        'extensionScripts'
+                                        'extensionScripts',
                                     ];
                                     
                                     for (const type of dependencyTypes) {

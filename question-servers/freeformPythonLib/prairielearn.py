@@ -1096,13 +1096,13 @@ def load_element_extension(data, extension_name):
     Loads a single specific extension by name for an element.
     Returns a dictionary of defined variables and functions.
     """
-    if not 'extensions' in data:
+    if 'extensions' not in data:
         raise Exception('load_element_extension() must be called from an extension!')
-    if not extension_name in data['extensions']:
+    if extension_name not in data['extensions']:
         raise Exception(f'Could not find extension {extension_name}!')
-    
+
     ext_info = data['extensions'][extension_name]
-    if not 'pythonScripts' in ext_info:
+    if 'pythonScripts' not in ext_info:
         # Nothing to load, just return an empty dict
         return {}
 
@@ -1119,16 +1119,16 @@ def load_element_extension(data, extension_name):
             os.chdir(old_wd)
             return ret_val
         return wrapped_function
-    
+
     script_paths = map(lambda script: os.path.join(ext_info['directory'], script), ext_info['pythonScripts'])
     loaded = {}
     for script in script_paths:
         spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        
+
         # Filter out extra names so we only get user defined functions and variables
-        script_loaded = { f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__') }
+        script_loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
         loaded.update(script_loaded)
     return loaded
 
@@ -1141,8 +1141,8 @@ def load_all_extensions_for_element(data):
     Returns a dictionary mapping the extension name to its
     defined variables and functions
     """
-    
-    if not 'extensions' in data:
+
+    if 'extensions' not in data:
         raise Exception('load_element_extension() must be called from an extension!')
     if len(data['extensions']) == 0:
         return {}
