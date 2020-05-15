@@ -6,7 +6,7 @@ Run persistent containers for users with web frontends, like VS Code and Jupyter
 
 # Motivation and background
 
-PrairieLearn currently allows code editing using an in-page ACE Editor and can compile and test code via external graders, which run take student code and instructor-provided test code and execute them in an instructor-defined container, returning the test results back to the student. While excellent for testing small code snippets, this is not a very flexible environment for writing and debugging more complex programs.
+PrairieLearn currently allows code editing using an in-page ACE Editor and can compile and test code via external graders, which take student code and instructor-provided test code and execute them in an instructor-defined container, returning the test results back to the student. While excellent for testing small code snippets, this is not a very flexible environment for writing and debugging more complex programs.
 
 This RFC proposes to give students persistent remote containers (called _Workspaces_) to work in, configured by instructors to provide a per-question environment with a specific set of compilers, debuggers, editors, etc. This remote container would be accessed via a web-based frontend, such as VS Code or Jupyter Notebooks.
 
