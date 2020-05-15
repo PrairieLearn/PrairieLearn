@@ -4,6 +4,7 @@ module.exports.infoCourse = require('./schemas/infoCourse.json');
 module.exports.infoCourseInstance = require('./schemas/infoCourseInstance.json');
 module.exports.infoElementCore = require('./schemas/infoElementCore.json');
 module.exports.infoElementCourse = require('./schemas/infoElementCourse.json');
+module.exports.infoElementExtension = require('./schemas/infoElementExtension.json');
 module.exports.infoQuestion = require('./schemas/infoQuestion.json');
 module.exports.questionOptionsCalculation = require('./schemas/questionOptionsCalculation.json');
 module.exports.questionOptionsCheckbox = require('./schemas/questionOptionsCheckbox.json');

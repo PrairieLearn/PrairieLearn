@@ -23,6 +23,8 @@ const markdown = require('../lib/markdown');
 let coreElementsCache = {};
 // Maps course IDs to course element info
 const courseElementsCache = {};
+/* Maps course IDs to course element extension info */
+const courseExtensionsCache = {};
 
 module.exports = {
 
@@ -128,7 +130,7 @@ module.exports = {
             return callback(null, elements);
         });
     },
-
+    
     loadElementsForCourse(course, callback) {
         if (courseElementsCache[course.id] !== undefined) {
             return callback(null, courseElementsCache[course.id]);
@@ -139,7 +141,7 @@ module.exports = {
             callback(null, courseElementsCache[course.id]);
         });
     },
-
+    
     // Skips the cache; used when syncing course from GitHub/disk
     reloadElementsForCourse(course, callback) {
         module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
@@ -149,6 +151,102 @@ module.exports = {
         });
     },
 
+    loadExtensions(sourceDir, callback) {
+        async.waterfall([
+            (callback) => {
+                fs.readdir(sourceDir, (err, elements) => {
+                    if (err && err.code === 'ENOENT') {
+                        /* We don't really care if there are no extensions, just return an empty array. */
+                        return callback(null, []);
+                    }
+                    if (ERR(err, callback)) return;
+                    return callback(null, elements);
+                });
+            },
+            (elementFolders, callback) => {
+                /* Get extensions from each element folder */
+                async.map(elementFolders, (element) => {
+                    fs.readdir(path.join(sourceDir, element), (err, extensions) => {
+                        if (ERR(err, callback)) return;
+                        return callback(null, extensions.map(ext => [element, ext]));
+                    });
+                }, callback);
+            },
+            (extensions, callback) => {
+                /* Filter out non-directories */
+                async.filter(extensions, (extension, callback) => {
+                    const [element, extensionDir] = extension;
+                    fs.lstat(path.join(sourceDir, element, extensionDir), (err, stats) => {
+                        if (ERR(err, callback)) return;
+                        callback(null, stats.isDirectory());
+                    });
+                }, (err, results) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, results);
+                });
+            },
+            (extensions, callback) => {
+                const elements = {};
+
+                /* Populate element map */
+                extensions.forEach((extension) => {
+                    const [element, extensionDir] = extension;
+                    if (!(element in elements)) {
+                        elements[element] = {};
+                    }
+                });
+
+                /* Load extensions */
+                async.each(extensions, (extension, callback) => {
+                    const [element, extensionDir] = extension;
+                    const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
+                    fs.readJson(infoPath, (err, info) => {
+                        if (err && err.code === 'ENOENT') {
+                            /* Not an extension directory, skip it. */
+                            logger.verbose(`${infoPath} not found, skipping...`);
+                            return callback(null);
+                        }
+                        if (ERR(err, callback)) return;
+
+                        jsonLoader.validateJSON(info, schemas.infoElementExtension, (err) => {
+                            if (ERR(err, callback)) return;
+                            info.name = extensionDir;
+                            info.directory = path.join(sourceDir, element, extensionDir);
+                            elements[element][extensionDir] = info;
+                            callback(null);
+                        });
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, elements);
+                });
+            }
+        ], (err, extensions) => {
+            if (ERR(err, callback)) return;
+            return callback(null, extensions)
+        });
+    },
+    
+    loadExtensionsForCourse(course, callback) {
+        if (courseExtensionsCache[course.id] !== undefined) {
+            return callback(null, courseExtensionsCache[course.id]);
+        }
+        module.exports.loadExtensions(path.join(course.path, 'elementExtensions'), (err, extensions) => {
+            if (ERR(err, callback)) return;
+            courseExtensionsCache[course.id] = extensions;
+            callback(null, extensions);
+        });
+    },
+
+    /* Skips the cache */
+    reloadExtensionsForCourse(course, callback) {
+        module.exports.loadExtensions(path.join(course.path, 'elementExtensions'), (err, extensions) => {
+            if (ERR(err, callback)) return;
+            courseExtensionsCache[course.id] = extensions;
+            callback(null, extensions);
+        });
+    },
+    
     resolveElement: function(elementName, context) {
         if (_.has(context.course_elements, elementName)) {
             return context.course_elements[elementName];
@@ -397,6 +495,11 @@ module.exports = {
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
                     renderedElementNames.push(elementName);
                 }
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
                 // We need to wrap it in another node, since only child nodes
                 // are serialized
                 const serializedNode = parse5.serialize({
@@ -412,6 +515,8 @@ module.exports = {
                     // We'll catch this and add it to the course issues list
                     throw courseIssue;
                 }
+                /* We'll be sneaky and remove the extensions, since they're not used elsewhere */
+                delete data.extensions;
                 if (_.isString(consoleLog) && consoleLog.length > 0) {
                     const courseIssue = new Error(`${elementFile}: output logged on console during ${phase}()`);
                     courseIssue.data = { outputBoth: consoleLog };
@@ -492,7 +597,12 @@ module.exports = {
                 }
 
                 const elementFile = module.exports.getElementController(elementName, context);
-
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
+                
                 module.exports.legacyElementFunction(pc, phase, elementName, $, element, data, context, (err, ret_val, consoleLog) => {
                     if (err) {
                         const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
@@ -501,6 +611,7 @@ module.exports = {
                         courseIssues.push(courseIssue);
                         return callback(courseIssue);
                     }
+                    delete data.extensions;
                     if (_.isString(consoleLog) && consoleLog.length > 0) {
                         const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
                         courseIssue.data = { outputBoth: consoleLog };
@@ -705,6 +816,16 @@ module.exports = {
         }
     },
 
+    getContextOptions: function(context) {
+        /* These options are always available in any phase. */
+        
+        let options = {};        
+        options.question_path = context.question_dir;
+        options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
+        return options;
+    },
+    
     generate: function(question, course, variant_seed, callback) {
         debug('generate()');
         module.exports.getContext(question, course, (err, context) => {
@@ -717,6 +838,7 @@ module.exports = {
                 variant_seed: parseInt(variant_seed, 36),
                 options: _.defaults({}, course.options, question.options),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -748,8 +870,9 @@ module.exports = {
                 params: _.get(variant, 'params', {}),
                 correct_answers: _.get(variant, 'true_answer', {}),
                 variant_seed: parseInt(variant.variant_seed, 36),
-                options: _.get(variant, 'options', {}),
+                options: _.get(variant, 'options',{}),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -812,9 +935,8 @@ module.exports = {
             data.options.base_url = locals.baseUrl;
 
             // Put key paths in data.options
-            data.options.question_path = context.question_dir;
-            data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
-
+            _.extend(data.options, module.exports.getContextOptions(context));
+            
             module.exports.getCachedDataOrCompute(
                 course,
                 data,
@@ -845,7 +967,7 @@ module.exports = {
             );
         });
     },
-
+    
     render: function(renderSelection, variant, question, submission, submissions, course, course_instance, locals, callback) {
         debug(`render()`);
         const htmls = {
@@ -857,10 +979,18 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         let panelCount = 0, cacheHitCount = 0;
+        let extensions = {};
         workers.getPythonCaller((err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
-                // FIXME: suppprt 'header'
+                (callback) => {
+                    module.exports.loadExtensionsForCourse(course, (err, loaded_extensions) => {
+                        if (ERR(err, callback)) return;
+                        extensions = loaded_extensions;
+                        callback(null);
+                    });
+                },
+                // FIXME: support 'header'
                 (callback) => {
                     if (!renderSelection.question) return callback(null);
                     module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
@@ -924,6 +1054,8 @@ module.exports = {
                             coreElementScripts: [],
                             courseElementStyles: [],
                             courseElementScripts: [],
+                            extensionStyles: [],
+                            extensionScripts: [],
                             clientFilesCourseStyles: [],
                             clientFilesCourseScripts: [],
                             clientFilesQuestionStyles: [],
@@ -938,7 +1070,7 @@ module.exports = {
                                 }
                             }
                         }
-
+                        
                         // Gather dependencies for all rendered elements
                         allRenderedElementNames.forEach((elementName) => {
                             let resolvedElement = module.exports.resolveElement(elementName, context);
@@ -975,7 +1107,7 @@ module.exports = {
                                 }
                             }
 
-                            let depdendencyTypes = [
+                            const dependencyTypes = [
                                 'coreStyles',
                                 'coreScripts',
                                 'nodeModulesStyles',
@@ -987,7 +1119,7 @@ module.exports = {
                                 'courseElementStyles',
                                 'courseElementScripts',
                             ];
-                            for (const type of depdendencyTypes) {
+                            for (const type of dependencyTypes) {
                                 if (_.has(elementDependencies, type)) {
                                     if (_.isArray(elementDependencies[type])) {
                                         for (const dep of elementDependencies[type]) {
@@ -1003,8 +1135,49 @@ module.exports = {
                                     }
                                 }
                             }
-                        });
+                            
+                            /* Load any extensions if they exist */
+                            if (_.has(extensions, elementName)) {
+                                for (const [extensionName, extension] of Object.entries(extensions[elementName])) {
+                                    let extension = _.cloneDeep(extensions[elementName][extensionName]);
+                                    if (_.has(extension, 'extensionStyles')) {
+                                        extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extension.name}/${dep}`);
+                                    }
+                                    if (_.has(extension, 'extensionScripts')) {
+                                        extension.extensionScripts = extension.extensionScripts.map(dep => `${elementName}/${extension.name}/${dep}`);
+                                    }
 
+                                    const dependencyTypes = [
+                                        'coreStyles',
+                                        'coreScripts',
+                                        'nodeModulesStyles',
+                                        'nodeModulesScripts',
+                                        'clientFilesCourseStyles',
+                                        'clientFilesCourseScripts',
+                                        'extensionStyles',
+                                        'extensionScripts'
+                                    ];
+                                    
+                                    for (const type of dependencyTypes) {
+                                        if (_.has(extension, type)) {
+                                            if (_.isArray(extension[type])) {
+                                                for (const dep of extension[type]) {
+                                                    if (!_.includes(dependencies[type], dep)) {
+                                                        dependencies[type].push(dep);
+                                                    }
+                                                }
+                                            } else {
+                                                const courseIssue = new Error(`Error getting dependencies for extension ${extension.name}: "${type}" is not an array`);
+                                                courseIssue.data = { elementDependencies };
+                                                courseIssue.fatal = true;
+                                                courseIssues.push(courseIssue);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        
                         // Transform dependency list into style/link tags
                         const coreScriptUrls = [];
                         const scriptUrls = [];
@@ -1021,6 +1194,9 @@ module.exports = {
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                         dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
                         dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elements/${file}`));
+                        dependencies.extensionStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+                        dependencies.extensionScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                             // It's important that any library-style scripts come first
@@ -1108,6 +1284,7 @@ module.exports = {
                 raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
                 gradable: _.get(submission, 'gradable', true),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1153,6 +1330,7 @@ module.exports = {
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1200,6 +1378,7 @@ module.exports = {
                 gradable: true,
                 test_type: test_type,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1232,10 +1411,17 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
             course_elements_dir: path.join(course.path, 'elements'),
         };
+        /* Load elements and any extensions */
         module.exports.loadElementsForCourse(course, (err, elements) => {
             if (ERR(err, callback)) return;
             context.course_elements = elements;
-            callback(null, context);
+
+            module.exports.loadExtensionsForCourse(course, (err, extensions) => {
+                if (ERR(err, callback)) return;
+                context.course_element_extensions = extensions;
+
+                callback(null, context);
+            });
         });
     },
 

@@ -288,6 +288,11 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 app.use('/pl/course_instance/:course_instance_id/instructor/elements', require('./pages/elementFiles/elementFiles'));
 app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
 
+// Serve extension statics
+app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+app.use('/pl/course/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

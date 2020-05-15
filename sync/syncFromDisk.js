@@ -66,6 +66,8 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             },
             function(callback) {logger.info('Reloading course elements...'); callback(null);},
             freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
+            function(callback) {logger.info('Reloading course element extensions...'); callback(null);},
+            freeformServer.reloadExtensionsForCourse.bind(null, course.courseInfo),
         ], function(err) {
             perf.end('sync');
             if (ERR(err, callback)) return;

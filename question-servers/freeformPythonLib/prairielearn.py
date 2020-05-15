@@ -11,6 +11,9 @@ from python_helper_sympy import json_to_sympy
 import re
 import colors
 import unicodedata
+import importlib
+import importlib.util
+import os
 
 
 def to_json(v):
@@ -1084,3 +1087,68 @@ def escape_invalid_string(string):
     Wraps and escapes string in <code> tags.
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def load_element_extension(data, extension_name):
+    """
+    load_element_extension(data, extension_name)
+
+    Loads a single specific extension by name for an element.
+    Returns a dictionary of defined variables and functions.
+    """
+    if not 'extensions' in data:
+        raise Exception('load_element_extension() must be called from an extension!')
+    if not extension_name in data['extensions']:
+        raise Exception(f'Could not find extension {extension_name}!')
+    
+    ext_info = data['extensions'][extension_name]
+    if not 'pythonScripts' in ext_info:
+        # Nothing to load, just return an empty dict
+        return {}
+
+    # wrap extension functions so that they execute in their own directory
+    def wrap(f):
+        # If not a function, just return
+        if not callable(f):
+            return f
+
+        def wrapped_function(*args, **kwargs):
+            old_wd = os.getcwd()
+            os.chdir(ext_info['directory'])
+            ret_val = f(*args, **kwargs)
+            os.chdir(old_wd)
+            return ret_val
+        return wrapped_function
+    
+    script_paths = map(lambda script: os.path.join(ext_info['directory'], script), ext_info['pythonScripts'])
+    loaded = {}
+    for script in script_paths:
+        spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        # Filter out extra names so we only get user defined functions and variables
+        script_loaded = { f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__') }
+        loaded.update(script_loaded)
+    return loaded
+
+
+def load_all_extensions_for_element(data):
+    """
+    load_all_extensions_for_element(data)
+
+    Loads all available extensions for a given element.
+    Returns a dictionary mapping the extension name to its
+    defined variables and functions
+    """
+    
+    if not 'extensions' in data:
+        raise Exception('load_element_extension() must be called from an extension!')
+    if len(data['extensions']) == 0:
+        return {}
+
+    loaded_extensions = {}
+    for name in data['extensions'].keys():
+        loaded_extensions[name] = load_element_extension(data, name)
+
+    return loaded_extensions
