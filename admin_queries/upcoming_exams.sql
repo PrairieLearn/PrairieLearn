@@ -31,7 +31,9 @@ SELECT
     format_date_full_compact(arwnd.start_date, config_select('display_timezone')) AS start_date,
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
     format_interval(arwnd.end_date - arwnd.start_date) AS end_minus_start,
+    EXTRACT(EPOCH FROM (arwnd.end_date - arwnd.start_date)) AS _sortval_end_minus_start,
     format_interval(make_interval(mins => arwnd.time_limit_min)) AS time_limit,
+    arwnd.time_limit_min AS _sortval_time_limit,
     arwnd.student_count,
     EXISTS (
         SELECT 1
@@ -50,7 +52,7 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
-    arwnd.student_count > 100
+    arwnd.student_count >= 20
 ORDER BY
     arwnd.start_date,
     i.short_name,
