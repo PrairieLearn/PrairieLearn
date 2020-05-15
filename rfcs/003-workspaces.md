@@ -47,22 +47,24 @@ These three components are implemented within the main PL executable, but for de
 
 * When we create a variant, we (maybe) create an editor session (if it’s enabled for that question). This is at this point just an entry in a database table somewhere.
 * We render some kind of button to launch an editor instance for that session.
-* The user clicks on that button
-* We get a request for a particular editor instance
+* The user clicks on that button.
+* We get a request for a particular workspace instance.
+* We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
 * Routes:
-    * `/editor/[uuid]` - serves outer frame
-    * `/editor/[uuid]/heartbeat`
-    * `/editor/[uuid]/container/*` - proxy `*` to inner frame
+    * `/workspace/[uuid]` - serves outer frame
+    * `/workspace/[uuid]/heartbeat`
+    * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
 * On the host:
-    * `/editor/[uuid]/editor/*` goes to the host that’s running this container
-    *  Within the host, we’ll proxy that to the appropriate container
-    *  Each container will probably need port 80 bound to some random, unique port that we can target for forwards
+    * `/workspace/[uuid]/workspace/*` goes to the host that’s running this container.
+    *  Within the host, we’ll proxy that to the appropriate container.
+    *  Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
+    * The host will listen for three types of signals: launch, sync, and kill container.
 * How to map requests to hosts?
-    * Hosts table that stores current information about each host VM
+    * Hosts table that stores current information about each host VM.
 * How do we kill off old containers?
     * Containers are killed after either:
-        * We don’t receive N heartbeats in a row
-        * The user hasn’t saved for X amount of time
+        * We don’t receive N heartbeats in a row.
+        * The user hasn’t saved for X amount of time.
 
 Need to make sure that cookies are inaccessible to client-side code (https://github.com/PrairieLearn/PrairieLearn/issues/2503) and on the server (we need to configure our proxy to strip out at least the Cookie header, if not more things).
 
