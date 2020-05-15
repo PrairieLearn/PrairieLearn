@@ -1267,20 +1267,20 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 ```html
 <pl-overlay width="400" height="400" clip="false">
-    <pl-location x="0" y="0">
+    <pl-location left="0" top="0" halign="left" valign="top">
         <pl-drawing width="398" height="398" hide-answer-panel="false">
             <pl-drawing-initial>
                 <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
             </pl-drawing-initial>
         </pl-drawing>
     </pl-location>
-    <pl-location x="200" y="375" center="true">
+    <pl-location left="200" top="375">
         $$3$$
     </pl-location>
-    <pl-location x="375" y="200" center="true">
+    <pl-location left="375" top="200">
         $$3$$
     </pl-location>
-    <pl-location x="170" y="170" center="true">
+    <pl-location left="170" top="170">
         <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
     </pl-location>
 </pl-overlay>
@@ -1298,14 +1298,16 @@ Attribute | Type | Default | Description
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`x` | float | - | The x coordinate of the child element (relative to the left of the canvas)
-`y` | float | - | The y coordinate of the child element (relative to the top of the canvas)
+`left` | float | - | The x coordinate of the child element (relative to the left of the overlay)
+`top` | float | - | The y coordinate of the child element (relative to the top of the overlay)
+`right` | float | - | The x coordinate of the child element (relative to the right of the overlay)
+`bottom` | float | - | The y coordinate of the child element (relative to the bottom of the overlay)
 `valign` | string | `middle` | Specifies the vertical alignment of the contents.  Can be one of `top`, `middle`, or `bottom`.
 `halign` | string | `center` | Specifies the horizontal alignment of the contents.  Can be one of `left`, `center`, or `right`.
 
 #### Details
 
-An overlay is pre-defined as a "overlay area" with a set width and height.  By default, elements that exceed these boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to the top-left corner with the `x` and `y` attributes.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+An overlay is pre-defined as a "overlay area" with a set width and height.  By default, elements that exceed these boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
 #### Example Implementations
 

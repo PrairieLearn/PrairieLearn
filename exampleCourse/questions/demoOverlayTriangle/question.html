@@ -11,14 +11,14 @@
 </pl-question-panel>
 
 <pl-overlay width="{{params.overlay_width}}" height="{{params.overlay_height}}" clip="false">
-    <pl-location x="0" y="0" halign="left" valign="top">
+    <pl-location left="0" top="0" halign="left" valign="top">
         <pl-drawing width="{{params.canvas_width}}" height="{{params.canvas_height}}" gradable="false" hide-answer-panel="false">
             <pl-drawing-initial>
                 <pl-triangle x1="{{params.tri_x1}}" y1="{{params.tri_y1}}" x2="{{params.tri_x2}}" y2="{{params.tri_y2}}" x3="{{params.tri_x3}}" y3="{{params.tri_y3}}" color="lightblue"></pl-triangle>
             </pl-drawing-initial>
         </pl-drawing>
     </pl-location>
-    <pl-location x="{{params.a_x}}" y="{{params.a_y}}">
+    <pl-location left="{{params.a_x}}" top="{{params.a_y}}">
         {{#params.display_a}}
         $${{params.a}}$$
         {{/params.display_a}}
@@ -26,7 +26,7 @@
         <pl-number-input answers-name="a" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
         {{/params.display_a}}
     </pl-location>
-    <pl-location x="{{params.b_x}}" y="{{params.b_y}}">
+    <pl-location left="{{params.b_x}}" top="{{params.b_y}}">
         {{#params.display_b}}
         $${{params.b}}$$
         {{/params.display_b}}
@@ -34,7 +34,7 @@
         <pl-number-input answers-name="b" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
         {{/params.display_b}}
     </pl-location>
-    <pl-location x="{{params.c_x}}" y="{{params.c_y}}">
+    <pl-location left="{{params.c_x}}" top="{{params.c_y}}">
         {{#params.display_c}}
         $${{params.c}}$$
         {{/params.display_c}}
