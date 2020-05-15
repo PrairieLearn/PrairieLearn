@@ -130,7 +130,7 @@ module.exports = {
             return callback(null, elements);
         });
     },
-    
+
     loadElementsForCourse(course, callback) {
         if (courseElementsCache[course.id] !== undefined) {
             return callback(null, courseElementsCache[course.id]);
@@ -141,7 +141,7 @@ module.exports = {
             callback(null, courseElementsCache[course.id]);
         });
     },
-    
+
     // Skips the cache; used when syncing course from GitHub/disk
     reloadElementsForCourse(course, callback) {
         module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
@@ -225,7 +225,7 @@ module.exports = {
             return callback(null, extensions);
         });
     },
-    
+
     loadExtensionsForCourse(course, callback) {
         if (courseExtensionsCache[course.id] !== undefined) {
             return callback(null, courseExtensionsCache[course.id]);
@@ -245,7 +245,7 @@ module.exports = {
             callback(null, extensions);
         });
     },
-    
+
     resolveElement: function(elementName, context) {
         if (_.has(context.course_elements, elementName)) {
             return context.course_elements[elementName];
@@ -602,7 +602,7 @@ module.exports = {
                 if (_.has(context.course_element_extensions, elementName)) {
                     data.extensions = context.course_element_extensions[elementName];
                 }
-                
+
                 module.exports.legacyElementFunction(pc, phase, elementName, $, element, data, context, (err, ret_val, consoleLog) => {
                     if (err) {
                         const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
@@ -819,14 +819,14 @@ module.exports = {
 
     getContextOptions: function(context) {
         /* These options are always available in any phase. */
-        
-        let options = {};        
+
+        let options = {};
         options.question_path = context.question_dir;
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
         return options;
     },
-    
+
     generate: function(question, course, variant_seed, callback) {
         debug('generate()');
         module.exports.getContext(question, course, (err, context) => {
@@ -937,7 +937,7 @@ module.exports = {
 
             // Put key paths in data.options
             _.extend(data.options, module.exports.getContextOptions(context));
-            
+
             module.exports.getCachedDataOrCompute(
                 course,
                 data,
@@ -968,7 +968,7 @@ module.exports = {
             );
         });
     },
-    
+
     render: function(renderSelection, variant, question, submission, submissions, course, course_instance, locals, callback) {
         debug(`render()`);
         const htmls = {
@@ -1071,7 +1071,7 @@ module.exports = {
                                 }
                             }
                         }
-                        
+
                         // Gather dependencies for all rendered elements
                         allRenderedElementNames.forEach((elementName) => {
                             let resolvedElement = module.exports.resolveElement(elementName, context);
@@ -1136,7 +1136,7 @@ module.exports = {
                                     }
                                 }
                             }
-                            
+
                             /* Load any extensions if they exist */
                             if (_.has(extensions, elementName)) {
                                 for (const extensionName of Object.keys(extensions[elementName])) {
@@ -1158,7 +1158,7 @@ module.exports = {
                                         'extensionStyles',
                                         'extensionScripts',
                                     ];
-                                    
+
                                     for (const type of dependencyTypes) {
                                         if (_.has(extension, type)) {
                                             if (_.isArray(extension[type])) {
@@ -1178,7 +1178,7 @@ module.exports = {
                                 }
                             }
                         });
-                        
+
                         // Transform dependency list into style/link tags
                         const coreScriptUrls = [];
                         const scriptUrls = [];
