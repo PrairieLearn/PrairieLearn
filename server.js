@@ -228,7 +228,7 @@ const workspaceProxyOptions = {
     pathRewrite: {
         '^/workspace/[0-9]/': '/',
     },
-    logProvider: provider => logger,
+    logProvider: _provider => logger,
     router: async (req) => {
         let url = 'not-matched';
         if (/^\/workspace\/0/.test(req.url)) {
@@ -237,7 +237,7 @@ const workspaceProxyOptions = {
             url = 'http://localhost:8081';
         }
         return url;
-    }
+    },
 };
 const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
 app.use('/workspace', workspaceProxy);
