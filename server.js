@@ -17,6 +17,7 @@ const argv = require('yargs-parser') (process.argv.slice(2));
 const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -219,6 +220,27 @@ app.use(function(req, res, next) {
     });
     next();
 });
+
+// proxy workspaces to remote machines
+const workspaceProxyOptions = {
+    target: 'invalid',
+    ws: true,
+    pathRewrite: {
+        '^/workspace/[0-9]/': '/',
+    },
+    logProvider: provider => logger,
+    router: async (req) => {
+        let url = 'not-matched';
+        if (/^\/workspace\/0/.test(req.url)) {
+            url = 'http://localhost:8080';
+        } else if (/^\/workspace\/1/.test(req.url)) {
+            url = 'http://localhost:8081';
+        }
+        return url;
+    }
+};
+const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
+app.use('/workspace', workspaceProxy);
 
 // clear all cached course code in dev mode (no authorization needed)
 if (config.devMode) {
