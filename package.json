@@ -66,7 +66,7 @@
         "plist": "^3.0.0",
         "popper.js": "^1.16.1",
         "qrcode-svg": "^1.1.0",
-        "redis": "^2.8.0",
+        "redis": "^3.0.2",
         "redis-lru": "^0.6.0",
         "rehype-raw": "^4.0.2",
         "rehype-stringify": "^7.0.0",

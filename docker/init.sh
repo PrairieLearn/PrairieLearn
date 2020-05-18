@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ -n $DELAYED_START ]]; then
+    echo "Waiting $DELAYED_START seconds to start"
+    sleep $DELAYED_START
+fi
 cd /PrairieLearn
 
 
