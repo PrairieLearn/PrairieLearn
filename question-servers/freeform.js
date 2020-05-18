@@ -10,6 +10,7 @@ const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const schemas = require('../schemas');
+const config = require('../lib/config');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
@@ -768,14 +769,6 @@ module.exports = {
         });
     },
 
-    _getCacheKey: function(course, data, callback) {
-        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
-            if (ERR(err, callback)) return;
-            const dataHash = hash('sha1').update(JSON.stringify(data)).digest('base64');
-            callback(null, `${commitHash}-${dataHash}`);
-        });
-    },
-
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
         debug(`renderPanel(${panel})`);
         // broken variant kills all rendering
@@ -822,63 +815,34 @@ module.exports = {
             data.options.question_path = context.question_dir;
             data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
 
-            // This function will render the panel and then cache the results
-            // if cacheKey is not null
-            const doRender = (cacheKey) => {
-                module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-                    if (ERR(err, callback)) return;
-                    if (cacheKey) {
-                        cache.set(cacheKey, {
+            module.exports.getCachedDataOrCompute(
+                course,
+                data,
+                context,
+                (callback) => {
+                    // function to do the actual render and return the cachedData
+                    module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
+                        if (ERR(err, callback)) return;
+                        const cachedData = {
                             courseIssues,
                             html,
                             renderedElementNames,
-                        });
-                    }
-                    const cacheHit = false; // Cache miss
+                        };
+                        callback(null, cachedData);
+                    });
+                },
+                (cachedData, cacheHit) => {
+                    // function to process the cachedData, whether we
+                    // just rendered it or whether it came from cache
+                    const {
+                        courseIssues,
+                        html,
+                        renderedElementNames,
+                    } = cachedData;
                     callback(null, courseIssues, html, renderedElementNames, cacheHit);
-                });
-            };
-
-            // This function will check the cache for the specified cache key
-            // and either return the cached render for a cache hit, or render
-            // the panel for a cache miss
-            const getFromCacheOrRender = (cacheKey) => {
-                cache.get(cacheKey, (err, cachedData) => {
-                    // We don't actually want to fail if the cache has an error; we'll
-                    // just render the panel as normal
-                    ERR(err, (e) => logger.error('Error in cache.get()', e));
-                    if (!err && cachedData !== null) {
-                        const {
-                            courseIssues,
-                            html,
-                            renderedElementNames,
-                        } = cachedData;
-
-                        const cacheHit = true;
-                        callback(null, courseIssues, html, renderedElementNames, cacheHit);
-                    } else {
-                        doRender(cacheKey);
-                    }
-                });
-            };
-
-            if (locals.devMode) {
-                // In dev mode, we should skip caching so that we'll immediately
-                // pick up new changes from disk
-                doRender(null);
-            } else {
-                module.exports._getCacheKey(course, data, (err, cacheKey) => {
-                    // If for some reason we failed to get a cache key, don't
-                    // actually fail the request, just skip the cache entirely
-                    // and render as usual
-                    ERR(err, e => logger.error('Error in _getCacheKey()', e));
-                    if (err || !cacheKey) {
-                        doRender(null);
-                    } else {
-                        getFromCacheOrRender(cacheKey);
-                    }
-                });
-            }
+                },
+                callback, // error-handling function
+            );
         });
     },
 
@@ -1093,17 +1057,36 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 filename: filename,
             };
-            workers.getPythonCaller((err, pc) => {
-                if (ERR(err, callback)) return;
-                module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
-                    // don't immediately error here; we have to return the pythonCaller
-                    workers.returnPythonCaller(pc, (pcErr) => {
-                        if (ERR(pcErr, callback)) return;
+
+            module.exports.getCachedDataOrCompute(
+                course,
+                data,
+                context,
+                (callback) => {
+                    // function to compute the file data and return the cachedData
+                    workers.getPythonCaller((err, pc) => {
                         if (ERR(err, callback)) return;
-                        callback(null, courseIssues, fileData);
+                        module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
+                            // don't immediately error here; we have to return the pythonCaller
+                            workers.returnPythonCaller(pc, (pcErr) => {
+                                if (ERR(pcErr, callback)) return;
+                                if (ERR(err, callback)) return;
+                                const fileDataBase64 = fileData.toString('base64');
+                                const cachedData = {courseIssues, fileDataBase64};
+                                callback(null, cachedData);
+                            });
+                        });
                     });
-                });
-            });
+                },
+                (cachedData, _cacheHit) => {
+                    // function to process the cachedData, whether we
+                    // just rendered it or whether it came from cache
+                    const {courseIssues, fileDataBase64} = cachedData;
+                    const fileData = Buffer.from(fileDataBase64, 'base64');
+                    callback(null, courseIssues, fileData);
+                },
+                callback, // error-handling function
+            );
         });
     },
 
@@ -1241,7 +1224,7 @@ module.exports = {
         });
     },
 
-    getContext(question, course, callback) {
+    getContext: function(question, course, callback) {
         const context = {
             question,
             course,
@@ -1254,5 +1237,63 @@ module.exports = {
             context.course_elements = elements;
             callback(null, context);
         });
+    },
+
+    getCacheKey: function(course, data, context, callback) {
+        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
+            if (ERR(err, callback)) return;
+            const dataHash = hash('sha1').update(JSON.stringify({data, context})).digest('base64');
+            callback(null, `${commitHash}-${dataHash}`);
+        });
+    },
+
+    getCachedDataOrCompute: function(course, data, context, computeFcn, processFcn, errorFcn) {
+        // This function will compute the cachedData and cache it if
+        // cacheKey is not null
+        const doCompute = (cacheKey) => {
+            computeFcn((err, cachedData) => {
+                if (ERR(err, errorFcn)) return;
+                if (cacheKey) {
+                    cache.set(cacheKey, cachedData);
+                }
+                const cacheHit = false; // Cache miss
+                processFcn(cachedData, cacheHit);
+            });
+        };
+
+        // This function will check the cache for the specified
+        // cacheKey and either return the cachedData for a cache hit,
+        // or compute the cachedData for a cache miss
+        const getFromCacheOrCompute = (cacheKey) => {
+            cache.get(cacheKey, (err, cachedData) => {
+                // We don't actually want to fail if the cache has an error; we'll
+                // just compute the cachedData as normal
+                ERR(err, (e) => logger.error('Error in cache.get()', e));
+                if (!err && cachedData !== null) {
+                    const cacheHit = true;
+                    processFcn(cachedData, cacheHit);
+                } else {
+                    doCompute(cacheKey);
+                }
+            });
+        };
+
+        if (config.devMode) {
+            // In dev mode, we should skip caching so that we'll immediately
+            // pick up new changes from disk
+            doCompute(null);
+        } else {
+            module.exports.getCacheKey(course, data, context, (err, cacheKey) => {
+                // If for some reason we failed to get a cache key, don't
+                // actually fail the request, just skip the cache entirely
+                // and compute as usual
+                ERR(err, e => logger.error('Error in getCacheKey()', e));
+                if (err || !cacheKey) {
+                    doCompute(null);
+                } else {
+                    getFromCacheOrCompute(cacheKey);
+                }
+            });
+        }
     },
 };
