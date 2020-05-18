@@ -14,6 +14,7 @@ import unicodedata
 import importlib
 import importlib.util
 import os
+import collections
 
 
 def to_json(v):
@@ -1102,7 +1103,7 @@ def load_element_extension(data, extension_name):
         raise Exception(f'Could not find extension {extension_name}!')
 
     ext_info = data['extensions'][extension_name]
-    if 'pythonScripts' not in ext_info:
+    if 'pythonScripts' not in ext_info or len(ext_info['pythonScripts']) == 0:
         # Nothing to load, just return an empty dict
         return {}
 
@@ -1120,6 +1121,8 @@ def load_element_extension(data, extension_name):
             return ret_val
         return wrapped_function
 
+    # Since extensions may have multiple scripts, load all of them
+    # and combine all variables/functions/etc into one dictionary
     script_paths = map(lambda script: os.path.join(ext_info['directory'], script), ext_info['pythonScripts'])
     loaded = {}
     for script in script_paths:
@@ -1130,7 +1133,15 @@ def load_element_extension(data, extension_name):
         # Filter out extra names so we only get user defined functions and variables
         script_loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
         loaded.update(script_loaded)
-    return loaded
+
+    # Strip invalid characters and weird leading characters so we have
+    # a decent typename for the namedtuple
+    type_name = re.sub('[^a-zA-Z0-9_]', '_', extension_name)
+    type_name = re.sub('^[^a-zA-Z]+', '', type_name)
+
+    # Return functions and variables as a namedtuple, so we get the nice dot access syntax
+    module_tuple = collections.namedtuple(type_name, loaded.keys())
+    return module_tuple(**loaded)
 
 
 def load_all_extensions_for_element(data):
@@ -1138,8 +1149,7 @@ def load_all_extensions_for_element(data):
     load_all_extensions_for_element(data)
 
     Loads all available extensions for a given element.
-    Returns a dictionary mapping the extension name to its
-    defined variables and functions
+    Returns a dictionary mapping the extension name to its defined variables and functions
     """
 
     if 'extensions' not in data:

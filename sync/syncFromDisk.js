@@ -5,6 +5,8 @@ const namedLocks = require('../lib/named-locks');
 const courseDB = require('../lib/course-db');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
+const config = require('../lib/config');
+
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
 const syncCourseStaff = require('./fromDisk/courseStaff');
@@ -64,10 +66,15 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
                     callback(null);
                 });
             },
-            function(callback) {logger.info('Reloading course elements...'); callback(null);},
-            freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
-            function(callback) {logger.info('Reloading course element extensions...'); callback(null);},
-            freeformServer.reloadExtensionsForCourse.bind(null, course.courseInfo),
+            function(callback) {
+                /* Flush freeform element and extension cache on dev sync, since 
+                   the course commit hash hasn't necessarily changed. */ 
+                if (config.devMode) {
+                    logger.info('Flushing course element and extensions cache...');
+                    freeformServer.flushElementCache();
+                }
+                callback(null);
+            },
         ], function(err) {
             perf.end('sync');
             if (ERR(err, callback)) return;

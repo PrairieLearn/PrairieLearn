@@ -22,9 +22,9 @@ const markdown = require('../lib/markdown');
 // Maps core element names to element info
 let coreElementsCache = {};
 // Maps course IDs to course element info
-const courseElementsCache = {};
+let courseElementsCache = {};
 /* Maps course IDs to course element extension info */
-const courseExtensionsCache = {};
+let courseExtensionsCache = {};
 
 module.exports = {
 
@@ -78,16 +78,6 @@ module.exports = {
                     return callback(null, files);
                 });
             },
-            (files, callback) => {
-                // Filter out any non-directories
-                async.filter(files, (file, callback) => fs.lstat(path.join(sourceDir, file), (err, stats) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, stats.isDirectory());
-                }), (err, results) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null, results);
-                });
-            },
             (elementNames, callback) => {
                 const elements = {};
                 async.each(elementNames, (elementName, callback) => {
@@ -132,25 +122,24 @@ module.exports = {
     },
 
     loadElementsForCourse(course, callback) {
-        if (courseElementsCache[course.id] !== undefined) {
-            return callback(null, courseElementsCache[course.id]);
+        if (courseElementsCache[course.id] !== undefined &&
+            courseElementsCache[course.id].commit_hash === course.commit_hash) {
+            return callback(null, courseElementsCache[course.id].data);
         }
         module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
+            courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
+            callback(null, courseElementsCache[course.id].data);
         });
     },
 
-    // Skips the cache; used when syncing course from GitHub/disk
-    reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.courseId] = elements;
-            callback(null, courseElementsCache[course.courseId]);
-        });
-    },
-
+    /**
+     * Takes a directory containing an extension directory and returns a new
+     * object mapping element names to each extension, which itself an object
+     * that contains relevant extension scripts and styles. 
+     * @param  {String}   sourceDir Absolute path to the directory of extensions
+     * @param  {Function} callback  Called with any errors and the results
+     */
     loadExtensions(sourceDir, callback) {
         async.waterfall([
             (callback) => {
@@ -164,26 +153,18 @@ module.exports = {
                 });
             },
             (elementFolders, callback) => {
-                /* Get extensions from each element folder */
-                async.map(elementFolders, (element) => {
+                /* Get extensions from each element folder.
+                   Each is stored as [ 'element name', 'extension name' ] */
+                async.map(elementFolders, (element, callback) => {
                     fs.readdir(path.join(sourceDir, element), (err, extensions) => {
                         if (ERR(err, callback)) return;
                         return callback(null, extensions.map(ext => [element, ext]));
                     });
                 }, callback);
             },
-            (extensions, callback) => {
-                /* Filter out non-directories */
-                async.filter(extensions, (extension, callback) => {
-                    const [element, extensionDir] = extension;
-                    fs.lstat(path.join(sourceDir, element, extensionDir), (err, stats) => {
-                        if (ERR(err, callback)) return;
-                        callback(null, stats.isDirectory());
-                    });
-                }, (err, results) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null, results);
-                });
+            (elementArrays, callback) => {
+                /* Flatten so we have one comprehensive single list  of all the extensions. */
+                callback(null, elementArrays.flat());
             },
             (extensions, callback) => {
                 const elements = {};
@@ -227,23 +208,24 @@ module.exports = {
     },
 
     loadExtensionsForCourse(course, callback) {
-        if (courseExtensionsCache[course.id] !== undefined) {
-            return callback(null, courseExtensionsCache[course.id]);
+        if (courseExtensionsCache[course.id] !== undefined &&
+            courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
+            return callback(null, courseExtensionsCache[course.id].data);
         }
         module.exports.loadExtensions(path.join(course.path, 'elementExtensions'), (err, extensions) => {
             if (ERR(err, callback)) return;
-            courseExtensionsCache[course.id] = extensions;
+            courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
             callback(null, extensions);
         });
     },
 
-    /* Skips the cache */
-    reloadExtensionsForCourse(course, callback) {
-        module.exports.loadExtensions(path.join(course.path, 'elementExtensions'), (err, extensions) => {
-            if (ERR(err, callback)) return;
-            courseExtensionsCache[course.id] = extensions;
-            callback(null, extensions);
-        });
+    /**
+     * Wipes the element and extension cache.  This is only needed in
+     * dev mode because each cache tracks Git commit hashes.
+     */
+    flushElementCache: function() {
+        courseElementsCache = {};
+        courseExtensionsCache = {};
     },
 
     resolveElement: function(elementName, context) {
