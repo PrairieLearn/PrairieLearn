@@ -31,17 +31,7 @@ A full `info.json` file should look something like:
 
 The server code in the `generate()` function must define the list of variables or functions that will be passed to the autograded student code as `names_for_user`, and also those that will be passed from the student code to the test code as `names_from_user`.  Only variables or functions listed in `names_for_user` will be accessible by the user from the setup code; only names listed in `names_from_user` will be accessible by the test cases from the user code.
 
-These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. Each variable dictionary has the following format:
-
-```json
-{
-    "name": "(name of the variable)",
-    "description": "(Human readable description of the variable)",
-    "type": "(Human readable type of the variable)"
-}
-```
-
-A full example is included here, taken from the question `demoAutograderSquare`:
+These are stored as a list of dictionary objects in the `data["params"]` dict.  The above `names_for_user` and `names_from_user` lists are stored as separate keys in `params`. For example:
 
 ```python
 def generate(data):
@@ -52,6 +42,8 @@ def generate(data):
         {"name": "x_sq", "description": "The square of $x$", "type": "float"},
     ]
 ```
+
+Each variable dictionary has entries `name` (the Python variable name in the code), `description` (human readable), and `type` (human readable). These variable lists are used for two purposes: (1) showing students which variables are used, and (2) making variables available to the student code and autograder code.
 
 ### `question.html`
 
