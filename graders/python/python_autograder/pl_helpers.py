@@ -1,6 +1,8 @@
 import io
 import urllib
 import base64
+import os
+from os.path import join
 from functools import wraps
 from code_feedback import Feedback
 import pygments
@@ -16,6 +18,7 @@ def save_plot(plt, iternum=0):
     """
     Save plot(s) to files as png images.
     """
+    base_dir = os.environ.get("MERGE_DIR")
 
     for i in plt.get_fignums():
         plt.figure(i)
@@ -25,7 +28,7 @@ def save_plot(plt, iternum=0):
         imgdata.seek(0)
         imgsrc = 'data:image/png;base64,' + \
                  urllib.parse.quote(base64.b64encode(imgdata.read()))
-        with open("image_%d_%d.png" % (iternum, i - 1), 'w') as f:
+        with open(join(base_dir, f'image_{iternum}_{i - 1}.png'), 'w') as f:
             f.write(imgsrc)
 
 

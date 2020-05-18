@@ -28,7 +28,7 @@
     Thanks to <a href="https://github.com/nicknytko">Nicolas Nytko</a> (CS MS '22), <a href="https://github.com/bowmnath">Nathan Bowman</a>, and <a href="https://github.com/inducer">Andreas Kl&ouml;ckner</a>, vast improvements have been made to the default Python autograder.  Among some of the added features include the ability to autograde various datatypes like NumPy arrays, Pandas DataFrames, and Matplotlib plots:
 </p>
 
-<img src="plot_grading.png" width="756px">
+<img src="plot_grading.png" width="848px">
 
 <p>
     Also included is the new <code class="user-output">pl-external-grader-variables</code> element, which gives students a clear overview of what variables they should expect to define and have access to.  This element is available for any question, not just those using the new autograder.  These lists of variables can be defined in <code class="user-output">data['params']</code>:
@@ -38,17 +38,19 @@
 <pre><code>data["params"]["names_for_user"] = [
     {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.",
      "type": "integer"},
-    {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array ($n \times n$)"},
-    {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array (length $n$)"}
+    {"name": "A", "description": r"Matrix $\mathbf{A}$.",
+     "type": r"numpy array ($n \times n$)"},
+    {"name": "b", "description": r"Vector $\mathbf{b}$.",
+     "type": r"numpy array (length $n$)"}
 ]
 data["params"]["names_from_user"] = [
     {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.",
-     "type": "numpy array (length $n$)"}
+     "type": r"numpy array (length $n$)"}
 ]
 </code></pre>
 </div>
 
-<img class="border rounded pt-2" src="variable_description.png" width="739px">
+<img class="border rounded pt-2" src="variable_description.png" width="804px">
 
 <p> The new autograder is included by default in the <code class="user-output">grader-python</code> docker image, to take advantage of it you can edit your question's `info.json` file to include: </p> 
 
