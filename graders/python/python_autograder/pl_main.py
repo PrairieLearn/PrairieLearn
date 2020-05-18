@@ -13,6 +13,7 @@ The main python entrypoint for the autograder framework.
 Loads and executes test cases.
 """
 
+OUTPUT_FILE = 'output-fname.txt'
 
 def add_files(results):
     base_dir = os.environ.get("MERGE_DIR")
@@ -42,9 +43,13 @@ if __name__ == '__main__':
         filenames_dir = os.environ.get("FILENAMES_DIR")
         base_dir = os.environ.get("MERGE_DIR")
 
-        output_fname = sys.argv[1]
-        sys.argv = []
-        
+        # Read the output filename from a file, and then delete it
+        # We could do this via command-line arg but there's a chance of
+        # a student picking it up by calling `ps` for example.
+        with open(join(filenames_dir, OUTPUT_FILE), 'r') as output_f:
+            output_fname = output_f.read()
+        os.remove(join(filenames_dir, OUTPUT_FILE))
+
         # Run the tests with our custom setup
         loader = TestLoader()
         all_results = []

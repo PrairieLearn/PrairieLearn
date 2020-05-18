@@ -39,7 +39,7 @@ chmod 1777 "$MERGE_DIR"
 export FILENAMES_DIR=$MERGE_DIR'/filenames'
 mkdir $FILENAMES_DIR
 chmod 777 $FILENAMES_DIR
-mv ans.py setup_code.py test.py $FILENAMES_DIR
+mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $FILENAMES_DIR
 
 ##########################
 # RUN
@@ -48,10 +48,13 @@ mv ans.py setup_code.py test.py $FILENAMES_DIR
 echo "[run] starting autograder"
 
 # randomly generate the name of the results file, so that someone can't guess and write to it
+# write it to a file that is then deleted, so that it can't get picked up by the student
 SECRET_NAME=$MERGE_DIR/`uuidgen`
+echo -n "$SECRET_NAME" > $FILENAMES_DIR/output-fname.txt
+chmod +r $FILENAMES_DIR/output-fname.txt
 
 # run the autograder as a limited user called ag
-su -c "python3 $MERGE_DIR/pl_main.py $SECRET_NAME" ag
+su -c "python3 $MERGE_DIR/pl_main.py" ag
 
 # remove any "fake" results.json files if they exist
 rm -f $MERGE_DIR/results.json

@@ -126,7 +126,7 @@ def test_0(self):
 
 Inside the test case implementation, the student answer variables and reference answer variables can be accessed as children of the tuples `self.st` and `self.ref`, respectively.  There are various helper functions to check correctness of different types of variables, these are defined in `code_feedback.py`.  These are taken from the RELATE grader, so this may be familiar to those with prior experience with RELATE.
 
-At the end of the test case, set the correctness of the answer using `feedback.set_percent()`.  This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct.  By default, if no points are given the test case will be marked incorrect.
+At the end of the test case, set the correctness of the answer using `feedback.set_score()`.  This function takes a floating point number between 0 and 1 (inclusive), with 0 being completely *in*correct and 1 being completely correct.  By default, if no points are given the test case will be marked incorrect.
 
 The overall structure of a test case should look something like:
 
@@ -137,12 +137,12 @@ from code_feedback import Feedback
 @name("name of the test case")
 def test_0(self):
    if Feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
-       Feedback.set_percent(1)
+       Feedback.set_score(1)
    else:
-       Feedback.set_percent(0)
+       Feedback.set_score(0)
 ```
 
-Note that `Feedback.set_percent()` is used to set the _percentage_ correctness of the test case.  For example, if a test case is worth 10 points and `Feedback.set_percent(0.5)` is run, the student will be awarded 5 points.
+Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case.  For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.
 
 #### Multiple Iterations
 

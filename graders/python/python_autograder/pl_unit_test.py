@@ -38,6 +38,7 @@ class PLTestCase(unittest.TestCase):
                                                               cls.include_plt,
                                                               join(base_dir, 'output.txt'),
                                                               cls.iter_num)
+        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
         cls.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())
@@ -112,7 +113,7 @@ class PLTestCase(unittest.TestCase):
         """
         Test cases are alphabetically ordered, so add a buncha z's in the name to display student code last
         """
-        print_student_code(self.student_code_file)
+        print_student_code(self.student_code_abs_path)
 
 
 class PLTestCaseWithPlot(PLTestCase):
