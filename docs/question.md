@@ -7,7 +7,7 @@
 
 ## Directory structure
 
-Questions are all stored inside the `questions` directory (or any subfolder) for a course. Each question is a single directory that contains all the files for that question. The name of the full question directory relative to `questions` is the question ID label (the `id`) for that question. For example, here are three different questions:
+Questions are all stored inside the `questions` directory (or any subfolder) for a course. Each question is a single directory that contains all the files for that question. The name of the full question directory relative to `questions` is the QID (the "question ID") for that question. For example, here are three different questions:
 
 ```text
 questions
