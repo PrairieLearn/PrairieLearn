@@ -32,10 +32,10 @@ tbody {
 }
 
 th, td {
-  text-align: center;
+  text-align: inherit;
   min-width: 150px;
   max-width: 150px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 tbody tr td:nth-child(1), td:nth-child(2), td:nth-child(3) {
