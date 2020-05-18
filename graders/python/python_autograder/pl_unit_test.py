@@ -31,14 +31,15 @@ class PLTestCase(unittest.TestCase):
         """
         On start, run the user code and generate answer tuples.
         """
+        Feedback.set_test(cls)
         filenames_dir = os.environ.get("FILENAMES_DIR")
         base_dir = os.environ.get("MERGE_DIR")
+        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
         ref_result, student_result, plot_value = execute_code(join(filenames_dir, 'ans.py'),
                                                               join(base_dir, cls.student_code_file),
                                                               cls.include_plt,
                                                               join(base_dir, 'output.txt'),
                                                               cls.iter_num)
-        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
         cls.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())
