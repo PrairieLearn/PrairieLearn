@@ -871,7 +871,7 @@ module.exports = {
                 params: _.get(variant, 'params', {}),
                 correct_answers: _.get(variant, 'true_answer', {}),
                 variant_seed: parseInt(variant.variant_seed, 36),
-                options: _.get(variant, 'options',{}),
+                options: _.get(variant, 'options', {}),
             };
             _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
