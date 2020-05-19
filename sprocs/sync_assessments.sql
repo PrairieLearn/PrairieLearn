@@ -93,6 +93,11 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
+        -- soft delete old group_configs and insert new
+        UPDATE group_configs
+        SET deleted_at = NOW()
+        WHERE assessment_id = new_assessment_id;
+
         INSERT INTO group_configs
             (course_instance_id,
             assessment_id,
@@ -106,15 +111,8 @@ BEGIN
                 (assessment->>'grouptype')::TEXT,
                 (assessment->>'groupmax')::integer,
                 (assessment->>'groupmin')::integer
-        )
-        ON CONFLICT (assessment_id) DO UPDATE
-        SET
-            type = EXCLUDED.type,
-            maximum = EXCLUDED.maximum,
-            minimum = EXCLUDED.minimum
-        WHERE
-            group_configs.assessment_id = new_assessment_id;
-
+        );
+        
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP
             -- If exam_uuid is specified, ensure that a corresponding PS exam exists

@@ -16,11 +16,11 @@ BEGIN
     SELECT id, course_instance_id
     INTO arg_group_config_id, arg_course_instance_id
     FROM group_configs
-    WHERE assessment_id = arg_assessment_id;
+    WHERE assessment_id = arg_assessment_id AND deleted_at IS NULL;
 
     -- ##################################################################
     -- insert groups if not exist
-    IF NOT EXISTS (SELECT 1 FROM groups WHERE name = arg_groupname AND group_config_id = arg_group_config_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM groups WHERE name = arg_groupname AND group_config_id = arg_group_config_id AND deleted_at IS NULL) THEN
         INSERT INTO groups (name, group_config_id, course_instance_id)
         VALUES (arg_groupname, arg_group_config_id, arg_course_instance_id);
     END IF;
@@ -37,7 +37,7 @@ BEGIN
     SELECT id
     INTO arg_group_id
     FROM groups
-    WHERE name = arg_groupname AND group_config_id = arg_group_config_id;
+    WHERE name = arg_groupname AND group_config_id = arg_group_config_id AND deleted_at IS NULL;
 
     -- ##################################################################
     -- insert group_user

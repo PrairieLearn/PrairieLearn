@@ -5,16 +5,19 @@ CREATE OR REPLACE FUNCTION
     ) returns void
 AS $$
 BEGIN
+    /* hard delete all group_user relationships
     DELETE FROM group_users gu
     WHERE gu.group_id IN (SELECT gr.id
                         FROM group_configs AS gc
                         JOIN groups AS gr ON gr.group_config_id = gc.id
                         WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id);
+    */
 
-    DELETE FROM groups g
+    UPDATE groups g
+    SET deleted_at = NOW()
     WHERE g.id IN (SELECT gr.id
                 FROM group_configs AS gc
                 JOIN groups AS gr ON gr.group_config_id = gc.id
-                WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id);
+                WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id AND gr.deleted_at IS NULL);
 END;
 $$ LANGUAGE plpgsql VOLATILE;

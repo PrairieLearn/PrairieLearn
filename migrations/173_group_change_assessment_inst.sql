@@ -8,8 +8,7 @@ CREATE TABLE IF NOT EXISTS group_configs (
     minimum INT,
     maximum INT,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp with time zone,
-    UNIQUE (assessment_id)
+    deleted_at timestamp with time zone
 );
 
 CREATE TABLE IF NOT EXISTS groups (
