@@ -3,7 +3,7 @@ SELECT COALESCE($force_mode, ip_to_mode($ip, $req_date)) AS mode;
 
 -- BLOCK get_course_instances
 WITH lti_institution AS (
-  SELECT * FROM institutions WHERE short_name = 'LTI'
+    SELECT * FROM institutions WHERE short_name = 'LTI'
 )
 SELECT
     c.short_name || ': ' || ci.short_name AS display_ci,
