@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS groups (
     deleted_at timestamp with time zone
 );
 
+CREATE UNIQUE INDEX groups_course_instance_id_name_group_config_id_isnull ON groups(course_instance_id, name)
+    WHERE group_config_id IS NULL;
+CREATE UNIQUE INDEX groups_course_instance_id_name_group_config_id ON groups(course_instance_id, name, group_config_id)
+    WHERE group_config_id IS NOT NULL;
+
 -- simple join table, no extra metadata - that could be stored in audit logs if needed
 CREATE TABLE IF NOT EXISTS group_users (
     group_id BIGINT REFERENCES groups(id),
