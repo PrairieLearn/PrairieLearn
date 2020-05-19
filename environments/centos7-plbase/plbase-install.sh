@@ -28,7 +28,7 @@ yum -y install \
     R \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
-    git2u \
+    git224 \
     graphviz \
     graphviz-devel
 

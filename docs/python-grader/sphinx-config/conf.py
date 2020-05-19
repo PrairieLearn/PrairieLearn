@@ -29,7 +29,8 @@ author = 'Nate Bowman, Nicolas Nytko, Andreas Kloeckner'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'recommonmark'
+    'recommonmark',
+    'sphinx_markdown_builder'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
