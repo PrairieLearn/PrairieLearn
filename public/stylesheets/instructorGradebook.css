@@ -20,9 +20,6 @@ thead {
   max-width: 97vw;
 }
 
-tr th:nth-child(1), th:nth-child(2), th:nth-child(3) {
-  position: relative;
-}
 tbody {
   position: relative;
   display: block;
@@ -33,13 +30,23 @@ tbody {
 
 th, td {
   text-align: inherit;
-  min-width: 150px;
-  max-width: 150px;
+  min-width: 120px;
+  max-width: 120px;
   overflow: hidden;
 }
 
+/* Set first three columns of the table header larger to fit more text */
+tr th:nth-child(1), th:nth-child(2), th:nth-child(3) {
+  position: relative;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+/* Set first three columns of the table body larger to fit more text */
 tbody tr td:nth-child(1), td:nth-child(2), td:nth-child(3) {
   position: relative;
+  min-width: 200px;
+  max-width: 200px;
 }
 
 .inner {

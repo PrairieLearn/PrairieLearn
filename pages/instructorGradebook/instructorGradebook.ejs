@@ -5,6 +5,7 @@
   <link href="/stylesheets/instructorGradebook.css" rel="stylesheet" />
   </head>
   <script>
+    // If table is moved to the right, move first three columns back to the left
     var scroll = () => {
       $('thead').css("left", -$("tbody").scrollLeft());
       $('thead tr th:nth-child(1)').css("left", $("tbody").scrollLeft()); 
@@ -22,6 +23,7 @@
         scroll();
       });
       
+      // If mousewheel event is triggered, cancel the movement and move it manually by setting the scrolling distance smaller to avoid lagging on Mac
       $('tbody').on('mousewheel', function(e) {
         e.preventDefault();
         var maxX = this.scrollWidth  - this.offsetWidth;
