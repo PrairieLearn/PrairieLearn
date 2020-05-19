@@ -162,7 +162,8 @@ module.exports = {
             'assessment_groups_delete_all.sql',
             'assessment_groups_copy.sql',
             'assessment_groups_add_member.sql',
-            'assessment_groups_delete_member.sql'
+            'assessment_groups_delete_member.sql',
+            'assessment_groups_delete_group.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

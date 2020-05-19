@@ -277,7 +277,7 @@
                     </button>
                     <div id="row<%= iRow %>PopoverAdd"
                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                      data-html="true" data-placement="auto" title="Add a member"
+                      data-html="true" data-placement="auto" title="Add Members"
                       data-content="
                                     <form name=&quot;add-member-form&quot; method=&quot;POST&quot;>
                                       UIDs:
@@ -295,7 +295,7 @@
                   </div>
                   <div id="row<%= iRow %>Popoverdeletemember"
                     tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                    data-html="true" data-placement="auto" title="Delete a Member"
+                    data-html="true" data-placement="auto" title="Remove Members"
                     data-content="
                                   <form name=&quot;delete-member-form&quot; method=&quot;POST&quot;>
                                     UIDs:
@@ -305,6 +305,21 @@
                                     <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                     <input type=&quot;hidden&quot; name=&quot;gid&quot; value=&quot;<%= row.gid %>&quot;>
                                     <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>Popoverdeletemember').popover('hide')&quot;>
+                                      Cancel
+                                    </button>
+                                    <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Delete</button>
+                                  </form>
+                                  ">
+                  </div>
+                  <div id="row<%= iRow %>Popoverdeletegroup"
+                    tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                    data-html="true" data-placement="auto" title="Confirm delete this group"
+                    data-content="
+                                  <form name=&quot;delete-group-form&quot; method=&quot;POST&quot;>
+                                    <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;deletegroup&quot;>
+                                    <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                    <input type=&quot;hidden&quot; name=&quot;gid&quot; value=&quot;<%= row.gid %>&quot;>
+                                    <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>Popoverdeletegroup').popover('hide')&quot;>
                                       Cancel
                                     </button>
                                     <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Delete</button>
@@ -367,7 +382,7 @@
 
                       <% if (authz_data.has_instructor_edit) { %>
                         <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
-                          <i class="fa fa-plus" aria-hidden="true"></i> Add a Member
+                          <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                         </a>
                         <% } %>
   
@@ -375,22 +390,18 @@
 
                       <% if (authz_data.has_instructor_edit) { %>
                         <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete a Member
+                          <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                         </a>
                         <% } %>
   
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item"
-                         href="#"
-                         data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
-                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
-                         data-number="<%= row.number %>"
-                         data-score-perc="<%= Math.floor(row.score_perc) %>"
-                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
-                         >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete
+                        <% if (authz_data.has_instructor_edit) { %>
+                          <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('show')" href="#">
+                            <i class="fa fa-times" aria-hidden="true"></i> Delete this group
+                          </a>
+                          <% } %>
                       </a>
                       <% } %>
 

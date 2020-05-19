@@ -116,6 +116,15 @@ router.post('/', function(req, res, next) {
             }
         })();
         res.redirect(req.originalUrl);
+    } else if (req.body.__action == 'deletegroup') {
+        const params = [
+            res.locals.assessment.id,
+            req.body.gid,
+        ];
+        sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
