@@ -42,7 +42,7 @@
                 <table id="questionsTable" class="table table-sm table-hover tablesorter">
                     <thead>
                         <tr>
-                            <th width="50">Thumbnail</th>
+                            <th>Thumbnail</th>
                             <th>Title</th>
                             <th>QID</th>
                             <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
@@ -57,11 +57,7 @@
                         <% questions.forEach(function(question) { %>
                         <tr>
                             <td class="align-middle">
-                                <% if (question.filename != null) { %>
-                                <image src="<%= urlPrefix %>/<%= question.location %>/<%= question.filename %>" width="50" height="50"/>
-                                <% } else { %>
-                                <div style="height:50px;"></div>
-                                <% } %>
+                                <%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.id}); %>
                             </td>
                             <td class="align-middle">
                                 <a href="<%= urlPrefix %>/question/<%= question.id %>/">

@@ -28,7 +28,7 @@ router.get('/:id', function(req, res, _next) {
             'questions',
             filename[0].qid,
         );
-        res.sendFile(filename[0].thumbnail, {maxAge: 86400000 * 30, root: clientFilesDir});
+        res.sendFile(filename[0].thumbnail_filename, {maxAge: 86400000 * 30, root: clientFilesDir});
     });
 });
 

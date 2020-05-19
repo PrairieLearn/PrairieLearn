@@ -153,8 +153,7 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-              <th width="50">Thumbnail</th>
-              <th>Question</th>
+              <th colspan="2">Question</th>
               <% if (assessment.allow_real_time_grading) { %>
                 <th class="text-center">
                   Best submission
@@ -198,11 +197,7 @@
             <% } %>
             <tr>
               <td>
-                <% if (instance_question.filename != null) { %>
-                <image src="<%= urlPrefix %>/<%= instance_question.location %>/<%= instance_question.filename %>" width="50" height="50"/>
-                <% } else { %>
-                <div style="height:50px;"></div>
-                <% } %>
+                <%- include('../partials/questionThumbnail', {location: instance_question.filename_location, filename: instance_question.thumbnail_filename, id: instance_question.id}); %>
               </td>
               <td>
                 <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">

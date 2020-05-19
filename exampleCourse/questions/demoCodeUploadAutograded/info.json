@@ -13,7 +13,7 @@
         "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh"
     },
     "thumbnail": {
-        "filename": "thumbnails/code.jpeg",
+        "filename": "code.jpeg",
         "location": "clientFilesCourse"
     }
 }

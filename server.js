@@ -147,6 +147,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/settin
 app.post('/pl/course/:course_id/course_admin/settings', upload.single('file'));
 app.post('/pl/course/:course_id/course_admin/file_view', upload.single('file'));
 app.post('/pl/course/:course_id/course_admin/file_view/*', upload.single('file'));
+app.post('/pl/course/:course_id/question/:question_id/settings', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/file_view', upload.single('file'));
@@ -155,6 +156,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/settings', upload.single('file'));
 
 
 // Limit to 1MB of JSON
@@ -623,6 +625,24 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// questionThumbnail
+app.use('/pl/course/:course_id/question_thumbnail', [
+    function(req, res, next) {next();},
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question_thumbnail', [
+    function(req, res, next) {next();},
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
+app.use('/pl/course_instance/:course_instance_id/question_thumbnail', [
+    function(req, res, next) {next();},
+    require('./pages/questionThumbnail/questionThumbnail'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_thumbnail', [
+    function(req, res, next) {next();},
+    require('./pages/questionThumbnail/questionThumbnail'),
 ]);
 
 // generatedFiles

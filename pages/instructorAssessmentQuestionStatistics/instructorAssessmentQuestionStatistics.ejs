@@ -117,8 +117,7 @@
           <table id="questionsTable" class="table table-sm table-hover tablesorter">
             <thead>
               <tr>
-                <th class="text-center" width="50">Thumbnail</th>
-                <th class="text-center">Question</th>
+                <th class="text-center" colspan="2">Question</th>
                 <th class="text-center">Mean score</th>
                 <th class="text-center">Discrimination</th>
                 <th class="text-center">Attempts</th>
@@ -129,9 +128,7 @@
               <% questions.forEach(function(row, i) { %>
               <tr>
                 <td>
-                  <% if (row.filename != null) { %>
-                  <image src="<%= urlPrefix %>/<%= row.location %>/<%= row.filename %>" onerror="this.style.display='none'" width="50" height="50"/>
-                  <% } %>
+                  <%- include('../partials/questionThumbnail', {location: row.filename_location, filename: row.thumbnail_filename, id: row.question_id}); %>
                 </td>
                 <td>
                   <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">

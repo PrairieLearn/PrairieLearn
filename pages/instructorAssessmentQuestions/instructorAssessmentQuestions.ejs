@@ -20,8 +20,7 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th width="50">Thumbnail</th>
-                <th></th>
+                <th colspan="2"></th>
                 <th>QID</th>
                 <th>Topic</th>
                 <th>Tags</th>
@@ -70,9 +69,7 @@
               <% } %>
               <tr>
                 <td>
-                  <% if (question.filename != null) { %>
-                  <image src="<%= urlPrefix %>/<%= question.location %>/<%= question.filename %>" onerror="this.style.display='none'" width="50" height="50" />
-                  <% } %>
+                  <%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.question_id}); %>
                 </td>
                 <td>
                   <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">

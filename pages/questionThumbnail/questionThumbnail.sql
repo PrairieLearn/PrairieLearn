@@ -1,6 +1,6 @@
 -- BLOCK questions
 SELECT
-    q.thumbnail, q.qid, q.id
+    q.thumbnail_filename, q.qid, q.id
 FROM
     questions as q
 WHERE

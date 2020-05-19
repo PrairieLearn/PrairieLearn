@@ -58,8 +58,8 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
-                filename: filename,
-                location: location,
+                thumbnail_filename: filename,
+                filename_location: location,
             };
         });
 

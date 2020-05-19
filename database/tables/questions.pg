@@ -9,16 +9,16 @@ columns
     external_grading_files: text[] default ARRAY[]::text[]
     external_grading_image: text
     external_grading_timeout: integer
-    filename: text
+    filename_location: text
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
     id: bigint not null default nextval('questions_id_seq'::regclass)
-    location: text
     number: integer
     options: jsonb
     partial_credit: boolean default true
     qid: text
     single_variant: boolean default false
     template_directory: text
+    thumbnail_filename: text
     title: text
     topic_id: bigint
     type: enum_question_type

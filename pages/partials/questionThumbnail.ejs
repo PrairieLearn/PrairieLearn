@@ -1,0 +1,9 @@
+<% if (location == "clientFilesCourse") { %>
+<image src="<%= urlPrefix %>/clientFilesCourse/thumbnails/<%= filename %>" width="64" height="64"/>
+<% } %>
+<% if (location == "question") { %>
+<image src="<%= urlPrefix %>/question_thumbnail/<%= id %>" height="64"/>
+<% } %>
+<% if (location == "public") { %>
+<image src="/images/thumbnails/<%= filename %>" width="64" height="64"/>
+<% } %>

@@ -5,7 +5,7 @@
     "tags": ["mwest", "fa17", "tpl101", "v3"],
     "type": "v3",
     "thumbnail": {
-        "filename": "thumbnails/demo.jpeg",
+        "filename": "demo.jpeg",
         "location": "clientFilesCourse"
     }
 }

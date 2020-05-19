@@ -30,6 +30,44 @@
         <table class="table table-sm two-column-description">
           <tbody>
             <tr>
+              <th>Thumbnail</th>
+              <td>
+                <span class="mr-2"><%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.id}); %></span>
+                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                  <button type="button" class="btn btn-xs btn-secondary mr-2" id="uploadThumbnail" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload Thumbnail" data-content="<%= include('../partials/uploadThumbnailForm', {id_label: 'QID', buttonID: 'uploadThumbnail', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                      <i class="fa fa-upload"></i>
+                      <span>Upload Thumbnail</span>
+                  </button>
+                <% } %>
+                <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+              </td>
+            </tr>
+            <tr>
+              <th>Thumbnail Filename</th>
+              <td>
+                <span class="mr-2"><%= question.thumbnail_filename %></span>
+                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                <button type="button" class="btn btn-xs btn-secondary mr-2" id="changeThumbnailFilenameButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change Thumbnail Filename" data-content="<%= include('../partials/changeThumbnailFilenameForm', {id_label: 'Thumbnail Filename', buttonID: 'changeThumbnailFilenameButton', id_old: question.thumbnail_filename}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-i-cursor"></i>
+                    <span>Change Filename</span>
+                </button>
+                <% } %>
+                <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+              </td>
+            </tr>
+            <tr>
+              <th>Thumbnail Location</th>
+              <td>
+                <span class="mr-2"><%= question.filename_location %></span>
+                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                <button type="button" class="btn btn-xs btn-secondary mr-2" id="changeFilenameLocationButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change Filename Location" data-content="<%= include('../partials/changeFilenameLocationForm', {id_label: 'Filename Location', buttonID: 'changeFilenameLocationButton', id_old: question.filename_location}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-i-cursor"></i>
+                    <span>Change Location</span>
+                </button>
+                <% } %>
+                <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+              </td>
+            </tr>
               <th>Title</th>
               <td><%= question.title %></td>
             </tr>

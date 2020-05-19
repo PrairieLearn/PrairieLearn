@@ -1,1 +1,1 @@
-ALTER TABLE questions ADD COLUMN location text;
+ALTER TABLE questions ADD COLUMN filename_location text;

@@ -56,8 +56,7 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-              <th width="50">Thumbnail</th>
-              <th>Question</th>
+              <th colspan="2">Question</th>
               <th class="text-center">Value</th>
               <th class="text-center">History</th>
               <th class="text-center">Awarded points</th>
@@ -87,11 +86,7 @@
             <% } %>
             <tr>
               <td>
-                <% if (question.filename != null) { %>
-                <image src="<%= urlPrefix %>/<%= question.location %>/<%= question.filename %>" width="50" height="50"/>
-                <% } else { %>
-                <div style="height:50px;"></div>
-                <% } %>
+                <%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.question_id}); %>
               </td>
               <td>
                 <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
