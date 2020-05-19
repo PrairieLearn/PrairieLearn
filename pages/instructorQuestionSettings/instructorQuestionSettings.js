@@ -116,11 +116,12 @@ router.post('/', function(req, res, next) {
         let container = {
             rootPath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
             invalidRootPaths: [],
-        }
+        };
         let location;
         if (req.body.location == 'question') {
             location = path.join(res.locals.course.path, 'questions', res.locals.question.qid, req.file.originalname);
         } else if (req.body.location == 'clientFilesCourse') {
+            container.rootPath = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails');
             location = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails', req.file.originalname);
         }
         const editor = new FileUploadEditor({
