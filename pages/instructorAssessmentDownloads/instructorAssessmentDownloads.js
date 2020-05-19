@@ -31,6 +31,7 @@ const setFilenames = function(locals) {
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
+    locals.groupConfigs = prefix + 'group_configs.csv';
     locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
     locals.finalFilesZipFilename = prefix + 'final_files.zip';
     locals.bestFilesZipFilename = prefix + 'best_files.zip';
@@ -290,6 +291,22 @@ router.get('/:filename', function(req, res, next) {
         }, (err) => {
             if (ERR(err, next)) return;
             archive.finalize();
+        });
+    } else if (req.params.filename == res.locals.groupConfigs) {
+        let params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.group_configs, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['groupname', 'name'],
+                [' uid', 'uid'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
         });
     } else {
         next(new Error('Unknown filename: ' + req.params.filename));
