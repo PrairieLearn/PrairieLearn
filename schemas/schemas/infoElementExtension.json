@@ -5,13 +5,9 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-        "pythonScripts": {
-            "description": "Any python files required by this extension.",
-            "type": "array",
-            "items": {
-                "description": "The python files required by this extension from the extensions's directory.",
-                "type": "string"
-            }
+        "controller": {
+            "description": "The name of the element's Python controller file.",
+            "type": "string"
         },
         "coreStyles": {
             "description": "The styles required by this extension from /public/stylesheets.",

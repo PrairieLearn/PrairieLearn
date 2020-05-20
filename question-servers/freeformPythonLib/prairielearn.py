@@ -1103,7 +1103,7 @@ def load_element_extension(data, extension_name):
         raise Exception(f'Could not find extension {extension_name}!')
 
     ext_info = data['extensions'][extension_name]
-    if 'pythonScripts' not in ext_info or len(ext_info['pythonScripts']) == 0:
+    if 'controller' not in ext_info:
         # Nothing to load, just return an empty dict
         return {}
 
@@ -1121,18 +1121,15 @@ def load_element_extension(data, extension_name):
             return ret_val
         return wrapped_function
 
-    # Since extensions may have multiple scripts, load all of them
-    # and combine all variables/functions/etc into one dictionary
-    script_paths = map(lambda script: os.path.join(ext_info['directory'], script), ext_info['pythonScripts'])
+    # Load any Python functions and variables from the defined controller
+    script = os.path.join(ext_info['directory'], ext_info['controller'])
     loaded = {}
-    for script in script_paths:
-        spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+    spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
 
-        # Filter out extra names so we only get user defined functions and variables
-        script_loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
-        loaded.update(script_loaded)
+    # Filter out extra names so we only get user defined functions and variables
+    loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
 
     # Strip invalid characters and weird leading characters so we have
     # a decent typename for the namedtuple

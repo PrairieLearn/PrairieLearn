@@ -145,7 +145,7 @@ module.exports = {
             (callback) => {
                 fs.readdir(sourceDir, (err, elements) => {
                     if (err && err.code === 'ENOENT') {
-                        /* We don't really care if there are no extensions, just return an empty array. */
+                        // We don't really care if there are no extensions, just return an empty array.
                         return callback(null, []);
                     }
                     if (ERR(err, callback)) return;
@@ -243,20 +243,37 @@ module.exports = {
         return path.join(element.directory, element.controller);
     },
 
+    /**
+     * Add clientFiles urls for elements and extensions.
+     * Returns a copy of data with the new urls inserted.
+     */
+    getElementClientFiles: function(data, elementName, context) {
+        let dataCopy = _.cloneDeep(data);
+        /* The options field wont contain URLs unless in the 'render' stage, so check
+           if it is populated before adding the element url */
+        if ('base_url' in data.options) {
+            /* Join the URL using Posix join to avoid generating a path with backslashes,
+               as would be the case when running on Windows */
+            dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
+            dataCopy.options.client_files_extensions_url = {};
+
+            if (_.has(context.course_element_extensions, elementName)) {
+                Object.keys(context.course_element_extensions[elementName]).forEach(extension => {
+                    const url = path.posix.join(data.options.base_url, 'elementExtensions', elementName, extension, 'clientFilesExtension');
+                    dataCopy.options.client_files_extensions_url[extension] = url;
+                });
+            }
+        }
+        return dataCopy;
+    },
+    
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
-
-            let dataCopy = _.cloneDeep(data);
-            /* The options field will be empty unless in the 'render' stage, so check
-               if it is populated before adding the element url */
-            if ('base_url' in data.options) {
-                /* Join the URL using Posix join to avoid generating a path with backslashes,
-                   as would be the case when running on Windows */
-                dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            }
+            const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
+            
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
@@ -266,7 +283,7 @@ module.exports = {
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
-                    return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
+                    return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
                 }
                 if (ERR(err, reject)) return;
                 resolve([ret, consoleLog]);
@@ -284,11 +301,12 @@ module.exports = {
 
         const cwd = resolvedElement.directory;
         const controller = resolvedElement.controller;
+        const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            const pythonArgs = [elementHtml, data];
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
@@ -299,7 +317,7 @@ module.exports = {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
-                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
+                    return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
                 }
                 if (ERR(err, callback)) return;
                 debug(`elementFunction(): completed`);
@@ -307,7 +325,7 @@ module.exports = {
             });
         } else {
             // JS module (FIXME: delete this block of code in future)
-            const jsArgs = [$, element, null, data];
+            const jsArgs = [$, element, null, dataCopy];
             controller[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
@@ -799,6 +817,11 @@ module.exports = {
         }
     },
 
+    /**
+     * Gets any options that are available in any freeform phase.
+     * These include file paths that are relevant for questions and elements.
+     * URLs are not included here because those are only applicable during 'render'.
+     */
     getContextOptions: function(context) {
         /* These options are always available in any phase. */
 

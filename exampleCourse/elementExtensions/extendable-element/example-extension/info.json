@@ -1,4 +1,4 @@
 {
-    "pythonScripts": [ "example-extension.py" ],
+    "controller": "example-extension.py",
     "extensionStyles": [ "example-extension.css" ]
 }
