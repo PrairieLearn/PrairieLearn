@@ -15,8 +15,8 @@ The `info.json` file is structurally similar to the element info file and may co
     "dependencies": {
         "coreStyles": ["Core PL styles"],
         "coreScripts": ["Core PL JavaScripts"],
-        "nodeModulesStyles": ["Node modules styles],
-        "nodeModulesScripts": ["Node modules JavaScripts],
+        "nodeModulesStyles": ["Node modules styles"],
+        "nodeModulesScripts": ["Node modules JavaScripts"],
         "clientFilesCourseStyles": ["Client files course styles"],
         "clientFilesCourseScripts": ["Client files course JavaScripts"],
         "extensionStyles": ["Styles in the extension directory"],
