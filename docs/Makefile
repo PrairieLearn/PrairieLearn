@@ -1,5 +1,5 @@
 # Execute commands regardless of physical state of files
-.PHONY: all jsdoc build preview python-grader-sphinx
+.PHONY: all jsdoc build preview sphinx
 
 # Overall build scheme
 all: jsdoc \
