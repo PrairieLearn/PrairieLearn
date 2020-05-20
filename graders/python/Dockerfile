@@ -4,6 +4,9 @@ FROM centos:7
 ENV PYTHONIOENCODING=UTF-8
 
 COPY requirements.txt /
+COPY python_autograder /python_autograder
+RUN chmod +x /python_autograder/run.sh
+
 RUN yum -y update \
     && yum install -y sudo gcc make \
     && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
