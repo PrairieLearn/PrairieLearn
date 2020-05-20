@@ -15,10 +15,11 @@ CREATE TABLE IF NOT EXISTS group_configs (
 CREATE TABLE IF NOT EXISTS groups (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    name TEXT,      -- visible name of the group
+    name TEXT, -- visible name of the group
     group_config_id BIGINT REFERENCES group_configs(id) ON DELETE CASCADE ON UPDATE CASCADE,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    UNIQUE (course_instance_id, name)
 );
 
 -- simple join table, no extra metadata - that could be stored in audit logs if needed
