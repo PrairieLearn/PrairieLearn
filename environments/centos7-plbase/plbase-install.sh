@@ -3,7 +3,7 @@
 yum -y install \
     epel-release \
     https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
-    https://centos7.iuscommunity.org/ius-release.rpm
+    https://repo.ius.io/ius-release-el7.rpm
 
 yum -y update
 
