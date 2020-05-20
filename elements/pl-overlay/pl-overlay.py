@@ -58,7 +58,7 @@ def render(element_html, data):
     for child in element:
         if isinstance(child, lxml.html.HtmlComment):
             continue
-        
+
         valign = pl.get_string_attrib(child, 'valign', VALIGN_DEFAULT)
         halign = pl.get_string_attrib(child, 'halign', HALIGN_DEFAULT)
 
