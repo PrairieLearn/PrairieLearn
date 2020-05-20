@@ -25,6 +25,8 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['width', 'height'], optional_attribs=['clip'])
     for child in element:
+        if isinstance(child, lxml.html.HtmlComment):
+            continue
         if child.tag != 'pl-location':
             raise ValueError(f'Unknown tag "{child.tag}" found as child of pl-overlay')
         pl.check_attribs(child, required_attribs=[], optional_attribs=['left', 'right', 'top', 'bottom', 'valign', 'halign'])
@@ -54,6 +56,9 @@ def render(element_html, data):
     locations = []
     z_index = 0
     for child in element:
+        if isinstance(child, lxml.html.HtmlComment):
+            continue
+        
         valign = pl.get_string_attrib(child, 'valign', VALIGN_DEFAULT)
         halign = pl.get_string_attrib(child, 'halign', HALIGN_DEFAULT)
 

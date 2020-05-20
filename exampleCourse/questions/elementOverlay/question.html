@@ -1,20 +1,56 @@
+<style>
+ .country-name {
+     color: black;
+     text-shadow: -2px 2px 0 #fff, 2px 2px 0 #fff, 2px -2px 0 #fff, -2px -2px 0 #fff;
+ }
+</style>
+
 <pl-question-panel>
     <p>
-        The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.
-        This question combines the <code class="user-output">pl-figure</code> element to serve as a background,
-        along with the <code class="user-output">pl-string-input</code> element.
+        <i>
+            The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.
+            This question combines the <code class="user-output">pl-figure</code> element to serve as a background,
+            along with the <code class="user-output">pl-string-input</code> element.
+        </i>
     </p>
     <p>
         Write the name of the unlabeled country:
     </p>
 </pl-question-panel>
 
-<pl-overlay width="400" height="600" clip="false">
+<pl-overlay width="700" height="600" clip="false">
+    <!-- Background map image  -->
     <pl-location left="0" top="0" valign="top" halign="left">
-       <pl-figure file-name="mapzoom.png" directory="clientFilesQuestion"></pl-figure>
+       <pl-figure file-name="europe_zoom.png" directory="clientFilesQuestion"></pl-figure>
     </pl-location>
-    <pl-location left="160" top="315" valign="top" halign="center">
+
+    <!-- Input -->
+    <pl-location left="460" top="260" valign="top" halign="center">
        <pl-string-input answers-name="string_value" show-help-text="false" size="7"
                         correct-answer="Ukraine" remove-leading-trailing="true" ignore-case="true"></pl-string-input>
     </pl-location>
+
+    <!-- All the other country names -->
+    <pl-location left="300" top="240" valign="top" halign="center"><span class="country-name">Poland</span></pl-location>
+    <pl-location left="400" top="200" valign="top" halign="center"><span class="country-name">Belarus</span></pl-location>
+    <pl-location left="200" top="260" valign="top" halign="center"><span class="country-name">Germany</span></pl-location>
+    <pl-location left="90" top="350" valign="top" halign="center"> <span class="country-name">France</span></pl-location>
+    <pl-location left="60" top="200" valign="top" halign="center"> <span class="country-name">United<br>Kingdom</span></pl-location>
+    <pl-location left="230" top="430" valign="top" halign="center"><span class="country-name">Italy</span></pl-location>
+    <pl-location left="400" top="480" valign="top" halign="center"><span class="country-name">Greece</span></pl-location>
+    <pl-location left="400" top="350" valign="top" halign="center"><span class="country-name">Romania</span></pl-location>
+    <pl-location left="560" top="450" valign="top" halign="center"><span class="country-name">Turkey</span></pl-location>
+    <pl-location left="185" top="70" valign="top" halign="center"> <span class="country-name">Norway</span></pl-location>
+    <pl-location left="245" top="90" valign="top" halign="center"> <span class="country-name">Sweden</span></pl-location>
+    <pl-location left="340" top="30" valign="top" halign="center"> <span class="country-name">Finland</span></pl-location>
+    <pl-location left="550" top="100" valign="top" halign="center"><span class="country-name">Russia</span></pl-location>
 </pl-overlay>
+
+<!-- Map attribution -->
+<pl-question-panel>
+    <small>
+        <center>
+            (Map from <a href="https://en.wikipedia.org/wiki/File:Europe_blank_laea_location_map.svg">https://en.wikipedia.org/wiki/File:Europe_blank_laea_location_map.svg</a>)
+        </center>
+    </small>
+</pl-question-panel>
