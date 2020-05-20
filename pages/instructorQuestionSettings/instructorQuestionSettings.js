@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
-const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor, QuestionThumbnailFilenameEditor, QuestionFilenameLocationEditor, FileUploadEditor } = require('../../lib/editors');
+const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor, QuestionEditThumbnailEditor, FileUploadEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
@@ -65,42 +65,21 @@ router.post('/', function(req, res, next) {
                 });
             });
         }
-    } else if (req.body.__action == 'change_filename') {
-        debug(`Change thumbnail filename from ${res.locals.question.thumbnail_filename} to ${req.body.id}`);
-        if (!req.body.id) return next(new Error(`Invalid filename (was falsey): ${req.body.id}`));
-        let thumbnail_filename_new = req.body.id;
-        if (res.locals.question.thumbnail_filename == thumbnail_filename_new) {
-            debug('The new filename is the same as the old filename - do nothing');
+    } else if (req.body.__action == 'edit_thumbnail') {
+        debug('Editing thumbnail');
+        if (!req.body.filename && !req.body.location) return next(new Error(`Invalid input (was falsey): ${req.body.filename}, ${req.body.location}`));
+        let thumbnail_filename_new = req.body.filename;
+        let filename_location_new = req.body.location;
+        if (res.locals.question.filename_location == filename_location_new && res.locals.question.thumbnail_filename == thumbnail_filename_new) {
+            debug('The thumbnail information is the same as the old information - do nothgin');
             res.redirect(req.originalUrl);
         } else {
-            const editor = new QuestionThumbnailFilenameEditor({
+            const editor = new QuestionEditThumbnailEditor({
                 locals: res.locals,
                 thumbnail_filename_new: thumbnail_filename_new,
+                filename_location_new: filename_location_new,
             });
             editor.canEdit((err) => {
-                if (ERR(err, next)) return;
-                editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
-                    } else {
-                        res.redirect(req.originalUrl);
-                    }
-                });
-            });
-        }
-    } else if (req.body.__action == 'change_location') {
-      debug(`Change filename location from ${res.locals.question.filename_location} to ${req.body.id}`);
-      if (!req.body.id) return next(new Error(`Invalid location (was falsey): ${req.body.id}`));
-      let filename_location_new = req.body.id;
-      if (res.locals.question.filename_location == filename_location_new) {
-          debug('The new location is the same as the old location - do nothing');
-          res.redirect(req.originalUrl);
-      } else {
-          const editor = new QuestionFilenameLocationEditor({
-              locals: res.locals,
-              filename_location_new: filename_location_new,
-          });
-          editor.canEdit((err) => {
               if (ERR(err, next)) return;
               editor.doEdit((err, job_sequence_id) => {
                   if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
@@ -109,8 +88,8 @@ router.post('/', function(req, res, next) {
                       res.redirect(req.originalUrl);
                   }
               });
-          });
-      }
+            });
+        }
     } else if (req.body.__action == 'upload_thumbnail') {
         debug('Upload thumbnail');
         let container = {

@@ -1,0 +1,74 @@
+<form name="edit-thumbnail-form" class="needs-validation" method="POST" novalidate>
+    <input type="hidden" name="__action" value="edit_thumbnail">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <div class="container p-0 mb-4">
+      <b>Use only letters, numbers, dashes, and underscores, with no spaces.</b>
+    </div>
+    <div class="form-group">
+        <label for="changeFilename">Thumbnail Filename:</label>
+        <input type="text" class="form-control" id="changeFilename" name="filename" value="<%= filename_old %>" pattern="[-A-Za-z0-9_.]+" required>
+        <div class="invalid-feedback" id="invalidFilenameMessage">
+        </div>
+    </div>
+    <div class="container p-0 mb-4">
+      <b>Select the directory of the thumbnail image.</b>
+    </div>
+    <div class="form-group">
+        <label for="changeLocation">Thumbnail Location:</label>
+        <select class="custom-select" name="location" id="changeLocation">
+            <option value="question" <% if (location_old == "question") { %>selected<% } %>>question</option>
+            <option value="clientFilesCourse" <% if (location_old == "clientFilesCourse") { %>selected<% } %>>clientFilesCourse</option>
+            <option value="public" <% if (location_old == "public") { %>selected<%}%>>public</option>
+        </select>
+        <div class="invalid-feedback" id="invalidLocationMessage">
+        </div>
+    </div>
+    <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#<%= buttonID %>').popover('hide')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change</button>
+    </div>
+</form>
+
+<script>
+    $(function() {
+        const validateLocation = function() {
+            let element = $('input[name="location"]');
+            let elementDOM = element.get(0);
+            let location_new = $(element).val();
+
+            if (location_new === "<%= location_old %>") {
+                elementDOM.setCustomValidity('Must be changed');
+                $('#invalidLocationMessage').text('Must be changed');
+                return;
+            }
+        }
+
+        const validateFilename = function() {
+            let element = $('input[name="filename"]');
+            let elementDOM = element.get(0);
+            let filename_new = $(element).val();
+
+            if (filename_new === "<%= filename_old %>") {
+                elementDOM.setCustomValidity('Must be changed');
+                $('#invalidFilenameMessage').text('Must be changed');
+                return;
+            }
+        }
+
+        $('input[name="location"]').on('input', validateLocation);
+        $('input[name="location"]').on('change', validateLocation);
+
+        $('input[name="filename"]').on('input', validateFilename);
+        $('input[name="filename"]').on('change', validateFilename);
+
+        $('form[name="edit-thumbnail-form"]').submit(function(event) {
+            validateLocation();
+            validateFilename();
+            if ($(this).get(0).checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            $(this).addClass('was-validated');
+        });
+    });
+</script>
