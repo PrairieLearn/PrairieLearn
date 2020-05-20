@@ -30,10 +30,10 @@ def prepare(element_html, data):
         pl.check_attribs(child, required_attribs=[], optional_attribs=['left', 'right', 'top', 'bottom', 'valign', 'halign'])
 
         if ('left' not in child.attrib and 'right' not in child.attrib) or ('left' in child.attrib and 'right' in child.attrib):
-            raise ValueError('pl-location requires one of "left" or "right" attributes.')
+            raise ValueError('pl-location requires exactly one of "left" or "right" attributes.')
 
         if ('top' not in child.attrib and 'bottom' not in child.attrib) or ('top' in child.attrib and 'bottom' in child.attrib):
-            raise ValueError('pl-location requires one of "top" or "bottom" attributes.')
+            raise ValueError('pl-location requires exactly one of "top" or "bottom" attributes.')
 
         valign = pl.get_string_attrib(child, 'valign', None)
         if valign is not None and valign not in VALIGN_VALUES:
