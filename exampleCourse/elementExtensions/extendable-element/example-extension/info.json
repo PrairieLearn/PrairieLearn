@@ -1,4 +1,6 @@
 {
     "controller": "example-extension.py",
-    "extensionStyles": [ "example-extension.css" ]
+    "dependencies": {
+        "extensionStyles": [ "example-extension.css" ]
+    }
 }

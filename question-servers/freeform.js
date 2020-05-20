@@ -1145,12 +1145,16 @@ module.exports = {
                             /* Load any extensions if they exist */
                             if (_.has(extensions, elementName)) {
                                 for (const extensionName of Object.keys(extensions[elementName])) {
-                                    const extension = _.cloneDeep(extensions[elementName][extensionName]);
+                                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                                        continue;
+                                    }
+                                    
+                                    const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
                                     if (_.has(extension, 'extensionStyles')) {
-                                        extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extension.name}/${dep}`);
+                                        extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extensionName}/${dep}`);
                                     }
                                     if (_.has(extension, 'extensionScripts')) {
-                                        extension.extensionScripts = extension.extensionScripts.map(dep => `${elementName}/${extension.name}/${dep}`);
+                                        extension.extensionScripts = extension.extensionScripts.map(dep => `${elementName}/${extensionName}/${dep}`);
                                     }
 
                                     const dependencyTypes = [
