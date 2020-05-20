@@ -4,8 +4,8 @@ const router = express.Router();
 const _ = require('lodash');
 
 /**
- * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
- * static files from an element's "clientFilesExtension" directory. 
+ * Serves scripts and styles for element extensions. Only serves .js and .css files, or any
+ * static files from an extension's "clientFilesExtension" directory. 
  */
 
 const EXTENSION_WHITELIST = ['.js', '.css'];
