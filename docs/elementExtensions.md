@@ -11,17 +11,17 @@ Each extension needs only an `info.json` containing metadata about the element, 
 The `info.json` file is structurally similar to the element info file and may contain the following fields:
 ```json
 {
-	"controller": "Python script",
+    "controller": "Python script",
     "dependencies": {
-    	"coreStyles": ["Core PL styles"],
-    	"coreScripts": [""Core PL JavaScripts"],
-    	"nodeModulesStyles": ["Node modules styles],
-		"nodeModulesScripts": ["Node modules JavaScripts],
-    	"clientFilesCourseStyles": ["Client files course styles"],
-    	"clientFilesCourseScripts": ["Client files course JavaScripts"],
-    	"extensionStyles": ["Styles in the extension directory"],
-    	"extensionScripts": ["JavaScripts in the extension directory"]
-	}
+        "coreStyles": ["Core PL styles"],
+        "coreScripts": ["Core PL JavaScripts"],
+        "nodeModulesStyles": ["Node modules styles],
+        "nodeModulesScripts": ["Node modules JavaScripts],
+        "clientFilesCourseStyles": ["Client files course styles"],
+        "clientFilesCourseScripts": ["Client files course JavaScripts"],
+        "extensionStyles": ["Styles in the extension directory"],
+        "extensionScripts": ["JavaScripts in the extension directory"]
+    }
 }
 ```
 
@@ -35,14 +35,14 @@ Loading extension Python scripts returns a named tuple of all globally defined f
 
 ```python
 def my_cool_function():
-	return "hello, world!"
+    return "hello, world!"
 ```
 
 The host element could then call this by running the following:
 
 ```python
 def render(element_html, data):
-	extension = prairielearn.load_element_extensions(data, 'extension_name')
+    extension = prairielearn.load_element_extensions(data, 'extension_name')
     contents = extension.my_cool_function()
     return contents
 ```
