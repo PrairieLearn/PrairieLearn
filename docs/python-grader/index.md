@@ -159,7 +159,7 @@ The code feedback library contains built-in functions for checking correctness o
 - `check_dataframe(name, ref, data, subset_columns=None)`
  Checks that a Pandas DataFrame has the same contents as the reference solution.  Can optionally check for a subset of columns by giving a list of column names to `subset_columns`.
 
-Most of these functions have a `accuracy_critical` and `report_failure` keyword argument.  If `accuracy_critical` is set to true (default), the grading job will halt if this check fails (similar to an assert).  If `report_failure` is true (default), feedback will be displayed to the student if this check fails.  The `name` argument is used when displaying feedback.
+Most of these functions have a `accuracy_critical` and `report_failure` keyword argument.  If `accuracy_critical` is set to `True` (default is `False`), the grading job will halt if this check fails (similar to an assert).  If `report_failure` is true (default), feedback will be displayed to the student if this check fails.  The `name` argument is used when displaying feedback.
 
 ## General tips and gotchas
 

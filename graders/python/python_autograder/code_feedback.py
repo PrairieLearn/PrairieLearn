@@ -146,7 +146,7 @@ class Feedback:
 
     @classmethod
     def check_numpy_array_features(cls, name, ref, data,
-                                   accuracy_critical=True,
+                                   accuracy_critical=False,
                                    report_failure=True):
         """
         Feedback.check_numpy_array_features(name, ref, data)
@@ -196,7 +196,7 @@ class Feedback:
 
     @classmethod
     def check_numpy_array_allclose(cls, name, ref, data,
-                                   accuracy_critical=True, rtol=1e-05,
+                                   accuracy_critical=False, rtol=1e-05,
                                    atol=1e-08, report_success=True,
                                    report_failure=True):
         """
@@ -237,7 +237,7 @@ class Feedback:
 
     @classmethod
     def check_list(cls, name, ref, data, entry_type=None,
-                            accuracy_critical=True,
+                            accuracy_critical=False,
                             report_failure=True):
         """
         Feedback.check_list(name, ref, data)
@@ -278,7 +278,7 @@ class Feedback:
         return True
 
     @classmethod
-    def check_tuple(cls, name, ref, data, accuracy_critical=True,
+    def check_tuple(cls, name, ref, data, accuracy_critical=False,
                     report_failure=True, report_success=True):
         """
         Feedback.check_tuple(name, ref, data)
@@ -331,7 +331,7 @@ class Feedback:
         return True
 
     @classmethod
-    def check_scalar(cls, name, ref, data, accuracy_critical=True,
+    def check_scalar(cls, name, ref, data, accuracy_critical=False,
                      rtol=1e-5, atol=1e-8, report_success=True,
                      report_failure=True):
         """
