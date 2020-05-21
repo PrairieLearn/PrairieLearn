@@ -60,6 +60,7 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
                 thumbnail_filename: filename,
                 filename_location: location,
+                dependencies: q.dependencies || {},
             };
         });
 

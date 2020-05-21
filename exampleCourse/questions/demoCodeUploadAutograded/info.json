@@ -9,8 +9,8 @@
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",
-        "serverFilesCourse": ["python_autograder/"],
-        "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh"
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 20
     },
     "thumbnail": {
         "filename": "code.jpeg",

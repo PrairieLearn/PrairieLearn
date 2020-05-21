@@ -153,6 +153,17 @@ a.badge {
   text-decoration: none;
 }
 
+.navbar, #course-nav {
+    align-items: baseline;
+}
+
+.no-select {
+    user-select: none;
+}
+
+/*****************
+ * Brand label ("PrairieLearn" text)
+ *****************/
 .navbar-brand {
   position: relative;
 }
@@ -178,6 +189,13 @@ a.badge {
 .navbar-brand:hover .navbar-brand-hover-label {
   opacity: 1;
   transform: translate(0px, 0px);
+}
+
+/* Supports a color accent at the tops of nav tabs, github-style */
+.nav-tabs.pl-nav-tabs-bar .nav-link.active {
+    border-top-color: var(--primary);
+    border-top-width: 0.2rem;
+    padding-top: 0.4rem;
 }
 
 /* Used to help vertically center badges in table cells */

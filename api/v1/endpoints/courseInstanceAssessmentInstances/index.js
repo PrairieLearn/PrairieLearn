@@ -12,7 +12,7 @@ const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
 router.get('/:assessment_instance_id', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_id: null,
         assessment_instance_id: req.params.assessment_instance_id,
     };
@@ -31,7 +31,7 @@ router.get('/:assessment_instance_id', (req, res, next) => {
 
 router.get('/:assessment_instance_id/instance_questions', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_instance_id: req.params.assessment_instance_id,
         instance_question_id: null,
     };
@@ -43,7 +43,7 @@ router.get('/:assessment_instance_id/instance_questions', (req, res, next) => {
 
 router.get('/:assessment_instance_id/submissions', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_instance_id: req.params.assessment_instance_id,
         submission_id: null,
     };

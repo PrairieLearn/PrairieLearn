@@ -29,9 +29,12 @@ digraph question_flow {
     open_variant [label="Open variant:\l\lvariant.broken = false\lvariant.open = true"];
     closed_variant [label="Closed variant:\l\lvariant.broken = false\lvariant.open = false"];
     broken_submission [label="Broken submission:\l\lsubmission.broken = true"];
-    ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false"];
+    ungradable_no_grading_job [label="No grading job inserted"];
+    ungradable_grading_job [label="Grading job:\l\lgrading_job.gradable = false\lgrading_job.date = <value>\lgrading_job.score = null\lgrading_job.partial_scores = null\lgrading_job.correct = null"];
+    ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false\lsubmission.score = null\lsubmission.partial_scores = null"];
+    gradable_grading_job [label="Grading job:\l\lgrading_job.gradable = true\lgrading_job.date = <value>\lgrading_job.score = <value>\lgrading_job.partial_scores = <value>\lgrading_job.correct = <value>"];
     gradable_submission [label="Gradable submission:\l\lsubmission.broken = false\lsubmission.gradable = true"];
-    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmision.score = <value>\lsubmission.feedback = <value>"];
+    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmission.score = <value>\lsubmission.feedback = <value>"];
 
     start -> generating;
     generating -> broken_variant [label="question\lcode error"];
@@ -46,12 +49,15 @@ digraph question_flow {
     submission_received -> parsing;
     parsing -> broken_submission [label="question\lcode error"];
     broken_submission -> display_broken;
-    parsing -> ungradable_submission [label="invalid format for\lsubmitted_answer"];
+    parsing -> ungradable_no_grading_job [label="invalid format for\lsubmitted_answer"];
     parsing -> gradable_submission [label="success"];
     ungradable_submission -> open_variant;
     gradable_submission -> grading;
-    grading -> ungradable_submission [label="invalid format for\lsubmitted_answer"];
-    grading -> graded_submission [label="success"];
+    grading -> ungradable_grading_job [label="invalid format for\lsubmitted_answer"];
+    grading -> gradable_grading_job [label="success"];
+    ungradable_grading_job -> ungradable_submission;
+    ungradable_no_grading_job -> ungradable_submission;
+    gradable_grading_job -> graded_submission;
     graded_submission -> question_update;
     question_update -> open_variant [label="more submissions are\lallowed for this variant"];
     question_update -> closed_variant [label="submissions are no longer\lallowed for this variant"];

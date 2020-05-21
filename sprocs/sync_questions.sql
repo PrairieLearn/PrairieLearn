@@ -37,7 +37,8 @@ BEGIN
             external_grading_timeout,
             external_grading_enable_networking,
             thumbnail_filename,
-            filename_location
+            filename_location,
+            dependencies
         ) SELECT
             (question->>'uuid')::uuid,
             question->>'qid',
@@ -60,7 +61,8 @@ BEGIN
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean,
             question->>'thumbnail_filename'::text,
-            question->>'filename_location'::text
+            question->>'filename_location'::text,
+            (question->>'dependencies')::jsonb
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
@@ -83,7 +85,8 @@ BEGIN
             external_grading_timeout = EXCLUDED.external_grading_timeout,
             external_grading_enable_networking = EXCLUDED.external_grading_enable_networking,
             thumbnail_filename = EXCLUDED.thumbnail_filename,
-            filename_location = EXCLUDED.filename_location
+            filename_location = EXCLUDED.filename_location,
+            dependencies = EXCLUDED.dependencies
         WHERE
             questions.course_id = new_course_id
         RETURNING id, qid
