@@ -41,8 +41,10 @@ def my_cool_function():
 The host element could then call this by running the following:
 
 ```python
+import prairielearn as pl
+
 def render(element_html, data):
-    extension = prairielearn.load_element_extensions(data, 'extension_name')
+    extension = pl.load_element_extensions(data, 'extension_name')
     contents = extension.my_cool_function()
     return contents
 ```
