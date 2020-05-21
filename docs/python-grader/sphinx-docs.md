@@ -75,7 +75,7 @@ Check that a student list has correct length with respect to a reference list.  
 * `report_failure`: If true, feedback will be given on failure.
 
 
-#### classmethod check_numpy_array_allclose(name, ref, data, accuracy_critical=True, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
+#### classmethod check_numpy_array_allclose(name, ref, data, accuracy_critical=False, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
 Feedback.check_numpy_allclose(name, ref, data)
 
 Check that a student NumPy array has similar values to a reference NumPy array. Note that this checks value according to the numpy.allclose function, which goes  by the following check:
