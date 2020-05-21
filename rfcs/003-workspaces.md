@@ -68,6 +68,23 @@ These three components are implemented within the main PL executable, but for de
 
 Need to make sure that cookies are inaccessible to client-side code (https://github.com/PrairieLearn/PrairieLearn/issues/2503) and on the server (we need to configure our proxy to strip out at least the Cookie header, if not more things).
 
+## Design
+
+### Questions
+
+Course staff will declare workspace config per question via `workspace` in `info.json`. To begin, the only option will be an image:
+
+```json
+{
+    "workspace": {
+        "image": "some-docker-image"
+    }
+}
+```
+
+The home directory in the workspace will be determined by the `workspace` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
+
 ## Notes
 
+* Since PrairieLearn will be serving a bunch of different roles depending on context, PrairieLearn's `server.js` should be split up so that only code needed to serve a particular role is loaded. While we're refactoring, let's just make it better, do things async, etc.
 * There’s a distinction between workspace state and submission state - the former can include arbitrary files, the latter just includes whatever the question specifies.
