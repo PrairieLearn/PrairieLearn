@@ -70,6 +70,28 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 ## Design
 
+### Database
+
+* `questions`
+  * Add a new `workspace_image` column
+* `workspace_hosts`:
+  * `id`: a unique ID for this host
+  * `instance_id`: the AWS instance ID for this host
+  * `hostname`: the hostname (IP address, DNS address, etc) for this host
+* `workspaces`: new tables
+  * `variant_id`: Question variant we're associated with
+  * `id`: a unique ID for this workspace
+  * `s3_bucket`: The S3 bucket that this workspace's state lives in
+  * `s3_root_key`: The root "path" within the S3 bucket
+  * `s3_initialized`: Whether we've created the resources for this workspace in S3 or not
+  * `workspace_host_id` (nullable): The ID of the host that this workspace container is running on, if any
+  * `state`: reflects the "state" of this workspace; one of the following:
+    * `uninitialized`: no resources have been created for this workspace yet; can transition to `initializing`
+    * `initializing`: we're creating S3 resources for this workspace; can transition to `stopped`
+    * `stopped`: the workspace exists but is not running on a particular machine; can transition to `launching`
+    * `launching`: we are allocating a host for this workspace and starting the appropriate container on that host; can transition to `running` or `stopped` (if launching fails)
+    * `running`: the container for this workspace is running; can transition to `stopped`
+
 ### Questions
 
 Course staff will declare workspace config per question via `workspace` in `info.json`. To begin, the only option will be an image:
@@ -90,9 +112,36 @@ The workspace image will need to be synced to the `questions` table via the usua
 
 > What happens when we render a question with an associated workspace?
 
-We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_launch_url` to `data.options`, and this element (or potentially other elements) can use this to render a button.
+When a new variant of a question is created, we'll create a corresponding workspace in the database associated with that particular variant. This database entry will contain a unique hash/id/something. However, we're not going to actually provision any containers, etc. for this workspace just yet.
 
-When this button is clicked, the URL at `workspace_launch_url` will be opened in a new tab.
+We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_url` to `data.options`, and this element (or potentially other elements) can use this to render a button. `workspace_url` will be something of the form `/pl/[garbage]/workspace/[workspace_id]`, where `[garbage]` corresponds to the different places that questions can be accessed from (instructor question, student variant, maybe others?).
+
+When this button is clicked, the URL at `workspace_url` will be opened in a new tab.
+
+### Accessing a workspace
+
+> What happens when a user lands on a `workspace_url`?
+
+`workspace_url` pages will be served by the main PrairieLearn server (someday, we could split this into a separate autoscaled component).
+
+When we get a request to this url, we'll first check if we have an existing instance of a workspace by checking the `workspace_host_id` column. There will be two cases here.
+
+#### A container has already been allocated on a host
+
+In this case, we can just proxy traffic directly to the appropriate host.
+
+#### A container has not been allocated on a host
+
+First, we'll see if we've already initialized S3 resources for this workspace in the past. If not, we'll create two files on S3:
+
+* The initial state of the workspace
+* The "working" state of the workspace that will be modified as students interact with the workspace
+
+These two will be identical initially and will diverege over time.
+
+Once we have these two S3 resources, we'll immediately respond with the "outer frame" HTML. At the same time, we'll allocate a host for this particular workspace and instruct it to begin loading the appropriate resources (Docker image, S3 resources, etc.).
+
+The "outer frame" will initially render a loading screen and set up a websocket connection to the main PL server. When the workspace host has finished initializing the workspace container, we'll send a websocket message to the client to instruct it to load the "inner frame" in an iframe, which will be served by the container running on a host.
 
 ## Notes
 
