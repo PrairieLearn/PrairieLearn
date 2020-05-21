@@ -84,6 +84,16 @@ Course staff will declare workspace config per question via `workspace` in `info
 
 The home directory in the workspace will be determined by the `workspace` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
 
+The workspace image will need to be synced to the `questions` table via the usual syncing code. We should use a new `workspace_image` column.
+
+### Student-facing question interface
+
+> What happens when we render a question with an associated workspace?
+
+We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_launch_url` to `data.options`, and this element (or potentially other elements) can use this to render a button.
+
+When this button is clicked, the URL at `workspace_launch_url` will be opened in a new tab.
+
 ## Notes
 
 * Since PrairieLearn will be serving a bunch of different roles depending on context, PrairieLearn's `server.js` should be split up so that only code needed to serve a particular role is loaded. While we're refactoring, let's just make it better, do things async, etc.
