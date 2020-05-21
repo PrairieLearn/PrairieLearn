@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
-const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor, QuestionEditThumbnailEditor, FileUploadEditor } = require('../../lib/editors');
+const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor, QuestionEditThumbnailEditor, ThumbnailUploadEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
@@ -103,11 +103,13 @@ router.post('/', function(req, res, next) {
             container.rootPath = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails');
             location = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails', req.file.originalname);
         }
-        const editor = new FileUploadEditor({
+        const editor = new ThumbnailUploadEditor({
             locals: res.locals,
             container: container,
             filePath: location,
             fileContents: req.file.buffer,
+            thumbnail_filename_new: req.file.originalname,
+            filename_location_new: req.body.location,
         });
         editor.shouldEdit((err, yes) => {
             if (ERR(err, next)) return;
