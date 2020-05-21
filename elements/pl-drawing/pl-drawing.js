@@ -3,8 +3,8 @@
 (function() {
     window.DrawingInterface = function(root_elem, elem_options, submitted_answer) {
         let canvas_elem = $(root_elem).find('canvas')[0];
-        let canvas_width = canvas_elem.clientWidth;
-        let canvas_height = canvas_elem.clientHeight;
+        let canvas_width = parseFloat(elem_options.width);
+        let canvas_height = parseFloat(elem_options.height);
         let html_input = $(root_elem).find('input');
 
         let parseElemOptions = function(elem) {

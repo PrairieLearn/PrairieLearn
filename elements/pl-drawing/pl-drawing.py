@@ -194,7 +194,7 @@ def render_controls(template, elem):
             if opts is not None:
                 opts['selectable'] = True
                 opts['evented'] = True
-                opts['gradable'] = True
+                opts['graded'] = True
                 opts['placed_by_user'] = True
             return chevron.render(template, {'render_button': True, 'button_class': elem.attrib.get('type', ''), 'options': json.dumps(opts)}).strip()
     elif elem.tag == 'pl-controls-group':
@@ -276,7 +276,9 @@ def render(element_html, data):
         'editable': (data['panel'] == 'question' and not preview_mode),
         'base_url': data['options']['base_url'],
         'client_files': '/pl/static/elements/pl-drawing/clientFilesElement/',
-        'render_scale': pl.get_float_attrib(element, 'render-scale', element_defaults['render-scale'])
+        'render_scale': pl.get_float_attrib(element, 'render-scale', element_defaults['render-scale']),
+        'width': pl.get_string_attrib(element, 'width', element_defaults['width']),
+        'height': pl.get_string_attrib(element, 'height', element_defaults['height'])
     }
 
     show_btn = data['panel'] == 'question' and not preview_mode
@@ -316,24 +318,8 @@ def render(element_html, data):
 
     # Grading feedback
     if data['panel'] == 'submission':
-        if name in data['partial_scores']:
-            gr_feedback = data['partial_scores'][name]['feedback']
-            if not gr_feedback['correct']:
-                html_feedback = ''
-                for elem, num in gr_feedback['missing'].items():
-                    html_feedback += '<li>'
-                    if num > 1:
-                        html_feedback += '$' + str(num) + '\\times$'
-
-                    if elem in element_names:
-                        html_feedback += element_names[elem]
-                    else:
-                        html_feedback += elem
-                # html_params['feedback'] = html_feedback
-                # ^ Uncomment to enable feedback ^
-        else:
-            parse_error = data['format_errors'].get(name, None)
-            html_params['parse_error'] = parse_error
+        parse_error = data['format_errors'].get(name, None)
+        html_params['parse_error'] = parse_error
 
     return chevron.render(template, html_params).strip()
 
