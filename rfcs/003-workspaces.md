@@ -1,4 +1,4 @@
-# Workspaces
+#jjjjWorkspaces
 
 # Summary
 
@@ -114,7 +114,7 @@ The workspace image will need to be synced to the `questions` table via the usua
 
 > What happens when we render a question with an associated workspace?
 
-When a new variant of a question is created, the main server will create a corresponding workspace in the database associated with that particular variant. This database entry will contain a unique hash/id/something. However, we're not going to actually provision any containers, etc. for this workspace just yet.
+When a new variant of a question is created, the main server will create a corresponding workspace in the database associated with that particular variant. This database entry will contain a unique hash/id/something. However, we're not going to actually provision any containers, etc. for this workspace just yet. The `state` of the new workspace row will be `uninitialized`.
 
 We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_url` to `data.options`, and this element (or potentially other elements) can use this to render a button. `workspace_url` will be something of the form `/pl/[garbage]/workspace/[workspace_id]`, where `[garbage]` corresponds to the different places that questions can be accessed from (instructor question, student variant, maybe others?).
 
@@ -141,7 +141,7 @@ First, the main server will check if we've already initialized S3 resources for 
 
 These two will be identical initially and will diverege over time.
 
-Once we have these two S3 resources, we'll immediately respond with the "outer frame" HTML. At the same time, we'll allocate a host for this particular workspace and instruct it to begin loading the appropriate resources (Docker image, S3 resources, etc.).
+Once we have these two S3 resources, the main server will immediately respond with the "outer frame" HTML. At the same time, the main server will allocate a host for this particular workspace and instruct the host to begin loading the appropriate resources (Docker image, S3 resources, etc.).
 
 The "outer frame" will initially render a loading screen and set up a websocket connection to the main PL server. When the workspace host has finished initializing the workspace container, we'll send a websocket message to the client to instruct it to load the "inner frame" in an iframe, which will be served by the container running on a host.
 
