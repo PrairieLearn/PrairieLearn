@@ -46,11 +46,12 @@ These three components are implemented within the main PL executable, but for de
 
 ## Workspace container orchestration
 
-* When we create a variant, we (maybe) create an editor session (if it’s enabled for that question). This is at this point just an entry in a database table somewhere.
-* We render some kind of button to launch an editor instance for that session.
-* The user clicks on that button.
-* We get a request for a particular workspace instance.
-* We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
+* On the main server:
+    * When we create a variant, we (maybe) create a workspace session (if it’s enabled for that question). This is at this point just an entry in a database table somewhere.
+    * We render some kind of button to launch a workspace instance for that session.
+    * The user clicks on that button.
+    * We get a request for a particular workspace instance.
+    * We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
 * Routes:
     * `/workspace/[uuid]` - serves outer frame
     * `/workspace/[uuid]/heartbeat`
