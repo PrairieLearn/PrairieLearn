@@ -52,10 +52,10 @@ These three components are implemented within the main PL executable, but for de
     * The user clicks on that button.
     * We get a request for a particular workspace instance.
     * We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
-* Routes:
-    * `/workspace/[uuid]` - serves outer frame
-    * `/workspace/[uuid]/heartbeat`
-    * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
+    * Routes:
+        * `/workspace/[uuid]` - serves outer frame
+        * `/workspace/[uuid]/heartbeat`
+        * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
 * On the host:
     * `/workspace/[uuid]/workspace/*` goes to the host that’s running this container.
     *  Within the host, we’ll proxy that to the appropriate container.
