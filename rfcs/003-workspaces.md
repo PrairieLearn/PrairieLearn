@@ -101,14 +101,31 @@ Course staff will declare workspace config per question via `workspace` in `info
 ```json
 {
     "workspace": {
-        "image": "some-docker-image"
+        "image": "some-docker-image-name"
     }
 }
 ```
 
-The home directory in the workspace will be determined by the `workspace` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
+The home directory in the workspace will be determined by the `workspace_homedir` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
 
-The workspace image will need to be synced to the `questions` table via the usual syncing code. We should use a new `workspace_image` column.
+```
+questions
+`-- myquestion
+    +-- info.json
+    +-- question.html
+    +-- server.py
+    +-- clientFilesQuestion
+    +-- tests
+    |   +-- correct_answer.c
+    |   `-- test_run.py
+    |
+    `-- workspace_homedir
+        +-- .bashrc
+        +-- starter_code.h
+        `-- starter_code.c
+```
+
+The workspace image name will need to be synced to the `questions` table via the usual syncing code. We should use a new `workspace_image` column.
 
 ### Student-facing question interface
 
