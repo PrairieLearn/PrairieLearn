@@ -22,10 +22,11 @@ Goals:
 
 # Proposed solution
 
-The server architecture has three conceptual components:
-1. Main PL web servers: render questions for the student with a "launch workspace" button in them.
-2. Manager servers: coordinate the launching of workspaces and proxy all traffic from the student browser through to the host machines.
-3. Host servers: run the actual containers.
+The server architecture has three conceptual components. The MVP will implement them in two servers:
+1. PL main servers (possibly refactored in the future)
+    * Web servers: render questions for the student with a "launch workspace" button in them.
+    * Manager servers: coordinate the launching of workspaces and proxy all traffic from the student browser through to the host machines.
+2. Host servers: run the actual containers.
 
 These three components are implemented within the main PL executable, but for deployment we can run different fleets of servers that use a `config` option to only turn on specific functionality.
 
