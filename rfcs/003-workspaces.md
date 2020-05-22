@@ -126,7 +126,7 @@ When this button is clicked, the URL at `workspace_url` will be opened in a new 
 
 `workspace_url` pages will be served by the main PrairieLearn server (someday, we could split this into a separate autoscaled component).
 
-When we get a request to this url, we'll first check if we have an existing instance of a workspace by checking the `workspace_host_id` column. There will be two cases here.
+When the main server gets a request to this url, we'll first check if we have an existing instance of a workspace by checking the `workspace_host_id` column. There will be two cases here.
 
 #### A container has already been allocated on a host
 
