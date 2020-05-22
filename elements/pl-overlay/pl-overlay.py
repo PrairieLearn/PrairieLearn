@@ -23,42 +23,63 @@ ALIGNMENT_TO_PERC = {
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['width', 'height'], optional_attribs=['clip'])
+    #
+    num_backgrounds = 0
     for child in element:
         if isinstance(child, lxml.html.HtmlComment):
             continue
-        if child.tag != 'pl-location':
+
+        if child.tag == 'pl-location':
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['left', 'right', 'top', 'bottom', 'valign', 'halign'])
+
+            if ('left' not in child.attrib and 'right' not in child.attrib) or ('left' in child.attrib and 'right' in child.attrib):
+                raise ValueError('pl-location requires exactly one of "left" or "right" attributes.')
+
+            if ('top' not in child.attrib and 'bottom' not in child.attrib) or ('top' in child.attrib and 'bottom' in child.attrib):
+                raise ValueError('pl-location requires exactly one of "top" or "bottom" attributes.')
+
+            valign = pl.get_string_attrib(child, 'valign', None)
+            if valign is not None and valign not in VALIGN_VALUES:
+                raise ValueError(f'Unknown vertical alignment "{valign}"')
+
+            halign = pl.get_string_attrib(child, 'halign', None)
+            if halign is not None and halign not in HALIGN_VALUES:
+                raise ValueError(f'Unknown horizontal alignment "{halign}"')
+        elif child.tag == 'pl-background':
+            pl.check_attribs(child, required_attribs=[], optional_attribs=[])
+            num_backgrounds += 1
+        else:
             raise ValueError(f'Unknown tag "{child.tag}" found as child of pl-overlay')
-        pl.check_attribs(child, required_attribs=[], optional_attribs=['left', 'right', 'top', 'bottom', 'valign', 'halign'])
 
-        if ('left' not in child.attrib and 'right' not in child.attrib) or ('left' in child.attrib and 'right' in child.attrib):
-            raise ValueError('pl-location requires exactly one of "left" or "right" attributes.')
-
-        if ('top' not in child.attrib and 'bottom' not in child.attrib) or ('top' in child.attrib and 'bottom' in child.attrib):
-            raise ValueError('pl-location requires exactly one of "top" or "bottom" attributes.')
-
-        valign = pl.get_string_attrib(child, 'valign', None)
-        if valign is not None and valign not in VALIGN_VALUES:
-            raise ValueError(f'Unknown vertical alignment "{valign}"')
-
-        halign = pl.get_string_attrib(child, 'halign', None)
-        if halign is not None and halign not in HALIGN_VALUES:
-            raise ValueError(f'Unknown horizontal alignment "{halign}"')
+    if num_backgrounds == 0:
+        pl.check_attribs(element, required_attribs=['width', 'height'], optional_attribs=['clip'])
+    elif num_backgrounds == 1:
+        pl.check_attribs(element, required_attribs=[], optional_attribs=['clip', 'width', 'height'])
+    else:
+        raise ValueError(f'pl-overlay can have at most one <pl-background> child, found {num_backgrounds}.')
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    width = pl.get_float_attrib(element, 'width')
-    height = pl.get_float_attrib(element, 'height')
+    width = pl.get_float_attrib(element, 'width', None)
+    height = pl.get_float_attrib(element, 'height', None)
+    background = None
 
     # Assign layer index in order children are defined
     # Later defined elements will be placed on top of earlier ones
     locations = []
     z_index = 0
     for child in element:
+        # Ignore comments
         if isinstance(child, lxml.html.HtmlComment):
             continue
 
+        # Don't do any special processing for backgrounds
+        if child.tag == 'pl-background':
+            background = pl.inner_html(child)
+            continue
+
+        # Otherwise, continue as normal
         valign = pl.get_string_attrib(child, 'valign', VALIGN_DEFAULT)
         halign = pl.get_string_attrib(child, 'halign', HALIGN_DEFAULT)
 
@@ -95,6 +116,7 @@ def render(element_html, data):
         'width': width,
         'height': height,
         'locations': locations,
+        'background': background,
         'clip': pl.get_boolean_attrib(element, 'clip', CLIP_DEFAULT)
     }
     with open('pl-overlay.mustache', 'r', encoding='utf-8') as f:

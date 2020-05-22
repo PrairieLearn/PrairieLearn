@@ -1,6 +1,9 @@
 .pl-overlay {
-    position: relative;
     display: block;
+}
+
+.pl-overlay-locations-container {
+    position: relative;
 }
 
 .pl-overlay-clip {

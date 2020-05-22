@@ -1268,13 +1268,13 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 ```html
 <pl-overlay width="400" height="400" clip="false">
-    <pl-location left="0" top="0" halign="left" valign="top">
+    <pl-background>
         <pl-drawing width="398" height="398" hide-answer-panel="false">
             <pl-drawing-initial>
                 <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
             </pl-drawing-initial>
         </pl-drawing>
-    </pl-location>
+    </pl-background>
     <pl-location left="200" top="375">
         $$3$$
     </pl-location>
@@ -1291,8 +1291,8 @@ The overlay element allows existing PrairieLearn and HTML elements to be layered
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`width` | float | - | The width of the overlay canvas in pixels.
-`height` | float | - | The height of the overlay canvas in pixels.
+`width` | float | - | The width of the overlay canvas in pixels.  Required only if no background is specified.
+`height` | float | - | The height of the overlay canvas in pixels.  Required only if no background is specified.
 `clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
 
 #### `pl-location` Customizations
@@ -1308,7 +1308,7 @@ Attribute | Type | Default | Description
 
 #### Details
 
-An overlay is pre-defined as a "overlay area" with a set width and height.  By default, elements that exceed these boundaries will get partially or totally cut off.  Child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+An overlay is pre-defined as a "overlay area" with a static size.  By default, elements that exceed these boundaries will get partially or totally cut off.  A background can be specified by wrapping HTML in a `<pl-background>` tag, in this case the overlay will automatically size itself to fit the background and a `width` and `height` do not need to be specified.   Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
 #### Example Implementations
 
