@@ -58,8 +58,8 @@ These three components are implemented within the main PL executable, but for de
         * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
 * On the host:
     * `/workspace/[uuid]/workspace/*` goes to the host that’s running this container.
-    *  Within the host, we’ll proxy that to the appropriate container.
-    *  Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
+    * Within the host, we’ll proxy that to the appropriate container.
+    * Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
     * The host will listen for three types of signals: launch, sync, and kill container.
 * How to map requests to hosts?
     * Hosts table that stores current information about each host VM.
