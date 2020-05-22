@@ -18,7 +18,7 @@ Goals:
 * The student should have complete freedom to use the workspace as a development environment, including compiling and executing code.
 * The files in the container home directory should be frequently autosaved to a persistent store, in case of container crashes (e.g., fork bombs).
 * At any time, the student should be able to trigger a "Grade" action, which will pull an instructor-defined set of files from the container and run the usual PL grading code (either internal or external graders).
-* Workspaces should auto-terminate after a period of inactivity (or force-terminated by the student), but should be able to be re-launched with the persistent home-directory files restored.
+* Containers should auto-terminate after a period of inactivity (or force-terminated by the student), but should be able to be re-launched with the persistent home-directory files restored.
 
 # Proposed solution
 
