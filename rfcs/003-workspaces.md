@@ -134,7 +134,7 @@ In this case, the main server can just proxy traffic directly to the appropriate
 
 #### A container has not been allocated on a host
 
-First, we'll see if we've already initialized S3 resources for this workspace in the past. If not, we'll create two files on S3:
+First, the main server will check if we've already initialized S3 resources for this workspace in the past. If not, the main server will create two files on S3:
 
 * The initial state of the workspace
 * The "working" state of the workspace that will be modified as students interact with the workspace
