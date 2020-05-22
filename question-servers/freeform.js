@@ -8,6 +8,7 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { promisify, callbackify } = require("util");
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -133,90 +134,84 @@ module.exports = {
         });
     },
 
+    async loadElementsForCourseAsync(course) {
+        return promisify(module.exports.loadElementsForCourse)(course);
+    },
+
     /**
      * Takes a directory containing an extension directory and returns a new
      * object mapping element names to each extension, which itself an object
-     * that contains relevant extension scripts and styles. 
+     * that contains relevant extension scripts and styles.
      * @param  {String}   sourceDir Absolute path to the directory of extensions
-     * @param  {Function} callback  Called with any errors and the results
      */
-    loadExtensions(sourceDir, callback) {
-        async.waterfall([
-            (callback) => {
-                fs.readdir(sourceDir, (err, elements) => {
-                    if (err && err.code === 'ENOENT') {
-                        // We don't really care if there are no extensions, just return an empty array.
-                        return callback(null, []);
-                    }
-                    if (ERR(err, callback)) return;
-                    return callback(null, elements);
-                });
-            },
-            (elementFolders, callback) => {
-                /* Get extensions from each element folder.
-                   Each is stored as [ 'element name', 'extension name' ] */
-                async.map(elementFolders, (element, callback) => {
-                    fs.readdir(path.join(sourceDir, element), (err, extensions) => {
-                        if (ERR(err, callback)) return;
-                        return callback(null, extensions.map(ext => [element, ext]));
-                    });
-                }, callback);
-            },
-            (elementArrays, callback) => {
-                /* Flatten so we have one comprehensive single list  of all the extensions. */
-                callback(null, elementArrays.flat());
-            },
-            (extensions, callback) => {
-                const elements = {};
+    async loadExtensionsAsync(sourceDir) {
+        const readdir = promisify(fs.readdir);
+        const readJson = promisify(fs.readJson);
 
-                /* Populate element map */
-                extensions.forEach((extension) => {
-                    if (!(extension[0] in elements)) {
-                        elements[extension[0]] = {};
-                    }
-                });
+        /* Load each root element extension folder */
+        let elementFolders;
+        try {
+            elementFolders = await readdir(sourceDir);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                // We don't really care if there are no extensions, just return an empty array.
+                return [];
+            } else {
+                throw err;
+            }
+        }
 
-                /* Load extensions */
-                async.each(extensions, (extension, callback) => {
-                    const [element, extensionDir] = extension;
-                    const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
-                    fs.readJson(infoPath, (err, info) => {
-                        if (err && err.code === 'ENOENT') {
-                            /* Not an extension directory, skip it. */
-                            logger.verbose(`${infoPath} not found, skipping...`);
-                            return callback(null);
-                        }
-                        if (ERR(err, callback)) return;
+        /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
+        let elementArrays = await Promise.all(elementFolders.map(async element => {
+            const extensions = await readdir(path.join(sourceDir, element));
+            return extensions.map(ext => [element, ext]);
+        }));
+        elementArrays = elementArrays.flat();
 
-                        jsonLoader.validateJSON(info, schemas.infoElementExtension, (err) => {
-                            if (ERR(err, callback)) return;
-                            info.name = extensionDir;
-                            info.directory = path.join(sourceDir, element, extensionDir);
-                            elements[element][extensionDir] = info;
-                            callback(null);
-                        });
-                    });
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, elements);
-                });
-            },
-        ], (err, extensions) => {
-            if (ERR(err, callback)) return;
-            return callback(null, extensions);
+        /* Populate element map */
+        const elements = {};
+        elementArrays.forEach(extension => {
+            if (!(extension[0] in elements)) {
+                elements[extension[0]] = {};
+            }
         });
+
+        /* Load extensions */
+        await Promise.all(elementArrays.map(async extension => {
+            const [element, extensionDir] = extension;
+            const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
+
+            let info;
+            try {
+                info = await readJson(infoPath);
+            } catch (err) {
+                if (err.code === 'ENOENT') {
+                    /* Not an extension directory, skip it. */
+                    logger.verbose(`${infoPath} not found, skipping...`);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
+
+            await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+            info.name = extensionDir;
+            info.directory = path.join(sourceDir, element, extensionDir);
+            elements[element][extensionDir] = info;
+        }));
+
+        return elements;
     },
 
-    loadExtensionsForCourse(course, callback) {
+    async loadExtensionsForCourseAsync(course) {
         if (courseExtensionsCache[course.id] !== undefined &&
             courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
-            return callback(null, courseExtensionsCache[course.id].data);
+            return courseExtensionsCache[course.id].data;
         }
-        module.exports.loadExtensions(path.join(course.path, 'elementExtensions'), (err, extensions) => {
-            if (ERR(err, callback)) return;
-            courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
-            callback(null, extensions);
-        });
+
+        let extensions = await module.exports.loadExtensionsAsync(path.join(course.path, 'elementExtensions'));
+        courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
+        return extensions;
     },
 
     /**
@@ -266,14 +261,14 @@ module.exports = {
         }
         return dataCopy;
     },
-    
+
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
             const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
-            
+
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
@@ -985,17 +980,9 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         let panelCount = 0, cacheHitCount = 0;
-        let extensions = {};
         workers.getPythonCaller((err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
-                (callback) => {
-                    module.exports.loadExtensionsForCourse(course, (err, loaded_extensions) => {
-                        if (ERR(err, callback)) return;
-                        extensions = loaded_extensions;
-                        callback(null);
-                    });
-                },
                 // FIXME: support 'header'
                 (callback) => {
                     if (!renderSelection.question) return callback(null);
@@ -1051,6 +1038,7 @@ module.exports = {
                             return callback(new Error(`Error generating options: ${err}`));
                         }
 
+                        const extensions = context.course_element_extensions;
                         const dependencies = {
                             coreStyles: [],
                             coreScripts: [],
@@ -1148,7 +1136,7 @@ module.exports = {
                                     if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
                                         continue;
                                     }
-                                    
+
                                     const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
                                     if (_.has(extension, 'extensionStyles')) {
                                         extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extensionName}/${dep}`);
@@ -1414,25 +1402,24 @@ module.exports = {
     },
 
     getContext: function(question, course, callback) {
-        const context = {
-            question,
-            course,
-            course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
-            course_elements_dir: path.join(course.path, 'elements'),
-        };
-        /* Load elements and any extensions */
-        module.exports.loadElementsForCourse(course, (err, elements) => {
-            if (ERR(err, callback)) return;
+        callbackify(async () => {
+            const context = {
+                question,
+                course,
+                course_dir: course.path,
+                question_dir: path.join(course.path, 'questions', question.directory),
+                course_elements_dir: path.join(course.path, 'elements'),
+            };
+
+            /* Load elements and any extensions */
+            const elements = await module.exports.loadElementsForCourseAsync(course);
+            const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+
             context.course_elements = elements;
+            context.course_element_extensions = extensions;
 
-            module.exports.loadExtensionsForCourse(course, (err, extensions) => {
-                if (ERR(err, callback)) return;
-                context.course_element_extensions = extensions;
-
-                callback(null, context);
-            });
-        });
+            return context;
+        })(callback);
     },
 
     getCacheKey: function(course, data, context, callback) {
