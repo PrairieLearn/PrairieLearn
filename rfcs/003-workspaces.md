@@ -130,7 +130,7 @@ When the main server gets a request to this url, we'll first check if we have an
 
 #### A container has already been allocated on a host
 
-In this case, we can just proxy traffic directly to the appropriate host.
+In this case, the main server can just proxy traffic directly to the appropriate host.
 
 #### A container has not been allocated on a host
 
