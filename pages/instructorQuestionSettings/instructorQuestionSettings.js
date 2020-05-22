@@ -71,7 +71,7 @@ router.post('/', function(req, res, next) {
         let thumbnail_filename_new = req.body.filename;
         let filename_location_new = req.body.location;
         if (res.locals.question.filename_location == filename_location_new && res.locals.question.thumbnail_filename == thumbnail_filename_new) {
-            debug('The thumbnail information is the same as the old information - do nothgin');
+            debug('The thumbnail information is the same as the old information - do nothing');
             res.redirect(req.originalUrl);
         } else {
             const editor = new QuestionEditThumbnailEditor({

@@ -33,7 +33,7 @@
               <td>
                 <span class="mr-2"><%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.id}); %></span>
                 <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
-                  <button type="button" class="btn btn-xs btn-secondary mr-2" id="uploadThumbnail" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload Thumbnail" data-content="<%= include('../partials/uploadThumbnailForm', {id_label: 'QID', buttonID: 'uploadThumbnail', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                  <button type="button" class="btn btn-xs btn-secondary mr-2" id="uploadThumbnail" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload Thumbnail" data-content="<%= include('uploadThumbnailForm', {id_label: 'QID', buttonID: 'uploadThumbnail', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                       <i class="fa fa-upload"></i>
                       <span>Upload Thumbnail</span>
                   </button>

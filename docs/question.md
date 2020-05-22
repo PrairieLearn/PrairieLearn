@@ -63,51 +63,8 @@ Property | Type | Description
 `partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
 `externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
 `thumbnail` | object | Contains a filename and directory location of a thumbnail associated with this question. (Optional; default: none)
-`dependencies` | object | External JavaScript or CSS dependencies to load.  See below.  (Optional; default: `{}`)
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
-
-### Question Dependencies
-
-Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be de-duped and loaded onto the page.
-
-These dependencies are specified in the `info.json` file, and can be configured as follows:
-
-```json
-{
-    "dependencies": {
-        "coreScripts": [
-            "d3.min.js"
-        ],
-        "nodeModulesScripts": [
-            "three/build/three.min.js"
-        ],
-        "clientFilesQuestionScripts": [
-            "my-question-script.js"
-        ],
-        "clientFilesQuestionStyles": [
-            "my-question-style.css"
-        ],
-        "clientFilesCourseStyles": [
-            "courseStylesheet1.css",
-            "courseStylesheet2.css"
-        ]
-    }
-}
-```
-
-The different types of dependency properties available are summarized in this table:
-
-Property | Description
---- | ---
-`coreStyles` |  The styles required by this question, relative to `[PrairieLearn directory]/public/stylesheets`.
-`coreScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/public/javascripts`.
-`nodeModulesStyles` | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.
-`nodeModulesScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.
-`clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
-`clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
-`clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
-`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`. 
 
 ## Question `question.html`
 
@@ -200,9 +157,6 @@ def grade(data):
     # We can modify or delete any of these if we have a custom grading method.
     # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
 
-    # grade() can also set `data['format_errors'][NAME]` if there is any reason to mark the question
-    # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
-
     # As an example, we will give half points for incorrect answers larger than "x":
     if data["score"] == 0: # only if not already correct
         if data["submitted_answers"]["y"] > data["params"]["x"]:
@@ -261,7 +215,7 @@ In general, it is strongly recommended to leave partial credit enabled for all q
 
 ## The `thumbnail` image
 
-To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location.
+To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location. The location can be `question`, `clientFilesCourse`, or `public`. Thumbnails located in `question` will be stored in the question folder. Thumbnails located in the `clientFilesCourse` folder should be stored in `cilentFilesCourse/thumbnails`. Thumbnails located in `public` should be stored in `public/thumbnails`.
 
 Example:
 
