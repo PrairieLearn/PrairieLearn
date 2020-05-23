@@ -14,13 +14,13 @@ DECLARE
     girl_names text[] := ARRAY['Emily', 'Emma', 'Madison', 'Abigail', 'Olivia', 'Isabella', 'Hannah', 'Samantha', 'Ava', 'Ashley', 'Sophia', 'Elizabeth', 'Alexis', 'Grace', 'Sarah', 'Alyssa', 'Mia', 'Natalie', 'Chloe', 'Brianna', 'Lauren', 'Ella', 'Anna', 'Taylor', 'Kayla', 'Hailey', 'Jessica', 'Victoria', 'Jasmine', 'Sydney', 'Julia', 'Destiny', 'Morgan', 'Kaitlyn', 'Savannah', 'Katherine', 'Alexandra', 'Rachel', 'Lily', 'Megan', 'Kaylee', 'Jennifer', 'Angelina', 'Makayla', 'Allison', 'Brooke', 'Maria', 'Trinity', 'Lillian', 'Mackenzie', 'Faith', 'Sofia', 'Riley', 'Haley', 'Gabrielle', 'Nicole', 'Kylie', 'Katelyn', 'Zoe', 'Paige', 'Gabriella', 'Jenna', 'Kimberly', 'Stephanie', 'Alexa', 'Avery', 'Andrea', 'Leah', 'Madeline', 'Nevaeh', 'Evelyn', 'Maya', 'Mary', 'Michelle', 'Jada', 'Sara', 'Audrey', 'Brooklyn', 'Vanessa', 'Amanda', 'Ariana', 'Rebecca', 'Caroline', 'Amelia', 'Mariah', 'Jordan', 'Jocelyn', 'Arianna', 'Isabel', 'Marissa', 'Autumn', 'Melanie', 'Aaliyah', 'Gracie', 'Claire', 'Isabelle', 'Molly', 'Mya', 'Diana', 'Katie', 'Leslie', 'Amber', 'Danielle', 'Melissa', 'Sierra', 'Madelyn', 'Addison', 'Bailey', 'Catherine', 'Gianna', 'Amy', 'Erin', 'Jade', 'Angela', 'Gabriela', 'Jacqueline', 'Shelby', 'Kennedy', 'Lydia', 'Alondra', 'Adriana', 'Daniela', 'Natalia', 'Breanna', 'Kathryn', 'Briana', 'Ashlyn', 'Rylee', 'Eva', 'Kendall', 'Peyton', 'Ruby', 'Alexandria', 'Sophie', 'Charlotte', 'Reagan', 'Valeria', 'Christina', 'Summer', 'Kate', 'Mikayla', 'Naomi', 'Layla', 'Miranda', 'Laura', 'Ana', 'Angel', 'Alicia', 'Daisy', 'Ciara', 'Margaret', 'Aubrey', 'Zoey', 'Skylar', 'Genesis', 'Payton', 'Courtney', 'Kylee', 'Kiara', 'Alexia', 'Jillian', 'Lindsey', 'Mckenzie', 'Karen', 'Giselle', 'Mariana', 'Valerie', 'Sabrina', 'Alana', 'Serenity', 'Kelsey', 'Cheyenne', 'Juliana', 'Lucy', 'Kelly', 'Sadie', 'Bianca', 'Kyra', 'Nadia', 'Lilly', 'Caitlyn', 'Jasmin', 'Ellie', 'Hope', 'Cassandra', 'Jazmin', 'Crystal', 'Jordyn', 'Cassidy', 'Delaney', 'Liliana', 'Angelica', 'Caitlin', 'Kyla', 'Jayla', 'Adrianna', 'Tiffany', 'Abby', 'Carly', 'Chelsea', 'Camila', 'Erica', 'Makenzie', 'Karla', 'Cadence', 'Paris', 'Veronica', 'Mckenna', 'Brenda', 'Bella', 'Maggie', 'Karina', 'Esmeralda', 'Erika', 'Makenna', 'Julianna', 'Elena', 'Mallory', 'Jamie', 'Alejandra', 'Cynthia', 'Ariel', 'Vivian', 'Jayden', 'Amaya', 'Dakota', 'Elise', 'Haylee', 'Josephine', 'Aniyah', 'Bethany', 'Keira', 'Aliyah', 'Laila', 'Camryn', 'Fatima', 'Reese', 'Annabelle', 'Monica', 'Lindsay', 'Kira', 'Selena', 'Macy', 'Hanna', 'Heaven', 'Clara', 'Katrina', 'Jazmine', 'Jadyn', 'Stella'];
 
     first_names text[];
-
     status int;
     name text;
     email text;
     new_user users%rowtype;
+    i int := 1;
 BEGIN
-    FOR i IN 1..count LOOP
+    WHILE i <= count LOOP
 
         name := '';
         status := FLOOR(RANDOM() * 10);
@@ -33,25 +33,30 @@ BEGIN
 
         -- 20% chance they have multiple first names
         IF status >= 8 THEN
-            name = name || first_names[FLOOR((RANDOM()*ARRAY_LENGTH(first_names, 1)))::int] || ' ';
+            -- +1 because psql arrays are 1-index starting and random() goes 0 <= x < 1
+            name = name || first_names[FLOOR((RANDOM()*ARRAY_LENGTH(first_names, 1))+1)::int] || ' ';
         END IF;
 
-        name = name || first_names[FLOOR((RANDOM()*ARRAY_LENGTH(first_names, 1)))::int] || ' ';
-        name = name || surnames[FLOOR((RANDOM()*ARRAY_LENGTH(surnames, 1)))::int];
+        name = name || first_names[FLOOR((RANDOM()*ARRAY_LENGTH(first_names, 1))+1)::int] || ' ';
+        name = name || surnames[FLOOR((RANDOM()*ARRAY_LENGTH(surnames, 1))+1)::int];
 
         email = LOWER(name);
         email = REPLACE(email, ' ', '.') || '@example.com';
 
-        INSERT INTO users (name, uid) VALUES (name, email)
-        RETURNING * INTO new_user;
+        BEGIN
+          INSERT INTO users (name, uid) VALUES (name, email)
+          RETURNING * INTO new_user;
+        EXCEPTION WHEN unique_violation THEN
+          CONTINUE;
+        END;
 
         IF course_instance_id IS NOT NULL THEN
             INSERT INTO enrollments (user_id, course_instance_id, role)
                 VALUES (new_user.user_id, course_instance_id, 'Student');
         END IF;
 
+        i := i+1;
         RETURN NEXT new_user;
     END LOOP;
-    RAISE NOTICE 'Generated % users', count;
 END;
 $$ LANGUAGE plpgsql;
