@@ -29,10 +29,13 @@ BEGIN
     -- ######################################################################
     -- determine the "number" of the new assessment instance
     IF groupwork THEN
-        SELECT group_id
+        SELECT gu.group_id
         INTO  groupId
         FROM  group_users as gu
-        WHERE gu.user_id = assessment_instances_insert.user_id;
+        JOIN  groups AS g ON(g.id = gu.group_id)
+        JOIN  group_configs AS gc ON (gc.id = g.group_config_id)
+        WHERE gu.user_id = assessment_instances_insert.user_id AND
+        gc.assessment_id = assessment_instances_insert.assessment_id;
         
         IF assessment.multiple_instance THEN
             SELECT coalesce(max(ai.number), 0) + 1

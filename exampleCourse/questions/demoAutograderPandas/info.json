@@ -1,0 +1,20 @@
+{
+    "uuid": "F22EC735-A1EB-4816-AB4C-3DF908A62719",
+    "title": "Autograder demo: Grading Pandas DataFrames",
+    "topic": "Coding",
+    "tags": [
+        "v3",
+        "sp20",
+        "nnytko2",
+        "short-coding"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}
