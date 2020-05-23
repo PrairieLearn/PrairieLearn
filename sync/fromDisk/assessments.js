@@ -71,7 +71,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             groupwork: assessment.groupwork || false,
             groupmax: assessment.groupmax || 1,
             groupmin: assessment.groupmin || 1,
-            grouptype: assessment.grouptype || 0
+            grouptype: assessment.grouptype || 0,
         };
 
         const allowAccess = assessment.allowAccess || [];

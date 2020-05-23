@@ -6,8 +6,6 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const error = require('@prairielearn/prairielib/error');
 const groupUpdate = require('../../lib/group-update');
-const regrading = require('../../lib/regrading');
-const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -47,7 +45,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'copy_assessment_groups') {
         const params = [
             res.locals.assessment.id,
-            req.body.inputGroupSelect01
+            req.body.inputGroupSelect01,
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
             if (ERR(err, next)) return;
