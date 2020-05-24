@@ -46,6 +46,12 @@ describe('Question syncing', () => {
     assert.isOk(syncedTag);
     assert(syncedTag.description && syncedTag.description.length > 0, 'tag should not have empty description');
 
+    // Subsequent syncs with the same data should succeed as well
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedTags = await util.dumpTable('tags');
+    syncedTag = syncedTags.find(tag => tag.name === missingTagName);
+    assert.isOk(syncedTag);
+
     // When missing tags are no longer used in any questions, they should
     // be removed from the DB
     courseData.questions[util.QUESTION_ID].tags.pop();
@@ -67,12 +73,18 @@ describe('Question syncing', () => {
     assert.isOk(syncedTopic);
     assert(syncedTopic.description && syncedTopic.description.length > 0, 'tag should not have empty description');
 
+    // Subsequent syncs with the same data should succeed as well
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    syncedTopics = await util.dumpTable('topics');
+    syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
+    assert.isOk(syncedTopic);
+
     // When missing topics are no longer used in any questions, they should
     // be removed from the DB
     courseData.questions[util.QUESTION_ID].topic = originalTopicName;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTopics = await util.dumpTable('topics');
-    syncedTopic = syncedTopics.find(tag => tag.name === missingTopicName);
+    syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
     assert.isUndefined(syncedTopic);
   });
 
