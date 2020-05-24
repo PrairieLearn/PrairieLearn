@@ -172,7 +172,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * structure from it. Returns the path to the newly-created directory.
  * 
  * @param {CourseData} courseData - The course data to write to disk
- * @returns string - The path to the directory containing the course data
+ * @returns {Promise<string>} - The path to the directory containing the course data
  */
 module.exports.writeCourseToTempDirectory = async function(courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
@@ -394,7 +394,7 @@ module.exports.createAndSyncCourseData = async function() {
  * path to the directory.
  * 
  * @param {CourseData} courseData - The course data to write and sync
- * @returns {string} the path to the new temp directory
+ * @returns {Promise<string>} the path to the new temp directory
  */
 module.exports.writeAndSyncCourseData = async function(courseData) {
   const courseDir = await this.writeCourseToTempDirectory(courseData);

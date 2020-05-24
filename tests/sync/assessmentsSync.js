@@ -385,7 +385,7 @@ describe('Assessment syncing', () => {
     assert.match(syncedAssessment.sync_errors, /The following questions do not exist in this course: i do not exist/);
   });
 
-  it('fails if an assessment references a QID more than once', async () => {
+  it('records an error if an assessment references a QID more than once', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.zones.push({
@@ -402,6 +402,58 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(syncedAssessment.sync_errors, /The following questions are used more than once: test/);
+  });
+
+  it('records an error if real-time grading is disallowed on a homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.allowRealTimeGrading = false;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Real-time grading cannot be disabled for Homework-type assessments/);
+  });
+
+  it('records an error if points array is specified for a question when real-time grading is disallowed', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = false;
+    assessment.zones = [{
+      title: 'zone 1',
+      questions: [{
+        id: util.QUESTION_ID,
+        points: [5, 4, 3],
+      }, {
+        id: util.ALTERNATIVE_QUESTION_ID,
+        points: [10, 9, 8],
+      }],
+    }];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Cannot specify an array of points for a question/);
+  });
+
+  it('records an error if points array is specified for an alternative when real-time grading is disallowed', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = false;
+    assessment.zones = [{
+      title: 'zone 1',
+      questions: [{
+        points: [10, 9, 8],
+        alternatives: [{
+          id: util.QUESTION_ID,
+        }, {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: [5, 4, 3],
+        }],
+      }],
+    }];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Cannot specify an array of points for an alternative/);
   });
 
   it('records a warning if the same UUID is used multiple times in one course instance', async () => {
@@ -478,54 +530,5 @@ describe('Assessment syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('unused');
     assert.isNotNull(syncedAssessment.deleted_at);
-  });
-
-  it('fails if real-time grading is disallowed on a homework assessment', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData, 'Homework');
-    assessment.allowRealTimeGrading = false;
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /cannot disable real-time grading/);
-  });
-
-  it('fails if points array is specified for a question when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [{
-      title: 'zone 1',
-      questions: [{
-        id: util.QUESTION_ID,
-        points: [5, 4, 3],
-      }, {
-        id: util.ALTERNATIVE_QUESTION_ID,
-        points: [10, 9, 8],
-      }],
-    }];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /cannot specify an array of points/);
-  });
-
-  it('fails if points array is specified for an alternative when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [{
-      title: 'zone 1',
-      questions: [{
-        points: [10, 9, 8],
-        alternatives: [{
-          id: util.QUESTION_ID,
-        }, {
-          id: util.ALTERNATIVE_QUESTION_ID,
-          points: [5, 4, 3],
-        }],
-      }],
-    }];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await assert.isRejected(util.syncCourseData(courseDir), /cannot specify an array of points/);
   });
 });

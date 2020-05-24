@@ -211,6 +211,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} set
  * @property {string} number
  * @property {boolean} allowIssueReporting
+ * @property {boolean} allowRealTimeGrading
  * @property {boolean} multipleInstance
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
@@ -791,6 +792,13 @@ async function validateAssessment(assessment, questions) {
     const warnings = [];
     const errors = [];
 
+    // Because of how Homework-type assessments work, we don't allow
+    // real-time grading to be disabled for them.
+    const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
+    if (!allowRealTimeGrading && assessment.type === 'Homework') {
+        errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+    }
+
     // Check assessment access rules
     (assessment.allowAccess || []).forEach(rule => {
         const allowAccessErrors = checkAllowAccessDates(rule);
@@ -813,6 +821,9 @@ async function validateAssessment(assessment, questions) {
     };
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
+            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points)) {
+                errors.push(`Cannot specify an array of points for a question if real-time grading is disabled`);
+            }
             // We'll normalize either single questions or alternative groups
             // to make validation easier
             /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
@@ -821,10 +832,15 @@ async function validateAssessment(assessment, questions) {
                 errors.push('Cannot specify both "alternatives" and "id" in one question');
             } else if ('alternatives' in zoneQuestion) {
                 zoneQuestion.alternatives.forEach(alternative => checkAndRecordQid(alternative.id));
-                alternatives = zoneQuestion.alternatives.map(alternative => ({
-                    points: alternative.points || zoneQuestion.points,
-                    maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
-                }));
+                alternatives = zoneQuestion.alternatives.map(alternative => {
+                    if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
+                        errors.push(`Cannot specify an array of points for an alternative if real-time grading is disabled`);
+                    }
+                    return {
+                        points: alternative.points || zoneQuestion.points,
+                        maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+                    };
+                });
             } else if ('id' in zoneQuestion) {
                 checkAndRecordQid(zoneQuestion.id);
                 alternatives = [{
