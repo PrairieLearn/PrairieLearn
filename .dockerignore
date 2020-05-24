@@ -4,17 +4,20 @@
 # whitelist things to copy
 !.eslintignore
 !.eslintrc.json
+!admin_queries/
 !api/
 !cron/
 !database/
-!doc/
+!docs/
 !docker/
 !elements/
 !exampleCourse/
+!testCourse/
 !lib/
 !middlewares/
 !migrations/
 !models/
+!news_items/
 !package.json
 !package-lock.json
 !pages/

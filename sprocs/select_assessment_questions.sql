@@ -47,7 +47,7 @@ ag_numbered_assessment_questions AS (
         randomized_assessment_questions AS aq
 ),
 -- Now we actually choose the questions in each alternative_group.
-ag_chosen_asssesment_questions AS (
+ag_chosen_assessment_questions AS (
     SELECT
         aq.*
     FROM
@@ -72,7 +72,7 @@ z_numbered_assessment_questions AS (
         aq.*,
         (row_number() OVER (PARTITION BY z.id ORDER BY aq.ag_row_number, aq.existing_order, aq.z_rand, aq.id)) AS z_row_number
     FROM
-        ag_chosen_asssesment_questions AS aq
+        ag_chosen_assessment_questions AS aq
         JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
         JOIN zones AS z ON (z.id = ag.zone_id)
 ),

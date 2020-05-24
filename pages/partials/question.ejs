@@ -34,18 +34,18 @@
         <pre class="bg-dark text-white rounded p-3"><%= issue.system_data.courseErrData.outputBoth %></pre>
         <% } %>
       <p><strong>Associated data:</strong>
-        <a class="btn btn-xs btn-secondary" role="button" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
+        <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
           Show/hide
-        </a>
+        </button>
       </p>
       <div class="collapse" id="issue-course-data-<%= iIssue %>">
         <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
       </div>
       <% if (is_administrator) { %>
       <p><strong>System data:</strong>
-        <a class="btn btn-xs btn-secondary" role="button" data-toggle="collapse" href="#issue-system-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-system-data-<%= iIssue %>">
+        <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-system-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-system-data-<%= iIssue %>">
           Show/hide
-        </a>
+        </button>
       </p>
       <div class="collapse" id="issue-system-data-<%= iIssue %>">
         <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.system_data, null, '    ') %></pre>

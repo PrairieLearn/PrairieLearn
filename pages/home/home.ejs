@@ -64,7 +64,7 @@
           <% } else { %>
           Courses
           <% } %>
-          <% if (authn_user.provider !== 'lti') { %>
+          <% if (authn_provider_name !== 'LTI') { %>
           <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
             <i class="fa fa-edit" aria-hidden="true"></i>
             <span class="d-none d-sm-inline">Add or remove courses</span>

@@ -150,6 +150,8 @@ BEGIN
             assessment_set_id = aggregates.assessment_set_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
+            allow_real_time_grading = (valid_assessment.data=>>'allow_real_time_grading')::boolean,
+            require_honor_code = (valid_assessment.data=>>'require_honor_code')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -180,7 +182,8 @@ BEGIN
                 seb_config,
                 exam_uuid,
                 start_date,
-                end_date)
+                end_date,
+                show_closed_assessment)
             (
                 SELECT
                     new_assessment_id,
@@ -188,13 +191,14 @@ BEGIN
                     (access_rule->>'mode')::enum_mode,
                     (access_rule->>'role')::enum_role,
                     (access_rule->>'credit')::integer,
-                    (SELECT ARRAY_AGG(uids)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(access_rule->>'uids', '[]')::jsonb) uids)::text[],
+                    jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
                     access_rule->>'password',
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago'))
+                    (access_rule->>'show_closed_assessment')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -213,7 +217,8 @@ BEGIN
                 uids = EXCLUDED.uids,
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
-                end_date = EXCLUDED.end_date;
+                end_date = EXCLUDED.end_date,
+                show_closed_assessment = EXCLUDED.show_closed_assessment;
         END LOOP;
 
         -- Delete excess access rules
@@ -284,7 +289,7 @@ BEGIN
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
                         (assessment_question->>'init_points')::double precision,
-                        (SELECT ARRAY_AGG(points)::double precision[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(assessment_question->>'points_list', '[]')::jsonb) points)::double precision[],
+                        jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         NULL,

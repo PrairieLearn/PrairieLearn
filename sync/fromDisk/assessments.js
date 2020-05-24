@@ -46,9 +46,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     if (infofile.hasErrors(assessmentInfoFile)) return null;
     const assessment = assessmentInfoFile.data;
 
-    // issue reporting defaults to true, then to the courseInstance setting, then to the assessment setting
-    let allowIssueReporting = true;
-    if (_.has(assessment, 'allowIssueReporting')) allowIssueReporting = !!assessment.allowIssueReporting;
+    const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
+    const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
+    const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+
     const assessmentParams = {
         type: assessment.type,
         number: assessment.number,
@@ -56,11 +57,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         multiple_instance: assessment.multipleInstance ? true : false,
         shuffle_questions: assessment.shuffleQuestions ? true : false,
         allow_issue_reporting: allowIssueReporting,
-        auto_close: _.has(assessment, 'autoClose') ? assessment.autoClose : true,
+        allow_real_time_grading: allowRealTimeGrading,
+        require_honor_code: requireHonorCode,
+        auto_close: !!_.get(assessment, 'autoClose', true),
         max_points: assessment.maxPoints,
         set_name: assessment.set,
         text: assessment.text,
-        constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
+        constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
     };
 
     const allowAccess = assessment.allowAccess || [];
@@ -77,6 +80,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             password: _(accessRule).has('password') ? accessRule.password : null,
             seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
             exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+            show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
         };
     });
 

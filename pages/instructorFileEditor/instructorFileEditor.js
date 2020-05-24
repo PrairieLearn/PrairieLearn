@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
@@ -8,7 +7,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const fs = require('fs-extra');
 const path = require('path');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
 const logger = require('../../lib/logger');
@@ -22,29 +21,37 @@ const editorUtil = require('../../lib/editorUtil');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
+const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { decodePath } = require('../../lib/uri-util');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/instructorFileEditorClient.js', (req, res) => {
-    debug('Responding to request for /instructorFileEditorClient.js');
-    res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
-});
-
-router.get('/', (req, res, next) => {
+router.get('/*', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
 
-    if (_.isEmpty(req.query)) {
-        return next(error.make(400, 'no query', {
-            locals: res.locals,
-            body: req.body,
-        }));
+    let workingPath;
+    if (req.params[0]) {
+        try {
+            workingPath = decodePath(req.params[0]);
+        } catch(err) {
+            return next(new Error(`Invalid path: ${req.params[0]}`));
+        }
+    } else {
+        return next(new Error(`No path`));
     }
 
-    if (!('file' in req.query)) {
-        return next(error.make(400, 'no file in query', {
-            locals: res.locals,
-            body: req.body,
-        }));
+    // This is a hack because we do not have a standard for how to serve
+    // page-specific client-side code. I would normally have done this with
+    // a route parameter, but all routes are being mapped to file paths, so
+    // I am using a query string instead.
+    if (req.query.serve) {
+        if (req.query.serve == 'client') {
+            debug('Responding to request for /instructorFileEditorClient.js');
+            res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
+            return;
+        } else {
+            return next(new Error(`Invalid query: serve=${req.query.serve}`));
+        }
     }
 
     let fileEdit = {
@@ -52,25 +59,38 @@ router.get('/', (req, res, next) => {
         userID: res.locals.user.user_id,
         courseID: res.locals.course.id,
         coursePath: res.locals.course.path,
-        dirName: path.dirname(req.query.file),
-        fileName: path.basename(req.query.file),
-        fileNameForDisplay: path.normalize(req.query.file),
+        dirName: path.dirname(workingPath),
+        fileName: path.basename(workingPath),
+        fileNameForDisplay: path.normalize(workingPath),
     };
 
-    const ext = path.extname(req.query.file);
-    if (ext == '.json') {
-        fileEdit.aceMode = 'json';
-    } else if (ext == '.html') {
-        fileEdit.aceMode = 'html';
-    } else if (ext == '.py') {
-        fileEdit.aceMode = 'python';
+    const ext = path.extname(workingPath);
+    // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
+    const extensionModeMap = {
+            '.json': 'json',
+            '.html': 'html',
+            '.py': 'python',
+            '.txt': 'text',
+            '.md': 'markdown',
+            '.mustache': 'text',
+            '.css': 'css',
+            '.csv': 'text',
+            '.js': 'javascript',
+            '.m': 'matlab',
+            '.c': 'c_cpp',
+            '.cpp': 'c_cpp',
+            '.h': 'c_cpp',
+    };
+    const fileEditMode = extensionModeMap[ext];
+    if (fileEditMode) {
+        fileEdit.aceMode = fileEditMode;
     } else {
         debug(`Could not find an ace mode to match extension: ${ext}`);
     }
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -81,13 +101,13 @@ router.get('/', (req, res, next) => {
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
     if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
-        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
     }
 
-    async.series([
+    async.waterfall([
         (callback) => {
             debug('Read from db');
             readEdit(fileEdit, (err) => {
@@ -97,11 +117,26 @@ router.get('/', (req, res, next) => {
         },
         (callback) => {
             debug('Read from disk');
-            fs.readFile(fullPath, 'utf8', (err, contents) => {
+            fs.readFile(fullPath, (err, contents) => {
                 if (ERR(err, callback)) return;
-                fileEdit.diskContents = b64Util.b64EncodeUnicode(contents);
+                fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
                 fileEdit.diskHash = getHash(fileEdit.diskContents);
-                callback(null);
+                callback(null, contents);
+            });
+        },
+        (contents, callback) => {
+            isBinaryFile(contents).then((result) => {
+                debug(`isBinaryFile: ${result}`);
+                if (result) {
+                    debug('found a binary file');
+                    callback(new Error('Cannot edit binary file'));
+                } else {
+                    debug('found a text file');
+                    callback(null);
+                }
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null); // should never get here
             });
         },
         (callback) => {
@@ -164,9 +199,20 @@ router.get('/', (req, res, next) => {
     });
 });
 
-router.post('/', (req, res, next) => {
+router.post('/*', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
+
+    let workingPath;
+    if (req.params[0]) {
+        try {
+            workingPath = decodePath(req.params[0]);
+        } catch(err) {
+            return next(new Error(`Invalid path: ${req.params[0]}`));
+        }
+    } else {
+        return next(new Error(`No path`));
+    }
 
     let fileEdit = {
         userID: res.locals.user.user_id,
@@ -182,7 +228,7 @@ router.post('/', (req, res, next) => {
 
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.options.isExampleCourse) {
-        return next(error.make(400, `attempting to edit file inside example course: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -193,7 +239,7 @@ router.post('/', (req, res, next) => {
     const relPath = path.relative(fileEdit.coursePath, fullPath);
     debug(`Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`);
     if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
-        return next(error.make(400, `attempting to edit file outside course directory: ${req.query.file}`, {
+        return next(error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
         }));
@@ -207,7 +253,7 @@ router.post('/', (req, res, next) => {
         // and origHash are the same. We will treat this is a catastrophic error.
         fileEdit.editHash = getHash(fileEdit.editContents);
         if (fileEdit.editHash == fileEdit.origHash) {
-            return next(error.make(400, `attempting to save a file without having made any changes: ${req.query.file}`, {
+            return next(error.make(400, `attempting to save a file without having made any changes: ${workingPath}`, {
                 locals: res.locals,
                 body: req.body,
             }));
@@ -215,6 +261,23 @@ router.post('/', (req, res, next) => {
 
         // Whether or not to pull from remote git repo before proceeding to save and sync
         fileEdit.doPull = (req.body.__action == 'pull_and_save_and_sync');
+
+        if (res.locals.navPage == 'course_admin') {
+            const rootPath = res.locals.course.path;
+            fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'instance_admin') {
+            const rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'assessment') {
+            const rootPath = path.join(res.locals.course.path, 'courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else if (res.locals.navPage == 'question') {
+            const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
+            fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(rootPath, fullPath)}`;
+        } else {
+            const rootPath = res.locals.course.path;
+            fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
+        }
 
         async.series([
             (callback) => {
@@ -611,7 +674,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _pullFromRemoteHash = () => {
             debug(`${job_sequence_id}: _pullFromRemoteHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 _checkHash();
             });
         };
@@ -738,7 +801,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 arguments: [
                     '-c', `user.name="${fileEdit.user_name}"`,
                     '-c', `user.email="${fileEdit.uid}"`,
-                    'commit', '-m', `in-browser change to ${fileEdit.fileName}`,
+                    'commit', '-m', fileEdit.commitMessage,
                 ],
                 working_directory: fileEdit.coursePath,
                 env: gitEnv,
@@ -833,7 +896,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _updateCommitHash = () => {
             debug(`${job_sequence_id}: _updateCommitHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 if (fileEdit.needToSync) {
                     _syncFromDisk();
                 } else {

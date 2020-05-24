@@ -12,6 +12,7 @@ WITH issue_count AS (
 )
 SELECT
     q.*,
+    case when q.type = 'Freeform' then 'v3' else 'v2 (' || q.type || ')' end AS display_type,
     coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
     row_to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
@@ -21,11 +22,7 @@ FROM
     JOIN topics AS top ON (top.id = q.topic_id)
     LEFT JOIN issue_count ON (issue_count.question_id = q.id)
 WHERE
-    q.course_id IN (
-        SELECT ci.course_id
-        FROM course_instances AS ci
-        WHERE ci.id = $course_instance_id
-    )
+    q.course_id = $course_id
     AND q.deleted_at IS NULL
 GROUP BY q.id, top.id, issue_count.open_issue_count
 ORDER BY top.number, q.title;
@@ -43,3 +40,13 @@ JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE a.course_instance_id = $course_instance_id
 AND a.deleted_at IS NULL
 ORDER BY aset.number,a.number;
+
+-- BLOCK select_question_id_from_uuid
+SELECT
+    q.id AS question_id
+FROM
+    questions AS q
+WHERE
+    q.uuid = $uuid
+    AND q.course_id = $course_id
+    AND q.deleted_at IS NULL;

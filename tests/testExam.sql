@@ -25,5 +25,17 @@ FROM
 WHERE
     a.id = aq.assessment_id
     AND q.id = aq.question_id
-    AND a.tid = 'exam1'
+    AND a.tid = 'exam1-automaticTestSuite'
     AND q.qid = 'addVectors';
+
+-- BLOCK select_submissions_by_qid
+SELECT s.*
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+    q.qid = $qid
+ORDER BY s.date;

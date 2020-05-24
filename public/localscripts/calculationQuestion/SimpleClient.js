@@ -144,7 +144,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             }
             this.checkSubmittable();
             if (window.MathJax)
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+                MathJax.typesetPromise();
             this.trigger("renderFinished");
         },
 

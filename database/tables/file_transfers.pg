@@ -1,0 +1,19 @@
+columns
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
+    from_course_id: bigint not null
+    from_filename: text not null
+    id: bigint not null default nextval('file_transfers_id_seq'::regclass)
+    storage_filename: text not null
+    to_course_id: bigint not null
+    transfer_type: enum_transfer_type not null
+    user_id: bigint not null
+
+indexes
+    file_transfers_pkey: PRIMARY KEY (id) USING btree (id)
+    file_transfers_storage_filename_key: UNIQUE (storage_filename) USING btree (storage_filename)
+
+foreign-key constraints
+    file_transfers_from_course_id_fkey: FOREIGN KEY (from_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_transfers_to_course_id_fkey: FOREIGN KEY (to_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_transfers_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

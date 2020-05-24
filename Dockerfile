@@ -12,14 +12,14 @@ COPY . /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
 RUN chmod +x /PrairieLearn/docker/init.sh \
-    && mv /PrairieLearn/docker/config.json /PrairieLearn \
-    && mkdir /course \
+    && mkdir /course{,{2..9}} \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && node server.js --migrate-and-exit \
     && su postgres -c "createuser root" \
     && su postgres -c 'psql -c "alter user root with superuser;"' \
-    && /PrairieLearn/docker/start_postgres.sh stop
+    && /PrairieLearn/docker/start_postgres.sh stop \
+    && /PrairieLearn/docker/gen_ssl.sh
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD /PrairieLearn/docker/init.sh

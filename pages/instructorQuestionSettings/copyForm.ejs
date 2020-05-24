@@ -1,0 +1,51 @@
+<form name="copy-question-form" class="needs-validation" method="POST" novalidate>
+  <input type="hidden" name="__action" value="copy_question">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <div class="form-group">
+    <label for="to-course-id-select">The copied question will be added to the following course:</label>
+    <select class="form-control" id="to-course-id-select" name="to_course_id" required>
+      <% if (course.options.isExampleCourse) { %>
+      <option hidden disabled selected value> -- select a course -- </option>
+      <% } %>
+      <% courses.forEach((c) => { %>
+        <% if (! c.options.isExampleCourse) { // cannot copy to example course %>
+        <option value="<%= c.id %>" <% if (c.id == course.id) { %>selected<% } %>><%= c.short_name %></option>
+        <% } %>
+      <% }); %>
+    </select>
+    <div class="invalid-feedback" id="invalidIdMessage">
+    </div>
+  </div>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= buttonID %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </div>
+</form>
+
+<script>
+    $(function() {
+        const validateCourse = function() {
+            let element = $('select[name="to_course_id"]');
+            let elementDOM = element.get(0);
+
+            elementDOM.setCustomValidity('');
+            if (elementDOM.validity.valueMissing) {
+                $('#invalidIdMessage').text('Please choose a course');
+            } else {
+                $('#invalidIdMessage').text('');
+            }
+        }
+
+        $('input[name="to_course_id"]').on('input', validateCourse);
+        $('input[name="to_course_id"]').on('change', validateCourse);
+
+        $('form[name="copy-question-form"]').submit(function(event) {
+            validateCourse();
+            if ($(this).get(0).checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            $(this).addClass('was-validated');
+        });
+    });
+</script>

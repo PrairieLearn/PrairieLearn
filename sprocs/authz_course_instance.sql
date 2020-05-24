@@ -19,7 +19,7 @@ BEGIN
     WHERE
         u.user_id = authz_course_instance.user_id
         AND e.course_instance_id = authz_course_instance.course_instance_id
-        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, req_date);
+        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, u.institution_id, req_date);
 
     IF NOT FOUND THEN
         role := 'None';

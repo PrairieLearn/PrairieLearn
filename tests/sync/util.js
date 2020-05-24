@@ -47,7 +47,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
-/** @typedef {"UIUC" | "ZJUI" | "LTI" | "Any"} Institution */
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
@@ -55,7 +54,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]=} uids
  * @property {string=} startDate
  * @property {string=} endDate
- * @property {Institution=} institution
+ * @property {string=} institution
  */
 
 /**
@@ -126,6 +125,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} set
  * @property {string} number
  * @property {boolean} allowIssueReporting
+ * @property {boolean} allowRealTimeGrading
+ * @property {boolean} requireHonorCode
  * @property {boolean} multipleInstance
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess

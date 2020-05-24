@@ -120,6 +120,7 @@ BEGIN
         external_grading_entrypoint = dq.data->>'external_grading_entrypoint',
         external_grading_timeout = (dq.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (dq.data->>'external_grading_enable_networking')::boolean,
+        dependencies = (dq.data->>'dependencies')::jsonb,
         sync_errors = NULL,
         sync_warnings = dq.warnings
     FROM

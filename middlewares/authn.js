@@ -2,7 +2,6 @@ var ERR = require('async-stacktrace');
 
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
-var logger = require('../lib/logger');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -10,6 +9,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     res.locals.is_administrator = false;
+    res.locals.news_item_notification_count = 0;
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -35,15 +35,17 @@ module.exports = function(req, res, next) {
             return next(new Error('invalid load_test_token'));
         }
 
-        let params = {
-            uid: 'loadtest@prairielearn.org',
-            name: 'Load Test',
-            uin: '999999999',
-            provider: 'dev',
-        };
-        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+        let params = [
+            'loadtest@prairielearn.org',
+            'Load Test',
+            '999999999',
+            'dev',
+        ];
+        sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
             res.locals.authn_user = result.rows[0].user;
+            res.locals.authn_institution = result.rows[0].institution;
+            res.locals.authn_provider_name = 'LoadTest';
             res.locals.is_administrator = result.rows[0].is_administrator;
 
             let params = {
@@ -60,26 +62,36 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        var authUid = 'dev@illinois.edu';
-        var authName = 'Dev User';
-        var authUin = '000000000';
-
+        var authUid = config.authUid;
+        var authName = config.authName;
+        var authUin = config.authUin;
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
             authUin = '000000001';
         }
-        let params = {
-            uid: authUid,
-            name: authName,
-            uin: authUin,
-            provider: 'dev',
-        };
-        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+        let params = [
+            authUid,
+            authName,
+            authUin,
+            'dev',
+        ];
+        sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.is_administrator = result.rows[0].is_administrator;
-            next();
+
+            let params = {
+                user_id: result.rows[0].user_id,
+            };
+            sqldb.query(sql.select_user, params, (err, result) => {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
+                res.locals.authn_user = result.rows[0].user;
+                res.locals.authn_institution = result.rows[0].institution;
+                res.locals.authn_provider_name = 'Local';
+                res.locals.is_administrator = result.rows[0].is_administrator;
+                res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
+                next();
+            });
         });
         return;
     }
@@ -92,9 +104,8 @@ module.exports = function(req, res, next) {
         return;
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
-    if (authnData == null) {
-        // if CSRF checking failed then clear the cookie and redirect to login
-        logger.error('authn cookie CSRF failure');
+    if (authnData == null || authnData.authn_provider_name == null) { // force re-authn if authn_provider_name is missing (for upgrade)
+        // if authn cookie check failed then clear the cookie and redirect to login
         res.clearCookie('pl_authn');
         res.redirect('/pl/login');
         return;
@@ -107,7 +118,10 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
+        res.locals.authn_institution = result.rows[0].institution;
+        res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
+        res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
         next();
     });
 };

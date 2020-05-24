@@ -7,7 +7,7 @@ var csrf = require('../../lib/csrf');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 
 router.get('/:action?/:target(*)?', function(req, res, next) {
-    if (!config.hasShib) return next(new Error('Illinois Shibboleth login is not enabled'));
+    if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
     var authUid = null;
     var authName = null;
     var authUin = null;
@@ -17,18 +17,20 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
     if (!authUid) return next(new Error('No authUid'));
 
     // catch bad Shibboleth data
-    if (authUid == '(null)') return next(new Error('authUid is (null)'));
+    const authError = 'Your account is not registered for this service. Please contact your course instructor or IT support.';
+    if (authUid == '(null)') return next(new Error(authError));
 
     var params = [
         authUid,
         authName,
         authUin,
-        'shibboleth',
+        'Shibboleth',
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
         if (ERR(err, next)) return;
         var tokenData = {
             user_id: result.rows[0].user_id,
+            authn_provider_name: 'Shibboleth',
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});

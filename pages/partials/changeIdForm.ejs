@@ -1,0 +1,62 @@
+<form name="change-id-form" class="needs-validation" method="POST" novalidate>
+    <input type="hidden" name="__action" value="change_id">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <div class="container p-0 mb-4">
+      Use only letters, numbers, dashes, and underscores, with no spaces. <% if (locals.changeIdFormHelpText) { %><%- changeIdFormHelpText %><% } %>
+    </div>
+    <div class="form-group">
+        <label for="changeIdInput"><%= id_label %>:</label>
+        <input type="text" class="form-control" id="changeIdInput" name="id" value="<%= id_old %>" pattern="[-A-Za-z0-9_]+" required>
+        <div class="invalid-feedback" id="invalidIdMessage">
+        </div>
+    </div>
+    <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#<%= buttonID %>').popover('hide')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change</button>
+    </div>
+</form>
+
+<script>
+    $(function() {
+        const validateId = function() {
+            let element = $('input[name="id"]');
+            let elementDOM = element.get(0);
+            let id_new = $(element).val();
+
+            if (id_new === "<%= id_old %>") {
+                elementDOM.setCustomValidity('Must be changed');
+                $('#invalidIdMessage').text('Must be changed');
+                return;
+            }
+
+            <% ids.forEach(function(id) { %>
+                if (id_new === "<%= id %>") {
+                    elementDOM.setCustomValidity('Must be unique');
+                    $('#invalidIdMessage').text('Must be unique');
+                    return;
+                }
+            <% }); %>
+
+            elementDOM.setCustomValidity('');
+            if (elementDOM.validity.patternMismatch) {
+                $('#invalidIdMessage').text('Please match required format.');
+            } else if (elementDOM.validity.valueMissing) {
+                $('#invalidIdMessage').text('Please choose <%= id_label %>');
+            } else {
+                $('#invalidIdMessage').text('');
+            }
+        }
+
+        $('input[name="id"]').on('input', validateId);
+        $('input[name="id"]').on('change', validateId);
+
+        $('form[name="change-id-form"]').submit(function(event) {
+            validateId();
+            if ($(this).get(0).checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            $(this).addClass('was-validated');
+        });
+    });
+</script>

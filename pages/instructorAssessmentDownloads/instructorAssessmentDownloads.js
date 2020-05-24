@@ -27,9 +27,11 @@ const setFilenames = function(locals) {
     locals.instancesCsvFilename = prefix + 'instances.csv';
     locals.instancesAllCsvFilename = prefix + 'instances_all.csv';
     locals.instanceQuestionsCsvFilename = prefix + 'instance_questions.csv';
+    locals.submissionsForManualGradingCsvFilename = prefix + 'submissions_for_manual_grading.csv';
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
+    locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
     locals.finalFilesZipFilename = prefix + 'final_files.zip';
     locals.bestFilesZipFilename = prefix + 'best_files.zip';
     locals.allFilesZipFilename = prefix + 'all_files.zip';
@@ -65,6 +67,7 @@ router.get('/:filename', function(req, res, next) {
     var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
     var scoresColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         [assessmentName, 'score_perc'],
     ];
     var scoresByUsernameColumns = [
@@ -73,6 +76,7 @@ router.get('/:filename', function(req, res, next) {
     ];
     var pointsColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         [assessmentName, 'points'],
     ];
     var pointsByUsernameColumns = [
@@ -81,6 +85,7 @@ router.get('/:filename', function(req, res, next) {
     ];
     var instancesColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         ['Username', 'username'],
         ['Name', 'name'],
         ['Role', 'role'],
@@ -143,6 +148,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['UID', 'uid'],
+                ['UIN', 'uin'],
                 ['Name', 'name'],
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
@@ -157,6 +163,30 @@ router.get('/:filename', function(req, res, next) {
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
                 ['Duration seconds', 'duration_seconds'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.submissionsForManualGradingCsvFilename) {
+        let params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.submissions_for_manual_grading, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['uid', 'uid'],
+                ['UIN', 'uin'],
+                ['qid', 'qid'],
+                ['old_score_perc', 'old_score_perc'],
+                ['submission_id', 'submission_id'],
+                ['params', 'params'],
+                ['true_answer', 'true_answer'],
+                ['submitted_answer', 'submitted_answer'],
+                ['score_perc', null],
+                ['feedback', null],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
@@ -180,6 +210,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['UID', 'uid'],
+                ['UIN', 'uin'],
                 ['Name', 'name'],
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
@@ -191,6 +222,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Params', 'params'],
                 ['True answer', 'true_answer'],
                 ['Options', 'options'],
+                ['submission_id', 'submission_id'],
                 ['Submission date', 'submission_date_formatted'],
                 ['Submitted answer', 'submitted_answer'],
                 ['Override score', 'override_score'],
@@ -210,6 +242,26 @@ router.get('/:filename', function(req, res, next) {
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
+        });
+    } else if (req.params.filename == res.locals.filesForManualGradingZipFilename) {
+        const params = {
+            assessment_id: res.locals.assessment.id,
+            limit: 100,
+        };
+
+        const archive = archiver('zip');
+        const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+        const prefix = `${dirname}/`;
+        archive.append(null, { name: prefix });
+        res.attachment(req.params.filename);
+        archive.pipe(res);
+        paginateQuery(sql.files_for_manual_grading, params, (row, callback) => {
+            const contents = (row.contents != null) ? row.contents : '';
+            archive.append(contents, { name: prefix + row.filename });
+            callback(null);
+        }, (err) => {
+            if (ERR(err, next)) return;
+            archive.finalize();
         });
     } else if (req.params.filename == res.locals.allFilesZipFilename
                || req.params.filename == res.locals.finalFilesZipFilename
@@ -232,7 +284,8 @@ router.get('/:filename', function(req, res, next) {
         res.attachment(req.params.filename);
         archive.pipe(res);
         paginateQuery(sql.assessment_instance_files, params, (row, callback) => {
-            archive.append(row.contents, { name: prefix + row.filename });
+            const contents = (row.contents != null) ? row.contents : '';
+            archive.append(contents, { name: prefix + row.filename });
             callback(null);
         }, (err) => {
             if (ERR(err, next)) return;

@@ -28,7 +28,9 @@ def download_course_instance(args, logfile):
     assessments = get_and_save_json(f'{course_instance_path}/assessments', 'assessments', args, logfile)
     for assessment in assessments:
         assessment_instances = get_and_save_json(f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_instances', f'assessment_{assessment["assessment_id"]}_assessment_instances', args, logfile)
+        assessment_access_rules = get_and_save_json(f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_access_rules', f'assessment_{assessment["assessment_id"]}_assessment_access_rules', args, logfile)
         for assessment_instance in assessment_instances:
+            instance_questions = get_and_save_json(f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/instance_questions', f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions', args, logfile)
             submissions = get_and_save_json(f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/submissions', f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions', args, logfile)
     end_time = time.time()
     log(logfile, f'successfully completed downloaded at {local_iso_time()}')

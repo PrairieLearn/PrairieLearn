@@ -1,7 +1,7 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.uin, u.name, coalesce(e.role, 'None'::enum_role) AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -26,11 +26,13 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.user_id, ai.number, ai.id;
+    e.role DESC, u.uid, u.uin, u.user_id, ai.number, ai.id;
+
 
 -- BLOCK select_instance_questions
 SELECT
     u.uid,
+    u.uin,
     u.name,
     e.role,
     (aset.name || ' ' || a.number) AS assessment_label,
@@ -58,12 +60,45 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    u.uid, ai.number, q.qid, iq.number, iq.id;
+    u.uid, u.uin, ai.number, q.qid, iq.number, iq.id;
+
+
+-- BLOCK submissions_for_manual_grading
+WITH final_assessment_instances AS (
+    SELECT DISTINCT ON (u.user_id)
+        u.user_id,
+        ai.id
+    FROM
+        assessment_instances AS ai
+        JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE ai.assessment_id = $assessment_id
+    ORDER BY u.user_id, ai.number DESC
+)
+SELECT DISTINCT ON (ai.id, q.qid)
+    u.uid,
+    u.uin,
+    q.qid,
+    iq.score_perc AS old_score_perc,
+    s.id AS submission_id,
+    v.params,
+    v.true_answer,
+    (s.submitted_answer - '_files') AS submitted_answer
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+ORDER BY ai.id, q.qid, s.date DESC;
+
 
 -- BLOCK assessment_instance_submissions
 WITH all_submissions AS (
     SELECT
         u.uid,
+        u.uin,
         u.name,
         e.role,
         (aset.name || ' ' || a.number) AS assessment_label,
@@ -79,6 +114,7 @@ WITH all_submissions AS (
         v.true_answer,
         v.options,
         s.date,
+        s.id AS submission_id,
         format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
         s.submitted_answer,
         s.override_score,
@@ -118,11 +154,91 @@ ORDER BY
     uid, assessment_instance_number, qid, instance_question_number, variant_number, date;
 
 
+-- BLOCK files_for_manual_grading
+WITH
+final_assessment_instances AS (
+    SELECT DISTINCT ON (u.user_id)
+        u.user_id,
+        ai.id
+    FROM
+        assessment_instances AS ai
+        JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE ai.assessment_id = $assessment_id
+    ORDER BY u.user_id, ai.number DESC
+),
+submissions_with_files AS (
+    SELECT DISTINCT ON (ai.id, q.qid)
+        u.uid,
+        u.uin,
+        q.qid,
+        s.id AS submission_id,
+        s.submitted_answer,
+        v.params
+    FROM
+        submissions AS s
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+    WHERE
+        (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
+        OR (s.submitted_answer ? '_files')
+    ORDER BY ai.id, q.qid, s.date DESC
+),
+all_files AS (
+    SELECT
+        uid,
+        uin,
+        qid,
+        submission_id,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
+            WHEN submitted_answer ? '_files' THEN f.file->>'name'
+        END) as filename,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN submitted_answer->>'fileData'
+            WHEN submitted_answer ? '_files' THEN f.file->>'contents'
+        END) as contents
+    FROM
+        submissions_with_files AS s
+        LEFT JOIN (
+            SELECT
+                submission_id AS id,
+                jsonb_array_elements(submitted_answer->'_files') AS file
+            FROM submissions_with_files
+            WHERE submitted_answer ? '_files'
+        ) f ON (f.id = submission_id)
+)
+SELECT
+    (
+        uid
+        || '_' || uin
+        || '_' || qid
+        || '_' || submission_id
+        || '_' || filename
+    ) AS filename,
+    base64_safe_decode(contents) AS contents
+FROM
+    all_files
+WHERE
+    filename IS NOT NULL
+    AND contents IS NOT NULL
+ORDER BY
+    uid, uin, qid, filename, submission_id
+LIMIT
+    $limit
+OFFSET
+    $offset;
+
+
 -- BLOCK assessment_instance_files
 WITH all_submissions_with_files AS (
     SELECT
         s.id AS submission_id,
         u.uid,
+        u.uin,
         ai.number AS assessment_instance_number,
         q.qid,
         v.number AS variant_number,
@@ -163,6 +279,7 @@ all_files AS (
         qid,
         variant_number,
         date,
+        submission_id,
         submission_number,
         (CASE
             WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
@@ -185,17 +302,22 @@ all_files AS (
 SELECT
     (
         uid
+        || '_' || uin
         || '_' || assessment_instance_number
         || '_' || qid
         || '_' || variant_number
         || '_' || submission_number
+        || '_' || submission_id
         || '_' || filename
     ) AS filename,
-    decode(contents, 'base64') AS contents
+    base64_safe_decode(contents) AS contents
 FROM
     all_files
+WHERE
+    filename IS NOT NULL
+    AND contents IS NOT NULL
 ORDER BY
-    uid, assessment_instance_number, qid, variant_number, date
+    uid, uin, assessment_instance_number, qid, variant_number, date
 LIMIT
     $limit
 OFFSET
