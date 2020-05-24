@@ -150,8 +150,8 @@ BEGIN
             assessment_set_id = aggregates.assessment_set_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
-            allow_real_time_grading = (valid_assessment.data=>>'allow_real_time_grading')::boolean,
-            require_honor_code = (valid_assessment.data=>>'require_honor_code')::boolean,
+            allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
+            require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -197,7 +197,7 @@ BEGIN
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
-                    input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago'))
+                    input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean
                 FROM
                     assessments AS a
