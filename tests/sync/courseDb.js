@@ -20,12 +20,14 @@ async function withTempDirectory(callback) {
 }
 
 /**
- * @param {(dir: string) => Promise<void>} callback 
+ * @param {(info: { path: string, dirname: string, basename: string }) => Promise<void>} callback
  */
 async function withTempFile(callback) {
   const file = await tmp.file();
+  const dirname = path.dirname(file.path);
+  const basename = path.basename(file.path);
   try {
-    await callback(file.path);
+    await callback({ path: file.path, dirname, basename });
   } finally {
     await file.cleanup();
   }
@@ -93,8 +95,8 @@ describe('course database', () => {
           uuid: UUID,
           foo: 'bar',
         };
-        await fs.writeJson(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeJson(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isFalse(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(result.uuid, UUID);
@@ -105,8 +107,8 @@ describe('course database', () => {
     it('errors if UUID is missing from valid file', async () => {
       await withTempFile(async (file) => {
         const json = { foo: 'bar' };
-        await fs.writeJson(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeJson(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -114,8 +116,8 @@ describe('course database', () => {
     it('errors if UUID is not valid v4 UUID', async () => {
       await withTempFile(async (file) => {
         const json = { uuid: 'bar' };
-        await fs.writeJson(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeJson(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -123,8 +125,8 @@ describe('course database', () => {
     it('finds a UUID in a malformed file', async () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uuid":"${UUID}"`;
-        await fs.writeFile(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeFile(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -135,8 +137,8 @@ describe('course database', () => {
     it('errors if no UUID is found in malformed file', async () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uid":"${UUID}"`;
-        await fs.writeFile(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeFile(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -147,8 +149,8 @@ describe('course database', () => {
     it('errors if two UUIDs are found in malformed file', async () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uuid":"${UUID}","uuid": "${UUID}"}`;
-        await fs.writeJson(file, json);
-        const result = await courseDb.loadInfoFile(file);
+        await fs.writeJson(file.path, json);
+        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
