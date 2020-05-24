@@ -153,7 +153,7 @@ router.get('/*', (req, res, next) => {
         },
         (callback) => {
             const promisified = callbackify(editorUtil.getErrorsAndWarningsForFilePath);
-            promisified(res.locals.course.id, req.query.file, (err, data) => {
+            promisified(res.locals.course.id, relPath, (err, data) => {
                 if (ERR(err, callback)) return;
                 fileEdit.sync_errors = data.errors;
                 fileEdit.sync_warnings = data.warnings;
