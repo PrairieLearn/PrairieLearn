@@ -114,7 +114,6 @@ BEGIN
     UPDATE course_instances AS ci
     SET
         long_name = dci.data->>'long_name',
-        number = (dci.data->>'number')::integer,
         display_timezone = dci.data->>'display_timezone',
         sync_errors = NULL,
         sync_warnings = dci.warnings
