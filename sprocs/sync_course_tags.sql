@@ -11,8 +11,9 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     question_tags_item JSONB;
-    inserted_tag_ids bigint[];
     keep_tag_ids bigint[];
+    existing_tag_ids bigint[];
+    inserted_tag_ids bigint[];
     num_existing_tags bigint;
 BEGIN
     IF valid_course_info THEN
@@ -45,6 +46,16 @@ BEGIN
         FROM tags
         WHERE course_id = syncing_course_id;
     END IF;
+
+    -- We need to handle potentially-unknown question tags in two phases.
+    -- First, we'll determine the IDs of all tags that we definitely need
+    -- to keep. Then, we'll attempt to insert any missing tags and record the
+    -- IDs of new rows. After this, any ID not captured above in those two
+    -- categories (or handled  in new_tags above) can be deleted.
+    SELECT array_agg(id) INTO existing_tag_ids FROM (
+        SELECT id FROM tags WHERE name IN (SELECT UNNEST(question_tag_names))
+    ) AS ids;
+    keep_tag_ids := array_cat(keep_tag_ids, existing_tag_ids);
 
     WITH new_tags AS (
         INSERT INTO tags (

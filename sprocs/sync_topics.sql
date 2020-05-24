@@ -10,8 +10,9 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     question_topics_item JSONB;
-    inserted_topic_ids bigint[];
     keep_topic_ids bigint[];
+    existing_topic_ids bigint[];
+    inserted_topic_ids bigint[];
     num_existing_topics bigint;
 BEGIN
     IF valid_course_info THEN
@@ -44,6 +45,16 @@ BEGIN
         FROM topics
         WHERE course_id = syncing_course_id;
     END IF;
+
+    -- We need to handle potentially-unknown topics in two phases.
+    -- First, we'll determine the IDs of all topics that we definitely need
+    -- to keep. Then, we'll attempt to insert any missing topics and record the
+    -- IDs of new rows. After this, any ID not captured above in those two
+    -- categories (or handled  in new_topics above) can be deleted.
+    SELECT array_agg(id) INTO existing_topic_ids FROM (
+        SELECT id FROM topics WHERE name IN (SELECT UNNEST(question_topic_names))
+    ) AS ids;
+    keep_topic_ids := array_cat(keep_topic_ids, existing_topic_ids);
 
     WITH new_topics AS (
         INSERT INTO topics (
