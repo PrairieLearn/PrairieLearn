@@ -3,6 +3,16 @@
     "description": "PrairieLearn online problem-solving system",
     "version": "3.2.0",
     "private": true,
+    "scripts": {
+        "start": "node server.js",
+        "start-nodemon": "npx nodemon -e ejs,js,json -L server.js",
+        "test": "nyc --reporter=lcov mocha tests/index.js",
+        "test-sync": "mocha tests/sync/index.js",
+        "test-nocoverage": "mocha tests/index.js",
+        "lint-js": "eslint --ext js \"**/*.js\"",
+        "lint-python": "python3.6 -m flake8 ./",
+        "typecheck": "tsc"
+    },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.13.0",
         "@prairielearn/prairielib": "^1.8.3",
@@ -105,6 +115,7 @@
         "@types/fs-extra": "^9.0.1",
         "@types/mocha": "^7.0.2",
         "@types/node": "^14.0.5",
+        "@types/pg": "^7.14.3",
         "chai": "^4.1.2",
         "chai-as-promised": "^7.1.1",
         "colors": "^1.4.0",
@@ -118,16 +129,8 @@
         "nyc": "^15.0.1",
         "request": "^2.88.2",
         "sinon": "^9.0.2",
-        "tmp": "0.2.1"
-    },
-    "scripts": {
-        "start": "node server.js",
-        "start-nodemon": "npx nodemon -e ejs,js,json -L server.js",
-        "test": "nyc --reporter=lcov mocha tests/index.js",
-        "test-sync": "mocha tests/sync/index.js",
-        "test-nocoverage": "mocha tests/index.js",
-        "lint-js": "eslint --ext js \"**/*.js\"",
-        "lint-python": "python3.6 -m flake8 ./"
+        "tmp": "0.2.1",
+        "typescript": "^3.9.3"
     },
     "nyc": {
         "exclude": [
