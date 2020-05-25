@@ -93,25 +93,24 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        -- soft delete old group_configs and insert new
-        UPDATE group_configs
-        SET deleted_at = NOW()
-        WHERE assessment_id = new_assessment_id;
-
-        INSERT INTO group_configs
+        -- if it is a group work AND group_configs does not exist, insert new
+        PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id;
+        IF NOT FOUND AND (assessment->>'groupwork')::boolean THEN
+            INSERT INTO group_configs
             (course_instance_id,
             assessment_id,
             type,
             maximum,
             minimum)
-        (
-            SELECT
-                new_course_instance_id,
-                new_assessment_id,
-                (assessment->>'grouptype')::TEXT,
-                (assessment->>'groupmax')::integer,
-                (assessment->>'groupmin')::integer
-        );
+            (
+                SELECT
+                    new_course_instance_id,
+                    new_assessment_id,
+                    (assessment->>'grouptype')::TEXT,
+                    (assessment->>'groupmax')::integer,
+                    (assessment->>'groupmin')::integer
+            );  
+        END IF;
         
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP

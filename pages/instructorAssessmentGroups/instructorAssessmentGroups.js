@@ -6,8 +6,6 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const error = require('@prairielearn/prairielib/error');
 const groupUpdate = require('../../lib/group-update');
-const regrading = require('../../lib/regrading');
-const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -47,7 +45,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'copy_assessment_groups') {
         const params = [
             res.locals.assessment.id,
-            req.body.inputGroupSelect01
+            req.body.inputGroupSelect01,
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
             if (ERR(err, next)) return;
@@ -124,21 +122,6 @@ router.post('/', function(req, res, next) {
         sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'open') {
-        const assessment_id = res.locals.assessment.id;
-        const assessment_instance_id = req.body.assessment_instance_id;
-        assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
-            if (ERR(err, next)) return;
-            const params = {
-                assessment_id,
-                assessment_instance_id,
-                authn_user_id: res.locals.authz_data.authn_user.user_id,
-            };
-            sqldb.queryOneRow(sql.open, params, function(err, _result) {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

@@ -56,6 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
+- [`pl-external-grader-variables`](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1256,6 +1257,61 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
+## `pl-external-grader-variables` element
+
+Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
+
+```python
+data["params"]["names_for_user"] = [
+    {"name": "var1", "description": "Human-readable description.", "type": "type"},
+    {"name": "var2", "description": "...", "type": "..."}
+]
+data["params"]["names_from_user"] = [
+    {"name": "result1", "description": "...", "type": "..."}
+]
+```
+
+#### Sample Element
+
+![](elements/pl-external-grader-variables.png)
+
+**question.html**
+```html
+<p>The setup code gives the following variables:</p>
+<pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
+
+<p>Your code snippet should define the following variables:</p>
+<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+```
+
+**server.py**
+```python
+def generate(data):
+    data["params"]["names_for_user"] = [
+        {"name": "n", "description": r"Dimensionality of $\mathbf{A}$ and $\mathbf{b}$.", "type": "integer"},
+        {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
+        {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
+    ]
+    data["params"]["names_from_user"] = [
+        {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
+    ]
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | `None` | Name of variable specification in `data['params']` to display, the format for which is given above.
+
+#### Example implementations
+
+- [demoCodeEditorAutograded]
+- [demoCodeUploadAutograded]
+- [demoAutograderSquare]
+- [demoAutograderNumpy]
+- [demoAutograderPandas]
+- [demoAutograderPlots]
+- [demoAutograderRandom]
 
 ## Conditional Elements
 
@@ -1494,3 +1550,8 @@ Attribute | Type | Default | Description
 [elementSymbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementSymbolicInput
 [elementThreeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementThreeJS
 [elementVariableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementVariableOutput
+[demoAutograderSquare]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderSquare
+[demoAutograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy
+[demoAutograderPandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas
+[demoAutograderPlots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots
+[demoAutograderRandom]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderRandom

@@ -1,0 +1,47 @@
+{
+    "uuid": "854E9FAF-7282-4501-99D8-B8C309AD7C9E",
+    "type": "Homework",
+    "title": "PrairieLearn demo questions for Python autograder",
+    "set": "Homework",
+    "number": "6",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demoCodeEditorAutograded",            "points": 1, "maxPoints": 5},
+                {"id": "demoCodeUploadAutograded",            "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderSquare",                "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderNumpy",                 "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderPandas",                "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderPlots",                 "points": 1, "maxPoints": 5},
+                {"id": "demoAutograderRandom",                "points": 1, "maxPoints": 5},
+                {"id": "demoAnsiOutput",                      "points": 2, "maxPoints": 4}
+            ]
+        }
+    ]
+}

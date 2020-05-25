@@ -70,7 +70,9 @@ def render(element_html, data):
                 html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
                 html_params['output'] = ansi_to_html(results.get('output', None))
-                html_params['has_message_or_output'] = bool(html_params['has_message'] or html_params['has_output'])
+                html_params['images'] = results.get('images', [])
+                html_params['has_images'] = len(html_params['images']) > 0
+                html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or html_params['has_images'])
 
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
@@ -102,12 +104,20 @@ def render(element_html, data):
                         test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
+                        test['show_points'] = not tests_missing_points
                         if not tests_missing_points:
                             test['max_points'] = results_test.get('max_points')
                             test['points'] = results_test.get('points')
                             correct = test['max_points'] == test['points']
+
+                            # Don't show points for test cases that are 0/0
+                            if correct and test['max_points'] == 0:
+                                test['show_points'] = False
+
                             test['results_color'] = '#4CAF50' if correct else '#F44336'
                             test['results_icon'] = 'fa-check' if correct else 'fa-times'
+                        test['images'] = results_test.get('images', [])
+                        test['has_images'] = len(test['images']) > 0
                         tests.append(test)
 
                     html_params['tests'] = tests

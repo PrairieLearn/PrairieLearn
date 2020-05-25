@@ -45,25 +45,3 @@ WHERE course_instance_id IN (SELECT course_instance_id
                             FROM assessments
                             WHERE id = $assessment_id)
 ORDER BY tid;
-
--- BLOCK open
-WITH results AS (
-    UPDATE assessment_instances AS ai
-    SET
-        open = true,
-        date_limit = NULL,
-        auto_close = FALSE
-    WHERE
-        ai.id = $assessment_instance_id
-    RETURNING
-        ai.open,
-        ai.id AS assessment_instance_id
-)
-INSERT INTO assessment_state_logs AS asl
-        (open, assessment_instance_id, auth_user_id)
-(
-    SELECT
-        true, results.assessment_instance_id, $authn_user_id
-    FROM
-        results
-);
