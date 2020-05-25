@@ -1306,6 +1306,10 @@ Attribute | Type | Default | Description
 `valign` | string | `middle` | Specifies the vertical alignment of the contents.  Can be one of `top`, `middle`, or `bottom`.
 `halign` | string | `center` | Specifies the horizontal alignment of the contents.  Can be one of `left`, `center`, or `right`.
 
+#### `pl-background` Customizations
+
+The `pl-background` child tag does not have any extra attributes that need to be set.  All relevant positioning and sizing information is obtained from the tag's contents.
+
 #### Details
 
 An overlay is pre-defined as a "overlay area" with a static size.  By default, elements that exceed these boundaries will get partially or totally cut off.  A background can be specified by wrapping HTML in a `<pl-background>` tag, in this case the overlay will automatically size itself to fit the background and a `width` and `height` do not need to be specified.   Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.

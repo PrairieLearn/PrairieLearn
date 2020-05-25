@@ -38,12 +38,12 @@ def prepare(element_html, data):
             if ('top' not in child.attrib and 'bottom' not in child.attrib) or ('top' in child.attrib and 'bottom' in child.attrib):
                 raise ValueError('pl-location requires exactly one of "top" or "bottom" attributes.')
 
-            valign = pl.get_string_attrib(child, 'valign', None)
-            if valign is not None and valign not in VALIGN_VALUES:
+            valign = pl.get_string_attrib(child, 'valign', VALIGN_DEFAULT)
+            if valign not in VALIGN_VALUES:
                 raise ValueError(f'Unknown vertical alignment "{valign}"')
 
-            halign = pl.get_string_attrib(child, 'halign', None)
-            if halign is not None and halign not in HALIGN_VALUES:
+            halign = pl.get_string_attrib(child, 'halign', HALIGN_DEFAULT)
+            if halign not in HALIGN_VALUES:
                 raise ValueError(f'Unknown horizontal alignment "{halign}"')
         elif child.tag == 'pl-background':
             pl.check_attribs(child, required_attribs=[], optional_attribs=[])
