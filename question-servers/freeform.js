@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { promisify, callbackify } = require("util");
+const { promisify, callbackify } = require('util');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
