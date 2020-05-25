@@ -98,17 +98,12 @@ BEGIN
         IF NOT FOUND AND (assessment->>'groupwork')::boolean THEN
             INSERT INTO group_configs
             (course_instance_id,
-            assessment_id,
-            type,
-            maximum,
-            minimum)
+            assessment_id
+            )
             (
                 SELECT
                     new_course_instance_id,
-                    new_assessment_id,
-                    (assessment->>'grouptype')::TEXT,
-                    (assessment->>'groupmax')::integer,
-                    (assessment->>'groupmin')::integer
+                    new_assessment_id
             );  
         END IF;
         

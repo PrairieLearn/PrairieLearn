@@ -5,9 +5,6 @@
     "set": "Homework",
     "number": "1",
     "groupwork": true,
-    "groupmax": 1,
-    "groupmin": 1,
-    "grouptype": 1,
     "allowAccess": [
         {
             "role": "Instructor",
