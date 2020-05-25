@@ -94,8 +94,8 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_add_member', params);
                 }
             }
+            res.redirect(req.originalUrl);
         })();
-        res.redirect(req.originalUrl);
     } else if (req.body.__action == 'deletemember') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
@@ -112,8 +112,8 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
                 }
             }
+            res.redirect(req.originalUrl);
         })();
-        res.redirect(req.originalUrl);
     } else if (req.body.__action == 'deletegroup') {
         const params = [
             res.locals.assessment.id,
