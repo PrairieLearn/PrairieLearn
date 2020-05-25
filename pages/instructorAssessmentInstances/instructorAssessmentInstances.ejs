@@ -104,6 +104,7 @@
             <thead>
               <tr>
                 <th>UID</th>
+                <th>GID</th>
                 <th>Name</th>
                 <th class="text-center">Role</th>
                 <th class="text-center">Instance</th>
@@ -119,6 +120,7 @@
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
                 <td><%= row.uid %></td>
+                <td><%= row.gid %></td>
                 <td><%= row.name %></td>
                 <td class="text-center"><%= row.role %></td>
                 <td class="text-center"><%= row.number %></td>
