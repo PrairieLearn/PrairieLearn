@@ -4,8 +4,9 @@ SELECT
 FROM
     assessment_instances AS ai,
     (SELECT *
-     FROM group_users AS gi 
-     WHERE $user_id = gi.user_id) AS gid
+     FROM group_users AS gi
+     JOIN groups AS gr ON gi.group_id = gr.id
+     WHERE $user_id = gi.user_id AND gr.deleted_at IS NULL) AS gid
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = 1

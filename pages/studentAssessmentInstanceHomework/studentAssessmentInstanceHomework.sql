@@ -40,8 +40,9 @@ ORDER BY qo.row_order;
 SELECT gu.group_id, gr.name, us.uid
 FROM
 assessment_instances ai
-JOIN group_users gu ON ai.auth_user_id = gu.user_id
-JOIN groups gr ON gr.id = gu.group_id
-JOIN group_users gu2 ON gu2.group_id = gr.id
-JOIN users us ON us.user_id = gu2.user_id
-WHERE ai.id = $assessment_instance_id AND gr.deleted_at IS NULL;
+JOIN group_configs gc ON ai.assessment_id = gc.assessment_id
+JOIN groups gr ON gr.group_config_id = gc.id
+JOIN group_users gu ON gu.group_id = gr.id
+JOIN group_users gu2 ON gu2.group_id = gu.group_id
+JOIN users us ON us.user_id = gu.user_id
+WHERE ai.id = $assessment_instance_id AND gu.user_id = $user_id AND gr.deleted_at IS NULL AND gc.deleted_at IS NULL;

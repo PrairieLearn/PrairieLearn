@@ -30,18 +30,37 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             debug('no assessment instance');
-
-            const time_limit_min = null;
-            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+            //if it is a groupwork with no instance, jump to a confirm page.
+            if(res.locals.assessment.groupwork){
                 if (ERR(err, next)) return;
-                debug('redirecting');
-                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-            });
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            } else {
+                const time_limit_min = null;
+                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+                    if (ERR(err, next)) return;
+                    debug('redirecting');
+                    res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+                });    
+            }
         } else {
             debug('redirecting');
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
         }
     });
+});
+
+router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    if (req.body.__action == 'newInstance') {
+        const time_limit_min = null;
+            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+                if (ERR(err, next)) return;
+                debug('redirecting');
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+            });
+    } else {
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+    }
 });
 
 module.exports = router;
