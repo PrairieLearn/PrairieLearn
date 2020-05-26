@@ -37,12 +37,19 @@ BEGIN
         ON CONFLICT (course_instance_id, name) DO
         UPDATE SET deleted_at = null;
 
+        -- Get the group's ID
         SELECT id INTO new_group_id
-        FROM groups
-        WHERE name = group_name;
+        FROM groups AS g
+        WHERE
+            g.name = group_name
+            AND g.course_instance_id = new_course_instance_id;
 
-        -- Delete previous group memberships
+        -- Delete all group memberships
+        DELETE FROM group_users AS gu
+        WHERE
+            gu.group_id = new_group_id;
 
+        -- Make new group memberships based on json
         FOR new_uid IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(group_members) LOOP
 
             -- Create or update user
