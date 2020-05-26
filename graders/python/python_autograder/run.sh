@@ -18,8 +18,8 @@ OUT_DIR=$JOB_DIR'/results'
 export MERGE_DIR=$JOB_DIR'/run'
 
 # now set up the stuff so that our run.sh can work
-mkdir $MERGE_DIR
-mkdir $OUT_DIR
+mkdir -p $MERGE_DIR
+mkdir -p $OUT_DIR
 
 mv $STUDENT_DIR/* $MERGE_DIR
 mv $AG_DIR/* $MERGE_DIR
@@ -37,7 +37,7 @@ chmod 1777 "$MERGE_DIR"
 
 # Create directory without sticky bit for deletable files
 export FILENAMES_DIR=$MERGE_DIR'/filenames'
-mkdir $FILENAMES_DIR
+mkdir -p $FILENAMES_DIR
 chmod 777 $FILENAMES_DIR
 mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $FILENAMES_DIR
 
