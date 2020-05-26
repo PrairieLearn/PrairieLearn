@@ -53,6 +53,23 @@ describe('Course instance syncing', () => {
     await util.syncCourseData(courseDir);
   });
 
+  it('syncs empty arrays correctly', async () => {
+    // Note that we want the database to contain empty arrays, not NULL
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess[0].uids = [];
+    await util.writeAndSyncCourseData(courseData);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
+    const syncedAccessRules = (await util.dumpTable('course_instance_access_rules')).filter(
+      ar => ar.course_instance_id === syncedCourseInstance.id,
+    );
+    assert.lengthOf(syncedAccessRules, 1);
+    const [syncedAccessRule] = syncedAccessRules;
+    const { uids } = syncedAccessRule;
+    assert.isArray(uids, 'uids should be an array');
+    assert.isEmpty(uids, 'uids should be empty');
+  });
+
   it('records a warning if the same UUID is used in multiple course instances', async () => {
     const courseData = util.getCourseData();
     courseData.courseInstances['newinstance'] = courseData.courseInstances[util.COURSE_INSTANCE_ID];
