@@ -29,7 +29,7 @@ router.get('/', function(req, res, next) {
             debug('render page');
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
-    };
+    }
 });
 
 router.post('/', function(req, res, next) {
