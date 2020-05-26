@@ -67,6 +67,7 @@ router.get('/:filename', function(req, res, next) {
     var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
     var scoresColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         [assessmentName, 'score_perc'],
     ];
     var scoresByUsernameColumns = [
@@ -75,6 +76,7 @@ router.get('/:filename', function(req, res, next) {
     ];
     var pointsColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         [assessmentName, 'points'],
     ];
     var pointsByUsernameColumns = [
@@ -83,6 +85,7 @@ router.get('/:filename', function(req, res, next) {
     ];
     var instancesColumns = [
         ['UID', 'uid'],
+        ['UIN', 'uin'],
         ['Username', 'username'],
         ['Name', 'name'],
         ['Role', 'role'],
@@ -145,6 +148,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['UID', 'uid'],
+                ['UIN', 'uin'],
                 ['Name', 'name'],
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
@@ -174,6 +178,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['uid', 'uid'],
+                ['UIN', 'uin'],
                 ['qid', 'qid'],
                 ['old_score_perc', 'old_score_perc'],
                 ['submission_id', 'submission_id'],
@@ -205,6 +210,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['UID', 'uid'],
+                ['UIN', 'uin'],
                 ['Name', 'name'],
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
