@@ -11,3 +11,7 @@ WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = 1
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
+
+-- BLOCK join_group
+INSERT INTO group_users (group_id, user_id)
+    VALUES ($group_id, $user_id);

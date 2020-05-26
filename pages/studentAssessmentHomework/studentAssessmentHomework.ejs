@@ -16,6 +16,21 @@
             This is <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
 
+          <form id="friendcode-form" name="friendcode-form" method="POST">
+            <div class="friend-code-input-form">
+              <label for="form-code">Friend Code</label>
+              <input type="text" class="form-control" name="friendcode">
+            </div>
+            <br>
+            <div class="d-flex justify-content-center">
+              <div class="form-group mb-0">
+                <input type="hidden" name="__action" value="joinGroup">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="submit" class="btn btn-primary">Join Group via Friend Code</button>
+              </div>
+            </div>
+          </form>
+          <br>
           <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
             <input type="hidden" name="__action" value="newInstance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

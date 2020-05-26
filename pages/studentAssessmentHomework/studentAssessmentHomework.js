@@ -58,6 +58,21 @@ router.post('/', function(req, res, next) {
                 debug('redirecting');
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
             });
+    } else if(req.body.__action == 'joinGroup'){
+        const group_id = Buffer.from(req.body.friendcode, 'base64').toString('utf8');
+        const params = {
+            group_id,
+            user_id: res.locals.user.user_id,
+        };
+        sqldb.query(sql.join_group, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            //assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+            //    if (ERR(err, next)) return;
+            //    debug('redirecting');
+            //    res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+            //});
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

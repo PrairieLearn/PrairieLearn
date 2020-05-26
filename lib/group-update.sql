@@ -43,5 +43,5 @@ FROM
     group_configs AS gc
     JOIN groups as gr ON (gc.id = gr.group_config_id)
     JOIN group_users as gu ON (gu.group_id = gr.id)
-WHERE gc.assessment_id = $assessment_id)) temp
+WHERE gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND gr.deleted_at IS NULL)) temp
 JOIN users u ON u.user_id = temp.user_id;

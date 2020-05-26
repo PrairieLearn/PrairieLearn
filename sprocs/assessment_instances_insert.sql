@@ -35,7 +35,9 @@ BEGIN
         JOIN  groups AS g ON(g.id = gu.group_id)
         JOIN  group_configs AS gc ON (gc.id = g.group_config_id)
         WHERE gu.user_id = assessment_instances_insert.user_id AND
-        gc.assessment_id = assessment_instances_insert.assessment_id;
+        gc.assessment_id = assessment_instances_insert.assessment_id AND
+        gc.deleted_at IS NULL AND
+        g.deleted_at IS NULL;
         
         IF assessment.multiple_instance THEN
             SELECT coalesce(max(ai.number), 0) + 1
