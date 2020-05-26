@@ -108,7 +108,7 @@ BEGIN
         type = (dq.data->>'type')::enum_question_type,
         title = dq.data->>'title',
         options = (dq.data->'options')::JSONB,
-        client_files = aggregates.client_files,
+        client_files = jsonb_array_to_text_array(dq.data->'client_files'),
         partial_credit = (dq.data->>'partial_credit')::boolean,
         grading_method = (dq.data->>'grading_method')::enum_grading_method,
         single_variant = (dq.data->>'single_variant')::boolean,
@@ -116,7 +116,7 @@ BEGIN
         topic_id = aggregates.topic_id,
         external_grading_enabled = (dq.data->>'external_grading_enabled')::boolean,
         external_grading_image = dq.data->>'external_grading_image',
-        external_grading_files = aggregates.external_grading_files,
+        external_grading_files = jsonb_array_to_text_array(dq.data->'external_grading_files'),
         external_grading_entrypoint = dq.data->>'external_grading_entrypoint',
         external_grading_timeout = (dq.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (dq.data->>'external_grading_enable_networking')::boolean,
@@ -130,9 +130,7 @@ BEGIN
         (
             SELECT
                 qid,
-                (SELECT ARRAY_AGG(client_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(dq.data->>'client_files', '[]')::jsonb) client_files)::text[] AS client_files,
-                (COALESCE((SELECT id FROM topics WHERE name = dq.data->>'topic' AND course_id = syncing_course_id), NULL)) AS topic_id,
-                (SELECT ARRAY_AGG(external_grading_files)::text[] FROM JSONB_ARRAY_ELEMENTS_TEXT(COALESCE(dq.data->>'external_grading_files', '[]')::jsonb) external_grading_files)::text[] AS external_grading_files
+                (COALESCE((SELECT id FROM topics WHERE name = dq.data->>'topic' AND course_id = syncing_course_id), NULL)) AS topic_id
             FROM disk_questions AS dq
         ) AS aggregates
     WHERE
