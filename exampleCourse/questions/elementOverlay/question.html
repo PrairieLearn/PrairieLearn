@@ -1,10 +1,3 @@
-<style>
- .country-name {
-     color: black;
-     text-shadow: -2px 2px 0 #fff, 2px 2px 0 #fff, 2px -2px 0 #fff, -2px -2px 0 #fff;
- }
-</style>
-
 <pl-question-panel>
     <p>
         <i>
@@ -22,7 +15,7 @@
     <!-- Background map image  -->
     <pl-background>
         <!-- Use a normal img tag because pl-figure applies extra padding and scaling when the window gets small -->
-        <img src="{{options.client_files_question_url}}/europe_zoom.png">
+        <img src="{{options.client_files_question_url}}/europe_annotated.png" width="700px">
     </pl-background>
 
     <!-- Input -->
@@ -30,29 +23,4 @@
        <pl-string-input answers-name="string_value" show-help-text="false" size="7"
                         correct-answer="Ukraine" remove-leading-trailing="true" ignore-case="true"></pl-string-input>
     </pl-location>
-
-    <!-- All the other country names -->
-    <pl-location left="300" top="250" valign="top" halign="center"><span class="country-name">Poland</span></pl-location>
-    <pl-location left="400" top="210" valign="top" halign="center"><span class="country-name">Belarus</span></pl-location>
-    <pl-location left="190" top="280" valign="top" halign="center"><span class="country-name">Germany</span></pl-location>
-    <pl-location left="80" top="370" valign="top" halign="center"> <span class="country-name">France</span></pl-location>
-    <pl-location left="40" top="200" valign="top" halign="center"> <span class="country-name">United<br>Kingdom</span></pl-location>
-    <pl-location left="220" top="450" valign="top" halign="center"><span class="country-name">Italy</span></pl-location>
-    <pl-location left="400" top="500" valign="top" halign="center"><span class="country-name">Greece</span></pl-location>
-    <pl-location left="400" top="370" valign="top" halign="center"><span class="country-name">Romania</span></pl-location>
-    <pl-location left="415" top="430" valign="top" halign="center"><span class="country-name">Bulgaria</span></pl-location>
-    <pl-location left="560" top="470" valign="top" halign="center"><span class="country-name">Turkey</span></pl-location>
-    <pl-location left="175" top="70" valign="top" halign="center"> <span class="country-name">Norway</span></pl-location>
-    <pl-location left="245" top="90" valign="top" halign="center"> <span class="country-name">Sweden</span></pl-location>
-    <pl-location left="340" top="30" valign="top" halign="center"> <span class="country-name">Finland</span></pl-location>
-    <pl-location left="550" top="120" valign="top" halign="center"><span class="country-name">Russia</span></pl-location>
 </pl-overlay>
-
-<!-- Map attribution -->
-<pl-question-panel>
-    <small>
-        <center>
-            (Map from <a href="https://en.wikipedia.org/wiki/File:Europe_blank_laea_location_map.svg">https://en.wikipedia.org/wiki/File:Europe_blank_laea_location_map.svg</a>)
-        </center>
-    </small>
-</pl-question-panel>
