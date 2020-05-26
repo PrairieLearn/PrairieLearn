@@ -222,6 +222,28 @@ describe('Assessment syncing', () => {
     assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
+  it('syncs empty arrays correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    // NOTE: our JSON schema explicitly prohibits a zone question from having
+    // an empty points array, so we can't test that here as it's impossible
+    // for it to ever be written to the database.
+    assessment.allowAccess.push({
+      mode: 'Exam',
+      uids: [],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find(a => a.tid === 'newexam');
+
+    const assessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const assessmentAccessRule = assessmentAccessRules.find(aar => aar.assessment_id === syncedAssessment.id);
+    const { uids } = assessmentAccessRule;
+    assert.isArray(uids, 'uids should be an array');
+    assert.isEmpty(uids, 'uids should be empty');
+  });
+
   it('handles assessment sets that are not present in infoCourse.json', async () => {
     // Missing tags should be created
     const courseData = util.getCourseData();
