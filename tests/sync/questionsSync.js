@@ -88,6 +88,25 @@ describe('Question syncing', () => {
     assert.isUndefined(syncedTopic);
   });
 
+  it('syncs empty arrays correctly', async () => {
+    // Note that we want the database to contain empty arrays, not NULL
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].clientFiles = [];
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      entrypoint: 'entrypoint',
+      serverFilesCourse: [],
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    const { client_files, external_grading_files } = syncedQuestion;
+    assert.isArray(client_files, 'client_files should be an array');
+    assert.isEmpty(client_files, 'client_files should be empty');
+    assert.isArray(external_grading_files, 'external_grading_files should be an array');
+    assert.isEmpty(external_grading_files, 'external_grading_files should be empty');
+  });
+
   it('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two

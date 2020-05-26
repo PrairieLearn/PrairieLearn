@@ -139,12 +139,12 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} QuestionExternalGradingOptions
- * @property {boolean} enabled
+ * @property {boolean=} enabled
  * @property {string} image
  * @property {string} entrypoint
- * @property {string[]} serverFilesCourse
- * @property {number} timeout
- * @property {boolean} enableNetworking
+ * @property {string[]=} serverFilesCourse
+ * @property {number=} timeout
+ * @property {boolean=} enableNetworking
  */
 
  /**
