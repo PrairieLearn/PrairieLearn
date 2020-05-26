@@ -61,7 +61,8 @@ router.get('/', function(req, res, next) {
                     sqldb.query(sql.get_groupinfo, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupinfo = result.rows;
-                        res.locals.friendcode = Buffer.from(res.locals.groupinfo[0].group_id, 'utf-8').toString('base64');
+                        const group_id = res.locals.groupinfo[0].group_id || 0;
+                        res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 } else {
@@ -90,6 +91,15 @@ router.post('/', function(req, res, next) {
         util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'quitGroup') {
+        var params = {
+            assessment_instance_id: res.locals.assessment_instance.id,
+            user_id: res.locals.user.user_id,
+        };
+        sqldb.query(sql.quit_group, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.redirect('/pl/course_instance/' + res.locals.course_instance.id + '/assessment/' + res.locals.assessment.id);
         });
     } else {
         next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
