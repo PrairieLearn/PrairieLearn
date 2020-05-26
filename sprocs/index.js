@@ -156,6 +156,7 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_topics.sql',
             'sync_course_instances.sql',
+            'sync_groups.sql',
             'lock_timeout_set.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
