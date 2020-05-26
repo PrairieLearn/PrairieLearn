@@ -23,7 +23,6 @@ ALIGNMENT_TO_PERC = {
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    #
     num_backgrounds = 0
     for child in element:
         if isinstance(child, lxml.html.HtmlComment):
