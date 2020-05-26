@@ -45,22 +45,25 @@
                 }) %>
             </div>
           </div>
-
-          <div class="alert alert-secondary mb-0">
-            <p>This is a group homework.</p>
-            <b>Members: </b>First Last (Netid), First Last (Netid), First Last (Netid)
-          </div>
-          </p>
-          <div class="row">
-            <div class="col-sm-6">
-              <span class="form-inline d-inline-block ml-2">
-                <input name="memberid" type="text" class="form-control rounded-right" size="10" aria-describedby="basic-addon1" placeholder="Netid">          
-              </span>
-              <button class="btn btn-primary question-grade disable-on-submit" name="__action" value="grade">Add</button>
-              <button class="btn btn-secondary question-grade disable-on-submit" name="__action" value="grade">Remove</button>
-            </div>
-          </div>
-          </p>
+          <% if (assessment.groupwork) { %>
+              <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm bg-light py-4 px-4 border">
+                      <p>This is a group homework, use your friendcode to invite others to join the group.</p>
+                      <span class="badge badge-secondary">Group Name</span> 
+                      <%= groupinfo[0].name %><br>
+                      <span class="badge badge-secondary">Friend Code</span> 
+                      <%= friendcode %><br>
+                    </div>
+                    <div class="col-sm bg-light py-4 px-4 border">
+                      <span class="badge badge-secondary">Group Members</span> 
+                      <% groupinfo.forEach(function(row) {%>
+                        <li><%= row.uid %></li>
+                      <% }); %>
+                    </div>
+                </div>
+              </div>
+          <% } %>
 
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">
