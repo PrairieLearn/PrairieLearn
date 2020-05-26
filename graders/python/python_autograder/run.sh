@@ -7,9 +7,7 @@
 # the autograder directory
 AG_DIR='/python_autograder'
 
-if [ -d /grade ] ; then
-        echo "Found /grade"
-else
+if [ ! -d /grade ] ; then
         echo "ERROR: /grade not found! Mounting may have failed."
         exit 1
 fi
