@@ -30,6 +30,7 @@ require('./testExam');
 require('./testRealTimeGradingDisabled');
 require('./testAccess');
 require('./testAccessAsStudent');
+require('./testCourseElementExtension');
 require('./testApi');
 require('./testLti');
 require('./testCron');
