@@ -4,7 +4,6 @@
     "title": "Exam Design: Best Practices",
     "set": "Exam",
     "number": "1",
-    "groupwork": true,
     "allowAccess": [
         {
             "role": "TA",
