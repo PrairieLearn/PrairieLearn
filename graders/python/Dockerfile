@@ -11,8 +11,7 @@ RUN yum -y update \
 
 COPY requirements.txt /
 
-RUN yum -y update \
-    && python3 -m pip install --no-cache-dir -r /requirements.txt
+RUN python3 -m pip install --no-cache-dir -r /requirements.txt
     
 COPY python_autograder /python_autograder
 RUN chmod +x /python_autograder/run.sh  
