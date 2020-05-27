@@ -116,7 +116,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h4 class="modal-title" id="addGroupModalLabel">Add a group</h4>
-            </div>            
+            </div>
               <form name="add-Group-form" method="POST">
                 <div class="modal-body">
                   <div class="form-name">
@@ -128,10 +128,10 @@
                     <label for="formUids">UIDs (Seperate with ",". Please make sure they are not in any other groups)</label>
                     <input type="text" class="form-control" name="uids" placeholder="a@illinois.edu, b@illinois.edu, c@illinois.edu">
                   </div>
-                </div>    
+                </div>
                 <div class="modal-footer">
                   <input type="hidden" name="__action" value="addGroup">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">  
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                   <button type="submit" class="btn btn-primary">Add</button>
                 </div>
@@ -139,7 +139,6 @@
           </div>
         </div>
       </div>
-
       <div class="modal fade" id="deleteAllGroupsModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllGroups">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -172,7 +171,7 @@
                data-toggle="modal" data-target="#addGroupModal">
               <i class="fa fa-plus" aria-hidden="true"></i> Add a group
             </button>
-            <button type="button" class="btn btn-sm btn-light" tabindex="0"
+            <button type="button" class="btn btn-sm btn-danger" tabindex="0"
                data-toggle="modal" data-target="#deleteAllGroupsModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
             </button>
@@ -211,11 +210,11 @@
             <thead>
               <tr>
                 <th>GID</th>
-                <th>Group Name</th>
-                <th>#Members</th>
+                <th>Name</th>
+                <th>Size</th>
                 <th class="text-center">Group Members (UIDs)</th>
-                <th class="text-center"></th>
-                <th class="text-center"></th>
+                <th class="sorter-false"></th>
+                <th class="sorter-false"></th>
               </tr>
             </thead>
             <tbody>
@@ -292,7 +291,7 @@
                           <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                         </a>
                         <% } %>
-  
+
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
@@ -300,7 +299,7 @@
                           <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                         </a>
                         <% } %>
-  
+
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
@@ -322,15 +321,24 @@
               <% }); %>
             </tbody>
           </table>
-
           <div class="card-footer">
             <small>
-              <strong>Not yet assigned students:</strong>
-                <ul>
+            <% if (not_assigned_users_rows.length == 0) { %>
+                <strong>
+                    All students have been assigned groups.
+                </strong>
+            <% } else { %>
+                <strong>
+                    <%= not_assigned_users_rows.length %>
+                    student<% if (not_assigned_users_rows.length > 1) { %>s<% } %>
+                    not yet assigned:
+                </strong>
+                <ul class="mb-0">
                   <% not_assigned_users_rows.forEach(function(row, iRow) {%>
                   <li><%= row.uid %></li>
                   <% }); %>
                 </ul>
+            <% } %>
             </small>
           </div>
         </div>
