@@ -65,7 +65,6 @@ router.post('/', function(req, res, next) {
         const groupname = req.body.groupname;
         const uids = req.body.uids;
         const uidlist = uids.split(/[ ,]+/);
-        const waitnum = len(uidlist)
         (async () => {
             for(const uid of uidlist){
                 let params = [
