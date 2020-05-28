@@ -23,24 +23,24 @@ def generate(data):
     data["correct_answers"]["ans_sig"] = round(x, 2)
     data["correct_answers"]["int_value"] = 42
     data["correct_answers"]["string_value"] = "Learn"
-    
+
     # Symbolic
     x, y = sympy.symbols('x y')
     data['correct_answers']['symbolic_math'] = pl.to_json(x + y + 1)
 
     # Matrix Fill in the Blank
     data['correct_answers']['matrixA'] = pl.to_json(np.matrix('1 2; 3 4'))
-    
+
     # Programming Variant of Supplying a Matrix
     data['correct_answers']['matrixB'] = pl.to_json(np.matrix('1 2; 3 4'))
-    
+
     # Threejs
     data['correct_answers']['robotC'] = [[1, 0, 0], [0, 45, 0]]
-    
+
     # Output elements
     data['params']['matrixC'] = pl.to_json(np.matrix('5 6; 7 8'))
     data['params']['matrixD'] = pl.to_json(np.matrix('-1 4; 3 2'))
-    
+
     # Display python variable contents
     data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
     data['params']['data_dictionary'] = pl.to_json(data_dictionary)
@@ -55,3 +55,6 @@ def generate(data):
     mat = mat / np.linalg.norm(mat, 1, axis=0)
     data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
     data['params']['matrix'] = pl.to_json(mat)
+
+    # Overlay
+    data['correct_answers']['c'] = (2 * (3 ** 2)) ** 0.5

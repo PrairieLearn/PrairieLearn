@@ -70,6 +70,8 @@
   * Add support for Rust to `pl-code` element (Nathan Walters).
 
   * Add tests for LTI auth (Dave Mussulman).
+  
+  * Add more robust Python autograder to `prairielearn/grader-python` (Nathan Bowman and Nicolas Nytko).
 
   * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
 

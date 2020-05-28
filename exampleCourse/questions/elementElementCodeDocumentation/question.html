@@ -390,3 +390,32 @@ digraph G {
    
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        <code>pl-overlay</code>
+    </div>
+
+    <div class="card-body">
+        <p> What is the length of the hypotenuse? </p>
+
+        <pl-overlay clip="false">
+            <pl-background>
+                <pl-drawing width="398" height="398" hide-answer-panel="false">
+                    <pl-drawing-initial>
+                        <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
+                    </pl-drawing-initial>
+                </pl-drawing>
+            </pl-background>
+            <pl-location left="200" top="375">
+                $$3$$
+            </pl-location>
+            <pl-location left="375" top="200">
+                $$3$$
+            </pl-location>
+            <pl-location left="170" top="170">
+                <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+            </pl-location>
+        </pl-overlay>
+    </div>
+</div>
