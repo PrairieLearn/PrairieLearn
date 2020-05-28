@@ -4,7 +4,6 @@
     "title": "Template homework - copy this to start a new HW",
     "set": "Homework",
     "number": "1",
-    "groupwork": true,
     "allowAccess": [
         {
             "role": "Instructor",
