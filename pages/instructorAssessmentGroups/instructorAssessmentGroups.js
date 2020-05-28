@@ -67,14 +67,12 @@ router.post('/', function(req, res, next) {
         const uidlist = uids.split(/[ ,]+/);
         (async () => {
             for(const uid of uidlist){
-                if(uid != ' '){
-                    let params = [
-                        assessment_id,
-                        groupname,
-                        uid,
-                    ];
-                    await sqldb.callAsync('assessment_groups_update', params);
-                }
+                let params = [
+                    assessment_id,
+                    groupname,
+                    uid,
+                ];
+                await sqldb.callAsync('assessment_groups_update', params);
             }
         })();
         res.redirect(req.originalUrl);
@@ -85,14 +83,12 @@ router.post('/', function(req, res, next) {
         const uidlist = uids.split(/[ ,]+/);
         (async () => {
             for(const uid of uidlist){
-                if(uid != ' '){
-                    const params = [
-                        assessment_id,
-                        gid,
-                        uid,
-                    ];
-                    await sqldb.callAsync('assessment_groups_add_member', params);
-                }
+                const params = [
+                    assessment_id,
+                    gid,
+                    uid,
+                ];
+                await sqldb.callAsync('assessment_groups_add_member', params);
             }
             res.redirect(req.originalUrl);
         })();
@@ -103,14 +99,12 @@ router.post('/', function(req, res, next) {
         const uidlist = uids.split(/[ ,]+/);
         (async () => {
             for(const uid of uidlist){
-                if(uid != ' '){
-                    const params = [
-                        assessment_id,
-                        gid,
-                        uid,
-                    ];
-                    await sqldb.callAsync('assessment_groups_delete_member', params);
-                }
+                const params = [
+                    assessment_id,
+                    gid,
+                    uid,
+                ];
+                await sqldb.callAsync('assessment_groups_delete_member', params);
             }
             res.redirect(req.originalUrl);
         })();
