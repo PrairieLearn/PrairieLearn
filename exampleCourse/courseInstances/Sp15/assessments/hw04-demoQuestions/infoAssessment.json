@@ -48,6 +48,7 @@
                 {"id": "demoRandomPlot",                      "points": 1, "maxPoints": 3},
                 {"id": "demoRandomDataFrame",                 "points": 2, "maxPoints": 6},
                 {"id": "demoAnsiOutput",                      "points": 2, "maxPoints": 4},
+                {"id": "demoOverlayTriangle",                 "points": 2, "maxPoints": 4},
                 {"id": "demoExtendableElement",               "points": 2, "maxPoints": 4}
             ]
         }

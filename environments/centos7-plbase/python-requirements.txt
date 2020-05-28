@@ -18,3 +18,6 @@ scikit-learn==0.22.2.post1
 nltk==3.5
 tzlocal==2.0.0
 Pygments==2.6.1
+sphinx==3.0.3
+sphinx-markdown-builder==0.5.4
+recommonmark==0.6.0
