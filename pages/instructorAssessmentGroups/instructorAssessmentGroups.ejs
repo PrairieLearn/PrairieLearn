@@ -21,7 +21,26 @@
               <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group setting</h1>
             </div>
             <div class="modal-body">
-              <%- include('csvHelpInstanceGroups'); %>
+                <p>
+                  Upload a CSV file in the format of <code>&lt;assessment&gt;_grouping.csv</code>.
+                </p>
+                <p class="mb-0">
+                  Alternatively, the CSV file can be in the format:
+                </p>
+            </div>
+                <div class="container bg-light py-2 border-bottom border-top">
+                    <code class="mb-0 text-dark">
+                        groupname, uid<br>
+                        teamA, mwest@illinois.edu<br>
+                        teamA, zilles@illinois.edu<br>
+                        teamB, mussulma@illinois.edu<br>
+                        teamB, dev@illinois.edu</code>
+                        <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+                </div>
+            <div class="modal-body">
+                <p>
+                  The <tt>groupname</tt> column is a unique identification for the group. To change the grouping, link uids to the groupname.
+                </p>
               <form name="upload-assessment-group-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
@@ -106,8 +125,8 @@
                       <button type="submit" class="btn btn-primary">Copy</button>
                     </div>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -172,7 +191,7 @@
                data-toggle="modal" data-target="#addGroupModal">
               <i class="fa fa-plus" aria-hidden="true"></i> Add a group
             </button>
-            <button type="button" class="btn btn-sm btn-light" tabindex="0"
+            <button type="button" class="btn btn-sm btn-danger" tabindex="0"
                data-toggle="modal" data-target="#deleteAllGroupsModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
             </button>
@@ -211,11 +230,11 @@
             <thead>
               <tr>
                 <th>GID</th>
-                <th>Group Name</th>
-                <th>#Members</th>
+                <th>Name</th>
+                <th>Size</th>
                 <th class="text-center">Group Members (UIDs)</th>
-                <th class="text-center"></th>
-                <th class="text-center"></th>
+                <th class="sorter-false"></th>
+                <th class="sorter-false"></th>
               </tr>
             </thead>
             <tbody>
@@ -224,7 +243,7 @@
                 <td><%= row.gid %></td>
                 <td><%= row.groupname %></td>
                 <td class="text-center"><%= row.num %></td>
-                <td class="text-center"><%= row.uids %></td>
+                <td class="text-center"><small><%= row.uids %></small></td>
                 <td class="text-center">
                   <div class="dropdown">
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -286,15 +305,24 @@
               <% }); %>
             </tbody>
           </table>
-
           <div class="card-footer">
             <small>
-              <strong>Not yet assigned students:</strong>
-                <ul>
+            <% if (not_assigned_users_rows.length == 0) { %>
+                <strong>
+                    All students have been assigned groups.
+                </strong>
+            <% } else { %>
+                <strong>
+                    <%= not_assigned_users_rows.length %>
+                    student<% if (not_assigned_users_rows.length > 1) { %>s<% } %>
+                    not yet assigned:
+                </strong>
+                <ul class="mb-0">
                   <% not_assigned_users_rows.forEach(function(row, iRow) {%>
                   <li><%= row.uid %></li>
                   <% }); %>
                 </ul>
+            <% } %>
             </small>
           </div>
         </div>
