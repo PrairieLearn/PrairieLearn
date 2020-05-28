@@ -116,7 +116,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <h4 class="modal-title" id="addGroupModalLabel">Add a group</h4>
-            </div>            
+            </div>
               <form name="add-Group-form" method="POST">
                 <div class="modal-body">
                   <div class="form-name">
@@ -128,10 +128,10 @@
                     <label for="formUids">UIDs (Seperate with ",". Please make sure they are not in any other groups)</label>
                     <input type="text" class="form-control" name="uids" placeholder="a@illinois.edu, b@illinois.edu, c@illinois.edu">
                   </div>
-                </div>    
+                </div>
                 <div class="modal-footer">
                   <input type="hidden" name="__action" value="addGroup">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">  
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                   <button type="submit" class="btn btn-primary">Add</button>
                 </div>
@@ -233,54 +233,18 @@
                     <div id="row<%= iRow %>PopoverAdd"
                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                       data-html="true" data-placement="auto" title="Add Members"
-                      data-content="
-                                    <form name=&quot;add-member-form&quot; method=&quot;POST&quot;>
-                                      UIDs:
-                                      <input type=&quot;text&quot; class=&quot;form-control&quot; placeholder=&quot;A@ex.com, B@ex.com&quot; name=&quot;addmemberuids&quot;>
-                                      <br>
-                                      <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;addmember&quot;>
-                                      <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                      <input type=&quot;hidden&quot; name=&quot;gid&quot; value=&quot;<%= row.gid %>&quot;>
-                                      <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverAdd').popover('hide')&quot;>
-                                        Cancel
-                                      </button>
-                                      <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Add</button>
-                                    </form>
-                                    ">
-                  </div>
-                  <div id="row<%= iRow %>Popoverdeletemember"
-                    tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                    data-html="true" data-placement="auto" title="Remove Members"
-                    data-content="
-                                  <form name=&quot;delete-member-form&quot; method=&quot;POST&quot;>
-                                    UIDs:
-                                    <input type=&quot;text&quot; class=&quot;form-control&quot; placeholder=&quot;A@ex.com, B@ex.com&quot; name=&quot;deletememberuids&quot;>
-                                    <br>
-                                    <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;deletemember&quot;>
-                                    <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                    <input type=&quot;hidden&quot; name=&quot;gid&quot; value=&quot;<%= row.gid %>&quot;>
-                                    <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>Popoverdeletemember').popover('hide')&quot;>
-                                      Cancel
-                                    </button>
-                                    <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Delete</button>
-                                  </form>
-                                  ">
-                  </div>
-                  <div id="row<%= iRow %>Popoverdeletegroup"
-                    tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                    data-html="true" data-placement="auto" title="Confirm delete this group"
-                    data-content="
-                                  <form name=&quot;delete-group-form&quot; method=&quot;POST&quot;>
-                                    <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;deletegroup&quot;>
-                                    <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                    <input type=&quot;hidden&quot; name=&quot;gid&quot; value=&quot;<%= row.gid %>&quot;>
-                                    <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>Popoverdeletegroup').popover('hide')&quot;>
-                                      Cancel
-                                    </button>
-                                    <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Delete</button>
-                                  </form>
-                                  ">
-                  </div>
+                      data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>">
+                    </div>
+                    <div id="row<%= iRow %>Popoverdeletemember"
+                      tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                      data-html="true" data-placement="auto" title="Remove Members"
+                      data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>">
+                    </div>
+                    <div id="row<%= iRow %>Popoverdeletegroup"
+                      tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                      data-html="true" data-placement="auto" title="Confirm delete this group"
+                      data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
+                    </div>
 
                     <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
                     <div class="dropdown-menu" onclick="window.event.preventDefault();">
@@ -292,7 +256,7 @@
                           <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                         </a>
                         <% } %>
-  
+
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
@@ -300,7 +264,7 @@
                           <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                         </a>
                         <% } %>
-  
+
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
