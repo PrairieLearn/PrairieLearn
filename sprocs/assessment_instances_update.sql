@@ -14,7 +14,7 @@ DECLARE
     course_id bigint;
     user_id bigint;
     group_id bigint;
-    group_work boolean;
+    groupwork boolean;
     assessment_id bigint;
     assessment_type enum_assessment_type;
     assessment_instance_open boolean;
@@ -31,15 +31,15 @@ BEGIN
     SELECT 
         a.groupwork
     INTO 
-        group_work
+        groupwork
     FROM
-        assessment_instances AS ai 
+        assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE 
         ai.id = assessment_instance_id;
     
      -- get basic data about existing objects
-    IF group_work THEN 
+    IF groupwork THEN
         SELECT
             c.id,      g.id, a.id,          a.type,
             a.max_points,          ai.max_points,

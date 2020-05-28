@@ -14,11 +14,11 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <div class="modal fade" id="uploadAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentGroups">
+      <div class="modal fade" id="uploadAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="uploadAssessmentGroupsModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group setting</h4>
+              <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group setting</h1>
             </div>
             <div class="modal-body">
               <%- include('csvHelpInstanceGroups'); %>
@@ -43,21 +43,21 @@
         </div>
       </div>
     <div id="content" class="container-fluid">
-      <div class="modal fade" id="autoAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="autoAssessmentGroups">
+      <div class="modal fade" id="autoAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="autoAssessmentGroupsModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="autoAssessmentGroupsModalLabel">Auto new group setting</h4>
+              <h1 class="h4 modal-title" id="autoAssessmentGroupsModalLabel">Auto new group setting</h1>
             </div>
             <div class="modal-body">
               <form name="auto-assessment-group-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <label for="formMin">Min number of members in a group</label>
-                  <input type="text" class="form-control" name="minnum">
+                  <input type="text" class="form-control" id="formMin" name="minnum">
                 </div>
                 <div class="form-group">
                   <label for="formMax">Max number of members in a group</label>
-                  <input type="text" class="form-control" name="maxnum">
+                  <input type="text" class="form-control" id="formMax" name="maxnum">
                 </div>
                 <div class="radio">
                   <label><input type="radio" name="optradio" value = 1 checked>Grouping entire class (Please delete all groups before executing)</label>
@@ -82,11 +82,11 @@
         </div>
       </div>
       <div id="content" class="container-fluid">
-        <div class="modal fade" id="copyAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="copyAssessmentGroups">
+        <div class="modal fade" id="copyAssessmentGroupsModal" tabindex="-1" role="dialog" aria-labelledby="copyAssessmentGroupsModalLabel">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h4 class="modal-title" id="copyAssessmentGroupsModalLabel">Copy group setting</h4>
+                <h1 class="h4 modal-title" id="copyAssessmentGroupsModalLabel">Copy group setting</h1>
               </div>
               <div class="modal-body">
                 <form name="copy-assessment-group-form" method="POST" enctype="multipart/form-data">
@@ -111,22 +111,22 @@
             </div>
           </div>
         </div>
-      <div class="modal fade" id="addGroupModal" tabindex="-1" role="dialog" aria-labelledby="addGroup">
+      <div class="modal fade" id="addGroupModal" tabindex="-1" role="dialog" aria-labelledby="addGroupModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="addGroupModalLabel">Add a group</h4>
+              <h1 class="h4 modal-title" id="addGroupModalLabel">Add a group</h1>
             </div>            
               <form name="add-Group-form" method="POST">
                 <div class="modal-body">
                   <div class="form-name">
                     <label for="formName">Group Name</label>
-                    <input type="text" class="form-control" name="groupname">
+                    <input type="text" class="form-control" id="formName" name="groupname">
                   </div>
                   <br>
                   <div class="form-uids">
                     <label for="formUids">UIDs (Seperate with ",". Please make sure they are not in any other groups)</label>
-                    <input type="text" class="form-control" name="uids" placeholder="a@illinois.edu, b@illinois.edu, c@illinois.edu">
+                    <input type="text" class="form-control" id="formUids" name="uids" placeholder="a@illinois.edu, b@illinois.edu, c@illinois.edu">
                   </div>
                 </div>    
                 <div class="modal-footer">
@@ -140,11 +140,11 @@
         </div>
       </div>
 
-      <div class="modal fade" id="deleteAllGroupsModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllGroups">
+      <div class="modal fade" id="deleteAllGroupsModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllGroupsModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="deleteAllGroupsModalLabel">Delete all exisitng groups</h4>
+              <h1 class="h4 modal-title" id="deleteAllGroupsModalLabel">Delete all exisitng groups</h1>
             </div>
             <div class="modal-body">
               Are you sure you want to delete all exisitng groups

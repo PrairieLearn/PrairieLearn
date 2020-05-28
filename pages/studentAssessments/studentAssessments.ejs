@@ -40,11 +40,12 @@
                     <% if(row.groupwork){ %>
                       Group
                     <% } %>
-                    <%= row.label %></span>  
+                    <%= row.label %>
+                  </span>
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"
                    class="badge color-<%= row.assessment_set_color %> color-hover">
-                   <% if(row.groupwork){ %>
+                  <% if(row.groupwork){ %>
                     Group
                   <% } %><%= row.label %>
                 </a>
