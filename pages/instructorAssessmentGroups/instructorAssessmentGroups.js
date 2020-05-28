@@ -65,6 +65,7 @@ router.post('/', function(req, res, next) {
         const groupname = req.body.groupname;
         const uids = req.body.uids;
         const uidlist = uids.split(/[ ,]+/);
+        const waitnum = len(uidlist)
         (async () => {
             for(const uid of uidlist){
                 let params = [
@@ -74,8 +75,8 @@ router.post('/', function(req, res, next) {
                 ];
                 await sqldb.callAsync('assessment_groups_update', params);
             }
+            res.redirect(req.originalUrl);
         })();
-        res.redirect(req.originalUrl);
     } else if (req.body.__action == 'addmember') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
