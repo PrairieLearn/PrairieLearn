@@ -8,11 +8,15 @@
      margin-bottom: 15px;
  }
  .code-block {
-     width: 65%;
+     width: 80%;
      margin-left: auto;
      margin-right: auto;
      overflow: hidden;
      margin-bottom: 1rem;
+     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+     background: #f0f0f0;
+     padding: 1em;
+     padding-bottom: 0em;
  }
  .code-block div {
      padding: 0.5rem;
@@ -23,27 +27,28 @@
 </style>
 
 <p>
-    <a href="https://github.com/nicknytko">Nicolas Nytko</a> (CS BS '19, CS MS '22) has added an amazingly flexible new <code class="user-output">pl-overlay</code> element that lets you place elements on top of each other in arbitrary locations. For example, you can put a <code class="user-output">pl-string-input</code> on top of a <code class="user-output">pl-figure</code> to ask students to label a diagram:
+    <a href="https://github.com/nicknytko">Nicolas Nytko</a> (CS BS '19, CS MS '22) has added an amazingly flexible <code class="user-output">pl-overlay</code> element that lets you place elements on top of each other in arbitrary locations. For example, you can put a <code class="user-output">pl-string-input</code> on top of a <code class="user-output">pl-figure</code> to ask students to label a diagram:
 </p>
 
 <img class="border rounded" src="map.png" width="715px">
 
 <p>
-    Each sub-element in the overlay is inside a <code class="user-output">pl-location</code> tag, which lets you specify the position and alignment relative to the overlay area. The source to the above example is given here:
+    Each sub-element in the overlay is inside a <code class="user-output">pl-location</code> tag, which lets you specify the position and alignment relative to the overlay area, and you can use <code class="user-output">pl-background</code> to set an image or other content as the lowest layer. The source to the above example is given here:
 </p>
 
 <div class="code-block rounded">
-    <!-- Auto-generated w/ Pygments -->
-<div style="background: #f0f0f0"><pre style="line-height: 125%"><span></span>&lt;<span style="color: #062873; font-weight: bold">pl-overlay</span> <span style="color: #4070a0">width</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;700&quot;</span> <span style="color: #4070a0">height</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;600&quot;</span> <span style="color: #4070a0">clip</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;false&quot;</span>&gt;
-    &lt;<span style="color: #062873; font-weight: bold">pl-location</span> <span style="color: #4070a0">left</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;0&quot;</span> <span style="color: #4070a0">top</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;0&quot;</span> <span style="color: #4070a0">valign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;top&quot;</span> <span style="color: #4070a0">halign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;left&quot;</span>&gt;
-       &lt;<span style="color: #062873; font-weight: bold">pl-figure</span> <span style="color: #4070a0">file-name</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;map.png&quot;</span> <span style="color: #4070a0">directory</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;clientFilesQuestion&quot;</span>&gt;&lt;/<span style="color: #062873; font-weight: bold">pl-figure</span>&gt;
-    &lt;/<span style="color: #062873; font-weight: bold">pl-location</span>&gt;
-    &lt;<span style="color: #062873; font-weight: bold">pl-location</span> <span style="color: #4070a0">left</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;460&quot;</span> <span style="color: #4070a0">top</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;260&quot;</span> <span style="color: #4070a0">valign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;top&quot;</span> <span style="color: #4070a0">halign</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;center&quot;</span>&gt;
-       &lt;<span style="color: #062873; font-weight: bold">pl-string-input</span> <span style="color: #4070a0">answers-name</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;string_value&quot;</span> <span style="color: #4070a0">show-help-text</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;false&quot;</span> <span style="color: #4070a0">size</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;7&quot;</span>
-                        <span style="color: #4070a0">correct-answer</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;Ukraine&quot;</span> <span style="color: #4070a0">remove-leading-trailing</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;true&quot;</span>
-                        <span style="color: #4070a0">ignore-case</span><span style="color: #666666">=</span><span style="color: #4070a0">&quot;true&quot;</span>&gt;&lt;/<span style="color: #062873; font-weight: bold">pl-string-input</span>&gt;
-    &lt;/<span style="color: #062873; font-weight: bold">pl-location</span>&gt;
-&lt;/<span style="color: #062873; font-weight: bold">pl-overlay</span>&gt;</pre></div></div>
+  <pre>
+&lt;pl-overlay&gt;
+    &lt;pl-background&gt;
+        &lt;img src="{{options.client_files_question_url}}/europe_annotated.png" width="700px"&gt;
+    &lt;/pl-background&gt;
+
+    &lt;pl-location left="460" top="290"&gt;
+       &lt;pl-string-input correct-answer="Ukraine" answers-name="string_value" show-help-text="false"
+           size="7" remove-leading-trailing="true" ignore-case="true"&gt;&lt;/pl-string-input&gt;
+    &lt;/pl-location&gt;
+&lt;/pl-overlay&gt;
+</pre></div>
 
 <p>
     For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay">pl-overlay documentation</a>.
