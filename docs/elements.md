@@ -56,6 +56,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
+- [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
@@ -1257,6 +1258,67 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
+## `pl-overlay` element
+
+The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
+
+#### Sample Element
+
+![](elements/pl-overlay.png)
+
+```html
+<pl-overlay width="400" height="400" clip="false">
+    <pl-background>
+        <pl-drawing width="398" height="398" hide-answer-panel="false">
+            <pl-drawing-initial>
+                <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </pl-background>
+    <pl-location left="200" top="375">
+        $$3$$
+    </pl-location>
+    <pl-location left="375" top="200">
+        $$3$$
+    </pl-location>
+    <pl-location left="170" top="170">
+        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+    </pl-location>
+</pl-overlay>
+```
+
+#### `pl-overlay` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`width` | float | - | The width of the overlay canvas in pixels.  Required only if no background is specified.
+`height` | float | - | The height of the overlay canvas in pixels.  Required only if no background is specified.
+`clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
+
+#### `pl-location` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`left` | float | - | The x coordinate of the child element (relative to the left of the overlay)
+`top` | float | - | The y coordinate of the child element (relative to the top of the overlay)
+`right` | float | - | The x coordinate of the child element (relative to the right of the overlay)
+`bottom` | float | - | The y coordinate of the child element (relative to the bottom of the overlay)
+`valign` | string | `middle` | Specifies the vertical alignment of the contents.  Can be one of `top`, `middle`, or `bottom`.
+`halign` | string | `center` | Specifies the horizontal alignment of the contents.  Can be one of `left`, `center`, or `right`.
+
+#### `pl-background` Customizations
+
+The `pl-background` child tag does not have any extra attributes that need to be set.  All relevant positioning and sizing information is obtained from the tag's contents.
+
+#### Details
+
+An overlay is pre-defined as a "overlay area" with a static size.  By default, elements that exceed these boundaries will get partially or totally cut off.  A background can be specified by wrapping HTML in a `<pl-background>` tag, in this case the overlay will automatically size itself to fit the background and a `width` and `height` do not need to be specified.   Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+
+#### Example Implementations
+
+- [elementOverlay]
+
+----
 ## `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
@@ -1543,6 +1605,7 @@ Attribute | Type | Default | Description
 [elementMatrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixLatex
 [elementMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMultipleChoice
 [elementNumberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementNumberInput
+[elementOverlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementOverlay
 [elementPanels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPanels
 [elementPrairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPrairieDrawFigure
 [elementPythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPythonVariable
