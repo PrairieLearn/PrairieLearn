@@ -21,7 +21,26 @@
               <h4 class="modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group setting</h4>
             </div>
             <div class="modal-body">
-              <%- include('csvHelpInstanceGroups'); %>
+                <p>
+                  Upload a CSV file in the format of <code>&lt;assessment&gt;_grouping.csv</code>.
+                </p>
+                <p class="mb-0">
+                  Alternatively, the CSV file can be in the format:
+                </p>
+            </div>
+                <div class="container bg-light py-2 border-bottom border-top">
+                    <code class="mb-0 text-dark">
+                        groupname, uid<br>
+                        teamA, mwest@illinois.edu<br>
+                        teamA, zilles@illinois.edu<br>
+                        teamB, mussulma@illinois.edu<br>
+                        teamB, dev@illinois.edu</code>
+                        <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+                </div>
+            <div class="modal-body">
+                <p>
+                  The <tt>groupname</tt> column is a unique identification for the group. To change the grouping, link uids to the groupname.
+                </p>
               <form name="upload-assessment-group-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <div class="custom-file">
