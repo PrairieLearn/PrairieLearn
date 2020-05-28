@@ -850,6 +850,7 @@ def gen_rectangle(el):
         'fill': color,
         'stroke': stroke_color,
         'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
+        'strokeUniform': True,
         'type': 'rectangle',
         'gradingName': 'rectangle',
         'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
@@ -868,10 +869,13 @@ def gen_triangle(el):
         'fill': color,
         'stroke': stroke_color,
         'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
+        'strokeUniform': True,
         'type': 'triangle',
         'gradingName': 'triangle',
         'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
         'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
+        'originX': 'center',
+        'originY': 'center'
     }
     return obj
 
@@ -891,10 +895,12 @@ def gen_circle(el):
         'stroke': stroke_color,
         'fill': color,
         'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
+        'strokeUniform': True,
         'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
         'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
         'type': 'circle',
         'gradingName': 'circle',
+        'scaling': True
     }
     return obj
 

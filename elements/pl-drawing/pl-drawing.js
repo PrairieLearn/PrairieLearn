@@ -98,6 +98,24 @@
             ev.target.cornerSize *= renderScale;
             ev.target.borderColor = 'rgba(102,153,255,1.0)';
         });
+
+        elem_options.show_bounding = true;
+        if (elem_options.show_bounding) {
+            canvas.on('after:render', function() {
+                canvas.contextContainer.strokeStyle = '#555';
+
+                canvas.forEachObject(function(obj) {
+                    var bound = obj.getBoundingRect();
+
+                    canvas.contextContainer.strokeRect(
+                        bound.left + 0.5,
+                        bound.top + 0.5,
+                        bound.width,
+                        bound.height
+                    );
+                })
+            });
+        }
         
         if (elem_options.grid_size != 0) {
             mechanicsObjects.addCanvasBackground(canvas, canvas_width, canvas_height, elem_options.grid_size);
@@ -133,6 +151,13 @@
             }
 
             obj.setCoords();
+        });
+
+        fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
+            const target = canvas.findTarget(e);
+            if (target !== undefined) {
+                target.fire('dblclick', {'e': e});
+            }
         });
 
         let answerData = {};
@@ -175,7 +200,8 @@
         
         handlers["add-generic"] = function(options) {
             if (options.type in mechanicsObjects.byType) {
-                mechanicsObjects.byType[options.type].call(mechanicsObjects, canvas, options, submittedAnswer, answerName);
+                let added = mechanicsObjects.byType[options.type].call(mechanicsObjects, canvas, options, submittedAnswer, answerName);
+                console.log(added);
             } else {
                 console.warn("No element type: " + options.type);
             }
