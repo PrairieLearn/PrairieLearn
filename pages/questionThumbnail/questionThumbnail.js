@@ -8,8 +8,9 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/:id', function(req, res, _next) {
+router.get('/:id/:filename', function(req, res, _next) {
     var id = req.params['id'];
+    var filename = req.params['filename'];
     const params = {
         course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
         course_id: res.locals.course.id,
@@ -18,17 +19,17 @@ router.get('/:id', function(req, res, _next) {
     sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, _next)) return;
 
-        const filename = result.rows;
-        if (filename.length == 0) {
+        const qinfo = result.rows;
+        if (qinfo.length == 0) {
             res.sendStatus(404);
             return;
         }
         var clientFilesDir = path.join(
             res.locals.course.path,
             'questions',
-            filename[0].qid,
+            qinfo[0].qid,
         );
-        res.sendFile(filename[0].thumbnail_filename, {maxAge: 86400000 * 30, root: clientFilesDir});
+        res.sendFile(filename, {maxAge: 86400000 * 30, root: clientFilesDir});
     });
 });
 

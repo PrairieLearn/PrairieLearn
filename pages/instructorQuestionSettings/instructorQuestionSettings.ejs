@@ -37,9 +37,9 @@
                       <i class="fa fa-upload"></i>
                       <span>Upload Thumbnail</span>
                   </button>
-                  <button type="button" class="btn btn-xs btn-secondary mr-2" id="editThumbnail" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Edit Thumbnail" data-content="<%= include('editThumbnailForm', {buttonID: 'editThumbnail', location_old: question.filename_location, filename_old: question.thumbnail_filename}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                  <button type="button" class="btn btn-xs btn-secondary mr-2" id="selectThumbnail" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Select Thumbnail" data-content="<%= include('selectThumbnailForm', {buttonID: 'selectThumbnail', id: question.id}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                       <i class="fa fa-i-cursor"></i>
-                      <span>Edit Thumbnail</span>
+                      <span>Select Thumbnail</span>
                   </button>
                 <% } %>
                 <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>

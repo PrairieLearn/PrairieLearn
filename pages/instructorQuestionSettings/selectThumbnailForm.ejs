@@ -1,0 +1,38 @@
+<form name="select-thumbnail-form" class="needs-validation" method="POST" novalidate>
+    <input type="hidden" name="__action" value="select_thumbnail">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <div class="container p-0 mb-4">
+      <b>Select a thumbnail.</b>
+    </div>
+    <div class="form-group">
+        <label for="selectThumbnail">Available Thumbnails:</label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="thumbnail_info" value="{&quot;filename&quot;: &quot;&quot;, &quot;location&quot;: &quot;&quot;}">
+            <label class="form-check-label">None</label>
+        </div>
+        <% available_thumbnails.forEach(function (thumbnail) { %>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="thumbnail_info" value="{&quot;filename&quot;: &quot;<%=thumbnail.filename%>&quot;, &quot;location&quot;: &quot;<%=thumbnail.location%>&quot;}">
+                <label class="form-check-label"><%- include('../partials/questionThumbnail', {location: thumbnail.location, filename: thumbnail.filename, id: question.id}); %></label>
+            </div>
+        <% }); %>
+        <div class="invalid-feedback" id="invalidLocationMessage">
+        </div>
+    </div>
+    <div class="text-right">
+        <button type="button" class="btn btn-secondary" onclick="$('#<%= buttonID %>').popover('hide')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change</button>
+    </div>
+</form>
+
+<script>
+    $(function() {
+        $('form[name="edit-thumbnail-form"]').submit(function(event) {
+            if ($(this).get(0).checkValidity() === false) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            $(this).addClass('was-validated');
+        });
+    });
+</script>

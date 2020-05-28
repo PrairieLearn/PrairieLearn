@@ -65,11 +65,12 @@ router.post('/', function(req, res, next) {
                 });
             });
         }
-    } else if (req.body.__action == 'edit_thumbnail') {
-        debug('Editing thumbnail');
-        if (!req.body.filename && !req.body.location) return next(new Error(`Invalid input (was falsey): ${req.body.filename}, ${req.body.location}`));
-        let thumbnail_filename_new = req.body.filename;
-        let filename_location_new = req.body.location;
+    } else if (req.body.__action == 'select_thumbnail') {
+        debug('Selecting thumbnail');
+        if (!req.body.thumbnail_info) return next(new Error(`Invalid input (was falsey): ${req.body.thumbnail_info}`));
+        let info = JSON.parse(req.body.thumbnail_info);
+        let thumbnail_filename_new = info.filename;
+        let filename_location_new = info.location;
         if (res.locals.question.filename_location == filename_location_new && res.locals.question.thumbnail_filename == thumbnail_filename_new) {
             debug('The thumbnail information is the same as the old information - do nothing');
             res.redirect(req.originalUrl);
@@ -226,6 +227,71 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.select_assessments_with_question_for_display, {question_id: res.locals.question.id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
+                callback(null);
+            });
+        },
+        (callback) => {
+            const clientFilesCoursePath = encodePath(path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails'));
+            const questionPath = encodePath(path.join(res.locals.course.path, 'questions', res.locals.question.qid));
+            const publicPath = encodePath('public/images/thumbnails');
+            res.locals.available_thumbnails = [];
+            async.series([
+                (callback) => {
+                    fs.readdir(clientFilesCoursePath, function (err, files) {
+                        // Probably no clientFilesCourse directory
+                        if (err) {
+                            console.log('clientFilesCourse failed' + err);
+                            return;
+                        }
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'clientFilesCourse'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(questionPath, function (err, files) {
+                        if (err) {
+                            console.log('question failed' + err);
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'question'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(publicPath, function (err, files) {
+                        if (err) {
+                            console.log('public failed' + err);
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'public'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                  },
+            ], (err, images) => {
+                if (ERR(err, next)) return;
+                images.forEach(function (image) {
+                    res.locals.available_thumbnails = res.locals.available_thumbnails.concat(image);
+                });
                 callback(null);
             });
         },
