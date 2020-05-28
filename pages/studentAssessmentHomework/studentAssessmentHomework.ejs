@@ -19,11 +19,8 @@
             <div class="row">
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="create-form" name="create-form" method="POST">
-                    <div class="create-input-form">
-                      <input type="text" class="form-control" name="groupName" placeholder="Group Name">
-                    </div>
-                    <br>
-                    <div class="d-flex justify-content-center">
+                    <input type="text" class="form-control" name="groupName" placeholder="Group Name">
+                    <div class="mt-4 d-flex justify-content-center">
                       <div class="form-group mb-0">
                         <input type="hidden" name="__action" value="createGroup">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -34,11 +31,8 @@
                 </div>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="joingroup-form" name="joingroup-form" method="POST">
-                    <div class="friend-code-input-form">
-                      <input type="text" class="form-control" name="friendcode" placeholder="Friend Code">
-                    </div>
-                    <br>
-                    <div class="d-flex justify-content-center">
+                    <input type="text" class="form-control" name="friendcode" placeholder="Friend Code">
+                    <div class="mt-4 d-flex justify-content-center">
                       <div class="form-group mb-0">
                         <input type="hidden" name="__action" value="joinGroup">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -50,8 +44,7 @@
             </div>
           </div>
           
-          <br>
-          <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
+          <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
             <input type="hidden" name="__action" value="newInstance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>

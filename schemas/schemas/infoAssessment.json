@@ -94,17 +94,17 @@
             "default": true
         },
         "groupwork": {
-            "description": "To set whether this is a group work.",
+            "description": "If the assessment will support group work.",
             "type": "boolean",
             "default": false
         },
         "groupmax": {
-            "description": "max number of students in a group",
+            "description": "The maximum number of students in the group.",
             "type": "integer",
             "default": 1
         },
         "groupmin": {
-            "description": "min number of students in a group",
+            "description": "The minimum number of students in the group.",
             "type": "integer",
             "default": 1
         },
