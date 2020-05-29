@@ -1,0 +1,67 @@
+.sortable-code {
+    position: static;
+    padding-left: 0px;
+    margin-left: 2%;
+    float: left;
+}
+#sortable-unused { width: 38%; }
+#sortable-answer { width: 56%; }
+.sortable-code ul {
+    font-size: 120%;
+    font-family: monospace;
+    list-style: none;
+    background-color: #efefff;
+    padding-bottom: 10px;
+    padding-left: 0;
+    margin-left: 0;
+    border: 1px solid #efefff;;
+}
+.sortable-code ul:empty {
+  padding-bottom: 30px;
+}
+.sortable-code li, .sortable-code li:before, .sortable-code li:after {
+  box-sizing: content-box;
+}
+ul.output {
+    background-color: #FFA;
+}
+.sortable-code li {
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius: 10px;
+    border:1px solid lightgray;
+    padding:10px;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: move;
+}
+.sortable-code li:hover {
+    overflow: visible;
+}
+
+.indent1 {
+    margin-left: 40px;
+}
+.indent2 {
+    margin-left: 80px;
+}
+.indent3 {
+    margin-left: 120px;
+}
+.indent4 {
+    margin-left: 160px;
+}
+    
+.lang-py {
+    background-color: #EFEFEF;
+}
+.correct {
+    background-color: #00dd00;
+}    
+.incorrect {
+    background-color: #ff0000;
+}    
+.misaligned {
+    background-color: #cccc00;
+}    

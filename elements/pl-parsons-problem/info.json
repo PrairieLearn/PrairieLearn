@@ -1,0 +1,16 @@
+{
+    "controller": "pl-parsons-problem.py",
+    "dependencies": {
+        "coreScripts": [
+            "lodash.min.js"
+        ],
+        "elementStyles": [
+            "pl-parsons-problem.css"
+        ],
+        "elementScripts": [
+            "jquery-ui.min.js",
+            "jquery.ui.touch-punch.min.js", 
+            "pl-parsons-problem.js"
+        ]
+    }    
+}
