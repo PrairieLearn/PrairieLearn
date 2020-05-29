@@ -241,6 +241,7 @@ router.get('/', function(req, res, next) {
                         // Probably no clientFilesCourse directory
                         if (err) {
                             console.log('clientFilesCourse failed' + err);
+                            callback(null, []);
                             return;
                         }
                         let images = [];
@@ -257,6 +258,7 @@ router.get('/', function(req, res, next) {
                     fs.readdir(questionPath, function (err, files) {
                         if (err) {
                             console.log('question failed' + err);
+                            callback(null, []);
                             return;
                         }
 
@@ -274,6 +276,7 @@ router.get('/', function(req, res, next) {
                     fs.readdir(publicPath, function (err, files) {
                         if (err) {
                             console.log('public failed' + err);
+                            callback(null, []);
                             return;
                         }
 
