@@ -24,7 +24,7 @@
     "fs-extra": "9.0.0",
     "js-yaml": "3.14.0",
     "lodash": "4.17.15",
-    "pg": "8.0.3"
+    "pg": "8.2.1"
   },
   "devDependencies": {
     "eslint": "7.1.0",
