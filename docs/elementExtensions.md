@@ -53,7 +53,7 @@ This small example above will render `"hello world!"` to the question page.  Not
 
 ### Extension Dependencies
 
-Like how questions and elements may require client-side assets, extensions may also require client-side JavaScript and CSS.  The different properties are summarized here:
+Similar to how questions and elements may require client-side assets, extensions may also require client-side JavaScript and CSS.  The different properties are summarized here:
 
 Property | Description
 --- | ---

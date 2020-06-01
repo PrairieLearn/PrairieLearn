@@ -8,14 +8,14 @@ const _ = require('lodash');
  * static files from an extension's "clientFilesExtension" directory. 
  */
 
-const EXTENSION_WHITELIST = ['.js', '.css'];
+const FILE_TYPE_EXTENSION_WHITELIST = ['.js', '.css'];
 const CLIENT_FOLDER = 'clientFilesExtension';
 
 router.get('/*', function(req, res, next) {
     const filename = req.params[0];
     let pathSpl = path.normalize(filename).split('/');
     const valid = pathSpl[2] == CLIENT_FOLDER ||
-          _.some(EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
+          _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
     if (!valid) {
         res.status(404);
         const err = new Error('Unable to serve that file');
