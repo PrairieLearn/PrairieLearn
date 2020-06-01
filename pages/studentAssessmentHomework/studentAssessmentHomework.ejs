@@ -13,7 +13,11 @@
 
         <div class="card-body">
           <p class="lead text-center">
-            This is <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
+            <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
+          </p>
+          <% if (groupsize == 0) { %>
+          <p class="text-center">
+             This is a group homework. Please create or join a group first.
           </p>
           <div class="container-fluid">
             <div class="row">
@@ -43,13 +47,44 @@
                 </div>
             </div>
           </div>
-          
-          <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-            <input type="hidden" name="__action" value="newInstance">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
-          </form>
-
+          <% } else {%>
+            <div class="container-fluid">
+              <div class="row">
+                  <div class="col-sm bg-light py-4 px-4 border">
+                    <p>This is a group homework. Use your friend code to invite others to join the group.</p>
+                    <span class="badge badge-secondary">Group Name</span> 
+                    <%= groupinfo[0].name %><br>
+                    <span class="badge badge-secondary">Friend Code</span> 
+                    <%= friendcode %><br>
+                  </div>
+                  <div class="col-sm bg-light py-4 px-4 border">
+                    <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
+                      <input type="hidden" name="__action" value="quitGroup">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <button id="start-assessment" type="submit" class="btn btn-danger">Quit the Group</button>
+                    </form>
+                    <span class="badge badge-secondary">Group Members</span> 
+                    <% groupinfo.forEach(function(row) {%>
+                      <li><%= row.uid %></li>
+                    <% }); %>
+                  </div>
+              </div>
+            </div>
+            <% if (start) { %>
+            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
+              <input type="hidden" name="__action" value="newInstance">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
+            </form>
+            <% } else { %>
+            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
+              <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
+            </form>
+            <p class="text-center">
+              * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
+           </p>
+           <% } %>
+        <% } %>
         </div>
       </div>
     </div>

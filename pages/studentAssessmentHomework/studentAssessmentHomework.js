@@ -33,7 +33,27 @@ router.get('/', function(req, res, next) {
             //if it is a groupwork with no instance, jump to a confirm page.
             if(res.locals.assessment.groupwork){
                 if (ERR(err, next)) return;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                sqldb.query(sql.get_groupinfo, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.locals.groupsize = result.rowCount;
+                    if(res.locals.groupsize > 0){
+                        res.locals.groupinfo = result.rows;
+                        const group_id = res.locals.groupinfo[0].group_id || 0;
+                        res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
+                        sqldb.query(sql.config_info, params, function(err, result) {
+                            if (ERR(err, next)) return;
+                            res.locals.minsize = result.rows[0].minimum;
+                            res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                            res.locals.start = false;
+                            if(res.locals.needsize <= 0){
+                                res.locals.start = true;
+                            }
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        });
+                    } else {
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
+                });
             } else {
                 const time_limit_min = null;
                 assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
@@ -80,6 +100,16 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
+        });
+    } else if (req.body.__action == 'quitGroup') {
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            user_id: res.locals.user.user_id,
+        };
+        sqldb.query(sql.quit_group, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.locals.groupsize = 0;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

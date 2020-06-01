@@ -14,17 +14,21 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     debug('GET /');
     const params = {assessment_id: res.locals.assessment.id};
-    sqldb.query(sql.assessment_list, params, function(err, result) {
+    sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.assessment_list_rows = result.rows;
-        sqldb.query(sql.select_groups, params, function(err, result) {
+        res.locals.config_info = result.rows[0];
+        sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.groups_rows = result.rows;
-            sqldb.query(sql.not_assigned_users, params, function(err, result) {
+            res.locals.assessment_list_rows = result.rows;
+            sqldb.query(sql.select_groups, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.not_assigned_users_rows = result.rows;
-                debug('render page');
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.locals.groups_rows = result.rows;
+                sqldb.query(sql.not_assigned_users, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.locals.not_assigned_users_rows = result.rows;
+                    debug('render page');
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                });
             });
         });
     });
@@ -76,6 +80,16 @@ router.post('/', function(req, res, next) {
             }
             res.redirect(req.originalUrl);
         })();
+    } else if (req.body.__action == 'configGroup') {
+        const params = {
+            assessment_id: res.locals.assessment.id,
+            minsize: req.body.minsize,
+            maxsize: req.body.maxsize,
+        };
+        sqldb.query(sql.config_group, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else if (req.body.__action == 'addmember') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;

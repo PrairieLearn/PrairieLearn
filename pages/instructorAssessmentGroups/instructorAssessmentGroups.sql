@@ -1,3 +1,8 @@
+--BLOCK config_info
+SELECT id, course_instance_id, type, name, minimum, maximum
+FROM group_configs
+WHERE assessment_id = $assessment_id AND deleted_at IS NULL;
+
 -- BLOCK select_groups
 SELECT 
   GID,
@@ -45,3 +50,11 @@ WHERE course_instance_id IN (SELECT course_instance_id
                             FROM assessments
                             WHERE id = $assessment_id)
 ORDER BY tid;
+
+--BLOCK config_group
+UPDATE group_configs
+    SET
+        minimum = $minsize,
+        maximum = $maxsize
+    WHERE
+        assessment_id = $assessment_id AND deleted_at IS NULL;
