@@ -86,7 +86,7 @@ router.post('/', function(req, res, next) {
             minsize: req.body.minsize,
             maxsize: req.body.maxsize,
         };
-        sqldb.query(sql.config_group, params, function(err, result) {
+        sqldb.query(sql.config_group, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
