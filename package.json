@@ -72,7 +72,7 @@
         "rehype-stringify": "^7.0.0",
         "remark-math": "^2.0.1",
         "remark-parse": "^8.0.2",
-        "remark-rehype": "^6.0.0",
+        "remark-rehype": "^7.0.0",
         "request-promise-native": "^1.0.8",
         "requirejs": "^2.3.5",
         "rimraf": "^3.0.2",
