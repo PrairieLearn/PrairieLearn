@@ -49,7 +49,7 @@ def render(element_html, data):
     return contents
 ```
 
-This small example above will render `"hello world!"` to the question page.  Note that no order is guaranteed when loading all extensions with `load_all_extensions_for_element()`.
+This small example above will render `"hello world!"` to the question page.  Note that when loading all extensions with `load_all_extensions_for_element()`, modules are returned in ascending alphabetical order.
 
 ### Extension Dependencies
 

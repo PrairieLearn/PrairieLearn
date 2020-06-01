@@ -1146,7 +1146,7 @@ def load_all_extensions_for_element(data):
     load_all_extensions_for_element(data)
 
     Loads all available extensions for a given element.
-    Returns a dictionary mapping the extension name to its defined variables and functions
+    Returns an ordered dictionary mapping the extension name to its defined variables and functions
     """
 
     if 'extensions' not in data:
@@ -1154,8 +1154,8 @@ def load_all_extensions_for_element(data):
     if len(data['extensions']) == 0:
         return {}
 
-    loaded_extensions = {}
-    for name in data['extensions'].keys():
+    loaded_extensions = collections.OrderedDict()
+    for name in sorted(data['extensions'].keys()):
         loaded_extensions[name] = load_element_extension(data, name)
 
     return loaded_extensions
