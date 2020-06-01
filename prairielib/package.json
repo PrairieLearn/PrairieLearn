@@ -27,7 +27,7 @@
     "pg": "8.0.3"
   },
   "devDependencies": {
-    "eslint": "6.8.0",
+    "eslint": "7.1.0",
     "jest": "25.5.3"
   }
 }
