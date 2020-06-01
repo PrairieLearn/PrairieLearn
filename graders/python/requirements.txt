@@ -8,7 +8,7 @@ Pillow==7.1.2
 pygraphviz==1.5
 defusedxml==0.6.0
 openpyxl==3.0.3
-scikit-learn==0.22.2.post1
+scikit-learn==0.23.1
 scikit-image==0.17.2
 requests==2.23.0
 colormath==3.0.0
