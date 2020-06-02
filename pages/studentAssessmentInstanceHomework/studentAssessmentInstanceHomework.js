@@ -20,7 +20,7 @@ const ensureUpToDate = (locals, callback) => {
 
         debug('updated:', updated);
         if (!updated) return callback(null);
-        
+
         // we updated the assessment_instance, so reload it
 
         debug('selecting assessment instance');
@@ -61,6 +61,7 @@ router.get('/', function(req, res, next) {
                     sqldb.query(sql.get_groupinfo, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupinfo = result.rows;
+                        if (res.locals.groupinfo[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
                         const group_id = res.locals.groupinfo[0].group_id || 0;
                         res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
