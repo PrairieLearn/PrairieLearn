@@ -165,14 +165,18 @@ BEGIN
                 title,
                 max_points,
                 number_choose,
-                best_questions
+                best_questions,
+                sequence_force,
+                sequence_score_threshold
             ) VALUES (
                 new_assessment_id,
                 (zone->>'number')::integer,
                 zone->>'title',
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
-                (zone->>'best_questions')::integer
+                (zone->>'best_questions')::integer,
+                (zone->>'sequence_force')::boolean,
+                (zone->>'sequence_score_threshold')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET

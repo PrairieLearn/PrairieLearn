@@ -9,7 +9,7 @@ const perf = require('../performance')('assessments');
 
 /**
  * SYNCING PROCESS:
- * 
+ *
  * 1. Assign order_by number to every assessment
  * 2. Check that no UUIDs are duplicated within this course instance
  * 3. Check that no UUIDS are duplicated in any other course instance
@@ -96,6 +96,8 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
+                sequence_force: zone.enforceOrder,
+                sequence_score_threshold: zone.orderScoreThreshold
             };
         });
 
