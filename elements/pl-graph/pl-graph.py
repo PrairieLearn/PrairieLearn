@@ -29,12 +29,12 @@ def graphviz_from_matrix(mat, label, engine, element):
     # Sanity checking
 
     if (mat.shape[0] != mat.shape[1]):
-        raise Exception('Non-square adjacency matrix of size (%s,%s) given as input.' % (mat.shape[0], mat.shape[1]))
+        raise Exception(f'Non-square adjacency matrix of size ({mat.shape[0]}, {mat.shape[1]}) given as input.')
 
     if label is not None:
         mat_label = label
         if (mat_label.shape[0] != mat.shape[0]):
-            raise Exception('Dimension of the label is not consistent with the dimension of matrix' % (mat_label.shape[0], mat.shape[0]))
+            raise Exception(f'Dimension of the label ({mat_label.shape[0]}) is not consistent with the dimension of the matrix ({mat.shape[0]})')
     else:
         mat_label = range(mat.shape[1])
 
