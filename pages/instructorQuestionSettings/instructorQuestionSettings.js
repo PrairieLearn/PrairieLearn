@@ -239,11 +239,13 @@ router.get('/', function(req, res, next) {
                 (callback) => {
                     fs.readdir(clientFilesCoursePath, function (err, files) {
                         // Probably no clientFilesCourse directory
-                        if (err) {
-                            console.log('clientFilesCourse failed' + err);
-                            callback(null, []);
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
                             return;
                         }
+
                         let images = [];
                         files.forEach(function (file) {
                             let ext = file.split('.').pop();
@@ -256,9 +258,10 @@ router.get('/', function(req, res, next) {
                 },
                 (callback) => {
                     fs.readdir(questionPath, function (err, files) {
-                        if (err) {
-                            console.log('question failed' + err);
-                            callback(null, []);
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
                             return;
                         }
 
@@ -274,9 +277,10 @@ router.get('/', function(req, res, next) {
                 },
                 (callback) => {
                     fs.readdir(publicPath, function (err, files) {
-                        if (err) {
-                            console.log('public failed' + err);
-                            callback(null, []);
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
                             return;
                         }
 
