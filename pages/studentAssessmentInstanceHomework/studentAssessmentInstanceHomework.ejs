@@ -63,7 +63,7 @@
             </tr>
           </thead>
           <tbody>
-            <% questions.forEach(function(question) { %>
+            <% questions.forEach(function(question, q_index) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
               <th colspan="4">
@@ -97,9 +97,27 @@
             <% } %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
-                  <%= question.question_number %>. <%= question.question_title %>
-                </a>
+                <%
+                  console.log(question);
+                  console.log(q_index + "\n\n\n\n\n\n\n\n");
+
+                  // Three cases where a link should be displayed:
+                  var sequence_not_enforced = !question.zone_sequence_force;
+                  var start_of_sequence = question.zone_sequence_force && question.start_new_zone;
+                  var seq_prev_met = false;
+                  if (!sequence_not_enforced && !start_of_sequence) {
+                    seq_prev_met = questions[q_index - 1].score_perc >= (question.zone_sequence_score_threshold*100);
+                  }
+                  if (sequence_not_enforced || start_of_sequence || seq_prev_met) {
+                %>
+                  <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
+                    <%= question.question_number %>. <%= question.question_title %>
+                  </a>
+                <% } else { %>
+                  <span class="text-muted">
+                    <%= question.question_number %>. <%= question.question_title %>
+                  </span>
+                <% } %>
                 <% if (question.file_count > 0) { %>
                   <i class="fas fa-paperclip"></i>
                 <% } %>
