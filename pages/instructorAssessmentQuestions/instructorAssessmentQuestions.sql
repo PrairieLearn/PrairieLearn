@@ -55,7 +55,9 @@ SELECT
     z.max_points AS zone_max_points,
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
-    (z.best_questions IS NOT NULL) AS zone_has_best_questions
+    (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+    z.sequence_force AS zone_sequence_force,
+    z.sequence_score_threshold AS zone_sequence_score_threshold
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

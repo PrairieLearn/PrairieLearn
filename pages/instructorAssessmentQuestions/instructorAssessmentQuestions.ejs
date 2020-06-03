@@ -35,19 +35,29 @@
               <% if (question.start_new_zone) { %>
               <tr>
                 <th colspan="9">
-                  Zone <%= question.zone_number %>. <%= question.zone_title %>
-                  <% if (question.zone_number_choose == null) { %>
-                  (Choose all questions)
-                  <% } else if (question.zone_number_choose == 1) { %>
-                  (Choose 1 question)
-                  <% } else { %>
-                  (Choose <%= question.zone_number_choose %> questions)
-                  <% } %>
+                  <span class="mr-1">Zone <%= question.zone_number %>. <%= question.zone_title %></span>
+                  <span class="badge border">
+                    <% if (question.zone_number_choose == null) { %>
+                      Choose all questions
+                    <% } else if (question.zone_number_choose == 1) { %>
+                      (Choose 1 question)
+                    <% } else { %>
+                      (Choose <%= question.zone_number_choose %> questions)
+                    <% } %>
+                  </span>
                   <% if (question.zone_has_max_points) { %>
-                      (maximum <%= question.zone_max_points %> points)
+                    <span class="badge border">Maximum <%= question.zone_max_points %> points</span>
                   <% } %>
                   <% if (question.zone_has_best_questions) { %>
-                      (best <%= question.zone_best_questions %> questions)
+                    <span class="badge border">Best <%= question.zone_best_questions %> questions</span>
+                  <% } %>
+                  <% if (question.zone_sequence_force) { %>
+                    <span class="badge border">
+                      Order matters
+                      <% if (question.zone_sequence_score_threshold !== undefined) { %>
+                        (<%= question.zone_sequence_score_threshold*100 %>% threshold)
+                      <% } %>
+                    </span>
                   <% } %>
                 </th>
               </tr>
