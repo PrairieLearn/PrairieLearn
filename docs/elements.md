@@ -50,7 +50,7 @@ images, files, and code display. The following **decorative** elements are avail
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
-- [`pl-python-variable`](#pl-python-variable): Display formatted output of Python 
+- [`pl-python-variable`](#pl-python-variable): Display formatted output of Python
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
@@ -207,7 +207,7 @@ tolerances.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -218,7 +218,7 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
----- 
+----
 
 ![](elements/pl-number-input-sigfig.png)
 
@@ -230,7 +230,7 @@ def generate(data):
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -290,7 +290,7 @@ Fill in the blank field that requires an **integer** input.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -345,7 +345,7 @@ import prairielearn as pl
 import sympy
 
 def generate(data):
-  
+
   # Declare math symbols
   x, y = sympy.symbols('x y')
 
@@ -547,8 +547,8 @@ Attribute | Type | Default | Description
 
 #### Details
 
-`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
-The following are valid input format options: 
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats.
+The following are valid input format options:
 
 **MATLAB format:**
 ```
@@ -993,7 +993,7 @@ def generate(data):
   matrixD = np.matrix('-1 4; 3 2')
   # Random matrices can be generated with:
   # mat = np.random.random((2, 2))
-  
+
   # Export each matrix as a JSON object for the question view.
   data['params']['matrixC'] = pl.to_json(matrixC)
   data['params']['matrixD'] = pl.to_json(matrixD)
@@ -1093,10 +1093,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  
+
   # Construct a matrix
   mat = np.matrix('1 2; 3 4')
-  
+
   # Export matrix to be displayed in question.html
   data['params']['matrixC'] = pl.to_json(mat)
 ```
@@ -1113,14 +1113,14 @@ Attribute | Type | Default | Description
 #### Details
 
 Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
-one of the following will be returned. 
+one of the following will be returned.
 
 - **scalar**
     - a string containing the scalar not wrapped in brackets.
 - **numpy 2D array**
     - a string formatted using the `bmatrix` LaTeX style.
 
-Sample LaTeX formatting: 
+Sample LaTeX formatting:
 
 ```latex
 \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
@@ -1188,7 +1188,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 ## `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations.
 
 #### Sample Elements
@@ -1232,6 +1232,7 @@ Attribute | Type | Default | Description
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
 `params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
 `params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`params-type` | string | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`.  By default, only `adjacency-matrix` exists but custom types can be added through extensions.
 `weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
 `weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
 `weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
@@ -1240,6 +1241,29 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [elementGraph]
+
+#### Extension API
+
+Custom values for `params-type` can be added with [element extensions](elementExtensions.md).  Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+
+A minimal type function can look something like:
+
+```
+def custom_type(element, data):
+    return "graph { a -- b; }"
+```
+
+In order to register these custom types, your extension should define the global `backends` dictionary.  This will map a value of `params-type` to your function above:
+
+```
+backends = {
+    'my-custom-type': custom_type
+}
+```
+
+This will automatically get picked up when the extension gets imported.  If your extension needs extra attributes to be defined, you may optionally define the global `optional_attribs` array that contains a list of attributes that the element may use.
+
+For a full implementation, check out the `edge-inc-matrix` extension in the exampleCourse.
 
 #### See also
 

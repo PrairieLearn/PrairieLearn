@@ -1090,15 +1090,29 @@ def escape_invalid_string(string):
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
 
-def load_element_extension(data, extension_name):
+def clean_identifier_name(name):
     """
-    load_element_extension(data, extension_name)
+    clean_identifier_name(string)
+
+    Escapes a string so that it becomes a valid Python identifier.
+    """
+
+    # Strip invalid characters and weird leading characters so we have
+    # a decent python identifier
+    name = re.sub('[^a-zA-Z0-9_]', '_', name)
+    name = re.sub('^[^a-zA-Z]+', '', name)
+    return name
+
+
+def load_extension(data, extension_name):
+    """
+    load_extension(data, extension_name)
 
     Loads a single specific extension by name for an element.
     Returns a dictionary of defined variables and functions.
     """
     if 'extensions' not in data:
-        raise Exception('load_element_extension() must be called from an extension!')
+        raise Exception('load_extension() must be called from an element!')
     if extension_name not in data['extensions']:
         raise Exception(f'Could not find extension {extension_name}!')
 
@@ -1131,31 +1145,39 @@ def load_element_extension(data, extension_name):
     # Filter out extra names so we only get user defined functions and variables
     loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
 
-    # Strip invalid characters and weird leading characters so we have
-    # a decent typename for the namedtuple
-    type_name = re.sub('[^a-zA-Z0-9_]', '_', extension_name)
-    type_name = re.sub('^[^a-zA-Z]+', '', type_name)
-
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = collections.namedtuple(type_name, loaded.keys())
+    module_tuple = collections.namedtuple(clean_identifier_name(extension_name), loaded.keys())
     return module_tuple(**loaded)
 
 
-def load_all_extensions_for_element(data):
+def load_all_extensions(data):
     """
-    load_all_extensions_for_element(data)
+    load_all_extensions(data)
 
     Loads all available extensions for a given element.
     Returns an ordered dictionary mapping the extension name to its defined variables and functions
     """
 
     if 'extensions' not in data:
-        raise Exception('load_element_extension() must be called from an extension!')
+        raise Exception('load_all_extensions() must be called from an element!')
     if len(data['extensions']) == 0:
         return {}
 
     loaded_extensions = collections.OrderedDict()
     for name in sorted(data['extensions'].keys()):
-        loaded_extensions[name] = load_element_extension(data, name)
+        loaded_extensions[name] = load_extension(data, name)
 
     return loaded_extensions
+
+
+def load_host_script(script_name):
+    """
+    load_host_script(script_name)
+
+    Small convenience function to load a host element script from an extension.
+    """
+
+    # Chop off the file extension because it's unnecessary here
+    if script_name.endswith('.py'):
+        script_name = script_name[:-3]
+    return __import__(script_name)

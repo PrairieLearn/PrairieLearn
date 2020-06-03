@@ -1,9 +1,9 @@
-import prairielearn
+import prairielearn as pl
 import chevron
 
 
 def render(element_html, data):
-    extensions = prairielearn.load_all_extensions_for_element(data)
+    extensions = pl.load_all_extensions(data)
     ext_params = []
     for name, ext in extensions.items():
         ext_params.append({

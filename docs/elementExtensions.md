@@ -29,7 +29,11 @@ The `info.json` file is structurally similar to the element info file and may co
 
 The main Python controller script has no general structure and is instead defined by the element that is being extended.  Any global functions and variables are available for use by the host element.
 
-A host element can call the `load_element_extension()` function to load one specific extension, or `load_all_extensions_for_element()` to load everything that is available.  These are defined in the freeform `prairielearn` module.
+A host element can call the `load_extension()` function to load one specific extension, or `load_all_extensions()` to load everything that is available.  These are defined in the freeform `prairielearn` module.
+
+A two-way flow of logic and information exists between elements and their extensions.
+
+##### Importing an Extension From an Element
 
 Loading extension Python scripts returns a named tuple of all globally defined functions and variables.  Loading all extensions will return a dictionary mapping the extension name to its named tuple.  For example, if an extension were to define the following in their controller:
 
@@ -44,12 +48,39 @@ The host element could then call this by running the following:
 import prairielearn as pl
 
 def render(element_html, data):
-    extension = pl.load_element_extensions(data, 'extension_name')
+    extension = pl.load_extension(data, 'extension_name')
     contents = extension.my_cool_function()
     return contents
 ```
 
-This small example above will render `"hello world!"` to the question page.  Note that when loading all extensions with `load_all_extensions_for_element()`, modules are returned in ascending alphabetical order.
+This small example above will render `"hello world!"` to the question page.  Note that when loading all extensions with `load_all_extensions()`, modules are returned in ascending alphabetical order.
+
+##### Importing a Host Element From an Extension
+
+Extensions can also import files from their host element with the `load_host_script()` function.  This can be used to obtain helper functions, class definitions, constant variables, etc.
+If the host element were to contain, for example:
+
+```python
+import prairielearn as pl
+
+STATIC_VARIABLE = "hello"
+
+def render(element_html, data):
+    extension = pl.load_extension(data, 'extension_name')
+    contents = extension.my_cool_function()
+    return contents
+```
+
+The extension could then access `STATIC_VARIABLE` by importing the host script:
+
+```python
+import prairielearn as pl
+
+host_element = pl.load_host_script('pl-host-element.py')
+
+def my_cool_function():
+    return host_element.STATIC_VARIABLE
+```
 
 ### Extension Dependencies
 
