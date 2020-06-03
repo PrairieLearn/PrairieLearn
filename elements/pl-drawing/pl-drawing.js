@@ -99,7 +99,7 @@
             ev.target.borderColor = 'rgba(102,153,255,1.0)';
         });
 
-        elem_options.show_bounding = true;
+        elem_options.show_bounding = false;
         if (elem_options.show_bounding) {
             canvas.on('after:render', function() {
                 canvas.contextContainer.strokeStyle = '#555';
@@ -116,7 +116,7 @@
                 })
             });
         }
-        
+
         if (elem_options.grid_size != 0) {
             mechanicsObjects.addCanvasBackground(canvas, canvas_width, canvas_height, elem_options.grid_size);
         }
@@ -197,16 +197,15 @@
             let opts = _.defaults(options, def);
             mechanicsObjects.addLine(canvas, opts, submittedAnswer, answerName);
         }
-        
+
         handlers["add-generic"] = function(options) {
             if (options.type in mechanicsObjects.byType) {
                 let added = mechanicsObjects.byType[options.type].call(mechanicsObjects, canvas, options, submittedAnswer, answerName);
-                console.log(added);
             } else {
                 console.warn("No element type: " + options.type);
             }
         }
-        
+
         handlers["delete"] = function(options) {
             canvas.remove(canvas.getActiveObject());
         };

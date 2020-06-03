@@ -7,8 +7,8 @@ import json
 # Generate element representations
 
 drawing_defaults = {
-    'x1': 20,
-    'y1': 20,
+    'x1': 40,
+    'y1': 40,
     'x2': 80,
     'y2': 20,
     'offsetx': 2,
@@ -906,7 +906,7 @@ def gen_circle(el):
 
 
 def gen_polygon(el):
-    pointlist = json.loads(pl.get_string_attrib(el, 'plist', '{}'))
+    pointlist = json.loads(pl.get_string_attrib(el, 'plist', '[{"x": 66.21260699999999, "y": 82.746078}, {"x": 25.880586, "y": 78.50701}, {"x": 17.448900000000002, "y": 38.839035}, {"x": 52.569852, "y": 18.561946}, {"x": 82.707481, "y": 45.697991}]'))
     color = pl.get_color_attrib(el, 'color', 'white')
     stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
     obj = {
@@ -914,6 +914,7 @@ def gen_polygon(el):
         'fill': color,
         'stroke': stroke_color,
         'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 1),
+        'strokeUniform': True,
         'type': 'polygon',
         'gradingName': 'polygon',
         'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),

@@ -54,15 +54,17 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
         this.originX = 'left';
         this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2));
         this.width = this.length;
-        this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+        this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
+        this.angle = ((180 / Math.PI) * this.angleRad);
         this.objectCaching = true;
 
         this.on('modified', function() {
             this.length = this.width * this.scaleX;
             this.x1 = this.left;
             this.y1 = this.top;
-            this.x2 = this.x1 + Math.cos(this.angle) * this.length;
-            this.y2 = this.y1 + Math.sin(this.angle) * this.length;
+            this.angleRad = (Math.PI / 180) * this.angle;
+            this.x2 = this.x1 + Math.cos(this.angleRad) * this.length;
+            this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
         });
     },
     _render: function(ctx) {
@@ -125,25 +127,42 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
     initialize: function(options) {
 	options = options || {};
 	this.callSuper("initialize", options);
-        this.left = this.x1;
-        this.top = this.y1;
         this.originY = 'center';
-        this.originX = 'center';
-        this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
-        this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2))
-        this.width = this.length * 2;
+        this.originX = 'left';
         this.objectCaching = false;
+
+        const update_visuals = () => {
+            this.left = this.x1;
+            this.top = this.y1;
+            this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
+            this.angle = ((180 / Math.PI) * this.angleRad);
+            this.length = Math.sqrt(Math.pow(this.y2 - this.y1, 2) + Math.pow(this.x2 - this.x1, 2))
+            this.width = this.length;
+            this.dirty = true;
+        }
+        this.on('update_visuals', update_visuals);
+        update_visuals();
+
+        this.on('modified', function() {
+            this.length = this.width * this.scaleX;
+            this.x1 = this.left;
+            this.y1 = this.top;
+            this.angleRad = (Math.PI / 180) * (360 - this.angle);
+            this.x2 = this.x1 + Math.cos(this.angleRad) * this.length;
+            this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
+        });
     },
     _render: function(ctx) {
         var rPx = this.height / 2;
         let len = this.length;
+        let l2 = len / 2;
 
         ctx.beginPath();
-        ctx.moveTo(0, rPx);
-        ctx.arcTo(len + rPx, 0 + rPx, len + rPx, 0      , rPx);
-        ctx.arcTo(len + rPx, 0 - rPx, len      , 0 - rPx, rPx);
-        ctx.arcTo(-rPx     , -rPx   , -rPx     , 0      , rPx);
-        ctx.arcTo(-rPx     , rPx    , 0        , rPx    , rPx);
+        ctx.moveTo(-l2, rPx);
+        ctx.arcTo(-l2 + len + rPx, 0 + rPx, -l2 + len + rPx, 0      , rPx);
+        ctx.arcTo(-l2 + len + rPx, 0 - rPx, -l2 + len      , 0 - rPx, rPx);
+        ctx.arcTo(-l2 + -rPx     , -rPx   , -l2 + -rPx     , 0      , rPx);
+        ctx.arcTo(-l2 + -rPx     , rPx    , -l2 + 0        , rPx    , rPx);
         ctx.closePath();
         ctx.strokeStyle = this.strokeColor;
         ctx.fillStyle = this.color;
@@ -152,13 +171,13 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
 
         if (this.drawPin) {
             ctx.beginPath();
-            ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+            ctx.arc(-l2, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fillStyle = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
-            ctx.arc(len, 0, 4, 0, 2 * Math.PI);
+            ctx.arc(len - l2, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fillStyle = "black";
             this._renderFill(ctx);
@@ -856,13 +875,6 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
                 ref.width = Math.ceil(width * exScale) * 2;
                 ref.height = Math.ceil(height * exScale) * 2;
 
-                if (ref.originX != "center") {
-                    ref.left += img.width * exScale;
-                }
-                if (ref.originY != "center") {
-                    ref.top += img.height * exScale;
-                }
-
                 ref.setCoords(false, false);
                 ref.image = img;
                 ref.dirty = true;
@@ -1179,6 +1191,11 @@ mechanicsObjects.makeDistTrianLoad = function(options) {
 mechanicsObjects.makeCoordinates = function(options) {
     const selectable = (options.selectable ? true : false);
 
+    let old_angle = options.angle;
+    if (selectable) {
+        options.angle = 0;
+    }
+
     var group = new fabric.Group([ ], {
         'left': 0,
         'top': 0,
@@ -1206,6 +1223,11 @@ mechanicsObjects.makeCoordinates = function(options) {
 
     let obj3 = new fabric.Circle(options3);
     group.addWithUpdate(obj3);
+
+    if (selectable) {
+        options.angle = old_angle;
+        group.angle = old_angle;
+    }
 
     return group;
 };
@@ -1353,9 +1375,10 @@ mechanicsObjects.addCanvasBackground = function(canvas, w, h, gridsize) {
 
 mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName) {
     const selectable = options.selectable ? true : false;
+    let textObj;
 
     if (options.latex) {
-        let textObj = new mechanicsObjects.LatexText(options.label, {
+        textObj = new mechanicsObjects.LatexText(options.label, {
             left: options.left+options.offsetx,
             top: options.top+options.offsety,
             fontSize: options.fontSize,
@@ -1363,8 +1386,6 @@ mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName
             evented: selectable,
             textAlign: "left",
         });
-        canvas.add(textObj);
-        return textObj;
     } else {
         let textObj = new fabric.Text(options.label, {
             left: options.left+options.offsetx,
@@ -1374,9 +1395,10 @@ mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName
             evented: selectable,
             textAlign: "left",
         });
-        canvas.add(textObj);
-        return textObj;
     }
+
+    canvas.add(textObj);
+    return textObj;
 };
 
 mechanicsObjects.byType['text'] = mechanicsObjects.addText;
@@ -1400,6 +1422,48 @@ mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName)
             selectable: false
         });
         canvas.add(textObj);
+    }
+
+    if (options.selectable === 1) {
+        obj.selectable = false;
+        obj.evented = false;
+
+        var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        canvas.add(c1, c2);
+
+        var subObj = this.cloneMechanicsObject('rod', options);
+        /* C1 */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x1 = c1.left;
+            subObj.y1 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(obj);
+        });
+        c1.on('moving',function() {
+            obj.x1 = c1.left;
+            obj.y1 = c1.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C2 */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x2 = c2.left;
+            subObj.y2 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(obj);
+        });
+        c2.on('moving',function() {
+            obj.x2 = c2.left;
+            obj.y2 = c2.top;
+            obj.fire('update_visuals');
+        });
     }
 
     return obj;
@@ -1742,14 +1806,24 @@ mechanicsObjects.addPolygon = function(canvas, options, submittedAnswer, answerN
         obj.id = this.newID();
     }
     canvas.add(obj);
+
+    if (submittedAnswer && options.selectable === 1) {
+        var modify = function(subObj) {
+            subObj.left = obj.left;
+            subObj.top = obj.top;
+            subObj.scaleX = obj.scaleX;
+            subObj.scaleY = obj.scaleY;
+            subObj.angle = obj.angle;
+        };
+        this.createObjectHandlers('polygon', options, obj, submittedAnswer, answerName, modify);
+    }
     return obj;
 };
 mechanicsObjects.byType['polygon'] = mechanicsObjects.addPolygon;
 
 // ======================================================================================
 mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName) {
-
-    let obj = new fabric.Line([options.x1,options.y1, options.x2, options.y2],options);
+    let obj = new fabric.Line([options.x1,options.y1, options.x2, options.y2], options);
 
     obj.setControlVisible('bl',false);
     obj.setControlVisible('tl',false);
@@ -1765,6 +1839,8 @@ mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName
               obj.setControlVisible(obj.trueHandles[i],true);
         }
     }
+    obj.selectable = false;
+    obj.evented = false;
 
     if (!obj.id) {
         obj.id = this.newID();
@@ -1773,13 +1849,42 @@ mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName
 
     if (!submittedAnswer) return obj;
 
-    var modify = function(subObj) {
-        subObj.left = obj.left,
-        subObj.top = obj.top,
-        subObj.angle = obj.angle,
-        subObj.scaleX = obj.scaleX;
-    };
-    this.createObjectHandlers('line', options, obj, submittedAnswer, answerName, modify);
+    if (options.selectable == 1) {
+        obj.objectCaching = false;
+
+        var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        canvas.add(c1, c2);
+
+        var subObj = this.cloneMechanicsObject('line', options);
+        /* C1 */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x1 = c1.left;
+            subObj.y1 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(obj);
+        });
+        c1.on('moving',function() {
+            obj.set({ 'x1': c1.left, 'y1': c1.top });
+        });
+
+        /* C2 */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x2 = c2.left;
+            subObj.y2 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(obj);
+        });
+        c2.on('moving',function() {
+            obj.set({ 'x2': c2.left, 'y2': c2.top });
+        });
+    }
 
     return obj;
 };
@@ -1788,28 +1893,35 @@ mechanicsObjects.byType['line'] = mechanicsObjects.addLine;
 
 // ======================================================================================
 mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, answerName) {
+    const selectable = (options.selectable ? true : false);
+
     let obj = mechanicsObjects.makeCoordinates(options);
-    obj.evented = false;
-    obj.selectable = false;
+    obj.evented = selectable;
+    obj.selectable = selectable;
+    obj.setControlVisible('bl',false);
+    obj.setControlVisible('tl',false);
+    obj.setControlVisible('br',false);
+    obj.setControlVisible('tr',false);
+    obj.setControlVisible('mt',false);
+    obj.setControlVisible('mb',false);
+    obj.setControlVisible('ml',false);
+    obj.setControlVisible('mr',false);
+    obj.setControlVisible('mtr',true);
     if (!obj.id) {
          obj.id = this.newID();
     }
     canvas.add(obj);
 
+    const groupOffsetX = options.left - obj.left;
+    const groupOffsetY = options.top - obj.top;
+
     var textObj = new mechanicsObjects.LatexText(options.label, {
-        left: options.left+options.offsetx,
-        top: options.top+options.offsety,
         fontSize: 20,
         textAlign: "left",
     });
     canvas.add(textObj);
 
-    var angle_rad = Math.PI*options.angle/180
-    var dx = options.width*Math.cos(angle_rad)
-    var dy = options.width*Math.sin(angle_rad)
     var textObj2 = new mechanicsObjects.LatexText(options.labelx, {
-        left: options.left+dx+options.offsetx_label_x,
-        top: options.top+dy+options.offsety_label_x,
         fontSize: 20,
         textAlign: "left"
     });
@@ -1817,18 +1929,46 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
     textObj2.selectable = false;
     canvas.add(textObj2);
 
-    var angle_rad = Math.PI*(options.angle-90)/180
-    var dx = options.width*Math.cos(angle_rad)
-    var dy = options.width*Math.sin(angle_rad)
     var textObj3 = new mechanicsObjects.LatexText(options.labely, {
-        left: options.left+dx+options.offsetx_label_y,
-        top: options.top+dy+options.offsety_label_y,
         fontSize: 20,
         textAlign: "left"
     });
     textObj3.evented = false;
     textObj3.selectable = false;
     canvas.add(textObj3);
+
+    let modify = function(subObj) {
+        const x = obj.left + groupOffsetX;
+        const y = obj.top + groupOffsetY;
+        subObj.left = x;
+        subObj.top = y;
+        subObj.angle = obj.angle;
+    };
+    this.createObjectHandlers('coordinates', options, obj, submittedAnswer, answerName, modify);
+
+    let update_labels = function() {
+        const angle_rad = (Math.PI / 180) * (360 - obj.angle);
+        const x = obj.left + (Math.cos(angle_rad) * groupOffsetX) + (Math.sin(angle_rad) * groupOffsetY);
+        const y = obj.top + (Math.cos(angle_rad) * groupOffsetY) - (Math.sin(angle_rad) * groupOffsetX);
+        const cosw = Math.cos(angle_rad) * options.width;
+        const sinw  = Math.sin(angle_rad) * options.width;
+
+        textObj.left = x + options.offsetx;
+        textObj.top = y + options.offsety;
+        textObj2.left = x + cosw + options.offsetx_label_x;
+        textObj2.top = y - sinw + options.offsety_label_x;
+        textObj3.left = x - sinw + options.offsetx_label_y;
+        textObj3.top = y - cosw + options.offsety_label_y;
+    };
+    obj.on('moving', update_labels);
+    obj.on('rotating', update_labels);
+    update_labels();
+
+    obj.on('removed', function() {
+        canvas.remove(textObj);
+        canvas.remove(textObj2);
+        canvas.remove(textObj3);
+    });
 
     return obj;
 };
@@ -1962,6 +2102,110 @@ mechanicsObjects.addArc = function(canvas, options, submittedAnswer, answerName)
         obj.id = this.newID();
     }
     canvas.add(obj);
+
+    if (options.selectable === 1) {
+        const x = options.left;
+        const y = options.top;
+        const r = options.radius;
+        const sa = options.startAngle;
+        const ea = options.endAngle;
+        let c1 = mechanicsObjects.makeControlHandle(x, y, 5, 2);
+        let c2 = mechanicsObjects.makeControlHandle(x + Math.cos(sa) * r, y + Math.sin(sa) * r, 5, 2);
+        let c3 = mechanicsObjects.makeControlHandle(x + Math.cos(ea) * r, y + Math.sin(ea) * r, 5, 2);
+
+        obj.objectCaching = false;
+        obj.selectable = false;
+        obj.evented = false;
+
+        canvas.add(c1, c2, c3);
+
+        var subObj = this.cloneMechanicsObject('simple-arc', options);
+        var that = this;
+
+        /* Center */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.left = c1.left;
+            subObj.top = c1.top;
+            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(c3);
+            canvas.remove(obj);
+            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+        });
+        c1.on('moving', function() {
+            obj.left = c1.left;
+            obj.top = c1.top;
+            obj.setCoords();
+
+            c2.left = c1.left + Math.cos(obj.startAngle) * obj.radius;
+            c2.top = c1.top + Math.sin(obj.startAngle) * obj.radius;
+            c2.setCoords();
+
+            c3.left = c1.left + Math.cos(obj.endAngle) * obj.radius;
+            c3.top = c1.top + Math.sin(obj.endAngle) * obj.radius;
+            c3.setCoords();
+        });
+
+        /* Starting Angle */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            const dy = c2.top - obj.top;
+            const dx = c2.left - obj.left;
+            subObj.startAngle = Math.atan2(dy, dx);
+            subObj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c3);
+            canvas.remove(obj);
+            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+        });
+        c2.on('moving', function() {
+            const dy = c2.top - obj.top;
+            const dx = c2.left - obj.left;
+            obj.startAngle = Math.atan2(dy, dx);
+            obj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+            obj.dirty = true;
+
+            c3.left = c1.left + Math.cos(obj.endAngle) * obj.radius;
+            c3.top = c1.top + Math.sin(obj.endAngle) * obj.radius;
+            c3.setCoords();
+        });
+
+        /* Ending Angle */
+        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        function() { /* Modified */
+            const dy = c3.top - obj.top;
+            const dx = c3.left - obj.left;
+            subObj.endAngle = Math.atan2(dy, dx);
+            subObj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c2);
+            canvas.remove(obj);
+            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+        });
+        c3.on('moving', function() {
+            const dy = c3.top - obj.top;
+            const dx = c3.left - obj.left;
+            obj.endAngle = Math.atan2(dy, dx);
+            obj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
+            obj.dirty = true;
+
+            c2.left = c1.left + Math.cos(obj.startAngle) * obj.radius;
+            c2.top = c1.top + Math.sin(obj.startAngle) * obj.radius;
+            c2.setCoords();
+        });
+
+        return [obj, c1, c2, c3];
+    }
+
     return obj;
 };
 mechanicsObjects.byType['simple-arc'] = mechanicsObjects.addArc;
