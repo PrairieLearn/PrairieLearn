@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/prairielib",
-  "version": "1.8.3",
+  "version": "1.10.0",
   "description": "A repository of code shared between various PrairieLearn projects",
   "main": "index.js",
   "files": [
@@ -24,7 +24,9 @@
     "fs-extra": "9.0.0",
     "js-yaml": "3.14.0",
     "lodash": "4.17.15",
-    "pg": "8.2.1"
+    "logform": "^2.1.2",
+    "pg": "8.2.1",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "eslint": "7.1.0",
