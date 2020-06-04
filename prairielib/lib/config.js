@@ -47,7 +47,7 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
                 (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
-                }
+                },
             );
         },
         (callback) => {
