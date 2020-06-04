@@ -56,15 +56,16 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
         this.width = this.length;
         this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
         this.angle = ((180 / Math.PI) * this.angleRad);
-        this.objectCaching = true;
+        this.objectCaching = false;
 
-        this.on('modified', function() {
+        this.on('scaling', function() {
             this.length = this.width * this.scaleX;
             this.x1 = this.left;
             this.y1 = this.top;
             this.angleRad = (Math.PI / 180) * this.angle;
             this.x2 = this.x1 + Math.cos(this.angleRad) * this.length;
             this.y2 = this.y1 + Math.sin(this.angleRad) * this.length;
+            this.dirty = true;
         });
     },
     _render: function(ctx) {
@@ -109,12 +110,12 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
         if (this.drawPin) {
             ctx.fillStyle = this.stroke;
             ctx.beginPath();
-            ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+            ctx.arc(-l2, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
 
             ctx.beginPath();
-            ctx.arc(len, 0, 4, 0, 2 * Math.PI);
+            ctx.arc(l2, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.fill();
         }
@@ -191,11 +192,16 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
     initialize: function(options) {
 	options = options || {};
 	this.callSuper("initialize", options);
-        this.left = this.x1;
-        this.top = this.y1;
         this.originY = 'center';
-        this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
         this.objectCaching = false;
+
+        let update_visuals = () => {
+            this.left = this.x1;
+            this.top = this.y1;
+            this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+        };
+        update_visuals();
+        this.on('update_visuals', update_visuals);
     },
     _render: function(ctx) {
         var d = this.height/2;
@@ -286,9 +292,33 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
         options = options || {};
         this.originY = 'center';
         this.callSuper("initialize", options);
-        this.left = this.x1;
-        this.top = this.y1;
         this.objectCaching = false;
+
+        let updateVisuals = () => {
+            this.left = this.x1;
+            this.top = this.y1;
+
+            let rC = $V([this.x1, this.y1]);
+            let rA = $V([this.x2, this.y2]);
+            let rB = $V([this.x3, this.y3]);
+            let uCA = rA.subtract(rC);
+            let L1 = uCA.modulus();
+            let e1 = uCA.toUnitVector();
+            let e2 = $V([-e1.e(2), e1.e(1)]);
+            let uCB = rB.subtract(rC);
+            let uAB = uCB.subtract(uCA);
+            let L2 = uAB.modulus();
+            let alpha_rad = Math.atan2(e1.e(2), e1.e(1));
+            let alpha = alpha_rad * (180 / Math.PI);
+            let beta = Math.atan2(uAB.dot(e2), uAB.dot(e1));
+
+            this.length1 = L1;
+            this.length2 = L2;
+            this.angle = alpha;
+            this.angle2 = beta;
+        }
+        updateVisuals();
+        this.on('update_visuals', updateVisuals);
     },
 
     _render: function(ctx) {
@@ -359,14 +389,54 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
 
 // ======================================================================================
 mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
-    type: 'Lshaperod',
+    type: 'Tshaperod',
     initialize: function(options) {
         options = options || {};
         this.originY = 'center';
         this.callSuper("initialize", options);
-        this.left = this.x1;
-        this.top = this.y1;
         this.objectCaching = false;
+
+        let update_visuals = () => {
+            this.left = this.x1;
+            this.top = this.y1;
+
+            let rP = $V([this.x1, this.y1]);
+            let rQ = $V([this.x2, this.y2]);
+            let uPQ = rQ.subtract(rP);
+            let L1 = uPQ.modulus();
+            let n1 = uPQ.toUnitVector();
+            let n2 = $V([-n1.e(2), n1.e(1)]);
+            let alpha_rad = Math.atan2(n1.e(2), n1.e(1));
+            let alpha = alpha_rad * (180 / Math.PI);
+
+            /* Assume first given point is R and second point is S */
+            let rR = $V([this.x3, this.y3]);
+            let rS = $V([this.x4, this.y4]);
+            let uQR = rR.subtract(rQ);
+            let uQS = rS.subtract(rQ);
+            let L2 = uQR.modulus();
+            let L3 = uQS.modulus();
+            let beta = Math.atan2(uQR.dot(n2), uQR.dot(n1));
+            let gamma = Math.atan2(uQS.dot(n2), uQS.dot(n1));
+
+            if (beta * gamma >= 0 && beta < gamma) {
+                let temp = gamma;
+                gamma = beta;
+                beta = temp;
+                temp = L2;
+                L2 = L3;
+                L3 = temp;
+            }
+
+            this.length1 = L1;
+            this.length2 = L2;
+            this.length3 = L3;
+            this.angle = alpha;
+            this.angle2 = beta;
+            this.angle3 = gamma;
+        };
+        update_visuals();
+        this.on('update_visuals', update_visuals);
     },
     get_distance: function(angle,d) {
         if (Math.abs(angle) < 1e-4 ) {
@@ -486,16 +556,14 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
     initialize: function(options) {
         options = options || {};
         this.callSuper("initialize", options);
-        this.originX = 'center';
+        this.originX = 'right';
         this.originY = 'center';
+        this.objectCaching = true;
+        this.strokeUniform = true;
         this.left = this.x1;
         this.top = this.y1;
-        this.objectCaching = false;
     },
     _render: function(ctx) {
-
-        var x0 = this.x1; //anchor point for the clamped end
-        var y0 = this.y1; //anchor point for the clamped end
         var h = this.height;
         var w = this.width;
         var gradient = ctx.createLinearGradient(-w, -h/2, 0, h/2);
@@ -504,12 +572,12 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
 
         // ======== Add Clamped End =========
         ctx.beginPath();
-        ctx.moveTo(0,0);
-        ctx.lineTo(0, h/2);
-        ctx.lineTo(-w, h/2);
-        ctx.lineTo(-w, -h/2);
-        ctx.lineTo(0, -h/2);
-        ctx.lineTo(0, 0);
+        ctx.moveTo(w/2,0);
+        ctx.lineTo(w/2, h/2);
+        ctx.lineTo(-w/2, h/2);
+        ctx.lineTo(-w/2, -h/2);
+        ctx.lineTo(w/2, -h/2);
+        ctx.lineTo(w/2, 0);
         ctx.closePath();
         ctx.strokeStyle = this.stroke;
         ctx.fillStyle = gradient;
@@ -526,14 +594,12 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
         this.callSuper("initialize", options);
         this.originX = 'center';
         this.originY = 'center';
-        this.left = this.x1;
-        this.top = this.y1;
         this.objectCaching = false;
     },
     _render: function(ctx) {
 
-        var x0 = this.x1; //center of the pin
-        var y0 = this.y1; //center of the pin
+        var x0 = this.left; //center of the pin
+        var y0 = this.top; //center of the pin
         var h = this.height;
         var w = this.width;
 
@@ -938,7 +1004,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
         this.left = options.left;
         this.top = options.top;
         this.originX = 'center';
-        this.objectCaching = true;
+        this.objectCaching = false;
         this.flipped = options.flipped || false;
         this.flipX = this.flipped;
 
@@ -965,7 +1031,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
       	this.setControlVisible('mr',true);
       	this.setControlVisible('mtr', true);
 
-        this.on('modified', function() {
+        this.on('scaling', function() {
             this.flipped = this.flipX;
             this.range = this.width * this.scaleX;
         });
@@ -1253,13 +1319,15 @@ mechanicsObjects.makePulley = function(options) {
         top: options.y1,
     });
 
-    var textObj = new fabric.Text(options.label, {
-        fontSize: 20,
-        textAlign: "left",
-        left: options.offsetx ,
-        top: options.offsety,
-    });
-    group.add(textObj);
+    if (options.label) {
+        var textObj = new fabric.Text(options.label, {
+            fontSize: 20,
+            textAlign: "left",
+            left: options.offsetx,
+            top: options.offsety,
+        });
+        group.add(textObj);
+    }
 
     var center_pulley = new fabric.Circle({
         originX: 'center',
@@ -1387,7 +1455,7 @@ mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName
             textAlign: "left",
         });
     } else {
-        let textObj = new fabric.Text(options.label, {
+        textObj = new fabric.Text(options.label, {
             left: options.left+options.offsetx,
             top: options.top+options.offsety,
             fontSize: options.fontSize,
@@ -1420,6 +1488,10 @@ mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName)
             fontSize: 20,
             textAlign: "left",
             selectable: false
+        });
+        obj.on('update_visuals', () => {
+            textObj.left = obj['x' + ind] + obj['offsetx' + ind];
+            textObj.top = obj['y' + ind] + obj['offsety' + ind];
         });
         canvas.add(textObj);
     }
@@ -1488,7 +1560,53 @@ mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer, answe
             textAlign: "left",
             selectable: false
         });
+        obj.on('update_visuals', () => {
+            textObj.left = obj['x' + ind] + obj['offsetx' + ind];
+            textObj.top = obj['y' + ind] + obj['offsety' + ind];
+        });
         canvas.add(textObj);
+    }
+
+        if (options.selectable === 1) {
+        obj.selectable = false;
+        obj.evented = false;
+
+        var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        canvas.add(c1, c2);
+
+        var subObj = this.cloneMechanicsObject('collarrod', options);
+        /* C1 */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x1 = c1.left;
+            subObj.y1 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(obj);
+        });
+        c1.on('moving',function() {
+            obj.x1 = c1.left;
+            obj.y1 = c1.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C2 */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x2 = c2.left;
+            subObj.y2 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(obj);
+        });
+        c2.on('moving',function() {
+            obj.x2 = c2.left;
+            obj.y2 = c2.top;
+            obj.fire('update_visuals');
+        });
     }
 
     return obj;
@@ -1513,7 +1631,73 @@ mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answe
             textAlign: "left",
             selectable: false
         });
+        obj.on('update_visuals', () => {
+            textObj.left = obj['x' + ind] + obj['offsetx' + ind];
+            textObj.top = obj['y' + ind] + obj['offsety' + ind];
+        });
         canvas.add(textObj);
+    }
+
+    if (options.selectable === 1) {
+        obj.selectable = false;
+        obj.evented = false;
+
+        var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        var c3 = mechanicsObjects.makeControlHandle(options.x3, options.y3, 5, 2);
+        canvas.add(c1, c2, c3);
+
+        var subObj = this.cloneMechanicsObject('Lshaperod', options);
+        /* C1 */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x1 = c1.left;
+            subObj.y1 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(c3);
+            canvas.remove(obj);
+        });
+        c1.on('moving',function() {
+            obj.x1 = c1.left;
+            obj.y1 = c1.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C2 */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x2 = c2.left;
+            subObj.y2 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c3);
+            canvas.remove(obj);
+        });
+        c2.on('moving',function() {
+            obj.x2 = c2.left;
+            obj.y2 = c2.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C3 */
+        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x3 = c3.left;
+            subObj.y3 = c3.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c2);
+            canvas.remove(obj);
+        });
+        c3.on('moving',function() {
+            obj.x3 = c3.left;
+            obj.y3 = c3.top;
+            obj.fire('update_visuals');
+        });
     }
 
     return obj;
@@ -1538,7 +1722,95 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
             textAlign: "left",
             selectable: false
         });
+        obj.on('update_visuals', () => {
+            textObj.left = obj['x' + ind] + obj['offsetx' + ind];
+            textObj.top = obj['y' + ind] + obj['offsety' + ind];
+        });
         canvas.add(textObj);
+    }
+
+    if (options.selectable === 1) {
+        obj.selectable = false;
+        obj.evented = false;
+
+        var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        var c3 = mechanicsObjects.makeControlHandle(options.x3, options.y3, 5, 2);
+        var c4 = mechanicsObjects.makeControlHandle(options.x4, options.y4, 5, 2);
+        canvas.add(c1, c2, c3, c4);
+
+        var subObj = this.cloneMechanicsObject('Tshaperod', options);
+        /* C1 */
+        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x1 = c1.left;
+            subObj.y1 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c2);
+            canvas.remove(c3);
+            canvas.remove(c4);
+            canvas.remove(obj);
+        });
+        c1.on('moving',function() {
+            obj.x1 = c1.left;
+            obj.y1 = c1.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C2 */
+        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x2 = c2.left;
+            subObj.y2 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c3);
+            canvas.remove(c4);
+            canvas.remove(obj);
+        });
+        c2.on('moving',function() {
+            obj.x2 = c2.left;
+            obj.y2 = c2.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C3 */
+        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x3 = c3.left;
+            subObj.y3 = c3.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c2);
+            canvas.remove(c4);
+            canvas.remove(obj);
+        });
+        c3.on('moving',function() {
+            obj.x3 = c3.left;
+            obj.y3 = c3.top;
+            obj.fire('update_visuals');
+        });
+
+        /* C4 */
+        this.attachHandlersNoClone(subObj, c4, submittedAnswer, answerName,
+        function() { /* Modified */
+            subObj.x4 = c4.left;
+            subObj.y4 = c4.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c2);
+            canvas.remove(c3);
+            canvas.remove(obj);
+        });
+        c4.on('moving',function() {
+            obj.x4 = c4.left;
+            obj.y4 = c4.top;
+            obj.fire('update_visuals');
+        });
     }
 
     return obj;
@@ -1554,13 +1826,24 @@ mechanicsObjects.addClampedEnd = function(canvas, options, submittedAnswer, answ
     canvas.add(obj);
 
     var textObj = new mechanicsObjects.LatexText(obj.label, {
-        left: obj.x1+obj.offsetx,
-        top: obj.y1+obj.offsety,
+        left: obj.left+obj.offsetx,
+        top: obj.top+obj.offsety,
         fontSize: 20,
         textAlign: "left",
         selectable: false
     });
     canvas.add(textObj);
+
+    if (submittedAnswer && options.selectable === 1) {
+        var modify = function(subObj) {
+            subObj.left = obj.left;
+            subObj.top = obj.top;
+            subObj.scaleX = obj.scaleX;
+            subObj.scaleY = obj.scaleY;
+            subObj.angle = obj.angle;
+        };
+        this.createObjectHandlers('clamped', options, obj, submittedAnswer, answerName, modify);
+    }
 
     return obj;
 }

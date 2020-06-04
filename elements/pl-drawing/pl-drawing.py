@@ -4,28 +4,11 @@ import lxml.etree
 import chevron
 import json
 import warnings
-from attributes import attributes as element_attributes
-from element_gen import generate_element, drawing_defaults
-from element_grade import grade_element, can_grade, set_grading_tol
+import defaults
+import elements
 
 # Used for giving user feedback on wrong answers
 element_names = {'controlledLine': 'Controlled Line', 'vector': 'Force Vector', 'arc_vector': 'Moment', 'distTrianLoad': 'Distributed Triangular Load', 'point': 'Point'}
-
-graded_elements = ['pl-controlled-line', 'pl-controlled-curved-line', 'pl-vector', 'pl-arc-vector', 'pl-distributed-load', 'pl-point', 'pl-double-headed-vector', 'pl-graph-line']
-
-element_defaults = {
-    'gradable': False,
-    'answers-name': '',
-    'draw-error-box': False,
-    'grid-size': 20,
-    'angle-tol': 10,
-    'snap-to-grid': False,
-    'width': 580,
-    'height': 320,
-    'show-tolerance-hint': True,
-    'render-scale': 1.5,
-    'disregard-extra-elements': False
-}
 
 
 def union_drawing_items(e1, e2):
@@ -64,27 +47,14 @@ def check_attributes_rec(element):
     # Recursively check attributes for a tree of elements
 
     name = element.tag
-    if name in element_attributes:
-        try:
-            pl.check_attribs(element, required_attribs=[], optional_attribs=element_attributes[name].keys())
-        except Exception as e:
-            print('Error in', name, ':', e)
-            raise e
-        for child in element:
-            check_attributes_rec(child)
-
-
-def check_graded(element, graded=True):
-    # Recursively check if all of an element's children are correctly graded/ungraded
-    # Will throw an error if e.g. an ungraded element is put in pl-drawing-answer
-
+    attributes = elements.get_attributes(name)
+    try:
+        pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
+    except Exception as e:
+        print(f'Error in {name}: {e}')
+        raise e
     for child in element:
-        if child.tag is lxml.etree.Comment or child.tag == 'pl-drawing-group':
-            continue
-
-        if child.tag not in graded_elements:
-            raise Exception('Element ' + child.tag + ' should not be graded!  Put it inside pl-drawing-initial.')
-        check_graded(child, graded)
+        check_attributes_rec(child)
 
 
 def prepare(element_html, data):
@@ -93,7 +63,7 @@ def prepare(element_html, data):
 
     w_button = None
 
-    prev = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
+    prev = not pl.get_boolean_attrib(element, 'gradable', defaults.element_defaults['gradable'])
 
     # Some preparation for elements with grading componenet
     if not prev:
@@ -109,8 +79,7 @@ def prepare(element_html, data):
         for child in element:
             # Get all the objects in pl-drawing-answer
             if child.tag == 'pl-drawing-answer':
-                check_graded(child)
-                draw_error_box = pl.get_boolean_attrib(child, 'draw-error-box', element_defaults['draw-error-box'])
+                draw_error_box = pl.get_boolean_attrib(child, 'draw-error-box', defaults.element_defaults['draw-error-box'])
                 ans, n_id = render_drawing_items(child, n_id)
                 n_ans_elements += 1
             # Get all the objects in pl-drawing-initial
@@ -129,7 +98,7 @@ def prepare(element_html, data):
                                     type_name = 'pl-arc-vector'
                                 elif type_name == 'pl-arc-vector-CW':
                                     type_name = 'pl-arc-vector'
-                                type_attribs = element_attributes.get(type_name, {}).keys()
+                                type_attribs = elements.get_attributes(type_name)
                                 pl.check_attribs(buttons, required_attribs=['type'], optional_attribs=type_attribs)
                                 if buttons.attrib['type'] == 'pl-vector':
                                     if 'width' in buttons.attrib:
@@ -158,7 +127,7 @@ def prepare(element_html, data):
             # Check to see if consistent width for pl-vector is used for correct answer
             # and submitted answers that are added using the buttons
             if obj['gradingName'] == 'vector':
-                if (w_button is None and obj['width'] == drawing_defaults['force-width']) or obj['width'] == float(w_button):
+                if (w_button is None and obj['width'] == defaults.drawing_defaults['force-width']) or obj['width'] == float(w_button):
                     continue
                 else:
                     raise Exception('Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button.')
@@ -190,7 +159,7 @@ def render_controls(template, elem):
             elif type_name == 'pl-arc-vector-CW':
                 type_name = 'pl-arc-vector'
                 elem.attrib['clockwise-direction'] = 'true'
-            opts = generate_element(elem, type_name)
+            opts = elements.generate(elem, type_name)
             if opts is not None:
                 opts['selectable'] = True
                 opts['evented'] = True
@@ -228,7 +197,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
                 curid += len(objs)
                 objects.extend(objs)
         else:
-            obj = generate_element(el, el.tag, defaults)
+            obj = elements.generate(el, el.tag, defaults)
             if obj is not None:
                 obj['id'] = curid
                 objects.append(obj)
@@ -242,7 +211,7 @@ def render_drawing_items(elem, curid=1, defaults={}):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', '')
-    preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
+    preview_mode = not pl.get_boolean_attrib(element, 'gradable', defaults.element_defaults['gradable'])
     with open('pl-drawing.mustache') as f:
         template = f.read()
 
@@ -256,7 +225,7 @@ def render(element_html, data):
             btn_markup = render_controls(template, el)
         elif el.tag == 'pl-drawing-initial':
             init, _ = render_drawing_items(el)
-            draw_error_box = pl.get_boolean_attrib(el, 'draw-error-box', element_defaults['draw-error-box'])
+            draw_error_box = pl.get_boolean_attrib(el, 'draw-error-box', defaults.element_defaults['draw-error-box'])
 
     for obj in init['objects']:
         obj['graded'] = False
@@ -265,20 +234,20 @@ def render(element_html, data):
             if obj['objectDrawErrorBox'] is not None:
                 obj['drawErrorBox'] = obj['objectDrawErrorBox']
 
-    grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
+    grid_size = pl.get_integer_attrib(element, 'grid-size', defaults.element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
-    angle_tol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
+    angle_tol = pl.get_float_attrib(element, 'angle-tol', defaults.element_defaults['angle-tol'])
     tol_percent = round(tol / grid_size, 2) if grid_size != 0 else 1
 
     js_options = {
-        'snap_to_grid': pl.get_boolean_attrib(element, 'snap-to-grid', element_defaults['snap-to-grid']),
+        'snap_to_grid': pl.get_boolean_attrib(element, 'snap-to-grid', defaults.element_defaults['snap-to-grid']),
         'grid_size': grid_size,
         'editable': (data['panel'] == 'question' and not preview_mode),
         'base_url': data['options']['base_url'],
         'client_files': '/pl/static/elements/pl-drawing/clientFilesElement/',
-        'render_scale': pl.get_float_attrib(element, 'render-scale', element_defaults['render-scale']),
-        'width': pl.get_string_attrib(element, 'width', element_defaults['width']),
-        'height': pl.get_string_attrib(element, 'height', element_defaults['height'])
+        'render_scale': pl.get_float_attrib(element, 'render-scale', defaults.element_defaults['render-scale']),
+        'width': pl.get_string_attrib(element, 'width', defaults.element_defaults['width']),
+        'height': pl.get_string_attrib(element, 'height', defaults.element_defaults['height'])
     }
 
     show_btn = data['panel'] == 'question' and not preview_mode
@@ -290,14 +259,14 @@ def render(element_html, data):
 
     html_params = {
         'uuid': pl.get_uuid(),
-        'width': pl.get_string_attrib(element, 'width', element_defaults['width']),
-        'height': pl.get_string_attrib(element, 'height', element_defaults['height']),
+        'width': pl.get_string_attrib(element, 'width', defaults.element_defaults['width']),
+        'height': pl.get_string_attrib(element, 'height', defaults.element_defaults['height']),
         'options_json': json.dumps(js_options),
         'show_buttons': show_btn,
         'name': name,
         'render_element': True,
         'btn_markup': btn_markup,
-        'show_tolerance': show_btn and pl.get_boolean_attrib(element, 'show-tolerance-hint', element_defaults['show-tolerance-hint']),
+        'show_tolerance': show_btn and pl.get_boolean_attrib(element, 'show-tolerance-hint', defaults.element_defaults['show-tolerance-hint']),
         'tolerance': pl.get_string_attrib(element, 'tolerance-hint', message_default),
     }
 
@@ -326,8 +295,8 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
-    preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
+    name = pl.get_string_attrib(element, 'answers-name', defaults.element_defaults['answers-name'])
+    preview_mode = not pl.get_boolean_attrib(element, 'gradable', defaults.element_defaults['gradable'])
 
     if preview_mode:
         return
@@ -344,16 +313,16 @@ def parse(element_html, data):
 
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    prev = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
+    prev = not pl.get_boolean_attrib(element, 'gradable', defaults.element_defaults['gradable'])
     if prev:
         return
 
-    grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
+    grid_size = pl.get_integer_attrib(element, 'grid-size', defaults.element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
-    angtol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
-    disregard_extra_elements = pl.get_boolean_attrib(element, 'disregard-extra-elements', element_defaults['disregard-extra-elements'])
+    angtol = pl.get_float_attrib(element, 'angle-tol', defaults.element_defaults['angle-tol'])
+    disregard_extra_elements = pl.get_boolean_attrib(element, 'disregard-extra-elements', defaults.element_defaults['disregard-extra-elements'])
 
-    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
+    name = pl.get_string_attrib(element, 'answers-name', defaults.element_defaults['answers-name'])
     student = data['submitted_answers'][name]
     reference = data['correct_answers'][name]
 
@@ -376,24 +345,22 @@ def grade(element_html, data):
     # num_total_ref is the total number of objects that are expected to be graded
     # this disregards optional objects and objects that don't have a grading function
     for ref_element in reference['objects']:
-        if can_grade(ref_element['gradingName']) and ref_element['graded']:
+        if elements.is_gradable(ref_element['gradingName']) and ref_element['graded']:
             matches[ref_element['id']] = False
             if 'optional_grading' in ref_element and ref_element['optional_grading']:
                 continue
             num_total_ref += 1
 
-    set_grading_tol(tol, angtol)
-
     # Loop through and check everything
     for element in student['objects']:
-        if 'gradingName' not in element or not can_grade(element['gradingName']) or 'graded' not in element or not element['graded']:
+        if 'gradingName' not in element or not elements.is_gradable(element['gradingName']) or 'graded' not in element or not element['graded']:
             continue
         # total number of objects inserted by students (using buttons)
         # this will disregard the initial objects placed by question authors
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if not can_grade(ref_element['gradingName']) or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if not elements.is_gradable(ref_element['gradingName']) or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
                 # Skip if the reference element is not gradable
                 continue
 
@@ -401,7 +368,7 @@ def grade(element_html, data):
                 # Skip if this object has already been matched
                 continue
 
-            if grade_element(ref_element, element, element['gradingName']):
+            if elements.grade(ref_element, element, element['gradingName'], tol, angtol):
                 if ('optional_grading' in ref_element and ref_element['optional_grading']) or (disregard_extra_elements and matches[ref_element['id']]):
                     # It's optional but correct, so the score should not be affected
                     # Or, it's a duplicate and we're okay with that.
