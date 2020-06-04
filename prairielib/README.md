@@ -11,6 +11,7 @@ PrairieLib is a NodeJS library used in [PrairieLearn](https://github.com/Prairie
 git checkout master
 git pull -p
 npm version minor  # or major/patch to bump version and commit
+git push
 git push --tags
 npm publish
 ```
