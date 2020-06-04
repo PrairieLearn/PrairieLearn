@@ -190,6 +190,30 @@ Two grading methods are available when using `partial-credit="true"`:
 
 -----
 
+## `pl-dropdown` element
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed as a JSON array.
+
+#### Sample Element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+<pl-dropdown sort="ascend" options='["wise", "clumsy", "wreckless"]' answer="wise" answer-key="hume"></pl-dropdown>
+```
+
+**server.py**
+```python
+def generate(data):
+
+    # Correct Answers
+    data['correct_answers']['socrates'] = 'unexamined'
+```
+
+-----
+
 ## `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
@@ -218,7 +242,21 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
----- 
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answer` | string | - | The correct answer in the drop-down options list. Can be set in server.py ['correct_answers`][answer_key] instead.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`sort` | string | unsorted | Sort order that drop-down options appear to students.
+`options` | Stringified JSON array of strings | Drop-down options that appear to students.
+`answer-key` | The key where the correct answer can be found in `[correct_answers]`.
+
+#### Example implementation
+
+- [dropdownQuestion]
+
+----
 
 ![](elements/pl-number-input-sigfig.png)
 

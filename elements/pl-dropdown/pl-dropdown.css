@@ -1,0 +1,16 @@
+.pl-dropdown {
+    display: inline-block;
+}
+
+.pl-dropdown-correct {
+    background: #39ff14;
+}
+
+.pl-dropdown-incorrect {
+    background: #ff0000;
+    text-decoration: line-through;
+}
+
+.pl-dropdown-submitted {
+    background: #ffff00;
+}
