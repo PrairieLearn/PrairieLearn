@@ -14,7 +14,7 @@ class SortTypes(Enum):
 
 
 def parse_separated_list(raw_str):
-    return [opt.strip() for opt in raw_str.splt(',')]
+    return [opt.strip() for opt in raw_str.split(',')]
 
 
 def prepare(element_html, data):
