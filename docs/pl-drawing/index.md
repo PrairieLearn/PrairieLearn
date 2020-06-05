@@ -1203,7 +1203,7 @@ The element `pl-controls` will add the buttons that allows students to place obj
 
 ### Example Implementations
 
-The example [`QID: demoDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingGradeVector) illustrates all the `pl-drawing-button`
+The example [demo/drawingGradeVector] illustrates all the `pl-drawing-button`
 that are currently implemented.
 
 <img src="pl-all-buttons.png" width=70%>
