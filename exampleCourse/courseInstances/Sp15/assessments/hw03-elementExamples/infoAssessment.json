@@ -36,6 +36,7 @@
                 {"id": "elementPanels",                   "points": 2, "maxPoints": 10},
                 {"id": "elementElementCodeDocumentation", "points": 2, "maxPoints": 10},
                 {"id": "elementCheckbox",                 "points": 2, "maxPoints": 10},
+                {"id": "elementDropdown",                 "points": 2, "maxPoints": 10},
                 {"id": "elementNumberInput",              "points": 2, "maxPoints": 10},
                 {"id": "elementIntegerInput",             "points": 2, "maxPoints": 10},
                 {"id": "elementSymbolicInput",            "points": 2, "maxPoints": 10},
@@ -47,7 +48,7 @@
                 {"id": "elementFileEditor",               "points": 2, "maxPoints": 10},
                 {"id": "elementPythonVariable",           "points": 2, "maxPoints": 10},
                 {"id": "elementGraph",                    "points": 2, "maxPoints": 10},
-                {"id": "elementOverlay",            "points": 2, "maxPoints": 10}
+                {"id": "elementOverlay",                  "points": 2, "maxPoints": 10}
             ]
         }
     ]
