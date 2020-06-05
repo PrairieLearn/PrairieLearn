@@ -169,7 +169,7 @@ Be careful not to switch the ordering of the student and reference arguments.  T
 
 ## Banning/Disallowing library functions
 
-One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
+One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the [demo/autograderNumpy] question.
 
 By setting the library functions equal to `Feedback.not_allowed`:
 
@@ -193,3 +193,7 @@ The grading Python scripts will load any sensitive files into memory (setup code
 After grading, results will be written to the secret filename generated above.  If this file does not exist or the filename does not match then the grading job will fail and students will not receive points.  This is mostly a failsafe in case the grader code were to crash, but in theory could also prevent crafty students from writing their own results file.
 
 The grading job will now drop back to `root` in the `run.sh` script and will copy any output to the correct location, as expected by the external grading framework.
+
+
+
+[demo/autograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderNumpy
