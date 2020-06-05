@@ -13,7 +13,7 @@ def get_name(student):
 
 def generate(data):
     # Get list of students
-    with open('../../clientFilesCourse/student_names.json', 'r') as infile:
+    with open('../../../clientFilesCourse/student_names.json', 'r') as infile:
         all_students = json.load(infile)
 
     n = 5

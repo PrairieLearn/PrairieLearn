@@ -12,7 +12,7 @@ def get_name(student):
 
 
 def generate(data):
-    basedir = '../../clientFilesCourse/'
+    basedir = '../../../clientFilesCourse/'
 
     # Get list of students
     with open(basedir + 'student_names.json', 'r') as infile:
