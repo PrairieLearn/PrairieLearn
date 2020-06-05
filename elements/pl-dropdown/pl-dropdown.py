@@ -13,6 +13,10 @@ class SortTypes(Enum):
     DESCEND = 'descend'
 
 
+def parse_separated_list(raw_str):
+    return [opt.strip() for opt in raw_str.splt(',')]
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['options', 'answer-key'], optional_attribs=['weight', 'answer', 'sort'])
@@ -29,8 +33,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    dropdown_options = pl.get_string_attrib(element, 'options')
-    dropdown_options = [x.strip() for x in dropdown_options.splt(',')]
+    dropdown_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
 
     sort = pl.get_string_attrib(element, 'sort', '').upper().strip()
 
@@ -80,7 +83,7 @@ def parse(element_html, data):
     answer_key = pl.get_string_attrib(element, 'answer-key')
     answer = data['submitted_answers'].get(answer_key, None)
 
-    valid_options = json.loads(pl.get_string_attrib(element, 'options'))
+    valid_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
 
     if answer is None:
         data['format_errors'][answer_key] = 'No answer was submitted.'
@@ -114,7 +117,7 @@ def test(element_html, data):
         data['raw_submitted_answers'][answer_key] = correct_answer
         data['partial_scores'][answer_key] = {'score': 1, 'weight': weight}
     elif data['test_type'] == 'incorrect':
-        dropdown_options = json.loads(pl.get_string_attrib(element, 'options'))
+        dropdown_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
         incorrect_ans = ''
 
         for option in dropdown_options:
