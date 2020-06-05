@@ -118,7 +118,7 @@ WITH all_submissions AS (
         s.id AS submission_id,
         format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
         s.submitted_answer,
-	s.partial_scores,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,
