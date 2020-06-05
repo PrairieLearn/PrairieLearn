@@ -226,7 +226,7 @@ router.get('/:filename', function(req, res, next) {
                 ['submission_id', 'submission_id'],
                 ['Submission date', 'submission_date_formatted'],
                 ['Submitted answer', 'submitted_answer'],
-		['Partial Scores', 'partial_scores'],
+                ['Partial Scores', 'partial_scores'],
                 ['Override score', 'override_score'],
                 ['Credit', 'credit'],
                 ['Mode', 'mode'],
