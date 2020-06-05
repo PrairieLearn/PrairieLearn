@@ -1,6 +1,5 @@
 import prairielearn as pl
 import lxml.html
-import json
 import random
 import chevron
 from enum import Enum
@@ -30,7 +29,9 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    dropdown_options = json.loads(pl.get_string_attrib(element, 'options'))
+    dropdown_options = pl.get_string_attrib(element, 'options')
+    dropdown_options = [x.strip() for x in dropdown_options.splt(',')]
+
     sort = pl.get_string_attrib(element, 'sort', '').upper().strip()
 
     answer_key = pl.get_string_attrib(element, 'answer-key')

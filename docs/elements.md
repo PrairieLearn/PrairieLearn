@@ -201,7 +201,7 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 **question.html**
 
 ```html
-<pl-dropdown sort="ascend" options='["wise", "clumsy", "wreckless"]' answer="wise" answer-key="hume"></pl-dropdown>
+<pl-dropdown sort="ascend" options='wise, clumsy, wreckless' answer="wise" answer-key="hume"></pl-dropdown>
 ```
 
 **server.py**
@@ -248,8 +248,8 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answer` | string | - | The correct answer in the drop-down options list. Can be set in server.py ['correct_answers`][answer_key] instead.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`sort` | string | unsorted | Sort order that drop-down options appear to students.
-`options` | Stringified JSON array of strings | Drop-down options that appear to students.
+`options` | string | Comma separated list of drop-down options students can select as answers.
+`sort` | string | unsorted | (enum: 'random', 'ascend', 'descend') Sort order that drop-down options appear to students.
 `answer-key` | The key where the correct answer can be found in `[correct_answers]`.
 
 #### Example implementation
