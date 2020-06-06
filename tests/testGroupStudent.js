@@ -432,8 +432,8 @@ describe('Group based homework setup on student side', function() {
                     return callback(error);
                 }
                 if (response.statusCode != 200) {
-                    //return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    return callback(new Error(locals.courseInstanceUrl + "/assessment_instance/" + locals.assessment_instance_id));
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                    //return callback(new Error(locals.courseInstanceUrl + "/assessment_instance/" + locals.assessment_instance_id));
                 }
                 page = body;
                 callback(null);
@@ -442,12 +442,6 @@ describe('Group based homework setup on student side', function() {
         
         it('should parse', function() {
             locals.$ = cheerio.load(page);
-        });
-    });
-
-    describe('test', function() {
-        it('should be able to switch to default user', function() {
-
         });
     });
 });
