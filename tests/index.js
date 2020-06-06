@@ -45,3 +45,4 @@ require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
 require('./sync');
+require('./testGroupStudent');
