@@ -1,4 +1,4 @@
--- BLOCK select_groupwork
+-- BLOCK select_groupwork_assessment
 SELECT
     a.id
 FROM
@@ -8,3 +8,40 @@ WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'HW'
     AND a.groupwork is TRUE;
+
+-- BLOCK select_group_config
+SELECT minimum, maximum
+FROM group_configs
+WHERE assessment_id = $assessment_id AND deleted_at IS NULL;
+
+-- BLOCK select_student_user
+SELECT
+    count(*) as result
+FROM
+    users AS u;
+
+-- BLOCK generate_and_enroll_3_users
+SELECT
+    user_id,
+    uid,
+    name,
+    uin
+FROM
+    users_randomly_generate(3, 1)
+    LEFT JOIN course_instances AS ci on (ci.id = 1)
+    LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
+ORDER BY
+    user_id;
+
+-- BLOCK select_all_user_in_group
+SELECT
+    group_id,
+    user_id
+FROM
+group_users;
+
+-- BLOCK select_all_assessment_instance
+SELECT
+ai.*
+FROM
+assessment_instances AS ai;
