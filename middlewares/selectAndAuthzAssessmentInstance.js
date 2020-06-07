@@ -20,6 +20,7 @@ module.exports = function(req, res, next) {
             sqldb.query(sql.select_and_auth_group, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+                var i = 0;
                 for(i = 0 ; i < result.rowCount; i++){
                     _.assign(res.locals, result.rows[i]);
                 }
@@ -32,6 +33,6 @@ module.exports = function(req, res, next) {
                 _.assign(res.locals, result.rows[0]);
                 next();
             });
-        };
+        }
     });
 };
