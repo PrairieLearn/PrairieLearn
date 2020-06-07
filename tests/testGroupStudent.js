@@ -18,7 +18,7 @@ var helperServer = require('./helperServer');
 // docker/start_postgres.sh
 // git config --global user.email "dev@illinois.edu"
 // git config --global user.name "Dev User"
-// npm test -- --grep "Group based homework setup on student side"
+// npm test -- --grep "Group based homework assess control on student side"
 
 let res, page, elemList, user;
 const locals = {};
@@ -31,7 +31,7 @@ locals.courseDir = path.join(__dirname, '..', 'exampleCourse');
 
 const storedConfig = {};
 
-describe('Group based homework setup on student side', function() {
+describe('Group based homework assess control on student side', function() {
     this.timeout(20000);
     before('set authenticated user', function(callback) {
         storedConfig.authUid = config.authUid;
@@ -130,11 +130,14 @@ describe('Group based homework setup on student side', function() {
         })
     });
 
-    describe('4. get 3 student user', function() {
-        it("should insert/get 3 users into/from the DB", function(callback) {
-            sqldb.query(sql.generate_and_enroll_3_users, [], function(err, result) {
+    describe('4. get 5 student user', function() {
+        it("should insert/get 5 users into/from the DB", function(callback) {
+            sqldb.query(sql.generate_and_enroll_5_users, [], function(err, result) {
                 if (ERR(err, callback)) return;
+                assert.lengthOf(result.rows, 5);
                 locals.studentUsers = result.rows.slice(0, 3);
+                locals.studentUserNotGrouped = result.rows[3];
+                locals.studentUserInDiffGroup = result.rows[4];
                 locals.groupCreator = locals.studentUsers[0];
                 assert.lengthOf(locals.studentUsers, 3);
                 callback(null);
@@ -191,13 +194,6 @@ describe('Group based homework setup on student side', function() {
                 callback(null);
             });
         });
-        // it('should have 1 students in group 1 in db', function(callback) {
-        //     sqldb.query(sql.select_all_user_in_group, [], function(err, result) {
-        //         if (ERR(err, callback)) return;
-        //         assert.lengthOf(result.rows, 1);
-        //         callback(null);
-        //     });
-        // });
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
@@ -318,7 +314,6 @@ describe('Group based homework setup on student side', function() {
                 }
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    //return callback(new Error(locals.assessmentUrl));
                 }
                 page = body;
                 callback(null);
@@ -410,7 +405,6 @@ describe('Group based homework setup on student side', function() {
                 }
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
-                    //return callback(new Error(body));
                 }
                 res = response;
                 page = body;
@@ -421,27 +415,243 @@ describe('Group based homework setup on student side', function() {
             sqldb.query(sql.select_all_assessment_instance, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.lengthOf(result.rows, 1);
-                locals.assessment_instance_id = result.rows[0].assessment_id;
-                // callback(result.rows[0].auth_user_id);
+                locals.assessment_instance_id = result.rows[0].id;
+                locals.assessmentInstanceURL = locals.courseInstanceUrl + "/assessment_instance/" + locals.assessment_instance_id;
+                assert.equal(result.rows[0].group_id, 1);
                 callback(null);
             });
         });
-        it('should be able to access the questions', function(callback) {
-            request(locals.courseInstanceUrl + "/assessment_instance/" + locals.assessment_instance_id, function (error, response, body) {
+    });
+
+    describe('12. access control of all members of group 1', function() {
+        it('should be able to access the assessment instance 1 as the 1st group member', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    //return callback(new Error(locals.courseInstanceUrl + "/assessment_instance/" + locals.assessment_instance_id));
+                    
                 }
                 page = body;
                 callback(null);
             });
         });
-        
         it('should parse', function() {
             locals.$ = cheerio.load(page);
+        });
+        it("should be able to switch to 2nd group member", function(callback) {
+            var student = locals.studentUsers[1];
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000002';
+            callback(null);
+        });
+        it('should be able to access the assessment instance 1 as the 2nd group member', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                    
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it("should be able to switch to 3rd group member", function(callback) {
+            var student = locals.studentUsers[0];
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000001';
+            callback(null);
+        });
+        it('should be able to access the assessment instance 1 as the 3rd group member', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                    
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+    });
+
+    describe('13. access control of student who used to be in group 1 but not in any group now', function() {
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 3);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('should be able to quit the group', function(callback) {
+            var form = {
+                __action: "quitGroup",
+                __csrf_token: locals.__csrf_token,
+            };
+            request.post({url: locals.assessmentInstanceURL, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should NOT be able to access the assessment instance 1 as a ungrouped student', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 403) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
+                }
+                page = body;
+                callback(null);
+            });
+        });
+    });
+    describe("14. access control of student who used to be in group 1 but in a different group now", function() {
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 2);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it("should be able to create a group", function(callback) {
+            locals.team_name_alternative1 = "Team CC";
+            var form = {
+                __action: "createGroup",
+                __csrf_token: locals.__csrf_token,
+                groupName: locals.team_name_alternative1,
+            };
+            request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should NOT be able to access the assessment instance 1 as a student from a different group', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 403) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
+                }
+                page = body;
+                callback(null);
+            });
+        });
+    });
+
+    describe("15. access control of student who are not in any group", function() {
+        it("should be able to switch to the ungrouped student", function(callback) {
+            var student = locals.studentUserNotGrouped;
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000004';
+            callback(null);
+        });
+        it('should NOT be able to access the assessment instance 1 as a ungrouped student', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 403) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
+                }
+                page = body;
+                callback(null);
+            });
+        });
+    });
+
+    describe("16. access control of student who are in a different group", function() {
+        it("should be able to switch to the student in the different group", function(callback) {
+            var student = locals.studentUserInDiffGroup;
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000005';
+            callback(null);
+        });
+        it("should load assessment page successfully", function(callback) {
+            request(locals.assessmentUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 2);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it("should be able to create a group", function(callback) {
+            locals.team_name_alternative2 = "Team BB&CC";
+            var form = {
+                __action: "createGroup",
+                __csrf_token: locals.__csrf_token,
+                groupName: locals.team_name_alternative2,
+            };
+            request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should NOT be able to access the assessment instance 1 as a student from a different group', function(callback) {
+            request(locals.assessmentInstanceURL, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 403) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
+                }
+                page = body;
+                callback(null);
+            });
         });
     });
 });
