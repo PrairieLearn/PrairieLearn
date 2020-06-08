@@ -67,7 +67,7 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN users AS u ON (u.user_id = $cur_user)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
+    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, FALSE) AS aai ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id
