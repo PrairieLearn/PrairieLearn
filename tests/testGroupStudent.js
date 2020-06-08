@@ -69,7 +69,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -107,7 +107,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -189,7 +189,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -263,7 +263,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -342,7 +342,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -406,7 +406,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -508,7 +508,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -551,7 +551,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
@@ -636,7 +636,7 @@ describe('Group based homework assess control on student side', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
+                //res = response;
                 page = body;
                 callback(null);
             });
