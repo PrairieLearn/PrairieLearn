@@ -254,7 +254,8 @@ Attribute | Type | Default | Description
 
 #### Example implementation
 
-- [dropdownQuestion]
+- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
+- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
 
 ----
 
