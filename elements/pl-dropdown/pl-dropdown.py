@@ -25,6 +25,7 @@ def get_options(element, data, correct_answer):
                 options.append(child_html)
     return options
 
+
 def get_solution(element, data, correct_answer):
     # server.py correct_answers value overrides correct pl-answer value
     solution = data['correct_answers'].get(correct_answer, [])
@@ -43,7 +44,6 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['correct-answer'], optional_attribs=['weight', 'sort'])
     correct_answer = pl.get_string_attrib(element, 'correct-answer')
-    options = get_options(element, data, correct_answer)
 
     # Get answer from pl-answer if implemented
     data['correct_answers'][correct_answer] = get_solution(element, data, correct_answer)
@@ -64,7 +64,6 @@ def render(element_html, data):
     sort_type = pl.get_string_attrib(element, 'sort', '').upper().strip()
     html_params = {}
     html = ''
-
 
     if data['panel'] == 'question':
         if sort_type == SortTypes.DESCEND.name:
