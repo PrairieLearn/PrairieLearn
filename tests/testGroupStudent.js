@@ -202,7 +202,7 @@ describe('Group based homework assess control on student side', function() {
     describe('6. the group information after 1 user join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(0, elemList.text().indexOf(locals.team_name));
         });
         it('should contain the 4-character friend code', function() {
             elemList = locals.$('#friend-code');
@@ -283,7 +283,7 @@ describe('Group based homework assess control on student side', function() {
     describe('8. the group information after 2 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(0, elemList.text().indexOf(locals.team_name));
         });
         it('should contain the 4-character friend code', function() {
             elemList = locals.$('#friend-code');
@@ -362,7 +362,7 @@ describe('Group based homework assess control on student side', function() {
     describe('10. the group information after 3 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(0, elemList.text().indexOf(locals.team_name));
         });
         it('should contain the 4-character friend code', function() {
             elemList = locals.$('#friend-code');
