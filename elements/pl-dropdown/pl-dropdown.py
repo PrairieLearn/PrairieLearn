@@ -13,64 +13,88 @@ class SortTypes(Enum):
     DESCEND = 'descend'
 
 
-def parse_separated_list(raw_str):
-    return [opt.strip() for opt in raw_str.split(',')]
+def get_options(element, data, correct_answer):
+    # server.py params values override pl-answer options
+    options = data['params'].get(correct_answer, [])
+    if not options:
+        options = []
+        for child in element:
+            if child.tag in ['pl-answer']:
+                pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+                child_html = pl.inner_html(child).strip()
+                options.append(child_html)
+    return options
+
+def get_solution(element, data, correct_answer):
+    # server.py correct_answers value overrides correct pl-answer value
+    solution = data['correct_answers'].get(correct_answer, [])
+    if not solution:
+        for child in element:
+            if child.tag in ['pl-answer']:
+                pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+                is_correct = pl.get_boolean_attrib(child, 'correct', False)
+                child_html = pl.inner_html(child).strip()
+                if is_correct:
+                    solution = child_html
+    return solution
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['options', 'answer-key'], optional_attribs=['weight', 'answer', 'sort'])
-    answer_key = pl.get_string_attrib(element, 'answer-key')
-    correct_answer = pl.get_string_attrib(element, 'answer', None)
+    pl.check_attribs(element, required_attribs=['correct-answer'], optional_attribs=['weight', 'sort'])
+    correct_answer = pl.get_string_attrib(element, 'correct-answer')
+    options = get_options(element, data, correct_answer)
 
-    # Set correct answer from HTML attrib if given
-    if correct_answer is not None:
-        data['correct_answers'][answer_key] = correct_answer
+    # Get answer from pl-answer if implemented
+    data['correct_answers'][correct_answer] = get_solution(element, data, correct_answer)
 
-    if data['correct_answers'][answer_key] is None:
-        raise Exception('Correct answer not defined for answer-key: %s' % answer_key)
+    # Get answer from server.py if pl-answer not implemented
+    if correct_answer is None:
+        data['correct_answers'][correct_answer] = correct_answer
+
+    if data['correct_answers'][correct_answer] is None:
+        raise Exception('Correct answer not defined for correct-answer: %s' % correct_answer)
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    dropdown_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
+    correct_answer = pl.get_string_attrib(element, 'correct-answer')
+    dropdown_options = get_options(element, data, correct_answer)
 
-    sort = pl.get_string_attrib(element, 'sort', '').upper().strip()
-
-    answer_key = pl.get_string_attrib(element, 'answer-key')
+    sort_type = pl.get_string_attrib(element, 'sort', '').upper().strip()
     html_params = {}
     html = ''
 
+
     if data['panel'] == 'question':
-        if sort == SortTypes.DESCEND.name:
+        if sort_type == SortTypes.DESCEND.name:
             dropdown_options.sort(reverse=True)
-        elif sort == SortTypes.ASCEND.name:
+        elif sort_type == SortTypes.ASCEND.name:
             dropdown_options.sort(reverse=False)
-        elif sort == SortTypes.RANDOM.name:
+        elif sort_type == SortTypes.RANDOM.name:
             random.shuffle(dropdown_options)
 
         html_params = {
             'question': True,
             'uuid': pl.get_uuid(),
             'options': dropdown_options,
-            'answer-key': answer_key
+            'correct-answer': correct_answer
         }
     elif data['panel'] == 'submission':
         html_params = {
             'submission': True,
-            'submitted_answer': data['submitted_answers'].get(answer_key, None),
-            'answer_key': answer_key
+            'submitted-answer': data['submitted_answers'].get(correct_answer, None),
+            'correct-answer': correct_answer
         }
     elif data['panel'] == 'answer':
-        answer_key = pl.get_string_attrib(element, 'answer-key')
-        submitted_answer = data['submitted_answers'].get(answer_key, None)
-        name = pl.get_string_attrib(element, 'answer-key')
+        correct_answer = pl.get_string_attrib(element, 'correct-answer')
+        submitted_answer = data['submitted_answers'].get(correct_answer, None)
 
         html_params = {
             'answer': True,
-            'submitted_answer': submitted_answer,
-            'correct_answer': data['correct_answers'][name],
-            'correct': data['correct_answers'][name] == submitted_answer
+            'submitted-answer': submitted_answer,
+            'solution': data['correct_answers'][correct_answer],
+            'correct': data['correct_answers'][correct_answer] == submitted_answer
         }
 
     with open('pl-dropdown.mustache', 'r', encoding='utf-8') as f:
@@ -80,55 +104,60 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_key = pl.get_string_attrib(element, 'answer-key')
-    answer = data['submitted_answers'].get(answer_key, None)
+    correct_answer = pl.get_string_attrib(element, 'correct-answer')
+    answer = data['submitted_answers'].get(correct_answer, None)
+    valid_options = []
 
-    valid_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
+    for child in element:
+        if child.tag in ['pl-answer']:
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+            child_html = pl.inner_html(child).strip()
+            valid_options.append(child_html)
 
     if answer is None:
-        data['format_errors'][answer_key] = 'No answer was submitted.'
+        data['format_errors'][correct_answer] = 'No answer was submitted.'
 
     if answer not in valid_options:
-        data['format_errors'][answer_key] = 'Invalid answer submitted.'
+        data['format_errors'][correct_answer] = 'Invalid answer submitted.'
 
 
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answer-key')
+    correct_answer = pl.get_string_attrib(element, 'correct-answer')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    submitted_answer = data['submitted_answers'].get(name, None)
+    submitted_answer = data['submitted_answers'].get(correct_answer, None)
 
-    if data['correct_answers'][name] == submitted_answer:
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    if data['correct_answers'][correct_answer] == submitted_answer:
+        data['partial_scores'][correct_answer] = {'score': 1, 'weight': weight}
     else:
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        data['partial_scores'][correct_answer] = {'score': 0, 'weight': weight}
 
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_key = pl.get_string_attrib(element, 'answer-key')
+    correct_answer = pl.get_string_attrib(element, 'correct-answer')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # correct_answer is what the answer should be
-    correct_answer = data['correct_answers'][answer_key]
+    solution = get_solution(element, data, correct_answer)
 
     # incorrect and correct answer test cases
     if data['test_type'] == 'correct':
-        data['raw_submitted_answers'][answer_key] = correct_answer
-        data['partial_scores'][answer_key] = {'score': 1, 'weight': weight}
+        data['raw_submitted_answers'][correct_answer] = solution
+        data['partial_scores'][correct_answer] = {'score': 1, 'weight': weight}
     elif data['test_type'] == 'incorrect':
-        dropdown_options = parse_separated_list(pl.get_string_attrib(element, 'options'))
+        dropdown_options = get_options(element, data, correct_answer)
         incorrect_ans = ''
 
         for option in dropdown_options:
-            if option != data['correct_answers'][answer_key]:
+            if option != correct_answer:
                 incorrect_ans = option
 
-        data['raw_submitted_answers'][answer_key] = incorrect_ans
-        data['partial_scores'][answer_key] = {'score': 0, 'weight': weight}
+        data['raw_submitted_answers'][correct_answer] = incorrect_ans
+        data['partial_scores'][correct_answer] = {'score': 0, 'weight': weight}
     elif data['test_type'] == 'invalid':
         # Test for invalid drop-down options in case injection on front-end
-        data['raw_submitted_answers'][answer_key] = 'INVALID STRING'
-        data['format_errors'][answer_key] = 'format error message'
+        data['raw_submitted_answers'][correct_answer] = 'INVALID STRING'
+        data['format_errors'][correct_answer] = 'format error message'
     else:
         raise Exception('invalid result: %s' % data['test_type'])

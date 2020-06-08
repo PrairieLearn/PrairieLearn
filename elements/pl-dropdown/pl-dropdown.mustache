@@ -1,6 +1,6 @@
 {{#question}}
     <div id="pl-dropdown-{{uuid}}" class="pl-dropdown form-group">
-        <select name="{{answer-key}}" class="form-control">
+        <select name="{{correct-answer}}" class="form-control">
         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
 
     {{#options}}
@@ -12,15 +12,15 @@
 {{/question}}
 
 {{#submission}}
-    <span class="pl-dropdown-submitted">{{submitted_answer}}</mark>
+    <span class="pl-dropdown-submitted">{{submitted-answer}}</mark>
 {{/submission}}
 
 {{#answer}}
     {{#correct}}
-        <span class="pl-dropdown-correct">{{submitted_answer}}</span>
+        <span class="pl-dropdown-correct">{{submitted-answer}}</span>
     {{/correct}}
     {{^correct}}
-        <span class="pl-dropdown-incorrect">{{submitted_answer}}</span> <span class="pl-dropdown-correct">{{correct_answer}}</span>
+        <span class="pl-dropdown-incorrect">{{submitted-answer}}</span> <span class="pl-dropdown-correct">{{solution}}</span>
     {{/correct}}
 {{/answer}}
 
