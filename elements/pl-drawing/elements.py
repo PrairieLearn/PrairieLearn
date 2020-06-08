@@ -1,7 +1,6 @@
 import prairielearn as pl
 import math
 import numpy as np
-import numpy.linalg as la
 import json
 from defaults import drawing_defaults
 
@@ -410,6 +409,7 @@ class Pulley(BaseElement):
         y2 = pl.get_float_attrib(el, 'y2', 140)
         x3 = pl.get_float_attrib(el, 'x3', 40)
         y3 = pl.get_float_attrib(el, 'y3', 130)
+        longer = pl.get_boolean_attrib(el, 'alternative-path', 'false')
 
         return {
             'x1': x1,
