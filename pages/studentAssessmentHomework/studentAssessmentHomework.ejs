@@ -19,6 +19,11 @@
           <p class="text-center">
              This is a group homework. Please create or join a group first.
           </p>
+          <% if (typeof usedfriendcode !== 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+              Failed to join the group with friendcode <span class="badge badge-secondary"><%= usedfriendcode %></span>. It is already full or does not exist. Please try to join another one.
+            </div>
+          <% } %>
           <div class="container-fluid">
             <div class="row">
                 <div class="col-sm bg-light py-4 px-4 border">

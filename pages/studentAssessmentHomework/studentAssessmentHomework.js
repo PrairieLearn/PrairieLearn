@@ -40,16 +40,14 @@ router.get('/', function(req, res, next) {
                         res.locals.groupinfo = result.rows;
                         const group_id = res.locals.groupinfo[0].group_id || 0;
                         res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
-                        sqldb.query(sql.config_info, params, function(err, result) {
-                            if (ERR(err, next)) return;
-                            res.locals.minsize = result.rows[0].minimum;
-                            res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-                            res.locals.start = false;
-                            if(res.locals.needsize <= 0){
-                                res.locals.start = true;
-                            }
-                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                        });
+                        res.locals.minsize = result.rows[0].minimum || 0;
+                        res.locals.maxsize = result.rows[0].maximum || 999;
+                        res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                        res.locals.start = false;
+                        if(res.locals.needsize <= 0){
+                            res.locals.start = true;
+                        }
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     } else {
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     }
@@ -79,20 +77,40 @@ router.post('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
             });
     } else if(req.body.__action == 'joinGroup'){
-        const group_id = Buffer.from(req.body.friendcode, 'base64').toString('utf8');
+        const friendcode = req.body.friendcode;
+        const group_id = Buffer.from(friendcode, 'base64').toString('utf8');
         const params = {
             group_id,
             user_id: res.locals.user.user_id,
         };
-        sqldb.query(sql.join_group, params, function(err, _result) {
+        let cursize, maxsize;
+        sqldb.query(sql.check_groupsize, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            let joinerror = true;
+            if (typeof result !== 'undefined'){
+                cursize = result.rowCount || 0;
+                if(cursize > 0){
+                    maxsize = result.rows[0].maximum;
+                    if (cursize < maxsize) {
+                        joinerror = false;
+                        sqldb.query(sql.join_group, params, function(err, _result) {
+                            if (ERR(err, next)) return;
+                            res.redirect(req.originalUrl);
+                        });
+                    }
+                }
+            }
+            if (joinerror){
+                res.locals.groupsize = 0;
+                res.locals.usedfriendcode = friendcode;
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            }
         });
     } else if(req.body.__action == 'createGroup'){
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
-            group_name: req.body.groupName,
+            group_name: req.body.groupName + ' #' + res.locals.assessment.id + '-' + res.locals.user.user_id,
         };
         sqldb.query(sql.create_group, params, function(err, _result) {
             if (ERR(err, next)) return;

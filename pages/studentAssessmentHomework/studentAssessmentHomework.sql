@@ -12,6 +12,13 @@ WHERE
     AND ai.number = 1
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
 
+-- BLOCK check_groupsize
+SELECT gc.maximum, gu.user_id, gu.group_id
+FROM groups gr
+JOIN group_configs gc ON gr.group_config_id = gc.id
+JOIN group_users gu ON gu.group_id = gr.id
+WHERE gr.id = $group_id AND gr.deleted_at IS NULL AND gc.deleted_at IS NULL;
+
 -- BLOCK join_group
 INSERT INTO group_users (group_id, user_id)
     VALUES ($group_id, $user_id);
@@ -31,7 +38,7 @@ INSERT INTO group_users (group_id, user_id)
         $user_id);
 
 -- BLOCK get_groupinfo
-SELECT gu.group_id, gr.name, us.uid
+SELECT gu.group_id, gr.name, us.uid, gc.minimum, gc.maximum
 FROM assessments ass
 JOIN group_configs gc ON gc.assessment_id = ass.id
 JOIN groups gr ON gr.group_config_id = gc.id
@@ -48,8 +55,3 @@ WHERE user_id = $user_id AND group_id IN (
                                         JOIN group_configs gc ON gc.assessment_id = ass.id
                                         JOIN groups gr ON gr.group_config_id = gc.id
                                         WHERE ass.id = $assessment_id);
-
---BLOCK config_info
-SELECT minimum, maximum
-FROM group_configs
-WHERE assessment_id = $assessment_id AND deleted_at IS NULL;
