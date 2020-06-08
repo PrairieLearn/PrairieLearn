@@ -410,35 +410,6 @@ class Pulley(BaseElement):
         y2 = pl.get_float_attrib(el, 'y2', 140)
         x3 = pl.get_float_attrib(el, 'x3', 40)
         y3 = pl.get_float_attrib(el, 'y3', 130)
-        uO = np.array([x1, y1])
-        uA = np.array([x2, y2])
-        uB = np.array([x3, y3])
-        longer = pl.get_boolean_attrib(el, 'alternative-path', 'false')
-
-        uOA = uA - uO
-        dOA = la.norm(uOA, 2)
-        n1 = uOA / dOA
-        n2 = np.array([n1[1], -n1[0]])
-        theta = math.asin(r / dOA)
-        p1 = r * math.sin(theta) * n1 + r * math.cos(theta) * n2
-        p2 = r * math.sin(theta) * n1 - r * math.cos(theta) * n2
-
-        uOB = uB - uO
-        dOB = la.norm(uOB, 2)
-        n3 = uOB / dOB
-        n4 = np.array([n3[1], -n3[0]])
-        theta2 = math.asin(r / dOB)
-        p3 = r * math.sin(theta2) * n3 + r * math.cos(theta2) * n4
-        p4 = r * math.sin(theta2) * n3 - r * math.cos(theta2) * n4
-
-        if longer:
-            p = p2 if np.inner(n2, uOB) > 0 else p1
-            u4 = uO + p
-            u5 = uO + p3 if la.norm(p3 - uOA, 2) > la.norm(p - uOA, 2) else uO + p4
-        else:
-            p = p2 if np.inner(n2, uOB) < 0 else p1
-            u4 = uO + p
-            u5 = uO + p3 if la.norm(p3 - uOA, 2) < la.norm(p - uOA, 2) else uO + p4
 
         return {
             'x1': x1,
@@ -447,10 +418,7 @@ class Pulley(BaseElement):
             'y2': y2,
             'x3': x3,
             'y3': y3,
-            'x4': u4[0],
-            'y4': u4[1],
-            'x5': u5[0],
-            'y5': u5[1],
+            'longer': longer,
             'radius': r,
             'label': pl.get_string_attrib(el, 'label', ''),
             'offsetx': pl.get_float_attrib(el, 'offsetx', 2),

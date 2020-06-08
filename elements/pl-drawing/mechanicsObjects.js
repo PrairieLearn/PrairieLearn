@@ -5,6 +5,11 @@ var $V = Sylvester.Vector.create;
 Sylvester.Vector.prototype.multElementwise = function(other) {
     return $V([this.e(1) * other.e(1), this.e(2) * other.e(2)]);
 }
+Sylvester.Vector.prototype.norm = Sylvester.Vector.prototype.modulus;
+Sylvester.Vector.prototype.normalize = Sylvester.Vector.prototype.toUnitVector;
+Sylvester.Vector.prototype.divide = function(k) {
+    return this.multiply(1/k);
+};
 
 const pt2vec = function(pt) {
     return $V([pt.x, pt.y]);
@@ -1131,6 +1136,109 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 });
 
 
+mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
+    type: 'pulley',
+    initialize: function(options) {
+        options = options || {};
+        this.callSuper('initialize', options);
+        this.originX = 'center';
+        this.originY = 'center';
+        this.objectCaching = false;
+
+        const update_visuals = () => {
+            this.left = this.x1;
+            this.top = this.y1;
+
+            const r = this.radius;
+            let uO = $V([this.x1, this.y1]);
+            let uA = $V([this.x2, this.y2]);
+            let uB = $V([this.x3, this.y3]);
+            let longer = this.longer;
+
+            let uOA = uA.subtract(uO);
+            let dOA = uA.norm();
+            let n1 = uOA.normalize();
+            let n2 = $V([n1.e(2), -n1.e(1)]);
+            let theta = Math.asin(r / dOA);
+            let p1 = n1.multiply(r * Math.sin(theta)).add(n2.multiply(r * Math.cos(theta)));
+            let p2 = n1.multiply(r * Math.sin(theta)).subtract(n2.multiply(r * Math.cos(theta)));
+
+            let uOB = uB.subtract(uO);
+            let dOB = uOB.norm();
+            let n3 = uOB.normalize();
+            let n4 = $V([n3.e(2), -n3.e(1)]);
+            let theta2 = Math.asin(r / dOB);
+            let p3 = n3.multiply(r * Math.sin(theta2)).add(n4.multiply(r * Math.cos(theta2)));
+            let p4 = n3.multiply(r * Math.sin(theta2)).subtract(n4.multiply(r * Math.cos(theta2)));
+
+            let p;
+            let u4;
+            let u5;
+            if (longer) {
+                if (n2.dot(uOB) > 0) {
+                    p = p2;
+                } else {
+                    p = p1;
+                }
+
+                u4 = uO.add(p);
+                if (p3.subtract(uOA).norm() > p.subtract(uOA).norm()) {
+                    u5 = uO.add(p3);
+                } else {
+                    u5 = uO.add(p4);
+                }
+            } else {
+                if (n2.dot(uOB) < 0) {
+                    p = p2;
+                } else {
+                    p = p1;
+                }
+
+                u4 = uO.add(p);
+                if (p3.subtract(uOA).norm() < p.subtract(uOA).norm()) {
+                    u5 = uO.add(p3);
+                } else {
+                    u5 = uO.add(p4);
+                }
+            }
+
+            this.x4 = u4.e(1);
+            this.y4 = u4.e(2);
+            this.x5 = u5.e(1);
+            this.y5 = u5.e(2);
+        }
+        this.on('update_visuals', update_visuals);
+        update_visuals();
+    },
+    _render: function(ctx) {
+        /* Draw pulley circle */
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        /* Draw middle nub */
+        ctx.beginPath();
+        ctx.fillStyle = "black";
+        ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        /* Undo canvas translations so we can draw in world coordinates. */
+        ctx.translate(-this.x1, -this.y1);
+
+        /* Draw first line */
+        ctx.beginPath();
+        ctx.moveTo(this.x2, this.y2);
+        ctx.lineTo(this.x4, this.y4);
+        ctx.stroke();
+
+        /* Draw second line */
+        ctx.beginPath();
+        ctx.moveTo(this.x3, this.y3);
+        ctx.lineTo(this.x5, this.y5);
+        ctx.stroke();
+    }
+});
 
 // ======================================================================================
 mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
@@ -1294,65 +1402,6 @@ mechanicsObjects.makeCoordinates = function(options) {
         options.angle = old_angle;
         group.angle = old_angle;
     }
-
-    return group;
-};
-
-
-// ======================================================================================
-mechanicsObjects.makePulley = function(options) {
-
-    var group = new fabric.Group([ ], { left: 0, top: 0 , name: 'pulley'});
-    var circle_pulley = new fabric.Circle({
-        radius: options.radius,
-        fill: options.fill,
-        stroke: options.stroke,
-        strokeWidth: options.strokeWidth,
-    });
-
-    group.addWithUpdate(circle_pulley);
-
-    group.set({
-        originX: 'center',
-        originY: 'center',
-        left: options.x1,
-        top: options.y1,
-    });
-
-    if (options.label) {
-        var textObj = new fabric.Text(options.label, {
-            fontSize: 20,
-            textAlign: "left",
-            left: options.offsetx,
-            top: options.offsety,
-        });
-        group.add(textObj);
-    }
-
-    var center_pulley = new fabric.Circle({
-        originX: 'center',
-        originY: 'center',
-        left: options.x1,
-        top: options.y1,
-        radius: 4,
-    });
-    group.addWithUpdate(center_pulley);
-
-    var line2 = new fabric.Line([ options.x2, options.y2, options.x4, options.y4], {
-        stroke: options.stroke,
-        strokeWidth: options.strokeWidth,
-        originX: 'center',
-        originY: 'center',
-    });
-    group.addWithUpdate(line2);
-
-    var line3 = new fabric.Line([ options.x3, options.y3, options.x5, options.y5], {
-        stroke: options.stroke,
-        strokeWidth: options.strokeWidth,
-        originX: 'center',
-        originY: 'center',
-    });
-    group.addWithUpdate(line3);
 
     return group;
 };
@@ -2444,14 +2493,66 @@ mechanicsObjects.byType['simple-arc'] = mechanicsObjects.addArc;
 // ======================================================================================
 // pulley
 mechanicsObjects.addPulley = function(canvas, options, submittedAnswer) {
-
-    let obj = mechanicsObjects.makePulley(options);
-    obj.selectable = false
-
+    let obj = new mechanicsObjects.pulley(options);
     if (!obj.id) {
         obj.id = window.PLDrawingApi.generateID();
     }
+    obj.selectable = false;
+    obj.evented = false;
     canvas.add(obj);
+
+    if (options.selectable === 1){
+        let cc = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
+        let c1 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
+        let c2 = mechanicsObjects.makeControlHandle(options.x3, options.y3, 5, 2);
+        canvas.add(cc, c1, c2);
+
+        let subObj = mechanicsObjects.cloneMechanicsObject('pulley', options);
+        /* cc */
+        mechanicsObjects.attachHandlersNoClone(subObj, cc, submittedAnswer,
+        function() { /* Modified */
+            subObj.x1 = cc.left;
+            subObj.y1 = cc.top;
+        },
+        function() { /* Removed */
+            canvas.remove(c1);
+            canvas.remove(c2);
+        });
+        cc.on('moving',function() {
+            obj.set({ 'x1': cc.left, 'y1': cc.top });
+            obj.fire('update_visuals');
+        });
+
+        /* c1 */
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
+        function() { /* Modified */
+            subObj.x2 = c1.left;
+            subObj.y2 = c1.top;
+        },
+        function() { /* Removed */
+            canvas.remove(cc);
+            canvas.remove(c2);
+        });
+        c1.on('moving',function() {
+            obj.set({ 'x2': c1.left, 'y2': c1.top });
+            obj.fire('update_visuals');
+        });
+
+        /* c2 */
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
+        function() { /* Modified */
+            subObj.x3 = c2.left;
+            subObj.y3 = c2.top;
+        },
+        function() { /* Removed */
+            canvas.remove(cc);
+            canvas.remove(c1);
+        });
+        c2.on('moving',function() {
+            obj.set({ 'x3': c2.left, 'y3': c2.top });
+            obj.fire('update_visuals');
+        });
+    }
 
     return obj;
 };
@@ -3065,4 +3166,4 @@ mechanicsObjects.createObjectHandlers = function(type, options, reference, submi
     mechanicsObjects.attachHandlersNoClone(subObj, reference, submittedAnswer, modifyHandler, removeHandler);
 }
 
-window.PLDrawingApi.registerElements('Mechanics Objects', mechanicsObjects.byType, mechanicsObjects);
+window.PLDrawingApi.registerElements(null, mechanicsObjects.byType, mechanicsObjects);
