@@ -149,7 +149,7 @@ def test(element_html, data):
         incorrect_ans = ''
 
         for option in dropdown_options:
-            if option != correct_answer:
+            if option != solution:
                 incorrect_ans = option
 
         data['raw_submitted_answers'][correct_answer] = incorrect_ans
