@@ -1,6 +1,20 @@
 	<p> Select the correct word in the following quotes:</p>
-	The <pl-dropdown sort="ascend" options="part, inverse, whole" answer="whole" answer-key="aristotle"></pl-dropdown> is more than the sum of its parts. <p></p>
+	The 
+	<pl-dropdown sort="ascend" correct-answer="aristotle">
+		<pl-answer correct="true">whole</pl-answer>
+		<pl-answer>part</pl-answer>
+		<pl-answer>inverse</pl-answer>
+	</pl-dropdown> 
+	is more than the sum of its parts. <p></p>
 
-	An <pl-dropdown sort="random" options="unexamined, examined, insatiable" answer="unexamined" answer-key="socrates"></pl-dropdown> life is not worth living. <p></p>
+	An <pl-dropdown sort="random" correct-answer="socrates">
+		<pl-answer correct="true">unexamined</pl-answer>
+		<pl-answer>examined</pl-answer>
+		<pl-answer>instiable</pl-answer>
+	</pl-dropdown> life is not worth living. <p></p>
 
-	A <pl-dropdown sort="ascend" options="wise, clumsy, wreckless" answer="wise" answer-key="hume"></pl-dropdown> man proportions his belief to the evidence. <p></p>
+	A <pl-dropdown sort="ascend" correct-answer="hume">
+		<pl-answer correct="true">wise</pl-answer>
+		<pl-answer>clumsy</pl-answer>
+		<pl-answer>reckless</pl-answer>
+	</pl-dropdown> man proportions his belief to the evidence. <p></p>
