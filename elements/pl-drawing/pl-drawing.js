@@ -5,16 +5,18 @@
  */
 window.PLDrawingApi = {
     '_idCounter': 0,
+
+    /**
+     * Generates a new numeric ID for a submission object.
+     * Each submitted object is uniquely identified by its ID.
+     */
     generateID: function() {
-        /**
-         * Generates a new numeric ID for a submission object.
-         * Each submitted object is uniquely identified by its ID.
-         */
         return this._idCounter++;
     },
 
     'elements': {},
     '_callingContext': {},
+
     /**
      * Register a dictionary of elements.  These should map element names
      * to a function that creates the element onto the canvas from the relevant
@@ -22,7 +24,9 @@ window.PLDrawingApi = {
      * @param extensionName Name of the extension/group of elements.
      * @param dictionary Dictionary of elements to register.
      * @param callingContext {optional} Context to run the element functions in.
-     * Used, for example, if the function depends on a 'this' value.
+     * Used, for example, if the function depends on a 'this' value.  The 'this'
+     * value will be set to the callingContext.  If it is omitted then 'this'
+     * will be set to the PLDrawingApi object.
      */
     registerElements: function(extensionName, dictionary, callingContext) {
         if (callingContext == undefined || callingContext === null) {
@@ -34,6 +38,12 @@ window.PLDrawingApi = {
         _.extend(this.elements, dictionary);
     },
 
+    /**
+     * Generate an element from an options dictionary.
+     * @param canvas Canvas to create the element on.
+     * @param options Element options.  Must contain a 'type' key.
+     * @param submittedAnswer Answer state object.
+     */
     createElement: function(canvas, options, submittedAnswer) {
         const name = options.type;
         let added = null;
@@ -49,6 +59,11 @@ window.PLDrawingApi = {
         return added;
     },
 
+    /**
+     * Restore the drawing canvas state from a submitted answer.
+     * @param canvas Canvas to restore state onto.
+     * @param submittedAnswer Answer state to restore from.
+     */
     restoreAnswer: function(canvas, submittedAnswer) {
         for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
             this._idCounter = Math.max(id, this._idCounter);
