@@ -1360,46 +1360,7 @@ mechanicsObjects.makePulley = function(options) {
 /********************************************************************************/
 /********************************************************************************/
 /********************************************************************************/
-// Helper functions for maintaining submittedAnswer
-
-mechanicsObjects.idCounter = 0;
-mechanicsObjects.newID = function() {
-    this.idCounter++;
-    return this.idCounter;
-};
-
-mechanicsObjects.addOrReplaceSubmittedAnswerObject = function(submittedAnswer, answerName, subObj) {
-    if (!submittedAnswer.has(answerName)) submittedAnswer.set(answerName, []);
-    var objects = submittedAnswer.get(answerName);
-    var origSubObj = _(objects).findWhere({id: subObj.id});
-    if (origSubObj) {
-        _.extend(origSubObj, subObj);
-    } else {
-        objects.push(subObj);
-    }
-    submittedAnswer.set(answerName, objects);
-};
-
-mechanicsObjects.removeSubmittedAnswerObject = function(submittedAnswer, answerName, subObj) {
-    var objects = submittedAnswer.get(answerName);
-    objects = _(objects).reject(function(obj) {return obj.id == subObj.id;});
-    submittedAnswer.set(answerName, objects);
-};
-
 mechanicsObjects.byType = {};
-mechanicsObjects.restoreSubmittedAnswer = function(canvas, submittedAnswer, answerName) {
-    if (!submittedAnswer.has(answerName)) return;
-    var objects = submittedAnswer.get(answerName);
-    var that = this;
-    _(objects).each(function(obj) {
-        that.idCounter = Math.max(that.idCounter, obj.id);
-        var newObj = JSON.parse(JSON.stringify(obj));
-        delete newObj.type;
-        var fcn = that.byType[obj.type];
-        if (!fcn) return;
-        fcn.call(that, canvas, newObj, submittedAnswer, answerName);
-    });
-};
 
 // ======================================================================================
 // ======================================================================================
@@ -1423,25 +1384,7 @@ mechanicsObjects.addCanvasBackground = function(canvas, w, h, gridsize) {
     }
 }
 
-// ======================================================================================
-// ======================================================================================
-// ======================================================================================
-// Functions to add objects to the canvas, including maintaining submittedAnswer.
-// These functions do not create actual new object types, but just use existing obejcts.
-//
-// These can all be called in two forms:
-// 1. addArrow(canvas, options) will simply draw the object directly on the canvas.
-// 2. addArrow(canvas, options, submittedAnswer, answerName) will draw the object
-//    on the canvas and also add callbacks to update the object in submittedAnswer.
-
-// ======================================================================================
-// ======================================================================================
-// The first list of objects are used to diplay figures, but they currently
-// don't have support for grading (not used as a submitted answer)
-// ======================================================================================
-// ======================================================================================
-
-mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addText = function(canvas, options, submittedAnswer) {
     const selectable = options.selectable ? true : false;
     let textObj;
 
@@ -1465,6 +1408,10 @@ mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName
         });
     }
 
+    if (options.selectable === 1) {
+
+    }
+
     canvas.add(textObj);
     return textObj;
 };
@@ -1472,10 +1419,10 @@ mechanicsObjects.addText = function(canvas, options, submittedAnswer, answerName
 mechanicsObjects.byType['text'] = mechanicsObjects.addText;
 
 // ======================================================================================
-mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addRod = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.Rod(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1504,9 +1451,9 @@ mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName)
         var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
         canvas.add(c1, c2);
 
-        var subObj = this.cloneMechanicsObject('rod', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('rod', options);
         /* C1 */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.x1 = c1.left;
             subObj.y1 = c1.top;
@@ -1522,7 +1469,7 @@ mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName)
         });
 
         /* C2 */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             subObj.x2 = c2.left;
             subObj.y2 = c2.top;
@@ -1543,10 +1490,10 @@ mechanicsObjects.addRod = function(canvas, options, submittedAnswer, answerName)
 mechanicsObjects.byType['rod'] = mechanicsObjects.addRod;
 
 // ======================================================================================
-mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.CollarRod(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1575,9 +1522,9 @@ mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer, answe
         var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
         canvas.add(c1, c2);
 
-        var subObj = this.cloneMechanicsObject('collarrod', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('collarrod', options);
         /* C1 */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.x1 = c1.left;
             subObj.y1 = c1.top;
@@ -1593,7 +1540,7 @@ mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C2 */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             subObj.x2 = c2.left;
             subObj.y2 = c2.top;
@@ -1614,10 +1561,10 @@ mechanicsObjects.addCollarRod = function(canvas, options, submittedAnswer, answe
 mechanicsObjects.byType['collarrod'] = mechanicsObjects.addCollarRod;
 
 // ======================================================================================
-mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.LShapeRod(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1647,9 +1594,9 @@ mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answe
         var c3 = mechanicsObjects.makeControlHandle(options.x3, options.y3, 5, 2);
         canvas.add(c1, c2, c3);
 
-        var subObj = this.cloneMechanicsObject('Lshaperod', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('Lshaperod', options);
         /* C1 */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.x1 = c1.left;
             subObj.y1 = c1.top;
@@ -1666,7 +1613,7 @@ mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C2 */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             subObj.x2 = c2.left;
             subObj.y2 = c2.top;
@@ -1683,7 +1630,7 @@ mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C3 */
-        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c3, submittedAnswer,
         function() { /* Modified */
             subObj.x3 = c3.left;
             subObj.y3 = c3.top;
@@ -1705,10 +1652,10 @@ mechanicsObjects.addLShapeRod = function(canvas, options, submittedAnswer, answe
 mechanicsObjects.byType['Lshaperod'] = mechanicsObjects.addLShapeRod;
 
 // ======================================================================================
-mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.TShapeRod(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1739,9 +1686,9 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
         var c4 = mechanicsObjects.makeControlHandle(options.x4, options.y4, 5, 2);
         canvas.add(c1, c2, c3, c4);
 
-        var subObj = this.cloneMechanicsObject('Tshaperod', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('Tshaperod', options);
         /* C1 */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.x1 = c1.left;
             subObj.y1 = c1.top;
@@ -1759,7 +1706,7 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C2 */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             subObj.x2 = c2.left;
             subObj.y2 = c2.top;
@@ -1777,7 +1724,7 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C3 */
-        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c3, submittedAnswer,
         function() { /* Modified */
             subObj.x3 = c3.left;
             subObj.y3 = c3.top;
@@ -1795,7 +1742,7 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
         });
 
         /* C4 */
-        this.attachHandlersNoClone(subObj, c4, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c4, submittedAnswer,
         function() { /* Modified */
             subObj.x4 = c4.left;
             subObj.y4 = c4.top;
@@ -1818,10 +1765,10 @@ mechanicsObjects.addTShapeRod = function(canvas, options, submittedAnswer, answe
 mechanicsObjects.byType['Tshaperod'] = mechanicsObjects.addTShapeRod;
 
 // ======================================================================================
-mechanicsObjects.addClampedEnd = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addClampedEnd = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.ClampedEnd(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1842,7 +1789,7 @@ mechanicsObjects.addClampedEnd = function(canvas, options, submittedAnswer, answ
             subObj.scaleY = obj.scaleY;
             subObj.angle = obj.angle;
         };
-        this.createObjectHandlers('clamped', options, obj, submittedAnswer, answerName, modify);
+        mechanicsObjects.createObjectHandlers('clamped', options, obj, submittedAnswer, modify);
     }
 
     return obj;
@@ -1850,10 +1797,10 @@ mechanicsObjects.addClampedEnd = function(canvas, options, submittedAnswer, answ
 mechanicsObjects.byType['clamped'] = mechanicsObjects.addClampedEnd;
 
 // ======================================================================================
-mechanicsObjects.addFixedPin = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addFixedPin = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.FixedPin(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -1871,7 +1818,7 @@ mechanicsObjects.addFixedPin = function(canvas, options, submittedAnswer, answer
 mechanicsObjects.byType['fixed-pin'] = mechanicsObjects.addFixedPin;
 
 // ======================================================================================
-mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addDimension = function(canvas, options, submittedAnswer) {
 
       var p1 = $V([ options.x1ref, options.y1ref ]);
       var p2 = $V([ options.x2ref, options.y2ref ]);
@@ -1887,7 +1834,7 @@ mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answe
       obj.selectable = false;
       obj.evented = false;
       if (!obj.id) {
-          obj.id = this.newID();
+          obj.id = window.PLDrawingApi.generateID();
       }
       canvas.add(obj);
 
@@ -1932,9 +1879,9 @@ mechanicsObjects.addDimension = function(canvas, options, submittedAnswer, answe
 mechanicsObjects.byType['dimension'] = mechanicsObjects.addDimension;
 
 // ======================================================================================
-mechanicsObjects.addArcDimension = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addArcDimension = function(canvas, options, submittedAnswer) {
 
-      var obj = new this.arcVector(options);
+      var obj = new mechanicsObjects.arcVector(options);
       canvas.add(obj);
 
       // Adding support lines
@@ -1991,10 +1938,10 @@ mechanicsObjects.addArcDimension = function(canvas, options, submittedAnswer, an
 mechanicsObjects.byType['arc-dimension'] = mechanicsObjects.addArcDimension;
 
 // ======================================================================================
-mechanicsObjects.addSpring = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addSpring = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.Spring(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2005,7 +1952,7 @@ mechanicsObjects.addSpring = function(canvas, options, submittedAnswer, answerNa
         subObj.x2 = obj.x2;
         subObj.y2 = obj.y2;
     };
-    this.createObjectHandlers('spring', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('spring', options, obj, submittedAnswer, modify);
 
     return obj;
 }
@@ -2013,10 +1960,10 @@ mechanicsObjects.byType['spring'] = mechanicsObjects.addSpring;
 
 // ======================================================================================
 // triangle
-mechanicsObjects.addTriangle = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addTriangle = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Polygon([options.p1,options.p2,options.p3], options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2051,7 +1998,7 @@ mechanicsObjects.addTriangle = function(canvas, options, submittedAnswer, answer
         subObj.p3 = vec2pt(p3);
         subObj.angle = obj.angle;
     };
-    this.createObjectHandlers('triangle', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('triangle', options, obj, submittedAnswer, modify);
 
     return obj;
 };
@@ -2059,11 +2006,11 @@ mechanicsObjects.byType['triangle'] = mechanicsObjects.addTriangle;
 
 // ======================================================================================
 // rectangle
-mechanicsObjects.addRectangle = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addRectangle = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Rect(options);
 
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
 
     if (!submittedAnswer) return obj;
@@ -2074,7 +2021,7 @@ mechanicsObjects.addRectangle = function(canvas, options, submittedAnswer, answe
         subObj.height = obj.height * obj.scaleY;
         subObj.angle = obj.angle;
     };
-    this.createObjectHandlers('rectangle', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('rectangle', options, obj, submittedAnswer, modify);
 
     canvas.add(obj);
     return obj;
@@ -2083,10 +2030,10 @@ mechanicsObjects.byType['rectangle'] = mechanicsObjects.addRectangle;
 
 // ======================================================================================
 // polygon
-mechanicsObjects.addPolygon = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addPolygon = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Polygon(options.pointlist,options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2098,14 +2045,14 @@ mechanicsObjects.addPolygon = function(canvas, options, submittedAnswer, answerN
             subObj.scaleY = obj.scaleY;
             subObj.angle = obj.angle;
         };
-        this.createObjectHandlers('polygon', options, obj, submittedAnswer, answerName, modify);
+        mechanicsObjects.createObjectHandlers('polygon', options, obj, submittedAnswer, modify);
     }
     return obj;
 };
 mechanicsObjects.byType['polygon'] = mechanicsObjects.addPolygon;
 
 // ======================================================================================
-mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addLine = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Line([options.x1,options.y1, options.x2, options.y2], options);
 
     obj.setControlVisible('bl',false);
@@ -2126,7 +2073,7 @@ mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName
     obj.evented = false;
 
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2139,9 +2086,9 @@ mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName
         var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
         canvas.add(c1, c2);
 
-        var subObj = this.cloneMechanicsObject('line', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('line', options);
         /* C1 */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.x1 = c1.left;
             subObj.y1 = c1.top;
@@ -2155,7 +2102,7 @@ mechanicsObjects.addLine = function(canvas, options, submittedAnswer, answerName
         });
 
         /* C2 */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             subObj.x2 = c2.left;
             subObj.y2 = c2.top;
@@ -2175,7 +2122,7 @@ mechanicsObjects.byType['line'] = mechanicsObjects.addLine;
 
 
 // ======================================================================================
-mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer) {
     const selectable = (options.selectable ? true : false);
 
     let obj = mechanicsObjects.makeCoordinates(options);
@@ -2191,7 +2138,7 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
     obj.setControlVisible('mr',false);
     obj.setControlVisible('mtr',true);
     if (!obj.id) {
-         obj.id = this.newID();
+         obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2227,7 +2174,7 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
         subObj.top = y;
         subObj.angle = obj.angle;
     };
-    this.createObjectHandlers('coordinates', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('coordinates', options, obj, submittedAnswer, modify);
 
     let update_labels = function() {
         const angle_rad = (Math.PI / 180) * (360 - obj.angle);
@@ -2259,7 +2206,7 @@ mechanicsObjects.addCoordinates = function(canvas, options, submittedAnswer, ans
 mechanicsObjects.byType['coordinates'] = mechanicsObjects.addCoordinates;
 
 // ======================================================================================
-mechanicsObjects.addAxes = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addAxes = function(canvas, options, submittedAnswer) {
 
     var obj = new fabric.Group([ ], { left: 0, top: 0 });
     obj.evented = false;
@@ -2291,7 +2238,7 @@ mechanicsObjects.addAxes = function(canvas, options, submittedAnswer, answerName
     obj.addWithUpdate(obj2);
 
     if (!obj.id) {
-         obj.id = this.newID();
+         obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2379,10 +2326,10 @@ mechanicsObjects.byType['axes'] = mechanicsObjects.addAxes;
 
 // ======================================================================================
 // arc
-mechanicsObjects.addArc = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addArc = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Circle(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2402,21 +2349,21 @@ mechanicsObjects.addArc = function(canvas, options, submittedAnswer, answerName)
 
         canvas.add(c1, c2, c3);
 
-        var subObj = this.cloneMechanicsObject('simple-arc', options);
+        var subObj = mechanicsObjects.cloneMechanicsObject('simple-arc', options);
         var that = this;
 
         /* Center */
-        this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
         function() { /* Modified */
             subObj.left = c1.left;
             subObj.top = c1.top;
-            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+            submittedAnswer.updateObject(subObj);
         },
         function() { /* Removed */
             canvas.remove(c2);
             canvas.remove(c3);
             canvas.remove(obj);
-            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+            that.removeSubmittedAnswerObj(submittedAnswer, subObj);
         });
         c1.on('moving', function() {
             obj.left = c1.left;
@@ -2433,19 +2380,19 @@ mechanicsObjects.addArc = function(canvas, options, submittedAnswer, answerName)
         });
 
         /* Starting Angle */
-        this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
         function() { /* Modified */
             const dy = c2.top - obj.top;
             const dx = c2.left - obj.left;
             subObj.startAngle = Math.atan2(dy, dx);
             subObj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+            submittedAnswer.updateObject(subObj);
         },
         function() { /* Removed */
             canvas.remove(c1);
             canvas.remove(c3);
             canvas.remove(obj);
-            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+            submittedAnswer.deleteObject(subObj);
         });
         c2.on('moving', function() {
             const dy = c2.top - obj.top;
@@ -2460,19 +2407,19 @@ mechanicsObjects.addArc = function(canvas, options, submittedAnswer, answerName)
         });
 
         /* Ending Angle */
-        this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+        mechanicsObjects.attachHandlersNoClone(subObj, c3, submittedAnswer,
         function() { /* Modified */
             const dy = c3.top - obj.top;
             const dx = c3.left - obj.left;
             subObj.endAngle = Math.atan2(dy, dx);
             subObj.radius = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2))
-            that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+            submittedAnswer.updateObject(subObj);
         },
         function() { /* Removed */
             canvas.remove(c1);
             canvas.remove(c2);
             canvas.remove(obj);
-            that.removeSubmittedAnswerObj(submittedAnswer, answerName, subObj);
+            submittedAnswer.deleteObject(subObj);
         });
         c3.on('moving', function() {
             const dy = c3.top - obj.top;
@@ -2496,13 +2443,13 @@ mechanicsObjects.byType['simple-arc'] = mechanicsObjects.addArc;
 
 // ======================================================================================
 // pulley
-mechanicsObjects.addPulley = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addPulley = function(canvas, options, submittedAnswer) {
 
-    let obj = this.makePulley(options);
+    let obj = mechanicsObjects.makePulley(options);
     obj.selectable = false
 
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2518,8 +2465,8 @@ mechanicsObjects.byType['pulley'] = mechanicsObjects.addPulley;
 //     right: right coordinate
 //     ...: other drawing options
 
-mechanicsObjects.addArcVector = function(canvas, options, submittedAnswer, answerName) {
-    var obj = new this.arcVector(options);
+mechanicsObjects.addArcVector = function(canvas, options, submittedAnswer) {
+    var obj = new mechanicsObjects.arcVector(options);
     canvas.add(obj)
 
     if (options.drawErrorBox) {
@@ -2573,7 +2520,7 @@ mechanicsObjects.addArcVector = function(canvas, options, submittedAnswer, answe
             textObj.top = obj.top + dy + obj.offsety;
         }
     };
-    this.createObjectHandlers('arc_vector', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('arc_vector', options, obj, submittedAnswer, modify);
 
     return obj;
 };
@@ -2593,8 +2540,8 @@ mechanicsObjects.byType['arc_vector'] = mechanicsObjects.addArcVector;
 //     right: right coordinate
 //     ...: other drawing options
 
-mechanicsObjects.addVector = function(canvas, options, submittedAnswer, answerName) {
-    var obj = new this.Arrow(options);
+mechanicsObjects.addVector = function(canvas, options, submittedAnswer) {
+    var obj = new mechanicsObjects.Arrow(options);
     canvas.add(obj);
 
     if (options.drawErrorBox) {
@@ -2639,7 +2586,7 @@ mechanicsObjects.addVector = function(canvas, options, submittedAnswer, answerNa
             textObj.top = obj.top + dy + obj.offsety;
         }
     };
-    this.createObjectHandlers('arrow', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('arrow', options, obj, submittedAnswer, modify);
 
     return obj;
 };
@@ -2648,8 +2595,8 @@ mechanicsObjects.byType['arrow'] = mechanicsObjects.addVector;
 mechanicsObjects.byType['vector'] = mechanicsObjects.addVector;
 
 // ======================================================================================
-mechanicsObjects.addDoubleArrow = function(canvas, options, submittedAnswer, answerName) {
-    var obj = new this.DoubleArrow(options);
+mechanicsObjects.addDoubleArrow = function(canvas, options, submittedAnswer) {
+    var obj = new mechanicsObjects.DoubleArrow(options);
     canvas.add(obj);
 
     if (options.drawErrorBox) {
@@ -2694,7 +2641,7 @@ mechanicsObjects.addDoubleArrow = function(canvas, options, submittedAnswer, ans
             textObj.top = obj.top + dy + obj.offsety;
         }
     };
-    this.createObjectHandlers('doubleArrow', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('doubleArrow', options, obj, submittedAnswer, modify);
 
     return obj;
 };
@@ -2712,8 +2659,8 @@ mechanicsObjects.byType['doubleArrow'] = mechanicsObjects.addDoubleArrow;
 //     minThickness: minimum vertical thickness of the load
 //     maxThickness: maximum vertical thickness of the load
 
-mechanicsObjects.addDistTrianLoad = function(canvas, options, submittedAnswer, answerName) {
-    var obj = this.makeDistTrianLoad(options);
+mechanicsObjects.addDistTrianLoad = function(canvas, options, submittedAnswer) {
+    var obj = mechanicsObjects.makeDistTrianLoad(options);
     canvas.add(obj);
 
     if (options.drawErrorBox) {
@@ -2746,7 +2693,7 @@ mechanicsObjects.addDistTrianLoad = function(canvas, options, submittedAnswer, a
         subObj.angle = obj.angle;
         subObj.flipped = obj.flipped;
     };
-    this.createObjectHandlers('distTrianLoad', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('distTrianLoad', options, obj, submittedAnswer, modify);
 
     return obj;
 };
@@ -2755,7 +2702,7 @@ mechanicsObjects.byType['distTrianLoad'] = mechanicsObjects.addDistTrianLoad;
 
 // ======================================================================================
 // circle
-mechanicsObjects.addCircle = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addCircle = function(canvas, options, submittedAnswer) {
     let obj = new fabric.Circle(options);
     if (options.scaling !== 1) {
         obj.setControlVisible('bl', false);
@@ -2770,7 +2717,7 @@ mechanicsObjects.addCircle = function(canvas, options, submittedAnswer, answerNa
     }
 
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2818,7 +2765,7 @@ mechanicsObjects.addCircle = function(canvas, options, submittedAnswer, answerNa
             textObj.top = obj.top+obj.offsety;
         }
     };
-    this.createObjectHandlers('circle', options, obj, submittedAnswer, answerName, modify);
+    mechanicsObjects.createObjectHandlers('circle', options, obj, submittedAnswer, modify);
 
     return obj;
 
@@ -2827,10 +2774,10 @@ mechanicsObjects.addCircle = function(canvas, options, submittedAnswer, answerNa
 mechanicsObjects.byType['circle'] = mechanicsObjects.addCircle;
 
 // ======================================================================================
-mechanicsObjects.addRoller = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addRoller = function(canvas, options, submittedAnswer) {
     let obj = new mechanicsObjects.Roller(options);
     if (!obj.id) {
-        obj.id = this.newID();
+        obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
@@ -2857,7 +2804,7 @@ mechanicsObjects.byType['roller'] = mechanicsObjects.addRoller;
 //     handleRadius: radius of the control circles on each end
 //     strokeWidth: stroke width of the line
 
-mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer) {
     var line = mechanicsObjects.makeControlStraightLine(options.x1, options.y1, options.x2, options.y2, options);
     var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, options.handleRadius, options.strokeWidth/2);
     var c2 = mechanicsObjects.makeControlHandle(options.x2, options.y2, options.handleRadius, options.strokeWidth/2);
@@ -2889,10 +2836,10 @@ mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer, 
 
     if (!submittedAnswer) return [line, c1, c2];
 
-    var subObj = this.cloneMechanicsObject('controlledLine', options);
+    var subObj = mechanicsObjects.cloneMechanicsObject('controlledLine', options);
 
     /* C1 */
-    this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+    mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
     function() { /* Modified */
         subObj.x1 = c1.left;
         subObj.y1 = c1.top;
@@ -2906,7 +2853,7 @@ mechanicsObjects.addControlledLine = function(canvas, options, submittedAnswer, 
     });
 
     /* C2 */
-    this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+    mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
     function() { /* Modified */
         subObj.x2 = c2.left;
         subObj.y2 = c2.top;
@@ -2964,7 +2911,7 @@ mechanicsObjects.byType['controlledLine'] = mechanicsObjects.addControlledLine;
 //     handleRadius: radius of the control circles on each end
 //     strokeWidth: stroke width of the line
 
-mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAnswer, answerName) {
+mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAnswer) {
     var line = mechanicsObjects.makeControlCurvedLine(options.x1, options.y1, options.x2, options.y2, options.x3, options.y3, options);
     line.objectCaching = false;
     var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, options.handleRadius, options.strokeWidth/2);
@@ -3011,10 +2958,10 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
 
     if (!submittedAnswer) return [line, c1, c2, c3];
 
-    var subObj = this.cloneMechanicsObject('controlledCurvedLine', options);
+    var subObj = mechanicsObjects.cloneMechanicsObject('controlledCurvedLine', options);
 
     /* C1 */
-    this.attachHandlersNoClone(subObj, c1, submittedAnswer, answerName,
+    mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
     function() { /* Modified */
         subObj.x1 = c1.left;
         subObj.y1 = c1.top;
@@ -3030,7 +2977,7 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
     });
 
     /* C2 */
-    this.attachHandlersNoClone(subObj, c2, submittedAnswer, answerName,
+    mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
     function() { /* Modified */
         subObj.x2 = c2.left;
         subObj.y2 = c2.top;
@@ -3046,7 +2993,7 @@ mechanicsObjects.addControlledCurvedLine = function(canvas, options, submittedAn
     });
 
     /* C3 */
-    this.attachHandlersNoClone(subObj, c3, submittedAnswer, answerName,
+    mechanicsObjects.attachHandlersNoClone(subObj, c3, submittedAnswer,
     function() { /* Modified */
         subObj.x3 = c3.left;
         subObj.y3 = c3.top;
@@ -3086,35 +3033,36 @@ mechanicsObjects.byType['controlledCurvedLine'] = mechanicsObjects.addControlled
 
 // common
 
-mechanicsObjects.attachHandlersNoClone = function(subObj, reference, submittedAnswer, answerName,
+mechanicsObjects.attachHandlersNoClone = function(subObj, reference, submittedAnswer,
                                                   modifyHandler, removeHandler) {
-    this.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
-    var that = this;
+    submittedAnswer.updateObject(subObj);
     reference.on('modified', function() {
         if (modifyHandler) {
             modifyHandler(subObj);
         }
-        that.addOrReplaceSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+        submittedAnswer.updateObject(subObj);
     });
     reference.on('removed', function() {
         if (removeHandler) {
             removeHandler(subObj);
         }
-        that.removeSubmittedAnswerObject(submittedAnswer, answerName, subObj);
+        submittedAnswer.deleteObject(subObj);
     });
 }
 
 mechanicsObjects.cloneMechanicsObject = function(type, options) {
     var subObj = _.clone(options);
     if (!subObj.id) {
-        subObj.id = this.newID();
+        subObj.id = window.PLDrawingApi.generateID();
     }
     subObj.type = type;
     return subObj;
 }
 
 mechanicsObjects.createObjectHandlers = function(type, options, reference, submittedAnswer,
-                                                 answerName, modifyHandler, removeHandler) {
-    var subObj = this.cloneMechanicsObject(type, options);
-    this.attachHandlersNoClone(subObj, reference, submittedAnswer, answerName, modifyHandler, removeHandler);
+                                                 modifyHandler, removeHandler) {
+    var subObj = mechanicsObjects.cloneMechanicsObject(type, options);
+    mechanicsObjects.attachHandlersNoClone(subObj, reference, submittedAnswer, modifyHandler, removeHandler);
 }
+
+window.PLDrawingApi.registerElements('Mechanics Objects', mechanicsObjects.byType, mechanicsObjects);

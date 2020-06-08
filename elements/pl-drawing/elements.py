@@ -48,6 +48,9 @@ class BaseElement:
     def grading_name(element):
         return None
 
+    def validate_attributes():
+        return True
+
     def get_attributes():
         """
         Returns a list of attributes that the element may contain.
@@ -673,7 +676,7 @@ class ArcVector(BaseElement):
         return True
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'draw-center', 'clockwise-direction', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box']
+        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'draw-center', 'clockwise-direction', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'anchor-is-tail']
 
 
 class DistributedLoad(BaseElement):
@@ -1433,13 +1436,41 @@ class DrawingGroup(UnplaceableBaseElement):
         return ['visible']
 
 
+class DrawingControls(UnplaceableBaseElement):
+    def get_attributes():
+        return []
+
+
+class DrawingControlsGroup(UnplaceableBaseElement):
+    def get_attributes():
+        return ['label']
+
+
+class DrawingControlsButton(UnplaceableBaseElement):
+    def validate_attributes():
+        return False
+
+    def get_attributes():
+        return ['type']
+
+
 elements['pl-drawing'] = DrawingElement
 elements['pl-drawing-initial'] = DrawingInitial
 elements['pl-drawing-answer'] = DrawingAnswer
 elements['pl-drawing-group'] = DrawingGroup
+elements['pl-controls'] = DrawingControls
+elements['pl-controls-group'] = DrawingControlsGroup
+elements['pl-drawing-button'] = DrawingControlsButton
 
 
 # Helper Functions
+
+def should_validate_attributes(name):
+    if name in elements:
+        return elements[name].validate_attributes()
+    else:
+        return True
+
 
 def get_attributes(name):
     if name in elements:
