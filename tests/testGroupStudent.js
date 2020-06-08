@@ -20,7 +20,7 @@ var helperServer = require('./helperServer');
 // git config --global user.name "Dev User"
 // npm test -- --grep "Group based homework assess control on student side"
 
-let res, page, elemList;
+let page, elemList;
 const locals = {};
 locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
