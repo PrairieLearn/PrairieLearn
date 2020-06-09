@@ -7,10 +7,8 @@ var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 var groupUpdate = require('../lib/group-update');
-var config = require('../lib/config');
 var locals = {};
 locals.courseDir = path.join(__dirname, '..', 'exampleCourse');
-var storedConfig = {};
 
 describe('test auto group and delete groups', function() {
     this.timeout(20000);
@@ -38,7 +36,7 @@ describe('test auto group and delete groups', function() {
     it('auto assign groups', (callback) => {
         groupUpdate.autoGroups(locals.assessment_id, 1, 1, 10, 10, 1, function(err, job_sequence_id) {
             if (ERR(err, callback)) return;
-            var locals = {job_sequence_id: job_sequence_id};
+            locals.job_sequence_id = job_sequence_id;
             var checkComplete = function() {
                 var params = {job_sequence_id: locals.job_sequence_id};
                 sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
@@ -71,12 +69,13 @@ describe('test auto group and delete groups', function() {
     it('delete groups', (callback) => {
         const params = [
             locals.assessment_id,
-            storedConfig.authUid,
+            0,
         ];
         sqldb.call('assessment_groups_delete_all', params, function(err, result) {
             if (ERR(err, callback)) return;
 
             sqldb.query('SELECT deleted_at FROM groups WHERE deleted_at IS NULL', [], function(err, result) {
+                if (ERR(err, callback)) return;
                 assert.equal(result.rows.length, 0);
                 callback(null);
             });
