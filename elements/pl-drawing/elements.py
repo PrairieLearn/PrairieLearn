@@ -78,7 +78,6 @@ class ControlledLine(BaseElement):
             'x2': pl.get_float_attrib(el, 'x2', 40),
             'y1': pl.get_float_attrib(el, 'y1', 40),
             'y2': pl.get_float_attrib(el, 'y2', 40),
-            'type': 'controlledLine',
             'stroke': pl.get_color_attrib(el, 'color', 'red'),
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 4),
             'handleRadius': pl.get_float_attrib(el, 'handle-radius', 6),
@@ -134,7 +133,6 @@ class ControlledCurvedLine(BaseElement):
             'y3': pl.get_float_attrib(el, 'y2', 40),
             'x2': pl.get_float_attrib(el, 'x3', 40),
             'y2': pl.get_float_attrib(el, 'y3', 60),
-            'type': 'controlledCurvedLine',
             'stroke': pl.get_color_attrib(el, 'color', 'red'),
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 4),
             'handleRadius': pl.get_float_attrib(el, 'handle-radius', 6),
@@ -185,8 +183,7 @@ class Roller(BaseElement):
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(pl.get_string_attrib(el, 'draw-ground', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'roller'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -209,8 +206,7 @@ class Clamped(BaseElement):
             'stroke': pl.get_string_attrib(el, 'stroke-color', 'black'),
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'clamped'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -236,8 +232,7 @@ class FixedPin(BaseElement):
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'drawGround': json.loads(pl.get_string_attrib(el, 'draw-ground', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'fixed-pin'
+            'evented': drawing_defaults['selectable']
         }
         return obj
 
@@ -266,8 +261,7 @@ class Rod(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'rod'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -302,8 +296,7 @@ class CollarRod(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'collarrod'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -342,8 +335,7 @@ class ThreePointRod(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'Lshaperod'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -390,8 +382,7 @@ class FourPointRod(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': json.loads(pl.get_string_attrib(el, 'draw-pin', 'true')),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'Tshaperod'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -425,8 +416,7 @@ class Pulley(BaseElement):
             'offsety': pl.get_float_attrib(el, 'offsety', 2),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
-            'fill': color,
-            'type': 'pulley'
+            'fill': color
         }
 
     def get_attributes():
@@ -495,8 +485,7 @@ class Vector(BaseElement):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'arrow'
+            'evented': drawing_defaults['selectable']
         }
 
     def is_gradable():
@@ -555,7 +544,7 @@ class Vector(BaseElement):
 class DoubleHeadedVector(BaseElement):
     def generate(el):
         obj = Vector.generate(el)
-        obj['type'] = 'doubleArrow'
+        obj['type'] = 'pl-double-headed-vector'
         return obj
 
     def get_attributes():
@@ -617,8 +606,7 @@ class ArcVector(BaseElement):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'originY': 'center',
-            'selectable': drawing_defaults['selectable'],
-            'type': 'arc_vector'
+            'selectable': drawing_defaults['selectable']
         }
 
     def is_gradable():
@@ -720,8 +708,7 @@ class DistributedLoad(BaseElement):
             'heightErrorBox': hbox,
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
-            'selectable': drawing_defaults['selectable'],
-            'type': 'distTrianLoad'
+            'selectable': drawing_defaults['selectable']
         }
 
     def is_gradable():
@@ -822,8 +809,7 @@ class Point(BaseElement):
             'originY': 'center',
             'fill': color,
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'circle'
+            'evented': drawing_defaults['selectable']
         }
 
     def is_gradable():
@@ -867,8 +853,7 @@ class Coordinates(BaseElement):
             'drawStartArrow': False,
             'drawEndArrow': True,
             'originY': 'center',
-            'selectable': drawing_defaults['selectable'],
-            'type': 'coordinates'
+            'selectable': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -929,8 +914,7 @@ class Dimensions(BaseElement):
             'startSupportLine': pl.get_boolean_attrib(el, 'start-support-line', False),
             'endSupportLine': pl.get_boolean_attrib(el, 'end-support-line', False),
             'originY': 'center',
-            'selectable': drawing_defaults['selectable'],
-            'type': 'dimension'
+            'selectable': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -962,8 +946,7 @@ class ArcDimensions(BaseElement):
             'arrowheadOffsetRatio': pl.get_float_attrib(el, 'arrow-head-length', 1),
             'originY': 'center',
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'arc-dimension'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -985,8 +968,7 @@ class Rectangle(BaseElement):
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
-            'strokeUniform': True,
-            'type': 'rectangle'
+            'strokeUniform': True
         }
 
     def get_attributes():
@@ -1005,7 +987,6 @@ class Triangle(BaseElement):
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'strokeUniform': True,
-            'type': 'triangle',
             'originX': 'center',
             'originY': 'center'
         }
@@ -1033,7 +1014,6 @@ class Circle(BaseElement):
             'strokeUniform': True,
             'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
             'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
-            'type': 'circle',
             'scaling': True
         }
 
@@ -1052,7 +1032,6 @@ class Polygon(BaseElement):
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 1),
             'strokeUniform': True,
-            'type': 'polygon',
             'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
             'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
         }
@@ -1087,8 +1066,7 @@ class Spring(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'drawPin': pl.get_boolean_attrib(el, 'draw-pin', False),
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'spring'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -1123,8 +1101,7 @@ class Line(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'line'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -1153,8 +1130,7 @@ class Arc(BaseElement):
             'selectable': drawing_defaults['selectable'],
             'evented': drawing_defaults['selectable'],
             'originX': 'center',
-            'originY': 'center',
-            'type': 'simple-arc'
+            'originY': 'center'
         }
 
     def get_attributes():
@@ -1170,8 +1146,7 @@ class Text(BaseElement):
             'offsetx': pl.get_float_attrib(el, 'offsetx', 0),
             'offsety': pl.get_float_attrib(el, 'offsety', 0),
             'fontSize': pl.get_float_attrib(el, 'font-size', drawing_defaults['font-size']),
-            'latex': pl.get_boolean_attrib(el, 'latex', True),
-            'type': 'text'
+            'latex': pl.get_boolean_attrib(el, 'latex', True)
         }
 
     def get_attributes():
@@ -1207,8 +1182,7 @@ class Axes(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'originY': 'center',
             'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable'],
-            'type': 'axes'
+            'evented': drawing_defaults['selectable']
         }
 
     def get_attributes():
@@ -1302,13 +1276,13 @@ class GraphLine(BaseElement):
         if not curved_line:
             obj.update({'x2': x0 + x2,
                         'y2': y0 - y2,
-                        'type': 'controlledLine'})
+                        'type': 'pl-controlled-line'})
         else:
             obj.update({'x3': x0 + x2,
                         'y3': y0 - y2,
                         'x2': x0 + x3,
                         'y2': y0 - y3,
-                        'type': 'controlledCurvedLine'})
+                        'type': 'pl-controlled-curved-line'})
 
         return obj
 
@@ -1459,6 +1433,7 @@ def generate(element, name, defaults={}):
             gradingName = name
 
         obj['gradingName'] = gradingName
+        obj['type'] = gradingName
         return obj
     else:
         return {}

@@ -172,6 +172,8 @@ def render_controls(template, elem):
                 opts['evented'] = True
                 opts['graded'] = True
                 opts['placed_by_user'] = True
+            if 'type' not in opts:
+                opts['type'] = type_name
             return chevron.render(template, {'render_button': True, 'button_class': elem.attrib.get('type', ''), 'options': json.dumps(opts)}).strip()
     elif elem.tag == 'pl-controls-group':
         markup = '<p><strong>' + elem.attrib.get('label', '') + '</strong></p>\n<p>'

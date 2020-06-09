@@ -53,7 +53,7 @@
      let submitted_answer = JSON.parse(`{{{input_answer}}}`);
      {{/input_answer}}
      $(function() {
-         window.DrawingInterface(element, options, submitted_answer);
+         window.PLDrawingApi.setupCanvas(element, options, submitted_answer);
      });
  })();
 </script>

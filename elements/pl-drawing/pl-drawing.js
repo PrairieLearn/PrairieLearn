@@ -1,6 +1,51 @@
 /* global window, _, $, fabric, mechanicsObjects */
 
 /**
+ * Base element class.
+ */
+class PLDrawingBaseElement {
+    /**
+     * Generates a canvas representation of an element from given options.
+     * This should set up all handlers for saving the element to the submittedAnswer.
+     * @param canvas Fabric canvas to create the object onto.
+     * @param options Element options
+     * @param submittedAnswer Answer state.
+     */
+    static generate(_canvas, _options, _submittedAnswer) {
+        return null;
+    }
+
+    /**
+     * Function that is called on pressing this element's control button.
+     * You can usually leave this as the default.
+     * @param canvas Fabric canvas to create the object onto.
+     * @param options Element options
+     * @param submittedAnswer Answer state.
+     */
+    static button_press(canvas, options, submittedAnswer) {
+        return this.generate(canvas, options, submittedAnswer);
+    }
+
+    /**
+     * Get the filename for this element's button icon.  This is relative to the clientFiles directory.
+     * You can leave this as the default if your element's icon has the same name as its type.
+     * @param options Element options.
+     */
+    static get_button_icon(options) {
+        return options.type;
+    }
+
+    /**
+     * Get the "tooltip" for the element button.  This is displayed when the user hovers their mouse
+     * over the button.
+     * @param options Element options.
+     */
+    static get_button_tooltip(options) {
+        return `Add ${options.type}`;
+    }
+}
+
+/**
  * Base functions to be used by element objects and extensions.
  */
 window.PLDrawingApi = {
@@ -15,8 +60,6 @@ window.PLDrawingApi = {
     },
 
     'elements': {},
-    '_callingContext': {},
-
     /**
      * Register a dictionary of elements.  These should map element names
      * to a function that creates the element onto the canvas from the relevant
@@ -28,13 +71,7 @@ window.PLDrawingApi = {
      * value will be set to the callingContext.  If it is omitted then 'this'
      * will be set to the PLDrawingApi object.
      */
-    registerElements: function(extensionName, dictionary, callingContext) {
-        if (callingContext == undefined || callingContext === null) {
-            callingContext = this;
-        }
-        for (const name of Object.keys(dictionary)) {
-            this._callingContext[name] = callingContext;
-        }
+    registerElements: function(extensionName, dictionary) {
         _.extend(this.elements, dictionary);
     },
 
@@ -49,14 +86,29 @@ window.PLDrawingApi = {
         let added = null;
 
         if (name in this.elements) {
-            const fcn = this.elements[name];
-            const context = this._callingContext[name];
-            fcn.call(context, canvas, options, submittedAnswer);
+            const element = this.elements[name];
+            element.generate(canvas, options, submittedAnswer);
         } else {
             console.warn('No element type: ' + name);
         }
 
         return added;
+    },
+
+    /**
+     * Get an element definition by its name.
+     * @param name Name of the element to look up.
+     * @returns The element, if found.  Silently fails with the base element otherwise.
+     */
+    getElement: function(name) {
+        let ret = PLDrawingBaseElement;
+        if (name in this.elements) {
+            let elem = this.elements[name];
+            if ('generate' in elem) {
+                ret = elem;
+            }
+        }
+        return ret;
     },
 
     /**
@@ -70,6 +122,139 @@ window.PLDrawingApi = {
             let newObj = JSON.parse(JSON.stringify(obj));
             this.createElement(canvas, newObj, submittedAnswer);
         }
+    },
+
+    /**
+     * Main entrypoint for the drawing element.
+     * Creates canvas at a given root element.
+     * @param root_elem DIV that holds the canvas.
+     * @param elem_options Any options to give to the element
+     * @param existing_answer_submission Existing submission to place on the canvas.
+     */
+    setupCanvas: function(root_elem, elem_options, existing_answer_submission) {
+        let canvas_elem = $(root_elem).find('canvas')[0];
+        let canvas_width = parseFloat(elem_options.width);
+        let canvas_height = parseFloat(elem_options.height);
+        let html_input = $(root_elem).find('input');
+
+        let parseElemOptions = function(elem) {
+            let opts = JSON.parse(elem.getAttribute('opts'));
+
+            /* Parse any numerical options from string to floating point */
+            for (let key in opts) {
+                let parsed = Number(opts[key]);
+                if (!isNaN(parsed)) {
+                    opts[key] = parsed;
+                }
+            }
+            return opts;
+        };
+
+        /* Set all button icons */
+        let drawing_btns = $(root_elem).find('button');
+        let image_base_url = elem_options['client_files'];
+        drawing_btns.each(function(i, btn) {
+            let img = btn.children[0];
+            let opts = parseElemOptions(img.parentNode);
+            let elem = window.PLDrawingApi.getElement(opts.type);
+            if (elem !== null) {
+                let image_filename = elem.get_button_icon(opts);
+                if (image_filename !== null) {
+                    img.setAttribute('src', image_base_url + image_filename + '.svg');
+                }
+                let image_tooltip = elem.get_button_tooltip(opts);
+                if (image_tooltip !== null) {
+                    btn.setAttribute('title', image_tooltip);
+                }
+            }
+        });
+
+        /* Render at a higher resolution if requested */
+        const renderScale = elem_options['render_scale'];
+        canvas_elem.width = canvas_width * renderScale;
+        canvas_elem.height = canvas_height * renderScale;
+
+        let canvas;
+        if (elem_options.editable) {
+            canvas = new fabric.Canvas(canvas_elem);
+        } else {
+            canvas = new fabric.StaticCanvas(canvas_elem);
+        }
+        canvas.selection = false; // disable group selection
+
+        /* Re-scale the html elements */
+        canvas.viewportTransform[0] = renderScale;
+        canvas.viewportTransform[3] = renderScale;
+        canvas_elem.parentElement.style.width = canvas_width + 'px';
+        canvas_elem.parentElement.style.height = canvas_height + 'px';
+        $(canvas_elem.parentElement).children('canvas').width(canvas_width);
+        $(canvas_elem.parentElement).children('canvas').height(canvas_height);
+
+        canvas.on('object:added', (ev) => {
+            ev.target.cornerSize *= renderScale;
+            ev.target.borderColor = 'rgba(102,153,255,1.0)';
+        });
+
+        if (elem_options.grid_size > 0) {
+            mechanicsObjects.addCanvasBackground(canvas, canvas_width, canvas_height, elem_options.grid_size);
+        }
+
+        // Restrict objects from being able to be dragged off-canvas
+        // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
+        canvas.on('object:moving', function (e) {
+            var obj = e.target;
+            // if object is too big ignore,
+            if (obj.currentHeight > canvas_width ||
+                obj.currentWidth > canvas_height) {
+                return;
+            }
+            let rect = obj.getBoundingRect(true, true);
+
+            // top-left  corner
+            if (rect.top < 0 || rect.left < 0) {
+                obj.top = Math.max(obj.top, obj.top - rect.top);
+                obj.left = Math.max(obj.left, obj.left-rect.left);
+            }
+            // bot-right corner
+            if (rect.top+rect.height > canvas_height ||
+                rect.left+rect.width > canvas_width) {
+                obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top-rect.top);
+                obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left-rect.left);
+            }
+            /* snap the element to the grid if enabled */
+            if (elem_options.snap_to_grid) {
+                obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
+                obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
+            }
+
+            obj.setCoords();
+        });
+
+        fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
+            const target = canvas.findTarget(e);
+            if (target !== undefined) {
+                target.fire('dblclick', {'e': e});
+            }
+        });
+
+        /* Restore existing answer if it exists */
+        const submittedAnswer = new PLDrawingAnswerState(html_input);
+        if (existing_answer_submission != null) {
+            submittedAnswer._set(existing_answer_submission);
+            window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
+        }
+
+        /* Attach click handlers */
+        drawing_btns.each(function(i, btn) {
+            let id = btn.name;
+            let opts = parseElemOptions(btn);
+            if (opts === null) {
+                opts = {};
+            }
+            opts = _.clone(opts);
+            let elem = window.PLDrawingApi.getElement(id);
+            $(btn).click(() => elem.button_press(canvas, opts, submittedAnswer));
+        });
     },
 };
 
@@ -121,167 +306,21 @@ class PLDrawingAnswerState {
     }
 }
 
-(function() {
-    window.DrawingInterface = function(root_elem, elem_options, existing_answer_submission) {
-        let canvas_elem = $(root_elem).find('canvas')[0];
-        let canvas_width = parseFloat(elem_options.width);
-        let canvas_height = parseFloat(elem_options.height);
-        let html_input = $(root_elem).find('input');
-
-        let parseElemOptions = function(elem) {
-            let opts = JSON.parse(elem.getAttribute('opts'));
-
-            /* Parse any numerical options from string to floating point */
-            for (let key in opts) {
-                let parsed = Number(opts[key]);
-                if (!isNaN(parsed)) {
-                    opts[key] = parsed;
-                }
-            }
-            return opts;
-        };
-
-        const button_tooltips = {
-            'pl-point': 'Add point',
-            'pl-vector': 'Add vector',
-            'pl-double-headed-vector': 'Add double headed vector',
-            'pl-arc-vector-CW': 'Add clockwise arc vector',
-            'pl-arc-vector-CCW': 'Add counter-clockwise arc vector',
-            'pl-distributed-load': 'Add distributed load',
-            'delete': 'Delete selected object',
-            'help-line': 'Add help line',
-        };
-
-        /* Set all button icons */
-        let drawing_btns = $(root_elem).find('button');
-        let image_base_url = elem_options['client_files'];
-        drawing_btns.each(function(i, btn) {
-            let img = btn.children[0];
-            let file_name = img.parentNode.name;
-
-            /* Have special cases for the 'pl-distributed-load' icon, which
-               can take different icons based on the width parameters */
-            if (file_name.toLowerCase() === 'pl-distributed-load') {
-                let wdef = {w1: 60, w2: 60, anchor_is_tail: false};
-                let opts = parseElemOptions(img.parentNode);
-                opts = _.defaults(opts, wdef);
-                let w1 = opts['w1'];
-                let w2 = opts['w2'];
-                let anchor = opts['anchor_is_tail'];
-
-                if (w1 == w2) {
-                    file_name = 'DUD';
-                } else if ((w1 < w2) && (anchor === 'true')) {
-                    file_name = 'DTDA';
-                } else if ((w1 < w2)) {
-                    file_name = 'DTUD';
-                } else if ((w1 > w2) && (anchor === 'true')) {
-                    file_name = 'DTUA';
-                } else {
-                    file_name = 'DTDD';
-                }
-            }
-
-            img.setAttribute('src', image_base_url + file_name + '.svg');
-            if (file_name in button_tooltips) {
-                btn.setAttribute('title', button_tooltips[file_name]);
-            }
-        });
-        /* Render at a higher resolution if requested */
-        const renderScale = elem_options['render_scale'];
-        canvas_elem.width = canvas_width * renderScale;
-        canvas_elem.height = canvas_height * renderScale;
-
-        let canvas;
-        if (elem_options.editable) {
-            canvas = new fabric.Canvas(canvas_elem);
-        } else {
-            canvas = new fabric.StaticCanvas(canvas_elem);
+/* Set up built-in buttons */
+(() => {
+    class DrawingDeleteButton extends PLDrawingBaseElement {
+        static get_button_icon() {
+            return 'delete';
         }
-        canvas.selection = false; // disable group selection
-
-        /* Re-scale the html elements */
-        canvas.viewportTransform[0] = renderScale;
-        canvas.viewportTransform[3] = renderScale;
-        canvas_elem.parentElement.style.width = canvas_width + 'px';
-        canvas_elem.parentElement.style.height = canvas_height + 'px';
-        $(canvas_elem.parentElement).children('canvas').width(canvas_width);
-        $(canvas_elem.parentElement).children('canvas').height(canvas_height);
-
-        canvas.on('object:added', (ev) => {
-            ev.target.cornerSize *= renderScale;
-            ev.target.borderColor = 'rgba(102,153,255,1.0)';
-        });
-
-        elem_options.show_bounding = false;
-        if (elem_options.show_bounding) {
-            canvas.on('after:render', function() {
-                canvas.contextContainer.strokeStyle = '#555';
-
-                canvas.forEachObject(function(obj) {
-                    var bound = obj.getBoundingRect();
-
-                    canvas.contextContainer.strokeRect(
-                        bound.left + 0.5,
-                        bound.top + 0.5,
-                        bound.width,
-                        bound.height,
-                    );
-                });
-            });
+        static get_button_tooltip() {
+            return 'Delete selected object';
         }
-
-        if (elem_options.grid_size != 0) {
-            mechanicsObjects.addCanvasBackground(canvas, canvas_width, canvas_height, elem_options.grid_size);
+        static button_press(canvas, _options, _submittedAnswer) {
+            canvas.remove(canvas.getActiveObject());
         }
-
-        // Restrict objects from being able to be dragged off-canvas
-        // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
-        canvas.on('object:moving', function (e) {
-            var obj = e.target;
-            // if object is too big ignore,
-            if (obj.currentHeight > canvas_width ||
-                obj.currentWidth > canvas_height) {
-                return;
-            }
-            let rect = obj.getBoundingRect(true, true);
-
-            // top-left  corner
-            if (rect.top < 0 || rect.left < 0) {
-                obj.top = Math.max(obj.top, obj.top - rect.top);
-                obj.left = Math.max(obj.left, obj.left-rect.left);
-            }
-            // bot-right corner
-            if (rect.top+rect.height > canvas_height ||
-                rect.left+rect.width > canvas_width) {
-                obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top-rect.top);
-                obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left-rect.left);
-            }
-            /* snap the element to the grid if enabled */
-            if (elem_options.snap_to_grid) {
-                obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
-                obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
-            }
-
-            obj.setCoords();
-        });
-
-        fabric.util.addListener(canvas.upperCanvasEl, 'dblclick', function (e) {
-            const target = canvas.findTarget(e);
-            if (target !== undefined) {
-                target.fire('dblclick', {'e': e});
-            }
-        });
-
-        const submittedAnswer = new PLDrawingAnswerState(html_input);
-        if (existing_answer_submission != null) {
-            submittedAnswer._set(existing_answer_submission);
-            window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
-        }
-
-        /* Button handlers */
-        let handlers = {};
-        handlers['help-line'] = function(options) {
+    }
+    class DrawingHelpLineButton extends PLDrawingBaseElement {
+        static generate(canvas, options, submittedAnswer) {
             let def = {
                 left: 40,
                 top: 40,
@@ -297,27 +336,21 @@ class PLDrawingAnswerState {
                 graded: false,
             };
             let opts = _.defaults(options, def);
-            mechanicsObjects.addLine(canvas, opts, submittedAnswer);
-        };
-        handlers['add-generic'] = function(options) {
-            window.PLDrawingApi.createElement(canvas, options, submittedAnswer);
-        };
-        handlers['delete'] = function(_options) {
-            canvas.remove(canvas.getActiveObject());
-        };
+            opts.type = 'pl-line';
+            window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
+        }
+        static get_button_icon() {
+            return 'help-line';
+        }
+        static get_button_tooltip() {
+            return 'Add help line';
+        }
+    }
 
-        /* Attach click handlers */
-        drawing_btns.each(function(i, btn) {
-            let id = btn.name;
-            let opts = parseElemOptions(btn);
-            if (opts === null) {
-                opts = {};
-            }
-            if (id in handlers) {
-                $(btn).click(() => handlers[id](_.clone(opts)));
-            } else {
-                $(btn).click(() => handlers['add-generic'](_.clone(opts)));
-            }
-        });
+    const builtins = {
+        'delete': DrawingDeleteButton,
+        'help-line': DrawingHelpLineButton,
     };
+
+    window.PLDrawingApi.registerElements('_base', builtins);
 })();
