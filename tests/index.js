@@ -31,6 +31,7 @@ require('./testRealTimeGradingDisabled');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testApi');
+require('./testAutoGroupAndDelete');
 require('./testLti');
 require('./testCron');
 require('./testNewsItems');
