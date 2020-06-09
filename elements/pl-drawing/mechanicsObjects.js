@@ -599,14 +599,26 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
         this.callSuper("initialize", options);
         this.originX = 'center';
         this.originY = 'center';
+        this.w = this.width;
+        this.h = this.height;
+        this.width *= 1.6;
+        this.height *= 2;
         this.objectCaching = false;
+
+        let ang_rad = ((Math.PI / 180) * this.angle) + (Math.PI / 2);
+        this.left = this.x1 + Math.cos(ang_rad) * (this.h/2);
+        this.top = this.y1 + Math.sin(ang_rad) * (this.h/2);
+
+        this.on('modified', () => {
+            let ang_rad = ((Math.PI / 180) * this.angle) + (Math.PI / 2);
+            this.x1 = this.left - Math.cos(ang_rad) * (this.h/2);
+            this.y1 = this.top - Math.sin(ang_rad) * (this.h/2);
+        });
     },
     _render: function(ctx) {
-
-        var x0 = this.left; //center of the pin
-        var y0 = this.top; //center of the pin
-        var h = this.height;
-        var w = this.width;
+        let h = this.h;
+        let w = this.w;
+        ctx.translate(0, -h/2);
 
         // ======== Add Pivot =========
         ctx.beginPath();
@@ -647,22 +659,32 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
 });
 // ======================================================================================
 mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
-    type: 'fixed-pin',
+    type: 'roller',
     initialize: function(options) {
         options = options || {};
         this.callSuper("initialize", options);
         this.originX = 'center';
         this.originY = 'center';
-        this.left = this.x1;
-        this.top = this.y1;
+        this.w = this.width;
+        this.h = this.height;
+        this.width *= 1.6;
+        this.height *= 2;
         this.objectCaching = false;
+
+        let ang_rad = ((Math.PI / 180) * this.angle) + (Math.PI / 2);
+        this.left = this.x1 + Math.cos(ang_rad) * (this.h/2);
+        this.top = this.y1 + Math.sin(ang_rad) * (this.h/2);
+
+        this.on('modified', () => {
+            let ang_rad = ((Math.PI / 180) * this.angle) + (Math.PI / 2);
+            this.x1 = this.left - Math.cos(ang_rad) * (this.h/2);
+            this.y1 = this.top - Math.sin(ang_rad) * (this.h/2);
+        });
     },
     _render: function(ctx) {
-
-        var x0 = this.x1; //center of the pin
-        var y0 = this.y1; //center of the pin
-        var h = this.height;
-        var w = this.width;
+        let h = this.h;
+        let w = this.w;
+        ctx.translate(0, -h/2);
 
         // ======== Add Pivot =========
         ctx.beginPath();
@@ -1860,7 +1882,34 @@ mechanicsObjects.addFixedPin = function(canvas, options, submittedAnswer) {
         textAlign: "left",
         selectable: false
     });
+    obj.on('moving', () => {
+        textObj.left = obj['x1'] + obj['offsetx'];
+        textObj.top = obj['y1'] + obj['offsety'];
+    });
+    obj.on('rotating', () => {
+        textObj.left = obj['x1'] + obj['offsetx'];
+        textObj.top = obj['y1'] + obj['offsety'];
+    });
     canvas.add(textObj);
+
+    if (options.selectable === 1) {
+        obj.setControlVisible('bl',false);
+        obj.setControlVisible('tl',false);
+        obj.setControlVisible('br',false);
+        obj.setControlVisible('tr',false);
+        obj.setControlVisible('mt',false);
+        obj.setControlVisible('mb',false);
+        obj.setControlVisible('ml',false);
+        obj.setControlVisible('mr',false);
+        obj.setControlVisible('mtr',true);
+
+        var modify = function(subObj) {
+            subObj.x1 = obj.x1;
+            subObj.y1 = obj.y1;
+            subObj.angle = obj.angle;
+        };
+        mechanicsObjects.createObjectHandlers('fixed-pin', options, obj, submittedAnswer, modify);
+    }
 
     return obj;
 }
@@ -1995,13 +2044,15 @@ mechanicsObjects.addSpring = function(canvas, options, submittedAnswer) {
     canvas.add(obj);
 
     if (!submittedAnswer) return obj;
-    var modify = function(subObj) {
-        subObj.x1 = obj.x1;
-        subObj.y1 = obj.y1;
-        subObj.x2 = obj.x2;
-        subObj.y2 = obj.y2;
-    };
-    mechanicsObjects.createObjectHandlers('spring', options, obj, submittedAnswer, modify);
+    if (options.selectable === 1){
+        var modify = function(subObj) {
+            subObj.x1 = obj.x1;
+            subObj.y1 = obj.y1;
+            subObj.x2 = obj.x2;
+            subObj.y2 = obj.y2;
+        };
+        mechanicsObjects.createObjectHandlers('spring', options, obj, submittedAnswer, modify);
+    }
 
     return obj;
 }
@@ -2889,7 +2940,34 @@ mechanicsObjects.addRoller = function(canvas, options, submittedAnswer) {
         textAlign: "left",
         selectable: false
     });
+    obj.on('moving', () => {
+        textObj.left = obj['x1'] + obj['offsetx'];
+        textObj.top = obj['y1'] + obj['offsety'];
+    });
+    obj.on('rotating', () => {
+        textObj.left = obj['x1'] + obj['offsetx'];
+        textObj.top = obj['y1'] + obj['offsety'];
+    });
     canvas.add(textObj);
+
+    if (options.selectable === 1) {
+        obj.setControlVisible('bl',false);
+        obj.setControlVisible('tl',false);
+        obj.setControlVisible('br',false);
+        obj.setControlVisible('tr',false);
+        obj.setControlVisible('mt',false);
+        obj.setControlVisible('mb',false);
+        obj.setControlVisible('ml',false);
+        obj.setControlVisible('mr',false);
+        obj.setControlVisible('mtr',true);
+
+        var modify = function(subObj) {
+            subObj.x1 = obj.x1;
+            subObj.y1 = obj.y1;
+            subObj.angle = obj.angle;
+        };
+        mechanicsObjects.createObjectHandlers('roller', options, obj, submittedAnswer, modify);
+    }
 
     return obj;
 }

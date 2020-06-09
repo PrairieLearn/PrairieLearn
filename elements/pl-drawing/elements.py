@@ -222,8 +222,8 @@ class FixedPin(BaseElement):
         color = pl.get_color_attrib(el, 'color', 'brown1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
-            'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
-            'top': pl.get_float_attrib(el, 'y1', drawing_defaults['y1']),
+            'x1': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
+            'y1': pl.get_float_attrib(el, 'y1', drawing_defaults['y1']),
             'height': pl.get_float_attrib(el, 'height', drawing_defaults['height']),
             'width': pl.get_float_attrib(el, 'width', drawing_defaults['width']),
             'angle': pl.get_float_attrib(el, 'angle', drawing_defaults['angle']),
