@@ -71,7 +71,7 @@ describe('test auto group and delete groups', function() {
             locals.assessment_id,
             0,
         ];
-        sqldb.call('assessment_groups_delete_all', params, function(err, result) {
+        sqldb.call('assessment_groups_delete_all', params, function(err) {
             if (ERR(err, callback)) return;
 
             sqldb.query('SELECT deleted_at FROM groups WHERE deleted_at IS NULL', [], function(err, result) {
