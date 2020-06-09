@@ -48,9 +48,9 @@ describe('Group based homework assess control on student side', function() {
 
     describe('1. the database', function() {   
         it('should contain a group-based homework assessment', function(callback) {
-            sqldb.queryOneRow(sql.select_groupwork_assessment, [], function(err, result) {
+            sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                assert.lengthOf(result.rows, 1);
+                assert.lengthOf(result.rows, 2);
                 assert.notEqual(result.rows[0].id, undefined);
                 locals.assessment_id = result.rows[0].id;
                 locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
