@@ -106,7 +106,7 @@ Course staff will declare workspace config per question via `workspace` in `info
 }
 ```
 
-The home directory in the workspace will be determined by the `workspace_homedir` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
+The home directory in the workspace will be determined by the `workspace` directory inside a question directory. In the future, we'll add the ability to dynamically generate files via `server.py` and place them into the home directory. This is not part of the MVP.
 
 ```
 questions
@@ -119,7 +119,7 @@ questions
     |   +-- correct_answer.c
     |   `-- test_run.py
     |
-    `-- workspace_homedir
+    `-- workspace
         +-- .bashrc
         +-- starter_code.h
         `-- starter_code.c
