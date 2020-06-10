@@ -53,7 +53,8 @@ These three components are implemented within the main PL executable, but for de
     * We get a request for a particular workspace instance.
     * We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
     * Routes:
-        * `/workspace/[uuid]` - serves outer frame
+        * `/workspace/[uuid]` - serves basic outer frame markup
+        * `/workspace/[uuid]/frame/*` - serves resources for outer frame
         * `/workspace/[uuid]/heartbeat`
         * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
 * On the host:
@@ -89,10 +90,14 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
   * `workspace_host_id` (nullable): The ID of the host that this workspace container is running on, if any
   * `state`: reflects the "state" of this workspace; one of the following:
     * `uninitialized`: no resources have been created for this workspace yet; can transition to `initializing`
-    * `initializing`: we're creating S3 resources for this workspace; can transition to `stopped`
-    * `stopped`: the workspace exists but is not running on a particular machine; can transition to `launching`
+    * `stopped`: S3 resources for the workspace exist, but it is not running on a particular machine; can transition to `launching`
     * `launching`: we are allocating a host for this workspace and starting the appropriate container on that host; can transition to `running` or `stopped` (if launching fails)
     * `running`: the container for this workspace is running; can transition to `stopped`
+* `workspace_logs`: notable events/messages assocaiated with a particular workspace (state transitions, errors, explicit restarts, etc.)
+  * `workspace_id`: ID of the associated workspace
+  * `timestamp`: (workshop name for consistency with rest of PL): timestamp of the event
+  * `message`: string message
+  * `level`: the level of this particular log
 
 ### Questions
 
@@ -143,9 +148,9 @@ When this button is clicked, the URL at `workspace_url` will be opened in a new 
 
 `workspace_url` pages will be served by the main PrairieLearn server (someday, we could split this into a separate autoscaled component).
 
-When the main server gets a request to this url, we'll first check if we have an existing instance of a workspace by checking the `workspace_host_id` column. There will be two cases here.
+When the main server gets a request to this url, we'll first check if we have an existing instance of a workspace by checking the `state` column of the appropriate workspace. There will be two cases here.
 
-#### A container has already been allocated on a host
+#### A container has already been allocated on a host (`state = 'launching' OR state = 'running'`)
 
 In this case, the main server can just proxy traffic directly to the appropriate host.
 
@@ -161,6 +166,14 @@ These two will be identical initially and will diverege over time.
 Once we have these two S3 resources, the main server will immediately respond with the "outer frame" HTML. At the same time, the main server will allocate a host for this particular workspace and instruct the host to begin loading the appropriate resources (Docker image, S3 resources, etc.).
 
 The "outer frame" will initially render a loading screen and set up a websocket connection to the main PL server. When the workspace host has finished initializing the workspace container, we'll send a websocket message to the client to instruct it to load the "inner frame" in an iframe, which will be served by the container running on a host.
+
+### State machine transitions
+
+* `uninitialized` -> `stopped`: We have created S3 resources for this workspace.
+* `stopped` -> `launching`: We are allocating a host for this workspace and loading the necessary image and S3 resources to the host.
+* `launching` -> `running`: The container for the workspace is running and ready to serve requests.
+* `launching` -> `stopped`: We failed to start a container for the workspace.
+* `running` -> `stopped`: The container for the workspace has stopped and cannot serve requests.
 
 ## Notes
 
