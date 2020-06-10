@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "PrairieLearn demo questions for Python autograder",
     "set": "Homework",
-    "number": "6",
+    "number": "5",
     "allowAccess": [
         {
             "mode": "Public",
