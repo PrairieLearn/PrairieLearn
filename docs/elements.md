@@ -192,7 +192,7 @@ Two grading methods are available when using `partial-credit="true"`:
 
 ## `pl-dropdown` element
 
-Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed as a JSON array.
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
 
 #### Sample Element
 

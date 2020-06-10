@@ -137,7 +137,7 @@ def test(element_html, data):
     correct_answer = pl.get_string_attrib(element, 'correct-answer')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    # correct_answer is what the answer should be
+    # solution is what the answer should be
     solution = get_solution(element, data, correct_answer)
 
     # incorrect and correct answer test cases
