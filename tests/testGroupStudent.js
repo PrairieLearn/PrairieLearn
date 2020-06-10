@@ -369,8 +369,86 @@ describe('Group based homework assess control on student side', function() {
             assert.equal(locals.friendCode, elemList.text());
         });
     });
+    describe('11. the fourth user can not join the already full group', function() {
+        it('should be able to switch to the ungrouped student', function(callback) {
+            var student = locals.studentUserNotGrouped;
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000004';
+            callback(null);
+        });
+        it('should load assessment page successfully', function(callback) {
+            request(locals.assessmentUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 2);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('should NOT be able to join group', function(callback) {
+            var form = {
+                __action: 'joinGroup',
+                __csrf_token: locals.__csrf_token,
+                friendcode: locals.friendCode,
+            };
+            request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                //res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should contain a prompt to inform the user that the group is full', function() {
+            elemList = locals.$('.alert:contains(It is already full)');
+            assert.lengthOf(elemList, 1);
+        });
+    });
 
-    describe('11. start assessment', function() {
+    describe('12. start assessment as the third user', function() {
+        it('should be able to switch user', function(callback) {
+            var student = locals.studentUsers[2];
+            config.authUid = student.uid;
+            config.authName = student.name;
+            config.authUin = '00000003';
+            callback(null);
+        });
+        it('should load assessment page successfully', function(callback) {
+            request(locals.assessmentUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 2);
@@ -423,7 +501,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('12. access control of all members of group 1', function() {
+    describe('13. access control of all members of group 1', function() {
         it('should be able to access the assessment instance 1 as the 1st group member', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
                 if (error) {
@@ -488,7 +566,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('13. access control of student who used to be in group 1 but not in any group now', function() {
+    describe('14. access control of student who used to be in group 1 but not in any group now', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 3);
@@ -529,7 +607,7 @@ describe('Group based homework assess control on student side', function() {
             });
         });
     });
-    describe('14. access control of student who used to be in group 1 but in a different group now', function() {
+    describe('15. access control of student who used to be in group 1 but in a different group now', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 2);
@@ -570,7 +648,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('15. access control of student who are not in any group', function() {
+    describe('16. access control of student who are not in any group', function() {
         it('should be able to switch to the ungrouped student', function(callback) {
             var student = locals.studentUserNotGrouped;
             config.authUid = student.uid;
@@ -592,7 +670,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('16. access control of student who are in a different group', function() {
+    describe('17. access control of student who are in a different group', function() {
         it('should be able to switch to the student in the different group', function(callback) {
             var student = locals.studentUserInDiffGroup;
             config.authUid = student.uid;
@@ -651,6 +729,64 @@ describe('Group based homework assess control on student side', function() {
                 }
                 page = body;
                 callback(null);
+            });
+        });
+    });
+
+    describe('18. cross assessment grouping', function() {
+        it('should contain a second group-based homework assessment', function(callback) {
+            sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
+                if (ERR(err, callback)) return;
+                assert.lengthOf(result.rows, 2);
+                assert.notEqual(result.rows[1].id, undefined);
+                locals.assessment_id_2 = result.rows[1].id == locals.assessment_id ? result.rows[0].id : result.rows[1].id;
+                locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
+                callback(null);
+            });
+        });
+        it('should load the second assessment page successfully', function(callback) {
+            request(locals.assessmentUrl_2, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
+                    //return callback(new Error(locals.assessmentUrl));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 2);
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('should NOT be able to join group using the friend code from a different assessment', function(callback) {
+            var form = {
+                __action: 'joinGroup',
+                __csrf_token: locals.__csrf_token,
+                friendcode: locals.friendCode,
+            };
+            request.post({url: locals.assessmentUrl_2, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                //res = response;
+                page = body;
+                callback(null);
+            });
+            it('should contain a prompt to inform the user that the group is full', function() {
+                elemList = locals.$('.alert:contains(It is already full)');
+                assert.lengthOf(elemList, 1);
             });
         });
     });
