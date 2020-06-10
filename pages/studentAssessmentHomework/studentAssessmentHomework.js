@@ -99,21 +99,26 @@ router.post('/', function(req, res, next) {
         let cursize, maxsize;
         sqldb.query(sql.check_groupsize, params, function(err, result) {
             let joinerror = true;
-            if (typeof result !== 'undefined'){
-                cursize = result.rowCount || 0;
-                if(cursize > 0){
-                    maxsize = result.rows[0].maximum;
-                    if (cursize < maxsize) {
-                        joinerror = false;
-                        sqldb.query(sql.join_group, params, function(err, _result) {
-                            if (ERR(err, next)) return;
-                            res.redirect(req.originalUrl);
-                        });
+            //students may have invalid input here, no need to log the error information
+            if (!ERR(err, next)){
+                if (typeof result !== 'undefined'){
+                    cursize = result.rowCount || 0;
+                    if(cursize > 0){
+                        maxsize = result.rows[0].maximum;
+                        if (cursize < maxsize) {
+                            //sucessfully join into a exist and not full group
+                            joinerror = false;
+                            sqldb.query(sql.join_group, params, function(err, _result) {
+                                if (ERR(err, next)) return;
+                                res.redirect(req.originalUrl);
+                            });
+                        }
                     }
                 }
             }
             if (joinerror){
                 res.locals.groupsize = 0;
+                //display the error on frontend
                 res.locals.usedfriendcode = friendcode;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }
@@ -132,11 +137,11 @@ router.post('/', function(req, res, next) {
             });
         });
     } else if (req.body.__action == 'quitGroup') {
-        var params = {
+        var params2 = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
         };
-        sqldb.query(sql.quit_group, params, function(err, _result) {
+        sqldb.query(sql.quit_group, params2, function(err, _result) {
             if (ERR(err, next)) return;
             res.locals.groupsize = 0;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
