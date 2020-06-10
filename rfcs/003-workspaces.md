@@ -53,7 +53,7 @@ These three components are implemented within the main PL executable, but for de
     * We get a request for a particular workspace instance.
     * We check the authorization cookies to verify that the requesting user matches the authorized user for this workspace.
     * Routes:
-        * `/workspace/[uuid]` - serves basic outer frame markup
+        * `/workspace/[uuid]` (referred to as `workspace_url` later in this document) - serves basic outer frame markup
         * `/workspace/[uuid]/frame/*` - serves resources for outer frame
         * `/workspace/[uuid]/heartbeat`
         * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
@@ -86,7 +86,6 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
   * `id`: a unique ID for this workspace
   * `s3_bucket`: The S3 bucket that this workspace's state lives in
   * `s3_root_key`: The root "path" within the S3 bucket
-  * `s3_initialized`: Whether we've created the resources for this workspace in S3 or not
   * `workspace_host_id` (nullable): The ID of the host that this workspace container is running on, if any
   * `state`: reflects the "state" of this workspace; one of the following:
     * `uninitialized`: no resources have been created for this workspace yet; can transition to `initializing`
@@ -148,24 +147,45 @@ When this button is clicked, the URL at `workspace_url` will be opened in a new 
 
 `workspace_url` pages will be served by the main PrairieLearn server (someday, we could split this into a separate autoscaled component).
 
-When the main server gets a request to this url, we'll first check if we have an existing instance of a workspace by checking the `state` column of the appropriate workspace. There will be two cases here.
+When the main server gets a request to this url, we'll first check if we have an existing instance of a workspace by checking the `state` column of the appropriate workspace. There will be three cases here:
 
-#### A container has already been allocated on a host (`state = 'launching' OR state = 'running'`)
+#### Workspace is in state `uninitialized`
 
-In this case, the main server can just proxy traffic directly to the appropriate host.
+* Respond to the request with the basic markup for the outer frame
+* Begin a transaction
+  * Obtain a lock on the row in the `workspaces` table
+  * Create archive of home directory
+  * Upload to appropriate key in S3: `workspace_{id}/`. We'll save this archive twice under two names:
+    * `initial.tar.gz`: the initial state (this can later be restored)
+    * `current.tar.gz`: the "working" state of the workspace (this will be modified as the user interacts with the workspace)
+  * Update workpace state to `stopped`
+* Commit the transaction, thereby releasing the lock
+* Send `change:state` websocket message to client
+* Begin a new transaction
+  * Obtain a lock on the row in the `workspaces` table
+  * Allocate a host for this workspace's container
+  * Instruct host to begin loading images, S3 resources, etc
+  * Update workspace state to `launching`
+* Commit the transaction, thereby releasing the lock
+* Send `change:state` websocket message to client
 
-#### A container has not been allocated on a host
+#### Workspace is in state `stopped`
 
-First, the main server will check if we've already initialized S3 resources for this workspace in the past. If not, the main server will create two files on S3:
+* Respond to the request with the basic markup for the outer frame
+* [Do whole launch container thing from the above section here; let's write this out in more detail later]
 
-* The initial state of the workspace
-* The "working" state of the workspace that will be modified as students interact with the workspace
+#### Workspace is in state `launching` or `running`k
 
-These two will be identical initially and will diverege over time.
+* Respond to the request with the basic markup for the outer frame
 
-Once we have these two S3 resources, the main server will immediately respond with the "outer frame" HTML. At the same time, the main server will allocate a host for this particular workspace and instruct the host to begin loading the appropriate resources (Docker image, S3 resources, etc.).
+In either case, the client will recieve exactly the same outer frame markup. The "outer frame" will initially render a loading screen and set up a websocket connection to a PL server.
 
-The "outer frame" will initially render a loading screen and set up a websocket connection to the main PL server. When the workspace host has finished initializing the workspace container, we'll send a websocket message to the client to instruct it to load the "inner frame" in an iframe, which will be served by the container running on a host.
+### Websocket protocol
+
+This is explicitly modeled on the existing external grading websocket code (`externalGradingLiveUpdate.ejs`). All efforts should be made to keep the workspaces implementation of websockets consistent with the external grading implementation, as it has proved very robust in production.
+
+* `init`: sent from client to server to request initial state.
+* `change:state`: sent from server to client to inform it of a state change.
 
 ### State machine transitions
 
