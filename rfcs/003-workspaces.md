@@ -199,3 +199,13 @@ This is explicitly modeled on the existing external grading websocket code (`ext
 
 * Since PrairieLearn will be serving a bunch of different roles depending on context, PrairieLearn's `server.js` should be split up so that only code needed to serve a particular role is loaded. While we're refactoring, let's just make it better, do things async, etc.
 * There’s a distinction between workspace state and submission state - the former can include arbitrary files, the latter just includes whatever the question specifies.
+
+## Remaining work and open questions
+
+- [ ] Define specifics of what happens on the client
+- [ ] Define specifics of what happens on a host
+- [ ] Procotol for communication between hosts and web servers
+- [ ] Protocol for user-initiated restart of a container
+- [ ] Algorithm for placing containers on hosts
+- [ ] Algorithm/implementation for autoscaling host fleet
+- [ ] Edge cases: timeouts on containers, etc.
