@@ -58,7 +58,7 @@ router.get('/', function(req, res, next) {
                     if (ERR(err, next)) return;
                     debug('redirecting');
                     res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-                });    
+                });
             }
         } else {
             debug('redirecting');
@@ -70,22 +70,34 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (req.body.__action == 'newInstance') {
-        const time_limit_min = null;
-            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
-                if (ERR(err, next)) return;
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            user_id: res.locals.user.user_id,
+        };
+        sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
+            if (ERR(err, next)) return;
+            if (result.rowCount == 0) {
+                const time_limit_min = null;
+                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+                    if (ERR(err, next)) return;
+                    debug('redirecting');
+                    res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+                });
+            } else {
                 debug('redirecting');
-                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-            });
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+            }
+        });
     } else if(req.body.__action == 'joinGroup'){
         const friendcode = req.body.friendcode;
         const group_id = Buffer.from(friendcode, 'base64').toString('utf8');
         const params = {
+            assessment_id: res.locals.assessment.id,
             group_id,
             user_id: res.locals.user.user_id,
         };
         let cursize, maxsize;
         sqldb.query(sql.check_groupsize, params, function(err, result) {
-            if (ERR(err, next)) return;
             let joinerror = true;
             if (typeof result !== 'undefined'){
                 cursize = result.rowCount || 0;

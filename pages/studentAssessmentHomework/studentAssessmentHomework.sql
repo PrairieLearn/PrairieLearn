@@ -13,11 +13,11 @@ WHERE
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
 
 -- BLOCK check_groupsize
-SELECT gc.maximum, gu.user_id, gu.group_id
+SELECT gc.maximum, gu.user_id, gu.group_id, gc.assessment_id
 FROM groups gr
 JOIN group_configs gc ON gr.group_config_id = gc.id
 JOIN group_users gu ON gu.group_id = gr.id
-WHERE gr.id = $group_id AND gr.deleted_at IS NULL AND gc.deleted_at IS NULL;
+WHERE gr.id = $group_id AND gc.assessment_id = $assessment_id AND gr.deleted_at IS NULL AND gc.deleted_at IS NULL;
 
 -- BLOCK join_group
 INSERT INTO group_users (group_id, user_id)
