@@ -51,7 +51,7 @@ class PLTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """ 
+        """
         Close all plots and increment the iteration number on test finish
         """
 
@@ -150,4 +150,4 @@ class PLTestCaseWithPlot(PLTestCase):
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_percent(points / 3.0)
+        Feedback.set_score(points / 3.0)
