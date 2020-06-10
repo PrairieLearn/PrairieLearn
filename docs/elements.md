@@ -201,7 +201,11 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 **question.html**
 
 ```html
-<pl-dropdown sort="ascend" options='wise, clumsy, wreckless' answer="wise" answer-key="hume"></pl-dropdown>
+An <pl-dropdown sort="random" correct-answer="socrates">
+  <pl-answer correct="true">unexamined</pl-answer>
+  <pl-answer>examined</pl-answer>
+  <pl-answer>insatiable</pl-answer>
+</pl-dropdown> life is not worth living. <p></p>
 ```
 
 **server.py**
@@ -211,6 +215,19 @@ def generate(data):
     # Correct Answers
     data['correct_answers']['socrates'] = 'unexamined'
 ```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct-answer` | string | - | The key of the correct answer. Can be set in ['correct_answers`][answer_key] instead.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+
+
+#### Example implementation
+
+- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
+- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
 
 -----
 
@@ -241,23 +258,6 @@ def generate(data):
   # Answer to fill in the blank input
   data["correct_answers"]["ans_rtol"] = x
 ```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answer` | string | - | The correct answer in the drop-down options list. Can be set in server.py ['correct_answers`][answer_key] instead.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`options` | string | Comma separated list of drop-down options students can select as answers.
-`sort` | string | unsorted | (enum: 'random', 'ascend', 'descend') Sort order that drop-down options appear to students.
-`answer-key` | The key where the correct answer can be found in `[correct_answers]`.
-
-#### Example implementation
-
-- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
-- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
-
-----
 
 ![](elements/pl-number-input-sigfig.png)
 
