@@ -220,9 +220,9 @@ def generate(data):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`correct-answer` | string | - | The key of the correct answer. Can be set in ['correct_answers`][answer_key] instead.
+`correct-answer` | string | - | The key of the correct answer.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-
+`sort` | string | no sorting | Options are 'random', 'ascend', and 'descend' for drop-down answers.
 
 #### Example implementation
 
