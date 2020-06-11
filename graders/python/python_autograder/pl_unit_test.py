@@ -140,4 +140,4 @@ class PLTestCaseWithPlot(PLTestCase):
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_percent(points / 3.0)
+        Feedback.set_score(points / 3.0)
