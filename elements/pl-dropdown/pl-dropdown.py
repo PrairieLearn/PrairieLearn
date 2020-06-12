@@ -14,29 +14,23 @@ class SortTypes(Enum):
 
 
 def get_options(element, data, correct_answer):
-    # server.py params values override pl-answer options
-    options = data['params'].get(correct_answer, [])
-    if not options:
-        options = []
-        for child in element:
-            if child.tag in ['pl-answer']:
-                pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
-                child_html = pl.inner_html(child).strip()
-                options.append(child_html)
+    options = []
+    for child in element:
+        if child.tag in ['pl-answer']:
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+            child_html = pl.inner_html(child).strip()
+            options.append(child_html)
     return options
 
-
 def get_solution(element, data, correct_answer):
-    # server.py correct_answers value overrides correct pl-answer value
-    solution = data['correct_answers'].get(correct_answer, [])
-    if not solution:
-        for child in element:
-            if child.tag in ['pl-answer']:
-                pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
-                is_correct = pl.get_boolean_attrib(child, 'correct', False)
-                child_html = pl.inner_html(child).strip()
-                if is_correct:
-                    solution = child_html
+    solution = []
+    for child in element:
+        if child.tag in ['pl-answer']:
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+            is_correct = pl.get_boolean_attrib(child, 'correct', False)
+            child_html = pl.inner_html(child).strip()
+            if is_correct:
+                solution = child_html
     return solution
 
 
