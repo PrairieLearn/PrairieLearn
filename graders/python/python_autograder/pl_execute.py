@@ -64,10 +64,6 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     # Seed student code and answer code with same seed
     seed = random.randint(0, (2 ** 32) - 1)
 
-    # Update the working directory so tests may access local files
-    prev_wd = os.getcwd()
-    os.chdir(base_dir)
-
     setup_code = {'test_iter_num': test_iter_num, 'data': data}
     # make all the variables in setup_code.py available to ans.py
     exec(str_setup, setup_code)
@@ -137,9 +133,6 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     # Redirect stdout back to normal
     sys.stdout.flush()
     sys.stdout = previous_stdout
-
-    # Change back to previous directory
-    os.chdir(prev_wd)
 
     ref_result = {}
     for i,j in ref_code.items():
