@@ -1,20 +1,20 @@
 	<p> Select the correct word in the following quotes:</p>
 	The 
 	<pl-dropdown sort="ascend" correct-answer="aristotle">
-		<pl-answer correct="true">whole</pl-answer>
-		<pl-answer>part</pl-answer>
-		<pl-answer>inverse</pl-answer>
+		<pl-answer correct="{{params.aristotle.tag1}}">{{params.aristotle.ans1}}</pl-answer>
+		<pl-answer correct="{{params.aristotle.tag2}}">{{params.aristotle.ans2}}</pl-answer>
+		<pl-answer correct="{{params.aristotle.tag3}}">{{params.aristotle.ans3}}</pl-answer>
 	</pl-dropdown> 
 	is more than the sum of its parts. <p></p>
 
 	An <pl-dropdown sort="random" correct-answer="socrates">
-		<pl-answer correct="true">unexamined</pl-answer>
-		<pl-answer>examined</pl-answer>
-		<pl-answer>insatiable</pl-answer>
+		<pl-answer correct="{{params.socrates.tag1}}">{{params.socrates.ans1}}</pl-answer>
+		<pl-answer correct="{{params.socrates.tag2}}">{{params.socrates.ans2}}</pl-answer>
+		<pl-answer correct="{{params.socrates.tag3}}">{{params.socrates.ans3}}</pl-answer>
 	</pl-dropdown> life is not worth living. <p></p>
 
 	A <pl-dropdown sort="ascend" correct-answer="hume">
-		<pl-answer correct="true">wise</pl-answer>
-		<pl-answer>clumsy</pl-answer>
-		<pl-answer>reckless</pl-answer>
+		<pl-answer correct="{{params.hume.tag1}}">{{params.hume.ans1}}</pl-answer>
+		<pl-answer correct="{{params.hume.tag2}}">{{params.hume.ans2}}</pl-answer>
+		<pl-answer correct="{{params.hume.tag3}}">{{params.hume.ans3}}</pl-answer>
 	</pl-dropdown> man proportions his belief to the evidence. <p></p>
