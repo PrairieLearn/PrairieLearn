@@ -22,6 +22,7 @@ def get_options(element, data, correct_answer):
             options.append(child_html)
     return options
 
+
 def get_solution(element, data, correct_answer):
     solution = []
     for child in element:
