@@ -89,10 +89,10 @@
 
   * Add example course question templates (James Balamuta).
 
-  * Add support for pages to set their own titles in browser tabs via `res.locals.navTrace` (David Mitchell)
+  * Add support for pages to set their own titles in browser tabs via `res.locals.pageTitle` (David Mitchell)
 
   * Add extra `/course*` mount points (Tim Yang).
-  
+
   * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
