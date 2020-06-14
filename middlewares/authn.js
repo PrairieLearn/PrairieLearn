@@ -60,6 +60,11 @@ module.exports = function(req, res, next) {
         return;
     }
 
+    // look for access level cookie
+    if (['Instructor', 'Student'].includes(req.cookies.pl_requested_max_access_level)) {
+        res.locals.max_access_level = req.cookies.pl_requested_max_access_level;
+    }
+
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
         var authUid = config.authUid;

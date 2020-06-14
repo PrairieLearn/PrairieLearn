@@ -84,26 +84,48 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
             <div class="dropdown-divider"></div>
             <h6 class="dropdown-header">Access level</h6>
 
+            <%
+            let check_administrator = false;
+            let check_instructor = false;
+            let check_student = false;
+
+            if (locals.max_access_level) {
+              if (max_access_level == 'Instructor') {
+                check_instructor = true;
+              } else if (max_access_level == 'Student') {
+                check_student = true;
+              } else {
+                // do nothing (should never get here)
+              }
+            } else {
+              if (is_administrator) {
+                check_administrator = true;
+              } else {
+                check_instructor = true;
+              }
+            }
+            %>
+
             <% if (locals.is_administrator) { %>
 
-            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_context=Administrator;max-age=3600000;path='/'&quot;; window.location.reload()">
+            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_max_access_level=Administrator;max-age=3600000;path='/'&quot;; window.location.reload()">
               <div class="row">
-                <div class="col-1"><% if (authz_data.has_administrator_context) { %>&#10003;<% } %></div>
+                <div class="col-1"><% if (check_administrator) { %>&#10003;<% } %></div>
                 <div class="col">Administrator</div>
               </div>
             </button>
 
             <% } %>
 
-            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_context=Instructor;max-age=3600000;path='/'&quot;; window.location.reload()">
+            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_max_access_level=Instructor;max-age=3600000;path='/'&quot;; window.location.reload()">
               <div class="row">
-                <div class="col-1"><% if (authz_data.has_instructor_context) { %>&#10003;<% } %></div>
+                <div class="col-1"><% if (check_instructor) { %>&#10003;<% } %></div>
                 <div class="col">Instructor</div>
               </div>
             </button>
-            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_context=Student;max-age=3600000;path='/'&quot;; window.location.reload()">
+            <button class="dropdown-item" type="button" onClick="document.cookie=&quot;pl_requested_max_access_level=Student;max-age=3600000;path='/'&quot;; window.location.reload()">
               <div class="row">
-                <div class="col-1"><% if (authz_data.has_student_context) { %>&#10003;<% } %></div>
+                <div class="col-1"><% if (check_student) { %>&#10003;<% } %></div>
                 <div class="col">Student</div>
               </div>
             </button>
