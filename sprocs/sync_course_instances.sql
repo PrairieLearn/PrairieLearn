@@ -14,7 +14,6 @@ DECLARE
     new_user_id bigint;
 BEGIN
     -- Move all our data into a temporary table so it's easier to work with
-    DROP TABLE IF EXISTS disk_course_instances;
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
