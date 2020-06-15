@@ -664,15 +664,17 @@ async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, va
 /**
  * Loads and schema-validates all info files in a directory.
  * @template T
- * @param {string} coursePath The path of the course being synced
- * @param {string} directory The path of the directory relative to `coursePath`
- * @param {string} infoFilename
- * @param {any} defaultInfo
- * @param {object} schema
- * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
+ * @param {Object} options - Options for loading and validating files
+ * @param {string} options.coursePath The path of the course being synced
+ * @param {string} options.directory The path of the directory relative to `coursePath`
+ * @param {string} options.infoFilename
+ * @param {any} options.defaultInfo
+ * @param {object} options.schema
+ * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
+ * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
-async function loadInfoForDirectory(coursePath, directory, infoFilename, defaultInfo, schema, validate) {
+async function loadInfoForDirectory({ coursePath, directory, infoFilename, defaultInfo, schema, validate }) {
     const infos = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
     let files;
     try {
@@ -915,7 +917,14 @@ async function validateCourseInstance(courseInstance) {
  */
 module.exports.loadQuestions = async function(courseDirectory) {
     /** @type {{ [qid: string]: InfoFile<Question> }} */
-    const questions = await loadInfoForDirectory(courseDirectory, 'questions', 'info.json', DEFAULT_QUESTION_INFO, schemas.infoQuestion, validateQuestion);
+    const questions = await loadInfoForDirectory({
+        coursePath: courseDirectory,
+        directory: 'questions',
+        infoFilename: 'info.json',
+        defaultInfo: DEFAULT_QUESTION_INFO,
+        schema: schemas.infoQuestion,
+        validate: validateQuestion,
+    });
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`);
     return questions;
 };
@@ -927,7 +936,14 @@ module.exports.loadQuestions = async function(courseDirectory) {
  */
 module.exports.loadCourseInstances = async function(courseDirectory) {
     /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
-    const courseInstances = await loadInfoForDirectory(courseDirectory, 'courseInstances', 'infoCourseInstance.json', DEFAULT_COURSE_INSTANCE_INFO, schemas.infoCourseInstance, validateCourseInstance);
+    const courseInstances = await loadInfoForDirectory({
+        coursePath: courseDirectory,
+        directory: 'courseInstances',
+        infoFilename: 'infoCourseInstance.json',
+        defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
+        schema: schemas.infoCourseInstance,
+        validate: validateCourseInstance,
+    });
     checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
 };
@@ -944,7 +960,14 @@ module.exports.loadAssessments = async function(courseDirectory, courseInstance,
     /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
     const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
-    const assessments = await loadInfoForDirectory(courseDirectory, assessmentsPath, 'infoAssessment.json', DEFAULT_ASSESSMENT_INFO, schemas.infoAssessment, validateAssessmentWithQuestions);
+    const assessments = await loadInfoForDirectory({
+        coursePath: courseDirectory,
+        directory: assessmentsPath,
+        infoFilename: 'infoAssessment.json',
+        defaultInfo: DEFAULT_ASSESSMENT_INFO,
+        schema: schemas.infoAssessment,
+        validate: validateAssessmentWithQuestions,
+    });
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;
 };
