@@ -23,7 +23,7 @@ describe('Course instance syncing', () => {
     assert.equal(syncedAccessRules.length, courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.length);
   });
 
-  it('soft-deletes and restores course instnaces', async () => {
+  it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
     let syncedCourseInstances = await util.dumpTable('course_instances');

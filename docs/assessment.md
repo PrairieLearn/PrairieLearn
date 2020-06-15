@@ -5,7 +5,7 @@
 
 ## Overview
 
-Each assessment is a single directory in the `assessments` folder. The directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
+Each assessment is a single directory in the `assessments` folder or any subfolder.  Assessments may be nested in subdirectories of the `assessments` folder.  The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
 ```json
 {
@@ -18,6 +18,8 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "zones": []
 }
 ```
+
+The assessment ID is the full path relative to `assessments`.
 
 * [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 

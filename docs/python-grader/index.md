@@ -1,6 +1,6 @@
 # Python Autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page. 
+This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
@@ -47,7 +47,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively, and thus the question markup should be structured as:
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively.  It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -56,6 +56,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 <pl-submission-panel>
   <pl-external-grading-results></pl-external-grading-results>
+  <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
 
