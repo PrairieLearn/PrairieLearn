@@ -113,6 +113,18 @@ pre {
     overflow-wrap: normal;
 }
 
+.thumbnail {
+    height: 64px;
+    width: 100%;
+    max-width: 64px;
+    min-width: 64px;
+    transition: transform .2s;
+}
+
+.thumbnail:hover {
+    transform: scale(1.75);
+}
+
 /**************
  * Submissions
  **************/
