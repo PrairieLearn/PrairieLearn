@@ -83,3 +83,32 @@ module.exports.processIssue = async (req, res) => {
     await sqldb.callAsync('issues_insert_for_variant', params);
     return variant_id;
 };
+
+module.exports.processGroupIssue = async (req, res) => {
+    if (!res.locals.assessment.allow_issue_reporting) {
+        throw new Error('Issue reporting not permitted for this assessment');
+    }
+    const description = req.body.description;
+    if (!_.isString(description) || description.length == 0) {
+        throw new Error('A description of the issue must be provided');
+    }
+
+    const variant_id = await module.exports.getValidVariantId(req, res);
+
+    const course_data = _.pick(res.locals, ['variant', 'instance_question',
+        'question', 'assessment_instance',
+        'assessment', 'course_instance', 'course']);
+    const params = [
+        variant_id,
+        description, // student message
+        'student-reported issue', // instructor message
+        true, // manually_reported
+        true, // course_caused
+        course_data,
+        {}, // system_data
+        res.locals.authn_user.user_id,
+        res.locals.lead_user_id,
+    ];
+    await sqldb.callAsync('issues_insert_for_group_variant', params);
+    return variant_id;
+};
