@@ -112,3 +112,10 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     s.id = $submission_id;
+
+-- BLOCK get_groupwork
+SELECT gu.user_id
+FROM
+    group_users AS gu 
+WHERE
+    gu.group_id = $groupid;

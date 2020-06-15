@@ -6,6 +6,9 @@ const async = require('async');
 const error = require('@prairielearn/prairielib/error');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
@@ -71,9 +74,22 @@ function processIssue(req, res, callback) {
             {}, // system_data
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('issues_insert_for_variant', params, (err) => {
+        sqldb.query(sql.get_groupwork, {vid: variant_id}, (err, result) =>{
+            console.log(result);
             if (ERR(err, callback)) return;
-            callback(null, variant_id);
+            if (result.rowCount != 0){          
+                    params.push(result.rows[0].user_id);
+                    console.log(params);
+                        sqldb.call('issues_insert_for_group_variant', params, (err) => {
+                            if (ERR(err, callback)) return;
+                            callback(null, variant_id);
+                        });
+            }else {
+                    sqldb.call('issues_insert_for_variant', params, (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null, variant_id);
+                    });
+            }
         });
     });
 }
