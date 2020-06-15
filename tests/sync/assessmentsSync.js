@@ -388,6 +388,7 @@ describe('Assessment syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'courseInstances', 'Fa19', 'assessments', 'fail'));
     await util.syncCourseData(courseDir);
     const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isOk(syncedAssessment);
     assert.match(syncedAssessment.sync_errors, /Error reading JSON file courseInstances\/Fa19\/assessments\/fail\/infoAssessment.json: ENOENT/);
   });
 

@@ -96,7 +96,10 @@ describe('course database', () => {
           foo: 'bar',
         };
         await fs.writeJson(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isFalse(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(result.uuid, UUID);
@@ -108,7 +111,10 @@ describe('course database', () => {
       await withTempFile(async (file) => {
         const json = { foo: 'bar' };
         await fs.writeJson(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -117,7 +123,10 @@ describe('course database', () => {
       await withTempFile(async (file) => {
         const json = { uuid: 'bar' };
         await fs.writeJson(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -126,7 +135,10 @@ describe('course database', () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uuid":"${UUID}"`;
         await fs.writeFile(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -138,7 +150,10 @@ describe('course database', () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uid":"${UUID}"`;
         await fs.writeFile(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -150,7 +165,10 @@ describe('course database', () => {
       await withTempFile(async (file) => {
         const json = `{{malformed, "uuid":"${UUID}","uuid": "${UUID}"}`;
         await fs.writeJson(file.path, json);
-        const result = await courseDb.loadInfoFile(file.dirname, file.basename);
+        const result = await courseDb.loadInfoFile({
+          coursePath: file.dirname,
+          filePath: file.basename,
+        });
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);

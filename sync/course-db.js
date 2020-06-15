@@ -416,12 +416,14 @@ module.exports.courseDataHasErrors = function(courseData) {
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
  * @template T
- * @param {string} coursePath
- * @param {string} filePath
- * @param {object} [schema]
+ * @param {Object} options - Options for loading and validating the file
+ * @param {string} options.coursePath
+ * @param {string} options.filePath
+ * @param {object} [options.schema]
+ * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
  * @returns {Promise<InfoFile<T>>} 
  */
-module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
+module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tolerateMissing = false }) {
     const absolutePath = path.join(coursePath, filePath);
     let contents;
     try {
@@ -446,7 +448,7 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
             // in fact a directory.
             return null;
         }
-        if (err.code === 'ENOENT' && err.path === absolutePath) {
+        if (tolerateMissing && err.code === 'ENOENT' && err.path === absolutePath) {
             // For info files that are recursively loaded, this probably means
             // we tried to load a file at an intermediate directory. This isn't
             // an error; return null to let the caller handle this.
@@ -526,12 +528,16 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
 };
 
 /**
- * @param {string} courseDirectory
+ * @param {string} coursePath
  * @returns {Promise<InfoFile<Course>>}
  */
-module.exports.loadCourseInfo = async function(courseDirectory) {
+module.exports.loadCourseInfo = async function(coursePath) {
     /** @type {import('./infofile').InfoFile<Course>} */
-    const loadedData = await module.exports.loadInfoFile(courseDirectory, 'infoCourse.json', schemas.infoCourse);
+    const loadedData = await module.exports.loadInfoFile({
+        coursePath,
+        filePath: 'infoCourse.json',
+        schema: schemas.infoCourse,
+    });
     if (infofile.hasErrors(loadedData)) {
         // We'll only have an error if we couldn't parse JSON data; abort
         return loadedData;
@@ -617,7 +623,7 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
     const course = {
         uuid: info.uuid.toLowerCase(),
-        path: courseDirectory,
+        path: coursePath,
         name: info.name,
         title: info.title,
         timezone: info.timezone,
@@ -641,16 +647,23 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
  * @param {string} options.filePath
  * @param {any} options.defaults
  * @param {any} options.schema
+ * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, validate }) {
+async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
     // perf.start(`loadandvalidate:${filePath}`);
-    const loadedJson = await module.exports.loadInfoFile(coursePath, filePath, schema);
+    const loadedJson = await module.exports.loadInfoFile({
+        coursePath,
+        filePath,
+        schema,
+        tolerateMissing,
+    });
     // perf.end(`loadandvalidate:${filePath}`);
     if (loadedJson === null) {
         // This should only occur if we looked for a file in a non-directory,
-        // as would happen if there was a .DS_Store file.
+        // as would happen if there was a .DS_Store file, or if we're
+        // tolerating missing files, as we'd need to for nesting support.
         return null;
     }
     if (infofile.hasErrors(loadedJson)) {
@@ -713,6 +726,9 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
                 defaults: defaultInfo,
                 schema,
                 validate,
+                // If we aren't operating in recursive mode, we want to ensure
+                // that missing files are correctly reflected as errors.
+                tolerateMissing: recursive,
             });
             if (info) {
                 infoFiles[path.join(relativeDir, dir)] = info;
@@ -950,12 +966,12 @@ async function validateCourseInstance(courseInstance) {
 /**
  * Loads all questions in a course directory.
  * 
- * @param {string} courseDirectory 
+ * @param {string} coursePath
  */
-module.exports.loadQuestions = async function(courseDirectory) {
+module.exports.loadQuestions = async function(coursePath) {
     /** @type {{ [qid: string]: InfoFile<Question> }} */
     const questions = await loadInfoForDirectory({
-        coursePath: courseDirectory,
+        coursePath,
         directory: 'questions',
         infoFilename: 'info.json',
         defaultInfo: DEFAULT_QUESTION_INFO,
@@ -970,12 +986,12 @@ module.exports.loadQuestions = async function(courseDirectory) {
 /**
  * Loads all course instances in a course directory.
  * 
- * @param {string} courseDirectory
+ * @param {string} coursePath
  */
-module.exports.loadCourseInstances = async function(courseDirectory) {
+module.exports.loadCourseInstances = async function(coursePath) {
     /** @type {{ [ciid: string]: InfoFile<CourseInstance> }} */
     const courseInstances = await loadInfoForDirectory({
-        coursePath: courseDirectory,
+        coursePath,
         directory: 'courseInstances',
         infoFilename: 'infoCourseInstance.json',
         defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
@@ -989,17 +1005,17 @@ module.exports.loadCourseInstances = async function(courseDirectory) {
 /**
  * Loads all assessments in a course instance.
  * 
- * @param {string} courseDirectory
+ * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
  */
-module.exports.loadAssessments = async function(courseDirectory, courseInstance, questions) {
+module.exports.loadAssessments = async function(coursePath, courseInstance, questions) {
     const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
     /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
     const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
     /** @type {{ [tid: string]: InfoFile<Assessment> }} */
     const assessments = await loadInfoForDirectory({
-        coursePath: courseDirectory,
+        coursePath,
         directory: assessmentsPath,
         infoFilename: 'infoAssessment.json',
         defaultInfo: DEFAULT_ASSESSMENT_INFO,
