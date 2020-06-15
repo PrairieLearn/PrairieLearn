@@ -199,7 +199,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
   const questionsPath = path.join(coursePath, 'questions');
   await fs.ensureDir(questionsPath);
   for (const qid of Object.keys(courseData.questions)) {
-    const questionPath = path.join(questionsPath, qid);
+    // Handle nested questions - split on '/' and use components to construct
+    // the nested directory structure.
+    const questionPath = path.join(questionsPath, ...qid.split('/'));
     await fs.ensureDir(questionPath);
     const questionInfoPath = path.join(questionPath, 'info.json');
     await fs.writeJSON(questionInfoPath, courseData.questions[qid]);
