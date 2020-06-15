@@ -445,7 +445,13 @@ module.exports.loadInfoFile = async function(coursePath, filePath, schema) {
             // that if we see ENOTDIR, that means the directory was not
             // in fact a directory.
             return null;
-        } 
+        }
+        if (err.code === 'ENOENT' && err.path === absolutePath) {
+            // For info files that are recursively loaded, this probably means
+            // we tried to load a file at an intermediate directory. This isn't
+            // an error; return null to let the caller handle this.
+            return null;
+        }
 
         // If it wasn't a missing file, this is another error. Propagate it to
         // the caller.
@@ -674,31 +680,55 @@ async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, va
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
-async function loadInfoForDirectory({ coursePath, directory, infoFilename, defaultInfo, schema, validate }) {
-    const infos = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
-    let files;
-    try {
-        files = await fs.readdir(path.join(coursePath, directory));
-    } catch (e) {
-        if (e.code === 'ENOENT') {
-            // Missing directory; fail gracefully and return empty collection
-            return infos;
-        }
-        // Some other error, permissions perhaps. Throw to abort sync.
-        throw e;
-    }
-    await async.each(files, async function(dir) {
-        const infoFile = path.join(directory, dir, infoFilename);
-        // console.log(`readfile: ${infoFile}`);
-        // perf.start(`loadfile:${infoFile}`);
-        const info = await loadAndValidateJsonNew(coursePath, infoFile, defaultInfo, schema, validate);
-        // perf.end(`loadfile:${infoFile}`);
-        if (info) {
-            infos[dir] = info;
-        }
-    });
+async function loadInfoForDirectory({ coursePath, directory, infoFilename, defaultInfo, schema, validate, recursive = false }) {
+    const infoFiles = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
 
-    return infos;
+    // Recursive lookup might not be enabled for some info types - if it's
+    // disabled, we'll still utilize the same recursive function, but the
+    // recursive function won't actually recurse.
+    const infoFilesRootDir = path.join(coursePath, directory);
+    const walk = async (relativeDir) => {
+        let files;
+        try {
+            files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
+        } catch (e) {
+            if (e.code === 'ENOENT') {
+                // Missing directory; fail gracefully so we return an empty collections.
+                return 0;
+            }
+            // Some other error, permissions perhaps. Throw to abort sync.
+            throw e;
+        }
+
+        // For each file in the directory, assume it is a question directory
+        // and attempt to access `info.json`. If we can successfully read it,
+        // hooray, we're done.
+        let infoFileCount = 0;
+        await async.each(files, async (/** @type {string} */ dir) => {
+            const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
+            const info = await loadAndValidateJsonNew(coursePath, infoFilePath, defaultInfo, schema, validate);
+            if (info) {
+                infoFiles[path.join(relativeDir, dir)] = info;
+                infoFileCount += 1;
+            } else if (recursive) {
+                const recursiveFileCount = await walk(path.join(relativeDir, dir));
+                if (recursiveFileCount === 0) {
+                    // If we hit this case, this means we just operated on a
+                    // directory that didn't contain an `info.json` file and
+                    // also didn't contain any subdirectories. If this happend,
+                    // emit this directory as an infofile with an error attached.
+                    infoFiles[path.join(relativeDir, dir)] = infofile.makeError(`Missing JSON file: ${infoFilePath}`);
+                    infoFileCount += 1;
+                } else {
+                    infoFileCount += recursiveFileCount;
+                }
+            }
+        });
+        return infoFileCount;
+    };
+
+    await walk('');
+    return infoFiles;
 }
 
 /**
@@ -924,6 +954,7 @@ module.exports.loadQuestions = async function(courseDirectory) {
         defaultInfo: DEFAULT_QUESTION_INFO,
         schema: schemas.infoQuestion,
         validate: validateQuestion,
+        recursive: true,
     });
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`);
     return questions;
