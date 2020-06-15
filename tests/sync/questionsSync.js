@@ -188,6 +188,15 @@ describe('Question syncing', () => {
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find(q => q.qid === questionId);
     assert.isOk(syncedQuestion);
-    assert.match(syncedQuestion.sync_errors, /replace me with actual error/);
+    assert.match(syncedQuestion.sync_errors, /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/);
+
+    // We should only record an error for the most deeply nested directories,
+    // not any of the intermediate ones.
+    for (let i = 0; i < nestedQuestionStructure.length - 1; i++) {
+      const partialNestedQuestionStructure  = nestedQuestionStructure.slice(0, i);
+      const partialQuestionId = partialNestedQuestionStructure.join('/');
+      const syncedQuestion = syncedQuestions.find(q => q.qid === partialQuestionId);
+      assert.isUndefined(syncedQuestion);
+    }
   });
 });
