@@ -636,14 +636,15 @@ module.exports.loadCourseInfo = async function(courseDirectory) {
 
 /**
  * @template T
- * @param {string} coursePath
- * @param {string} filePath 
- * @param {any} defaults 
- * @param {any} schema 
- * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} validate
+ * @param {Object} options - Options for loading and validating the file
+ * @param {string} options.coursePath
+ * @param {string} options.filePath
+ * @param {any} options.defaults
+ * @param {any} options.schema
+ * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJsonNew(coursePath, filePath, defaults, schema, validate) {
+async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, validate }) {
     // perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile(coursePath, filePath, schema);
     // perf.end(`loadandvalidate:${filePath}`);
@@ -706,7 +707,13 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
         let infoFileCount = 0;
         await async.each(files, async (/** @type {string} */ dir) => {
             const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-            const info = await loadAndValidateJsonNew(coursePath, infoFilePath, defaultInfo, schema, validate);
+            const info = await loadAndValidateJsonNew({
+                coursePath,
+                filePath: infoFilePath,
+                defaults: defaultInfo,
+                schema,
+                validate,
+            });
             if (info) {
                 infoFiles[path.join(relativeDir, dir)] = info;
                 infoFileCount += 1;
