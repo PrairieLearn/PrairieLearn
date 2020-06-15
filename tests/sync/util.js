@@ -61,10 +61,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @typedef {Object} CourseInstance
  * @property {string} uuid
  * @property {string} longName
- * @property {number} number
- * @property {string} timezone
- * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
- * @property {CourseInstanceAllowAccess[]} allowAccess
+ * @property {number} [number]
+ * @property {string} [timezone]
+ * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
+ * @property {CourseInstanceAllowAccess[]} [allowAccess]
  */
 
 /**
@@ -153,15 +153,15 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
   * @property {string} title
   * @property {string} topic
-  * @property {string[]} tags
-  * @property {string[]} clientFiles
-  * @property {string[]} clientTemplates
-  * @property {string} template
-  * @property {"Internal" | "External" | "Manual"} gradingMethod
-  * @property {boolean} singleVariant
-  * @property {boolean} partialCredit
-  * @property {Object} options
-  * @property {QuestionExternalGradingOptions} externalGradingOptions
+  * @property {string[]} [tags]
+  * @property {string[]} [clientFiles]
+  * @property {string[]} [clientTemplates]
+  * @property {string} [template]
+  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
+  * @property {boolean} [singleVariant]
+  * @property {boolean} [partialCredit]
+  * @property {Object} [options]
+  * @property {QuestionExternalGradingOptions} [externalGradingOptions]
   */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
@@ -212,7 +212,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
   await fs.ensureDir(courseInstancesPath);
   for (const shortName of Object.keys(courseData.courseInstances)) {
     const courseInstance = courseData.courseInstances[shortName];
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    // Handle nested course instances - split on '/' and use components to construct
+    // the nested directory structure.
+    const courseInstancePath = path.join(courseInstancesPath, ...shortName.split('/'));
     await fs.ensureDir(courseInstancePath);
     const courseInstanceInfoPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     await fs.writeJSON(courseInstanceInfoPath, courseInstance.courseInstance);
@@ -221,7 +223,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
     const assessmentsPath = path.join(courseInstancePath, 'assessments');
     await fs.ensureDir(assessmentsPath);
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
-      const assessmentPath = path.join(assessmentsPath, assessmentName);
+      // Handle nested assessments - split on '/' and use components to construct
+      // the nested directory structure.
+      const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
       await fs.ensureDir(assessmentPath);
       const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);

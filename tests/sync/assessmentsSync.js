@@ -48,6 +48,18 @@ describe('Assessment syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
+  it('allows nesting of assessments in subfolders', async() => {
+    const courseData = util.getCourseData();
+    const nestedAssessmentStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
+    const assessmentId = nestedAssessmentStructure.join('/');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[assessmentId] = makeAssessment(courseData);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedData = await findSyncedAssessment(assessmentId);
+    assert.isOk(syncedData);
+  });
+
   it('adds a new zone to an assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
@@ -389,7 +401,7 @@ describe('Assessment syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.isOk(syncedAssessment);
-    assert.match(syncedAssessment.sync_errors, /Error reading JSON file courseInstances\/Fa19\/assessments\/fail\/infoAssessment.json: ENOENT/);
+    assert.match(syncedAssessment.sync_errors, /Missing JSON file: courseInstances\/Fa19\/assessments\/fail\/infoAssessment.json/);
   });
 
   it('records an error if a zone references an invalid QID', async () => {
@@ -553,5 +565,28 @@ describe('Assessment syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('unused');
     assert.isNotNull(syncedAssessment.deleted_at);
+  });
+
+  it('records an error if a nested assessment directory does not eventually contain an infoAssessment.json file', async() => {
+    const courseData = util.getCourseData();
+    const nestedAssessmentStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedAssessment'];
+    const assessmentId = nestedAssessmentStructure.join('/');
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await fs.ensureDir(path.join(courseDir, 'courseInstances', util.COURSE_INSTANCE_ID, 'assessments', ...nestedAssessmentStructure));
+    await util.syncCourseData(courseDir);
+
+    const syncedAssessment = await findSyncedAssessment(assessmentId);
+    assert.isOk(syncedAssessment);
+    assert.match(syncedAssessment.sync_errors, new RegExp(`Missing JSON file: courseInstances/${util.COURSE_INSTANCE_ID}/assessments/subfolder1/subfolder2/subfolder3/nestedAssessment/infoAssessment.json`));
+
+    // We should only record an error for the most deeply nested directories,
+    // not any of the intermediate ones.
+    for (let i = 0; i < nestedAssessmentStructure.length - 1; i++) {
+      const partialNestedAssessmentStructure  = nestedAssessmentStructure.slice(0, i);
+      const partialAssessmentId = partialNestedAssessmentStructure.join('/');
+
+      const syncedAssessment = await findSyncedAssessment(partialAssessmentId);
+      assert.isUndefined(syncedAssessment);
+    }
   });
 });

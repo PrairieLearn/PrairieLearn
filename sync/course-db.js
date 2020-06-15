@@ -997,6 +997,7 @@ module.exports.loadCourseInstances = async function(coursePath) {
         defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
         schema: schemas.infoCourseInstance,
         validate: validateCourseInstance,
+        recursive: true,
     });
     checkDuplicateUUIDs(courseInstances, (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`);
     return courseInstances;
@@ -1021,6 +1022,7 @@ module.exports.loadAssessments = async function(coursePath, courseInstance, ques
         defaultInfo: DEFAULT_ASSESSMENT_INFO,
         schema: schemas.infoAssessment,
         validate: validateAssessmentWithQuestions,
+        recursive: true,
     });
     checkDuplicateUUIDs(assessments, (uuid, ids) => `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`);
     return assessments;

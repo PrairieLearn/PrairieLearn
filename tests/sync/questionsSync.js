@@ -9,11 +9,39 @@ const helperDb = require('../helperDb');
 
 const { assert } = chai;
 
+/**
+ * Makes an empty question.
+ * 
+ * @param {import('./util').CourseData} courseData
+ * @returns {import('./util').Question}
+ */
+function makeQuestion(courseData) {
+  return {
+    uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
+    title: 'Test question',
+    type: 'v3',
+    topic: courseData.course.topics[0].name,
+  };
+}
+
 describe('Question syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
+
+  it('allows nesting of questions in subfolders', async() => {
+    const courseData = util.getCourseData();
+    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
+    const questionId = nestedQuestionStructure.join('/');
+    courseData.questions[questionId] = makeQuestion(courseData);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find(q => q.qid === questionId);
+    assert.isOk(syncedQuestion);
+  });
 
   it('soft-deletes and restores questions', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
@@ -155,34 +183,18 @@ describe('Question syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'questions', 'badQuestion'));
     await util.syncCourseData(courseDir);
 
-    // TODO: actually check for error
-  });
-
-  it('allows arbitrary nesting of questions in subfolders', async() => {
-    const courseData = util.getCourseData();
-    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
-    const questionId = nestedQuestionStructure.join('/');
-    // Replace default question with nested question
-    courseData.questions[questionId] = courseData.questions[util.QUESTION_ID];
-    delete courseData.questions[util.QUESTION_ID];
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
-
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === questionId);
+    const syncedQuestion = syncedQuestions.find(q => q.qid === 'badQuestion');
     assert.isOk(syncedQuestion);
+    assert.match(syncedQuestion.sync_errors, /Missing JSON file: questions\/badQuestion\/info.json/);
   });
 
   it('records an error if a nested question directory does not eventually contain an info.json file', async() => {
     const courseData = util.getCourseData();
     const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
     const questionId = nestedQuestionStructure.join('/');
-    // Replace default question with nested question
-    courseData.questions[questionId] = courseData.questions[util.QUESTION_ID];
-    delete courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    // Before syncing, delete the info.json file that was just written
-    await fs.remove(path.join(courseDir, 'questions', ...nestedQuestionStructure, 'info.json'));
+    await fs.ensureDir(path.join(courseDir, 'questions', ...nestedQuestionStructure));
     await util.syncCourseData(courseDir);
 
     const syncedQuestions = await util.dumpTable('questions');

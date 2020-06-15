@@ -9,11 +9,39 @@ const helperDb = require('../helperDb');
 
 const { assert } = chai;
 
+/**
+ * Makes an empty course instance.
+ * 
+ * @returns {import('./util').CourseInstanceData}
+ */
+function makeCourseInstance() {
+  return {
+    courseInstance: {
+      uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
+      longName: 'Test course instance',
+    },
+    assessments: {},
+  };
+}
+
 describe('Course instance syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
+
+  it('allows nesting of course instances in subfolders', async() => {
+    const courseData = util.getCourseData();
+    const nestedCourseInstanceStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
+    const courseInstanceId = nestedCourseInstanceStructure.join('/');
+    courseData.courseInstances[courseInstanceId] = makeCourseInstance();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === courseInstanceId);
+    assert.isOk(syncedCourseInstance);
+  });
 
   it('syncs access rules', async () => {
     const courseData = util.getCourseData();
@@ -121,7 +149,34 @@ describe('Course instance syncing', () => {
   it('records an error if a course instance directory is missing an infoCourseInstance.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await fs.ensureDir(path.join(courseDir, 'courseInstances', 'badCourseInstance', 'assessments'));
+    await fs.ensureDir(path.join(courseDir, 'courseInstances', 'badCourseInstance'));
     await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'badCourseInstance');
+    assert.isOk(syncedCourseInstance);
+    assert.match(syncedCourseInstance.sync_errors, /Missing JSON file: courseInstances\/badCourseInstance\/infoCourseInstance.json/);
+  });
+
+  it('records an error if a nested course instance directory does not eventually contain an infoCourseInstance.json file', async() => {
+    const courseData = util.getCourseData();
+    const nestedCourseInstanceStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedCourseInstance'];
+    const courseInstanceId = nestedCourseInstanceStructure.join('/');
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await fs.ensureDir(path.join(courseDir, 'courseInstances', ...nestedCourseInstanceStructure));
+    await util.syncCourseData(courseDir);
+
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === courseInstanceId);
+    assert.isOk(syncedCourseInstance);
+    assert.match(syncedCourseInstance.sync_errors, /Missing JSON file: courseInstances\/subfolder1\/subfolder2\/subfolder3\/nestedCourseInstance\/infoCourseInstance.json/);
+
+    // We should only record an error for the most deeply nested directories,
+    // not any of the intermediate ones.
+    for (let i = 0; i < nestedCourseInstanceStructure.length - 1; i++) {
+      const partialNestedCourseInstanceStructure  = nestedCourseInstanceStructure.slice(0, i);
+      const partialCourseInstanceId = partialNestedCourseInstanceStructure.join('/');
+      const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === partialCourseInstanceId);
+      assert.isUndefined(syncedCourseInstance);
+    }
   });
 });
