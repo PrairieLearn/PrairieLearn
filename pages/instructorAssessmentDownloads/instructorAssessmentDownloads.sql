@@ -21,7 +21,8 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+    JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
@@ -55,7 +56,8 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+    JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE
     a.id = $assessment_id
