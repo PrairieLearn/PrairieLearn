@@ -28,19 +28,16 @@
             </div>
             <div class="modal-body">
                 <p>
-                  Upload a CSV file in the format of <code>&lt;assessment&gt;_grouping.csv</code>.
-                </p>
-                <p class="mb-0">
-                  Alternatively, the CSV file can be in the format:
+                  Upload a CSV file in the format of:
                 </p>
             </div>
                 <div class="container bg-light py-2 border-bottom border-top">
                     <code class="mb-0 text-dark">
-                        groupname, uid<br>
-                        teamA, mwest@illinois.edu<br>
-                        teamA, zilles@illinois.edu<br>
-                        teamB, mussulma@illinois.edu<br>
-                        teamB, dev@illinois.edu</code>
+                        groupName, UID<br>
+                        teamA, one@example.com<br>
+                        teamA, two@example.com<br>
+                        teamB, three@example.com<br>
+                        teamB, four@example.com</code>
                         <!-- Closing code tag not on its own line to improve copy/paste formatting -->
                 </div>
             <div class="modal-body">
@@ -275,7 +272,6 @@
                 <th>Size</th>
                 <th class="text-center">Group Members (UIDs)</th>
                 <th class="sorter-false"></th>
-                <th class="sorter-false"></th>
               </tr>
             </thead>
             <tbody>
@@ -341,7 +337,6 @@
                     </div>
                   </div>
                 </td>
-                <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
               <% }); %>
             </tbody>
