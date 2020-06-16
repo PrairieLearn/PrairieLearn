@@ -94,7 +94,7 @@ BEGIN
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
         -- if it is a group work AND group_configs does not exist, insert new
-        PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id;
+        PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id AND deleted_at IS NULL;
         IF NOT FOUND AND (assessment->>'groupWork')::boolean THEN
             INSERT INTO group_configs
             (course_instance_id,
