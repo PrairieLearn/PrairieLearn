@@ -181,7 +181,8 @@ submissions_with_files AS (
         JOIN variants AS v ON (v.id = s.variant_id)
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN final_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
     WHERE
@@ -253,7 +254,8 @@ WITH all_submissions_with_files AS (
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
