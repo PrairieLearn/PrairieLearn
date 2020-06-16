@@ -1,3 +1,6 @@
+// change
+
+//change
 var parsons = {
     options: { can_indent: true, x_indent: 40 },
     indents: {},
@@ -7,23 +10,25 @@ var parsons = {
 };
 
 parsons.initialize_indentation = function() {
+    /* globals $ */
     var submitted = $('#parsons-input').val();
     if (submitted) {
         var ids = submitted.split('-');
+         /* globals _ */
         _.each(ids, function(encoded) {
             var disaggregated = encoded.split(':');
             var id = disaggregated[0];
             var indent = disaggregated[1];
             parsons.indents[id] = indent;
-            $('#' + id).addClass('indent' + indent)
+            $('#' + id).addClass('indent' + indent);
         });
     }
-}
+};
 
 parsons.remove_indent_classes = function(id) {
     parsons.indents[id] = 0;
     $('#' + id).removeClass('indent0 indent1 indent2 indent3 indent4 correct incorrect misaligned');
-}
+};
 
 parsons.set_answer = function() {
     var dom_objs = $('#ul-answer').children();
@@ -42,7 +47,7 @@ parsons.set_answer = function() {
 //     console.log(contents);
 
 //     this.set_answer();
-}
+};
 
 // parsons.getLineById = function(id) {
 //     return _.find(this.lines, { 'id': id });
@@ -62,14 +67,13 @@ parsons.set_answer = function() {
 // };
 
     parsons.update_indent = function(leftDiff, id) {
-        current_indent = parseInt(parsons.indents[id]) || 0;
         
-        parsons.remove_indent_classes(id)
-
+        var current_indent = parseInt(parsons.indents[id]) || 0;
+        parsons.remove_indent_classes(id);
         var new_indent = this.options.can_indent ? current_indent + Math.floor(leftDiff / this.options.x_indent) : 0;
         new_indent = Math.min(Math.max(0, new_indent), 4);
         parsons.indents[id] = new_indent;
-        $('#' + id).addClass('indent' + new_indent)
+        $('#' + id).addClass('indent' + new_indent);
     };
 
 //     parsons.addLogEntry = function(entry) {
@@ -123,7 +127,7 @@ parsons.addSortableFunctionalityToHTML = function() {
 //    }
 
 //    $('#parsons-input').val("hi there");
-    console.log($('#parsons-input').val())
+    console.log($('#parsons-input').val());
     
     var sortable_functions = {
         start: function() { 
@@ -139,7 +143,7 @@ parsons.addSortableFunctionalityToHTML = function() {
 //          parsons.addLogEntry({type: "moveOutput", target: ui.item[0].id}, true);
         },
         receive: function(event, ui) {
-            parsons.remove_indent_classes(ui.item[0].id)            
+            parsons.remove_indent_classes(ui.item[0].id);            
             
 //            var ind = parsons.updateIndent(ui.position.left - ui.item.parent().position().left, ui.item[0].id);
 //            parsons.updateHTMLIndent(ui.item[0].id);
@@ -147,30 +151,31 @@ parsons.addSortableFunctionalityToHTML = function() {
 //          parsons.addLogEntry({type: "addOutput", target: ui.item[0].id}, true);
         },
 
-        grid: this.options.can_indent ? [this.options.x_indent, 1 ] : false
+        grid: this.options.can_indent ? [this.options.x_indent, 1 ] : false,
     };
-    var sortable = $("#ul-answer");
-    sortable.sortable(sortable_functions).addClass("output");
-
+    var sortable = $('#ul-answer');
+    sortable.sortable(sortable_functions).addClass('output');
+   
     var trash_functions = {
         connectWith: sortable,
         start: function() { 
         },
         receive: function(event, ui) {
-            parsons.remove_indent_classes(ui.item[0].id)            
+            parsons.remove_indent_classes(ui.item[0].id);            
             parsons.set_answer();
 //          parsons.addLogEntry({type: "removeOutput", target: ui.item[0].id}, true);
         },
-        stop: function(event, ui) {
+        stop: function() {
 //          if ($(event.target)[0] != ui.item.parent()[0]) {
 //              // line moved to output and logged there
 //              return;
 //          }
 //          parsons.addLogEntry({type: "moveInput", target: ui.item[0].id}, true);
-        }
+        },
     };
+    
 
-    var unused = $("#ul-unused").sortable(trash_functions);
+    var unused = $('#ul-unused').sortable(trash_functions);
     sortable.sortable('option', 'connectWith', unused);
 };
 
@@ -180,8 +185,8 @@ parsons.addSortableFunctionalityToHTML = function() {
 //})()
 
 // $(parsons.addSortableFunctionalityToHTML())
-
+/*global document*/
 $( document ).ready(function() {
-    parsons.initialize_indentation()
-    parsons.addSortableFunctionalityToHTML()    
+    parsons.initialize_indentation();
+    parsons.addSortableFunctionalityToHTML();    
 });

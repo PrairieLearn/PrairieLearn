@@ -1,7 +1,6 @@
 import prairielearn as pl
 import lxml.html
 import random
-import math
 
 DEFAULT_CHECK_INDENTATION = False
 
@@ -10,19 +9,19 @@ DEFAULT_CHECK_INDENTATION = False
 #       b, d, and f are the number of levels they are indented.
 # This function checks that a submitted answer is formatted correct and converts it
 # into the following format:  [(a, b), (c, d), (e, f)]
-#
+
+
 def unpack_answer(submitted, num_pieces, data, name):
     if submitted == '':
         return []
-        
     unpacked = []
     for piece in submitted.split('-'):
         piece_no, indent = piece.split(':')
-        try: 
+        try:
             if not 0 <= int(piece_no) < num_pieces:
-               raise ValueError()
+                raise ValueError()
         except:
-            data['format_errors'][name] = 'INVALID piece number: ' + piece_no
+            ata['format_errors'][name] = 'INVALID piece number: ' + piece_no
             return []
         try: 
             if not 0 <= int(indent) <= 4:
@@ -88,11 +87,11 @@ def prepare(element_html, data):
         if child.tag == 'pl-answer':
             pl.check_attribs(child, required_attribs=[], optional_attribs=['indent'])
             indent = pl.get_integer_attrib(child, 'indent', -1)
-            answer_tuple = { 'html': child_html, 'indent': indent }
+            answer_tuple = {'html': child_html, 'indent': indent}
             correct_answers.append(answer_tuple)
         if child.tag == 'pl-distractor':
             pl.check_attribs(child, required_attribs=[], optional_attribs=[])
-            answer_tuple = { 'html': child_html }
+            answer_tuple = {'html': child_html}
             distractors.append(answer_tuple)
 
     # error check the input and 
@@ -172,8 +171,8 @@ def render(element_html, data):
         if submitted == '':
             html = 'No submitted answer'
         else:
-            ## partial_score = data['partial_scores'].get(name, {'score': None})
-            ## score = partial_score.get('score', None)
+            # partial_score = data['partial_scores'].get(name, {'score': None})
+            # score = partial_score.get('score', None)
         
             html = '<pre>'
             for piece_idx, indent in unpacked_submitted:
@@ -183,17 +182,17 @@ def render(element_html, data):
             if feedback:
                 html += '<p>' + feedback + '<p>'
 
-            ## if score is not None:
-            ##     try:
-            ##         score = float(score)
-            ##         if score >= 1:
-            ##             html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
-            ##         elif score > 0:
-            ##             html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
-            ##         else:
-            ##             html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
-            ##     except Exception:
-            ##         raise ValueError('invalid score' + score)
+            # if score is not None:
+            #     try:
+            #         score = float(score)
+            #         if score >= 1:
+            #             html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+            #         elif score > 0:
+            #             html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+            #         else:
+            #             html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+            #     except Exception:
+            #         raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
         html = "Your submission is graded from top to bottom.  Pieces shown in green are in the correct position with the correct indentation.  Yellow pieces are in the right position but with the wrong indentation.  Red pieces are in the wrong position.  Grading stops as soon as you hit a red or yellow piece."
 
@@ -248,34 +247,34 @@ def grade(element_html, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-## def test(element_html, data):
-##     element = lxml.html.fragment_fromstring(element_html)
-##     name = pl.get_string_attrib(element, 'answers-name')
-##     weight = pl.get_integer_attrib(element, 'weight', 1)
-## 
-##     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
-##     if correct_key is None:
-##         raise Exception('could not determine correct_key')
-##     number_answers = len(data['params'][name])
-##     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
-##     incorrect_keys = list(set(all_keys) - set([correct_key]))
-## 
-##     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
-##     if result == 'correct':
-##         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
-##         data['partial_scores'][name] = {'score': 1, 'weight': weight}
-##     elif result == 'incorrect':
-##         if len(incorrect_keys) > 0:
-##             data['raw_submitted_answers'][name] = random.choice(incorrect_keys)
-##             data['partial_scores'][name] = {'score': 0, 'weight': weight}
-##         else:
-##             # actually an invalid submission
-##             data['raw_submitted_answers'][name] = '0'
-##             data['format_errors'][name] = 'INVALID choice'
-##     elif result == 'invalid':
-##         data['raw_submitted_answers'][name] = '0'
-##         data['format_errors'][name] = 'INVALID choice'
-## 
-##         # FIXME: add more invalid choices
-##     else:
-##         raise Exception('invalid result: %s' % result)
+# def test(element_html, data):
+#     element = lxml.html.fragment_fromstring(element_html)
+#     name = pl.get_string_attrib(element, 'answers-name')
+#     weight = pl.get_integer_attrib(element, 'weight', 1)
+# 
+#     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
+#     if correct_key is None:
+#         raise Exception('could not determine correct_key')
+#     number_answers = len(data['params'][name])
+#     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+#     incorrect_keys = list(set(all_keys) - set([correct_key]))
+# 
+#     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+#     if result == 'correct':
+#         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
+#         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+#     elif result == 'incorrect':
+#         if len(incorrect_keys) > 0:
+#             data['raw_submitted_answers'][name] = random.choice(incorrect_keys)
+#             data['partial_scores'][name] = {'score': 0, 'weight': weight}
+#         else:
+#             # actually an invalid submission
+#             data['raw_submitted_answers'][name] = '0'
+#             data['format_errors'][name] = 'INVALID choice'
+#     elif result == 'invalid':
+#         data['raw_submitted_answers'][name] = '0'
+#         data['format_errors'][name] = 'INVALID choice'
+# 
+#         # FIXME: add more invalid choices
+#     else:
+#         raise Exception('invalid result: %s' % result)
