@@ -16,6 +16,10 @@ router.get('/', function(req, res, next) {
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
+        if(result.rowCount == 0){
+            next(new Error('This is not a group assessment. To enable this function, please set groupWork to be true in infoAssessment.json.'));
+            return;
+        }
         res.locals.config_info = result.rows[0];
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -79,7 +83,10 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
-                    if (ERR(err, next)) return;
+                    if (err){
+                        next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
+                        return;
+                    }
                 }
             }
             res.redirect(req.originalUrl);
@@ -109,7 +116,10 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_add_member', params);
                 } catch (err) {
-                    if (ERR(err, next)) return;
+                    if (err){
+                        next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
+                        return;
+                    }
                 }
             }
             res.redirect(req.originalUrl);
@@ -129,7 +139,10 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
                 } catch (err) {
-                    if (ERR(err, next)) return;
+                    if (err){
+                        next(new Error('Failed to delete' + uid + 'from this group. Please check if this member exist.'));
+                        return;
+                    }
                 }
             }
             res.redirect(req.originalUrl);
