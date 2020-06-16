@@ -1,0 +1,16 @@
+<div class="list-group-item list-group-item-warning small">
+    <div class="row align-items-center justify-content-between">
+        <div class="col">
+            <ul class="list-unstyled">
+                <li class="font-weight-bold"><%= override.name %></li>
+                <li><%= override.value %></li>
+            </ul>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-xs btn-warning" role="button" type="button" onClick="document.cookie=&quot;<%= override.cookie %>=;max-age=3600000;path='/'&quot;; window.location.reload()">
+                <i class="fas fa-times"></i>
+                Remove
+            </button>
+        </div>
+    </div>
+</div>

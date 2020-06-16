@@ -25,27 +25,22 @@
     <!-- User and logout ------------------------------------------------------------->
 
 <%
-if (!locals.effective_user_has_no_access_to_course_instance) {
-  var displayedName = '';
-  if (typeof authz_data !== 'undefined' && authz_data.authn_has_course_permission_preview) {
-      if (authz_data.user.name) {
-          displayedName = authz_data.user.name;
-      } else {
-          displayedName = authz_data.user.uid;
-      }
-      displayedName += ' (' + authz_data.course_role;
-      if (authz_data.mode != 'Public') {
-          displayedName += ', ' + authz_data.mode;
-      }
-      displayedName += ')';
+let displayedName;
+if (locals.authz_data) {
+  if (locals.authz_data.user.name) {
+    displayedName = authz_data.user.name;
   } else {
-      if (typeof authn_user == 'undefined') {
-          displayedName = '(No user)';
-      } else if (is_administrator) {
-          displayedName = authn_user.name + ' (Administrator)';
-      } else {
-          displayedName = authn_user.name;
-      }
+    displayedName = authz_data.user.uid;
+  }
+
+  if (authz_data.mode != 'Public') {
+    displayedName += ' (' + authz_data.mode + ')';
+  }
+} else {
+  if (locals.authn_user) {
+    displayedName = authn_user.name;
+  } else {
+    displayName = '(no user)';
   }
 }
 %>
@@ -54,35 +49,31 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
 
     <% if (!locals.effective_user_has_no_access_to_course_instance) { %>
 
-    <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %> position-static">
+        <a class="nav-link dropdown-toggle <% if (locals.authz_data && authz_data.overrides) { %>text-warning<% } %>" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
               <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
             <% } %>
         </a>
-        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-right w-10" aria-labelledby="navbarDropdown">
 
-            <% if (locals.authn_user) { %>
-            <h6 class="dropdown-header"><%= authn_user.name %> (FIXME)</h6>
-            <div class="dropdown-divider"></div>
-            <% } %>
-
-            <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
-            <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_course_permission_preview) { %>
+            <% if (locals.authz_data && authz_data.authn_has_course_permission_preview) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>
-            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
-              News
-              <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-                <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
-              <% } %>
-            </a>
+
+            <% if (locals.authz_data && authz_data.overrides) { %>
+            <div class="list-group small dropdown-item-text px-4">
+              <% authz_data.overrides.forEach(function(override) { %>
+                <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
+              <% }); %>
+            </div>
+            <% } %>
 
             <% if (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view) { %>
 
             <div class="dropdown-divider"></div>
-            <h6 class="dropdown-header">Access level</h6>
+            <h6 class="dropdown-header">User type</h6>
 
             <%
             let check_administrator = false;
@@ -191,6 +182,13 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
             <% } %>
 
             <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
+            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+              News
+              <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+                <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
+              <% } %>
+            </a>
             <%- include('logout'); %>
 
         </div>
