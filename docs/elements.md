@@ -16,6 +16,7 @@ PrairieLearn presently provides the following templated **input field** elements
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -190,46 +191,6 @@ Two grading methods are available when using `partial-credit="true"`:
 
 -----
 
-## `pl-dropdown` element
-
-Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
-
-#### Sample Element
-
-![](elements/pl-dropdown.png)
-
-**question.html**
-
-```html
-An <pl-dropdown sort="random" correct-answer="socrates">
-  <pl-answer correct="true">unexamined</pl-answer>
-  <pl-answer>examined</pl-answer>
-  <pl-answer>insatiable</pl-answer>
-</pl-dropdown> life is not worth living. <p></p>
-```
-
-**server.py**
-```python
-def generate(data):
-
-    # Correct Answers
-    data['correct_answers']['socrates'] = 'unexamined'
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`correct-answer` | string | - | The key of the correct answer.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`sort` | string | no sorting | Options are 'random', 'ascend', and 'descend' for drop-down answers.
-
-#### Example implementation
-
-- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
-- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
-
------
 
 ## `pl-number-input` element
 
@@ -311,6 +272,47 @@ Attribute | Type | Default | Description
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
+
+-----
+
+## `pl-dropdown` element
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
+
+#### Sample Element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+An <pl-dropdown sort="random" correct-answer="socrates">
+  <pl-answer correct="true">unexamined</pl-answer>
+  <pl-answer>examined</pl-answer>
+  <pl-answer>insatiable</pl-answer>
+</pl-dropdown> life is not worth living. <p></p>
+```
+
+**server.py**
+```python
+def generate(data):
+
+    # Correct Answers
+    data['correct_answers']['socrates'] = 'unexamined'
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct-answer` | string | - | The key of the correct answer.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`sort` | string | no sorting | Options are 'random', 'ascend', and 'descend' for drop-down answers.
+
+#### Example implementation
+
+- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
+- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
 
 -----
 
