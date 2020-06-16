@@ -91,10 +91,10 @@ WITH
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-            LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-            LEFT JOIN groups AS gr ON (gr.group_config_id = gc.id)
+            LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id AND gc.deleted_at IS NULL)
+            LEFT JOIN groups AS gr ON (gr.group_config_id = gc.id AND gr.deleted_at IS NULL)
             LEFT JOIN group_users AS gu ON (gu.group_id = gc.id AND gu.user_id = $user_id)
-            LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND ai.user_id = $user_id OR ai.group_id = gu.group_id)
+            LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
         WHERE
             ci.id = $course_instance_id
