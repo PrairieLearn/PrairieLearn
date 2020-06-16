@@ -93,7 +93,7 @@
             "type": "boolean",
             "default": true
         },
-        "groupwork": {
+        "groupWork": {
             "description": "If the assessment will support group work.",
             "type": "boolean",
             "default": false

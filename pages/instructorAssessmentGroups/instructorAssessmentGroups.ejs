@@ -72,20 +72,20 @@
               <form name="auto-assessment-group-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                   <label for="formMin">Min number of members in a group</label>
-                  <input type="text" class="form-control" id="formMin" name="minnum">
+                  <input type="text" value=2 class="form-control" id="formMin" name="minnum">
                 </div>
                 <div class="form-group">
                   <label for="formMax">Max number of members in a group</label>
-                  <input type="text" class="form-control" id="formMax" name="maxnum">
+                  <input type="text" value=5 class="form-control" id="formMax" name="maxnum">
                 </div>
                 <div class="radio">
-                  <label><input type="radio" name="optradio" value = 1 checked>Grouping entire class (Please delete all groups before executing)</label>
+                  <label><input type="radio" name="optradio" value = 1 checked> Grouping entire class (Please delete all groups before executing)</label>
                 </div>
                 <div class="radio">
-                  <label><input type="radio" name="optradio" value = 2>Grouping not-assigned students (fill existing groups first)</label>
+                  <label><input type="radio" name="optradio" value = 2 disabled> Grouping not-assigned students (fill existing groups first)</label>
                 </div>
                 <div class="radio">
-                  <label><input type="radio" name="optradio" value = 3>Grouping not-assigned students (will not change existing groups; create new groups only)</label>
+                  <label><input type="radio" name="optradio" value = 3 disabled> Grouping not-assigned students (will not change existing groups; create new groups only)</label>
                 </div>
                 <div class="d-flex justify-content-end">
                   <div class="form-group mb-0">

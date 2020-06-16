@@ -103,11 +103,11 @@ By default all assessments are *single instance*, meaning that each student has 
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
-## Enabling groupwork for collaborative assessments
+## Enabling groupWork for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `groupwork: true`, groupwork-related options will be enabled in the web interface, allowing multiple students to work on the same assessment instance.
+By default, assessment instances are tied to only one user. By setting `groupWork: true`, groupWork-related options will be enabled in the web interface, allowing multiple students to work on the same assessment instance.
 
-### Instructor options for groupwork
+### Instructor options for groupWork
 
 ![Instructor group assignment page](groupwork_instructor_interface.png)
 
@@ -128,7 +128,7 @@ teamB, dev@illinois.edu
 
 A backup of the current group assignments can be saved from the "Downloads" tab, under `<asssessment>_group_configs.csv`
 
-### Student options for groupwork
+### Student options for groupWork
 
 ![Student perspective for joining a group](groupwork_student_perspective_join.png)
 

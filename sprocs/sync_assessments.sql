@@ -44,7 +44,7 @@ BEGIN
             allow_issue_reporting,
             allow_real_time_grading,
             require_honor_code,
-            groupwork)
+            groupWork)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -66,7 +66,7 @@ BEGIN
                 (assessment->>'allow_issue_reporting')::boolean,
                 (assessment->>'allow_real_time_grading')::boolean,
                 (assessment->>'require_honor_code')::boolean,
-                (assessment->>'groupwork')::boolean
+                (assessment->>'groupWork')::boolean
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -87,7 +87,7 @@ BEGIN
             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
             allow_real_time_grading = EXCLUDED.allow_real_time_grading,
             require_honor_code = EXCLUDED.require_honor_code,
-            groupwork = EXCLUDED.groupwork    
+            groupWork = EXCLUDED.groupWork    
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
@@ -95,7 +95,7 @@ BEGIN
 
         -- if it is a group work AND group_configs does not exist, insert new
         PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id;
-        IF NOT FOUND AND (assessment->>'groupwork')::boolean THEN
+        IF NOT FOUND AND (assessment->>'groupWork')::boolean THEN
             INSERT INTO group_configs
             (course_instance_id,
             assessment_id

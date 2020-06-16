@@ -68,7 +68,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
-            groupwork: assessment.groupwork || false,
+            groupWork: assessment.groupWork || false,
         };
 
         const allowAccess = assessment.allowAccess || [];

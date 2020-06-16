@@ -76,7 +76,11 @@ router.post('/', function(req, res, next) {
                     groupname,
                     uid,
                 ];
-                await sqldb.callAsync('assessment_groups_update', params);
+                try {
+                    await sqldb.callAsync('assessment_groups_update', params);
+                } catch (err) {
+                    if (ERR(err, next)) return;
+                }
             }
             res.redirect(req.originalUrl);
         })();
@@ -102,7 +106,11 @@ router.post('/', function(req, res, next) {
                     gid,
                     uid,
                 ];
-                await sqldb.callAsync('assessment_groups_add_member', params);
+                try {
+                    await sqldb.callAsync('assessment_groups_add_member', params);
+                } catch (err) {
+                    if (ERR(err, next)) return;
+                }
             }
             res.redirect(req.originalUrl);
         })();
@@ -118,7 +126,11 @@ router.post('/', function(req, res, next) {
                     gid,
                     uid,
                 ];
-                await sqldb.callAsync('assessment_groups_delete_member', params);
+                try {
+                    await sqldb.callAsync('assessment_groups_delete_member', params);
+                } catch (err) {
+                    if (ERR(err, next)) return;
+                }
             }
             res.redirect(req.originalUrl);
         })();
