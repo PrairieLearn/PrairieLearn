@@ -299,8 +299,8 @@ router.get('/:filename', function(req, res, next) {
         sqldb.query(sql.group_configs, params, function(err, result) {
             if (ERR(err, next)) return;
             var columns = [
-                ['groupname', 'name'],
-                [' uid', 'uid'],
+                ['groupName', 'name'],
+                [' UID', 'UID'],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
