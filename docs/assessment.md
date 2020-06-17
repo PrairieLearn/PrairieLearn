@@ -115,7 +115,7 @@ Underneath the "Groups" tab in an assessment, instructors have three ways of ass
 
 1. Uploading a CSV file in the following format:
 ```
-groupname, uid
+groupName, UID
 teamA, mwest@illinois.edu
 teamA, zilles@illinois.edu
 teamB, mussulma@illinois.edu
