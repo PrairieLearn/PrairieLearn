@@ -7,6 +7,7 @@ from enum import Enum
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
 
+
 class SortTypes(Enum):
     RANDOM = 'random'
     ASCEND = 'ascend'
@@ -81,7 +82,7 @@ def render(element_html, data):
             'correct-answer': correct_answer
         }
     elif data['panel'] == 'submission':
-        submitted_answer =  data['submitted_answers'].get(correct_answer, None)
+        submitted_answer = data['submitted_answers'].get(correct_answer, None)
         if submitted_answer == BLANK_ANSWER:
             no_answer_selected = True
 
