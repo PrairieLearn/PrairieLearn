@@ -31,7 +31,7 @@ const setFilenames = function(locals) {
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
-    locals.groupConfigs = prefix + 'group_configs.csv';
+    locals.groups = prefix + 'groups.csv';
     locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
     locals.finalFilesZipFilename = prefix + 'final_files.zip';
     locals.bestFilesZipFilename = prefix + 'best_files.zip';
@@ -292,7 +292,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             archive.finalize();
         });
-    } else if (req.params.filename == res.locals.groupConfigs) {
+    } else if (req.params.filename == res.locals.groups) {
         let params = {
             assessment_id: res.locals.assessment.id,
         };
@@ -300,7 +300,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var columns = [
                 ['groupName', 'name'],
-                [' UID', 'UID'],
+                ['UID', 'uid'],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
