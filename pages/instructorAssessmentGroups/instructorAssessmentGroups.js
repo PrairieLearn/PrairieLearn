@@ -75,6 +75,7 @@ router.post('/', function(req, res, next) {
         const groupname = req.body.groupname;
         const uids = req.body.uids;
         const uidlist = uids.split(/[ ,]+/);
+        res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
                 let params = [
@@ -86,12 +87,13 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
                     if (err){
-                        next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
-                        return;
+                        //next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
+                        //return;
+                        res.locals.errormsg += 'Failed to add ' + uid + ' to this group. Please check if this uid exist. <br>'
                     }
                 }
             }
-            res.redirect(req.originalUrl);
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         })();
     } else if (req.body.__action == 'configGroup') {
         const params = {
