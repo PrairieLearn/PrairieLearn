@@ -1,5 +1,3 @@
-
-
 # Elements to setup canvas (drawing space)
 
 ## `pl-drawing` element
@@ -1462,14 +1460,14 @@ class PLDrawingBaseElement {
 Any element is free to define any of the above methods, and a description for each is given here:
 
 - `generate(canvas, options, submittedAnswer)`
-  Creates a Fabric.js representation of the element and places it onto the canvas.  The options dictioanry that is passed in
+  Creates a Fabric.js representation of the element and places it onto the canvas.  The options dictionary that is passed in
   is the same one that is generated in the Python `generate()` function.  This function should also register the element with
   the answer state (see example below, and definition of answer state class).
 - `button_press(canvas, options, submittedAnswer)`
   This function will be run whenever the sidebar control button for this element is pressed.  By default this will call `generate()`,
   so in most cases you do not need to implement this.
 - `get_button_icon(options)`
-  Returns the path as a string for this button's icon relative to `clientFilesElement` (or `clientFilesExtension`)
+  Returns the path as a string for this button's icon relative to `clientFilesElement` (or `clientFilesExtension`).  By default, this will resolve to the same filename as the element's name, so if your image has the same name you do not need to implement this.
 - `get_button_tooltip(options)`
   Returns the tooltip that is displayed when the mouse hovers over this element's button.
 
@@ -1532,7 +1530,7 @@ const my_extensions = {
 PLDrawingApi.registerElements(my_extension_name, my_extension);
 ```
 
-#### JavaScript Api
+#### JavaScript API
 
 The `pl-drawing` element has some helper functions pre-defined and can be accessed with `PLDrawingApi`.  A list of them is given here:
 

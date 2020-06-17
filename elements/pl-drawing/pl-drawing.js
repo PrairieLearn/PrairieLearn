@@ -156,7 +156,10 @@ window.PLDrawingApi = {
             if (elem !== null) {
                 let image_filename = elem.get_button_icon(opts);
                 if (image_filename !== null) {
-                    img.setAttribute('src', image_base_url + image_filename + '.svg');
+                    if (!image_filename.endsWith('.svg')) {
+                        image_filename += '.svg';
+                    }
+                    img.setAttribute('src', image_base_url + image_filename);
                 }
                 let image_tooltip = elem.get_button_tooltip(opts);
                 if (image_tooltip !== null) {
