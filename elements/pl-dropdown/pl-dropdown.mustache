@@ -12,7 +12,12 @@
 {{/question}}
 
 {{#submission}}
-    <span class="pl-dropdown-submitted">{{submitted-answer}}</mark>
+    {{#no-answer-selected}}
+        <span class="pl-dropdown-no-answer">	&lt;No answer selected	&gt;</span>
+    {{/no-answer-selected}}
+    {{^no-answer-selected}}
+        <span class="pl-dropdown-submitted">{{submitted-answer}}</span>
+    {{/no-answer-selected}}
 {{/submission}}
 
 {{#answer}}
@@ -20,7 +25,12 @@
         <span class="pl-dropdown-correct">{{submitted-answer}}</span>
     {{/correct}}
     {{^correct}}
-        <span class="pl-dropdown-incorrect">{{submitted-answer}}</span> <span class="pl-dropdown-correct">{{solution}}</span>
+        {{#no-answer-selected}}
+            <span class="pl-dropdown-incorrect">&lt;No answer selected&gt;</span> <span class="pl-dropdown-correct">{{solution}}</span>
+        {{/no-answer-selected}}
+        {{^no-answer-selected}}
+            <span class="pl-dropdown-incorrect">{{submitted-answer}}</span> <span class="pl-dropdown-correct">{{solution}}</span>
+        {{/no-answer-selected}}
     {{/correct}}
 {{/answer}}
 

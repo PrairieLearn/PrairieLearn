@@ -5,7 +5,7 @@ import chevron
 from enum import Enum
 
 WEIGHT_DEFAULT = 1
-
+BLANK_ANSWER = ' '
 
 class SortTypes(Enum):
     RANDOM = 'random'
@@ -37,7 +37,7 @@ def get_solution(element, data, correct_answer):
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['correct-answer'], optional_attribs=['weight', 'sort'])
+    pl.check_attribs(element, required_attribs=['correct-answer'], optional_attribs=['blank', 'weight', 'sort'])
     correct_answer = pl.get_string_attrib(element, 'correct-answer')
 
     # Get answer from pl-answer if implemented
@@ -57,8 +57,11 @@ def render(element_html, data):
     dropdown_options = get_options(element, data, correct_answer)
 
     sort_type = pl.get_string_attrib(element, 'sort', '').upper().strip()
+    blank_start = pl.get_boolean_attrib(element, 'blank', False)
+
     html_params = {}
     html = ''
+    no_answer_selected = False
 
     if data['panel'] == 'question':
         if sort_type == SortTypes.DESCEND.name:
@@ -68,6 +71,9 @@ def render(element_html, data):
         elif sort_type == SortTypes.RANDOM.name:
             random.shuffle(dropdown_options)
 
+        if blank_start:
+            dropdown_options.insert(0, BLANK_ANSWER)
+
         html_params = {
             'question': True,
             'uuid': pl.get_uuid(),
@@ -75,18 +81,26 @@ def render(element_html, data):
             'correct-answer': correct_answer
         }
     elif data['panel'] == 'submission':
+        submitted_answer =  data['submitted_answers'].get(correct_answer, None)
+        if submitted_answer == BLANK_ANSWER:
+            no_answer_selected = True
+
         html_params = {
             'submission': True,
-            'submitted-answer': data['submitted_answers'].get(correct_answer, None),
+            'no-answer-selected': no_answer_selected,
+            'submitted-answer': submitted_answer,
             'correct-answer': correct_answer
         }
     elif data['panel'] == 'answer':
         correct_answer = pl.get_string_attrib(element, 'correct-answer')
         submitted_answer = data['submitted_answers'].get(correct_answer, None)
+        if submitted_answer == BLANK_ANSWER:
+            no_answer_selected = True
 
         html_params = {
             'answer': True,
             'submitted-answer': submitted_answer,
+            'no-answer-selected': no_answer_selected,
             'solution': data['correct_answers'][correct_answer],
             'correct': data['correct_answers'][correct_answer] == submitted_answer
         }
@@ -100,7 +114,9 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     correct_answer = pl.get_string_attrib(element, 'correct-answer')
     answer = data['submitted_answers'].get(correct_answer, None)
-    valid_options = []
+
+    # We want a space to be a valid option in case 'blank' start is desired
+    valid_options = [' ']
 
     for child in element:
         if child.tag in ['pl-answer']:

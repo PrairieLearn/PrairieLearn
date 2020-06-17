@@ -14,3 +14,7 @@
 .pl-dropdown-submitted {
     background: #ffff00;
 }
+
+.pl-dropdown-no-answer {
+    background: #add8e6;
+}
