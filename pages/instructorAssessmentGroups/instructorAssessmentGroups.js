@@ -10,9 +10,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
-
-router.get('/', function(req, res, next) {
-    debug('GET /');
+function obtainInfo(req, res, next){
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -38,6 +36,10 @@ router.get('/', function(req, res, next) {
             });
         });
     });
+}
+router.get('/', function(req, res, next) {
+    debug('GET /');
+    obtainInfo(req, res, next);
 });
 
 router.post('/', function(req, res, next) {
@@ -75,6 +77,7 @@ router.post('/', function(req, res, next) {
         const groupname = req.body.groupname;
         const uids = req.body.uids;
         const uidlist = uids.split(/[ ,]+/);
+        var failedUids = '';
         res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
@@ -87,20 +90,28 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
                     if (err){
-                        //next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
-                        //return;
-                        res.locals.errormsg += 'Failed to add ' + uid + ' to this group. Please check if this uid exist. <br>'
+                        failedUids += '[' + uid + '] '
                     }
                 }
             }
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            if(failedUids.length > 0){
+                res.locals.errormsg += 'Failed to add ' + failedUids + 'to [' + groupname + ']. Please check if the uid exist.\n';
+            }
+            obtainInfo(req, res, next);
         })();
     } else if (req.body.__action == 'configGroup') {
+        var failedUids = '';
+        res.locals.errormsg = '';
         const params = {
             assessment_id: res.locals.assessment.id,
             minsize: req.body.minsize,
             maxsize: req.body.maxsize,
         };
+        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1){
+            res.locals.errormsg += 'Please enter maxsize and minsize for group config';
+            obtainInfo(req, res, next);
+            return;
+        }
         sqldb.query(sql.config_group, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
@@ -110,6 +121,8 @@ router.post('/', function(req, res, next) {
         const gid = req.body.gid;
         const uids = req.body.addmemberuids;
         const uidlist = uids.split(/[ ,]+/);
+        var failedUids = '';
+        res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
                 const params = [
@@ -121,18 +134,22 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_add_member', params);
                 } catch (err) {
                     if (err){
-                        next(new Error('Failed to add ' + uid + ' to this group. Please check if this uid exist.'));
-                        return;
+                        failedUids += '[' + uid + '] '
                     }
                 }
             }
-            res.redirect(req.originalUrl);
+            if(failedUids.length > 0){
+                res.locals.errormsg += 'Failed to add ' + failedUids + 'to Group No.' + gid + '. Please check if the uid exist.\n';
+            }
+            obtainInfo(req, res, next);
         })();
     } else if (req.body.__action == 'deletemember') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
         const uids = req.body.deletememberuids;
         const uidlist = uids.split(/[ ,]+/);
+        var failedUids = '';
+        res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
                 const params = [
@@ -144,12 +161,14 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
                 } catch (err) {
                     if (err){
-                        next(new Error('Failed to delete' + uid + 'from this group. Please check if this member exist.'));
-                        return;
+                        failedUids += '[' + uid + '] '
                     }
                 }
             }
-            res.redirect(req.originalUrl);
+            if(failedUids.length > 0){
+                res.locals.errormsg += 'Failed to delete ' + failedUids + 'from Group No.' + gid + ']. Please check if the uid exist.\n';
+            }
+            obtainInfo(req, res, next);
         })();
     } else if (req.body.__action == 'deletegroup') {
         const params = [
