@@ -35,13 +35,6 @@
         if (assessment.type == "Homework") {
           navTrace.push(instance_question_info.question_number);
         } else if (assessment.type == "Exam") {
-          console.log({
-            "assessment": assessment,
-            "assessment_set": assessment_set,
-            "question": question,
-            "instance_question": instance_question,
-            "instance_question_info": instance_question_info
-          });
           navTrace.push(`${assessment_abbreviation}.${instance_question_info.question_number}`);
         }
       } else {
