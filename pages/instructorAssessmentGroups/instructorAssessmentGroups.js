@@ -16,8 +16,10 @@ router.get('/', function(req, res, next) {
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
+        res.locals.isgroup = true;
         if(result.rowCount == 0){
-            next(new Error('This is not a group assessment. To enable this function, please set groupWork to be true in infoAssessment.json.'));
+            res.locals.isgroup = false;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             return;
         }
         res.locals.config_info = result.rows[0];
