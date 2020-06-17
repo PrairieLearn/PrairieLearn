@@ -1200,12 +1200,15 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
-The `pl-controls` element requires only one attribute, `type`, which corresponds with an element name defined above.  When a user clicks on the control button, the element will be spawned with all of its default values.  To override any default, any attribute that can be set on the element to be created (that which is specified in `type`) can be added to `pl-controls` as an optional attribute.
+The `pl-controls` element requires only one attribute, `type`, which corresponds with an element name defined above.  When a user clicks on the control button, the element will be generated with all of its default values.  To override any default, any attribute that can be set on the element to be created (that which is specified in `type`) can be added to `pl-controls` as an optional attribute.  (See `demoDrawingCustomizedButtons` below for an example)
 
 ### Example Implementations
 
-The example [`QID: demoDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector) illustrates all the `pl-drawing-button`
-that are currently implemented.
+The example [`QID: demoDrawingGradeVector`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector) illustrates all the `pl-drawing-button`s that have grading routines implemented.
+
+The example [`QID: demoDrawingButtons`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingButtons) illustrates all the `pl-drawing-button`s that can create placeable objects.
+
+The example [`QID: demoDrawingCustomizedButtons`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingButtons) illustrates how custom objects can be generated via buttons.
 
 <img src="pl-all-buttons.png" width=70%>
 

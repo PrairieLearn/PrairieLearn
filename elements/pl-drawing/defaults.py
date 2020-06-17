@@ -32,3 +32,5 @@ drawing_defaults = {
     'point-size': 4,
     'force-width': 60
 }
+
+no_submission_error = 'There was no submitted answer.  Please place some objects on the canvas and try again.'

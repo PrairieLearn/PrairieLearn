@@ -7,9 +7,6 @@ import warnings
 import defaults
 import elements
 
-# Used for giving user feedback on wrong answers
-element_names = {'controlledLine': 'Controlled Line', 'vector': 'Force Vector', 'arc_vector': 'Moment', 'distTrianLoad': 'Distributed Triangular Load', 'point': 'Point'}
-
 
 def union_drawing_items(e1, e2):
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
@@ -313,10 +310,10 @@ def parse(element_html, data):
     try:
         data['submitted_answers'][name] = json.loads(data['submitted_answers'][name])
         if data['submitted_answers'][name] is None or len(data['submitted_answers'][name]) == 0:
-            data['format_errors'][name] = 'No submitted answer.'
+            data['format_errors'][name] = defaults.no_submission_error
             data['submitted_answers'][name] = None
     except json.JSONDecodeError:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = defaults.no_submission_error
         data['submitted_answers'][name] = None
 
 

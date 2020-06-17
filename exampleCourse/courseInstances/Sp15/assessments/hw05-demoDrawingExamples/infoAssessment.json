@@ -31,7 +31,8 @@
                 {"id": "demoDrawingGraphs",                     "points": 2, "maxPoints": 6},
                 {"id": "demoDrawingInclinedPlane",              "points": 2, "maxPoints": 6},
                 {"id": "demoDrawingVMDiagrams",                 "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingButtons",                    "points": 2, "maxPoints": 6}
+                {"id": "demoDrawingButtons",                    "points": 2, "maxPoints": 6},
+                {"id": "demoDrawingCustomizedButtons",          "points": 2, "maxPoints": 6}
             ]
         }
     ]
