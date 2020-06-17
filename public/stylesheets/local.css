@@ -119,10 +119,11 @@ pre {
     max-width: 64px;
     min-width: 64px;
     transition: transform .2s;
+    transform-origin: 0% 100%;
 }
 
 .thumbnail:hover {
-    transform: scale(1.75);
+    transform: scale(2.00);
 }
 
 /**************

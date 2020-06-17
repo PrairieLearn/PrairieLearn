@@ -7,13 +7,13 @@
     <div class="form-group" style="max-height:300px;overflow:scroll;">
         <label for="selectThumbnail">Available Thumbnails:</label>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="thumbnail_info" value="{&quot;filename&quot;: &quot;&quot;, &quot;location&quot;: &quot;&quot;}">
-            <label class="form-check-label">None</label>
+            <input class="form-check-input" type="radio" name="thumbnail_info" id="none_thumbnail" value="{&quot;filename&quot;: &quot;&quot;, &quot;location&quot;: &quot;&quot;}">
+            <label class="form-check-label" for="none_thumbnail">None</label>
         </div>
         <% available_thumbnails.forEach(function (thumbnail) { %>
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="thumbnail_info" value="{&quot;filename&quot;: &quot;<%=thumbnail.filename%>&quot;, &quot;location&quot;: &quot;<%=thumbnail.location%>&quot;}">
-                <label class="form-check-label"><%- include('../partials/questionThumbnail', {location: thumbnail.location, filename: thumbnail.filename, id: question.id}); %></label>
+                <input class="form-check-input" type="radio" name="thumbnail_info" id="<%=thumbnail.filename%><%=thumbnail.location%>" value="{&quot;filename&quot;: &quot;<%=thumbnail.filename%>&quot;, &quot;location&quot;: &quot;<%=thumbnail.location%>&quot;}">
+                <label class="form-check-label" for="<%=thumbnail.filename%><%=thumbnail.location%>"><%- include('../partials/questionThumbnail', {location: thumbnail.location, filename: thumbnail.filename, id: question.id}); %></label>
             </div>
         <% }); %>
         <div class="invalid-feedback" id="invalidLocationMessage">

@@ -299,6 +299,7 @@ router.get('/', function(req, res, next) {
                 images.forEach(function (image) {
                     res.locals.available_thumbnails = res.locals.available_thumbnails.concat(image);
                 });
+                res.locals.available_thumbnails = res.locals.available_thumbnails.filter(function(value, index, arr) { return value.filename; });
                 callback(null);
             });
         },
