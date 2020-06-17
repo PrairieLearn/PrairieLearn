@@ -21,6 +21,8 @@ function obtainInfo(req, res, next){
             return;
         }
         res.locals.config_info = result.rows[0];
+        res.locals.config_info.defaultmin = res.locals.config_info.minimum || 2;
+        res.locals.config_info.defaultmax = res.locals.config_info.maximum || 5;
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.assessment_list_rows = result.rows;
@@ -90,7 +92,7 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
                     if (err){
-                        failedUids += '[' + uid + '] '
+                        failedUids += '[' + uid + '] ';
                     }
                 }
             }
@@ -100,7 +102,6 @@ router.post('/', function(req, res, next) {
             obtainInfo(req, res, next);
         })();
     } else if (req.body.__action == 'configGroup') {
-        var failedUids = '';
         res.locals.errormsg = '';
         const params = {
             assessment_id: res.locals.assessment.id,
@@ -108,7 +109,7 @@ router.post('/', function(req, res, next) {
             maxsize: req.body.maxsize,
         };
         if(req.body.maxsize.length < 1 || req.body.minsize.length < 1){
-            res.locals.errormsg += 'Please enter maxsize and minsize for group config';
+            res.locals.errormsg += 'Please enter max and min size for group config';
             obtainInfo(req, res, next);
             return;
         }
@@ -121,7 +122,7 @@ router.post('/', function(req, res, next) {
         const gid = req.body.gid;
         const uids = req.body.addmemberuids;
         const uidlist = uids.split(/[ ,]+/);
-        var failedUids = '';
+        failedUids = '';
         res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
@@ -134,7 +135,7 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_add_member', params);
                 } catch (err) {
                     if (err){
-                        failedUids += '[' + uid + '] '
+                        failedUids += '[' + uid + '] ';
                     }
                 }
             }
@@ -148,7 +149,7 @@ router.post('/', function(req, res, next) {
         const gid = req.body.gid;
         const uids = req.body.deletememberuids;
         const uidlist = uids.split(/[ ,]+/);
-        var failedUids = '';
+        failedUids = '';
         res.locals.errormsg = '';
         (async () => {
             for(const uid of uidlist){
@@ -161,7 +162,7 @@ router.post('/', function(req, res, next) {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
                 } catch (err) {
                     if (err){
-                        failedUids += '[' + uid + '] '
+                        failedUids += '[' + uid + '] ';
                     }
                 }
             }
