@@ -62,14 +62,10 @@ window.PLDrawingApi = {
     'elements': {},
     /**
      * Register a dictionary of elements.  These should map element names
-     * to a function that creates the element onto the canvas from the relevant
+     * to a static class corresponding to the element itself.
      * Python options dictionary.
      * @param extensionName Name of the extension/group of elements.
      * @param dictionary Dictionary of elements to register.
-     * @param callingContext {optional} Context to run the element functions in.
-     * Used, for example, if the function depends on a 'this' value.  The 'this'
-     * value will be set to the callingContext.  If it is omitted then 'this'
-     * will be set to the PLDrawingApi object.
      */
     registerElements: function(extensionName, dictionary) {
         _.extend(this.elements, dictionary);
@@ -118,7 +114,7 @@ window.PLDrawingApi = {
      */
     restoreAnswer: function(canvas, submittedAnswer) {
         for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-            this._idCounter = Math.max(id, this._idCounter);
+            this._idCounter = Math.max(id + 1, this._idCounter);
             let newObj = JSON.parse(JSON.stringify(obj));
             this.createElement(canvas, newObj, submittedAnswer);
         }
@@ -166,6 +162,8 @@ window.PLDrawingApi = {
                 if (image_tooltip !== null) {
                     btn.setAttribute('title', image_tooltip);
                 }
+                let cloned_opts = _.clone(opts || {});
+                $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
             }
         });
 
@@ -243,18 +241,6 @@ window.PLDrawingApi = {
             submittedAnswer._set(existing_answer_submission);
             window.PLDrawingApi.restoreAnswer(canvas, submittedAnswer);
         }
-
-        /* Attach click handlers */
-        drawing_btns.each(function(i, btn) {
-            let id = btn.name;
-            let opts = parseElemOptions(btn);
-            if (opts === null) {
-                opts = {};
-            }
-            opts = _.clone(opts);
-            let elem = window.PLDrawingApi.getElement(id);
-            $(btn).click(() => elem.button_press(canvas, opts, submittedAnswer));
-        });
     },
 };
 
@@ -274,15 +260,26 @@ class PLDrawingAnswerState {
         });
     }
 
+    _updateAnswerInput() {
+        /* Correctly escape double back-slashes... (\\) */
+        let temp = JSON.stringify(_.values(this._answerData)).replace('\\\\', '\\\\\\\\');
+        this._htmlInput.val(temp);
+    }
+
     /**
      * Update an object in the submitted answer state.
      * @param object Object to update.
      */
     updateObject(object) {
+        if (object.id in this._answerData){
+            if (this._answerData[object.id].type !== object.type) {
+                console.trace(`Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${object.type}`);
+                console.warn('Existing', this._answerData[object.id]);
+                console.warn('New', object);
+            }
+        }
         this._answerData[object.id] = object;
-        /* Correctly escape double back-slashes... (\\) */
-        let temp = JSON.stringify(_.values(this._answerData)).replace('\\\\', '\\\\\\\\');
-        this._htmlInput.val(temp);
+        this._updateAnswerInput();
     }
 
     /**
@@ -303,6 +300,72 @@ class PLDrawingAnswerState {
             object = object.id;
         }
         delete this._answerData[object];
+        this._updateAnswerInput();
+    }
+
+    /**
+     * Registers an object to save to the answer when modified.
+     * This maintains a "submission" object that is separate from the canvas object.
+     * By default, all properties from the canvas object are copied to the submission object.
+     *
+     * @options options Options that were passed to the 'generate()' function.
+     * @options object Canvas object that was created and should be saved.
+     * @modifyHandler {optional} Function that is run whenever the canvas object is modified.
+     * This has the signature of (submitted_object, canvas_object).
+     * Any properties that should be saved should be copied from canvas_object into
+     * submitted_object.  If this is omitted, all properties from the canvas object
+     * are copied as-is.
+     * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
+     */
+    registerAnswerObject(options, object, modifyHandler, removeHandler) {
+        let submitted_object = _.clone(options);
+        if (!('id' in submitted_object)) {
+            if (!('id' in object)) {
+                submitted_object.id = window.PLDrawingApi.generateID();
+            } else {
+                submitted_object.id = object.id;
+            }
+        }
+
+        const blocked_keys = new Set([
+            'aCoords',
+            'borderColor',
+            'cacheHeight',
+            'cacheTranslationX',
+            'cacheTranslationY',
+            'cacheWidth',
+            'canvas',
+            'cornerSize',
+            'dirty',
+            'isMoving',
+            'matrixCache',
+            'oCoords',
+            'ownCaching',
+            'ownMatrixCache',
+            'id',
+        ]);
+
+        this.updateObject(submitted_object);
+        object.on('modified', () => {
+            if (modifyHandler) {
+                console.log(submitted_object);
+                modifyHandler(submitted_object, object);
+                console.log(submitted_object);
+            } else {
+                for (const [key, value] of Object.entries(object)) {
+                    if (key[0] != '_' && !blocked_keys.has(key)) {
+                        submitted_object[key] = value;
+                    }
+                }
+            }
+            this.updateObject(submitted_object);
+        });
+        object.on('removed', () => {
+            if (removeHandler) {
+                removeHandler(submitted_object, object);
+            }
+            this.deleteObject(submitted_object);
+        });
     }
 }
 

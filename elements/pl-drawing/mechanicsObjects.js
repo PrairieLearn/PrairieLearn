@@ -42,6 +42,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
 
         this.on('scaling', function() {
             this.length = this.width * this.scaleX;
+            this.h = this.height * this.scaleY;
             this.x1 = this.left;
             this.y1 = this.top;
             this.angleRad = (Math.PI / 180) * this.angle;
@@ -532,6 +533,11 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
         this.strokeUniform = true;
         this.left = this.x1;
         this.top = this.y1;
+
+        this.on('modified', () => {
+            this.x1 = this.left;
+            this.y1 = this.top;
+        });
     },
     _render: function(ctx) {
         var h = this.height;
@@ -1473,16 +1479,8 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
             });
         }
 
-        if (options.selectable === 1) {
-            var modify = function(subObj) {
-                subObj.label = textObj.label;
-                subObj.left = textObj.left;
-                subObj.top = textObj.top;
-                subObj.angle = textObj.angle;
-                subObj.scaleX = textObj.scaleX;
-                subObj.scaleY = textObj.scaleY;
-            };
-            mechanicsObjects.createObjectHandlers('pl-text', options, textObj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, textObj);
         }
 
         canvas.add(textObj);
@@ -1497,7 +1495,7 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-rod'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.Rod(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1519,7 +1517,7 @@ mechanicsObjects.byType['pl-rod'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.selectable = false;
             obj.evented = false;
 
@@ -1571,7 +1569,7 @@ mechanicsObjects.byType['pl-rod'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-collar-rod'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.CollarRod(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1593,7 +1591,7 @@ mechanicsObjects.byType['pl-collar-rod'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.selectable = false;
             obj.evented = false;
 
@@ -1646,7 +1644,7 @@ mechanicsObjects.byType['pl-collar-rod'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.LShapeRod(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1668,7 +1666,7 @@ mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.selectable = false;
             obj.evented = false;
 
@@ -1741,7 +1739,7 @@ mechanicsObjects.byType['pl-3pointrod'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.TShapeRod(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1763,7 +1761,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.selectable = false;
             obj.evented = false;
 
@@ -1858,7 +1856,7 @@ mechanicsObjects.byType['pl-4pointrod'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-clamped'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.ClampedEnd(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1872,15 +1870,8 @@ mechanicsObjects.byType['pl-clamped'] = class extends PLDrawingBaseElement {
         });
         canvas.add(textObj);
 
-        if (submittedAnswer && options.selectable === 1) {
-            var modify = function(subObj) {
-                subObj.left = obj.left;
-                subObj.top = obj.top;
-                subObj.scaleX = obj.scaleX;
-                subObj.scaleY = obj.scaleY;
-                subObj.angle = obj.angle;
-            };
-            mechanicsObjects.createObjectHandlers('pl-clamped', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
         }
 
         return obj;
@@ -1894,7 +1885,7 @@ mechanicsObjects.byType['pl-clamped'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-fixed-pin'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.FixedPin(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -1916,7 +1907,7 @@ mechanicsObjects.byType['pl-fixed-pin'] = class extends PLDrawingBaseElement {
         });
         canvas.add(textObj);
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.setControlVisible('bl',false);
             obj.setControlVisible('tl',false);
             obj.setControlVisible('br',false);
@@ -1932,7 +1923,7 @@ mechanicsObjects.byType['pl-fixed-pin'] = class extends PLDrawingBaseElement {
                 subObj.y1 = obj.y1;
                 subObj.angle = obj.angle;
             };
-            mechanicsObjects.createObjectHandlers('pl-fixed-pin', options, obj, submittedAnswer, modify);
+            submittedAnswer.registerAnswerObject(options, obj, modify);
         }
 
         return obj;
@@ -1958,7 +1949,7 @@ mechanicsObjects.byType['pl-dimensions'] = class extends PLDrawingBaseElement {
         let obj = new mechanicsObjects.Arrow(options);
         obj.selectable = false;
         obj.evented = false;
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -2061,20 +2052,20 @@ mechanicsObjects.byType['pl-arc-dimensions'] = class extends PLDrawingBaseElemen
 mechanicsObjects.byType['pl-spring'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.Spring(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
 
-        if (!submittedAnswer) return obj;
-        if (options.selectable === 1){
-            var modify = function(subObj) {
+        if (options.selectable) {
+            let modify = function(subObj) {
                 subObj.x1 = obj.x1;
                 subObj.y1 = obj.y1;
                 subObj.x2 = obj.x2;
                 subObj.y2 = obj.y2;
+                subObj.height = obj.h;
             };
-            mechanicsObjects.createObjectHandlers('pl-spring', options, obj, submittedAnswer, modify);
+            submittedAnswer.registerAnswerObject(options, obj, modify);
         }
 
         return obj;
@@ -2088,43 +2079,44 @@ mechanicsObjects.byType['pl-spring'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-triangle'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new fabric.Polygon([options.p1,options.p2,options.p3], options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
 
-        if (!submittedAnswer) return obj;
-        var modify = function(subObj) {
-            let p1 = pt2vec(obj.p1);
-            let p2 = pt2vec(obj.p2);
-            let p3 = pt2vec(obj.p3);
+        if (options.selectable) {
+            var modify = function(subObj) {
+                let p1 = pt2vec(obj.p1);
+                let p2 = pt2vec(obj.p2);
+                let p3 = pt2vec(obj.p3);
 
-            let left = Math.min(p1.e(1), p2.e(1), p3.e(1));
-            let right = Math.max(p1.e(1), p2.e(1), p3.e(1));
-            let top = Math.min(p1.e(2), p2.e(2), p3.e(2));
-            let bot = Math.max(p1.e(2), p2.e(2), p3.e(2));
+                let left = Math.min(p1.e(1), p2.e(1), p3.e(1));
+                let right = Math.max(p1.e(1), p2.e(1), p3.e(1));
+                let top = Math.min(p1.e(2), p2.e(2), p3.e(2));
+                let bot = Math.max(p1.e(2), p2.e(2), p3.e(2));
 
-            let avg = $V([(left + right) * 0.5, (top + bot) * 0.5]);
-            p1 = p1.subtract(avg);
-            p2 = p2.subtract(avg);
-            p3 = p3.subtract(avg);
+                let avg = $V([(left + right) * 0.5, (top + bot) * 0.5]);
+                p1 = p1.subtract(avg);
+                p2 = p2.subtract(avg);
+                p3 = p3.subtract(avg);
 
-            let scale = $V([obj.scaleX, obj.scaleY]);
-            p1 = p1.multElementwise(scale);
-            p2 = p2.multElementwise(scale);
-            p3 = p3.multElementwise(scale);
+                let scale = $V([obj.scaleX, obj.scaleY]);
+                p1 = p1.multElementwise(scale);
+                p2 = p2.multElementwise(scale);
+                p3 = p3.multElementwise(scale);
 
-            let trans = $V([obj.left, obj.top]);
-            p1 = p1.add(trans);
-            p2 = p2.add(trans);
-            p3 = p3.add(trans);
+                let trans = $V([obj.left, obj.top]);
+                p1 = p1.add(trans);
+                p2 = p2.add(trans);
+                p3 = p3.add(trans);
 
-            subObj.p1 = vec2pt(p1);
-            subObj.p2 = vec2pt(p2);
-            subObj.p3 = vec2pt(p3);
-            subObj.angle = obj.angle;
-        };
-        mechanicsObjects.createObjectHandlers('pl-triangle', options, obj, submittedAnswer, modify);
+                subObj.p1 = vec2pt(p1);
+                subObj.p2 = vec2pt(p2);
+                subObj.p3 = vec2pt(p3);
+                subObj.angle = obj.angle;
+            };
+            submittedAnswer.registerAnswerObject(options, obj, modify);
+        }
 
         return obj;
     }
@@ -2137,20 +2129,20 @@ mechanicsObjects.byType['pl-triangle'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-rectangle'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new fabric.Rect(options);
-
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
 
-        if (!submittedAnswer) return obj;
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.width = obj.width * obj.scaleX;
-            subObj.height = obj.height * obj.scaleY;
-            subObj.angle = obj.angle;
-        };
-        mechanicsObjects.createObjectHandlers('pl-rectangle', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            var modify = function(subObj) {
+                subObj.left = obj.left;
+                subObj.top = obj.top;
+                subObj.width = obj.width * obj.scaleX;
+                subObj.height = obj.height * obj.scaleY;
+                subObj.angle = obj.angle;
+            };
+            submittedAnswer.registerAnswerObject(options, obj, modify);
+        }
 
         canvas.add(obj);
         return obj;
@@ -2164,20 +2156,13 @@ mechanicsObjects.byType['pl-rectangle'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-polygon'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new fabric.Polygon(options.pointlist,options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
 
-        if (submittedAnswer && options.selectable === 1) {
-            var modify = function(subObj) {
-                subObj.left = obj.left;
-                subObj.top = obj.top;
-                subObj.scaleX = obj.scaleX;
-                subObj.scaleY = obj.scaleY;
-                subObj.angle = obj.angle;
-            };
-            mechanicsObjects.createObjectHandlers('pl-polygon', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
         }
         return obj;
     }
@@ -2208,14 +2193,12 @@ mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
         obj.selectable = false;
         obj.evented = false;
 
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
 
-        if (!submittedAnswer) return obj;
-
-        if (options.selectable == 1) {
+        if (options.selectable) {
             obj.objectCaching = false;
 
             var c1 = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
@@ -2276,7 +2259,7 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
         obj.setControlVisible('ml',false);
         obj.setControlVisible('mr',false);
         obj.setControlVisible('mtr',true);
-        if (!obj.id) {
+        if (!('id' in obj)) {
              obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -2313,7 +2296,7 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
             subObj.top = y;
             subObj.angle = obj.angle;
         };
-        mechanicsObjects.createObjectHandlers('pl-coordinates', options, obj, submittedAnswer, modify);
+        submittedAnswer.registerAnswerObject(options, obj, modify);
 
         let update_labels = function() {
             const angle_rad = (Math.PI / 180) * (360 - obj.angle);
@@ -2378,7 +2361,7 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
         let obj2 = new mechanicsObjects.Arrow(options_axis_2);
         obj.addWithUpdate(obj2);
 
-        if (!obj.id) {
+        if (!('id' in obj)) {
              obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -2465,12 +2448,12 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new fabric.Circle(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             const x = options.left;
             const y = options.top;
             const r = options.radius;
@@ -2584,14 +2567,14 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.pulley(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         obj.selectable = false;
         obj.evented = false;
         canvas.add(obj);
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             let cc = mechanicsObjects.makeControlHandle(options.x1, options.y1, 5, 2);
             let c1 = mechanicsObjects.makeControlHandle(options.x2, options.y2, 5, 2);
             let c2 = mechanicsObjects.makeControlHandle(options.x3, options.y3, 5, 2);
@@ -2629,7 +2612,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
             });
 
             /* c2 */
-            mechanicsObjects.attachHandlersNoClone(subObj, c1, submittedAnswer,
+            mechanicsObjects.attachHandlersNoClone(subObj, c2, submittedAnswer,
             function() { /* Modified */
                 subObj.x3 = c2.left;
                 subObj.y3 = c2.top;
@@ -2663,6 +2646,9 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
         }
 
         var obj = new mechanicsObjects.arcVector(options);
+        if (!('id' in obj)) {
+            obj.id = window.PLDrawingApi.generateID();
+        }
         canvas.add(obj);
 
         if (options.drawErrorBox) {
@@ -2704,18 +2690,15 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (!submittedAnswer) return obj;
-
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.angle = obj.angle;
-            if (textObj) {
-                textObj.left = obj.left + dx + obj.offsetx;
-                textObj.top = obj.top + dy + obj.offsety;
-            }
-        };
-        mechanicsObjects.createObjectHandlers('pl-arc-vector', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
+            obj.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj.left + dx + obj.offsetx;
+                    textObj.top = obj.top + dy + obj.offsety;
+                }
+            });
+        }
 
         return obj;
     }
@@ -2740,6 +2723,9 @@ mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         var obj = new mechanicsObjects.Arrow(options);
+        if (!('id' in obj)) {
+            obj.id = window.PLDrawingApi.generateID();
+        }
         canvas.add(obj);
 
         if (options.drawErrorBox) {
@@ -2772,18 +2758,15 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (!submittedAnswer) return obj;
-
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.angle = obj.angle;
-            if (textObj) {
-                textObj.left = obj.left + dx + obj.offsetx;
-                textObj.top = obj.top + dy + obj.offsety;
-            }
-        };
-        mechanicsObjects.createObjectHandlers('pl-vector', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
+            obj.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj.left + dx + obj.offsetx;
+                    textObj.top = obj.top + dy + obj.offsety;
+                }
+            });
+        }
 
         return obj;
     }
@@ -2796,6 +2779,9 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         var obj = new mechanicsObjects.DoubleArrow(options);
+        if (!('id' in obj)) {
+            obj.id = window.PLDrawingApi.generateID();
+        }
         canvas.add(obj);
 
         if (options.drawErrorBox) {
@@ -2828,18 +2814,15 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
             canvas.add(textObj);
         }
 
-        if (!submittedAnswer) return obj;
-
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.angle = obj.angle;
-            if (textObj) {
-                textObj.left = obj.left + dx + obj.offsetx;
-                textObj.top = obj.top + dy + obj.offsety;
-            }
-        };
-        mechanicsObjects.createObjectHandlers('pl-double-headed-vector', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
+            obj.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj.left + dx + obj.offsetx;
+                    textObj.top = obj.top + dy + obj.offsety;
+                }
+            });
+        }
 
         return obj;
     }
@@ -2852,6 +2835,9 @@ mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBase
 mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         var obj = new mechanicsObjects.DistTrianLoad(options);
+        if (!('id' in obj)) {
+            obj.id = window.PLDrawingApi.generateID();
+        }
         canvas.add(obj);
 
         if (options.drawErrorBox) {
@@ -2869,22 +2855,22 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
             canvas.add(error_box);
         }
 
-        if (!submittedAnswer) return obj;
+        if (options.selectable) {
+            // save location for updates
+            var initSubObjLeft = options.left;
+            var initSubObjTop = options.top;
+            var initObjLeft = obj.left;
+            var initObjTop = obj.top;
 
-        // save location for updates
-        var initSubObjLeft = options.left;
-        var initSubObjTop = options.top;
-        var initObjLeft = obj.left;
-        var initObjTop = obj.top;
-
-        var modify = function(subObj) {
-            subObj.left = initSubObjLeft + obj.left - initObjLeft,
-            subObj.top = initSubObjTop + obj.top - initObjTop,
-            subObj.range = obj.range;
-            subObj.angle = obj.angle;
-            subObj.flipped = obj.flipped;
-        };
-        mechanicsObjects.createObjectHandlers('pl-distributed-load', options, obj, submittedAnswer, modify);
+            var modify = function(subObj) {
+                subObj.left = initSubObjLeft + obj.left - initObjLeft,
+                subObj.top = initSubObjTop + obj.top - initObjTop,
+                subObj.range = obj.range;
+                subObj.angle = obj.angle;
+                subObj.flipped = obj.flipped;
+            };
+            submittedAnswer.registerAnswerObject(options, obj, modify);
+        }
 
         return obj;
     }
@@ -2928,8 +2914,7 @@ mechanicsObjects.byType['pl-circle'] = class extends PLDrawingBaseElement {
         obj.setControlVisible('ml', false);
         obj.setControlVisible('mr', false);
         obj.setControlVisible('mtr', false);
-
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -2946,22 +2931,15 @@ mechanicsObjects.byType['pl-circle'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (!submittedAnswer) return obj;
-
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.width = obj.width;
-            subObj.angle = obj.angle;
-            subObj.scaleX = obj.scaleX;
-            subObj.scaleY = obj.scaleY;
-
-            if (textObj) {
-                textObj.left = obj.left+obj.offsetx;
-                textObj.top = obj.top+obj.offsety;
-            }
-        };
-        mechanicsObjects.createObjectHandlers('pl-circle', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
+            obj.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj.left+obj.offsetx;
+                    textObj.top = obj.top+obj.offsety;
+                }
+            });
+        }
 
         return obj;
     }
@@ -2984,7 +2962,7 @@ mechanicsObjects.byType['pl-point'] = class extends PLDrawingBaseElement {
         obj.setControlVisible('mr', false);
         obj.setControlVisible('mtr', false);
 
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -3017,22 +2995,15 @@ mechanicsObjects.byType['pl-point'] = class extends PLDrawingBaseElement {
             canvas.add(textObj);
         }
 
-        if (!submittedAnswer) return obj;
-
-        var modify = function(subObj) {
-            subObj.left = obj.left;
-            subObj.top = obj.top;
-            subObj.width = obj.width;
-            subObj.angle = obj.angle;
-            subObj.scaleX = obj.scaleX;
-            subObj.scaleY = obj.scaleY;
-
-            if (textObj) {
-                textObj.left = obj.left+obj.offsetx;
-                textObj.top = obj.top+obj.offsety;
-            }
-        };
-        mechanicsObjects.createObjectHandlers('pl-point', options, obj, submittedAnswer, modify);
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObject(options, obj);
+            obj.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj.left+obj.offsetx;
+                    textObj.top = obj.top+obj.offsety;
+                }
+            });
+        }
 
         return obj;
     }
@@ -3045,7 +3016,7 @@ mechanicsObjects.byType['pl-point'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-roller'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         let obj = new mechanicsObjects.Roller(options);
-        if (!obj.id) {
+        if (!('id' in obj)) {
             obj.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj);
@@ -3067,7 +3038,7 @@ mechanicsObjects.byType['pl-roller'] = class extends PLDrawingBaseElement {
         });
         canvas.add(textObj);
 
-        if (options.selectable === 1) {
+        if (options.selectable) {
             obj.setControlVisible('bl',false);
             obj.setControlVisible('tl',false);
             obj.setControlVisible('br',false);
@@ -3078,12 +3049,12 @@ mechanicsObjects.byType['pl-roller'] = class extends PLDrawingBaseElement {
             obj.setControlVisible('mr',false);
             obj.setControlVisible('mtr',true);
 
-            var modify = function(subObj) {
+            let modify = function(subObj) {
                 subObj.x1 = obj.x1;
                 subObj.y1 = obj.y1;
                 subObj.angle = obj.angle;
             };
-            mechanicsObjects.createObjectHandlers('pl-roller', options, obj, submittedAnswer, modify);
+            submittedAnswer.registerAnswerObject(options, obj, modify);
         }
 
         return obj;
@@ -3290,7 +3261,7 @@ mechanicsObjects.attachHandlersNoClone = function(subObj, reference, submittedAn
 
 mechanicsObjects.cloneMechanicsObject = function(type, options) {
     var subObj = _.clone(options);
-    if (!subObj.id) {
+    if (!('id' in subObj)) {
         subObj.id = window.PLDrawingApi.generateID();
     }
     subObj.type = type;
@@ -3303,4 +3274,4 @@ mechanicsObjects.createObjectHandlers = function(type, options, reference, submi
     mechanicsObjects.attachHandlersNoClone(subObj, reference, submittedAnswer, modifyHandler, removeHandler);
 };
 
-window.PLDrawingApi.registerElements(null, mechanicsObjects.byType, mechanicsObjects);
+window.PLDrawingApi.registerElements('_base', mechanicsObjects.byType, mechanicsObjects);
