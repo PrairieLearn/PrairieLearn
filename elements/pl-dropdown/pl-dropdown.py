@@ -6,6 +6,7 @@ from enum import Enum
 
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
+BLANK_DEFAULT = False
 
 
 class SortTypes(Enum):
@@ -58,7 +59,7 @@ def render(element_html, data):
     dropdown_options = get_options(element, data, correct_answer)
 
     sort_type = pl.get_string_attrib(element, 'sort', '').upper().strip()
-    blank_start = pl.get_boolean_attrib(element, 'blank', False)
+    blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
 
     html_params = {}
     html = ''
