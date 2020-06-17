@@ -3,8 +3,8 @@ import random, copy
 def generate(data):
 
 	QUESTION1 = 'aristotle'
-	QUESTION2 = 'hume'
-	QUESTION3 = 'socrates'
+	QUESTION2 = 'socrates'
+	QUESTION3 = 'hume'
 
 	# Can override pl-answer options as parameters
 	data['params'][QUESTION1] = { 
@@ -14,8 +14,8 @@ def generate(data):
 	}
 
 	data['params'][QUESTION2] = {
-		'tag1': 'true', 'ans1': 'insatiable',
-		'tag2': 'false', 'ans2': 'unexamined',
+		'tag1': 'false', 'ans1': 'insatiable',
+		'tag2': 'true', 'ans2': 'unexamined',
 		'tag3': 'false', 'ans3': 'examined' 
 	}
 
