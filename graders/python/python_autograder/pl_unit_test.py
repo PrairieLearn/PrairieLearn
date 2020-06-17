@@ -7,6 +7,7 @@ from pl_helpers import (points, name, save_plot, print_student_code, not_repeate
 from pl_execute import execute_code
 from code_feedback import Feedback
 
+
 # Needed to ensure matplotlib runs on Docker
 import matplotlib
 matplotlib.use('Agg')
@@ -21,7 +22,6 @@ class PLTestCase(unittest.TestCase):
     """
 
     include_plt = False
-    student_code_string = 'test_zzz_print_student_code'
     student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
@@ -51,7 +51,7 @@ class PLTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        """ 
+        """
         Close all plots and increment the iteration number on test finish
         """
 
@@ -103,18 +103,8 @@ class PLTestCase(unittest.TestCase):
         """
 
         test_id = self.id().split('.')[-1]
-        if not result.done_grading or test_id == self.student_code_string:
+        if not result.done_grading:
             super(PLTestCase, self).run(result)
-
-
-    @not_repeated
-    @points(0)
-    @name('Student Code')
-    def test_zzz_print_student_code(self):
-        """
-        Test cases are alphabetically ordered, so add a buncha z's in the name to display student code last
-        """
-        print_student_code(self.student_code_abs_path)
 
 
 class PLTestCaseWithPlot(PLTestCase):
@@ -150,4 +140,4 @@ class PLTestCaseWithPlot(PLTestCase):
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_percent(points / 3.0)
+        Feedback.set_score(points / 3.0)

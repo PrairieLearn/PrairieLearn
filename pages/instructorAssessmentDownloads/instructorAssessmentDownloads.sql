@@ -82,7 +82,8 @@ SELECT DISTINCT ON (ai.id, q.qid)
     s.id AS submission_id,
     v.params,
     v.true_answer,
-    (s.submitted_answer - '_files') AS submitted_answer
+    (s.submitted_answer - '_files') AS submitted_answer,
+    s.partial_scores
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -117,6 +118,7 @@ WITH all_submissions AS (
         s.id AS submission_id,
         format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,
