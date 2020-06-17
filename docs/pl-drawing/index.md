@@ -1410,9 +1410,6 @@ class Point(BaseElement):
             'left': pl.get_float_attrib(el, 'x1', 20),
             'top': pl.get_float_attrib(el, 'y1', 20),
             'radius': pl.get_float_attrib(el, 'radius', drawing_defaults['point-size']),
-            'label': pl.get_string_attrib(el, 'label', drawing_defaults['label']),
-            'offsetx': pl.get_float_attrib(el, 'offsetx', 5),
-            'offsety': pl.get_float_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
             'fill': color,
@@ -1496,18 +1493,12 @@ class Point extends PLDrawingBaseElement {
         }
         canvas.add(obj);
 
-        /* Selectable is automatically set to true if it is spawned with a button */
+        /* Selectable is automatically set to true if it is spawned with a button.
+           If the object is not selectable (i.e. it is static and part of the background),
+           then we do not need to register it with the submitted answer. */
         if (options.selectable) {
             /* Register the object with the submitted answer state */
             submittedAnswer.registerAnswerObject(options, obj);
-
-            /* Update the text graphic when the main object is moved */
-            obj.on('moving', () => {
-                if (textObj) {
-                    textObj.left = obj.left+obj.offsetx;
-                    textObj.top = obj.top+obj.offsety;
-                }
-            });
         }
 
         return obj;
@@ -1621,6 +1612,7 @@ class PLDrawingAnswerState {
      * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
      */
     registerAnswerObject(options, object, modifyHandler, removeHandler);
+}
 ```
 
 ### Button Icons
