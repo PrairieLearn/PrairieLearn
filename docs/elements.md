@@ -308,6 +308,7 @@ Attribute | Type | Default | Description
 `correct-answer` | string | - | The key of the correct answer.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `sort` | string | no sorting | Options are 'random', 'ascend', and 'descend' for drop-down answers.
+`blank` | boolean | false | True or False option to add blank dropdown entry as default selection in drop-down list. 
 
 #### Example implementation
 
