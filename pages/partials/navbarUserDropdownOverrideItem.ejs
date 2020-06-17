@@ -1,14 +1,14 @@
-<div class="list-group-item list-group-item-warning small">
-    <div class="row align-items-center justify-content-between">
-        <div class="col">
+<div class="list-group-item list-group-item-warning small p-2">
+    <div class="d-flex flex-row justify-content-between align-items-center">
+        <div class="p-0 mr-4">
             <ul class="list-unstyled">
                 <li class="font-weight-bold"><%= override.name %></li>
                 <li><%= override.value %></li>
             </ul>
         </div>
-        <div class="col-auto">
+        <div>
             <button class="btn btn-xs btn-warning" role="button" type="button" onClick="document.cookie=&quot;<%= override.cookie %>=;max-age=3600000;path='/'&quot;; window.location.reload()">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times mr-1"></i>
                 Remove
             </button>
         </div>
