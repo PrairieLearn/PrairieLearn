@@ -36,43 +36,43 @@ if (locals.authz_data) {
   if (authz_data.mode != 'Public') {
     displayedName += ' (' + authz_data.mode + ')';
   }
+} else if (locals.authn_user) {
+  displayedName = authn_user.name;
 } else {
-  if (locals.authn_user) {
-    displayedName = authn_user.name;
-  } else {
-    displayName = '(no user)';
-  }
+  displayName = '(no user)';
 }
 %>
 
 <ul class="nav navbar-nav" id="username-nav">
+  <% if (devMode) { %>
+      <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
+  <% } %>
 
-    <% if (!locals.effective_user_has_no_access_to_course_instance) { %>
 
-    <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %> position-static">
+    <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle <% if (locals.authz_data && authz_data.overrides) { %>text-warning<% } %>" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
               <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
             <% } %>
         </a>
-        <div class="dropdown-menu dropdown-menu-right w-10" aria-labelledby="navbarDropdown">
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
 
             <% if (locals.authz_data && authz_data.authn_has_course_permission_preview) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
-            <% } %>
 
-            <% if (locals.authz_data && authz_data.overrides) { %>
-            <div class="list-group small dropdown-item-text px-4">
+            <% if (authz_data.overrides) { %>
+            <div class="list-group small dropdown-item-text px-4" style="white-space: nowrap">
               <% authz_data.overrides.forEach(function(override) { %>
                 <%- include('navbarUserDropdownOverrideItem', {override: override}); %>
               <% }); %>
             </div>
             <% } %>
 
-            <% if (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view) { %>
-
             <div class="dropdown-divider"></div>
+            <% } %>
+
+            <% if (locals.is_instructor) { %>
             <h6 class="dropdown-header">User type</h6>
 
             <%
@@ -193,12 +193,6 @@ if (locals.authz_data) {
 
         </div>
     </li>
-
-    <% } %>
-
-<% if (devMode) { %>
-    <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
-<% } %>
 
 </ul>
 </div>
