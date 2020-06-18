@@ -2,6 +2,7 @@ import prairielearn as pl
 import lxml.html
 import random
 import math
+import chevron
 
 WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
@@ -86,62 +87,76 @@ def render(element_html, data):
         editable = data['editable']
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
+        display_score = (score is not None)
 
-        html = ''
+        # Set up the templating for each answer
+        answerset = []
         for answer in answers:
-            item = '<input class="form-check-input" type="radio"' \
-                + ' name="' + name + '" value="' + answer['key'] + '"' \
-                + ('' if editable else ' disabled') \
-                + (' checked ' if (submitted_key == answer['key']) else '') \
-                + f' id="{name}-{answer["key"]}"' \
-                + ' />\n' \
-                + f'<label class="form-check-label" for="{name}-{answer["key"]}">\n' \
-                + '    (' + answer['key'] + ') ' + answer['html'] + '\n'
-            if score is not None:
-                if submitted_key == answer['key']:
-                    if correct_key == answer['key']:
-                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
-                    else:
-                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-            item += '</label>\n'
-            item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
-            html += item
-        if inline:
-            html = '<span>\n' + html + '</span>\n'
-        if score is not None:
+            answer_html = {
+                'key': answer['key'],
+                'checked': (submitted_key == answer['key']),
+                'html': answer['html'],
+                'display_score_badge': display_score and submitted_key == answer['key']
+            }
+            if answer_html['display_score_badge']:
+                answer_html['correct'] = (correct_key == answer['key'])
+                answer_html['incorrect'] = (correct_key != answer['key'])
+            answerset.append(answer_html)
+
+        html_params = {
+            'question': True,
+            'inline': inline,
+            'name': name,
+            'editable': editable,
+            'display_score_badge': display_score,
+            'answers': answerset
+        }
+
+        # Display the score badge if necessary
+        if display_score:
             try:
                 score = float(score)
                 if score >= 1:
-                    html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                    html_params['correct'] = True
                 elif score > 0:
-                    html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                    html_params['partial'] = math.floor(score * 100)
                 else:
-                    html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                    html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
-        # FIXME: handle parse errors?
-        if submitted_key is None:
-            html = 'No submitted answer'
-        else:
-            submitted_html = next((a['html'] for a in answers if a['key'] == submitted_key), None)
-            if submitted_html is None:
-                html = 'ERROR: Invalid submitted value selected: %s' % submitted_key  # FIXME: escape submitted_key
-            else:
-                html = '(%s) %s' % (submitted_key, submitted_html)
-                partial_score = data['partial_scores'].get(name, {'score': None})
-                score = partial_score.get('score', None)
-                if score is not None:
-                    try:
-                        score = float(score)
-                        if score >= 1:
-                            html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
-                        elif score > 0:
-                            html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
-                        else:
-                            html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
-                    except Exception:
-                        raise ValueError('invalid score' + score)
+        parse_error = data['format_errors'].get(name, None)
+        html_params = {
+            'submission': True,
+            'parse_error': parse_error,
+            'uuid': pl.get_uuid()
+        }
+
+        if parse_error is None:
+            submitted_answer = next(filter(lambda a: a['key'] == submitted_key, answers), None)
+            html_params['key'] = submitted_key
+            html_params['answer'] = submitted_answer
+
+            partial_score = data['partial_scores'].get(name, {'score': None})
+            score = partial_score.get('score', None)
+            if score is not None:
+                html_params['display_score_badge'] = True
+                try:
+                    score = float(score)
+                    if score >= 1:
+                        html_params['correct'] = True
+                    elif score > 0:
+                        html_params['partial'] = math.floor(score * 100)
+                    else:
+                        html_params['incorrect'] = True
+                except Exception:
+                    raise ValueError('invalid score' + score)
+
+        with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         correct_answer = data['correct_answers'].get(name, None)
         if correct_answer is None:
@@ -162,11 +177,11 @@ def parse(element_html, data):
     all_keys = [a['key'] for a in data['params'][name]]
 
     if submitted_key is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = 'No answer was submitted.'
         return
 
     if submitted_key not in all_keys:
-        data['format_errors'][name] = 'INVALID choice: ' + submitted_key  # FIXME: escape submitted_key
+        data['format_errors'][name] = f'Invalid choice: {pl.escape_invalid_string(submitted_key)}'
         return
 
 

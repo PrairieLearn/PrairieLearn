@@ -13,7 +13,7 @@ describe('Course instance syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
-  it('soft-deletes and restores course instnaces', async () => {
+  it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
     let syncedCourseInstances = await util.dumpTable('course_instances');
