@@ -35,11 +35,11 @@
             "questions": [
                 {"id": "demo/codeEditorAutograded",            "points": 1, "maxPoints": 5},
                 {"id": "demo/codeUploadAutograded",            "points": 1, "maxPoints": 5},
-                {"id": "demo/autograderSquare",                "points": 1, "maxPoints": 5},
-                {"id": "demo/autograderNumpy",                 "points": 1, "maxPoints": 5},
-                {"id": "demo/autograderPandas",                "points": 1, "maxPoints": 5},
-                {"id": "demo/autograderPlots",                 "points": 1, "maxPoints": 5},
-                {"id": "demo/autograderRandom",                "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/square",                "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/numpy",                 "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/pandas",                "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/plots",                 "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/random",                "points": 1, "maxPoints": 5},
                 {"id": "demo/ansiOutput",                      "points": 2, "maxPoints": 4}
             ]
         }
