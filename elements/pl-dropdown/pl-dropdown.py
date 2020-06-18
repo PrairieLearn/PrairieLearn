@@ -13,6 +13,7 @@ class SortTypes(Enum):
     RANDOM = 'random'
     ASCEND = 'ascend'
     DESCEND = 'descend'
+    FIXED = 'fixed'
 
 
 def get_options(element, data, correct_answer):
