@@ -45,16 +45,7 @@ function disableOnSubmit() {
     });
 }
 
-// also called in pages/partials/externalGradingLiveUpdate.ejs
-function disableOnClick() {
-    console.log('DoC');
-    $('.disable-on-click').on('click', function() {
-        $(this).addClass('disabled');
-    });
-}
-
 $(document).ready(() => {
     confirmOnUnload();
     disableOnSubmit();
-    disableOnClick();
 });
