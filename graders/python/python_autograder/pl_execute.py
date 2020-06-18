@@ -31,10 +31,10 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     - fname_student: Filename for the submitted student answer code.
     - include_plt: If true, plots will be included in grading results.
     - console_output_fname: Filename to redirect console output to.
-    - test_iter_num: The iteration number of this test, when test cases are run multiple times. 
+    - test_iter_num: The iteration number of this test, when test cases are run multiple times.
 
     Returns:
-    - ref_result: A named tuple with reference variables 
+    - ref_result: A named tuple with reference variables
     - student_result: A named tuple with submitted student variables
     - plot_value: Any plots made by the student
     """
