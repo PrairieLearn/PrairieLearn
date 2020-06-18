@@ -205,14 +205,25 @@
                   <%= config_info.course_instance_id %><br>
                   <span class="badge badge-secondary">minimum size</span> <%= config_info.minimum %><br>
                   <span class="badge badge-secondary">maximum size</span> <%= config_info.maximum %><br>
+                  <span class="badge badge-secondary">permission type</span> <%= config_info.type %><br>
                   <br>
                   <div class="form-min">
                     <label for="formmin">Minimum group size</label>
-                    <input type="text" class="form-control" id="formmin" name="minsize">
+                    <input type="text" value=<%= config_info.defaultmin %> class="form-control" id="formmin" name="minsize">
                   </div>
                   <div class="form-max">
                     <label for="formman">Maximum group size</label>
-                    <input type="text" class="form-control" id="formmax" name="maxsize">
+                    <input type="text" value=<%= config_info.defaultmax %> class="form-control" id="formmax" name="maxsize">
+                  </div>
+                  <label for="formman">Student Permission</label>
+                  <div class="input-group mb-3">
+                    <select class="custom-select" name="inputGroupSelectAccess">
+                      <option selected></option>
+                      <option value=1>1: None - Only instructors could modify groups</option>
+                      <option value=2>2: Join</option>
+                      <option value=3>3: Create/Join</option>
+                      <option value=4>4: Create/Join/Quit</option>
+                    </select>
                   </div>
                 </div>
                 <div class="modal-footer">

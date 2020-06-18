@@ -55,6 +55,7 @@ ORDER BY tid;
 UPDATE group_configs
     SET
         minimum = $minsize,
-        maximum = $maxsize
+        maximum = $maxsize,
+        type = $permission
     WHERE
         assessment_id = $assessment_id AND deleted_at IS NULL;

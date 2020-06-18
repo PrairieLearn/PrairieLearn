@@ -32,25 +32,28 @@ router.get('/', function(req, res, next) {
             debug('no assessment instance');
             //if it is a groupwork with no instance, jump to a confirm page.
             if(res.locals.assessment.groupwork){
-                if (ERR(err, next)) return;
-                sqldb.query(sql.get_groupinfo, params, function(err, result) {
+                sqldb.query(sql.get_configinfo, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    res.locals.groupsize = result.rowCount;
-                    if(res.locals.groupsize > 0){
-                        res.locals.groupinfo = result.rows;
-                        const group_id = res.locals.groupinfo[0].group_id || 0;
-                        res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
-                        res.locals.minsize = result.rows[0].minimum || 0;
-                        res.locals.maxsize = result.rows[0].maximum || 999;
-                        res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-                        res.locals.start = false;
-                        if(res.locals.needsize <= 0){
-                            res.locals.start = true;
+                    res.locals.type = result.rows[0].type || 0;
+                    sqldb.query(sql.get_groupinfo, params, function(err, result) {
+                        if (ERR(err, next)) return;
+                        res.locals.groupsize = result.rowCount;
+                        if(res.locals.groupsize > 0){
+                            res.locals.groupinfo = result.rows;
+                            const group_id = res.locals.groupinfo[0].group_id || 0;
+                            res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
+                            res.locals.minsize = result.rows[0].minimum || 0;
+                            res.locals.maxsize = result.rows[0].maximum || 999;
+                            res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                            res.locals.start = false;
+                            if(res.locals.needsize <= 0){
+                                res.locals.start = true;
+                            }
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        } else {
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                         }
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    } else {
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    }
+                    });
                 });
             } else {
                 const time_limit_min = null;
@@ -97,31 +100,35 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.user.user_id,
         };
         let cursize, maxsize;
-        sqldb.query(sql.check_groupsize, params, function(err, result) {
-            let joinerror = true;
-            //students may have invalid input here, no need to log the error information
-            if (!ERR(err, next)){
-                if (typeof result !== 'undefined'){
-                    cursize = result.rowCount || 0;
-                    if(cursize > 0){
-                        maxsize = result.rows[0].maximum;
-                        if (cursize < maxsize) {
-                            //sucessfully join into a exist and not full group
-                            joinerror = false;
-                            sqldb.query(sql.join_group, params, function(err, _result) {
-                                if (ERR(err, next)) return;
-                                res.redirect(req.originalUrl);
-                            });
+        sqldb.query(sql.get_configinfo, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.type = result.rows[0].type || 0;
+            sqldb.query(sql.check_groupsize, params, function(err, result) {
+                let joinerror = true;
+                //students may have invalid input here, no need to log the error information
+                if (!ERR(err, next)){
+                    if (typeof result !== 'undefined'){
+                        cursize = result.rowCount || 0;
+                        if(cursize > 0){
+                            maxsize = result.rows[0].maximum;
+                            if (cursize < maxsize) {
+                                //sucessfully join into a exist and not full group
+                                joinerror = false;
+                                sqldb.query(sql.join_group, params, function(err, _result) {
+                                    if (ERR(err, next)) return;
+                                    res.redirect(req.originalUrl);
+                                });
+                            }
                         }
                     }
                 }
-            }
-            if (joinerror){
-                res.locals.groupsize = 0;
-                //display the error on frontend
-                res.locals.usedfriendcode = friendcode;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            }
+                if (joinerror){
+                    res.locals.groupsize = 0;
+                    //display the error on frontend
+                    res.locals.usedfriendcode = friendcode;
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
+            });
         });
     } else if(req.body.__action == 'createGroup'){
         const params = {
@@ -143,8 +150,7 @@ router.post('/', function(req, res, next) {
         };
         sqldb.query(sql.quit_group, params2, function(err, _result) {
             if (ERR(err, next)) return;
-            res.locals.groupsize = 0;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            res.redirect(req.originalUrl);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

@@ -12,6 +12,11 @@ WHERE
     AND ai.number = 1
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
 
+-- BLOCK get_configinfo
+SELECT gc.type
+FROM group_configs gc
+WHERE gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
+
 -- BLOCK check_groupsize
 SELECT gc.maximum, gu.user_id, gu.group_id, gc.assessment_id
 FROM groups gr

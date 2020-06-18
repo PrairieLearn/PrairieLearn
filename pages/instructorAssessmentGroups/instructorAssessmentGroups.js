@@ -107,9 +107,10 @@ router.post('/', function(req, res, next) {
             assessment_id: res.locals.assessment.id,
             minsize: req.body.minsize,
             maxsize: req.body.maxsize,
+            permission: req.body.inputGroupSelectAccess,
         };
-        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1){
-            res.locals.errormsg += 'Please enter max and min size for group config';
+        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1 || !req.body.inputGroupSelectAccess){
+            res.locals.errormsg += 'Please enter max size, min size and student permission for group config';
             obtainInfo(req, res, next);
             return;
         }

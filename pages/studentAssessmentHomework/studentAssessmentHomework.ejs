@@ -16,8 +16,13 @@
             <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
           <% if (groupsize == 0) { %>
+            <% if (type < 2) { %>
+              <p class="text-center">
+                This is a group homework. Please wait the instructor to create groups first.
+             </p>
+            <% } else { %>
           <p class="text-center">
-             This is a group homework. Please create or join a group first.
+             This is a group homework.
           </p>
           <% if (typeof usedfriendcode !== 'undefined') { %>
             <div class="alert alert-danger" role="alert">
@@ -26,6 +31,7 @@
           <% } %>
           <div class="container-fluid">
             <div class="row">
+                <% if (type > 2) { %>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="create-form" name="create-form" method="POST">
                     <input type="text" class="form-control" name="groupName" placeholder="Group Name">
@@ -38,6 +44,7 @@
                     </div>
                   </form>
                 </div>
+                <% } %>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="joingroup-form" name="joingroup-form" method="POST">
                     <input type="text" class="form-control" name="friendcode" placeholder="Friend Code">
@@ -52,9 +59,11 @@
                 </div>
             </div>
           </div>
+          <% } %>
           <% } else {%>
             <div class="container-fluid">
               <div class="row">
+                <% if (type > 1) { %>
                   <div class="col-sm bg-light py-4 px-4 border">
                     <p>This is a group homework. Use your friend code to invite others to join the group.</p>
                     <span class="badge badge-secondary">Group Name</span> 
@@ -62,12 +71,15 @@
                     <span class="badge badge-secondary">Friend Code</span> 
                     <span id='friend-code'><%= friendcode %></span><br>
                   </div>
+                  <% } %>
                   <div class="col-sm bg-light py-4 px-4 border">
+                    <% if (type > 3) { %>
                     <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
                       <input type="hidden" name="__action" value="quitGroup">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                       <button id="quit-group" type="submit" class="btn btn-danger">Quit the Group</button>
                     </form>
+                    <% } %>
                     <span class="badge badge-secondary">Group Members</span> 
                     <% groupinfo.forEach(function(row) {%>
                       <li><%= row.uid %></li>
