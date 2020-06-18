@@ -54,13 +54,17 @@ describe('Group based homework assess control on student side', function() {
                 assert.notEqual(result.rows[0].id, undefined);
                 locals.assessment_id = result.rows[0].id;
                 locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
-                locals.instructorAssessmentsUrlGroupTab = locals.courseInstanceUrl + '/instructor/assessment/' + result.rows[0].id + '/groups';
+                locals.instructorAssessmentsUrlGroupTab = locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+                locals.assessment_id_2 = result.rows[1].id == locals.assessment_id ? result.rows[0].id : result.rows[1].id;
+                locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
+                locals.instructorAssessmentsUrlGroupTab_2 = locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
+                
                 callback(null);
             });
         });
     });
     
-    describe('2. GET to instructor assessments URL group tab', function() {
+    describe('2. GET to instructor assessments URL group tab for the first assessment', function() {
         it('should load successfully', function(callback) {
             request(locals.instructorAssessmentsUrlGroupTab, function(error, response, body) {
                 if (error) {
@@ -98,6 +102,7 @@ describe('Group based homework assess control on student side', function() {
                 __csrf_token: locals.__csrf_token,
                 minsize: '3',
                 maxsize: '3',
+                inputGroupSelectAccess: 4
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -130,7 +135,78 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('4. get 5 student user', function() {
+    describe('4. GET to instructor assessments URL group tab for the second assessment', function() {
+        it('should load successfully', function(callback) {
+            request(locals.instructorAssessmentsUrlGroupTab_2, function(error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                //res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should contain "Homework 4: Groups":', function() {
+            elemList = locals.$('div.card-header:contains("Homework 4: Groups")');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should have a CSRF token', function() {
+            elemList = locals.$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 6);
+            // there are 6 occurances of the same csrf, we will pick the first one
+            assert.nestedProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+    });
+
+    describe('5. POST to instructor assessments URL to set MIN/MAX for group', function() {
+        it('should load successfully', function(callback) {
+            var form = {
+                __action: 'configGroup',
+                __csrf_token: locals.__csrf_token,
+                minsize: '3',
+                maxsize: '3',
+                inputGroupSelectAccess: 4
+            };
+            locals.preStartTime = Date.now();
+            request.post({url: locals.instructorAssessmentsUrlGroupTab_2, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                //res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should create the correct group configuration', function(callback) {
+            var params = {
+                assessment_id: locals.assessment_id_2,
+            };
+            sqldb.queryOneRow(sql.select_group_config, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                var min = result.rows[0]['minimum'];
+                var max = result.rows[0]['maximum'];
+                assert.equal(min, 3);
+                assert.equal(max, 3);
+            });
+            callback(null);
+        });
+    });
+
+    describe('6. get 5 student user', function() {
         it('should insert/get 5 users into/from the DB', function(callback) {
             sqldb.query(sql.generate_and_enroll_5_users, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -151,7 +227,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('5. POST to assessment page to create group', function() {
+    describe('7. POST to assessment page to create group', function() {
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
                 if (error) {
@@ -199,7 +275,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('6. the group information after 1 user join the group', function() {
+    describe('8. the group information after 1 user join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
             assert.equal(0, elemList.text().indexOf(locals.team_name));
@@ -219,7 +295,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('7. the second user can join the group using code', function() {
+    describe('9. the second user can join the group using code', function() {
         it('should be able to switch user', function(callback) {
             var student = locals.studentUsers[1];
             config.authUid = student.uid;
@@ -280,7 +356,7 @@ describe('Group based homework assess control on student side', function() {
         });     
     });
 
-    describe('8. the group information after 2 users join the group', function() {
+    describe('10. the group information after 2 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
             assert.equal(0, elemList.text().indexOf(locals.team_name));
@@ -299,7 +375,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('9. the third user can join the group using code', function() {
+    describe('11. the third user can join the group using code', function() {
         it('should be able to switch user', function(callback) {
             var student = locals.studentUsers[2];
             config.authUid = student.uid;
@@ -359,7 +435,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('10. the group information after 3 users join the group', function() {
+    describe('12. the group information after 3 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
             assert.equal(0, elemList.text().indexOf(locals.team_name));
@@ -369,7 +445,7 @@ describe('Group based homework assess control on student side', function() {
             assert.equal(locals.friendCode, elemList.text());
         });
     });
-    describe('11. the fourth user can not join the already full group', function() {
+    describe('13. the fourth user can not join the already full group', function() {
         it('should be able to switch to the ungrouped student', function(callback) {
             var student = locals.studentUserNotGrouped;
             config.authUid = student.uid;
@@ -426,7 +502,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('12. start assessment as the third user', function() {
+    describe('14. start assessment as the third user', function() {
         it('should be able to switch user', function(callback) {
             var student = locals.studentUsers[2];
             config.authUid = student.uid;
@@ -501,7 +577,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('13. access control of all members of group 1', function() {
+    describe('15. access control of all members of group 1', function() {
         it('should be able to access the assessment instance 1 as the 1st group member', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
                 if (error) {
@@ -566,7 +642,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('14. access control of student who used to be in group 1 but not in any group now', function() {
+    describe('16. access control of student who used to be in group 1 but not in any group now', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 3);
@@ -607,7 +683,7 @@ describe('Group based homework assess control on student side', function() {
             });
         });
     });
-    describe('15. access control of student who used to be in group 1 but in a different group now', function() {
+    describe('17. access control of student who used to be in group 1 but in a different group now', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 2);
@@ -648,7 +724,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('16. access control of student who are not in any group', function() {
+    describe('18. access control of student who are not in any group', function() {
         it('should be able to switch to the ungrouped student', function(callback) {
             var student = locals.studentUserNotGrouped;
             config.authUid = student.uid;
@@ -670,7 +746,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('17. access control of student who are in a different group', function() {
+    describe('19. access control of student who are in a different group', function() {
         it('should be able to switch to the student in the different group', function(callback) {
             var student = locals.studentUserInDiffGroup;
             config.authUid = student.uid;
@@ -733,14 +809,12 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('18. cross assessment grouping', function() {
+    describe('20. cross assessment grouping', function() {
         it('should contain a second group-based homework assessment', function(callback) {
             sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.lengthOf(result.rows, 2);
                 assert.notEqual(result.rows[1].id, undefined);
-                locals.assessment_id_2 = result.rows[1].id == locals.assessment_id ? result.rows[0].id : result.rows[1].id;
-                locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
                 callback(null);
             });
         });
