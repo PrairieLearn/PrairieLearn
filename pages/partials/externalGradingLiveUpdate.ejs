@@ -1,5 +1,20 @@
 <% if (question.grading_method == 'External') { %>
+
+
+
+
+
+
 <script>
+    // also called in pages/partials/externalGradingLiveUpdate.ejs
+    function disableOnClick() {
+        $('a.disable-on-click').on('click', function() {
+            $(this).addClass('disabled');
+        });
+    }
+
+
+
   $(function() {
     var variantId = '<%= variant.id %>';
     var variantToken = '<%= variantToken %>';
@@ -95,6 +110,7 @@
           });
         }
         if (msg.questionPanelFooter) {
+          disableOnClick();
           $('#question-panel-footer').replaceWith(function() {
             return $(msg.questionPanelFooter).fadeIn('slow');
           });
