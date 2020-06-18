@@ -93,6 +93,7 @@
   </div>
 <% } %>
 <script>
+  // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {
     $(this).addClass('disabled');
   });
