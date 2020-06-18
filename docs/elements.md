@@ -312,8 +312,8 @@ Attribute | Type | Default | Description
 
 #### Example implementation
 
-- [demoOverlayDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
-- [elementDropdown](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
+- [demoOverlayDropdown]
+- [elementDropdown]
 
 -----
 
@@ -1627,6 +1627,7 @@ Attribute | Type | Default | Description
 [demoFixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoFixedCheckbox
 [demoMatrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixAlgebra
 [demoMatrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixComplexAlgebra
+[demoOverlayDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoOverlayDropdown)
 [demoRandomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomCheckbox
 [demoRandomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomDataFrame
 [demoRandomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomMultipleChoice
@@ -1637,6 +1638,7 @@ Attribute | Type | Default | Description
 [elementCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCheckbox
 [elementCode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCode
 [elementDrawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery
+[elementDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
 [elementElementCodeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementElementCodeDocumentation
 [elementFileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileDownload
 [elementFileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileEditor
