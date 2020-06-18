@@ -102,7 +102,7 @@ describe('Group based homework assess control on student side', function() {
                 __csrf_token: locals.__csrf_token,
                 minsize: '3',
                 maxsize: '3',
-                inputGroupSelectAccess: 4
+                inputGroupSelectAccess: 4,
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -173,7 +173,7 @@ describe('Group based homework assess control on student side', function() {
                 __csrf_token: locals.__csrf_token,
                 minsize: '3',
                 maxsize: '3',
-                inputGroupSelectAccess: 4
+                inputGroupSelectAccess: 4,
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab_2, form: form, followAllRedirects: true}, function (error, response, body) {
