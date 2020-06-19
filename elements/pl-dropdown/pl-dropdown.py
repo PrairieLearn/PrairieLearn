@@ -17,7 +17,7 @@ class SortTypes(Enum):
     FIXED = 'fixed'
 
 
-def get_options(element, data, correct_answer):
+def get_options(element, data):
     options = []
     for child in element:
         if child.tag in ['pl-answer']:
@@ -27,7 +27,7 @@ def get_options(element, data, correct_answer):
     return options
 
 
-def get_solution(element, data, correct_answer):
+def get_solution(element, data):
     solution = []
     for child in element:
         if child.tag in ['pl-answer']:
@@ -45,7 +45,7 @@ def prepare(element_html, data):
     answers_name = pl.get_string_attrib(element, 'answers-name')
 
     # Get answer from pl-answer if implemented
-    data['correct_answers'][answers_name] = get_solution(element, data, answers_name)
+    data['correct_answers'][answers_name] = get_solution(element, data)
 
     # Get answer from server.py if pl-answer not implemented
     if answers_name is None:
@@ -58,7 +58,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, 'answers-name')
-    dropdown_options = get_options(element, data, answers_name)
+    dropdown_options = get_options(element, data)
 
     sort_type = pl.get_string_attrib(element, 'sort', SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
@@ -155,14 +155,14 @@ def test(element_html, data):
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     # solution is what the answer should be
-    solution = get_solution(element, data, answers_name)
+    solution = get_solution(element, data)
 
     # incorrect and correct answer test cases
     if data['test_type'] == 'correct':
         data['raw_submitted_answers'][answers_name] = solution
         data['partial_scores'][answers_name] = {'score': 1, 'weight': weight}
     elif data['test_type'] == 'incorrect':
-        dropdown_options = get_options(element, data, answers_name)
+        dropdown_options = get_options(element, data)
         incorrect_ans = ''
 
         for option in dropdown_options:
