@@ -22,15 +22,15 @@
         {
             "questions": [
                 {"id": "element/drawingGallery",                 "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingSimpleTutorial",             "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingGradeVector",                "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingLiftingMechanism",           "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingCentroid",                   "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingCollarRod",                  "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingPulley",                     "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingGraphs",                     "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingInclinedPlane",              "points": 2, "maxPoints": 6},
-                {"id": "demo/drawingVMDiagrams",                 "points": 2, "maxPoints": 6}
+                {"id": "demo/drawing/simpleTutorial",             "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/gradeVector",                "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/liftingMechanism",           "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/centroid",                   "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/collarRod",                  "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/pulley",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/graphs",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/inclinedPlane",              "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6}
 
 
 
