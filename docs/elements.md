@@ -654,7 +654,7 @@ Attribute | Type | Default | description
 #### Example implementations
 
 - [demo/autograder/codeUpload]
-- [demo/manualGradeCodeUpload]
+- [demo/manualGrade/codeUpload]
 
 #### See also
 
@@ -1427,7 +1427,7 @@ may be correct, incorrect, or invalid.
 
 #### Example implementations
 
-- [demo/customGradeFunction]
+- [demo/custom/gradeFunction]
 - [demo/autograder/codeUpload]
 - [demo/autograder/codeEditor]
 
@@ -1465,7 +1465,7 @@ Common reasons that trigger the display of this element are:
 
 #### Example implementations
 
-- [demo/customGradeFunction]
+- [demo/custom/gradeFunction]
 
 #### See also
 
