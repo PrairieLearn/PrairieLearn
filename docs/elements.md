@@ -1369,11 +1369,11 @@ Attribute | Type | Default | Description
 
 - [demo/codeEditorAutograded]
 - [demo/codeUploadAutograded]
-- [demo/autograderSquare]
-- [demo/autograderNumpy]
-- [demo/autograderPandas]
-- [demo/autograderPlots]
-- [demo/autograderRandom]
+- [demo/autograder/python/square]
+- [demo/autograder/python/numpy]
+- [demo/autograder/python/pandas]
+- [demo/autograder/python/plots]
+- [demo/autograder/python/random]
 
 ## Conditional Elements
 
@@ -1613,8 +1613,8 @@ Attribute | Type | Default | Description
 [element/symbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
-[demo/autograderSquare]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderSquare
-[demo/autograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderNumpy
-[demo/autograderPandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderPandas
-[demo/autograderPlots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderPlots
-[demo/autograderRandom]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderRandom
+[demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
+[demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
