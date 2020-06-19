@@ -170,7 +170,7 @@ Be careful not to switch the ordering of the student and reference arguments.  T
 
 ## Banning/Disallowing library functions
 
-One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the [demo/autograderNumpy] question.
+One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the [demo/autograder/python/numpy] question.
 
 By setting the library functions equal to `Feedback.not_allowed`:
 
@@ -197,4 +197,4 @@ The grading job will now drop back to `root` in the `run.sh` script and will cop
 
 
 
-[demo/autograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograderNumpy
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
