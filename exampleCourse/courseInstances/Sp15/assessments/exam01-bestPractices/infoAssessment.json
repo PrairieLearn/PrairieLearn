@@ -73,8 +73,8 @@
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
                     "alternatives": [
-                        {"id": "demo/customElement"},
-                        {"id": "demo/customGradeFunction"}
+                        {"id": "demo/custom/element"},
+                        {"id": "demo/custom/gradeFunction"}
                     ]
                 }
             ]

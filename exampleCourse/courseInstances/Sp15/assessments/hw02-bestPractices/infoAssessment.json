@@ -53,7 +53,7 @@
             "questions": [
                 {"id": "demo/randomDataFrame",     "points": 1, "maxPoints": 5},
                 {"id": "demo/randomSymbolic",      "points": 1, "maxPoints": 5},
-                {"id": "demo/customGradeFunction", "points": 1, "maxPoints": 5}
+                {"id": "demo/custom/gradeFunction", "points": 1, "maxPoints": 5}
             ]
         }
     ],
