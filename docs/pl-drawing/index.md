@@ -110,7 +110,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingInclinedPlan]: Example that uses a system of coordinates
+- [demo/drawing/inclinedPlan]: Example that uses a system of coordinates
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -144,7 +144,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingLiftingMechanism]: Example that uses lines
+- [demo/drawing/liftingMechanism]: Example that uses lines
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -209,7 +209,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingPulley]: Example that includes a point in the canvas
+- [demo/drawing/pulley]: Example that includes a point in the canvas
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -243,7 +243,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingPulley]: Example that includes a triangle
+- [demo/drawing/pulley]: Example that includes a triangle
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -276,7 +276,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingPulley]: Example that includes a rectangle
+- [demo/drawing/pulley]: Example that includes a rectangle
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -311,7 +311,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingLiftingMechanism]: Example that uses circles
+- [demo/drawing/liftingMechanism]: Example that uses circles
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -383,7 +383,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingVMDiagrams]: Example that includes a rod
+- [demo/drawing/vMDiagrams]: Example that includes a rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -427,7 +427,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingInclinedPlane]: Example that includes a 3-point rod
+- [demo/drawing/inclinedPlane]: Example that includes a 3-point rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -476,7 +476,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingLiftingMechanism]: Example that uses 4-point rods
+- [demo/drawing/liftingMechanism]: Example that uses 4-point rods
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -522,7 +522,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingCollarRod]: Example that uses a collar rod
+- [demo/drawing/collarRod]: Example that uses a collar rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -560,7 +560,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingVMDiagrams]: Example that uses a fixed pin as boundary condition
+- [demo/drawing/vMDiagrams]: Example that uses a fixed pin as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -599,7 +599,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingVMDiagrams]: Example that uses a roller as boundary condition
+- [demo/drawing/vMDiagrams]: Example that uses a roller as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -635,7 +635,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingCollarRod]: Example that uses a clamped end as boundary condition
+- [demo/drawing/collarRod]: Example that uses a clamped end as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -709,7 +709,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingPulley]: Example that includes a pulley system
+- [demo/drawing/pulley]: Example that includes a pulley system
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -758,7 +758,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingLiftingMechanism]: Example that includes dimensions
+- [demo/drawing/liftingMechanism]: Example that includes dimensions
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -800,9 +800,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingLiftingMechanism]: Example that includes arc dimensions
+- [demo/drawing/liftingMechanism]: Example that includes arc dimensions
 
-- [demo/drawingInclinedPlane]: Example that includes arc dimensions
+- [demo/drawing/inclinedPlane]: Example that includes arc dimensions
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -849,11 +849,11 @@ More information about the grading attributes in the Grading section below.
 
 ### Example Implementations
 
-- [demo/drawingSimpleTutorial]: Tutorial example that includes arrows (vectors)
+- [demo/drawing/simpleTutorial]: Tutorial example that includes arrows (vectors)
 
-- [demo/drawingLiftingMechanism]: Example that includes arrows (vectors)
+- [demo/drawing/liftingMechanism]: Example that includes arrows (vectors)
 
-- [demo/drawingInclinedPlane]: Example that includes arrows (vectors)
+- [demo/drawing/inclinedPlane]: Example that includes arrows (vectors)
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -895,11 +895,11 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingSimpleTutorial]: Tutorial example that includes double arrows (vectors)
+- [demo/drawing/simpleTutorial]: Tutorial example that includes double arrows (vectors)
 
-- [demo/drawingLiftingMechanism]: Example that includes double arrows (vectors)
+- [demo/drawing/liftingMechanism]: Example that includes double arrows (vectors)
 
-- [demo/drawingInclinedPlane]: Example that includes double arrows (vectors)
+- [demo/drawing/inclinedPlane]: Example that includes double arrows (vectors)
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -941,9 +941,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingSimpleTutorial]: Tutorial example that includes arc vectors 
+- [demo/drawing/simpleTutorial]: Tutorial example that includes arc vectors 
 
-- [demo/drawingCollarRod]: Example that includes arc vectors 
+- [demo/drawing/collarRod]: Example that includes arc vectors 
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -992,7 +992,7 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingSimpleTutorial]: Tutorial example that includes distributed loads 
+- [demo/drawing/simpleTutorial]: Tutorial example that includes distributed loads 
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1028,9 +1028,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingGraphs]: Example that includes controlled lines for graph sketching 
+- [demo/drawing/graphs]: Example that includes controlled lines for graph sketching 
 
-- [demo/drawingVMDiagrams]: Example that includes controlled lines for graph sketching 
+- [demo/drawing/vMDiagrams]: Example that includes controlled lines for graph sketching 
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1068,9 +1068,9 @@ Attribute | Type | Default | Description
 
 ### Example Implementations
 
-- [demo/drawingGraphs]: Example that includes controlled curved lines for graph sketching 
+- [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching 
 
-- [demo/drawingVMDiagrams]: Example that includes controlled curved lines for graph sketching 
+- [demo/drawing/vMDiagrams]: Example that includes controlled curved lines for graph sketching 
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1125,7 +1125,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 
 ### Example Implementations
 
-- [demo/drawingSimpleTutorial]: Example where the attribute `visible` is set in server.py
+- [demo/drawing/simpleTutorial]: Example where the attribute `visible` is set in server.py
 
 
 # Elements to set up a grading canvas
@@ -1203,7 +1203,7 @@ The element `pl-controls` will add the buttons that allows students to place obj
 
 ### Example Implementations
 
-The example [demo/drawingGradeVector] illustrates all the `pl-drawing-button`
+The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`
 that are currently implemented.
 
 <img src="pl-all-buttons.png" width=70%>
@@ -1314,7 +1314,7 @@ This button deletes objects that were previously placed on the canvas.
 
 ### Example Implementations
 
-- [demo/drawingGraphs]: Example that highlights graph sketching 
+- [demo/drawing/graphs]: Example that highlights graph sketching 
 
 ## `pl-axes` element
 
@@ -1359,13 +1359,13 @@ Attribute | Type | Default | Description
 `color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 4 | Set the width of the stroke.
 
-
-[demo/drawingLiftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingLiftingMechanism
-[demo/drawingPulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingPulley
-[demo/drawingVMDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingVMDiagrams
-[demo/drawingInclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingInclinedPlane
-[demo/drawingCollarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingCollarRod
-[demo/drawingSimpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingSimpleTutorial
-[demo/drawingGraphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingGraphs
-[demo/drawingGradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingGradeVector 
+<!-- Reference links -->
+[demo/drawing/liftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
+[demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
+[demo/drawing/vmDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/vmDiagrams
+[demo/drawing/inclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/inclinedPlane
+[demo/drawing/collarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/collarRod
+[demo/drawing/simpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/simpleTutorial
+[demo/drawing/graphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/graphs
+[demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector 
 
