@@ -619,7 +619,7 @@ This will initialize the editor area with a sufficient number of lines to displa
 #### Example implementations
 
 - [element/fileEditor]
-- [demo/codeEditorAutograded]
+- [demo/autograder/codeEditor]
 
 #### See also
 
@@ -653,8 +653,8 @@ Attribute | Type | Default | description
 
 #### Example implementations
 
-- [demo/codeUploadAutograded]
-- [demo/codeUploadAutograded]
+- [demo/autograder/codeUpload]
+- [demo/manualGradeCodeUpload]
 
 #### See also
 
@@ -1367,8 +1367,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/codeEditorAutograded]
-- [demo/codeUploadAutograded]
+- [demo/autograder/codeEditor]
+- [demo/autograder/codeUpload]
 - [demo/autograder/python/square]
 - [demo/autograder/python/numpy]
 - [demo/autograder/python/pandas]
@@ -1428,8 +1428,8 @@ may be correct, incorrect, or invalid.
 #### Example implementations
 
 - [demo/customGradeFunction]
-- [demo/codeUploadAutograded]
-- [demo/codeEditorAutograded]
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
 
 #### See also
 
@@ -1538,8 +1538,8 @@ It expects results to follow [the reference schema for external grading results]
 
 ### Example Implementations
 
-- [demo/codeUploadAutograded]
-- [demo/codeEditorAutograded]
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
 
 ### See also
 
@@ -1568,9 +1568,9 @@ Attribute | Type | Default | Description
 <!-- Switch to using reference style links for elements -->
 [demo/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/ansiOutput
 [demo/calculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/calculation
-[demo/codeEditorAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/codeEditorAutograded
-[demo/codeUploadAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/codeUploadAutograded
-[demo/codeUploadManualGrade]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/codeUploadManualGrade
+[demo/autograder/codeEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
+[demo/autograder/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
+[demo/manualGradeCodeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGradeCodeUpload
 [demo/customElement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/customElement
 [demo/customGradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/customGradeFunction
 [demo/drawingCentroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingCentroid
