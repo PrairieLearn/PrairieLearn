@@ -88,24 +88,16 @@ def render(element_html, data):
         }
     elif data['panel'] == 'submission':
         submitted_answer = data['submitted_answers'].get(answers_name, None)
-        if submitted_answer == BLANK_ANSWER:
-            no_answer_selected = True
 
         html_params = {
             'submission': True,
-            'no-answer-selected': no_answer_selected,
-            'submitted-answer': submitted_answer,
-            'answers-name': answers_name
+            'submitted-answer': submitted_answer
         }
     elif data['panel'] == 'answer':
         answers_name = pl.get_string_attrib(element, 'answers-name')
-        submitted_answer = data['submitted_answers'].get(answers_name, None)
-        if submitted_answer == BLANK_ANSWER:
-            no_answer_selected = True
 
         html_params = {
             'answer': True,
-            'submitted-answer': submitted_answer,
             'no-answer-selected': no_answer_selected,
             'correct-answer': data['correct_answers'][answers_name],
             'correct': data['correct_answers'][answers_name] == submitted_answer
@@ -129,6 +121,9 @@ def parse(element_html, data):
             pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
             child_html = pl.inner_html(child).strip()
             valid_options.append(child_html)
+
+    if answer is BLANK_ANSWER:
+        data['format_errors'][answers_name] = 'Blank answer was submitted.'
 
     if answer is None:
         data['format_errors'][answers_name] = 'No answer was submitted.'

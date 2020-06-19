@@ -11,24 +11,9 @@
 {{/question}}
 
 {{#submission}}
-    {{#no-answer-selected}}
-        <span class="badge badge-warning d-inline">&lt;No answer selected&gt;</span>
-    {{/no-answer-selected}}
-    {{^no-answer-selected}}
-        <span class="badge badge-warning d-inline">{{submitted-answer}}</span>
-    {{/no-answer-selected}}
+    <span class="badge badge-warning d-inline">{{submitted-answer}}</span>
 {{/submission}}
 
 {{#answer}}
-    {{#correct}}
-        <span class="badge badge-success d-inline">{{submitted-answer}}</span>
-    {{/correct}}
-    {{^correct}}
-        {{#no-answer-selected}}
-            <span class="badge badge-danger d-inline">&lt;No answer selected&gt;</span> <span class="badge badge-success d-inline">{{correct-answer}}</span>
-        {{/no-answer-selected}}
-        {{^no-answer-selected}}
-            <span class="badge badge-danger d-inline">{{submitted-answer}}</span> <span class="badge badge-success d-inline">{{correct-answer}}</span>
-        {{/no-answer-selected}}
-    {{/correct}}
+        <span class="badge badge-success d-inline">{{correct-answer}}</span>
 {{/answer}}
