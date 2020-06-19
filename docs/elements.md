@@ -1573,15 +1573,6 @@ Attribute | Type | Default | Description
 [demo/manualGradeCodeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGradeCodeUpload
 [demo/customElement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/customElement
 [demo/customGradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/customGradeFunction
-[demo/drawingCentroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingCentroid
-[demo/drawingCollarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingCollarRod
-[demo/drawingGradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingGradeVector
-[demo/drawingGraphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingGraphs
-[demo/drawingInclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingInclinedPlane
-[demo/drawingLiftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingLiftingMechanism
-[demo/drawingPulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingPulley
-[demo/drawingSimpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingSimpleTutorial
-[demo/drawingVMDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawingVMDiagrams
 [demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
 [demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
 [demo/matrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixComplexAlgebra
