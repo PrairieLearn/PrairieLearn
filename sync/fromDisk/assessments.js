@@ -90,14 +90,15 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         const zones = assessment.zones || [];
         assessmentParams.zones = zones.map((zone, index) => {
+            zone.sequence = zone.sequential || {};
             return {
                 number: index + 1,
                 title: zone.title,
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
-                sequence_force: zone.enforceOrder,
-                sequence_score_threshold: zone.orderScoreThreshold
+                sequence_force: zone.sequence.enforce,
+                sequence_score_perc_threshold: zone.sequence.scorePercThreshold
             };
         });
 
