@@ -167,7 +167,7 @@ BEGIN
                 number_choose,
                 best_questions,
                 sequence_force,
-                sequence_score_threshold
+                sequence_score_perc_threshold
             ) VALUES (
                 new_assessment_id,
                 (zone->>'number')::integer,
@@ -176,7 +176,7 @@ BEGIN
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
                 (zone->>'sequence_force')::boolean,
-                (zone->>'sequence_score_threshold')::double precision
+                (zone->>'sequence_score_perc_threshold')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET

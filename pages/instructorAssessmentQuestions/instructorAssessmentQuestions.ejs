@@ -54,8 +54,8 @@
                   <% if (question.zone_sequence_force) { %>
                     <span class="badge border">
                       Order matters
-                      <% if (question.zone_sequence_score_threshold !== undefined) { %>
-                        (<%= question.zone_sequence_score_threshold*100 %>% threshold)
+                      <% if (question.zone_sequence_score_perc_threshold !== undefined) { %>
+                        (<%= question.zone_sequence_score_perc_threshold %>% threshold)
                       <% } %>
                     </span>
                   <% } %>

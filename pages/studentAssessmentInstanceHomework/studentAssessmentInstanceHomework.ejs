@@ -82,10 +82,10 @@
                     <a tabindex="0" class="btn btn-xs btn-secondary text-white border" role="button"
                       data-toggle="popover" data-trigger="focus" data-container="body"
                       data-html="true"
-                      data-content="You must score at least <%= question.zone_sequence_score_threshold*100 %>% on each question in order to unlock the next.">
+                      data-content="You must score at least <%= question.zone_sequence_score_perc_threshold %>% on each question in order to unlock the next.">
                       Order matters
-                      <% if (question.zone_sequence_score_threshold) { %>
-                        (<%= question.zone_sequence_score_threshold*100 %>% threshold)
+                      <% if (question.zone_sequence_score_perc_threshold) { %>
+                        (<%= question.zone_sequence_score_perc_threshold %>% threshold)
                       <% } %>
                       <i class="far fa-question-circle" aria-hidden="true"></i>
                     </a>
@@ -99,7 +99,7 @@
               var start_of_sequence = question.zone_sequence_force && question.start_new_zone;
               var seq_prev_met = false;
               if (!sequence_not_enforced && !start_of_sequence) {
-                seq_prev_met = questions[q_index - 1].score_perc >= (question.zone_sequence_score_threshold*100);
+                seq_prev_met = questions[q_index - 1].score_perc >= (question.zone_sequence_score_perc_threshold);
               }
               var question_locked = (sequence_not_enforced || start_of_sequence || seq_prev_met);
             %>

@@ -57,7 +57,7 @@ SELECT
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
     z.sequence_force AS zone_sequence_force,
-    z.sequence_score_threshold AS zone_sequence_score_threshold
+    z.sequence_score_perc_threshold AS zone_sequence_score_perc_threshold
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

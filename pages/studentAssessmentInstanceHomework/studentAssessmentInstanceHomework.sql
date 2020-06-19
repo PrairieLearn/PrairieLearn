@@ -22,7 +22,7 @@ SELECT
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
     z.sequence_force AS zone_sequence_force,
-    z.sequence_score_threshold AS zone_sequence_score_threshold,
+    z.sequence_score_perc_threshold AS zone_sequence_score_perc_threshold,
     (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count
 FROM
     instance_questions AS iq
