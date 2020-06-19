@@ -90,7 +90,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         const zones = assessment.zones || [];
         assessmentParams.zones = zones.map((zone, index) => {
-            zone.sequence = zone.sequential || {};
+            zone.sequence = zone.sequence || {};
             return {
                 number: index + 1,
                 title: zone.title,
