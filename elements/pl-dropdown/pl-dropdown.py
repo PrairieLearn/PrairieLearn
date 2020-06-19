@@ -6,7 +6,7 @@ from enum import Enum
 
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
-BLANK_DEFAULT = False
+BLANK_DEFAULT = True
 SORT_DEFAULT = 'fixed'
 
 
