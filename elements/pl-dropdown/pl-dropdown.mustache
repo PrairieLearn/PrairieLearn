@@ -1,7 +1,6 @@
 {{#question}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group">
-        <select name="{{correct-answer}}" class="form-control">
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <select name="{{answers-name}}" class="form-control">
 
     {{#options}}
         <option value="{{.}}">{{.}}</option>
@@ -26,10 +25,10 @@
     {{/correct}}
     {{^correct}}
         {{#no-answer-selected}}
-            <span class="badge badge-danger d-inline">&lt;No answer selected&gt;</span> <span class="badge badge-success d-inline">{{solution}}</span>
+            <span class="badge badge-danger d-inline">&lt;No answer selected&gt;</span> <span class="badge badge-success d-inline">{{correct-answer}}</span>
         {{/no-answer-selected}}
         {{^no-answer-selected}}
-            <span class="badge badge-danger d-inline">{{submitted-answer}}</span> <span class="badge badge-success d-inline">{{solution}}</span>
+            <span class="badge badge-danger d-inline">{{submitted-answer}}</span> <span class="badge badge-success d-inline">{{correct-answer}}</span>
         {{/no-answer-selected}}
     {{/correct}}
 {{/answer}}
