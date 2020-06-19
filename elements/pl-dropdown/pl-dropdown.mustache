@@ -1,5 +1,5 @@
 {{#question}}
-    <div id="pl-dropdown-{{uuid}}" class="pl-dropdown form-group">
+    <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group">
         <select name="{{correct-answer}}" class="form-control">
         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
 
@@ -13,24 +13,23 @@
 
 {{#submission}}
     {{#no-answer-selected}}
-        <span class="badge pl-dropdown-no-answer">&lt;No answer selected&gt;</span>
+        <span class="badge badge-warning d-inline">&lt;No answer selected&gt;</span>
     {{/no-answer-selected}}
     {{^no-answer-selected}}
-        <span class="badge pl-dropdown-submitted">{{submitted-answer}}</span>
+        <span class="badge badge-warning d-inline">{{submitted-answer}}</span>
     {{/no-answer-selected}}
 {{/submission}}
 
 {{#answer}}
     {{#correct}}
-        <span class="badge pl-dropdown-correct">{{submitted-answer}}</span>
+        <span class="badge badge-success d-inline">{{submitted-answer}}</span>
     {{/correct}}
     {{^correct}}
         {{#no-answer-selected}}
-            <span class="badge pl-dropdown-incorrect">&lt;No answer selected&gt;</span> <span class="badge pl-dropdown-correct">{{solution}}</span>
+            <span class="badge badge-danger d-inline">&lt;No answer selected&gt;</span> <span class="badge badge-success d-inline">{{solution}}</span>
         {{/no-answer-selected}}
         {{^no-answer-selected}}
-            <span class="badge pl-dropdown-incorrect">{{submitted-answer}}</span> <span class="badge pl-dropdown-correct">{{solution}}</span>
+            <span class="badge badge-danger d-inline">{{submitted-answer}}</span> <span class="badge badge-success d-inline">{{solution}}</span>
         {{/no-answer-selected}}
     {{/correct}}
 {{/answer}}
-
