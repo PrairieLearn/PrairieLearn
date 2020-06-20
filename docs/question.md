@@ -262,7 +262,7 @@ In general, it is strongly recommended to leave partial credit enabled for all q
 
 ## The `thumbnail` image
 
-To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location. The location can be `question`, `clientFilesCourse`, or `public`. Thumbnails located in `question` will be stored in the question folder. Thumbnails located in the `clientFilesCourse` folder should be stored in `cilentFilesCourse/thumbnails`. Thumbnails located in `public` should be stored in `public/thumbnails`.
+To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location. The location can be `question`, `clientFilesCourse`, `clientFilesQuestion`, or `public`. Thumbnails located in `question` will be stored in the question folder. Thumbnails located in the `clientFilesCourse` folder should be stored in `cilentFilesCourse/thumbnails`. Thumbnails located in the `clientFilesQuestion` folder should be stored in the `clientFilesQuestion` folder for that question. Thumbnails located in `public` should be stored in `public/thumbnails`.
 
 Example:
 

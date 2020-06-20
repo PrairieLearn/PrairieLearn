@@ -1,9 +1,12 @@
 <% if (location == "clientFilesCourse") { %>
-<image src="<%= urlPrefix %>/clientFilesCourse/thumbnails/<%= filename %>" class="thumbnail"/>
+<image src="<%= urlPrefix %>/clientFilesCourse/thumbnails/<%= filename %>" class="thumbnail" alt=""/>
 <% } %>
 <% if (location == "question") { %>
-<image src="<%= urlPrefix %>/question_thumbnail/<%= id %>/<%= filename %>" class="thumbnail"/>
+<image src="<%= urlPrefix %>/question_thumbnail/<%= id %>/<%= filename %>" class="thumbnail" alt=""/>
 <% } %>
 <% if (location == "public") { %>
-<image src="/images/thumbnails/<%= filename %>" class="thumbnail"/>
+<image src="/images/thumbnails/<%= filename %>" class="thumbnail" alt=""/>
+<% } %>
+<% if (location == "clientFilesQuestion") { %>
+<image src="<%= urlPrefix %>/question/<%= id %>/clientFilesQuestion/<%= filename %>" class="thumbnail" alt="" />
 <% } %>

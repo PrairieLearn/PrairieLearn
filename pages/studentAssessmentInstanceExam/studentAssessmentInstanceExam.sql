@@ -5,8 +5,6 @@ SELECT
     z.id AS zone_id,
     z.title AS zone_title,
     q.title AS question_title,
-    q.thumbnail_filename,
-    q.filename_location,
     q.id as question_id,
     aq.max_points,
     qo.row_order,

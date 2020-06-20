@@ -177,7 +177,6 @@
           <% instance_questions.forEach(function(instance_question) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th width="50" style="visibility:hidden">Thumbnail</th>
               <th colspan="5">
                 <%= instance_question.zone_title %>
                 <% if (instance_question.zone_has_max_points) { %>
@@ -196,9 +195,6 @@
             </tr>
             <% } %>
             <tr>
-              <td>
-                <%- include('../partials/questionThumbnail', {location: instance_question.filename_location, filename: instance_question.thumbnail_filename, id: instance_question.id}); %>
-              </td>
               <td>
                 <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
                   Question <%= instance_question.question_number %>

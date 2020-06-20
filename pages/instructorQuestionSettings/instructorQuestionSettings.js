@@ -103,6 +103,9 @@ router.post('/', function(req, res, next) {
         } else if (req.body.location == 'clientFilesCourse') {
             container.rootPath = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails');
             location = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails', req.file.originalname);
+        } else if (req.body.location == 'clientFilesQuestion') {
+            container.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion');
+            location = path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion', req.file.originalname);
         }
         const editor = new ThumbnailUploadEditor({
             locals: res.locals,
@@ -232,6 +235,7 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             const clientFilesCoursePath = encodePath(path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails'));
+            const clientFilesQuestionPath = encodePath(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion'));
             const questionPath = encodePath(path.join(res.locals.course.path, 'questions', res.locals.question.qid));
             const publicPath = encodePath('public/images/thumbnails');
             res.locals.available_thumbnails = [];
@@ -251,6 +255,25 @@ router.get('/', function(req, res, next) {
                             let ext = file.split('.').pop();
                             if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
                                 images.push({filename: file, location:'clientFilesCourse'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(clientFilesQuestionPath, function (err, files) {
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'clientFilesQuestion'});
                             }
                         });
                         callback(null, images);
