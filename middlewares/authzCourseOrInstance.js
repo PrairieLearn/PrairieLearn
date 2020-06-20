@@ -51,6 +51,7 @@ module.exports = function(req, res, next) {
         res.locals.authz_data = {
             authn_user: _.cloneDeep(res.locals.authn_user),
             authn_mode: authn_mode,
+            authn_is_administrator: res.locals.is_administrator,
             authn_course_role: permissions_course.course_role,
             authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
             authn_has_course_permission_view: permissions_course.has_course_permission_view,
@@ -58,6 +59,7 @@ module.exports = function(req, res, next) {
             authn_has_course_permission_own: permissions_course.has_course_permission_own,
             user: _.cloneDeep(res.locals.authn_user),
             mode: authn_mode,
+            is_administrator: res.locals.is_administrator,
             course_role: permissions_course.course_role,
             has_course_permission_preview: permissions_course.has_course_permission_preview,
             has_course_permission_view: permissions_course.has_course_permission_view,
@@ -107,9 +109,12 @@ module.exports = function(req, res, next) {
         if (req.cookies.pl_requested_date) {
             overrides.push({'name': 'Date', 'value': req.cookies.pl_requested_date, 'cookie': 'pl_requested_date'});
         }
+
         if (overrides.length > 0) {
+            // FIXME: either set this later, or remove later if you delete the overrides
+
             res.locals.authz_data.overrides = overrides;
-        } else if (!(res.locals.max_access_level && (res.locals.is_administrator || (res.locals.max_access_level == 'Student')))) {
+        } else if (!res.locals.login_type_changed) {
             return next();
         }
 
@@ -136,8 +141,10 @@ module.exports = function(req, res, next) {
         //     return next();
         // }
 
-        // Must be at least an Editor in course to request a user data override
-        if (!res.locals.authz_data.has_course_permission_edit) {
+        // The authn_user must be at least an Editor in course to request a user data override
+        if (!res.locals.authz_data.authn_has_course_permission_edit)
+            // FIXME: remove all cookies
+
             return next(new Error('Access denied (insufficient permissions to change the effective user)'));
         }
 
@@ -150,8 +157,11 @@ module.exports = function(req, res, next) {
         let req_course_role = (req.cookies.pl_requested_course_role ? req.cookies.pl_requested_course_role : null);
         let req_course_instance_role = (req.cookies.pl_requested_course_instance_role ? req.cookies.pl_requested_course_instance_role : null);
 
+        // FIXME: only do this when you succeed in doing the override
         res.locals.authz_data.override = true;
         debug(res.locals.authz_data.override);
+
+        let user = res.locals.authz_data.user;
 
         async.series([
             //
@@ -180,28 +190,59 @@ module.exports = function(req, res, next) {
                     };
 
                     sqldb.queryZeroOrOneRow(sql.select_user, params, function(err, result) {
+                        // Something went wrong - immediately return with error
                         if (ERR(err, callback)) return;
+
+                        // No user was found - remove all override cookies and return with error
                         if (result.rowCount == 0) {
+                            overrides.forEach((override) => {
+                                debug(`clearing cookie: ${override.cookie}`);
+                                res.clearCookie(override.cookie);
+                            });
+
                             let err = error.make(403, 'Access denied');
-                            err.info =  `<p>You have tried to change the effective user to one with uid` +
-                                        `${req.cookies.pl_requested_uid}, when no such user exists.` +
-                                        `To reset the effective user, return to the ` +
-                                        `<a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
+                            err.info =  `<p>You have tried to change the effective user to one with uid ` +
+                                        `<code>${req.cookies.pl_requested_uid}</code>, when no such user exists. ` +
+                                        `All requested changes to the effective user have been removed.</p>`;
                             return callback(err);
                         }
 
-                        // FIXME: should base this check on max_access_level as well
+                        // The effective user is an administrator and the authn user is not - remove
+                        // all override cookies and return with error
+                        if (result.rows[0].is_administrator && !res.locals.is_administrator) {
+                            overrides.forEach((override) => {
+                                debug(`clearing cookie: ${override.cookie}`);
+                                res.clearCookie(override.cookie);
+                            });
+
+                            let err = error.make(403, 'Access denied');
+                            err.info =  `<p>You have tried to change the effective user to one who is an ` +
+                                        `administrator, when you are not an administrator. ` +
+                                        `All requested changes to the effective user have been removed.</p>`;
+                            return callback(err);
+                        }
+
+                        // The effective user is an administrator and, although the authn user is also
+                        // an administrator, the authn user has chosen a login type that is not Administrator.
+                        // Remove all override cookies and return with error.
+                        if (result.rows[0].is_administrator && res.locals.login_type != 'Administrator') {
+                            overrides.forEach((override) => {
+                                debug(`clearing cookie: ${override.cookie}`);
+                                res.clearCookie(override.cookie);
+                            });
+
+                            let err = error.make(403, 'Access denied');
+                            err.info =  `<p>You have tried to change the effective user to one who is an ` +
+                                        `administrator. You are also an administrator, but have chosen to ` +
+                                        `use a non-administrator login type (${res.locals.login_type}), so ` +
+                                        `the change you have requested is forbidden. ` +
+                                        `All requested changes to the effective user have been removed.</p>`;
+                            return callback(err);
+                        }
+
                         is_administrator = result.rows[0].is_administrator;
-                        if (is_administrator && (!res.locals.is_administrator)) {
-                            let err = error.make(403, 'Access denied');
-                            err.info =  `<p>You have tried to change the effective user to one who is an` +
-                                        `administrator, when you are not an administrator. To reset the effective user,` +
-                                        `return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                            return callback(err);
-                        }
+                        user = _.cloneDeep(result.rows[0].user);
 
-                        res.locals.authz_data.user = _.cloneDeep(result.rows[0].user);
-                        res.locals.user = res.locals.authz_data.user;
                         // FIXME: also override institution?
                         callback(null);
                     });
@@ -210,12 +251,12 @@ module.exports = function(req, res, next) {
                 }
             },
             (callback) => {
-                // Access level only acts to drop roles
-                if (res.locals.max_access_level == 'Student') {
+                // Login type only acts to drop roles (and so reduce access)
+                if (res.locals.login_type == 'Student') {
                     is_administrator = false;
                     req_course_role = 'None';
                     req_course_instance_role = 'None';
-                } else if (res.locals.max_access_level == 'Instructor') {
+                } else if (res.locals.login_type == 'Instructor') {
                     is_administrator = false;
                 }
 
@@ -237,223 +278,86 @@ module.exports = function(req, res, next) {
                 debug(params);
 
                 sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
+                    // Something went wrong - immediately return with error
                     if (ERR(err, callback)) return;
-                    // if (result.rowCount == 0) return callback(error.make(403, 'Access denied (FIXME A)'));
-                    // if (result.rowCount == 0) {
-                    //     // The effective user has been denied access. For a real user, two things would be true:
-                    //     //
-                    //     //  1) authn_user would exist
-                    //     //  2) authz_data would not exist
-                    //     //
-                    //     // Unfortunately, for the effective user, both authn_user and authz_data exist but are
-                    //     // "wrong" in the sense that they are consistent with the real user and not the effective
-                    //     // user. This screws up various things on the error page.
-                    //     //
-                    //     // As a fix for now, we will remove authz_data and will set a flag saying that the
-                    //     // effective user has been denied access to the course instance - this will allow, for
-                    //     // example, the user dropdown in the navbar to be hidden. It is likely that a better
-                    //     // solution can be found when this code is all rewritten.
-                    //     delete res.locals.authz_data;
-                    //     res.locals.effective_user_has_no_access_to_course_instance = true; // FIXME: maybe it's no access just to course...
-                    //
-                    //     // Tell the real user what happened and how to reset the effective user.
-                    //     let err = error.make(403, 'Access denied (FIXME B)');
-                    //     // err.info =  `<p>You have changed the effective user to one with these properties:</p>` +
-                    //     //             `<div class="container"><pre class="bg-dark text-white rounded p-2">` +
-                    //     //             `uid = ${params.requested_uid}\n` +
-                    //     //             `role = ${params.requested_role}\n` +
-                    //     //             `mode = ${params.requested_mode}\n` +
-                    //     //             `</pre></div>` +
-                    //     //             `<p>This user does not have access to the course instance <code>${res.locals.course_instance.short_name}</code> (with long name "${res.locals.course_instance.long_name}").` +
-                    //     //             `<p>To reset the effective user, return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                    //     return callback(err);
-                    // }
+
+                    // The effective user was denied access. For the real user, we would
+                    // return with error. For the effective user, we remove all permissions
+                    // and simply return (without error).
                     if (result.rowCount == 0) {
                         debug('The effective user has been denied access.');
 
-                        // The effective user has been denied access. For a real user, two things would be true:
-                        //
-                        //  1) authn_user would exist
-                        //  2) authz_data would not exist
-                        //
-                        // Unfortunately, for the effective user, both authn_user and authz_data exist but are
-                        // "wrong" in the sense that they are consistent with the real user and not the effective
-                        // user. This screws up various things on the error page.
-                        //
-                        // As a fix for now, we will remove authz_data and will set a flag saying that the
-                        // effective user has been denied access to the course instance - this will allow, for
-                        // example, the user dropdown in the navbar to be hidden. It is likely that a better
-                        // solution can be found when this code is all rewritten.
+                        res.locals.authz_data.user = user;
+                        res.locals.authz_data.is_administrator = false;
 
                         res.locals.authz_data.course_role = 'None';
                         res.locals.authz_data.has_course_permission_preview = false;
                         res.locals.authz_data.has_course_permission_view = false;
                         res.locals.authz_data.has_course_permission_edit = false;
                         res.locals.authz_data.has_course_permission_own = false;
-
                         if (isCourseInstance) {
                             res.locals.authz_data.course_instance_role = 'None';
                             res.locals.authz_data.has_course_instance_permission_view = false;
                             res.locals.authz_data.has_course_instance_permission_edit = false;
                             res.locals.authz_data.is_enrolled_with_access = false;
                         }
+                        callback(null);
+                    }
 
-                        // Tell the real user what happened and how to reset the effective user.
+                    // The effective user is an Owner and the authn_user is not - remove
+                    // all override cookies and return with error
+                    //
+                    // (note that the authn_user must be at least an Editor, so there is no
+                    // need to check that the effective user is anything less than Owner)
+                    if ((!res.locals.authz_data.authn_has_course_permission_own) && result.rows[0].permissions_course.has_course_permission_own) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
+
                         let err = error.make(403, 'Access denied');
-                        if (overrides.length > 0) {
-                            err.info =  `<p>You have changed the effective user to one with these properties:</p>` +
-                                        `<div class="container"><pre class="bg-dark text-white rounded p-2">`;
-                            overrides.forEach((override) => {
-                                err.info += `${override.name} = ${override.value}\n`;
-                            });
-                            err.info += `</pre></div>` +
-                                        `<p>This user does not have access to the `;
-                            if (isCourseInstance) {
-                                err.info += `course instance <code>${res.locals.course_instance.short_name}</code> (${res.locals.course_instance.long_name}).`;
-                            } else {
-                                err.info += `course <code>${res.locals.course.short_name}</code> (${res.locals.course.title}).`;
-                            }
-                            err.info += ` To reset the effective user, return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                        } else {
-                            err.info =  `<p>You have chosen to login with the <strong>${res.locals.max_access_level}</strong> user type. ` +
-                                        `With this user type, you do not have access to the `;
-                            if (isCourseInstance) {
-                                err.info += `course instance <code>${res.locals.course_instance.short_name}</code> (${res.locals.course_instance.long_name}).`;
-                            } else {
-                                err.info += `course <code>${res.locals.course.short_name}</code> (${res.locals.course.title}).`;
-                            }
-                            err.info += ` To change the user type with which you login and to restore access, use the dropdown menu <strong>${res.locals.authn_user.name}</strong> in the navbar.`
-                        }
-
-
-
-                        // err.info = '';
-                        // if (overrides.length > 0) {
-                        //     err.info +=  `<p>You have changed the effective user to one with these properties:</p>` +
-                        //                 `<div class="container"><pre class="bg-dark text-white rounded p-2">`;
-                        //     overrides.forEach((override) => {
-                        //         err.info += `${override.name} = ${override.value}\n`;
-                        //     });
-                        //     err.info += `</pre></div>`;
-                        // }
-                        // if (res.locals.max_access_level) {
-                        //     err.info += `<p>You have restricted the maximum access level to <strong>${res.locals.max_access_level}</strong>.</p>`;
-                        // }
-                        // err.info += `<p>This user does not have access to the `;
-                        // if (isCourseInstance) {
-                        //     err.info += `course instance <code>${res.locals.course_instance.short_name}</code> (${res.locals.course_instance.long_name}).`;
-                        // } else {
-                        //     err.info += `course <code>${res.locals.course.short_name}</code> (${res.locals.course.title}).`;
-                        // }
-                        // err.info += `<p>To reset the effective user, return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
+                        err.info =  `<p>You have tried to change the effective user to one who is a ` +
+                                    `course owner, when you are not a course owner. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
                         return callback(err);
                     }
 
-                    // res.locals.authz_data = {
-                    //     authn_user: _.cloneDeep(res.locals.authn_user),
-                    //     authn_mode: authn_mode,
-                    //     authn_course_role: permissions_course.course_role,
-                    //     authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
-                    //     authn_has_course_permission_view: permissions_course.has_course_permission_view,
-                    //     authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
-                    //     authn_has_course_permission_own: permissions_course.has_course_permission_own,
-                    //     user: _.cloneDeep(res.locals.authn_user),
-                    //     mode: authn_mode,
-                    //     course_role: permissions_course.course_role,
-                    //     has_course_permission_preview: permissions_course.has_course_permission_preview,
-                    //     has_course_permission_view: permissions_course.has_course_permission_view,
-                    //     has_course_permission_edit: permissions_course.has_course_permission_edit,
-                    //     has_course_permission_own: permissions_course.has_course_permission_own,
-                    // };
-                    //
-                    // // debug(res.locals.course)
-                    // // debug(permissions_course);
-                    //
-                    // if (isCourseInstance) {
-                    //     res.locals.course_instance = result.rows[0].course_instance;
-                    //
-                    //     const permissions_course_instance = result.rows[0].permissions_course_instance;
-                    //     res.locals.authz_data.authn_course_instance_role = permissions_course_instance.course_instance_role;
-                    //     res.locals.authz_data.authn_has_course_instance_permission_view = permissions_course_instance.has_course_instance_permission_view;
-                    //     res.locals.authz_data.authn_has_course_instance_permission_edit = permissions_course_instance.has_course_instance_permission_edit;
-                    //     res.locals.authz_data.authn_is_enrolled_with_access = permissions_course_instance.is_enrolled_with_access;
-                    //     res.locals.authz_data.course_instance_role = permissions_course_instance.course_instance_role;
-                    //     res.locals.authz_data.has_course_instance_permission_view = permissions_course_instance.has_course_instance_permission_view;
-                    //     res.locals.authz_data.has_course_instance_permission_edit = permissions_course_instance.has_course_instance_permission_edit;
-                    //     res.locals.authz_data.is_enrolled_with_access = permissions_course_instance.is_enrolled_with_access;
-                    //
-                    //     // debug(res.locals.course_instance)
-                    //     // debug(permissions_course_instance);
-                    // }
+                    // The effective user is a Student Data Viewer and the authn_user is not -
+                    // remove all override cookies and return with error
+                    if ((!res.locals.authz_data.authn_has_course_instance_permission_view) && result.rows[0].permissions_course.has_course_instance_permission_view) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
 
-
-
-                    // debug(result.rows[0]);
-
-                    // user: _.cloneDeep(res.locals.authn_user),
-                    // mode: authn_mode,
-                    // course_role: permissions_course.course_role,
-                    // course_instance_role: permissions_course_instance.course_instance_role,
-                    // has_course_permission_preview: permissions_course.has_course_permission_preview,
-                    // has_course_permission_view: permissions_course.has_course_permission_view,
-                    // has_course_permission_edit: permissions_course.has_course_permission_edit,
-                    // has_course_permission_own: permissions_course.has_course_permission_own,
-                    // has_course_instance_permission_view: permissions_course_instance.has_course_instance_permission_view,
-                    // has_course_instance_permission_edit: permissions_course_instance.has_course_instance_permission_edit,
-
-                    // It must be true that the authn_user is a course Editor. So,
-                    // we need only check if the effective user is a course Owner and
-                    // the authn_user is not.
-                    if ((!res.locals.authz_data.has_course_permission_own) && result.rows[0].permissions_course.has_course_permission_own) {
                         let err = error.make(403, 'Access denied');
-                        err.info =  `<p>You have tried to change the effective user to one who is a course` +
-                                    `owner, when you are not a course owner. To reset the effective user,` +
-                                    `return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
+                        err.info =  `<p>You have tried to change the effective user to one who can view ` +
+                                    `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
+                                    `you do not have permission to view these student data. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
                         return callback(err);
                     }
 
+                    // FIXME: mode, req_date
+                    res.locals.authz_data.user = user;
+                    res.locals.authz_data.is_administrator = is_administrator;
                     res.locals.authz_data.course_role = result.rows[0].permissions_course.course_role;
                     res.locals.authz_data.has_course_permission_preview = result.rows[0].permissions_course.has_course_permission_preview;
                     res.locals.authz_data.has_course_permission_view = result.rows[0].permissions_course.has_course_permission_view;
                     res.locals.authz_data.has_course_permission_edit = result.rows[0].permissions_course.has_course_permission_edit;
                     res.locals.authz_data.has_course_permission_own = result.rows[0].permissions_course.has_course_permission_own;
-
-                    if ((!res.locals.authz_data.has_course_instance_permission_view) && result.rows[0].permissions_course.has_course_instance_permission_view) {
-                        let err = error.make(403, 'Access denied');
-                        err.info =  `<p>You have tried to change the effective user to one who can view` +
-                                    `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when` +
-                                    `you do not have permission to view these student data. To reset the effective user,` +
-                                    `return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                        return callback(err);
+                    if (isCourseInstance) {
+                        res.locals.authz_data.course_instance_role = result.rows[0].permissions_course_instance.course_instance_role;
+                        res.locals.authz_data.has_course_instance_permission_view = result.rows[0].permissions_course_instance.has_course_instance_permission_view;
+                        res.locals.authz_data.has_course_instance_permission_edit = result.rows[0].permissions_course_instance.has_course_instance_permission_edit;
+                        res.locals.authz_data.is_enrolled_with_access = result.rows[0].permissions_course_instance.is_enrolled_with_access;
                     }
-
-                    if ((!res.locals.authz_data.has_course_instance_permission_edit) && result.rows[0].permissions_course.has_course_instance_permission_edit) {
-                        let err = error.make(403, 'Access denied');
-                        err.info =  `<p>You have tried to change the effective user to one who can edit` +
-                                    `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when` +
-                                    `you do not have permission to edit these student data. To reset the effective user,` +
-                                    `return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                        return callback(err);
-                    }
-
-                    res.locals.authz_data.course_instance_role = result.rows[0].permissions_course_instance.course_instance_role;
-                    res.locals.authz_data.has_course_instance_permission_view = result.rows[0].permissions_course_instance.has_course_instance_permission_view;
-                    res.locals.authz_data.has_course_instance_permission_edit = result.rows[0].permissions_course_instance.has_course_instance_permission_edit;
 
                     // FIXME - restore as many of the following lines as necessary
 
-                    // res.locals.authz_data.user = result.rows[0].user;
-                    // res.locals.authz_data.role = result.rows[0].role;
                     // res.locals.authz_data.mode = result.rows[0].mode;
                     // res.locals.req_date = result.rows[0].req_date;
-                    //
-                    // // Make sure that we never grant extra permissions
-                    // res.locals.authz_data.has_instructor_view = res.locals.authz_data.has_instructor_view && result.rows[0].has_instructor_view;
-                    // res.locals.authz_data.has_instructor_edit = res.locals.authz_data.has_instructor_edit && result.rows[0].has_instructor_edit;
-                    // res.locals.authz_data.has_course_permission_view = res.locals.authz_data.has_course_permission_view && result.rows[0].permissions_course.has_course_permission_view;
-                    // res.locals.authz_data.has_course_permission_edit = res.locals.authz_data.has_course_permission_edit && result.rows[0].permissions_course.has_course_permission_edit;
-                    // res.locals.authz_data.has_course_permission_own = res.locals.authz_data.has_course_permission_own && result.rows[0].permissions_course.has_course_permission_own;
-                    //
+
                     // // NOTE: When this code is all rewritten, you may want to throw an error if
                     // // the user tries to emulate another user with greater permissions, so that
                     // // it is clear why these permissions aren't granted.
@@ -534,3 +438,5 @@ module.exports = function(req, res, next) {
         });
     });
 };
+
+// FIXME: res.locals.user = res.locals.authz_data.user;

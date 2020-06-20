@@ -46,7 +46,8 @@ module.exports = function(req, res, next) {
             res.locals.authn_user = result.rows[0].user;
             res.locals.authn_institution = result.rows[0].institution;
             res.locals.authn_provider_name = 'LoadTest';
-            res.locals.is_administrator = result.rows[0].is_administrator;
+            res.locals.authn_is_administrator = result.rows[0].is_administrator;
+            // FIXME: authn_is_instructor, is_administrator, is_instructor, login_type
 
             let params = {
                 uid: 'loadtest@prairielearn.org',
@@ -58,11 +59,6 @@ module.exports = function(req, res, next) {
             });
         });
         return;
-    }
-
-    // look for access level cookie
-    if (['Instructor', 'Student'].includes(req.cookies.pl_requested_max_access_level)) {
-        res.locals.max_access_level = req.cookies.pl_requested_max_access_level;
     }
 
     // bypass auth for local /pl/ serving
@@ -93,7 +89,9 @@ module.exports = function(req, res, next) {
                 res.locals.authn_user = result.rows[0].user;
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
-                res.locals.is_administrator = result.rows[0].is_administrator;
+                res.locals.authn_is_administrator = result.rows[0].is_administrator;
+                res.locals.authn_is_instructor = result.rows[0].is_instructor;
+                getLoginType(req, res);
                 res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
                 next();
             });
@@ -125,8 +123,63 @@ module.exports = function(req, res, next) {
         res.locals.authn_user = result.rows[0].user;
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;
-        res.locals.is_administrator = result.rows[0].is_administrator;
+        res.locals.authn_is_administrator = result.rows[0].is_administrator;
+        res.locals.authn_is_instructor = result.rows[0].is_instructor;
+        getLoginType(req, res);
         res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
         next();
     });
 };
+
+function getLoginType(req, res) {
+    // Flags are from authn by default
+    res.locals.is_administrator = res.locals.authn_is_administrator;
+    res.locals.is_instructor = res.locals.authn_is_instructor;
+
+    // Get default login type based on who the authenticated user is
+    let login_type;
+    if (res.locals.is_administrator) {
+        res.locals.login_type = 'Administrator';
+    } else if (res.locals.is_instructor) {
+        res.locals.login_type = 'Instructor';
+    } else {
+        res.locals.login_type = 'Student';
+    }
+
+    // Check for login type request cookie
+    if (req.cookies.pl_requested_login_type) {
+        if (req.cookies.pl_requested_login_type == 'Administrator') {
+            // If cookie requests Administrator, then clear it and return - either
+            // the request is redundant (authn user is Administrator) or prohibited
+            // (authn user is not Administrator)
+            res.clearCookie('pl_requested_login_type');
+        } else if (req.cookies.pl_requested_login_type == 'Instructor') {
+            if (res.locals.login_type != 'Administrator') {
+                // If cookie requests Instructor and authn user is not Administrator,
+                // then the request is either redundant (authn user is Instructor) or
+                // prohibited (authn user is Student), so clear cookie and return
+                res.clearCookie('pl_requested_login_type');
+            } else {
+                // Otherwise, change login_type and set login_type_changed flag
+                res.locals.login_type = 'Instructor';
+                res.locals.login_type_changed = true;
+                res.locals.is_administrator = false;
+            }
+        } else if (req.cookies.pl_requested_login_type == 'Student') {
+            if (res.locals.login_type == 'Student') {
+                // If cookie requests Student and authn user is Student, then the
+                // request is redundant - clear it and return
+                res.clearCookie('pl_requested_login_type');
+            } else {
+                // Otherwise, change login_type and set login_type_changed flag
+                res.locals.login_type = 'Student';
+                res.locals.login_type_changed = true;
+                res.locals.is_administrator = false;
+                res.locals.is_instructor = false;
+            }
+        } else {
+            // Cookie has a nonsense value, so clear it and return
+            res.clearCookie('pl_requested_login_type');
+        }
+    }
+}
