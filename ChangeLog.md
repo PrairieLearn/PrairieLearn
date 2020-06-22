@@ -92,6 +92,8 @@
   * Add example course question templates (James Balamuta).
 
   * Add extra `/course*` mount points (Tim Yang).
+
+  * Add symbolic matrix component input element and example (Eric Huber).
   
   * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
 
