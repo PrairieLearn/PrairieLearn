@@ -119,7 +119,7 @@ def parse(element_html, data):
     answers_name = pl.get_string_attrib(element, 'answers-name')
     answer = data['submitted_answers'].get(answers_name, None)
 
-    # We want a space to be a valid option in case 'blank' start is desired
+    # Blank option should be available, but cause format error when submitted.
     valid_options = [' ']
 
     for child in element:
