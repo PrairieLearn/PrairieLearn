@@ -3,10 +3,10 @@
     <!-- Course Admin ---------------------------------------------------------------->
 
     <li class="nav-item btn-group <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
-        <a class="nav-link <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
+        <a class="nav-link" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if (locals.courses && courses.length > 0) { %>
+        <% if (authz_data.has_course_permission_preview && locals.courses && courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
@@ -38,6 +38,7 @@
             <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
+            <% if (authz_data.has_course_permission_preview) { %>
             <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             </a>
             <% if (typeof course_instances != 'undefined') { %>
@@ -50,6 +51,7 @@
                         <% } %>
                     <% }); %>
                 </div>
+            <% } %>
             <% } %>
         </li>
 
@@ -80,7 +82,7 @@
             </li>
         <% } %>
     <% } else { %>
-        <% if (locals.course_instances && course_instances.length > 0) { %>
+        <% if (authz_data.has_course_permission_preview && locals.course_instances && course_instances.length > 0) { %>
             <span class="navbar-text mx-2">
                 <i class="fas fa-circle"></i>
             </span>
