@@ -314,8 +314,8 @@ Attribute | Type | Default | Description
 
 #### Example implementation
 
-- [demoOverlayDropdown]
-- [elementDropdown]
+- [demo/overlayDropdown]
+- [element/dropdown]
 
 -----
 
@@ -1642,7 +1642,7 @@ Attribute | Type | Default | Description
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
-[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDropdown)
+[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
 [element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
