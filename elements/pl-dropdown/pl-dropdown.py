@@ -8,6 +8,7 @@ WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
 BLANK_DEFAULT = True
 SORT_DEFAULT = 'fixed'
+NO_ANSWER_SELECTED = '<No answer selected>'
 
 
 class SortTypes(Enum):
@@ -60,13 +61,13 @@ def render(element_html, data):
     answers_name = pl.get_string_attrib(element, 'answers-name')
     dropdown_options = get_options(element, data)
     submitted_answer = data['submitted_answers'].get(answers_name, None)
+    uuid = pl.get_uuid()
 
     sort_type = pl.get_string_attrib(element, 'sort', SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
 
     html_params = {}
     html = ''
-    no_answer_selected = False
 
     if data['panel'] == 'question':
         if sort_type == SortTypes.FIXED.name:
@@ -82,16 +83,21 @@ def render(element_html, data):
             dropdown_options.insert(0, BLANK_ANSWER)
 
         html_params = {
+            'answers-name': answers_name,
             'question': True,
-            'uuid': pl.get_uuid(),
+            'uuid': uuid,
             'options': dropdown_options,
-            'answers-name': answers_name
         }
+
     elif data['panel'] == 'submission':
+        if submitted_answer is BLANK_ANSWER: 
+            submitted_answer = NO_ANSWER_SELECTED
 
         html_params = {
+            'uuid': uuid,
+            'parse-error': data['format_errors'].get(answers_name, None),
             'submission': True,
-            'submitted-answer': submitted_answer
+            'submitted-answer': submitted_answer,
         }
 
     elif data['panel'] == 'answer':
@@ -99,7 +105,6 @@ def render(element_html, data):
 
         html_params = {
             'answer': True,
-            'no-answer-selected': no_answer_selected,
             'correct-answer': data['correct_answers'][answers_name],
             'correct': data['correct_answers'][answers_name] == submitted_answer
         }
@@ -124,13 +129,13 @@ def parse(element_html, data):
             valid_options.append(child_html)
 
     if answer is BLANK_ANSWER:
-        data['format_errors'][answers_name] = 'Blank answer was submitted.'
+        data['format_errors'][answers_name] = 'The submitted answer was left blank.'
 
     if answer is None:
         data['format_errors'][answers_name] = 'No answer was submitted.'
 
     if answer not in valid_options:
-        data['format_errors'][answers_name] = 'Invalid answer submitted.'
+        data['format_errors'][answers_name] = 'Invalid option submitted.'
 
 
 def grade(element_html, data):
