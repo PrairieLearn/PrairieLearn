@@ -40,7 +40,7 @@ module.exports = function(req, res, next) {
     // Note that req.params.course_id and req.params.course_instance_id are strings and not
     // numbers - this is why we can use the pattern "id ? id : null" to check if they exist.
     const params = {
-        authn_user_id: res.locals.authn_user.user_id,   // FIXME: don't mislead - call this just user_id (b/c it'll be that for effective user)
+        user_id: res.locals.authn_user.user_id,   // FIXME: don't mislead - call this just user_id (b/c it'll be that for effective user)
         course_id: req.params.course_id ? req.params.course_id : null,
         course_instance_id: req.params.course_instance_id ? req.params.course_instance_id : null,
         is_administrator: res.locals.is_administrator,
@@ -216,7 +216,7 @@ module.exports = function(req, res, next) {
             },
             (callback) => {
                 const params = {
-                    authn_user_id: user.user_id, // FIXME: don't mislead - call this just user_id
+                    user_id: user.user_id, // FIXME: don't mislead - call this just user_id
                     course_id: req.params.course_id ? req.params.course_id : null,
                     course_instance_id: req.params.course_instance_id ? req.params.course_instance_id : null,
                     is_administrator: is_administrator,
@@ -226,8 +226,6 @@ module.exports = function(req, res, next) {
                     req_course_role: req_course_role,
                     req_course_instance_role: req_course_instance_role,
                 };
-
-                // FIXME: do is_enrolled_with_access override...
 
                 sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
                     // Something went wrong - immediately return with error
@@ -338,83 +336,15 @@ module.exports = function(req, res, next) {
 
                     res.locals.user = res.locals.authz_data.user;
 
+                    debug(res.locals.authz_data);
+
                     // FIXME - restore as many of the following lines as necessary
 
                     // res.locals.authz_data.mode = result.rows[0].mode;
                     // res.locals.req_date = result.rows[0].req_date;
 
-                    // // NOTE: When this code is all rewritten, you may want to throw an error if
-                    // // the user tries to emulate another user with greater permissions, so that
-                    // // it is clear why these permissions aren't granted.
-                    //
-                    // res.locals.user = res.locals.authz_data.user;
                     return callback(null);
                 });
-
-
-
-                // const params = {
-                //     authn_user_id: res.locals.authn_user.user_id,
-                //     authn_role: res.locals.authz_data.authn_role,
-                //     server_mode: res.locals.authz_data.authn_mode,
-                //     req_date: res.locals.req_date,
-                //     course_instance_id: req.params.course_instance_id,
-                //     requested_uid: (req.cookies.pl_requested_uid ? req.cookies.pl_requested_uid : res.locals.authz_data.user.uid),
-                //     requested_role: (req.cookies.pl_requested_role ? req.cookies.pl_requested_role : res.locals.authz_data.role),
-                //     requested_mode: (req.cookies.pl_requested_mode ? req.cookies.pl_requested_mode : res.locals.authz_data.mode),
-                //     requested_date: (req.cookies.pl_requested_date ? req.cookies.pl_requested_date : res.locals.req_date),
-                // };
-                // sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
-                //     if (ERR(err, callback)) return;
-                //     if (result.rowCount == 0) {
-                //         // The effective user has been denied access. For a real user, two things would be true:
-                //         //
-                //         //  1) authn_user would exist
-                //         //  2) authz_data would not exist
-                //         //
-                //         // Unfortunately, for the effective user, both authn_user and authz_data exist but are
-                //         // "wrong" in the sense that they are consistent with the real user and not the effective
-                //         // user. This screws up various things on the error page.
-                //         //
-                //         // As a fix for now, we will remove authz_data and will set a flag saying that the
-                //         // effective user has been denied access to the course instance - this will allow, for
-                //         // example, the user dropdown in the navbar to be hidden. It is likely that a better
-                //         // solution can be found when this code is all rewritten.
-                //         delete res.locals.authz_data;
-                //         res.locals.effective_user_has_no_access_to_course_instance = true;
-                //
-                //         // Tell the real user what happened and how to reset the effective user.
-                //         let err = error.make(403, 'Access denied');
-                //         err.info =  `<p>You have changed the effective user to one with these properties:</p>` +
-                //                     `<div class="container"><pre class="bg-dark text-white rounded p-2">` +
-                //                     `uid = ${params.requested_uid}\n` +
-                //                     `role = ${params.requested_role}\n` +
-                //                     `mode = ${params.requested_mode}\n` +
-                //                     `</pre></div>` +
-                //                     `<p>This user does not have access to the course instance <code>${res.locals.course_instance.short_name}</code> (with long name "${res.locals.course_instance.long_name}").` +
-                //                     `<p>To reset the effective user, return to the <a href="${res.locals.homeUrl}">PrairieLearn home page</a>.</p>`;
-                //         return callback(err);
-                //     }
-                //
-                //     res.locals.authz_data.user = result.rows[0].user;
-                //     res.locals.authz_data.role = result.rows[0].role;
-                //     res.locals.authz_data.mode = result.rows[0].mode;
-                //     res.locals.req_date = result.rows[0].req_date;
-                //
-                //     // Make sure that we never grant extra permissions
-                //     res.locals.authz_data.has_instructor_view = res.locals.authz_data.has_instructor_view && result.rows[0].has_instructor_view;
-                //     res.locals.authz_data.has_instructor_edit = res.locals.authz_data.has_instructor_edit && result.rows[0].has_instructor_edit;
-                //     res.locals.authz_data.has_course_permission_view = res.locals.authz_data.has_course_permission_view && result.rows[0].permissions_course.has_course_permission_view;
-                //     res.locals.authz_data.has_course_permission_edit = res.locals.authz_data.has_course_permission_edit && result.rows[0].permissions_course.has_course_permission_edit;
-                //     res.locals.authz_data.has_course_permission_own = res.locals.authz_data.has_course_permission_own && result.rows[0].permissions_course.has_course_permission_own;
-                //
-                //     // NOTE: When this code is all rewritten, you may want to throw an error if
-                //     // the user tries to emulate another user with greater permissions, so that
-                //     // it is clear why these permissions aren't granted.
-                //
-                //     res.locals.user = res.locals.authz_data.user;
-                //     callback(null);
-                // });
             }
         ], (err) => {
             if (ERR(err, next)) return;
@@ -422,5 +352,3 @@ module.exports = function(req, res, next) {
         });
     });
 };
-
-// FIXME: res.locals.user = res.locals.authz_data.user;
