@@ -1,11 +1,10 @@
-var ERR = require('async-stacktrace');
-var passport = require('passport');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const passport = require('passport');
+const express = require('express');
+const router = express.Router();
 
-var config = require('../../lib/config');
-var csrf = require('../../lib/csrf');
-var sqldb = require('@prairielearn/prairielib/sql-db');
+const config = require('../../lib/config');
+const authLib = require('../../lib/auth');
 
 // FIXME: do we need "all" below for both "get" and "post", or just one of them?
 router.all('/', function(req, res, next) {
@@ -19,20 +18,15 @@ router.all('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (!user) return next(new Error('Login failed'));
 
-        var params = [
-            user.upn,         // uid
-            user.displayName, // name
-            null,             // uin
-            'Azure',          // provider
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        var params = {
+            uid: user.upn,
+            name: user.displayName,
+            uin: null,
+            provider: 'Azure',
+        };
+
+        authLib.set_pl_authn(res, params, (err) => {
             if (ERR(err, next)) return;
-            var tokenData = {
-                user_id: result.rows[0].user_id,
-                authn_provider_name: 'Azure',
-            };
-            var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-            res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
             var redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;

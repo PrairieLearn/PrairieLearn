@@ -1,12 +1,11 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
 
-var config = require('../../lib/config');
-var csrf = require('../../lib/csrf');
-var sqldb = require('@prairielearn/prairielib/sql-db');
+const config = require('../../lib/config');
+const authLib = require('../../lib/auth');
 
-router.get('/:action?/:target(*)?', function(req, res, next) {
+router.get('/', function(req, res, next) {
     if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
     var authUid = null;
     var authName = null;
@@ -20,21 +19,15 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
     const authError = 'Your account is not registered for this service. Please contact your course instructor or IT support.';
     if (authUid == '(null)') return next(new Error(authError));
 
-    var params = [
-        authUid,
-        authName,
-        authUin,
-        'Shibboleth',
-    ];
-    sqldb.call('users_select_or_insert', params, (err, result) => {
+    const params = {
+        uid: authUid,
+        name: authName,
+        uin: authUin,
+        provider: 'Shibboleth',
+    };
+
+    authLib.set_pl_authn(res, params, (err) => {
         if (ERR(err, next)) return;
-        var tokenData = {
-            user_id: result.rows[0].user_id,
-            authn_provider_name: 'Shibboleth',
-        };
-        var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-        res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
-        if (req.params.action == 'redirect') return res.redirect('/' + req.params.target);
         var redirUrl = res.locals.homeUrl;
         if ('preAuthUrl' in req.cookies) {
             redirUrl = req.cookies.preAuthUrl;

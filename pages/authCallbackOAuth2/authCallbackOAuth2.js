@@ -5,8 +5,7 @@ const router = express.Router();
 
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
-const csrf = require('../../lib/csrf');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const authLib = require('../../lib/auth');
 
 const {google} = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
@@ -47,20 +46,15 @@ router.get('/', function(req, res, next) {
             ERR(err, next);
             return;
         }
-        const params = [
-            identity.email, // uid
-            identity.email, // name
-            null,           // uin
-            'Google',       // provider
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        const params = {
+            uid: identity.email,
+            name: identity.email,
+            uin: null,
+            provider: 'Google',
+        };
+
+        authLib.set_pl_authn(res, params, (err) => {
             if (ERR(err, next)) return;
-            const tokenData = {
-                user_id: result.rows[0].user_id,
-                authn_provider_name: 'Google',
-            };
-            const pl_authn = csrf.generateToken(tokenData, config.secretKey);
-            res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
             let redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;
