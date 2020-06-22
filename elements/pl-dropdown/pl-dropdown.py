@@ -59,6 +59,7 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, 'answers-name')
     dropdown_options = get_options(element, data)
+    submitted_answer = data['submitted_answers'].get(answers_name, None)
 
     sort_type = pl.get_string_attrib(element, 'sort', SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
@@ -87,12 +88,12 @@ def render(element_html, data):
             'answers-name': answers_name
         }
     elif data['panel'] == 'submission':
-        submitted_answer = data['submitted_answers'].get(answers_name, None)
 
         html_params = {
             'submission': True,
             'submitted-answer': submitted_answer
         }
+
     elif data['panel'] == 'answer':
         answers_name = pl.get_string_attrib(element, 'answers-name')
 
