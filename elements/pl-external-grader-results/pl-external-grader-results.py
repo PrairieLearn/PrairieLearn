@@ -35,6 +35,10 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
+def round_value(val, digits=2):
+    return format(val, f'.{digits}f').rstrip('0').rstrip('.')
+
+
 def render(element_html, data):
     if data['panel'] == 'submission':
         html_params = {'submission': True, 'graded': True, 'uuid': pl.get_uuid()}
@@ -63,7 +67,7 @@ def render(element_html, data):
             results = feedback.get('results', None)
             if grading_succeeded and results:
                 html_params['succeeded'] = bool(results.get('succeeded', None))
-                html_params['score'] = format(results.get('score', 0) * 100, '.2f').rstrip('0').rstrip('.')
+                html_params['score'] = round_value(results.get('score', 0) * 100)
                 html_params['achieved_max_points'] = (results.get('score', 0) >= 1.0)
                 html_params['results_color'] = '#4CAF50' if (results.get('score', 0) >= 1.0) else '#F44336'
                 html_params['has_message'] = bool(results.get('message', False))
@@ -89,8 +93,8 @@ def render(element_html, data):
                     html_params['tests_missing_points'] = tests_missing_points
 
                     if not tests_missing_points:
-                        html_params['points'] = sum(test['points'] for test in results_tests)
-                        html_params['max_points'] = sum(test['max_points'] for test in results_tests)
+                        html_params['points'] = round_value(sum(test['points'] for test in results_tests))
+                        html_params['max_points'] = round_value(sum(test['max_points'] for test in results_tests))
 
                     # We need to build a new tests array to massage data a bit
                     tests = []
@@ -106,8 +110,8 @@ def render(element_html, data):
                         test['description'] = results_test.get('description', None)
                         test['show_points'] = not tests_missing_points
                         if not tests_missing_points:
-                            test['max_points'] = results_test.get('max_points')
-                            test['points'] = results_test.get('points')
+                            test['points'] = round_value(results_test.get('points'))
+                            test['max_points'] = round_value(results_test.get('max_points'))
                             correct = test['max_points'] == test['points']
 
                             # Don't show points for test cases that are 0/0
