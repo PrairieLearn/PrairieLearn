@@ -251,6 +251,8 @@
 
   * Fix `demoRandomPlot` by updating the matlibplot subplot code (James Balamuta).
 
+  * Fix `CR LF` line endings in `socket.io.js` and `mersenne.js` that were causing cross-platform `git` issues sporadically (Eric Huber).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
   
   * Remove introduction alert at the top of `homework` assessments (Tim Yang).
