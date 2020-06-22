@@ -220,6 +220,8 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
+---- 
+
 ![](elements/pl-number-input-sigfig.png)
 
 **question.html**
