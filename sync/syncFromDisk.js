@@ -8,6 +8,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
 const syncCourseStaff = require('./fromDisk/courseStaff');
+const syncGroups = require('./fromDisk/groups');
 const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
@@ -46,8 +47,10 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
                 async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     perf.start(`syncCourseInstance${courseInstanceShortName}`);
                     async.series([
+                        function(callback) {logger.info(`Syncing ${courseInstanceShortName} groups from git repository to database...`); callback(null);},
+                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Groups`, syncGroups.sync.bind(null, course.courseInfo, courseInstance)),
                         function(callback) {logger.info('Syncing ' + courseInstanceShortName
-                                                        + ' courseInstance from git repository to database...'); callback(null);},
+                                                        + ' staff from git repository to database...'); callback(null);},
                         perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Staff`, syncCourseStaff.sync.bind(null, courseInstance)),
                         function(callback) {logger.info('Syncing ' + courseInstanceShortName
                                                         + ' assessments from git repository to database...'); callback(null);},
