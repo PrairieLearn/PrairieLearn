@@ -351,6 +351,7 @@ describe('assessment instance group synchorization test', function () {
             assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
         });
 
+        
     });
 });
       
