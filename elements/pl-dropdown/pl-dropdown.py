@@ -90,7 +90,7 @@ def render(element_html, data):
         }
 
     elif data['panel'] == 'submission':
-        if submitted_answer is BLANK_ANSWER: 
+        if submitted_answer is BLANK_ANSWER:
             submitted_answer = NO_ANSWER_SELECTED
 
         html_params = {
