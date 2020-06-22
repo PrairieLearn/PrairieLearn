@@ -47,3 +47,4 @@ require('./testRedirects');
 require('./testIssues');
 require('./sync');
 require('./testGroupStudent');
+require('./testGroupScoreAndSync');
