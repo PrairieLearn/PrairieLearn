@@ -58,7 +58,7 @@ These three components are implemented within the main PL executable, but for de
         * `/workspace/[uuid]/heartbeat`
         * `/workspace/[uuid]/container/*` - proxy `*` to inner frame
 * On the host:
-    * `/workspace/[uuid]/workspace/*` goes to the host that’s running this container.
+    * `/workspace/[uuid]/container/*` goes to the host that’s running this container.
     * Within the host, we’ll proxy that to the appropriate container.
     * Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
     * The host will listen for three types of signals: launch, sync, and kill container.
@@ -105,7 +105,11 @@ Course staff will declare workspace config per question via `workspace` in `info
 ```json
 {
     "workspace": {
-        "image": "some-docker-image-name"
+        "image": "some-docker-image-name",
+        "gradedFiles": [
+            "animal.h",
+            "animal.cpp"
+        ]
     }
 }
 ```
@@ -195,6 +199,33 @@ This is explicitly modeled on the existing external grading websocket code (`ext
 * `launching` -> `stopped`: We failed to start a container for the workspace.
 * `running` -> `stopped`: The container for the workspace has stopped and cannot serve requests.
 
+### Client
+
+The client will be divided into two parts - the *outer frame* and the *inner frame*. The outer frame will render PrairieLearn-provided UI that is shared across all workspaces and will show things like a "restart container" button and the status of the container. The outer frame will also be responsible for rendering the inner frame, which is served from the workspace container.
+
+The outer frame will include JavaScript that runs when the page "boots up". This JS will connect to the `/workspace` websocket and send an `init` event. The server will respond to this with the current state of the workspace (`launching`, `running`, or `stopped`). Future state changes will be delivered via `change:state` events as documented above.
+
+If/when the status becomes `running`, we'll try to load the inner frame.
+
+The "restart container" button should kill and relaunch the underlying workspace container. (This will be elaborated on later.)
+
+### PrairieLearn question page
+
+The "Save" button should be removed from the PrairieLearn question page, and the "Save & grade" button should be renamed to just "Grade".
+
+When the "Grade" button is clicked, the PrairieLearn web server will do one of three things:
+
+* If the workspace state is `uninitialized`, that is an invalid submission.
+* If the workspace state is `launching` or `stopped`, the PrairieLearn web server will pull the state of the workspace from S3.
+  * If that request fails, this is an error.
+* If the workspace state is `running`, the PrairieLearn web server will query the workspace host directly for its files.
+  * If that request fails or times out (this is not an error), fall back to S3.
+  * If the request to S3 fails, this is an error.
+
+Once the PrairieLearn web server has the workspace state, it will create a submission with the `gradedFiles` (specified in `info.json`) saved to `submitted_answer._files` and kick off the normal grading process. This matches the PrairieLearn convention of storing files that is used by `pl-file-upload`, `pl-file-editor`, `pl-file-preview`, etc.
+
+After the MVP, the UX could be improved to reduce the weirdness of needing to have two separate pages open at once, with editing and grading split between tabs.
+
 ## Notes
 
 * Since PrairieLearn will be serving a bunch of different roles depending on context, PrairieLearn's `server.js` should be split up so that only code needed to serve a particular role is loaded. While we're refactoring, let's just make it better, do things async, etc.
@@ -202,7 +233,7 @@ This is explicitly modeled on the existing external grading websocket code (`ext
 
 ## Remaining work and open questions
 
-- [ ] Define specifics of what happens on the client
+- [x] Define specifics of what happens on the client
 - [ ] Define specifics of what happens on a host
 - [ ] Procotol for communication between hosts and web servers
 - [ ] Protocol for user-initiated restart of a container
