@@ -34,5 +34,12 @@
 {{#answer}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
         <span class="badge badge-success d-inline">{{correct-answer}}</span>
+
+        {{#correct}}
+            &nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{^correct}}
+            &nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+        {{/correct}}
     </div>
 {{/answer}}

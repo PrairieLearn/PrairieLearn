@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import random
+import math
 import chevron
 from enum import Enum
 
@@ -102,12 +103,23 @@ def render(element_html, data):
 
     elif data['panel'] == 'answer':
         answers_name = pl.get_string_attrib(element, 'answers-name')
+        partial_score = data['partial_scores'].get(answers_name, {'score': None})
+        score = partial_score.get('score', None)
 
         html_params = {
             'answer': True,
-            'correct-answer': data['correct_answers'][answers_name],
-            'correct': data['correct_answers'][answers_name] == submitted_answer
+            'correct-answer': data['correct_answers'][answers_name]
         }
+
+        if score is not None:
+            try:
+                score = float(score)
+                if score == 1:
+                    html_params['correct'] = True
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score' + score)
 
     with open('pl-dropdown.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
