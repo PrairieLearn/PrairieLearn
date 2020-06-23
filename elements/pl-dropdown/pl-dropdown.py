@@ -36,8 +36,12 @@ def get_solution(element, data):
             is_correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child).strip()
             if is_correct:
-                solution = child_html
-    return solution
+                solution.append(child_html)
+
+    if len(solution) > 1:
+        raise Exception('Multiple correct answers were set')
+
+    return solution[0]
 
 
 def prepare(element_html, data):
