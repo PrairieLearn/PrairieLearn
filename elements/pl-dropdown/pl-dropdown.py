@@ -1,7 +1,6 @@
 import prairielearn as pl
 import lxml.html
 import random
-import math
 import chevron
 from enum import Enum
 
