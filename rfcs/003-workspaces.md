@@ -182,7 +182,7 @@ When the main server gets a request to this url, we'll first check if we have an
 
 * Respond to the request with the basic markup for the outer frame
 
-In either case, the client will recieve exactly the same outer frame markup. The "outer frame" will initially render a loading screen and set up a websocket connection to a PL server.
+In either case, the client will receive exactly the same outer frame markup. The "outer frame" will initially render a loading screen and set up a websocket connection to a PL server.
 
 ### Websocket protocol
 
@@ -242,7 +242,7 @@ Workspaces expose a simple API that allow them to be controlled and queried by a
 * `POST /workspace/<workspace_id>/stop`: Tears down any resources associated with this container.
 * `GET /workspace/<workspace_id>/graded_files`: Responds with a tarball including the set of graded files for this question.
 
-Workspace hosts will also respond to `/workspace/[uuid]/container/*`, which mirrors the route on the PrairieLearn web server. When a workspace host recieves a request to that path, it forwards `*` to the workspace container for that UUID.
+Workspace hosts will also respond to `/workspace/[uuid]/container/*`, which mirrors the route on the PrairieLearn web server. When a workspace host receives a request to that path, it forwards `*` to the workspace container for that UUID.
 
 The workspace host will monitor the workspace state (which is mounted into the workspace container and will be written to when the workspace is saved). When the host detects a file change, it will upload the current workspace state to S3. The workspace host should check that it is still the current host for this workspace in `workspace_host_id` before syncing to S3.
 
