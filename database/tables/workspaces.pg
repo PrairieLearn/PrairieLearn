@@ -1,0 +1,20 @@
+columns
+    id: bigint not null default nextval('workspaces_id_seq'::regclass)
+    s3_bucket: text
+    s3_root_key: text
+    state: text
+    variant_id: bigint
+    workspace_host_id: bigint
+
+indexes
+    workspaces_pkey: PRIMARY KEY (id) USING btree (id)
+    workspaces_s3_bucket_idx: USING btree (s3_bucket)
+    workspaces_s3_root_key_idx: USING btree (s3_root_key)
+    workspaces_workspace_host_id_idx: USING btree (workspace_host_id)
+
+foreign-key constraints
+    workspaces_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+    workspaces_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    workspace_logs: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
