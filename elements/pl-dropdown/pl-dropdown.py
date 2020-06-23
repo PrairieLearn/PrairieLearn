@@ -94,6 +94,9 @@ def render(element_html, data):
         }
 
     elif data['panel'] == 'submission':
+        partial_score = data['partial_scores'].get(answers_name, {'score': None})
+        score = partial_score.get('score', None)
+
         if submitted_answer is BLANK_ANSWER:
             submitted_answer = NO_ANSWER_SELECTED
 
@@ -102,16 +105,6 @@ def render(element_html, data):
             'parse-error': data['format_errors'].get(answers_name, None),
             'submission': True,
             'submitted-answer': submitted_answer,
-        }
-
-    elif data['panel'] == 'answer':
-        answers_name = pl.get_string_attrib(element, 'answers-name')
-        partial_score = data['partial_scores'].get(answers_name, {'score': None})
-        score = partial_score.get('score', None)
-
-        html_params = {
-            'answer': True,
-            'correct-answer': data['correct_answers'][answers_name]
         }
 
         if score is not None:
@@ -123,6 +116,13 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+    elif data['panel'] == 'answer':
+        answers_name = pl.get_string_attrib(element, 'answers-name')
+
+        html_params = {
+            'answer': True,
+            'correct-answer': data['correct_answers'][answers_name]
+        }
 
     with open('pl-dropdown.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
