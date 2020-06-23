@@ -22,14 +22,17 @@
 
 {{#submission}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
-        <code class="user-output">{{submitted-answer}}</code>
 
-        {{#correct}}
-            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-        {{/correct}}
-        {{^correct}}
-            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-        {{/correct}}
+        {{^parse-error}}
+            <code class="user-output">{{submitted-answer}}</code>
+
+            {{#correct}}
+                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            {{/correct}}
+            {{^correct}}
+                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            {{/correct}}
+        {{/parse-error}}
 
         {{#parse-error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
