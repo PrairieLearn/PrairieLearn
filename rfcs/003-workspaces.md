@@ -260,6 +260,7 @@ If the underlying container dies, we set the `workspace_host_id` for that contai
 - [x] Procotol for communication between workspace hosts and web servers
 - [x] Protocol for user-initiated restart of a container
 - [ ] What does this look like when running locally?
+- [ ] How do we toggle the server mode (web vs host)?
 - [ ] Figure out what happens to websockets when workspace moves to new host
 - [ ] Algorithm for placing containers on workspace hosts
 - [ ] Algorithm/implementation for autoscaling host fleet
