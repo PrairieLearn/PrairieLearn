@@ -117,8 +117,6 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
-        answers_name = pl.get_string_attrib(element, 'answers-name')
-
         html_params = {
             'answer': True,
             'correct-answer': data['correct_answers'][answers_name]
