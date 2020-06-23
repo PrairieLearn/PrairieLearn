@@ -13,7 +13,7 @@
         {
             "questions": [
                 {
-                    "id": "testQuestion",
+                    "id": "test/question",
                     "points": 10
                 }
             ]
