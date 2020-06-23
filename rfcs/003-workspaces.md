@@ -62,8 +62,8 @@ These three components are implemented within the main PL executable, but for de
     * Within the host, we’ll proxy that to the appropriate container.
     * Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
     * The host will listen for three types of signals: launch, sync, and kill container.
-* How to map requests to hosts?
-    * Hosts table that stores current information about each host VM.
+* How to map requests to workspace hosts?
+  * `workspace_hosts` table that stores current information about each host VM.
 * How do we kill off old containers?
     * Containers are killed after either:
         * We don’t receive N heartbeats in a row.
@@ -178,7 +178,7 @@ When the main server gets a request to this url, we'll first check if we have an
 * Respond to the request with the basic markup for the outer frame
 * [Do whole launch container thing from the above section here; let's write this out in more detail later]
 
-#### Workspace is in state `launching` or `running`k
+#### Workspace is in state `launching` or `running`
 
 * Respond to the request with the basic markup for the outer frame
 
@@ -226,6 +226,28 @@ Once the PrairieLearn web server has the workspace state, it will create a submi
 
 After the MVP, the UX could be improved to reduce the weirdness of needing to have two separate pages open at once, with editing and grading split between tabs.
 
+### Workspace hosts
+
+There will be some number of EC2 instances responsible for running the containers that power workspaces. The `workspace_hosts` table will store metadata about each host, at a minimum the hostname where it can be reached. These will be referenced by the `workspace_host_id` column in the `workspaces` table.
+
+Workspaces expose a simple API that allow them to be controlled and queried by a PrairieLearn web server. That API will be served from `/api/v1/` and include the following routes:
+
+* `POST /workspace/<workspace_id>/launch`: Begins the asynchronous process of launching a workspace container. This entails:
+  * Pull the Docker container
+  * Pull the workspace state from S3
+  * Place workspace state into a directory on disk
+  * Starting a container with the workspace state mounted as the home directory
+  * Change workspace state to `running`
+  * Emit `change:state` websocket event
+* `POST /workspace/<workspace_id>/stop`: Tears down any resources associated with this container.
+* `GET /workspace/<workspace_id>/graded_files`: Responds with a tarball including the set of graded files for this question.
+
+Workspace hosts will also respond to `/workspace/[uuid]/container/*`, which mirrors the route on the PrairieLearn web server. When a workspace host recieves a request to that path, it forwards `*` to the workspace container for that UUID.
+
+The workspace host will monitor the workspace state (which is mounted into the workspace container and will be written to when the workspace is saved). When the host detects a file change, it will upload the current workspace state to S3. The workspace host should check that it is still the current host for this workspace in `workspace_host_id` before syncing to S3.
+
+If the underlying container dies, we set the `workspace_host_id` for that container to NULL and update its state to `stopped`.
+
 ## Notes
 
 * Since PrairieLearn will be serving a bunch of different roles depending on context, PrairieLearn's `server.js` should be split up so that only code needed to serve a particular role is loaded. While we're refactoring, let's just make it better, do things async, etc.
@@ -234,9 +256,11 @@ After the MVP, the UX could be improved to reduce the weirdness of needing to ha
 ## Remaining work and open questions
 
 - [x] Define specifics of what happens on the client
-- [ ] Define specifics of what happens on a host
-- [ ] Procotol for communication between hosts and web servers
-- [ ] Protocol for user-initiated restart of a container
-- [ ] Algorithm for placing containers on hosts
+- [x] Define specifics of what happens on a host
+- [x] Procotol for communication between workspace hosts and web servers
+- [x] Protocol for user-initiated restart of a container
+- [ ] What does this look like when running locally?
+- [ ] Figure out what happens to websockets when workspace moves to new host
+- [ ] Algorithm for placing containers on workspace hosts
 - [ ] Algorithm/implementation for autoscaling host fleet
 - [ ] Edge cases: timeouts on containers, etc.
