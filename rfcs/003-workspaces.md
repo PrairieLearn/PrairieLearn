@@ -94,7 +94,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
     * `running`: the container for this workspace is running; can transition to `stopped`
 * `workspace_logs`: notable events/messages assocaiated with a particular workspace (state transitions, errors, explicit restarts, etc.)
   * `workspace_id`: ID of the associated workspace
-  * `timestamp`: (workshop name for consistency with rest of PL): timestamp of the event
+  * `date`: timestamp of the event
   * `message`: string message
   * `level`: the level of this particular log
 
