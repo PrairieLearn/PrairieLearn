@@ -1,8 +1,12 @@
+DROP FUNCTION IF EXISTS authz_course(bigint,bigint,boolean);
+DROP FUNCTION IF EXISTS authz_course(bigint,bigint,boolean,enum_course_role);
+
 CREATE OR REPLACE FUNCTION
     authz_course(
         user_id bigint,
         course_id bigint,
-        is_administrator boolean
+        is_administrator boolean,
+        req_course_role enum_course_role default NULL
     ) returns jsonb
 AS $$
 DECLARE
@@ -22,6 +26,10 @@ BEGIN
 
     IF is_administrator THEN
         course_role := 'Owner';
+    END IF;
+
+    IF req_course_role IS NOT NULL THEN
+        course_role := req_course_role;
     END IF;
 
     permissions_course := jsonb_build_object(

@@ -1,11 +1,14 @@
 DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean);
+DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean,timestamptz);
+DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean,timestamptz,enum_course_instance_role);
 
 CREATE OR REPLACE FUNCTION
     authz_course_instance(
         user_id bigint,
         course_instance_id bigint,
         is_administrator boolean,
-        req_date timestamptz
+        req_date timestamptz,
+        req_course_instance_role enum_course_instance_role default NULL
     ) returns jsonb
 AS $$
 DECLARE
@@ -22,6 +25,14 @@ BEGIN
 
     IF NOT FOUND THEN
         course_instance_role := 'None';
+    END IF;
+
+    IF is_administrator THEN
+        course_instance_role := 'Student Data Editor';
+    END IF;
+
+    IF req_course_instance_role IS NOT NULL THEN
+        course_instance_role := req_course_instance_role;
     END IF;
 
     PERFORM
