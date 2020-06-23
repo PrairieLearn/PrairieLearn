@@ -5,6 +5,7 @@ const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const moment = require('moment');
 const config = require('../lib/config');
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -40,20 +41,22 @@ module.exports = function(req, res, next) {
     // Note that req.params.course_id and req.params.course_instance_id are strings and not
     // numbers - this is why we can use the pattern "id ? id : null" to check if they exist.
     const params = {
-        user_id: res.locals.authn_user.user_id,   // FIXME: don't mislead - call this just user_id (b/c it'll be that for effective user)
+        user_id: res.locals.authn_user.user_id,
         course_id: req.params.course_id ? req.params.course_id : null,
         course_instance_id: req.params.course_instance_id ? req.params.course_instance_id : null,
         is_administrator: res.locals.is_administrator,
-        req_date: res.locals.req_date,
         ip: req.ip,
-        force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
-        req_course_role: req_course_role,  // FIXME: rename as force_course_role?
-        req_course_instance_role: req_course_instance_role,  // FIXME: rename as force_course_instance_role?
+        req_date: res.locals.req_date,
+        req_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
+        req_course_role: req_course_role,
+        req_course_instance_role: req_course_instance_role,
     };
 
     if ((params.course_id == null) && (params.course_instance_id == null)) {
         next(error.make(403, 'Access denied (both course_id and course_instance_id are null)'));
     }
+
+    debug(params);
 
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -215,14 +218,32 @@ module.exports = function(req, res, next) {
                 }
             },
             (callback) => {
+                let req_date = res.locals.req_date;
+                if (req.cookies.pl_requested_date) {
+                    req_date = moment(req.cookies.pl_requested_date, moment.ISO_8601);
+                    if (!req_date.isValid()) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
+
+                        let err = error.make(403, 'Access denied');
+                        err.info =  `<p>You have requested an invalid effective date: <code>${req.cookies.pl_requested_date}</code>. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
+                        return callback(err);
+                    }
+
+                    debug(`effective req_date = ${req_date}`);
+                }
+
                 const params = {
-                    user_id: user.user_id, // FIXME: don't mislead - call this just user_id
+                    user_id: user.user_id,
                     course_id: req.params.course_id ? req.params.course_id : null,
                     course_instance_id: req.params.course_instance_id ? req.params.course_instance_id : null,
                     is_administrator: is_administrator,
-                    req_date: res.locals.req_date,
                     ip: req.ip,
-                    force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null, // FIXME: still necessary?
+                    req_date: req_date,
+                    req_mode: (req.cookies.pl_requested_mode ? req.cookies.pl_requested_mode : res.locals.authz_data.mode),
                     req_course_role: req_course_role,
                     req_course_instance_role: req_course_instance_role,
                 };
@@ -257,6 +278,9 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.overrides = overrides;
 
                         res.locals.user = res.locals.authz_data.user;
+
+                        res.locals.authz_data.mode = params.req_mode;
+                        res.locals.req_date = req_date;
 
                         return callback(null);
                     }
@@ -313,10 +337,6 @@ module.exports = function(req, res, next) {
                         }
                     }
 
-                    // FIXME: mode, req_date
-
-                    // debug(result.rows[0]);
-
                     res.locals.authz_data.user = user;
                     res.locals.authz_data.is_administrator = is_administrator;
                     res.locals.authz_data.course_role = result.rows[0].permissions_course.course_role;
@@ -336,12 +356,8 @@ module.exports = function(req, res, next) {
 
                     res.locals.user = res.locals.authz_data.user;
 
-                    debug(res.locals.authz_data);
-
-                    // FIXME - restore as many of the following lines as necessary
-
-                    // res.locals.authz_data.mode = result.rows[0].mode;
-                    // res.locals.req_date = result.rows[0].req_date;
+                    res.locals.authz_data.mode = result.rows[0].mode;
+                    res.locals.req_date = req_date;
 
                     return callback(null);
                 });
