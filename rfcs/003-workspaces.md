@@ -58,7 +58,7 @@ These three components are implemented within the main PL executable, but for de
         * `/workspace/<workspace_id>/heartbeat`
         * `/workspace/<workspace_id>/container/*` - proxy `*` to inner frame
 * On the host:
-    * `/workspace/[uuid]/container/*` goes to the host that’s running this container.
+    * `/workspace/<workspace_id>/container/*` goes to the host that’s running this container.
     * Within the host, we’ll proxy that to the appropriate container.
     * Each container will probably need port 80 bound to some random, unique port that we can target for forwards.
     * The host will listen for three types of signals: launch, sync, and kill container.
@@ -242,7 +242,7 @@ Workspaces expose a simple API that allow them to be controlled and queried by a
 * `POST /workspace/<workspace_id>/stop`: Tears down any resources associated with this container.
 * `GET /workspace/<workspace_id>/graded_files`: Responds with a tarball including the set of graded files for this question.
 
-Workspace hosts will also respond to `/workspace/[uuid]/container/*`, which mirrors the route on the PrairieLearn web server. When a workspace host receives a request to that path, it forwards `*` to the workspace container for that UUID.
+Workspace hosts will also respond to `/workspace/<workspace_id>/container/*`, which mirrors the route on the PrairieLearn web server. When a workspace host receives a request to that path, it forwards `*` to the workspace container for that ID.
 
 The workspace host will monitor the workspace state (which is mounted into the workspace container and will be written to when the workspace is saved). When the host detects a file change, it will upload the current workspace state to S3. The workspace host should check that it is still the current host for this workspace in `workspace_host_id` before syncing to S3.
 
