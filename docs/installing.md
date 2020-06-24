@@ -3,8 +3,9 @@
 
 * Step 1: Install [Docker Community Edition](https://www.docker.com/community-edition). It's free.
     * On Linux and MacOS this is straightforward. [Download from here](https://store.docker.com/search?type=edition&offering=community).
-    * On Windows the best version is [Docker Community Edition for Windows](https://store.docker.com/editions/community/docker-ce-desktop-windows), which requires Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
+    * On Windows the best version is [Docker Community Edition for Windows](https://store.docker.com/editions/community/docker-ce-desktop-windows), which requires Windows 10 Pro/Edu.
         * UIUC students and staff can download Windows 10 from [the WebStore](https://webstore.illinois.edu/shop/product.aspx?zpid=2899).
+        * Docker Toolbox is no longer supported.
 
 * Step 2: Run PrairieLearn using the example course with:
 

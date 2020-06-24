@@ -15,8 +15,8 @@ const helperClient = require('./helperClient');
 
 describe('Course element extensions', function() {
     this.timeout(60000);
-    const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');   
-    
+    const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
+
     describe('Extensions can be loaded', function() {
         const extDir = path.join(exampleCourseDir, 'elementExtensions');
         const element = 'extendable-element';
@@ -31,7 +31,7 @@ describe('Course element extensions', function() {
             assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
             assert(_.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()), 'could not load all extensions');
         };
-        
+
         it('should correctly load extensions from example course', async () => {
             const extensions = await freeform.loadExtensionsAsync(extDir);
             check_ext(extensions);
@@ -66,11 +66,11 @@ describe('Course element extensions', function() {
             assert(extensions.length === 0, 'non-zero number of extensions were loaded from a course without extensions');
         });
     });
-    
+
     describe('Extensions can insert client-side assets into the page', function() {
         before('set up testing server', helperServer.before(exampleCourseDir));
         after('shut down testing server', helperServer.after);
-        
+
         const locals = {};
         locals.siteUrl = 'http://localhost:' + config.serverPort;
         locals.baseUrl = locals.siteUrl + '/pl';
@@ -80,7 +80,7 @@ describe('Course element extensions', function() {
         locals.questionSettingsTabUrl = '/settings';
         locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
         locals.isStudentPage = false;
-        const testQid = 'demoExtendableElement';
+        const testQid = 'demo/custom/extension';
 
         const incJs = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.js';
         const incCss = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.css';
@@ -105,7 +105,7 @@ describe('Course element extensions', function() {
             let questionUrl = locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
             const response = await helperClient.fetchCheerio(questionUrl);
             assert.isTrue(response.ok, 'could not fetch question page');
-            
+
             const images = response.$('img');
             let found_image = null;
             for (let i = 0; i < images.length; i++) {
@@ -115,7 +115,7 @@ describe('Course element extensions', function() {
                 }
             }
             assert(found_image !== null, 'could not find image on page');
-            
+
             const image_response = await helperClient.fetchCheerio(locals.siteUrl + found_image.attribs.src);
             assert.isTrue(image_response.ok, 'could not fetch image');
         });

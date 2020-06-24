@@ -50,6 +50,10 @@ if __name__ == '__main__':
             output_fname = output_f.read()
         os.remove(join(filenames_dir, OUTPUT_FILE))
 
+        # Update the working directory so tests may access local files
+        prev_wd = os.getcwd()
+        os.chdir(base_dir)
+
         # Run the tests with our custom setup
         loader = TestLoader()
         all_results = []
@@ -64,6 +68,9 @@ if __name__ == '__main__':
                 gradable = False
                 format_errors = result.format_errors
                 break
+
+        # Change back to previous directory
+        os.chdir(prev_wd)
 
         if len(all_results) > 1:
             # Combine results into big dict and then back to list of dicts
