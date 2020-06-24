@@ -26,8 +26,7 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const assessment = require('./lib/assessment');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const migrations = require('./migrations');
+const { sqldb, migrations } = require('@prairielearn/prairielib');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -890,7 +889,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            migrations.init(function(err) {
+            migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
