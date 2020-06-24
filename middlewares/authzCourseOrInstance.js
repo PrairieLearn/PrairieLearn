@@ -256,8 +256,6 @@ module.exports = function(req, res, next) {
                     // return with error. For the effective user, we remove all permissions
                     // and simply return (without error).
                     if (result.rowCount == 0) {
-                        // FIXME: does the right thing happen on the "change effective user" page?
-
                         debug('The effective user has been denied access.');
 
                         res.locals.authz_data.user = user;
@@ -332,6 +330,27 @@ module.exports = function(req, res, next) {
                             err.info =  `<p>You have tried to change the effective user to one who can edit ` +
                                         `student data in the course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
                                         `you do not have permission to edit these student data. ` +
+                                        `All requested changes to the effective user have been removed.</p>`;
+                            return callback(err);
+                        }
+
+                        // The effective user is a student (with no course or course instance role) with
+                        // a different UID than the authn user, and the authn user is not a Student Data
+                        // Editor - remove all override cookies and return with error
+                        if ((req.cookies.pl_requested_uid && (req.cookies.pl_requested_uid != res.locals.authn_user.uid))   // effective user has a different uid from authn user
+                            && result.rows[0].permissions_course_instance.is_enrolled_with_access                           // effective user is enrolled
+                            && (result.rows[0].permissions_course_instance.course_instance_role == 'None')                  // effective user is not course instance staff
+                            && (result.rows[0].permissions_course.course_role == 'None')                                    // effective user is not course staff
+                            && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {                        // authn user is not a Student Data Editor
+                            overrides.forEach((override) => {
+                                debug(`clearing cookie: ${override.cookie}`);
+                                res.clearCookie(override.cookie);
+                            });
+
+                            let err = error.make(403, 'Access denied');
+                            err.info =  `<p>You have tried to change the effective user to one who is a student in the ` +
+                                        `course instance <code>${res.locals.course_instance.short_name}</code>, when ` +
+                                        `you do not have permission to edit student data in this course instance. ` +
                                         `All requested changes to the effective user have been removed.</p>`;
                             return callback(err);
                         }
