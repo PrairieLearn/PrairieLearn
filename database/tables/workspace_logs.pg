@@ -1,7 +1,7 @@
 columns
     date: timestamp with time zone default now()
     id: bigint not null default nextval('workspace_logs_id_seq'::regclass)
-    level: smallint
+    log_level: enum_workspace_log_log_level
     message: text
     workspace_id: bigint not null
 
