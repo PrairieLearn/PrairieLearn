@@ -3,5 +3,9 @@
     "title": "Template pl-figure: select static figure using MC question",
     "topic": "Template",
     "tags": ["mfsilva", "Sp20", "xc101"],
-    "type": "v3"
+    "type": "v3",
+    "thumbnail": {
+        "filename": "b1.jpeg",
+        "location": "clientFilesQuestion"
+    }
 }

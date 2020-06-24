@@ -3,9 +3,5 @@
     "title": "Template pl-multiple-choice: Fixed correct answer, randomly chosen distractors",
     "topic": "Template",
     "tags": ["balamut2", "Sp20", "xc101", "v3"],
-    "type": "v3",
-    "thumbnail": {
-        "filename": "multiple_choice.png",
-        "location": "public"
-    }
+    "type": "v3"
 }
