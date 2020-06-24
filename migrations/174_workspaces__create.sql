@@ -1,4 +1,4 @@
-CREATE TYPE enum_workspace_state AS ENUM ('launching', 'running', 'stopped', 'uninitialized');
+CREATE TYPE enum_workspace_state AS ENUM ('uninitialized', 'stopped', 'launching', 'running');
 
 CREATE TABLE IF NOT EXISTS workspaces (
     id bigserial PRIMARY KEY,
