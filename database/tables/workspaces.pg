@@ -8,9 +8,6 @@ columns
 
 indexes
     workspaces_pkey: PRIMARY KEY (id) USING btree (id)
-    workspaces_s3_bucket_idx: USING btree (s3_bucket)
-    workspaces_s3_root_key_idx: USING btree (s3_root_key)
-    workspaces_workspace_host_id_idx: USING btree (workspace_host_id)
 
 foreign-key constraints
     workspaces_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
