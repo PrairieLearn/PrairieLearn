@@ -15,7 +15,7 @@ describe('database', function() {
     this.timeout(20000);
 
     before('set up testing database', helperDb.beforeOnlyCreate);
-    //after('tear down testing database', helperDb.after);
+    after('tear down testing database', helperDb.after);
 
     it('should match the database described in /database', function(done) {
         this.timeout(20000);
