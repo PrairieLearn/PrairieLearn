@@ -56,8 +56,6 @@ module.exports = function(req, res, next) {
         next(error.make(403, 'Access denied (both course_id and course_instance_id are null)'));
     }
 
-    debug(params);
-
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
