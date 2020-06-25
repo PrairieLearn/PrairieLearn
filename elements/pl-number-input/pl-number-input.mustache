@@ -13,7 +13,7 @@
     <span id="pl-number-input-{{uuid}}" class="input-group pl-number-input">
         {{#label}}
         <span class="input-group-prepend">
-            <span class="input-group-text">{{label}}</span>
+            <span class="input-group-text">{{{label}}}</span>
         </span>
         {{/label}}
         <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
@@ -61,7 +61,7 @@
 <span id="pl-number-input-submission-{{uuid}}">
 
 {{#parse_error}}
-    {{#label}}<span>{{label}}</span>{{/label}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
 
     <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
@@ -70,7 +70,7 @@
     </a>
 {{/parse_error}}
 {{#missing_input}}
-    {{#label}}<span>{{label}}</span>{{/label}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
 
     <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
 
@@ -83,7 +83,7 @@
 {{/error}}
 {{^error}}
 
-{{#label}}<span>{{label}}</span>{{/label}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{#correct}}
@@ -116,7 +116,7 @@
 {{/submission}}
 
 {{#answer}}
-{{#label}}<span>{{label}}</span>{{/label}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_tru}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
