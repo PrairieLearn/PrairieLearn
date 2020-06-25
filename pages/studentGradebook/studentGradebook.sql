@@ -2,10 +2,7 @@
 SELECT
     a.number AS assessment_number,
     a.order_by AS assessment_order_by,
-    CASE
-        WHEN a.multiple_instance THEN a.title || ' (' || COUNT(ai.id) || ' instances)'
-        ELSE a.title
-    END AS title,
+    a.title AS title,
     aset.abbreviation AS assessment_set_abbreviation,
     aset.name AS assessment_set_name,
     aset.heading AS assessment_set_heading,
@@ -13,6 +10,14 @@ SELECT
     aset.number AS assessment_set_number,
     CASE
         WHEN a.multiple_instance THEN aset.abbreviation || a.number
+        ELSE aset.abbreviation || a.number
+    END AS label,
+    CASE
+        WHEN a.multiple_instance THEN
+            CASE
+              WHEN (COUNT(ai.id) > 1) THEN aset.abbreviation || a.number || '#1-' || MAX(ai.number)
+              ELSE aset.abbreviation || a.number || '#1'
+            END
         ELSE aset.abbreviation || a.number
     END AS label,
     MAX(ai.score_perc) AS assessment_instance_score_perc,
