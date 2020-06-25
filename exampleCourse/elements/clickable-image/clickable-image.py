@@ -3,89 +3,82 @@ import lxml.html
 import prairielearn as pl
 import random
 
-# Functions specific to this element
-
-def answers_name(element_html):
-    element = lxml.html.fragment_fromstring(element_html)  # Convert the html from a string to an lxml.html.HtmlElement object    
-    return pl.get_string_attrib(element, 'answers-name')   # The question element in the question.html file should have an attribute called 'answers-name'; get the value of that attribute.
-
-def answers_weight(element_html):
-    weight_default = 1
-    element = lxml.html.fragment_fromstring(element_html)  # Convert the html from a string to an lxml.html.HtmlElement object    
-    return pl.get_integer_attrib(element, 'weight', weight_default) # The question element may have a weight. Get the weight, or a default if there isn't one.
-
-
-
-# Functions defined by PrairieLearn
 
 def prepare(element_html, data):
-    data['params']['random_number'] = random.randint(0,9)
-    data["correct_answers"][answers_name(element_html)] = int(data['params']['random_number'])
-    return data
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=[])
+
+    name = pl.get_string_attrib(element, 'answers-name')
+    number = random.randint(0,9)
+    data['params'][name] = number
+    data['correct_answers'][name] = number
 
 
 def render(element_html, data):
+    # Grab the name of the element (name of the hidden input tag), and generate a unique UUID
+    # Each element on the page has its own UUID to prevent the JavaScript of other elements from interfering
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+    uuid = pl.get_uuid()
 
-    name = answers_name(element_html)  
+    if data['panel'] == 'question':
+        html_params = {
+            'question': True,
+            'number': data['params'][name],
+            'answers_name': name,
+            'image_url': data['options']['client_files_element_url'] + '/block_i.png',
+            'uuid': uuid
+        }
+    elif data['panel'] == 'submission':
+        feedback = data['partial_scores'][name].get('feedback', None)
+        html_params = {
+            'submission': True,
+            'submitted': data["raw_submitted_answers"][name],
+            'feedback': feedback
+        }
+    elif data['panel'] == 'answer':
+        html_params = {
+            'answer': True,
+            'correct': data["correct_answers"][name]
+        }
 
     with open('clickable-image.mustache', 'r') as f:
+        return chevron.render(f, html_params).strip()
 
-        if data['panel'] == 'question':
-            html_params = {
-                'question': True,                                                          # This boolean parameter is needed to let the mustache file know to render the html between {{#question}} and {{/question}}
-                'number': data['params']['random_number'],                                 # This parameter is accessible from the mustache file as {{number}}
-                'answers_name': name,                                                      # This parameter is accessible from the mustache file as {{answers_name}}
-                'image_url': data['options']['client_files_element_url'] + '/block_i.png'  # This parameter is accessible from the mustache file as {{image_url}}
-            }
-            return chevron.render(f, html_params).strip()                                  # This line renders the mustache file into the actual HTML snippet for the Question panel.
-                                                                                           #   Alternatively, this method could have dynamically created the HTML string and returned it without using a mustache file.
-
-        elif data['panel'] == 'submission':
-            feedback = data['partial_scores'][name].get('feedback', None)
-            if feedback:
-                html_params = {
-                    'submission': True,                                                    # This boolean parameter is needed to let the mustache file know to render the html between {{#submission}} and {{/submission}}
-                    'provide_feedback': True,                                              # This boolean parameter is needed to let the mustache file know to render the html between {{#provide_feedback}} and {{/feedback}}
-                    'feedback': feedback,                                                  # This parameter is accessible from the mustache file as {{feedback}}
-                    'submitted': data["raw_submitted_answers"][name]                       # This parameter is accessible from the mustache file as {{submitted}}
-                }
-            else:
-                html_params = {
-                    'submission': True,                                                    # This boolean parameter is needed to let the mustache file know to render the html between {{#submission}} and {{/submission}}
-                    'provide_feedback': False,                                             # This boolean parameter is needed to let the mustache file know not to render the html between {{#provide_feedback}} and {{/feedback}}
-                    'submitted': data["raw_submitted_answers"][name]                       # This parameter is accessible from the mustache file as {{submitted}}
-                }
-            return chevron.render(f, html_params).strip()                                  # This line renders the mustache file into the actual HTML snippet for the Submitted Answer panel.
-                                                                                           #   Alternatively, this method could have dynamically created the HTML string and returned it without using a mustache file.
-
-        elif data['panel'] == 'answer':
-            html_params = {
-                'answer': True,                                                            # This boolean parameter is needed to let the mustache file know to render the html between {{#answer}} and {{/answer}}
-                'correct': data["correct_answers"][name]                                   # This parameter is accessible from the mustache file as {{correct}}
-            }                       
-            return chevron.render(f, html_params).strip()                                  # This line renders the mustache file into the actual HTML snippet for the Correct Answer panel.
-                                                                                           #   Alternatively, this method could have dynamically created the HTML string and returned it without using a mustache file.
-
-        
 
 def parse(element_html, data):
-    name = answers_name(element_html)
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+
+    # Grab the number of clicks in the hidden field and put it into submitted answers
+    # Each "input" field is automatically saved into "raw_submitted_answers"
     data["submitted_answers"][name] = int(data["raw_submitted_answers"][name])
-    return data
-    
+
+
 def grade(element_html, data):
-    name = answers_name(element_html)
-    weight = answers_weight(element_html)
+    # Get the name of the element and the weight for this answer
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+    weight = pl.get_float_attrib(element, 'weight', 1.0)
 
-    if data["submitted_answers"][name] == data["correct_answers"][name]:
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    elif data["submitted_answers"][name] + 1 == data["correct_answers"][name]:
-        data['partial_scores'][name] = {'score': 0.75, 'weight': weight, 'feedback': 'Your number was one too small.'}
-    elif data["submitted_answers"][name] - 1 == data["correct_answers"][name]:
-        data['partial_scores'][name] = {'score': 0.5, 'weight': weight, 'feedback': 'Your number was one too large.'}
+    # Get the number of submitted clicks and the correct number of clicks
+    submitted_answer = data["submitted_answers"][name]
+    correct_answer = data["correct_answers"][name]
+    score = 0.0
+    feedback = None
+
+    # Grade the actual number of clicks
+    if submitted_answer == correct_answer:
+        score = 1.0
+    elif submitted_answer == correct_answer - 1:
+        score = 0.75
+        feedback = 'Your number was one too small.'
+    elif submitted_answer == correct_answer + 1:
+        score = 0.5
+        feedback = 'Your number was one too large.'
     else:
-        data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': "You didn't click on the image the correct number of times"}
+        score = 0
+        feedback = "You didn't click on the image the correct number of times"
 
-    return data
-
-
+    # Put the score, weight, and feedback into the data object
+    data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}

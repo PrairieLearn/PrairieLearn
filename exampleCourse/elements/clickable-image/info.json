@@ -1,9 +1,6 @@
 {
     "controller": "clickable-image.py",
     "dependencies": {
-        "elementScripts": [
-            "clickable-image.js"
-        ],
         "elementStyles": [
             "clickable-image.css"
         ],
