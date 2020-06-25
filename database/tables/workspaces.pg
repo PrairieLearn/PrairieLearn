@@ -2,7 +2,7 @@ columns
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
     s3_bucket: text
     s3_root_key: text
-    state: enum_workspace_state default 'uninitialized'::enum_workspace_state
+    state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
     variant_id: bigint
     workspace_host_id: bigint
 
