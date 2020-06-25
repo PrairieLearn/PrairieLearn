@@ -52,10 +52,6 @@ def prepare(element_html, data):
     # Get answer from pl-answer if implemented
     data['correct_answers'][answers_name] = get_solution(element, data)
 
-    # Get answer from server.py if pl-answer not implemented
-    if answers_name is None:
-        data['correct_answers'][answers_name] = answers_name
-
     if data['correct_answers'][answers_name] is None:
         raise Exception('Correct answer not defined for answers-name: %s' % answers_name)
 
