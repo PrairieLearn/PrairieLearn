@@ -288,11 +288,11 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 **question.html**
 
 ```html
-An <pl-dropdown sort="random" correct-answer="socrates">
+An <pl-dropdown answers-name="socrates">
   <pl-answer correct="true">unexamined</pl-answer>
   <pl-answer>examined</pl-answer>
   <pl-answer>insatiable</pl-answer>
-</pl-dropdown> life is not worth living. <p></p>
+</pl-dropdown> life is not worth living.
 ```
 
 **server.py**
@@ -300,14 +300,18 @@ An <pl-dropdown sort="random" correct-answer="socrates">
 def generate(data):
 
     # Correct Answers
-    data['correct_answers']['socrates'] = 'unexamined'
+    data['params']['socrates'] = {
+      'tag1': 'true', 'ans1': 'whole',
+      'tag2': 'false', 'ans2': 'part',
+      'tag3': 'false', 'ans3': 'inverse'
+    }
 ```
 
 #### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`correct-answer` | string | - | The key of the correct answer.
+`answers-name` | string | - | The key of the correct answer.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `sort` | string | fixed | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.
 `blank` | boolean | True | Option to add blank dropdown entry as default selection in drop-down list.
