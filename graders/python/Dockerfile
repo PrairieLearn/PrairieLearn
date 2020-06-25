@@ -11,8 +11,8 @@ RUN yum -y update \
     && yum install -y python3 python3-devel python3-pip dos2unix \
     && yum install -y graphviz graphviz-devel \
     && python3 -m pip install --no-cache-dir -r /requirements.txt
-    
-COPY python_autograder /python_autograder
-RUN chmod +x /python_autograder/run.sh  
 
 RUN useradd ag
+
+COPY python_autograder /python_autograder
+RUN chmod +x /python_autograder/run.sh
