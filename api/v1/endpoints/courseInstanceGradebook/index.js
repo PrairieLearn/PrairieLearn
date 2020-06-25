@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
     };
     sqldb.queryOneRow(sql.select_user_scores, params, (err, result) => {
         if (ERR(err, next)) return;

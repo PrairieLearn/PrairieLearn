@@ -1,8 +1,15 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
+from html import escape, unescape
 import chevron
 import os
+
+import pygments
+import pygments.lexers
+import pygments.lexer
+import pygments.formatters
+import pygments.util
+from pygments.token import Token
 
 LANGUAGE_DEFAULT = None
 NO_HIGHLIGHT_DEFAULT = False
@@ -11,69 +18,47 @@ PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
 
-# To add a new language, we need to download a new build of
-# public/javascripts/highlight.js
-#
-# This comes from https://highlightjs.org/download/
-#
-# To download a new build, here's a handy JS script to auto-check the correct
-# language boxes. Run this script in the browser JavaScript console on the
-# highlight.js download page. The list of languages in this script should match
-# the list below in python code.
-#
-###############################################################################
-# const languages = [`armasm`, `bash`, `cpp`, `csharp`, `css`, `excel`, `fortran`, `go`, `haskell`, `html`, `ini`, `java`, `javascript`, `json`, `julia`, `makefile`, `markdown`, `mathematica`, `matlab`, `mipsasm`, `objectivec`, `ocaml`, `perl`, `php`, `python`, `r`, `ruby`, `rust`, `shell`, `sql`, `tex`, `x86asm`, `yaml`];
-# document.querySelectorAll('input[type="checkbox"]').forEach(input => {
-#     if (languages.indexOf(input.name.replace(".js", "")) >= 0) {
-#         input.checked = true;
-#     } else {
-#         input.checked = false;
-#     }
-# });
-###############################################################################
 
-allowed_languages = [
-    'armasm',
-    'bash',
-    'cpp',
-    'csharp',
-    'css',
-    'excel',
-    'fortran',
-    'go',
-    'haskell',
-    'html',
-    'ini',
-    'java',
-    'javascript',
-    'json',
-    'julia',
-    'makefile',
-    'markdown',
-    'mathematica',
-    'matlab',
-    'mipsasm',
-    'objectivec',
-    'ocaml',
-    'perl',
-    'php',
-    'plaintext',
-    'python',
-    'r',
-    'ruby',
-    'rust',
-    'shell',
-    'sql',
-    'tex',
-    'x86asm',
-    'yaml',
-]
+class NoHighlightingLexer(pygments.lexer.Lexer):
+    """
+    Dummy lexer for when syntax highlighting is not wanted, but we still
+    want to run it through the highlighter for styling and code escaping.
+    """
+    def __init__(self, **options):
+        pygments.lexer.Lexer.__init__(self, **options)
+        self.compress = options.get('compress', '')
+
+    def get_tokens_unprocessed(self, text):
+        return [(0, Token.Text, text)]
+
+
+class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
+    """
+    Subclass of the default HTML formatter to provide more flexibility
+    with highlighted lines.
+    """
+    def __init__(self, **options):
+        pygments.formatters.HtmlFormatter.__init__(self, **options)
+        self.hl_color = options.get('hl_color', HIGHLIGHT_LINES_COLOR_DEFAULT)
+
+    def _highlight_lines(self, tokensource):
+        """
+        Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
+        Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"
+        """
+        for i, (t, value) in enumerate(tokensource):
+            if t != 1:
+                yield t, value
+            if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
+                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.hl_color}">{value}</span>'
+            else:
+                yield 1, value
 
 
 def parse_highlight_lines(highlight_lines):
     """
-    Parses a string like "1", "1-4", "1-3,5,7-8" into lists of tuples like
-    [(1,1)], [(1,4)], and [(1,3),(5,5),(7,8)]
+    Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
+    [1], [1,2,3,4], and [1,2,3,5,7,8]
     """
     lines = []
     components = highlight_lines.split(',')
@@ -81,7 +66,7 @@ def parse_highlight_lines(highlight_lines):
         component = component.strip()
         try:
             line = int(component)
-            lines.append((line, line))
+            lines.append(line)
         except ValueError:
             # Try parsing as "##-###"
             numbers = component.split('-')
@@ -90,39 +75,30 @@ def parse_highlight_lines(highlight_lines):
             try:
                 start = int(numbers[0])
                 end = int(numbers[1])
-                lines.append((start, end))
+                for i in range(start, end + 1):
+                    lines.append(i)
             except ValueError:
                 return None
     return lines
 
 
-def line_should_be_highlighted(line_number, lines_to_highlight):
+def get_lexer_by_name(name):
     """
-    Takes an array like that produced by parse_highlight_lines and determines
-    if a line of code satisfies the range.
+    Tries to find a lexer by both its proper name and any aliases it has.
     """
-    for pair in lines_to_highlight:
-        start, end = pair
-        if line_number >= start and line_number <= end:
-            return True
-    return False
-
-
-def highlight_lines_in_code(code, highlight_lines, color):
-    lines_to_highlight = parse_highlight_lines(highlight_lines)
-    code_lines = code.splitlines()
-    line_number = 1
-    result_lines = ''
-    for line in code_lines:
-        if line_should_be_highlighted(line_number, lines_to_highlight):
-            if len(line.strip()) == 0:
-                # insert line break to prevent collapsing the line
-                line = '<br>'
-            result_lines += '<span class="pl-code-highlighted-line" style="background-color: ' + color + ';">' + line + '\n</span>'
-        else:
-            result_lines += line + '\n'
-        line_number += 1
-    return result_lines
+    # Search by proper class/language names
+    # This returns None if not found, and a class if found.
+    lexer_class = pygments.lexers.find_lexer_class(name)
+    if lexer_class is not None:
+        # Instantiate the class if we found it
+        return lexer_class()
+    else:
+        try:
+            # Search by language aliases
+            # This throws an Exception if it's not found, and returns an instance if found.
+            return pygments.lexers.get_lexer_by_name(name)
+        except pygments.util.ClassNotFound:
+            return None
 
 
 def prepare(element_html, data):
@@ -133,8 +109,10 @@ def prepare(element_html, data):
 
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
     if language is not None:
-        if language not in allowed_languages:
-            raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
+        lexer = get_lexer_by_name(language)
+        if lexer is None:
+            allowed_languages = map(lambda tup: tup[1][0], pygments.lexers.get_all_lexers())
+            raise Exception(f'Unknown language: "{language}". Must be one of {", ".join(allowed_languages)}')
 
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     if source_file_name is not None:
@@ -166,7 +144,13 @@ def render(element_html, data):
         code = ''
         for line in f.readlines():
             code += line
-        code = code[:-1]
+
+        # Chop off ending newlines
+        if code[:-2] == '\r\n':
+            code = code[:-2]
+        if code[:-1] == '\n':
+            code = code[:-1]
+
         f.close()
         # Automatically escape code in file source (important for: html/xml).
         code = escape(code)
@@ -186,12 +170,25 @@ def render(element_html, data):
         elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
             code = code[1:]
 
+    if specify_language:
+        lexer = get_lexer_by_name(language)
+    else:
+        lexer = NoHighlightingLexer()
+
+    formatter_opts = {
+        'style': 'friendly',
+        'cssclass': 'mb-2 rounded',
+        'prestyles': 'padding: 0.5rem; margin-bottom: 0px',
+        'noclasses': True
+    }
     if highlight_lines is not None:
-        code = highlight_lines_in_code(code, highlight_lines, highlight_lines_color)
+        formatter_opts['hl_lines'] = parse_highlight_lines(highlight_lines)
+        formatter_opts['hl_color'] = highlight_lines_color
+    formatter = HighlightingHtmlFormatter(**formatter_opts)
+
+    code = pygments.highlight(unescape(code), lexer, formatter)
 
     html_params = {
-        'specify_language': specify_language,
-        'language': language,
         'no_highlight': no_highlight,
         'code': code,
         'prevent_select': prevent_select,

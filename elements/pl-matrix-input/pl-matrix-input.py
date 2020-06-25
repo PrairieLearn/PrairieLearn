@@ -1,6 +1,5 @@
 import prairielearn as pl
 import lxml.html
-from html import escape
 import numpy as np
 import random
 import math
@@ -14,12 +13,13 @@ RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_COMPLEX_DEFAULT = False
+SHOW_HELP_TEXT_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -74,6 +74,7 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid()
         }
 
@@ -92,7 +93,7 @@ def render(element_html, data):
                 raise ValueError('invalid score' + score)
 
         if raw_submitted_answer is not None:
-            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+            html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
@@ -104,7 +105,7 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -119,10 +120,13 @@ def render(element_html, data):
 
             # Format answer as a string
             html_params['a_sub'] = pl.string_from_2darray(a_sub, language=format_type, digits=12, presentation_type='g')
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -137,6 +141,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -189,6 +195,12 @@ def render(element_html, data):
     return html
 
 
+def get_format_string(message):
+    params = {'format_error': True, 'format_error_message': message}
+    with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, params).strip()
+
+
 def parse(element_html, data):
     # By convention, this function returns at the first error found
 
@@ -199,14 +211,14 @@ def parse(element_html, data):
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = get_format_string('No submitted answer.')
         data['submitted_answers'][name] = None
         return
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, info) = pl.string_to_2darray(a_sub, allow_complex=allow_complex)
     if a_sub_parsed is None:
-        data['format_errors'][name] = info['format_error']
+        data['format_errors'][name] = get_format_string(info['format_error'])
         data['submitted_answers'][name] = None
         return
 
@@ -291,7 +303,7 @@ def test(element_html, data):
     # Wrap true answer in ndarray (if it already is one, this does nothing)
     a_tru = np.array(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if random.choice([True, False]):
         # matlab
         if result == 'correct':
@@ -301,10 +313,50 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])), ndigits=12, wtype='g')
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
         elif result == 'invalid':
-            # FIXME: add more invalid expressions, make text of format_errors
-            # correct, and randomize
-            data['raw_submitted_answers'][name] = '[1, 2, 3]'
-            data['format_errors'][name] = 'invalid'
+            invalid_cases = {
+                'invalid commas': [
+                    '[,,1, 2, 3]',
+                    '[1,, 2, 3]',
+                    '[1, 2,, 3]',
+                    '[1, 2, 3,,]',
+                    '[, ,1, 2, 3]',
+                    '[1, , 2, 3]',
+                    '[1, 2, , 3]',
+                    '[1, 2, 3, ,]',
+                ],
+                'uneven dimensions': [
+                    '[1; 2 3]',
+                    '[1 2; 3]',
+                    '[1; 2, 3]',
+                    '[1, 2; 3]',
+                ],
+                'unbalanced brackets': [
+                    '[1 2 3',
+                    '1 2 3]',
+                    '[1, 2, 3',
+                    '1, 2, 3]',
+                ],
+                'non-spaces outside brackets': [
+                    '1 [2 3]',
+                    '[1 2] 3',
+                    '1 [2, 3]',
+                    '[1, 2] 3',
+                ],
+                'not finite': [
+                    'np.inf',
+                    '[np.inf]',
+                    '[1 2 np.inf]',
+                    '[1, 2, np.inf]',
+                ],
+                'empty matrix': [
+                    '[]',
+                    '[,]',
+                ],
+            }
+
+            error = random.choice(list(invalid_cases))
+            data['raw_submitted_answers'][name] = random.choice(invalid_cases[error])
+            data['format_errors'][name] = error
         else:
             raise Exception('invalid result: %s' % result)
     else:
