@@ -11,9 +11,10 @@ INLINE_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'enable-nota']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
+    enable_nota = pl.get_boolean_attrib(element, 'enable-nota', False)
 
     correct_answers = []
     incorrect_answers = []
@@ -32,6 +33,19 @@ def prepare(element_html, data):
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
+
+    nota_correct = False
+    if enable_nota:
+        # 'None of the Above' is correct with probability 1/(number_correct + 1)
+        # If len_correct is 0, nota_correct is guaranteed to be True.
+        # Thus, if no correct option is given, 'None of the Above' will always
+        # be correct
+        nota_correct = random.randint(0, len_correct) < 1
+        if nota_correct:
+            len_correct += 1
+        else:
+            len_incorrect += 1
+
     len_total = len_correct + len_incorrect
 
     if len_correct < 1:
@@ -45,11 +59,21 @@ def prepare(element_html, data):
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
+    if enable_nota:
+        if nota_correct:
+            number_correct -= 1
+        else:
+            number_incorrect -= 1
+
     sampled_correct = random.sample(correct_answers, number_correct)
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
+
+    if enable_nota:
+        # Add 'None of the above' option after shuffling
+        sampled_answers.append((index, nota_correct, 'None of the above'))
 
     fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
     if fixed_order:
