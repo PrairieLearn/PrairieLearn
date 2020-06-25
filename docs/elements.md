@@ -313,7 +313,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | - | The key of the correct answer.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`sort` | string | fixed | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.
+`sort` | string | random | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.
 `blank` | boolean | True | Option to add blank dropdown entry as default selection in drop-down list.
 
 #### Example implementation
