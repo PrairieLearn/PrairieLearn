@@ -7,7 +7,7 @@ from enum import Enum
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
 BLANK_DEFAULT = True
-SORT_DEFAULT = 'fixed'
+SORT_DEFAULT = 'random'
 NO_ANSWER_SELECTED = '<No answer selected>'
 
 
