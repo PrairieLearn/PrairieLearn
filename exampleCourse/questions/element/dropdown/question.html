@@ -1,6 +1,6 @@
     <p> Select the correct word in the following quotes:</p>
     The 
-    <pl-dropdown answers-name="aristotle">
+    <pl-dropdown answers-name="aristotle" blank="true">
 
         {{#params.aristotle}}
             <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
@@ -9,18 +9,8 @@
     </pl-dropdown> 
     is more than the sum of its parts. <p></p>
 
-    An <pl-dropdown sort="random" answers-name="socrates">
-
-        {{#params.socrates}}
-            <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-        {{/params.socrates}}
-
-    </pl-dropdown> life is not worth living. <p></p>
-
     A <pl-dropdown sort="ascend" answers-name="hume">
-
-        {{#params.hume}}
-            <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-        {{/params.hume}}
-
+        <pl-answer correct="true">wise</pl-answer>
+        <pl-answer correct="false">clumsy</pl-answer>
+        <pl-answer correct="false">reckless</pl-answer>
     </pl-dropdown> man proportions his belief to the evidence. <p></p>

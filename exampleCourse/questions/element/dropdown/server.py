@@ -12,17 +12,5 @@ def generate(data):
 		{'tag': 'false', 'ans': 'inverse'}
 	]
 
-	data['params'][QUESTION2] = [
-		{'tag': 'false', 'ans': 'insatiable'},
-		{'tag': 'true', 'ans': 'unexamined'},
-		{'tag': 'false', 'ans': 'examined' }
-	]
-
-	data['params'][QUESTION3] = [
-		{'tag': 'true', 'ans': 'wise'},
-		{'tag': 'false', 'ans': 'clumsy'},
-		{'tag': 'false', 'ans': 'reckless'}
-	]
-
 	return data
 	
