@@ -1,19 +1,18 @@
-var ERR = require('async-stacktrace');
-var async = require('async');
-var pg = require('pg');
-var path = require('path');
+const ERR = require('async-stacktrace');
+const async = require('async');
+const pg = require('pg');
+const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var migrations = require('../migrations');
-var sprocs = require('../sprocs');
+const { sqldb, migrations } = require('@prairielearn/prairielib');
+const sprocs = require('../sprocs');
 
-var postgresqlUser = 'postgres';
-var postgresqlDatabase = 'pltest';
-var postgresqlDatabaseTemplate = 'pltest_template';
-var postgresqlHost = 'localhost';
-var initConString = 'postgres://postgres@localhost/postgres';
+const postgresqlUser = 'postgres';
+const postgresqlDatabase = 'pltest';
+const postgresqlDatabaseTemplate = 'pltest_template';
+const postgresqlHost = 'localhost';
+const initConString = 'postgres://postgres@localhost/postgres';
 
 var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
     debug(`createFullDatabase(${dbName})`);
@@ -72,7 +71,7 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
         },
         function(callback) {
             debug('createFullDatabase(): running migrations');
-            migrations.init(function(err) {
+            migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn', function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
