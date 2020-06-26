@@ -240,7 +240,6 @@ WITH all_submissions_with_files AS (
     SELECT
         s.id AS submission_id,
         u.uid,
-        u.uin,
         ai.number AS assessment_instance_number,
         q.qid,
         v.number AS variant_number,
