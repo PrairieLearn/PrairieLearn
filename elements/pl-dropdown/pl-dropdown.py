@@ -8,7 +8,6 @@ WEIGHT_DEFAULT = 1
 BLANK_ANSWER = ' '
 BLANK_DEFAULT = True
 SORT_DEFAULT = 'random'
-NO_ANSWER_SELECTED = '<No answer selected>'
 
 
 class SortTypes(Enum):
@@ -92,9 +91,6 @@ def render(element_html, data):
     elif data['panel'] == 'submission':
         partial_score = data['partial_scores'].get(answers_name, {'score': None})
         score = partial_score.get('score', None)
-
-        if submitted_answer is BLANK_ANSWER:
-            submitted_answer = NO_ANSWER_SELECTED
 
         html_params = {
             'uuid': uuid,
