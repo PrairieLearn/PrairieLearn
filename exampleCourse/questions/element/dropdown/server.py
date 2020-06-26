@@ -6,24 +6,23 @@ def generate(data):
 	QUESTION2 = 'socrates'
 	QUESTION3 = 'hume'
 
-	# Can override pl-answer options as parameters
-	data['params'][QUESTION1] = { 
-		'tag1': 'true', 'ans1': 'whole', 
-		'tag2': 'false', 'ans2': 'part',
-		'tag3': 'false', 'ans3': 'inverse' 
-	}
+	data['params'][QUESTION1] = [
+		{'tag': 'true', 'ans': 'whole'},
+		{'tag': 'false', 'ans': 'part'},
+		{'tag': 'false', 'ans': 'inverse'}
+	]
 
-	data['params'][QUESTION2] = {
-		'tag1': 'false', 'ans1': 'insatiable',
-		'tag2': 'true', 'ans2': 'unexamined',
-		'tag3': 'false', 'ans3': 'examined' 
-	}
+	data['params'][QUESTION2] = [
+		{'tag': 'false', 'ans': 'insatiable'},
+		{'tag': 'true', 'ans': 'unexamined'},
+		{'tag': 'false', 'ans': 'examined' }
+	]
 
-	data['params'][QUESTION3] = {
-		'tag1': 'true', 'ans1': 'wise',
-		'tag2': 'false', 'ans2': 'clumsy',
-		'tag3': 'false', 'ans3': 'reckless'
-	}
+	data['params'][QUESTION3] = [
+		{'tag': 'true', 'ans': 'wise'},
+		{'tag': 'false', 'ans': 'clumsy'},
+		{'tag': 'false', 'ans': 'reckless'}
+	]
 
 	return data
 	

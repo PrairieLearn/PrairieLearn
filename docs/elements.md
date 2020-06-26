@@ -288,11 +288,16 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 **question.html**
 
 ```html
-An <pl-dropdown answers-name="socrates">
-  <pl-answer correct="true">unexamined</pl-answer>
-  <pl-answer>examined</pl-answer>
-  <pl-answer>insatiable</pl-answer>
-</pl-dropdown> life is not worth living.
+<p> Select the correct word in the following quotes:</p>
+The 
+<pl-dropdown answers-name="aristotle">
+
+    {{#params.aristotle}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    {{/params.aristotle}}
+
+</pl-dropdown> 
+is more than the sum of its parts. <p></p>
 ```
 
 **server.py**
@@ -300,11 +305,11 @@ An <pl-dropdown answers-name="socrates">
 def generate(data):
 
     # Correct Answers
-    data['params']['socrates'] = {
-      'tag1': 'true', 'ans1': 'whole',
-      'tag2': 'false', 'ans2': 'part',
-      'tag3': 'false', 'ans3': 'inverse'
-    }
+   data['params']['aristotle'] = [
+     {'tag': 'true', 'ans': 'whole'},
+     {'tag': 'false', 'ans': 'part'},
+     {'tag': 'false', 'ans': 'inverse'}
+   ]
 ```
 
 #### Customizations
