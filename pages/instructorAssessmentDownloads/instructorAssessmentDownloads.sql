@@ -304,7 +304,6 @@ all_files AS (
 SELECT
     (
         uid
-        || '_' || uin
         || '_' || assessment_instance_number
         || '_' || qid
         || '_' || variant_number
@@ -319,7 +318,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    uid, uin, assessment_instance_number, qid, variant_number, date
+    uid, assessment_instance_number, qid, variant_number, date
 LIMIT
     $limit
 OFFSET
