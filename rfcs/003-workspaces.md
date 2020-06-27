@@ -77,6 +77,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 * `questions`
   * Add a new `workspace_image` column
+  * Add a new `workspace_gradedFiles` column
 * `workspace_hosts`:
   * `id`: a unique ID for this host
   * `instance_id`: the AWS instance ID for this host
@@ -100,7 +101,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 ### Questions
 
-Course staff will declare workspace config per question via `workspace` in `info.json`. To begin, the only option will be an image:
+Course staff will declare workspace config per question via `workspace` in `info.json`. To begin, the only options will be an Docker image and a list of files to be graded:
 
 ```json
 {
@@ -133,7 +134,7 @@ questions
         `-- starter_code.c
 ```
 
-The workspace image name will need to be synced to the `questions` table via the usual syncing code. We should use a new `workspace_image` column.
+The workspace options will need to be synced to the `questions` table via the usual syncing code.
 
 ### Student-facing question interface
 
