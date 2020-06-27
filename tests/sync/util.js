@@ -147,6 +147,12 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} enableNetworking
  */
 
+/**
+ * @typedef {Object} QuestionWorkspaceOptions
+ * @property {string} image
+ * @property {string[]} gradedFiles
+ */
+
  /**
   * @typedef {Object} Question
   * @property {string} uuid
@@ -163,6 +169,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {boolean} partialCredit
   * @property {Object} options
   * @property {QuestionExternalGradingOptions} externalGradingOptions
+  * @property {QuestionWorkspaceOptions} workspaceOptions
   */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
