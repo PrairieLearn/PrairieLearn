@@ -1,6 +1,6 @@
 # Workspaces
 
-This file documents how to create workspace questions.
+Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
 ## Setting up
 
