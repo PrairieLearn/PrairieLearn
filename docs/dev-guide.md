@@ -368,7 +368,7 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
          shuffle_questions: boolean default false
     ```
 
-1. Add a DB migration; e.g., create `migrations/167\_assessments\_\_require\_honor\_code\_\_add.sql`:
+1. Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
 
     ```diff
     @@ -0,0 +1 @@
