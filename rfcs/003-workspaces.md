@@ -77,7 +77,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 * `questions`
   * Add a new `workspace_image` column
-  * Add a new `workspace_gradedFiles` column
+  * Add a new `workspace_graded_files` column
 * `workspace_hosts`:
   * `id`: a unique ID for this host
   * `instance_id`: the AWS instance ID for this host
