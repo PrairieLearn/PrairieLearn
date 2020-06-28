@@ -402,7 +402,7 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
                  auto_close: !!_.get(assessment, 'autoClose', true),
     ```
 
-1. Edit the sync query; For example, modify `sprocs/sync_assessments.sql`:
+1. Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
 
     ```diff
     @@ -44,3 +44,4 @@ BEGIN
