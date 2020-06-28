@@ -434,7 +434,7 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
       * @property {boolean} multipleInstance
     ```
 
-1. Add documentation; e.g., the honor code option is described at [Assessments -- Honor Code](assessment.md#honor-code).
+1. Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
 
 1. Add [tests](#unit-tests-and-integration-tests).
 
