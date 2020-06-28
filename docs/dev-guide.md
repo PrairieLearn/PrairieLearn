@@ -374,8 +374,6 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
     @@ -0,0 +1 @@
     +ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
     ```
-
-
 1. Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
 
     ```diff
