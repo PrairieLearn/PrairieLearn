@@ -2,8 +2,16 @@
 WITH instance_questions_info AS (
     SELECT
         iq.id,
-        (lag(iq.id) OVER w) AS prev_instance_question_id,
-        (lead(iq.id) OVER w) AS next_instance_question_id,
+        jsonb_build_object(
+            'id', (lag(iq.id) OVER w),
+            'score_perc', (lag(iq.score_perc) OVER w),
+            'sequence_blocked', instance_questions_check_sequence_blocked((lag(iq.id) OVER w))
+        ) AS prev_instance_question,
+        jsonb_build_object(
+            'id', (lead(iq.id) OVER w),
+            'score_perc', (lead(iq.score_perc) OVER w),
+            'sequence_blocked', instance_questions_check_sequence_blocked((lead(iq.id) OVER w))
+        ) AS next_instance_question,
         qo.question_number
     FROM
         assessment_instances AS ai
@@ -39,8 +47,8 @@ SELECT
     to_jsonb(iq) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
-        'prev_instance_question_id', iqi.prev_instance_question_id,
-        'next_instance_question_id', next_instance_question_id,
+        'prev', prev_instance_question,
+        'next', next_instance_question,
         'question_number', question_number,
         'max_points', CASE
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)

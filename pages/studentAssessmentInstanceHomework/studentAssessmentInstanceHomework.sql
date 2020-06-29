@@ -9,6 +9,7 @@ WHERE
 -- BLOCK get_questions
 SELECT
     iq.*,
+    instance_questions_check_sequence_blocked(iq.id) AS sequence_blocked,
     ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
     z.id AS zone_id,
     z.title AS zone_title,

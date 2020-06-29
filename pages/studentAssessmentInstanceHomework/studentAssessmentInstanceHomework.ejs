@@ -67,19 +67,19 @@
               <th colspan="4">
                 <%= question.zone_title %>
                 <% if (question.zone_has_max_points) { %>
-                    &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
+                    <a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
                        data-toggle="popover" data-trigger="focus" data-container="body"
                        data-html="true"
                        data-content="Of the points that you are awarded for answering these questions, at most <%= question.zone_max_points %> will count toward your total points.">Maximum <%= question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></a>
                 <% } %>
                 <% if (question.zone_has_best_questions) { %>
-                    &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
+                    <a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
                        data-toggle="popover" data-trigger="focus" data-container="body"
                        data-html="true"
                        data-content="Of these questions, only the <%= question.zone_best_questions %> with the highest number of awarded points will count toward your total points.">Best <%= question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></a>
                 <% } %>
-                <% if (question.zone_sequence_force) { %>
-                    <a tabindex="0" class="btn btn-xs btn-secondary text-white border" role="button"
+                <% if (question.zone_sequence_enforce) { %>
+                    <a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
                       data-toggle="popover" data-trigger="focus" data-container="body"
                       data-html="true"
                       data-content="You must score at least <%= question.zone_sequence_score_perc_threshold %>% on each question in order to unlock the next.">
@@ -93,20 +93,10 @@
               </th>
             </tr>
             <% } %>
-            <%
-              // Three cases where a link should be displayed:
-              var sequence_not_enforced = !question.zone_sequence_force;
-              var start_of_sequence = question.zone_sequence_force && question.start_new_zone;
-              var seq_prev_met = false;
-              if (!sequence_not_enforced && !start_of_sequence) {
-                seq_prev_met = questions[q_index - 1].score_perc >= (question.zone_sequence_score_perc_threshold);
-              }
-              var question_locked = (sequence_not_enforced || start_of_sequence || seq_prev_met);
-            %>
-            <tr class="<% if (!question_locked) { %>bg-light<% } %>">
+            <tr class="<% if (question.sequence_blocked) { %>bg-light<% } %>">
               <td>
                 <a
-                  <% if (!question_locked) { %>
+                  <% if (question.sequence_blocked) { %>
                     class="text-muted"
                   <% } else { %>
                     href="<%= urlPrefix %>/instance_question/<%= question.id %>/"
