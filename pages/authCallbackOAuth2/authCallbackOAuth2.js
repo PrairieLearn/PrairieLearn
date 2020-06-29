@@ -60,7 +60,7 @@ router.get('/', function(req, res, next) {
                 authn_provider_name: 'Google',
             };
             const pl_authn = csrf.generateToken(tokenData, config.secretKey);
-            res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMin});
+            res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
             let redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;

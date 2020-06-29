@@ -129,7 +129,7 @@ module.exports = function(req, res, next) {
             authn_provider_name: authnData.authn_provider_name || null,
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-        res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMin});
+        res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
 
         next();
     });
