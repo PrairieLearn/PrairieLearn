@@ -23,6 +23,18 @@ function obtainInfo(req, res, next){
         res.locals.config_info = result.rows[0];
         res.locals.config_info.defaultmin = res.locals.config_info.minimum || 2;
         res.locals.config_info.defaultmax = res.locals.config_info.maximum || 5;
+
+        res.locals.config_info.permission = '';
+        if(res.locals.config_info.student_auth_join){
+            res.locals.config_info.permission += 'join ';
+        }
+        if(res.locals.config_info.student_auth_create){
+            res.locals.config_info.permission += 'create ';
+        }
+        if(res.locals.config_info.student_auth_quit){
+            res.locals.config_info.permission += 'quit ';
+        }
+
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.assessment_list_rows = result.rows;
@@ -107,10 +119,12 @@ router.post('/', function(req, res, next) {
             assessment_id: res.locals.assessment.id,
             minsize: req.body.minsize,
             maxsize: req.body.maxsize,
-            permission: req.body.inputGroupSelectAccess,
+            joincheck: req.body.joincheck || false,
+            createcheck: req.body.createcheck || false,
+            quitcheck: req.body.quitcheck || false,
         };
-        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1 || !req.body.inputGroupSelectAccess){
-            res.locals.errormsg += 'Please enter max size, min size and student permission for group config';
+        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1){
+            res.locals.errormsg += 'Please enter group max size and min size';
             obtainInfo(req, res, next);
             return;
         }

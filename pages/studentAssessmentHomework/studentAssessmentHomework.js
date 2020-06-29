@@ -34,7 +34,7 @@ router.get('/', function(req, res, next) {
             if(res.locals.assessment.group_work){
                 sqldb.query(sql.get_configinfo, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    res.locals.type = result.rows[0].type || 0;
+                    res.locals.permissions = result.rows[0];
                     sqldb.query(sql.get_groupinfo, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupsize = result.rowCount;
@@ -102,7 +102,7 @@ router.post('/', function(req, res, next) {
         let cursize, maxsize;
         sqldb.query(sql.get_configinfo, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.type = result.rows[0].type || 0;
+            res.locals.permissions = result.rows[0];
             sqldb.query(sql.check_groupsize, params, function(err, result) {
                 let joinerror = true;
                 //students may have invalid input here, no need to log the error information

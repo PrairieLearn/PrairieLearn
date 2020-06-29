@@ -1,5 +1,5 @@
 --BLOCK config_info
-SELECT id, course_instance_id, type, name, minimum, maximum
+SELECT id, course_instance_id, name, minimum, maximum, student_auth_join, student_auth_create, student_auth_quit
 FROM group_configs
 WHERE assessment_id = $assessment_id AND deleted_at IS NULL;
 
@@ -56,6 +56,8 @@ UPDATE group_configs
     SET
         minimum = $minsize,
         maximum = $maxsize,
-        type = $permission
+        student_auth_join = $joincheck,
+        student_auth_create = $createcheck,
+        student_auth_quit = $quitcheck
     WHERE
         assessment_id = $assessment_id AND deleted_at IS NULL;

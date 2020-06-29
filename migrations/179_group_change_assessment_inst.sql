@@ -3,10 +3,12 @@ CREATE TABLE IF NOT EXISTS group_configs (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances(id) ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_id BIGINT REFERENCES assessments(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    type TEXT, -- what will these be? This might belong in groups rather than groups_config
     name TEXT, -- or maybe description is accurate here? Maybe as a base for groups created from it?
     minimum INT,
     maximum INT,
+    student_auth_join boolean DEFAULT false,
+    student_auth_create boolean DEFAULT false,
+    student_auth_quit boolean DEFAULT false,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp with time zone
 );
