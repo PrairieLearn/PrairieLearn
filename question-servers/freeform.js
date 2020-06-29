@@ -860,7 +860,7 @@ module.exports = {
         workers.getPythonCaller((err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
-                // FIXME: suppprt 'header'
+                // FIXME: support 'header'
                 (callback) => {
                     if (!renderSelection.question) return callback(null);
                     module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
