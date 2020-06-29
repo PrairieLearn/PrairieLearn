@@ -32,7 +32,7 @@ router.all('/', function(req, res, next) {
                 authn_provider_name: 'Azure',
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-            res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
+            res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
             var redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;

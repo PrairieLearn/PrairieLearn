@@ -146,11 +146,42 @@
   </div>
   <% } %>
 
+  <%# Submissions section %>
   <% if (showSubmissions) { %>
-  <% submissions.forEach(function(submission, idx) { %>
-    <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-  <% }); %>
-  <% } %>
+
+    <%# Only shows this many recent submissions by default %>
+    <% const MAX_TOP_RECENTS = 3; %>
+
+    <%# Show the top submissions %>
+    <% submissions.forEach(function(submission, idx) { %>
+      <% if (submissions.length - idx > submissions.length - MAX_TOP_RECENTS) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
+      <% } %>
+    <% }); %>
+
+    <%# Optionally show the older submissions %>
+    <% if (submissions.length > MAX_TOP_RECENTS) { %>
+
+      <div class="mb-4 d-flex justify-content-center">
+        <button class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed" type="button" data-toggle="collapse" data-target="#more-submissions-collapser" aria-expanded="false" aria-controls="more-submissions-collapser">
+          Show/hide older submissions
+          <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+        </button>
+      </div>
+
+      <div id="more-submissions-collapser" class="collapse">
+
+        <% submissions.forEach(function(submission, idx) { %>
+          <% if (submissions.length - idx <= submissions.length - MAX_TOP_RECENTS) { %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
+          <% } %>
+        <% }); %>
+
+      </div>
+
+    <% } %>
+
+  <% } %> <%# endif showSubmissions %>
 
   <%- include('externalGradingLiveUpdate'); %>
 
