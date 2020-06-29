@@ -30,6 +30,14 @@ file_list AS (
     WHERE
         f.instance_question_id = $instance_question_id
         AND f.deleted_at IS NULL
+),
+zone AS (
+  SELECT z.* FROM
+      instance_questions iq
+      JOIN assessment_questions aq ON (aq.id = iq.assessment_question_id)
+      JOIN alternative_groups ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones z ON (z.id = ag.zone_id)
+  WHERE iq.id = $instance_question_id
 )
 SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
@@ -62,7 +70,8 @@ SELECT
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
-    fl.list AS file_list
+    fl.list AS file_list,
+    z.sequence_score_perc_threshold AS zone_sequence_score_perc_threshold
 FROM
     instance_questions AS iq
     JOIN instance_questions_info AS iqi ON (iqi.id = iq.id)
@@ -77,6 +86,7 @@ FROM
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
     CROSS JOIN file_list AS fl
+    CROSS JOIN zone AS z
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id

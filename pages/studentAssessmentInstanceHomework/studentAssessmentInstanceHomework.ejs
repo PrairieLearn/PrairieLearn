@@ -100,7 +100,8 @@
                     class="text-muted"
                   <% } else { %>
                     href="<%= urlPrefix %>/instance_question/<%= question.id %>/"
-                  <% } %>>
+                  <% } %>
+                >
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
                 <% if (question.file_count > 0) { %>
