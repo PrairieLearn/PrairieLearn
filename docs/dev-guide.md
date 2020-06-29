@@ -72,6 +72,12 @@ npm run lint -s
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
+* Individual tests can be run with:
+
+```sh
+npx mocha tests/[testName].js
+```
+
 ## Debugging server-side JavaScript
 
 * Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
