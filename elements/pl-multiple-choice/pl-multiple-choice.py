@@ -11,10 +11,11 @@ INLINE_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'enable-nota']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'enable-nota', 'enable-aota']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
-    enable_nota = pl.get_boolean_attrib(element, 'enable-nota', False)
+    nota_enabled = pl.get_boolean_attrib(element, 'enable-nota', False)
+    aota_enabled = pl.get_boolean_attrib(element, 'enable-aota', False)
 
     correct_answers = []
     incorrect_answers = []
@@ -35,7 +36,7 @@ def prepare(element_html, data):
     len_incorrect = len(incorrect_answers)
 
     nota_correct = False
-    if enable_nota:
+    if nota_enabled:
         # 'None of the Above' is correct with probability 1/(number_correct + 1)
         # If len_correct is 0, nota_correct is guaranteed to be True.
         # Thus, if no correct option is given, 'None of the Above' will always
@@ -59,7 +60,7 @@ def prepare(element_html, data):
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
-    if enable_nota:
+    if nota_enabled:
         if nota_correct:
             number_correct -= 1
         else:
@@ -71,7 +72,7 @@ def prepare(element_html, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    if enable_nota:
+    if nota_enabled:
         # Add 'None of the above' option after shuffling
         sampled_answers.append((index, nota_correct, 'None of the above'))
 
