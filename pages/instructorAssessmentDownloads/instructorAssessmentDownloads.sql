@@ -84,7 +84,8 @@ SELECT DISTINCT ON (ai.id, q.qid)
     s.id AS submission_id,
     v.params,
     v.true_answer,
-    (s.submitted_answer - '_files') AS submitted_answer
+    (s.submitted_answer - '_files') AS submitted_answer,
+    s.partial_scores
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -119,6 +120,7 @@ WITH all_submissions AS (
         s.id AS submission_id,
         format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,
@@ -242,7 +244,6 @@ WITH all_submissions_with_files AS (
     SELECT
         s.id AS submission_id,
         u.uid,
-        u.uin,
         ai.number AS assessment_instance_number,
         q.qid,
         v.number AS variant_number,
@@ -307,7 +308,6 @@ all_files AS (
 SELECT
     (
         uid
-        || '_' || uin
         || '_' || assessment_instance_number
         || '_' || qid
         || '_' || variant_number
@@ -322,7 +322,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    uid, uin, assessment_instance_number, qid, variant_number, date
+    uid, assessment_instance_number, qid, variant_number, date
 LIMIT
     $limit
 OFFSET
