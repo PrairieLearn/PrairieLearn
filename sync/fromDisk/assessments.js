@@ -97,8 +97,8 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
-                sequence_force: zone.sequence.enforce,
-                sequence_score_perc_threshold: zone.sequence.scorePercThreshold
+                sequence_enforce: zone.sequence.enforce,
+                sequence_score_perc_threshold: zone.sequence.scorePercThreshold || 100
             };
         });
 

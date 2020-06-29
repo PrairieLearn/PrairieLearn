@@ -51,7 +51,7 @@
                   <% if (question.zone_has_best_questions) { %>
                     <span class="badge border">Best <%= question.zone_best_questions %> questions</span>
                   <% } %>
-                  <% if (question.zone_sequence_force) { %>
+                  <% if (question.zone_sequence_enforce) { %>
                     <span class="badge border">
                       Order matters
                       <% if (question.zone_sequence_score_perc_threshold !== undefined) { %>
