@@ -124,6 +124,11 @@ psql postgres
 RAISE NOTICE 'This is logging: % and %', var1, var2;
 ```
 
+* To manually run a function:
+
+```sql
+SELECT the_sql_function(arg1, arg2);
+```
 
 ## HTML page generation
 
