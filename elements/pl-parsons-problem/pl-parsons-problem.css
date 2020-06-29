@@ -35,6 +35,7 @@ ul.output {
     white-space: nowrap;
     overflow: hidden;
     cursor: move;
+    
 }
 .sortable-code li:hover {
     overflow: visible;
@@ -65,3 +66,8 @@ ul.output {
 .misaligned {
     background-color: #cccc00;
 }    
+.break-word {
+    overflow-wrap: break-word;
+    word-break: keep-all;
+    overflow: hidden; 
+ }
