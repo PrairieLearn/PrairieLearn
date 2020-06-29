@@ -30,8 +30,8 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             debug('no assessment instance');
-            //if it is a groupwork with no instance, jump to a confirm page.
-            if(res.locals.assessment.groupwork){
+            //if it is a group_work with no instance, jump to a confirm page.
+            if(res.locals.assessment.group_work){
                 sqldb.query(sql.get_configinfo, params, function(err, result) {
                     if (ERR(err, next)) return;
                     res.locals.type = result.rows[0].type || 0;
@@ -57,7 +57,7 @@ router.get('/', function(req, res, next) {
                 });
             } else {
                 const time_limit_min = null;
-                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
                     if (ERR(err, next)) return;
                     debug('redirecting');
                     res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
@@ -81,7 +81,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
                 const time_limit_min = null;
-                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.groupwork, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
+                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
                     if (ERR(err, next)) return;
                     debug('redirecting');
                     res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

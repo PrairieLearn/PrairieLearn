@@ -1,4 +1,4 @@
--- BLOCK get_groupwork
+-- BLOCK get_group_work
 SELECT *
 FROM
     

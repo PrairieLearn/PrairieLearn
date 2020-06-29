@@ -113,7 +113,7 @@ FROM
 WHERE
     s.id = $submission_id;
 
--- BLOCK get_groupwork
+-- BLOCK get_group_work
 SELECT gu.user_id
 FROM
     group_users AS gu 

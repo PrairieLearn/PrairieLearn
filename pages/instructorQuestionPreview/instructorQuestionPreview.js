@@ -74,7 +74,7 @@ function processIssue(req, res, callback) {
             {}, // system_data
             res.locals.authn_user.user_id,
         ];
-        sqldb.query(sql.get_groupwork, {vid: variant_id}, (err, result) =>{
+        sqldb.query(sql.get_group_work, {vid: variant_id}, (err, result) =>{
             console.log(result);
             if (ERR(err, callback)) return;
             if (result.rowCount != 0){          

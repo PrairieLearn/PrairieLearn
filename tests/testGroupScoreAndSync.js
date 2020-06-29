@@ -38,7 +38,7 @@ describe('assessment instance group synchorization test', function () {
     after('shut down testing server', helperServer.after);
     describe('1. database initialization', function() {
         it('get group-based homework assessment id', function(callback) {
-            sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
+            sqldb.query(sql.select_group_work_assessment, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.lengthOf(result.rows, 2);
                 assert.notEqual(result.rows[0].id, undefined);

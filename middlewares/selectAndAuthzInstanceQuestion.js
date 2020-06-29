@@ -14,7 +14,7 @@ module.exports = function(req, res, next) {
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
     };
-    sqldb.query(sql.get_groupwork, params, function(err, result) {
+    sqldb.query(sql.get_group_work, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount != 0) {
             sqldb.query(sql.select_and_auth_group, params, function(err, result) {

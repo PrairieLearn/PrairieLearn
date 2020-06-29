@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION
         IN course_instance_id bigint,   -- can be NULL for some instructor questions
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
-        IN groupwork boolean,
+        IN group_work boolean,
         OUT variant jsonb
     )
 AS $$
@@ -35,7 +35,7 @@ BEGIN
 
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
-        IF groupwork THEN 
+        IF group_work THEN 
             SELECT           q.id,    g.id,                  ai.id,                   ci.id
             INTO real_question_id, real_group_id, assessment_instance_id, real_course_instance_id
             FROM

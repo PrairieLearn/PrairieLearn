@@ -7,7 +7,7 @@ columns
     constant_question_value: boolean default false
     course_instance_id: bigint not null
     deleted_at: timestamp with time zone
-    groupwork: boolean default false
+    group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_points: double precision
     mode: enum_mode

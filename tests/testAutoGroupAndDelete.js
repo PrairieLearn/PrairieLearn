@@ -16,7 +16,7 @@ describe('test auto group and delete groups', function() {
     after('shut down testing server', helperServer.after);
 
     it('get group-based homework assessment', (callback) => {
-        sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
+        sqldb.query(sql.select_group_work_assessment, [], function(err, result) {
             if (ERR(err, callback)) return;
             assert.notEqual(result.rows.length, 0);
             assert.notEqual(result.rows[0].id, undefined);

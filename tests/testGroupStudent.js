@@ -48,7 +48,7 @@ describe('Group based homework assess control on student side', function() {
 
     describe('1. the database', function() {   
         it('should contain a group-based homework assessment', function(callback) {
-            sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
+            sqldb.query(sql.select_group_work_assessment, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.lengthOf(result.rows, 2);
                 assert.notEqual(result.rows[0].id, undefined);
@@ -811,7 +811,7 @@ describe('Group based homework assess control on student side', function() {
 
     describe('20. cross assessment grouping', function() {
         it('should contain a second group-based homework assessment', function(callback) {
-            sqldb.query(sql.select_groupwork_assessment, [], function(err, result) {
+            sqldb.query(sql.select_group_work_assessment, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.lengthOf(result.rows, 2);
                 assert.notEqual(result.rows[1].id, undefined);

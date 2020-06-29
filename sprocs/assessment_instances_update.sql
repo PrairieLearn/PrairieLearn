@@ -14,7 +14,7 @@ DECLARE
     course_id bigint;
     user_id bigint;
     group_id bigint;
-    groupwork boolean;
+    group_work boolean;
     assessment_id bigint;
     assessment_type enum_assessment_type;
     assessment_instance_open boolean;
@@ -29,9 +29,9 @@ BEGIN
     new_instance_question_ids = array[]::bigint[];
 
     SELECT 
-        a.groupwork
+        a.group_work
     INTO 
-        groupwork
+        group_work
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -39,7 +39,7 @@ BEGIN
         ai.id = assessment_instance_id;
     
      -- get basic data about existing objects
-    IF groupwork THEN
+    IF group_work THEN
         SELECT
             c.id,      g.id, a.id,          a.type,
             a.max_points,          ai.max_points,

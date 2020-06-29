@@ -15,7 +15,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     debug('GET /');
     const params = {assessment_id: res.locals.assessment.id};
-    if (res.locals.assessment.groupwork) {
+    if (res.locals.assessment.group_work) {
         sqldb.query(sql.select_assessment_instances_group, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.user_scores = result.rows;

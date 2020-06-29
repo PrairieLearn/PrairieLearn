@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION
     assessment_instances_insert(
         IN assessment_id bigint,
         IN user_id bigint,
-        IN groupwork boolean,
+        IN group_work boolean,
         IN authn_user_id bigint,
         IN mode enum_mode,
         IN time_limit_min integer DEFAULT NULL,
@@ -28,7 +28,7 @@ BEGIN
 
     -- ######################################################################
     -- determine the "number" of the new assessment instance
-    IF groupwork THEN
+    IF group_work THEN
         SELECT gu.group_id
         INTO  groupId
         FROM  group_users as gu

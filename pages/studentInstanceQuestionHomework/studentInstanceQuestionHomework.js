@@ -84,7 +84,7 @@ router.post('/', function(req, res, next) {
                 + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
-        sqldb.query(sql.get_groupwork, {vid: req.body.__variant_id}, (err, result) => {
+        sqldb.query(sql.get_group_work, {vid: req.body.__variant_id}, (err, result) => {
             if (ERR(err, next)) return;
             if(result.rowCount != 0){
                 res.locals.leader_user_id = result.rows[0].user_id;

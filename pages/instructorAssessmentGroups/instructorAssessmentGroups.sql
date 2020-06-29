@@ -46,7 +46,7 @@ ORDER BY uid;
 -- BLOCK assessment_list
 SELECT id, tid, title
 FROM assessments
-WHERE groupwork AND id != $assessment_id AND course_instance_id IN (SELECT course_instance_id
+WHERE group_work AND id != $assessment_id AND course_instance_id IN (SELECT course_instance_id
                                             FROM assessments
                                             WHERE id = $assessment_id)
 ORDER BY tid;

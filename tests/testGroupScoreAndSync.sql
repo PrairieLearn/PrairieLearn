@@ -1,4 +1,4 @@
--- BLOCK select_groupwork_assessment
+-- BLOCK select_group_work_assessment
 SELECT
     a.id
 FROM
@@ -7,7 +7,7 @@ FROM
 WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'HW'
-    AND a.groupwork is TRUE;
+    AND a.group_work is TRUE;
 
 -- BLOCK generate_and_enroll_3_users
 SELECT

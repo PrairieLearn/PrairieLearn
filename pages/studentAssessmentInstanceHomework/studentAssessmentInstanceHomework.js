@@ -57,7 +57,7 @@ router.get('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
                 debug('rendering EJS');
-                if(res.locals.assessment.groupwork){
+                if(res.locals.assessment.group_work){
                     sqldb.query(sql.get_groupinfo, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupinfo = result.rows;
