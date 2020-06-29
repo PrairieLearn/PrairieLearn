@@ -97,21 +97,6 @@
             "description": "If the assessment will support group work.",
             "type": "boolean",
             "default": false
-        },
-        "groupmax": {
-            "description": "The maximum number of students in the group.",
-            "type": "integer",
-            "default": 1
-        },
-        "groupmin": {
-            "description": "The minimum number of students in the group.",
-            "type": "integer",
-            "default": 1
-        },
-        "grouptype": {
-            "description": "1 = assigned_by_instructor, 2 = assigned_by_system, 3 = pair_up_by_students",
-            "type": "integer",
-            "default": 0
         }
     },
     "definitions": {
