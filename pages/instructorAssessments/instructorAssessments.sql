@@ -18,7 +18,7 @@ SELECT
     a.course_instance_id,
     a.type,
     a.number as assessment_number,
-    a.title,    
+    a.title,
     a.group_work AS group_work,
     a.assessment_set_id,
     tstats.number,
