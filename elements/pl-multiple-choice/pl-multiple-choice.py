@@ -6,15 +6,15 @@ import chevron
 
 WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
-
+NONE_OF_THE_ABOVE_DEFAULT = False
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'enable-nota']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
-    enable_nota = pl.get_boolean_attrib(element, 'enable-nota', False)
+    enable_nota = pl.get_boolean_attrib(element, 'none-of-the-above', NONE_OF_THE_ABOVE_DEFAULT)
 
     correct_answers = []
     incorrect_answers = []
