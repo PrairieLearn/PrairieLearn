@@ -76,14 +76,14 @@ function processIssue(req, res, callback) {
         sqldb.query(sql.get_group_work, {vid: variant_id}, (err, result) =>{
             console.log(result);
             if (ERR(err, callback)) return;
-            if (result.rowCount != 0){          
+            if (result.rowCount != 0) {          
                     params.push(result.rows[0].user_id);
                     console.log(params);
                         sqldb.call('issues_insert_for_group_variant', params, (err) => {
                             if (ERR(err, callback)) return;
                             callback(null, variant_id);
                         });
-            }else {
+            } else {
                     sqldb.call('issues_insert_for_variant', params, (err) => {
                         if (ERR(err, callback)) return;
                         callback(null, variant_id);
