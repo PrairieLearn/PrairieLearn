@@ -5,7 +5,7 @@
     <% } else { %>
     <div class="row">
       <div class="col d-flex justify-content-between">
-        <span class="d-flex">
+        <span class="d-flex align-items-center">
           <% if (showSaveButton) { %>
             <button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">
               <% if (showGradeButton) { %>
@@ -30,7 +30,7 @@
               <% } %>
           <% } %>
           <% if (showManualGradingMsg) { %>
-          This question will be manually graded.
+          <span class="order-3 ml-2">This question will be manually graded.</span>
           <% } %>
         </span>
         <span class="d-flex">
@@ -51,7 +51,7 @@
       <% } else { %>
       <div class="row">
         <div class="col d-flex justify-content-between">
-          <span class="d-flex">
+          <span class="d-flex align-items-center">
               <% if (showSaveButton) { %>
                 <button class="btn btn-info question-save disable-on-submit order-2">
                   <% if (showGradeButton) { %>
@@ -76,7 +76,7 @@
                   <% } %>
               <% } %>
               <% if (showManualGradingMsg) { %>
-              This question will be manually graded.
+              <span class="order-3 ml-2">This question will be manually graded.</span>
               <% } %>
           </span>
           <span class="d-flex">

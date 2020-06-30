@@ -7,7 +7,7 @@
 
 ## Directory structure
 
-Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `id`) for that question. For example, here are two different questions:
+Questions are all stored inside the `questions` directory (or any subfolder) for a course. Each question is a single directory that contains all the files for that question. The name of the full question directory relative to `questions` is the QID (the "question ID") for that question. For example, here are three different questions:
 
 ```text
 questions
@@ -18,19 +18,26 @@ questions
 |   +-- server.py             # secret server-side code (optional)
 |   `-- question.html         # HTML template for the question
 |
-`-- addVectors                # second question, id is "addVectors"
+|-- addVectors                # second question, id is "addVectors"
+|   |
+|   +-- info.json             # metadata for the addVectors question
+|   +-- server.py
+|   +-- question.html
+|   +-- notes.docx            # more files, like notes on how the question works
+|   +-- solution.docx         # these are secret (can't be seen by students)
+|   |
+|   +-- clientFilesQuestion/  # Files accessible to the client (web browser)
+|   |   `-- fig1.png          # A client file (an image)
+|   |
+|   +-- tests/                # external grading files (see other doc)
+|       `-- ...
+|
+`-- subfolder                 # a subfolder we can put questions in -- this itself can't be a question
     |
-    +-- info.json             # metadata for the addVectors question
-    +-- server.py
-    +-- question.html
-    +-- notes.docx            # more files, like notes on how the question works
-    +-- solution.docx         # these are secret (can't be seen by students)
-    |
-    +-- clientFilesQuestion/  # Files accessible to the client (web browser)
-    |   `-- fig1.png          # A client file (an image)
-    |
-    +-- tests/                # external grading files (see other doc)
-        `-- ...
+    `-- nestedQuestion        # third question, id is "subfolder/nestedQuestion"
+        |
+        +-- info.json         # metadata for the "subfolder/nestedQuestion" question
+        `-- question.html
 ```
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).

@@ -106,4 +106,29 @@ describe('Question syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'questions', 'badQuestion'));
     await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
   });
+
+  it('allows arbitrary nesting of questions in subfolders', async() => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'subfolder4', 'subfolder5', 'subfolder6', 'nestedQuestion'];
+    const nestedQid = path.join(...nestedQuestionStructure);
+    const questionPath = path.join(courseDir, 'questions', nestedQid);
+
+    await fs.ensureDir(questionPath);
+    await fs.copyFile(path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'), path.join(questionPath, 'info.json'));
+    await fs.rmdir(path.join(courseDir, 'questions', util.QUESTION_ID), {'recursive': true});
+
+    await util.syncCourseData(courseDir);
+  });
+
+  it('fails if a nested question directory does not eventually contain an info.json file', async() => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'subfolder4', 'subfolder5', 'subfolder6', 'badQuestion'];
+    const nestedQid = path.join(...nestedQuestionStructure);
+    const questionPath = path.join(courseDir, 'questions', nestedQid);
+
+    await fs.ensureDir(questionPath);
+    await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
+  });
 });
