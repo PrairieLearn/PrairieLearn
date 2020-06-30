@@ -144,6 +144,11 @@ When a new variant of a question is created, the main server will create a corre
 
 We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_url` to `data.options`, and this element (or potentially other elements) can use this to render a button. `workspace_url` will be something of the form `/pl/[garbage]/workspace/[workspace_id]`, where `[garbage]` corresponds to the different places that questions can be accessed from (instructor question, student variant, maybe others?).
 
+> Implementation note: workspace will be created and inserted into the DB in the `_makeAndInsertVariantWithClient` function in `lib/question.js`
+> Implementation note: the workspace object from the DB should be attached to `res.locals` in the `getAndRenderVariant` function in `lib/question.js`, just like `variant` currently is
+> Implementation note: `workspaceUrl` should be generated in the `_buildQuestionUrls` function in `lib/question.js`
+> Implementation note: `data.options.workspace_url` should be populated in the `renderPanel` function of `question-servers/freeform.js`; `workspaceUrl` should be available from the `locals` object like the other URLs
+
 When this button is clicked, the URL at `workspace_url` will be opened in a new tab.
 
 ### Accessing a workspace
