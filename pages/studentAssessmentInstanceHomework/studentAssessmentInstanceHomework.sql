@@ -36,7 +36,7 @@ WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
 
--- BLOCK get_groupinfo
+-- BLOCK get_group_info
 SELECT gu.group_id, gr.name, us.uid, gc.student_auth_join, gc.student_auth_create, gc.student_auth_quit
 FROM
 assessment_instances ai
