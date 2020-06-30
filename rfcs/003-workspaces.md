@@ -80,6 +80,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
   * Add a new `workspace_graded_files` column
 * `variants`
   * Add a `workspace_id` column
+    * Consider adding a `UNIQUE` constraint on `workspace_id`
 * `workspace_hosts`:
   * `id`: a unique ID for this host
   * `instance_id`: the AWS instance ID for this host
