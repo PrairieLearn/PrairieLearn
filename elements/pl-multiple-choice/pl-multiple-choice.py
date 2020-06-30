@@ -63,14 +63,14 @@ def prepare(element_html, data):
         # min number if 'All of the above' is correct
         number_answers = min(1 + len_correct + enable_nota, number_answers)
     # For simplicity, (1 + len_incorrect) is the min number for all other cases
-    number_answers = max(1, min(1 + len_incorrect, number_answers))
+    number_answers = max(1, int(enable_nota + enable_aota), min(1 + len_incorrect, number_answers))
 
     number_correct = 1
     number_incorrect = number_answers - number_correct
 
     if aota_correct:
         number_correct = number_answers - 1 - enable_nota
-        number_incorrect = enable_nota
+        number_incorrect = int(enable_nota)
 
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
@@ -78,7 +78,7 @@ def prepare(element_html, data):
     # 2. Sample corret and incorrect choices
     d_incorrect = (enable_nota and not nota_correct) + (enable_aota and not aota_correct)
     sampled_correct = random.sample(correct_answers, number_correct - nota_correct)
-    sampled_incorrect = random.sample(incorrect_answers, number_incorrect - d_incorrect)
+    sampled_incorrect = random.sample(incorrect_answers, max(0, number_incorrect - d_incorrect))
 
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
