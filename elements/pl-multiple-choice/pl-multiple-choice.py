@@ -65,7 +65,7 @@ def prepare(element_html, data):
         # min number if 'All of the above' is correct
         number_answers = min(1 + len_correct + enable_nota, number_answers)
     # For simplicity, (1 + len_incorrect) is the min number for all other cases
-    number_answers = max(1, int(enable_nota + enable_aota), min(1 + len_incorrect, number_answers))
+    number_answers = max(1, min(1 + len_incorrect, number_answers))
 
     number_correct = 1
     number_incorrect = number_answers - number_correct
