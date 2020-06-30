@@ -35,7 +35,7 @@ BEGIN
             tmp_group_id
         FROM
             group_users as gu
-            JOIN groups AS g ON(g.id = gu.group_id)
+            JOIN groups AS g ON (g.id = gu.group_id)
             JOIN group_configs AS gc ON (gc.id = g.group_config_id)
         WHERE 
             gu.user_id = assessment_instances_insert.user_id
