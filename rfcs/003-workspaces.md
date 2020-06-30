@@ -78,12 +78,13 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 * `questions`
   * Add a new `workspace_image` column
   * Add a new `workspace_graded_files` column
+* `variants`
+  * Add a `workspace_id` column
 * `workspace_hosts`:
   * `id`: a unique ID for this host
   * `instance_id`: the AWS instance ID for this host
   * `hostname`: the hostname (IP address, DNS address, etc) for this host
 * `workspaces`: new tables
-  * `variant_id`: Question variant we're associated with
   * `id`: a unique ID for this workspace
   * `s3_bucket`: The S3 bucket that this workspace's state lives in
   * `s3_root_key`: The root "path" within the S3 bucket
