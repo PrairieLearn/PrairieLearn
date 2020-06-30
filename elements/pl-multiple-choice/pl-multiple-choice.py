@@ -8,6 +8,7 @@ WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
 NONE_OF_THE_ABOVE_DEFAULT = False
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
