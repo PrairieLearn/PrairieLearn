@@ -103,11 +103,11 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 ### Questions
 
-Course staff will declare workspace config per question via `workspace` in `info.json`. To begin, the only options will be an Docker image and a list of files to be graded:
+Course staff will declare workspace config per question via `workspaceOptions` in `info.json`. To begin, the only options will be an Docker image and a list of files to be graded:
 
 ```json
 {
-    "workspace": {
+    "workspaceOptions": {
         "image": "some-docker-image-name",
         "gradedFiles": [
             "animal.h",
