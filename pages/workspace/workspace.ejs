@@ -1,0 +1,31 @@
+<div>
+    <body id="msg">NA</body>
+</div>
+<div>
+    <button id="button">Ping the Server</button>
+
+</div>
+<script src="/javascripts/socket.io.js"></script>
+<script src="/node_modules/jquery/dist/jquery.min.js"></script>
+<body>
+    <script>
+        $(function () {
+            var socket = io("/workspace", {query: "id=" + "<%= id %>"});
+            socket.on("connect", function () {
+                console.log("connected");
+                socket.emit("ping", "Hello!");
+            });
+
+            socket.on("update", function (msg) {
+                // document.getElementById("msg").innerText = "Hello";
+                console.log("receive update: " + msg);
+                
+                document.getElementById("button").onclick = function() {              
+                    socket.emit("heartbeat", "I am still alive");
+                };
+            });
+        });
+    
+        
+    </script>
+</body>

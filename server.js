@@ -25,6 +25,7 @@ const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
+const workspaceSocket = require('./lib/workspaceSocket')
 const assessment = require('./lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const migrations = require('./migrations');
@@ -238,6 +239,7 @@ app.use('/pl/password', require('./pages/authPassword/authPassword'));
 app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
 app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
 
+app.use('/workspace', require('./pages/workspace/workspace'));
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
     app.use('/pl/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
@@ -987,6 +989,12 @@ if (config.startServer) {
         },
         function(callback) {
             externalGradingSocket.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            workspaceSocket.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
