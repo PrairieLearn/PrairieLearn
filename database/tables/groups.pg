@@ -8,6 +8,8 @@ columns
 
 indexes
     groups_pkey: PRIMARY KEY (id) USING btree (id)
+    groups_course_instance_id_key: USING btree (course_instance_id)
+    groups_group_config_id_key: USING btree (group_config_id)
 
 foreign-key constraints
     groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

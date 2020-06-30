@@ -97,14 +97,12 @@ BEGIN
         PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id AND deleted_at IS NULL;
         IF NOT FOUND AND (assessment->>'group_work')::boolean THEN
             INSERT INTO group_configs
-            (course_instance_id,
-            assessment_id
-            )
-            (
-                SELECT
-                    new_course_instance_id,
-                    new_assessment_id
-            );  
+                (course_instance_id,
+                assessment_id
+            ) VALUES (
+                new_course_instance_id,
+                new_assessment_id
+            ); 
         END IF;
         
         -- Now process all access rules for this assessment

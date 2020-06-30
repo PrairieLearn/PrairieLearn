@@ -13,6 +13,8 @@ columns
 
 indexes
     group_configs_pkey: PRIMARY KEY (id) USING btree (id)
+    group_configs_assessment_id_key: USING btree (assessment_id)
+    group_configs_course_instance_id_key: USING btree (course_instance_id)
 
 foreign-key constraints
     group_configs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

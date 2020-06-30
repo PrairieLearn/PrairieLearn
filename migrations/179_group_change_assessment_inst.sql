@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS group_configs (
     deleted_at timestamp with time zone
 );
 
+CREATE INDEX group_configs_course_instance_id_key ON group_configs (course_instance_id);
+CREATE INDEX group_configs_assessment_id_key ON group_configs (assessment_id);
+
+
 CREATE TABLE IF NOT EXISTS groups (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -22,12 +26,18 @@ CREATE TABLE IF NOT EXISTS groups (
     deleted_at timestamp with time zone
 );
 
+CREATE INDEX groups_course_instance_id_key ON groups (course_instance_id);
+CREATE INDEX groups_group_config_id_key ON groups (group_config_id);
+
 -- simple join table, no extra metadata - that could be stored in audit logs if needed
 CREATE TABLE IF NOT EXISTS group_users (
     group_id BIGINT REFERENCES groups(id),
     user_id BIGINT REFERENCES users,
     PRIMARY KEY (group_id, user_id)
 );
+
+CREATE INDEX group_users_group_id_key ON group_users (group_id);
+CREATE INDEX group_users_user_id_key ON group_users (user_id);
 
 ALTER TABLE assessments ADD COLUMN group_work boolean DEFAULT FALSE;
 ALTER TABLE assessment_instances ADD COLUMN group_id BIGINT REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE;
