@@ -101,6 +101,8 @@ def prepare(element_html, data):
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
     # 4. Write to data
+    # Because 'All of the above' is below all the correct options when it's
+    # true. The variable correct_answer will save it as correct
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
