@@ -14,8 +14,6 @@ def prepare(element_html, data):
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'enable-nota', 'enable-aota']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
-    nota_enabled = pl.get_boolean_attrib(element, 'enable-nota', False)
-    aota_enabled = pl.get_boolean_attrib(element, 'enable-aota', False)
 
     correct_answers = []
     incorrect_answers = []
@@ -34,47 +32,67 @@ def prepare(element_html, data):
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
-
-    nota_correct = False
-    if nota_enabled:
-        # 'None of the Above' is correct with probability 1/(number_correct + 1)
-        # If len_correct is 0, nota_correct is guaranteed to be True.
-        # Thus, if no correct option is given, 'None of the Above' will always
-        # be correct
-        nota_correct = random.randint(0, len_correct) < 1
-        if nota_correct:
-            len_correct += 1
-        else:
-            len_incorrect += 1
-
     len_total = len_correct + len_incorrect
 
-    if len_correct < 1:
+    enable_nota = pl.get_boolean_attrib(element, 'enable-nota', False)
+    enable_aota = pl.get_boolean_attrib(element, 'enable-aota', False)
+
+    nota_correct = False
+    aota_correct = False
+    if enable_nota or enable_aota:
+        prob_space = len_correct + enable_nota + enable_aota
+        rand_int = random.randint(1, prob_space)
+        # Either 'None of the above' or 'All of the above' is correct
+        # with probability 1/(number_correct + enable-nota + enable-aota).
+        # However, if len_correct is 0, nota_correct is guaranteed to be True.
+        # Thus, if no correct option is given, 'None of the above' will always
+        # be correct, and 'All of the above' always incorrect
+        nota_correct = (enable_nota and rand_int == 1) or len_correct == 0
+        # 'All of the above' will be chosen as correct only when there is
+        # at least 1 correct choice to avoid confusion
+        aota_correct = enable_aota and rand_int == 2 and len_correct > 0
+
+    # d_correct = (nota_correct + aota_correct)
+
+    if len_correct < 1 and not nota_correct:
         raise Exception('pl-multiple-choice element must have at least one correct answer')
 
-    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
-
+    # 1. Determine number of answers to display
+    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total + enable_nota + enable_aota)
+    if enable_aota:
+        # min number if 'All of the above' is correct
+        number_answers = min(1 + len_correct + enable_nota, number_answers)
+    # For simplicity, (1 + len_incorrect) is the min number for all other cases
     number_answers = max(1, min(1 + len_incorrect, number_answers))
+
     number_correct = 1
     number_incorrect = number_answers - number_correct
+
+    if aota_correct:
+        number_correct = number_answers - 1 - enable_nota
+        number_incorrect = enable_nota
+
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
-    if nota_enabled:
-        if nota_correct:
-            number_correct -= 1
-        else:
-            number_incorrect -= 1
-
-    sampled_correct = random.sample(correct_answers, number_correct)
-    sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
+    # 2. Sample corret and incorrect choices
+    d_incorrect = (enable_nota and not nota_correct) + (enable_aota and not aota_correct)
+    sampled_correct = random.sample(correct_answers, number_correct - nota_correct)
+    sampled_incorrect = random.sample(incorrect_answers, number_incorrect - d_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    if nota_enabled:
+    # 3. Modify sampled choices
+    if enable_aota:
+        # Add 'All of the above' option after shuffling
+        sampled_answers.append((index, aota_correct, 'All of the above'))
+        index += 1
+
+    if enable_nota:
         # Add 'None of the above' option after shuffling
         sampled_answers.append((index, nota_correct, 'None of the above'))
+        index += 1
 
     fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
     if fixed_order:
@@ -82,6 +100,7 @@ def prepare(element_html, data):
         # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
+    # 4. Write to data
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
