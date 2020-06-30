@@ -32,8 +32,8 @@ ul.output {
     border:1px solid lightgray;
     padding:10px;
     margin-top: 5px;
-    white-space: nowrap;
-    overflow: hidden;
+    word-break: break-all;
+    word-break: keep-all;
     cursor: move;
     
 }
@@ -66,8 +66,8 @@ ul.output {
 .misaligned {
     background-color: #cccc00;
 }    
-.break-word {
+/* .break-word {
     overflow-wrap: break-word;
     word-break: keep-all;
     overflow: hidden; 
- }
+ } */
