@@ -19,7 +19,7 @@ DECLARE
     number integer := 1;
     date_limit timestamptz := NULL;
     auto_close boolean := FALSE;
-    groupId bigint;
+    tmp_group_id bigint;
 BEGIN
     -- ######################################################################
     -- get the assessment
@@ -29,15 +29,19 @@ BEGIN
     -- ######################################################################
     -- determine the "number" of the new assessment instance
     IF group_work THEN
-        SELECT gu.group_id
-        INTO  groupId
-        FROM  group_users as gu
-        JOIN  groups AS g ON(g.id = gu.group_id)
-        JOIN  group_configs AS gc ON (gc.id = g.group_config_id)
-        WHERE gu.user_id = assessment_instances_insert.user_id AND
-        gc.assessment_id = assessment_instances_insert.assessment_id AND
-        gc.deleted_at IS NULL AND
-        g.deleted_at IS NULL;
+        SELECT
+            gu.group_id
+        INTO
+            tmp_group_id
+        FROM
+            group_users as gu
+            JOIN groups AS g ON(g.id = gu.group_id)
+            JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+        WHERE 
+            gu.user_id = assessment_instances_insert.user_id
+            AND gc.assessment_id = assessment_instances_insert.assessment_id
+            AND gc.deleted_at IS NULL
+            AND g.deleted_at IS NULL;
         
         IF assessment.multiple_instance THEN
             SELECT coalesce(max(ai.number), 0) + 1
@@ -45,7 +49,7 @@ BEGIN
             FROM assessment_instances AS ai
             WHERE
                 ai.assessment_id = assessment_instances_insert.assessment_id
-                AND ai.group_id = groupId;
+                AND ai.group_id = tmp_group_id;
         END IF;
         -- if a.multiple_instance is FALSE then we use
         -- number = 1 so we will error on INSERT if there
@@ -57,7 +61,7 @@ BEGIN
 
         INSERT INTO assessment_instances
                 (auth_user_id, assessment_id, group_id, mode, auto_close, date_limit, number)
-        VALUES (authn_user_id, assessment_id, groupId, mode, auto_close, date_limit, number)
+        VALUES (authn_user_id, assessment_id, tmp_group_id, mode, auto_close, date_limit, number)
         RETURNING id
         INTO assessment_instance_id;
     ELSE 

@@ -12,9 +12,9 @@ DECLARE
     course_id bigint;
 BEGIN
     SELECT
-        ai.user_id, ai.group_id, ci.id,              c.id
+        ai.user_id, ai.group_id,              ci.id,      c.id
     INTO
-        user_id, group_id,   course_instance_id, course_id
+        user_id,       group_id, course_instance_id, course_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)

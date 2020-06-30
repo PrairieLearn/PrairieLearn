@@ -34,14 +34,9 @@ ORDER BY
     user_id;
 
 -- BLOCK select_all_user_in_group
-SELECT
-    group_id,
-    user_id
-FROM
-group_users;
+SELECT group_id, user_id
+FROM group_users;
 
 -- BLOCK select_all_assessment_instance
-SELECT
-ai.*
-FROM
-assessment_instances AS ai;
+SELECT ai.*
+FROM assessment_instances AS ai;
