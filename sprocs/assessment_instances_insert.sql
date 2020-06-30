@@ -58,7 +58,6 @@ BEGIN
         -- ######################################################################
         -- do the actual insert
 
-
         INSERT INTO assessment_instances
                 (auth_user_id, assessment_id, group_id, mode, auto_close, date_limit, number)
         VALUES (authn_user_id, assessment_id, tmp_group_id, mode, auto_close, date_limit, number)
@@ -79,7 +78,6 @@ BEGIN
         
         -- ######################################################################
         -- do the actual insert
-
 
         INSERT INTO assessment_instances
                 (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
