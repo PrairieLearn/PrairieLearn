@@ -151,6 +151,7 @@ We'll introduce a new `<pl-workspace>` element that renders (to start with) a "L
 > * In `variants_insert`, query for `questions.workspace_image` to determine if it's necessary to create a workspace
 > * `workspaceUrl` should be generated in the `_buildQuestionUrls` function in `lib/question.js`
 > * `data.options.workspace_url` should be populated in the `renderPanel` function of `question-servers/freeform.js`; `workspaceUrl` should be available from the `locals` object like the other URLs
+> * `<pl-workspace>` element should read `data.options.workspace_url` and render a block-level link styled as a button that opens the workspace URL in a new tab
 
 When this button is clicked, the URL at `workspace_url` will be opened in a new tab.
 
