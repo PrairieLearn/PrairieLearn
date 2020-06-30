@@ -57,8 +57,8 @@ router.get('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
                 debug('rendering EJS');
-                if(res.locals.assessment.group_work){
-                    sqldb.query(sql.get_groupinfo, params, function(err, result) {
+                if (res.locals.assessment.group_work) {
+                    sqldb.query(sql.get_group_info, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupinfo = result.rows;
                         if (res.locals.groupinfo[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));

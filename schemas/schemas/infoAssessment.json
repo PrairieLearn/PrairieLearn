@@ -94,7 +94,7 @@
             "default": true
         },
         "groupWork": {
-            "description": "If the assessment will support group work.",
+            "description": "Whether the assessment will support group work.",
             "type": "boolean",
             "default": false
         }

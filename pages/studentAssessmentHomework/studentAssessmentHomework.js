@@ -31,14 +31,14 @@ router.get('/', function(req, res, next) {
         if (result.rowCount == 0) {
             debug('no assessment instance');
             //if it is a group_work with no instance, jump to a confirm page.
-            if(res.locals.assessment.group_work){
-                sqldb.query(sql.get_configinfo, params, function(err, result) {
+            if (res.locals.assessment.group_work) {
+                sqldb.query(sql.get_config_info, params, function(err, result) {
                     if (ERR(err, next)) return;
                     res.locals.permissions = result.rows[0];
-                    sqldb.query(sql.get_groupinfo, params, function(err, result) {
+                    sqldb.query(sql.get_group_info, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.groupsize = result.rowCount;
-                        if(res.locals.groupsize > 0){
+                        if (res.locals.groupsize > 0) {
                             res.locals.groupinfo = result.rows;
                             const group_id = res.locals.groupinfo[0].group_id || 0;
                             res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
@@ -46,7 +46,7 @@ router.get('/', function(req, res, next) {
                             res.locals.maxsize = result.rows[0].maximum || 999;
                             res.locals.needsize = res.locals.minsize - res.locals.groupsize;
                             res.locals.start = false;
-                            if(res.locals.needsize <= 0){
+                            if (res.locals.needsize <= 0) {
                                 res.locals.start = true;
                             }
                             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -91,7 +91,7 @@ router.post('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
-    } else if(req.body.__action == 'joinGroup'){
+    } else if (req.body.__action == 'joinGroup') {
         const friendcode = req.body.friendcode;
         const group_id = Buffer.from(friendcode, 'base64').toString('utf8');
         const params = {
@@ -100,16 +100,16 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.user.user_id,
         };
         let cursize, maxsize;
-        sqldb.query(sql.get_configinfo, params, function(err, result) {
+        sqldb.query(sql.get_config_info, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.permissions = result.rows[0];
-            sqldb.query(sql.check_groupsize, params, function(err, result) {
+            sqldb.query(sql.check_group_size, params, function(err, result) {
                 let joinerror = true;
                 //students may have invalid input here, no need to log the error information
                 if (!ERR(err, next)){
                     if (typeof result !== 'undefined'){
                         cursize = result.rowCount || 0;
-                        if(cursize > 0){
+                        if (cursize > 0) {
                             maxsize = result.rows[0].maximum;
                             if (cursize < maxsize) {
                                 //sucessfully join into a exist and not full group
@@ -130,7 +130,7 @@ router.post('/', function(req, res, next) {
                 }
             });
         });
-    } else if(req.body.__action == 'createGroup'){
+    } else if (req.body.__action == 'createGroup') {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,

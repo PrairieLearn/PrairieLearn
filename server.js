@@ -155,10 +155,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
-
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
-
-
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));

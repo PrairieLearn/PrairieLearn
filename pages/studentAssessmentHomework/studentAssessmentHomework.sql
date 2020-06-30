@@ -12,12 +12,12 @@ WHERE
     AND ai.number = 1
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
 
--- BLOCK get_configinfo
+-- BLOCK get_config_info
 SELECT gc.student_auth_join, gc.student_auth_create, gc.student_auth_quit
 FROM group_configs gc
 WHERE gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
 
--- BLOCK check_groupsize
+-- BLOCK check_group_size
 SELECT gc.maximum, gu.user_id, gu.group_id, gc.assessment_id
 FROM groups gr
 JOIN group_configs gc ON gr.group_config_id = gc.id
@@ -42,7 +42,7 @@ INSERT INTO group_users (group_id, user_id)
         (SELECT id FROM groups WHERE name = $group_name AND deleted_at IS NULL),
         $user_id);
 
--- BLOCK get_groupinfo
+-- BLOCK get_group_info
 SELECT gu.group_id, gr.name, us.uid, gc.minimum, gc.maximum
 FROM assessments ass
 JOIN group_configs gc ON gc.assessment_id = ass.id

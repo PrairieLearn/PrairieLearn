@@ -15,7 +15,7 @@ function obtainInfo(req, res, next){
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.isgroup = true;
-        if(result.rowCount == 0){
+        if (result.rowCount == 0) {
             res.locals.isgroup = false;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             return;
@@ -25,13 +25,13 @@ function obtainInfo(req, res, next){
         res.locals.config_info.defaultmax = res.locals.config_info.maximum || 5;
 
         res.locals.config_info.permission = '';
-        if(res.locals.config_info.student_auth_join){
+        if (res.locals.config_info.student_auth_join) {
             res.locals.config_info.permission += 'join ';
         }
-        if(res.locals.config_info.student_auth_create){
+        if (res.locals.config_info.student_auth_create) {
             res.locals.config_info.permission += 'create ';
         }
-        if(res.locals.config_info.student_auth_quit){
+        if (res.locals.config_info.student_auth_quit) {
             res.locals.config_info.permission += 'quit ';
         }
 
@@ -94,7 +94,7 @@ router.post('/', function(req, res, next) {
         var failedUids = '';
         res.locals.errormsg = '';
         (async () => {
-            for(const uid of uidlist){
+            for (const uid of uidlist) {
                 let params = [
                     assessment_id,
                     groupname,
@@ -108,7 +108,7 @@ router.post('/', function(req, res, next) {
                     }
                 }
             }
-            if(failedUids.length > 0){
+            if (failedUids.length > 0) {
                 res.locals.errormsg += 'Failed to add ' + failedUids + 'to [' + groupname + ']. Please check if the uid exist.\n';
             }
             obtainInfo(req, res, next);
@@ -123,7 +123,7 @@ router.post('/', function(req, res, next) {
             createcheck: req.body.createcheck || false,
             quitcheck: req.body.quitcheck || false,
         };
-        if(req.body.maxsize.length < 1 || req.body.minsize.length < 1){
+        if (req.body.maxsize.length < 1 || req.body.minsize.length < 1) {
             res.locals.errormsg += 'Please enter group max size and min size';
             obtainInfo(req, res, next);
             return;
@@ -140,7 +140,7 @@ router.post('/', function(req, res, next) {
         failedUids = '';
         res.locals.errormsg = '';
         (async () => {
-            for(const uid of uidlist){
+            for (const uid of uidlist) {
                 const params = [
                     assessment_id,
                     gid,
@@ -154,7 +154,7 @@ router.post('/', function(req, res, next) {
                     }
                 }
             }
-            if(failedUids.length > 0){
+            if (failedUids.length > 0) {
                 res.locals.errormsg += 'Failed to add ' + failedUids + 'to Group No.' + gid + '. Please check if the uid exist.\n';
             }
             obtainInfo(req, res, next);
@@ -167,7 +167,7 @@ router.post('/', function(req, res, next) {
         failedUids = '';
         res.locals.errormsg = '';
         (async () => {
-            for(const uid of uidlist){
+            for (const uid of uidlist) {
                 const params = [
                     assessment_id,
                     gid,
@@ -181,7 +181,7 @@ router.post('/', function(req, res, next) {
                     }
                 }
             }
-            if(failedUids.length > 0){
+            if (failedUids.length > 0) {
                 res.locals.errormsg += 'Failed to delete ' + failedUids + 'from Group No.' + gid + ']. Please check if the uid exist.\n';
             }
             obtainInfo(req, res, next);
