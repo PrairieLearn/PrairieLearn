@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS users_is_instructor(bigint);
+DROP FUNCTION IF EXISTS users_is_course_staff(bigint);
 
 CREATE OR REPLACE FUNCTION
     users_is_instructor (
