@@ -53,8 +53,7 @@ def prepare(element_html, data):
         nota_correct = enable_nota and (rand_int == 1 or len_correct == 0)
         # 'All of the above' will always be correct when no incorrect option is
         # provided, while still never both True
-        aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) \
-                        and not nota_correct
+        aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) and not nota_correct
 
     if len_correct < 1 and not enable_nota:
         # This means the code needs to handle the special case when len_correct == 0
