@@ -18,6 +18,6 @@ scikit-learn==0.23.1
 nltk==3.5
 tzlocal==2.1
 Pygments==2.6.1
-sphinx==3.0.4
+sphinx==3.1.1
 sphinx-markdown-builder==0.5.4
 recommonmark==0.6.0
