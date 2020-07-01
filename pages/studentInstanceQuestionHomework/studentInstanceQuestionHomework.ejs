@@ -43,40 +43,7 @@
 
           <%- include('../partials/questionScorePanel') %>
 
-          <div class="text-center mb-1">
-            <%
-              var navSideButtons = [
-                {
-                  "label": "Previous question",
-                  "popoverContent": "Question is blocked by the score of an earlier question in this assessment.",
-                  "question": instance_question_info.prev
-                },
-                {
-                  "label": "Next question",
-                  "popoverContent": `You must score at least ${zone_sequence_score_perc_threshold}% on this question in order to unlock the next.`,
-                  "question": instance_question_info.next
-                }
-              ];
-              navSideButtons.forEach(function(button) {
-            %>
-              <a
-                <% if (button.question.id && !button.question.sequence_blocked) { %>
-                  class="btn btn-primary mb-3"
-                  href="<%= urlPrefix %>/instance_question/<%= button.question.id %>/"
-                <% } else { %>
-                  class="btn btn-secondary text-white mb-4 <% if (!button.question.sequence_blocked) { %> disabled <% } %>"
-                  <% if (button.question.sequence_blocked) { %>
-                    tabindex="0" role="button"
-                    data-toggle="popover" data-trigger="focus" data-container="body"
-                    data-html="true"
-                    data-content="<%= button.popoverContent %>"
-                  <% } %>
-                <% } %>
-              >
-                <%= button.label %>
-              </a>
-            <% }); %>
-          </div>
+          <%- include('../partials/questionNavSideButtonGroup') %>
 
           <%- include('../partials/attachFilePanel') %>
 

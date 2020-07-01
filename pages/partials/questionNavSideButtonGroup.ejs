@@ -1,0 +1,16 @@
+<div class="text-center">
+  <%- include("../partials/questionNavSideButton", {
+    button: {
+      "label": "Previous question",
+      "popoverContent": "Question is blocked by the score of an earlier question in this assessment.",
+      "question": instance_question_info.prev
+    }
+  }); %>
+  <%- include("../partials/questionNavSideButton", {
+    button: {
+      "label": "Next question",
+      "popoverContent": `You must score at least ${zone_sequence_score_perc_threshold}% on this question in order to unlock the next.`,
+      "question": instance_question_info.next
+    }
+  }); %>
+</div>

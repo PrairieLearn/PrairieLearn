@@ -65,7 +65,9 @@
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
               <th colspan="4">
-                <%= question.zone_title %>
+                <span class="mr-1">
+                  <%= question.zone_title %>
+                </span>
                 <% if (question.zone_has_max_points) { %>
                     <a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
                        data-toggle="popover" data-trigger="focus" data-container="body"

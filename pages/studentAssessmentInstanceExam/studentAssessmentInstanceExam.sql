@@ -1,6 +1,7 @@
 -- BLOCK select_instance_questions
 SELECT
     iq.*,
+    instance_questions_check_sequence_blocked(iq.id) AS sequence_blocked,
     ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
     z.id AS zone_id,
     z.title AS zone_title,
@@ -12,6 +13,8 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+    z.sequence_enforce AS zone_sequence_enforce,
+    z.sequence_score_perc_threshold AS zone_sequence_score_perc_threshold,
     (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count
 FROM
     instance_questions AS iq
