@@ -5,7 +5,7 @@ lxml==4.5.1
 matplotlib==3.2.1
 networkx==2.4
 numpy==1.18.4
-pandas==1.0.4
+pandas==1.0.5
 pycryptodome==3.9.7
 pyquaternion==0.9.5
 regex==2020.5.14
