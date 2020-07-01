@@ -47,40 +47,54 @@ def prepare(element_html, data):
         # Either 'None of the above' or 'All of the above' is correct
         # with probability 1/(number_correct + enable-nota + enable-aota).
         # However, if len_correct is 0, nota_correct is guaranteed to be True.
-        # Thus, if no correct option is given, 'None of the above' will always
+        # Thus, if no correct option is provided, 'None of the above' will always
         # be correct, and 'All of the above' always incorrect
-        nota_correct = (enable_nota and rand_int == 1) or len_correct == 0
-        # 'All of the above' will be chosen as correct only when there is
-        # at least 1 correct choice to avoid confusion
-        aota_correct = enable_aota and rand_int == 2 and len_correct > 0
+        nota_correct = enable_nota and (rand_int == 1 or len_correct == 0)
+        # 'All of the above' will always be correct when no incorrect option is
+        # provided, while still being mutually exclusive of nota_correct
+        aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) \
+                        and not nota_correct
 
-    # d_correct = (nota_correct + aota_correct)
+    if len_correct < 1 and not enable_nota:
+        raise Exception('pl-multiple-choice element must have at least one correct answer or set none-of-the-above')
 
-    if len_correct < 1 and not nota_correct:
-        raise Exception('pl-multiple-choice element must have at least one correct answer')
+    # FIXME: number_answers should not take nota or aota into account, neither should
+    # number_correct or number_incorrect
 
     # 1. Determine number of answers to display
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total + enable_nota + enable_aota)
     if enable_aota:
         # min number if 'All of the above' is correct
         number_answers = min(1 + len_correct + enable_nota, number_answers)
-    # For simplicity, (1 + len_incorrect) is the min number for all other cases
-    number_answers = max(1, min(1 + len_incorrect, number_answers))
-
-    number_correct = 1
-    number_incorrect = number_answers - number_correct
+        # min number if 'All of the above' is incorrect
+        number_answers = min(1 + len_incorrect + enable_nota, number_answers)
+    else:
+        # (1 + len_incorrect) is the min number for all other cases
+        number_answers = max(1, min(1 + len_incorrect, number_answers))
 
     if aota_correct:
         number_correct = number_answers - 1 - enable_nota
         number_incorrect = int(enable_nota)
+    else:
+        number_correct = 1
+        number_incorrect = number_answers - number_correct
+
+    d_correct = (nota_correct + aota_correct)
+    d_incorrect = (enable_nota and not nota_correct) + (enable_aota and not aota_correct)
+    len_correct += d_correct
+    len_incorrect += d_incorrect
+    number_correct = number_correct - nota_correct
+    number_incorrect = number_incorrect - d_incorrect
+
+    print(f'nota_correct: {nota_correct}, aota_correct: {aota_correct}, len_correct: {len_correct}, \
+len_incorrect: {len_incorrect}, number_correct: {number_correct}, number_incorrect: {number_incorrect}')
 
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
     # 2. Sample corret and incorrect choices
-    d_incorrect = (enable_nota and not nota_correct) + (enable_aota and not aota_correct)
-    sampled_correct = random.sample(correct_answers, number_correct - nota_correct)
-    sampled_incorrect = random.sample(incorrect_answers, max(0, number_incorrect - d_incorrect))
+    sampled_correct = random.sample(correct_answers, number_correct)
+    sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
