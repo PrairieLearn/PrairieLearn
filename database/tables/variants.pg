@@ -17,11 +17,13 @@ columns
     true_answer: jsonb
     user_id: bigint not null
     variant_seed: text
+    workspace_id: bigint
 
 indexes
     variants_pkey: PRIMARY KEY (id) USING btree (id)
     variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
     variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
+    variants_workspace_id_key: USING btree (workspace_id)
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -29,6 +31,7 @@ foreign-key constraints
     variants_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_workspace_id_fkey: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     current_pages: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -36,4 +39,3 @@ referenced by
     page_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     submissions: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     variant_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
-    workspaces: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

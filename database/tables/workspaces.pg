@@ -3,15 +3,14 @@ columns
     s3_bucket: text
     s3_root_key: text
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
-    variant_id: bigint
     workspace_host_id: bigint
 
 indexes
     workspaces_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
-    workspaces_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     workspaces_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    variants: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
     workspace_logs: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
