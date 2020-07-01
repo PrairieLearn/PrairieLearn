@@ -5,6 +5,7 @@ import math
 import chevron
 
 WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
 NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
@@ -51,43 +52,52 @@ def prepare(element_html, data):
         # be correct, and 'All of the above' always incorrect
         nota_correct = enable_nota and (rand_int == 1 or len_correct == 0)
         # 'All of the above' will always be correct when no incorrect option is
-        # provided, while still being mutually exclusive of nota_correct
+        # provided, while still never both True
         aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) \
                         and not nota_correct
 
     if len_correct < 1 and not enable_nota:
-        raise Exception('pl-multiple-choice element must have at least one correct answer or set none-of-the-above')
+        # This means the code needs to handle the special case when len_correct == 0
+        raise Exception('pl-multiple-choice element must have at least 1 correct answer or set none-of-the-above')
 
-    # FIXME: number_answers should not take nota or aota into account, neither should
-    # number_correct or number_incorrect
+    if enable_aota and len_correct < 2:
+        # To prevent confusion on the client side
+        raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
 
-    # 1. Determine number of answers to display
+    # 1. Pick the choice(s) to display
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total + enable_nota + enable_aota)
+    # figure out how many choice(s) to choose from the *provided* choices,
+    # excluding 'none-of-the-above' and 'all-of-the-above'
+    number_answers -= (enable_nota + enable_aota)
+
     if enable_aota:
         # min number if 'All of the above' is correct
-        number_answers = min(1 + len_correct + enable_nota, number_answers)
-        # min number if 'All of the above' is incorrect
-        number_answers = min(1 + len_incorrect + enable_nota, number_answers)
-    else:
-        # (1 + len_incorrect) is the min number for all other cases
-        number_answers = max(1, min(1 + len_incorrect, number_answers))
+        number_answers = min(len_correct, number_answers)
+    if enable_nota:
+        # if nota correct
+        number_answers = min(len_incorrect, number_answers)
+    # this is the case for
+    # - 'All of the above' is incorrect
+    # - 'None of the above' is incorrect
+    # - nota and aota disabled
+    number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
 
     if aota_correct:
-        number_correct = number_answers - 1 - enable_nota
-        number_incorrect = int(enable_nota)
+        # when 'All of the above' is correct, we choose all from correct
+        # and none from incorrect
+        number_correct = number_answers
+        number_incorrect = 0
+    elif nota_correct:
+        # when 'None of the above' is correct, we choose all from incorrect
+        # and none from correct
+        number_correct = 0
+        number_incorrect = number_answers
     else:
+        # PROOF: by the above probability, if len_correct == 0, then nota_correct
+        # conversely; if not nota_correct, then len_correct != 0. Since len_correct
+        # is none negative, this means len_correct >= 1.
         number_correct = 1
-        number_incorrect = number_answers - number_correct
-
-    d_correct = (nota_correct + aota_correct)
-    d_incorrect = (enable_nota and not nota_correct) + (enable_aota and not aota_correct)
-    len_correct += d_correct
-    len_incorrect += d_incorrect
-    number_correct = number_correct - nota_correct
-    number_incorrect = number_incorrect - d_incorrect
-
-    print(f'nota_correct: {nota_correct}, aota_correct: {aota_correct}, len_correct: {len_correct}, \
-len_incorrect: {len_incorrect}, number_correct: {number_correct}, number_incorrect: {number_incorrect}')
+        number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
@@ -100,6 +110,12 @@ len_incorrect: {len_incorrect}, number_correct: {number_correct}, number_incorre
     random.shuffle(sampled_answers)
 
     # 3. Modify sampled choices
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
+    if fixed_order:
+        # we can't simply skip the shuffle because we already broke the original
+        # order by separating into correct/incorrect lists
+        sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
+
     if enable_aota:
         # Add 'All of the above' option after shuffling
         sampled_answers.append((index, aota_correct, 'All of the above'))
@@ -110,15 +126,10 @@ len_incorrect: {len_incorrect}, number_correct: {number_correct}, number_incorre
         sampled_answers.append((index, nota_correct, 'None of the above'))
         index += 1
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
-    if fixed_order:
-        # we can't simply skip the shuffle because we already broke the original
-        # order by separating into correct/incorrect lists
-        sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
-
     # 4. Write to data
-    # Because 'All of the above' is below all the correct options when it's
-    # true. The variable correct_answer will save it as correct
+    # Because 'All of the above' is below all the correct choice(s) when it's
+    # true, the variable correct_answer will save it as correct, and
+    # overwritting previous choice(s)
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
