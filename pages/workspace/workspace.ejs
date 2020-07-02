@@ -1,10 +1,12 @@
+<html>
+<head>
+    <%- include('../partials/head'); %>
+</head>
 <body style="margin:0; overflow: hidden;" width="100%" height="100%">
     <iframe id="workspace_container" width="100%" height="100%" style="margin: 0; border: none;"></iframe>
     <button id="button" style="position: absolute; left: 250px; bottom: 0">Ping the Server</button>
-</body>
-<script src="/javascripts/socket.io.js"></script>
-<script src="/node_modules/jquery/dist/jquery.min.js"></script>
-<body>
+    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
     <script>
         $(function () {
             var socket = io("/workspace", {query: "id=" + "<%= id %>", upgrade: false});
@@ -23,7 +25,6 @@
                 };
             });
         });
-    
-        
     </script>
 </body>
+</html>
