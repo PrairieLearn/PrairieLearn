@@ -4,7 +4,7 @@
     "version": "3.2.0",
     "private": true,
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.13.0",
+        "@fortawesome/fontawesome-free": "^5.13.1",
         "@prairielearn/prairielib": "^1.9.0",
         "ace-builds": "^1.4.11",
         "adm-zip": "^0.4.16",
