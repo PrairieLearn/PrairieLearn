@@ -30,6 +30,9 @@ pages:
   - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
   - 'API': 'api.md'
+- Getting Started:
+  - 'Requesting your course space': 'requestCourse.md'
+  - 'Creating content in the browser': 'getStarted.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
