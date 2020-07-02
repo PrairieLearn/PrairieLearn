@@ -218,7 +218,7 @@ Let's see how you can copy one of the example questions to your own course:
 
 * click on the assessment `HW1: Template homework - copy this to start a new HW`.
 
-* click on the question `Template pl-integer-input: randomized input parameters` (QID: template/integerInput).
+* click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
 
 * click on the `Settings` tab.
 
@@ -283,4 +283,3 @@ Learn more:
 [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
 [Detailed list of PrairieLearn elements](https://prairielearn.readthedocs.io/en/latest/elements/)
-
