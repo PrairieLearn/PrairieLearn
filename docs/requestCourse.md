@@ -1,6 +1,6 @@
 # Request your course space
 
-To request your PrairieLearn course space, you should first join our Slack channel:
+To request your PrairieLearn course space, you should first join the PrairieLearn Slack channel:
 
 [https://go.illinois.edu/joinplslack](https://go.illinois.edu/joinplslack)
 
@@ -13,4 +13,3 @@ Your email: netid@illinois.edu
 ```
 
 If you use Github, you can also provide your Github login name (this is optional).
-
