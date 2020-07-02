@@ -1,16 +1,14 @@
-<div>
-    <body id="msg">NA</body>
-</div>
-<div>
-    <button id="button">Ping the Server</button>
-
-</div>
+<body style="margin:0; overflow: hidden;" width="100%" height="100%">
+    <iframe id="workspace_container" width="100%" height="100%" style="margin: 0; border: none;"></iframe>
+    <button id="button" style="position: absolute; left: 250px; bottom: 0">Ping the Server</button>
+</body>
 <script src="/javascripts/socket.io.js"></script>
 <script src="/node_modules/jquery/dist/jquery.min.js"></script>
 <body>
     <script>
         $(function () {
-            var socket = io("/workspace", {query: "id=" + "<%= id %>"});
+            var socket = io("/workspace", {query: "id=" + "<%= id %>", upgrade: false});
+            document.getElementById("workspace_container").src = window.location.href + "/container/"
             socket.on("connect", function () {
                 console.log("connected");
                 socket.emit("ping", "Hello!");
