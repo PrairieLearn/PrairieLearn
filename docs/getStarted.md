@@ -277,3 +277,8 @@ Before you create an assessment, make sure you are in the desired course instanc
 * click `Save and sync`.
 
 Read the [assessment documentation](https://prairielearn.readthedocs.io/en/latest/assessment/) to learn more about the different assessment configurations available.
+
+Learn more:
+[Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
+[Detailed list of PrairieLearn elements](https://prairielearn.readthedocs.io/en/latest/elements/)
+
