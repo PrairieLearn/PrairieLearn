@@ -93,7 +93,7 @@
         "unist-util-visit": "^2.0.2",
         "uuid": "^8.2.0",
         "viz.js": "^2.1.2",
-        "winston": "^3.2.1",
+        "winston": "^3.3.3",
         "yargs": "^15.3.1",
         "yargs-parser": "^18.1.3"
     },
