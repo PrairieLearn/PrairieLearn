@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS migrations (
   id BIGSERIAL PRIMARY KEY,
   filename TEXT,
   index INTEGER,
-  project TEXT,
+  project TEXT DEFAULT 'prairielearn',
   applied_at TIMESTAMP WITH TIME ZONE,
   UNIQUE(project, index)
 );
