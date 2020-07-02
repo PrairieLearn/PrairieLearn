@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/PrairieLearn/PrairieGrader#readme",
   "dependencies": {
-    "@prairielearn/prairielib": "1.9.0",
+    "@prairielearn/prairielib": "1.10.2",
     "ajv": "6.12.2",
     "async": "3.2.0",
     "async-stacktrace": "0.0.2",
