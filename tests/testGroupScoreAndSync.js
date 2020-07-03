@@ -303,7 +303,7 @@ describe('assessment instance group synchorization test', function () {
             assert.approximately(locals.assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
         });
         it('should have the correct assessment_instance score_perc', function() {
-            assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 5e-2);
+            assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 6e-2);
         });
     });
     describe('7. check Score for another student',function(){
@@ -348,7 +348,7 @@ describe('assessment instance group synchorization test', function () {
             assert.approximately(locals.assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
         });
         it('should have the correct assessment_instance score_perc', function() {
-            assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 5e-2);
+            assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 6e-2);
         });
 
         
