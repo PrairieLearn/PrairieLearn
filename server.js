@@ -231,12 +231,7 @@ const workspaceProxyOptions = {
     },
     logProvider: _provider => logger,
     router: async (req) => {
-        let url = 'undefined';
-        if (/^\/workspace\/0/.test(req.url)) {
-            url = 'http://localhost:8080/';
-        } else if (/^\/workspace\/1/.test(req.url)) {
-            url = 'http://localhost:8081/';
-        }
+        let url = 'http://localhost:13746/';
         return url;
     },
 };
