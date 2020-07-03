@@ -90,63 +90,11 @@
       </div>
       <% } %>
     </form>
-
-    <script>
-      $('form').on('submit', function(e) {
-          if (!$(this).data('submitted')) {
-              $(this).data('submitted', true);
-
-              var form = $(this);
-              form.find('.disable-on-submit').each(function (index) {
-                  // Create a disabled clone of the submit button
-                  $(this).clone(false).removeAttr('id').prop('disabled', true).insertBefore($(this));
-
-                  // Hide the actual submit button and move it to the beginning of the form
-                  $(this).hide();
-                  form.prepend($(this));
-              });
-
-          } else {
-              e.preventDefault();
-          }
-      });
-
-      $('a.disable-on-click').on('click', function() {
-          $(this).addClass('disabled');
-      });
-    </script>
   </div>
 <% } %>
-
 <script>
-    // Wait for DOM (ace, file upload, etc.)
-    $(document).ready(() => {
-        const form = $('form.question-form');
-        const getForm = () => form.serialize();
-
-        // Set form state on load and submit
-        var initialForm = getForm();
-        form.submit(() => {
-            initialForm = getForm();
-        });
-
-        // Check form state on unload
-        $(window).bind('beforeunload', (e) => {
-            const isSameForm = initialForm == getForm();
-
-            // allowQuestionUnload: pages/partials/countdown.ejs
-            if(!isSameForm && !window.allowQuestionUnload) {
-                const event = e || window.event;
-
-                // MDN recommendation (not fully supported)
-                event.preventDefault();
-
-                // Chrome legacy
-                event.returnValue = '';
-
-                // Fallback
-                return '';
-            }
-        });
-    });
+  // Install on page load and reinstall on websocket re-render
+  $('a.disable-on-click').on('click', function() {
+    $(this).addClass('disabled');
+  });
 </script>
