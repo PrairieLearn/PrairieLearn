@@ -61,12 +61,15 @@
                 // });
 
                 var helpBox = $('#help-<%= fileEdit.uuid %>');
+                var helpButton =  $('#help-<%= fileEdit.uuid %>-button');
                 var helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
                 helpBox.on('hide.bs.collapse', function () {
                     helpButtonLabel.text('Show help');
+                    helpButton.attr('aria-expanded', 'false');
                 });
                 helpBox.on('show.bs.collapse', function () {
                     helpButtonLabel.text('Hide help');
+                    helpButton.attr('aria-expanded', 'true');
                 });
             });
         </script>
@@ -81,7 +84,11 @@
                             <span class="text-monospace text-white"><%= fileEdit.fileNameForDisplay %></span>
                         </div>
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
-                            <a class="btn btn-light btn-sm" data-toggle="collapse" href="#help-<%= fileEdit.uuid %>" role="button" id="help-<%= fileEdit.uuid %>-button">
+                            <a id="help-<%= fileEdit.uuid %>-button"
+                               class="btn btn-light btn-sm"
+                               data-toggle="collapse" href="#help-<%= fileEdit.uuid %>"
+                               role="button" aria-labelledby="help-<%= fileEdit.uuid %>-button-label"
+                               aria-expanded="false">
                                 <i class="far fa-question-circle"></i>
                                 <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
                             </a>
