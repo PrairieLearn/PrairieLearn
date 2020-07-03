@@ -134,7 +134,7 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
-            group_name: req.body.groupName + ' #' + res.locals.assessment.id + '-' + res.locals.user.user_id,
+            group_name: req.body.groupName + ' #' + Math.round((Date.now() / 1000) % 100000),
         };
         sqldb.query(sql.create_group, params, function(err, _result) {
             if (ERR(err, next)) return;
