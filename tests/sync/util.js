@@ -237,6 +237,7 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
+module.exports.WORKSPACE_QUESTION_ID = 'test3';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -305,6 +306,21 @@ const questions = {
     secondaryTopics: [],
     tags: ['test'],
     type: 'Calculation',
+  },
+  [module.exports.WORKSPACE_QUESTION_ID]: {
+    uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
+    title: 'Workspace test question',
+    topic: 'Workspace',
+    secondaryTopics: [],
+    tags: ['workspace'],
+    type: 'v3',
+    workspaceOptions: {
+      image: 'prairielearn/vscode-workspace',
+      gradedFiles: [
+        'animal.h',
+        'animal.c',
+      ],
+    },
   },
 };
 
