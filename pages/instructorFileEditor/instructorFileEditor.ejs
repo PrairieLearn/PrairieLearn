@@ -55,9 +55,18 @@
                     });
                 <% } %>
 
-                let showHelpElement = $("#help-<%= fileEdit.uuid %>-button");
-                showHelpElement.click(() => {
-                    showHelpElement.text(showHelpElement.text() == "Show help" ? "Hide help" : "Show help");
+                // let showHelpElement = $("#help-<%= fileEdit.uuid %>-button");
+                // showHelpElement.click(() => {
+                //     showHelpElement.text(showHelpElement.text() == "Show help" ? "Hide help" : "Show help");
+                // });
+
+                var helpBox = $('#help-<%= fileEdit.uuid %>');
+                var helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
+                helpBox.on('hide.bs.collapse', function () {
+                    helpButtonLabel.text('Show help');
+                });
+                helpBox.on('show.bs.collapse', function () {
+                    helpButtonLabel.text('Hide help');
                 });
             });
         </script>
@@ -66,14 +75,20 @@
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
-                            <span class="text-monospace font-weight-bolder"><%= fileEdit.fileNameForDisplay %></span>
+                            <span class="text-monospace text-white"><%= fileEdit.fileNameForDisplay %></span>
                         </div>
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
-                            <a class="btn btn-secondary" data-toggle="collapse" href="#help-<%= fileEdit.uuid %>" role="button" id="help-<%= fileEdit.uuid %>-button">Show help</a>
-                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and sync</button>
+                            <a class="btn btn-light btn-sm" data-toggle="collapse" href="#help-<%= fileEdit.uuid %>" role="button" id="help-<%= fileEdit.uuid %>-button">
+                                <i class="far fa-question-circle"></i>
+                                <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
+                            </a>
+                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-light btn-sm" disabled>
+                                <i class="fas fa-save"></i>
+                                Save and sync
+                            </button>
                         </div>
                     </div>
                 </div>
