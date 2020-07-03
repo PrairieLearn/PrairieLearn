@@ -230,7 +230,7 @@ const workspaceProxyOptions = {
         '^/workspace/[0-9]/container/': '/',
     },
     logProvider: _provider => logger,
-    router: async (req) => {
+    router: async () => {
         let url = 'http://localhost:13746/';
         return url;
     },
