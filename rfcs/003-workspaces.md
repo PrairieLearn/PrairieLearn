@@ -78,6 +78,7 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 * `questions`
   * Add a new `workspace_image` column
   * Add a new `workspace_graded_files` column
+  * Add a new `workspace_port` column
 * `variants`
   * Add a `workspace_id` column
     * Consider adding a `UNIQUE` constraint on `workspace_id`
@@ -103,12 +104,13 @@ Need to make sure that cookies are inaccessible to client-side code (https://git
 
 ### Questions
 
-Course staff will declare workspace config per question via `workspaceOptions` in `info.json`. To begin, the only options will be an Docker image and a list of files to be graded:
+Course staff will declare workspace config per question via `workspaceOptions` in `info.json`. To begin, the only options will be a Docker image, port number, and list of files to be graded:
 
 ```json
 {
     "workspaceOptions": {
         "image": "some-docker-image-name",
+        "port": 15000,
         "gradedFiles": [
             "animal.h",
             "animal.cpp"
