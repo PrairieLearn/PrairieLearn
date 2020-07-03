@@ -1,6 +1,4 @@
 const ERR = require('async-stacktrace');
-const path = require('path');
-const fs = require('fs');
 const express = require('express');
 const _ = require('lodash');
 const router = express.Router();
@@ -39,10 +37,10 @@ router.post('/', function(req, res, next) {
         short_name,
         title,
         institution,
-        user_id: res.locals.authn_user.user_id
-    }
+        user_id: res.locals.authn_user.user_id,
+    };
 
-    sqldb.query(sql.insert_request, sql_params, (err, result) => {
+    sqldb.query(sql.insert_request, sql_params, (err, _result) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
     });
