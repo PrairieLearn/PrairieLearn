@@ -55,11 +55,6 @@
                     });
                 <% } %>
 
-                // let showHelpElement = $("#help-<%= fileEdit.uuid %>-button");
-                // showHelpElement.click(() => {
-                //     showHelpElement.text(showHelpElement.text() == "Show help" ? "Hide help" : "Show help");
-                // });
-
                 var helpBox = $('#help-<%= fileEdit.uuid %>');
                 var helpButton =  $('#help-<%= fileEdit.uuid %>-button');
                 var helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
@@ -87,8 +82,7 @@
                             <a id="help-<%= fileEdit.uuid %>-button"
                                class="btn btn-light btn-sm"
                                data-toggle="collapse" href="#help-<%= fileEdit.uuid %>"
-                               role="button" aria-labelledby="help-<%= fileEdit.uuid %>-button-label"
-                               aria-expanded="false">
+                               role="button" aria-expanded="false">
                                 <i class="far fa-question-circle"></i>
                                 <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
                             </a>
