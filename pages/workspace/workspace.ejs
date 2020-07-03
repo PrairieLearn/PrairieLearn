@@ -9,19 +9,19 @@
     <script src="/node_modules/jquery/dist/jquery.min.js"></script>
     <script>
         $(function () {
-            var socket = io("/workspace", {query: "id=" + "<%= id %>", upgrade: false});
-            document.getElementById("workspace_container").src = window.location.href + "/container/"
-            socket.on("connect", function () {
-                console.log("connected");
-                socket.emit("ping", "Hello!");
+            var socket = io('/workspace', {query: 'id=' + '<%= id %>', upgrade: false});
+            document.getElementById('workspace_container').src = window.location.href + '/container/'
+            socket.on('connect', function () {
+                console.log('connected');
+                socket.emit('ping', 'Hello!');
             });
 
-            socket.on("update", function (msg) {
-                // document.getElementById("msg").innerText = "Hello";
-                console.log("receive update: " + msg);
+            socket.on('update', function (msg) {
+                // document.getElementById('msg').innerText = 'Hello';
+                console.log('receive update: ' + msg);
                 
-                document.getElementById("button").onclick = function() {              
-                    socket.emit("heartbeat", "I am still alive");
+                document.getElementById('button').onclick = function() {              
+                    socket.emit('heartbeat', 'I am still alive');
                 };
             });
         });
