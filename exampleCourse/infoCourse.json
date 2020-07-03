@@ -5,7 +5,9 @@
     "options": {
         "useNewQuestionRenderer": true
     },
-    "assessmentSets": [],
+    "assessmentSets": [
+        {"abbreviation": "WS", "name": "Worksheet", "heading": "Worksheets", "color": "blue1"}
+    ],
     "topics": [
         {"name": "Template", "color": "orange2", "description": "Templates to copy as the start for a new question."},
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
