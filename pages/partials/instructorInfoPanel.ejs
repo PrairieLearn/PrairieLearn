@@ -28,7 +28,7 @@
       <div class="pr-1">Title:</div>
       <div><%= question.title %></div>
     </div>
-  <% if (locals.workspaceUrl.split('/').pop() !== 'null') { %>
+  <% if (locals.workspaceUrl != null) { %>
   <div class="d-flex flex-wrap">
     <a target="_blank" href="<%= locals.workspaceUrl %>">Open workspace</a>
   </div>
