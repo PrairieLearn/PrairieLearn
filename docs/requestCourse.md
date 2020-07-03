@@ -4,7 +4,7 @@ To request your PrairieLearn course space, you should first join the PrairieLear
 
 [https://go.illinois.edu/joinplslack](https://go.illinois.edu/joinplslack)
 
-In the `#pl-` channel, please provide the following information:
+In the `#request-course` channel, please provide the following information:
 
 ```html
 Course rubric: XX-100
