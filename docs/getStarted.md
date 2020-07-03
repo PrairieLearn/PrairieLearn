@@ -1,5 +1,5 @@
 
-# Getting started with PrairieLearn
+# Create content in the browser
 
 Now that you have access to your course in [https://prairielearn.engr.illinois.edu/](https://prairielearn.engr.illinois.edu/), it is time to start creating course content.
 
@@ -9,16 +9,16 @@ This is a view of your course home page (or a similar variation, depending on wh
 
 This tutorial will show you how to create:
 
-* [a course instance](#Creating-a-course-instance)
+* [a course instance](#creating-a-course-instance)
 
-* [simple questions from scratch](#Creating-questions-from-scratch)
+* [simple questions from scratch](#creating-questions-from-scratch)
 
-* [questions starting from provided examples](#Creating-a-question-from-the-example-course)
+* [questions starting from provided examples](#creating-questions-from-the-example-course)
 
 * [assessments](#creating-a-new-assessment)
 
 
-### Creating a course instance:
+### Creating a course instance
 
 A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M". Follow the steps below to create a new course instance:
 
@@ -34,7 +34,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 "longName": "Fall 2020, Section M"
 ```
 
-* in `userRoles`, you can add other instructors and teaching assistants (more details about user roles [here](https://prairielearn.readthedocs.io/en/latest/courseInstance/#user-roles)). For example:
+* in `userRoles`, you can add instructors and teaching assistants (or you can check other [user roles](courseInstance.md#user-roles)). For example:
 
 ```json
 "userRoles": {
@@ -44,7 +44,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 }
 ```
 
-* in `allowAccess`, you should set the dates in which you want your course to be available (more details about allowAccess [here](https://prairielearn.readthedocs.io/en/latest/courseInstance/#course-instance-allowaccess)). For example:
+* in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
 
 ```json
 "allowAccess": [
@@ -61,9 +61,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 ![](start-guide/homepage_new_instance.png)
 
-### Creating questions from scratch:
+### Creating questions from scratch
 
-##### a) Add a new question:
+##### Add a new question
 
 * go to the `Questions` tab. Your questions page should be similar to the example below:
 
@@ -87,7 +87,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 "topic": "Geometric properties"
 ```
 
-* change the question `tags`. Use tags to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. Other typical uses can be found [here](https://prairielearn.readthedocs.io/en/latest/course/#tags). For our example, we use:
+* change the question `tags`. Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. For our example, we use:
 
 ```json
 "tags": [
@@ -102,9 +102,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 * click `Save and sync`.
 
-##### b) Change the content of the question:
+**Change the content of the question**
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file `question.html`.
+To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
 
 * go to the `Files` tab.
 
@@ -126,8 +126,6 @@ To provide a simple example, here we first create a question without any randomi
 </pl-multiple-choice>
 ```
 
-You can find more information about the file `question.html` [here](https://prairielearn.readthedocs.io/en/latest/question/#question-questionhtml)
-
 * click `Save and sync`
 
 * go to the `Preview` tab to see your question. Try it out!
@@ -138,7 +136,7 @@ You can find more information about the file `question.html` [here](https://prai
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
-##### c) Start a new question from an existing one
+##### Start a new question from an existing one
 
 * from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
 
@@ -156,9 +154,9 @@ Note that this question does not use any server side code, and for that reason, 
 
 * click `Save and sync`.
 
-##### d) Change the content of the question:
+**Change the content of the question**
 
-We will add randomization to the previous question.
+We will add randomization to the previous question, using the file [server.py](question.md#question-serverpy)
 
 * go to the `Files` tab.
 
@@ -206,7 +204,7 @@ def generate(data):
 
 * go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### Creating a question from the example course
+### Creating questions from the example course
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
@@ -238,14 +236,14 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 * click the `Edit` button next to `infoAssessment.json`.
 
-* select the assessment type to be either `Homework` or `Exam`. Read more about the difference between these assessments [here](https://prairielearn.readthedocs.io/en/latest/assessment/#assessment-types). For this example, we will use `Homework`.
+* select the [assessment type](assessment.md#assessment-types) to be either `Homework` or `Exam`. For this example, we will use `Homework`.
 
 * change the `title`. For example:
 ```json
 "title": "Geometric properties and applications",
 ```
 
-* you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also create your own (read details [here](https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets)).
+* you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).
 
 * change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
 
@@ -276,10 +274,12 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 * click `Save and sync`.
 
-Read the [assessment documentation](https://prairielearn.readthedocs.io/en/latest/assessment/) to learn more about the different assessment configurations available.
+
 
 Learn more:
 
-[Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
+- [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
-[Detailed list of PrairieLearn elements](https://prairielearn.readthedocs.io/en/latest/elements/)
+- [Different ways to setup an assessment](assessment.md)
+
+- [Detailed list of PrairieLearn elements](elements.md)

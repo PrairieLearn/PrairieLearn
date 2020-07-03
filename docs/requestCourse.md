@@ -6,7 +6,7 @@ To request your PrairieLearn course space, you should first join the PrairieLear
 
 In the `#pl-help` channel, please provide the following information:
 
-```
+```html
 Course rubric: XX-100
 Course name: Super Fun Course
 Your email: netid@illinois.edu
