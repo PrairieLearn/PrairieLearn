@@ -16,6 +16,7 @@ PrairieLearn presently provides the following templated **input field** elements
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -190,6 +191,7 @@ Two grading methods are available when using `partial-credit="true"`:
 
 -----
 
+
 ## `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
@@ -272,6 +274,66 @@ Attribute | Type | Default | Description
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
+
+-----
+
+## `pl-dropdown` element
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
+
+#### Sample Element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+<p> Select the correct word in the following quotes:</p>
+The 
+<pl-dropdown answers-name="aristotle" blank="true">
+
+    {{#params.aristotle}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    {{/params.aristotle}}
+
+</pl-dropdown> 
+is more than the sum of its parts. <p></p>
+
+A <pl-dropdown sort="ascend" answers-name="hume">
+    <pl-answer correct="true">wise</pl-answer>
+    <pl-answer correct="false">clumsy</pl-answer>
+    <pl-answer correct="false">reckless</pl-answer>
+</pl-dropdown> man proportions his belief to the evidence. <p></p>
+```
+
+**server.py**
+```python
+def generate(data):
+
+  QUESTION1 = 'aristotle'
+
+  data['params'][QUESTION1] = [
+    {'tag': 'true', 'ans': 'whole'},
+    {'tag': 'false', 'ans': 'part'},
+    {'tag': 'false', 'ans': 'inverse'}
+  ]
+
+  return data
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | - | The key of the correct answer.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`sort` | string | random | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.
+`blank` | boolean | True | Option to add blank dropdown entry as default selection in drop-down list.
+
+#### Example implementation
+
+- [demo/overlayDropdown]
+- [element/dropdown]
 
 -----
 
@@ -1584,6 +1646,7 @@ Attribute | Type | Default | Description
 [demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
 [demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
 [demo/matrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixComplexAlgebra
+[demo/overlayDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown)
 [demo/randomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomCheckbox
 [demo/randomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
@@ -1597,6 +1660,7 @@ Attribute | Type | Default | Description
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
+[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
 [element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
