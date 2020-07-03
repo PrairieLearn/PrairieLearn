@@ -7,25 +7,24 @@ WHERE
     assessment_id = $assessment_id AND deleted_at IS NULL;
 
 -- BLOCK select_groups
-SELECT 
+SELECT
     GID,
     groupname,
     COUNT(*) AS num,
-    array_to_string(array_agg(uid), ', ') AS uids
+    array_to_string(array_agg(us.uid), ', ') AS uids
 FROM (SELECT
         gr.id AS GID,
-        gr.name AS groupname,
-        us.uid AS uid
+        gr.name AS groupname
     FROM
         group_configs AS gc
         JOIN groups as gr ON (gc.id = gr.group_config_id)
-        JOIN group_users as gu ON (gu.group_id = gr.id)
-        JOIN users as us ON (us.user_id = gu.user_id)
     WHERE
         gc.assessment_id = $assessment_id
         AND gc.deleted_at IS NULL
         AND gr.deleted_at IS NULL
     ) temp
+    JOIN group_users as gu ON (gu.group_id = temp.GID)
+    JOIN users as us ON (us.user_id = gu.user_id)
 GROUP BY GID, groupname
 ORDER BY GID, groupname;
 
@@ -60,12 +59,7 @@ FROM
 WHERE 
     group_work 
     AND id != $assessment_id 
-    AND course_instance_id IN (SELECT 
-                                    course_instance_id
-                                FROM 
-                                    assessments
-                                WHERE 
-                                    id = $assessment_id)
+    AND course_instance_id = $course_instance_id
 ORDER BY tid;
 
 --BLOCK config_group

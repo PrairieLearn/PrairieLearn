@@ -34,7 +34,10 @@ function obtainInfo(req, res, next){
         if (res.locals.config_info.student_auth_quit) {
             res.locals.config_info.permission += 'quit ';
         }
-
+        const params = {
+            assessment_id: res.locals.assessment.id,
+            course_instance_id: res.locals.config_info.course_instance_id,
+        };
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.assessment_list_rows = result.rows;
