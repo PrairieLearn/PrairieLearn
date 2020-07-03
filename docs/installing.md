@@ -1,5 +1,9 @@
 
-# Installing and running PrairieLearn
+# Installing PL for local development
+
+This page describes the procedure to install and run your course locally within Docker. You can develop course content locally following the instructions below, or using the 
+[in-browser tools](getStarted.md).
+
 
 * Step 1: Install [Docker Community Edition](https://www.docker.com/community-edition). It's free.
     * On Linux and MacOS this is straightforward. [Download from here](https://store.docker.com/search?type=edition&offering=community).

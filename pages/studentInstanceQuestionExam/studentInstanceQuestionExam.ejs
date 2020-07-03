@@ -3,7 +3,6 @@
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-
     <script src="/javascripts/socket.io.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -97,5 +96,7 @@
         </div>
       </div>
     </div>
+    <!-- Needs to be located below element scripts -->
+    <script src="/localscripts/questionPageScripts.js"></script>
   </body>
 </html>
