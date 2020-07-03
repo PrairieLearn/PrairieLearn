@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <link href="/stylesheets/issues.css" rel="stylesheet" />
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'requestCourse'}); %>
+    <div id="content" class="container">
+        <!-- Previous Course Requests -->
+        <% if (course_requests.length > 0) { %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    Previous Course Requests
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Short name</th>
+                                <th>Title</th>
+                                <th>Institution</th>
+                                <th>Status</th>
+                        </thead>
+                        <tbody>
+                            <% course_requests.forEach(function(req, i) { %>
+                                <tr>
+                                    <td><%= req.short_name %></td>
+                                    <td><%= req.title %></td>
+                                    <td><%= req.institution %></td>
+                                    <td><i class="fa <%= approval_status_get_icon(req.approval_status) %>" aria-hidden="true"></i> <%= req.approval_status %> </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <% } /* non-zero course requests */ %>
+
+        <!-- New Request -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+                Request a New Course
+            </div>
+            <form class="question-form" name="course-request" method="POST">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="cr-shortname">Course Rubric and Number</label>
+                        <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101">
+                    </div>
+                    <div class="form-group">
+                        <label for="cr-title">Course Title</label>
+                        <input type="text" class="form-control" name="cr-title" placeholder="Example Course">
+                    </div>
+                    <div class="form-group">
+                        <label for="cr-institution">Course Institution</label>
+                        <select class="form-control" name="cr-institution">
+                            <% institutions.forEach(function(inst, i) { %>
+                                <option value="<%= inst.id %>" <%= (inst.id == default_institution) ? 'selected' : '' %>><%= inst.short_name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cr-ghuser">GitHub Username (optional)</label>
+                        <input type="text" class="form-control" name="cr-ghuser">
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button class="btn btn-primary" type="submit">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+  </body>
+</html>

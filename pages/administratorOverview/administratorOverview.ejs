@@ -212,6 +212,50 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
+      <!-- Course Requests ------------------------------------------------------------->
+
+      <div class="card mb-4">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
+              Course Requests
+          </div>
+          <div class="table-responsive">
+              <table class="table table-sm table-hover table-striped">
+                  <thead>
+                      <tr>
+                          <th>Short name</th>
+                          <th>Title</th>
+                          <th>Requested By</th>
+                          <th>User ID</th>
+                          <th></th>
+                  </thead>
+                  <tbody>
+                      <% course_requests.forEach(function(req, i) { %>
+                          <tr>
+                              <td><%= req.short_name %></td>
+                              <td><%= req.title %></td>
+                              <td><%= req.user_name %></td>
+                              <td><%= req.user_id %></td>
+                              <td class="align-middle">
+                                  <button type="button" class="btn btn-sm btn-danger float-right"
+                                          id="courseRequestApproveButton<%= i %>" tabindex="0">
+                                      <i class="fa fa-times" aria-hidden="true"></i> Deny
+                                  </button>
+
+                                  <button type="button" class="btn btn-sm btn-success float-right mr-2"
+                                          id="courseRequestApproveButton<%= i %>" tabindex="0">
+                                      <i class="fa fa-check" aria-hidden="true"></i> Approve
+                                  </button>
+                              </td>
+                          </tr>
+                      <% }); %>
+                  </tbody>
+              </table>
+          </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
       <!-- Courses --------------------------------------------------------------------->
 
       <div class="card mb-4">

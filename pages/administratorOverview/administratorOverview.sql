@@ -10,6 +10,23 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
+select_course_requests AS (
+    SELECT
+        coalesce(
+            jsonb_agg(jsonb_build_object(
+                'short_name', r.short_name,
+                'title', r.title,
+                'user_name', u.name,
+                'user_id', u.uid
+            )),
+            '[]'::jsonb
+        ) AS course_requests
+    FROM
+        course_requests AS r
+        INNER JOIN users AS u ON (u.user_id = r.user_id)
+    WHERE
+        r.approval_status = 'pending'
+),
 select_courses AS (
     SELECT
         coalesce(
@@ -81,6 +98,7 @@ select_institutions AS (
 )
 SELECT
     administrator_users,
+    course_requests,
     courses,
     networks,
     configs,
@@ -88,6 +106,7 @@ SELECT
     institutions
 FROM
     select_administrator_users,
+    select_course_requests,
     select_courses,
     select_networks,
     select_config,

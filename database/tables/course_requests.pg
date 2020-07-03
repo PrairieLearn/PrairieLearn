@@ -1,0 +1,13 @@
+columns
+    approved: boolean not null default false
+    approved_by bigint
+    id: bigint not null default nextval('course_requests'::regclass)
+    short_name: text
+    title: text
+    user_id: bigint
+
+indexes:
+    course_requests_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints:
+    course_requests_users_userid_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
