@@ -9,7 +9,8 @@
     ],
     "type": "v3",
     "workspaceOptions": {
-        "image": "prairielearn/grader-python",
+        "image": "prairielearn/vscode-workspace",
+        "port": 15000,
         "gradedFiles": [
             "animal.h",
             "animal.cpp"
