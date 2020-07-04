@@ -1,9 +1,4 @@
--- BLOCK get_workspace_image
-SELECT workspace_image
-FROM questions as q
-WHERE q.uuid = $quuid;
-
--- BLOCK get_workspace_port
-SELECT workspace_port
+-- BLOCK get_workspace_options
+SELECT workspace_image, workspace_port
 FROM questions as q
 WHERE q.uuid = $quuid;
