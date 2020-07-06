@@ -11,7 +11,7 @@ INLINE_DEFAULT = False
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'hide-letter-keys']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -96,7 +96,8 @@ def render(element_html, data):
                 'key': answer['key'],
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
-                'display_score_badge': display_score and submitted_key == answer['key']
+                'display_score_badge': display_score and submitted_key == answer['key'],
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (correct_key == answer['key'])

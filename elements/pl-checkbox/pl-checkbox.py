@@ -19,7 +19,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -137,7 +137,8 @@ def render(element_html, data):
                 'key': answer['key'],
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
-                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys
+                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
