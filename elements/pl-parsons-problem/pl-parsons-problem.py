@@ -134,6 +134,10 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
+    #change
+    header-left = pl.get_string_attrib(element, 'header-left-column')
+
+    #change
     pieces = data['params'].get(name, [])
     if len(pieces) == 0:
         raise Exception("No pieces in Parson's problem")
