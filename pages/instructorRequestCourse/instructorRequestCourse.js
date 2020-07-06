@@ -25,7 +25,7 @@ router.post('/', function(req, res, next) {
     const github_user = req.body['cr-ghuser'] || null;
 
     if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
-        res.locals.error_message = 'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.'
+        res.locals.error_message = 'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.';
         return next();
     }
     if (title.length < 1) {
@@ -52,7 +52,7 @@ router.post('/', function(req, res, next) {
             if (formatted_owners.length > 0) {
                 error_message += '<ul>';
                 formatted_owners.forEach(o => {
-                    error_message += '<li>' + o + '</li>'
+                    error_message += '<li>' + o + '</li>';
                 });
                 error_message += '</ul>';
             }
