@@ -8,7 +8,7 @@
     <%- include('../partials/navbar', {navPage: 'requestCourse'}); %>
     <div id="content" class="container">
         <!-- Previous Course Requests -->
-        <% if (course_requests.length > 0) { %>
+        <% if (typeof error_message === 'undefined' && course_requests.length > 0) { %>
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
                     Course Requests
@@ -38,6 +38,16 @@
                 </div>
             </div>
         <% } /* non-zero course requests */ %>
+        <% if (typeof error_message !== 'undefined') { %>
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white d-flex align-items-center">
+                    Error
+                </div>
+                <div class="card-body">
+                    <%- error_message  %>
+                </div>
+            </div>
+        <% } /* error message */ %>
 
         <!-- New Request -->
         <div class="card mb-4">
@@ -61,11 +71,11 @@
 
                     <div class="form-group">
                         <label for="cr-shortname">Course Rubric and Number</label>
-                        <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101">
+                        <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101" pattern="[a-zA-Z]+ [a-zA-Z0-9]+" title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters" required>
                     </div>
                     <div class="form-group">
                         <label for="cr-title">Course Title</label>
-                        <input type="text" class="form-control" name="cr-title" placeholder="Example Course">
+                        <input type="text" class="form-control" name="cr-title" placeholder="Example Course" minlength="1" required>
                     </div>
                     <div class="form-group">
                         <label for="cr-institution">Course Institution</label>
