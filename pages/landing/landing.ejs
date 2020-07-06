@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <%- include('../partials/head'); %>
+  <link href="/stylesheets/landing.css" rel="stylesheet">
+</head>
+
+<body>
+  <header>
+    <nav id="navbar" class="navbar navbar-expand-sm fixed-top bg-white navbar-light">
+      <div class="container">
+        <a href="/" class="navbar-brand py-1 my-1 mr-3">PrairieLearn</a>
+        <div class="navbar-expand">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link py-1 my-1" href="/pl/login">Log in</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="jumbotron bg-white mb-0" style="padding-top:11rem;padding-bottom:11rem">
+      <div class="container">
+        <h1 class="display-4">PrairieLearn</h1>
+        <p class="lead">
+          A problem-driven learning system for online assessment
+        </p>
+        <a class="btn btn-primary btn-lg mr-2" href="/pl/login" role="button">
+          <i class="fas fa-fw fa-sign-in-alt" aria-hidden="true"></i>
+          Log in
+        </a>
+        <a class="btn btn-outline-info btn-lg" href="#" role="button">
+          <i class="fas fa-fw fa-chalkboard-teacher" aria-hidden="true"></i>
+          Request your course
+        </a>
+      </div><!-- /container -->
+    </div><!-- /jumbotron -->
+
+    <div class="position-relative bg-students text-white text-center pt-5">
+      <div class="container">
+        <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Empower students to master content</h2>
+        <div class="row row-cols-1 row-cols-md-3">
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-light text-center display-2">
+                <i class="fas fa-clock" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Real-time</h3>
+                <p class="card-text">
+                  Students receive immediate feedback about mastery level
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-light text-center display-2">
+                <i class="fas fa-random" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Randomized</h3>
+                <p class="card-text">
+                  Students solve randomized question variants until mastery
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-light text-center display-2">
+                <i class="fas fa-brain" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Repetition</h3>
+                <p class="card-text">
+                  Students are incentivized to repeat questions until mastery
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+        </div><!-- /row -->
+      </div><!-- /container -->
+      <div class="flare-students"></div>
+    </div>
+
+    <div class="position-relative bg-instructors text-center pt-5">
+      <div class="container">
+        <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Improve teaching workflows</h2>
+        <div class="row row-cols-1 row-cols-md-3">
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-center display-2">
+                <i class="fas fa-tasks text-dark" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Adaptive</h3>
+                <p class="card-text">
+                  Score adaptively based on student mastery and question difficulty
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-center display-2">
+                <i class="fas fa-magic text-dark" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Automated</h3>
+                <p class="card-text">
+                  Automate the submission and grading process
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+          <div class="col pb-5">
+            <div class="card bg-transparent text-center border-0">
+              <div class="card-img-top text-center display-2">
+                <i class="fas fa-chart-line text-dark" aria-hidden="true"></i>
+              </div>
+              <div class="card-body">
+                <h3 class="card-title">Analytics</h3>
+                <p class="card-text">
+                  Analyze assessment quality and student outcomes
+                </p>
+              </div>
+            </div><!-- /card -->
+          </div><!-- /col -->
+        </div><!-- /row -->
+      </div><!-- /container -->
+      <div class="flare-instructors"></div>
+    </div>
+
+    <div class="jumbotron bg-white my-3">
+      <div class="container px-5">
+        <h2 class="text-center">Jumpstart your assessments with PrairieLearn elements</h2>
+        <p class="text-center lead mb-5">
+          PrairieLearn offers a wide range of built-in widgets to accelerate your question writing development
+        </p>
+        <div class="card-columns">
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Selectors
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Select correct answers from a pool of distractors
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Radio buttons</li>
+              <li class="list-group-item py-1">Checkboxes</li>
+              <li class="list-group-item py-1">Dropdowns</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Inputs
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Fill in the blank
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Numerics</li>
+              <li class="list-group-item py-1">Integers</li>
+              <li class="list-group-item py-1">Strings</li>
+              <li class="list-group-item py-1">Symbolic expressions</li>
+              <li class="list-group-item py-1">Pandas dataframes</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Editors
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Work with in-browser, live-preview editors
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Markdown</li>
+              <li class="list-group-item py-1">LaTeX</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Visualizations
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Display 2D and 3D visuals
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Images (static or generated)</li>
+              <li class="list-group-item py-1">GraphViz graphs</li>
+              <li class="list-group-item py-1">Drawing canvases</li>
+              <li class="list-group-item py-1">Element overlays</li>
+              <li class="list-group-item py-1">3D scenes and objects</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Files
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Work with external files
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">File uploads</li>
+              <li class="list-group-item py-1">File downloads</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Draggables
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Drag and drop items into order or orientation
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Lines of code</li>
+              <li class="list-group-item py-1">Chronological events</li>
+              <li class="list-group-item py-1">2D vectors</li>
+              <li class="list-group-item py-1">3D objects</li>
+            </ul>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              Workspaces
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Work remotely in custom Docker containers via in-browser frontends
+              </p>
+            </div>
+            <ul class="list-group list-group-flush small font-italic">
+              <li class="list-group-item py-1">Visual Studio Code</li>
+              <li class="list-group-item py-1">Jupyter notebooks</li>
+              <li class="list-group-item py-1">RStudio</li>
+            </ul>
+            <div class="card-footer small font-weight-bold py-1 border-0">
+              <i class="fas fa-fw fa-hourglass-half" aria-hidden="true"></i>
+              Coming soon!
+            </div>
+          </div><!-- /card -->
+          <div class="card">
+            <h3 class="h6 card-header font-weight-bold py-2">
+              And more &hellip;
+            </h3>
+            <div class="card-body py-2">
+              <p class="card-text">
+                Check out the docs to see more elements or how to roll your own!
+              </p>
+              <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                <i class="fas fa-fw fa-shapes" aria-hidden="true"></i>
+                Using elements
+              </a>
+              <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                <i class="fas fa-fw fa-laptop-code" aria-hidden="true"></i>
+                Writing elements
+              </a>
+            </div>
+          </div><!-- /card -->
+        </div><!-- /card-columns -->
+      </div><!-- /container -->
+    </div><!-- /jumbotron -->
+
+    <div class="jumbotron bg-light mb-0">
+      <div class="container">
+        <h2>Ready to get started?</h2>
+        <p class="lead">
+          Start by requesting a course and creating some content. Join the Slack workspace for ad hoc
+          assistance or some random banter!
+        </p>
+        <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="#">
+          <i class="fab fa-fw fa-wpforms" aria-hidden="true"></i>
+          Request your course
+        </a>
+        <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="#">
+          <i class="fas fa-fw fa-laptop-code" aria-hidden="true"></i>
+          Create your content
+        </a>
+        <a class="btn btn-outline-dark btn-lg mb-2" href="#">
+          <i class="fab fa-fw fa-slack" aria-hidden="true"></i>
+          Join your community
+        </a>
+      </div><!-- /container -->
+    </div><!-- /jumbotron -->
+
+    <div class="jumbotron bg-dark text-light text-right mb-0">
+      <div class="container">
+        <h2>Want to contribute?</h2>
+        <p class="lead">
+          PrairieLearn is open source, so anyone can add features or fix bugs!
+        </p>
+        <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="#">
+          <i class="fab fa-fw fa-github" aria-hidden="true"></i>
+          GitHub
+        </a>
+        <a class="btn btn-outline-light btn-lg mb-2" href="#">
+          <i class="fab fa-fw fa-slack" aria-hidden="true"></i>
+          Slack
+        </a>
+        <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="#">
+          <i class="fas fa-fw fa-book" aria-hidden="true"></i>
+          Developer guide
+        </a>
+      </div><!-- /container -->
+    </div><!-- /jumbotron -->
+  </main>
+</body>
+
+</html>
