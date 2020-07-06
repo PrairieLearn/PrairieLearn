@@ -28,7 +28,7 @@
                                     <td><%= req.short_name %></td>
                                     <td><%= req.title %></td>
                                     <td><%= req.institution %></td>
-                                    <td><i class="fa <%= approval_status_get_icon(req.approval_status) %>" aria-hidden="true"></i> <%= req.approval_status %> </td>
+                                    <td><%- include('approvalStatusIcon', {status: req.approval_status}); %> </td>
                                 </tr>
                             <% }); %>
                         </tbody>
