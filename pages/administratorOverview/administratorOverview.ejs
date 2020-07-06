@@ -226,30 +226,43 @@
                           <th>Title</th>
                           <th>Requested By</th>
                           <th>User ID</th>
+                          <th>GitHub Username</th>
                           <th></th>
                   </thead>
                   <tbody>
-                      <% course_requests.forEach(function(req, i) { %>
+                      <% course_requests.forEach(function(req) { %>
                           <tr>
                               <td><%= req.short_name %></td>
                               <td><%= req.title %></td>
                               <td><%= req.user_name %></td>
                               <td><%= req.user_id %></td>
+                              <td><%= req.github_user %></td>
                               <td class="align-middle">
-                                  <button type="button" class="btn btn-sm btn-danger float-right"
-                                          id="courseRequestApproveButton<%= i %>" tabindex="0">
-                                      <i class="fa fa-times" aria-hidden="true"></i> Deny
-                                  </button>
+                                  <form name="approve-request-form-<%= req.id %>" method="POST">
+                                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                      <input type="hidden" name="__action" value="approve_deny_course_request">
+                                      <input type="hidden" name="request_id" value="<%= req.id %>">
 
-                                  <button type="button" class="btn btn-sm btn-success float-right mr-2"
-                                          id="courseRequestApproveButton<%= i %>" tabindex="0">
-                                      <i class="fa fa-check" aria-hidden="true"></i> Approve
-                                  </button>
+                                      <button type="submit" class="btn btn-sm btn-danger float-right"
+                                              name="approve_deny_action" value="deny" tabindex="0">
+                                          <i class="fa fa-times" aria-hidden="true"></i> Deny
+                                      </button>
+                                      <button type="submit" class="btn btn-sm btn-success float-right mr-2"
+                                              name="approve_deny_action" value="approve" tabindex="0">
+                                          <i class="fa fa-check" aria-hidden="true"></i> Approve
+                                      </button>
+                                  </form>
                               </td>
                           </tr>
                       <% }); %>
                   </tbody>
               </table>
+          </div>
+          <div class="card-footer">
+              <small>
+                  Accepting or denying a course request is only used to signal to the original instructor that their request has been fulfilled.
+                  This will not create a new GitHub repository or create the course in the database.
+              </small>
           </div>
       </div>
 

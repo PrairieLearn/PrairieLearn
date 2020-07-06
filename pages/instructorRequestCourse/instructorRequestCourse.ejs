@@ -11,7 +11,7 @@
         <% if (course_requests.length > 0) { %>
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
-                    Previous Course Requests
+                    Course Requests
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover table-striped">
@@ -21,6 +21,7 @@
                                 <th>Title</th>
                                 <th>Institution</th>
                                 <th>Status</th>
+                                <th>Details</th>
                         </thead>
                         <tbody>
                             <% course_requests.forEach(function(req, i) { %>
@@ -28,7 +29,8 @@
                                     <td><%= req.short_name %></td>
                                     <td><%= req.title %></td>
                                     <td><%= req.institution %></td>
-                                    <td><%- include('approvalStatusIcon', {status: req.approval_status}); %> </td>
+                                    <td><%- include('approvalStatusIcon', {status: req.status}); %> </td>
+                                    <td><%= req.details %></td>
                                 </tr>
                             <% }); %>
                         </tbody>
@@ -44,6 +46,19 @@
             </div>
             <form class="question-form" name="course-request" method="POST">
                 <div class="card-body">
+                    <% if (!has_one_course) { %>
+                        <!-- Small blurb for people that have never requested a course before -->
+                        <p>
+                            Welcome to PrairieLearn!  You may use this page to request a new repository for your course, this will contain all the relevant question and assessment content for your course's needs.
+                        </p>
+                        <p>
+                            The minimum amount of information needed to get started is the <strong>course rubric and number</strong> (for example, XC 101), the course's <strong>title</strong>, and the <strong>institution</strong> that your course will be located at.  You may also optionally provide your GitHub username if you would like the ability to edit content offline. </p>
+                        </p>
+                        <p>
+                            Once you have submitted your request, a member of the staff will review your request as quickly as possible and create your course.  You will receive an email with more details once your course has been finalized.
+                        </p>
+                    <% } /* has at least one course */ %>
+
                     <div class="form-group">
                         <label for="cr-shortname">Course Rubric and Number</label>
                         <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101">

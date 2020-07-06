@@ -93,6 +93,28 @@ router.post('/', (req, res, next) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.__action === 'approve_deny_course_request') {
+        const id = req.body.request_id;
+        const user_id = res.locals.authn_user.user_id;
+        let action = req.body.approve_deny_action;
+
+        if (action === 'approve') {
+            action = 'approved';
+        } else if (action === 'deny') {
+            action = 'denied';
+        } else {
+            return next(new Error(`Unknown course request action "${action}"`));
+        }
+
+        const params = {
+            id,
+            user_id,
+            action,
+        };
+        sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

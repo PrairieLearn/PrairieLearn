@@ -12,7 +12,6 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
 
         _.assign(res.locals, result.rows[0]);
-        res.locals.approval_status_get_icon = approval_status_get_icon;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
@@ -21,10 +20,12 @@ router.post('/', function(req, res, next) {
     const short_name = req.body['cr-shortname'] || '';
     const title = req.body['cr-title'] || '';
     const institution = req.body['cr-institution'] || '';
+    const github_user = req.body['cr-ghuser'] || null;
     const sql_params = {
         short_name,
         title,
         institution,
+        github_user,
         user_id: res.locals.authn_user.user_id,
     };
 

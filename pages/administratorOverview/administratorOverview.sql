@@ -14,10 +14,12 @@ select_course_requests AS (
     SELECT
         coalesce(
             jsonb_agg(jsonb_build_object(
+                'id', r.id,
                 'short_name', r.short_name,
                 'title', r.title,
                 'user_name', u.name,
-                'user_id', u.uid
+                'user_id', u.uid,
+                'github_user', r.github_user
             )),
             '[]'::jsonb
         ) AS course_requests
@@ -25,7 +27,7 @@ select_course_requests AS (
         course_requests AS r
         INNER JOIN users AS u ON (u.user_id = r.user_id)
     WHERE
-        r.approval_status = 'pending'
+        r.approved_status = 'pending'
 ),
 select_courses AS (
     SELECT
@@ -115,3 +117,9 @@ FROM
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
+
+-- BLOCK update_course_request
+UPDATE course_requests
+SET approved_by = $user_id,
+    approved_status = $action
+WHERE course_requests.id = $id;
