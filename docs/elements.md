@@ -753,7 +753,7 @@ Submit the result in the correct order and indentation, which by using parson me
 #### Sample Element
 
 ```html
-<pl-parsons-problem answers-name="result" max-distractors=2 max-feedback-count=2 check-indentation=true></pl-parsons-problem>
+<pl-parsons-problem answers-name="result" max-distractors=2 max-feedback-count=2 check-indentation=true header-left-column = "Drag from here" header-right-column = "construct your solution here"></pl-parsons-problem>
 ```
 #### Customizations
 
@@ -763,6 +763,8 @@ Attribute | Type | Default | Description
 `max-distractors` | integer | `"2"` |select the maximum number of distractors.
 `max-feedback-count` | integer | `"2"` | The maximum number of counting the feedback
 `check-indentation`| boolean | `true` | Whether check the indentation
+`header-left-column`| string | `Drag from here` | Initial the header of the left column
+`header-right-column`| string| `construct your solution here` |  Initial the header of the right column
 
 ### Details
 

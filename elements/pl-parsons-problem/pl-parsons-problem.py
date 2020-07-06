@@ -135,8 +135,8 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
     #change
-    header-left = pl.get_string_attrib(element, 'header-left-column')
-
+    header_left = pl.get_string_attrib(element, 'header-left-column')
+    header_right = pl.get_string_attrib(element, 'header-right-column')
     #change
     pieces = data['params'].get(name, [])
     if len(pieces) == 0:
@@ -161,9 +161,11 @@ def render(element_html, data):
         unused_items = ''.join([render_piece(id, 0, piece, '') for id, piece in enumerate(pieces) if id not in submitted])
         answer_items = ''.join([render_piece(id, indent, pieces[id], flag) for (id, indent, flag) in decorated_submitted])
 
-        html =  '<div id="sortable-unused" class="sortable-code">' 
+        html =  '<div id="sortable-unused"  class="sortable-code">' 
+        html += header_left
         html += '<ul id="ul-unused">' + unused_items + '</ul></div>' 
         html += '<div id="sortable-answer" class="sortable-code">' 
+        html += header_right
         html += '<ul id="ul-answer">' + answer_items + '</ul></div>'
         html += '<input type="hidden" id="parsons-input" name="' + name + '" value="' + submitted_str + '">'
 
