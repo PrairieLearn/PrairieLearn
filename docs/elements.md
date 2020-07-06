@@ -34,6 +34,7 @@ PrairieLearn presently provides the following templated **input field** elements
   to obtain a file with a specific naming scheme.
 - [`pl-threejs`](#pl-threejs-element): Enables 3D scene display and problem
   submission.
+- [`pl-parsons-problem`](#pl-parsons-problem-element): Submit the result in the correct order and indentation, which by using parson method.
 
 **Decorative** elements are meant to improve how the question is displayed to
 students. Elements under this category include ways to specify question markup,
@@ -72,7 +73,7 @@ The following **Conditional** elements are available:
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
-- [`pl-parsons-problem`](#pl-parsons-problem-element): Submit the result in the correct order and indentation, which by using parson method, 
+
 
 Note: PrairieLearn Elements listed next have been **deprecated**. These elements
 will be removed at a future date.
@@ -740,6 +741,38 @@ that if there are many submitted answers, the page will load slowly.
 #### See also
 
 - [External: `three.js` JavaScript library](https://threejs.org/)
+
+
+-----
+
+
+## `pl-parson-problem` element
+
+Submit the result in the correct order and indentation, which by using parson method, 
+
+#### Sample Element
+
+```html
+<pl-parsons-problem answers-name="result" max-distractors=2 max-feedback-count=2 check-indentation=true></pl-parsons-problem>
+```
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | `result` | Variable name to store data in
+`max-distractors` | integer | `"2"` |select the maximum number of distractors.
+`max-feedback-count` | integer | `"2"` | The maximum number of counting the feedback
+`check-indentation`| boolean | `true` | Whether check the indentation
+
+### Details
+
+This element using Parson method to make a shuffle list of things to display and achieve drag the things, when the strings has the correct indentation and order, the result can be submitted and get the correct answer.
+
+
+### Example Implementations
+
+- [elementParsons]
+
 
 ## Decorative Elements
 
@@ -1545,36 +1578,6 @@ It expects results to follow [the reference schema for external grading results]
 ### See also
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
-
------
-
-
-## `pl-parson-problem` element
-
-Submit the result in the correct order and indentation, which by using parson method, 
-
-#### Sample Element
-
-```html
-<pl-parsons-problem answers-name="result" max-distractors=2 max-feedback-count=2 check-indentation=true></pl-parsons-problem>
-```
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answers-name` | string | `result` | Variable name to store data in
-`max-distractors` | integer | `"2"` |select the maximum number of distractors.
-`max-feedback-count` | integer | `"2"` | The maximum number of counting the feedback
-`check-indentation`| boolean | `true` | Whether check the indentation
-
-### Details
-
-This element using Parson method to make a shuffle list of things to display and achive drag the things, when the strings has the correct indentation and order, the result can be submited and get the correct answer.
-
-
-### Example Implementations
-
-- [elementParsons]
 
 ----------
 

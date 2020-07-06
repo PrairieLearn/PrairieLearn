@@ -21,25 +21,23 @@ def unpack_answer(submitted, num_pieces, data, name):
             if not 0 <= int(piece_no) < num_pieces:
                 raise ValueError()
         except:
-            ata['format_errors'][name] = 'INVALID piece number: ' + piece_no
+            data['format_errors'][name] = 'INVALID piece number: ' + piece_no
             return []
-        try: 
+        try:
             if not 0 <= int(indent) <= 4:
-               raise ValueError()
+                raise ValueError()
         except:
             data['format_errors'][name] = 'INVALID indentation: ' + str(indent)
             return []
 
         piece_tuple = (int(piece_no), int(indent))
         unpacked.append(piece_tuple)
-        
     return unpacked
 
 # this function takes an unpacked submission and checks it against the correct
 # solution piece by piece.  Returns an overall score (all right or all wrong),
 # textual feedback that could be provided to a learner, and flags for pieces
 # up to the first error indicating that the piece is correct, incorrect, mis-indented, or missing
-
 def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
     score = 1
     flags = []
@@ -74,14 +72,13 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation']
+    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
     # parse the sub-elements, making lists of both correct answers and distractors
-
     correct_answers = []
-    distractors = []
+    distractors = [] 
     for child in element:
         child_html = pl.inner_html(child)
         if child.tag == 'pl-answer':
@@ -247,34 +244,34 @@ def grade(element_html, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-# def test(element_html, data):
-#     element = lxml.html.fragment_fromstring(element_html)
-#     name = pl.get_string_attrib(element, 'answers-name')
-#     weight = pl.get_integer_attrib(element, 'weight', 1)
-# 
-#     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
-#     if correct_key is None:
-#         raise Exception('could not determine correct_key')
-#     number_answers = len(data['params'][name])
-#     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
-#     incorrect_keys = list(set(all_keys) - set([correct_key]))
-# 
-#     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
-#     if result == 'correct':
-#         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
-#         data['partial_scores'][name] = {'score': 1, 'weight': weight}
-#     elif result == 'incorrect':
-#         if len(incorrect_keys) > 0:
-#             data['raw_submitted_answers'][name] = random.choice(incorrect_keys)
-#             data['partial_scores'][name] = {'score': 0, 'weight': weight}
-#         else:
-#             # actually an invalid submission
-#             data['raw_submitted_answers'][name] = '0'
-#             data['format_errors'][name] = 'INVALID choice'
-#     elif result == 'invalid':
-#         data['raw_submitted_answers'][name] = '0'
-#         data['format_errors'][name] = 'INVALID choice'
-# 
-#         # FIXME: add more invalid choices
-#     else:
-#         raise Exception('invalid result: %s' % result)
+def test(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+    weight = pl.get_integer_attrib(element, 'weight', 1)
+
+    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
+    if correct_key is None:
+        raise Exception('could not determine correct_key')
+    number_answers = len(data['params'][name])
+    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    incorrect_keys = list(set(all_keys) - set([correct_key]))
+
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    if result == 'correct':
+        data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
+        data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    elif result == 'incorrect':
+        if len(incorrect_keys) > 0:
+            data['raw_submitted_answers'][name] = random.choice(incorrect_keys)
+            data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        else:
+            # actually an invalid submission
+            data['raw_submitted_answers'][name] = '0'
+            data['format_errors'][name] = 'INVALID choice'
+    elif result == 'invalid':
+        data['raw_submitted_answers'][name] = '0'
+        data['format_errors'][name] = 'INVALID choice'
+
+        # FIXME: add more invalid choices
+    else:
+        raise Exception('invalid result: %s' % result)
