@@ -49,6 +49,7 @@ describe('test auto group and delete groups', function() {
                     }
                 });
             };
+            setTimeout(checkComplete, 10);
         });
     });
 
