@@ -29,7 +29,7 @@
       </div>
     <% } %>
 
-    <% if (!isgroup) { %>
+    <% if (!isGroup) { %>
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <%= assessment_set.name %> <%= assessment.number %>: Groups
@@ -100,11 +100,11 @@
                 <form name="auto-assessment-group-form" method="POST" enctype="multipart/form-data">
                   <div class="form-group">
                     <label for="formMin">Min number of members in a group</label>
-                    <input type="text" value=<%= config_info.defaultmin %> class="form-control" id="formMin" name="min_group_size">
+                    <input type="text" value=<%= config_info.defaultMin %> class="form-control" id="formMin" name="min_group_size">
                   </div>
                   <div class="form-group">
                     <label for="formMax">Max number of members in a group</label>
-                    <input type="text" value=<%= config_info.defaultmax %> class="form-control" id="formMax" name="max_group_size">
+                    <input type="text" value=<%= config_info.defaultMax %> class="form-control" id="formMax" name="max_group_size">
                   </div>
                   <div class="radio">
                     <label><input type="radio" name="optradio" value=1 checked> Grouping entire class (Please delete all
@@ -168,18 +168,19 @@
               <div class="modal-header">
                 <h1 class="h4 modal-title" id="addGroupModalLabel">Add a group</h1>
               </div>
-              <form name="add-Group-form" method="POST">
+              <form name="add-group-form" method="POST">
                 <div class="modal-body">
-                  <div class="form-name">
+                  <div class="form-group">
                     <label for="formName">Group Name</label>
-                    <input type="text" class="form-control" id="formName" name="groupname">
+                    <input type="text" class="form-control" id="formName" name="groupname">  
                   </div>
-                  <br>
-                  <div class="form-uids">
-                    <label for="formUids">UIDs (Seperate with ",". Please make sure they are not in any other
-                      groups)</label>
+                <br>
+                  <div class="form-group">
+                    <label for="formUids">UIDs</label>
                     <input type="text" class="form-control" id="formUids" name="uids"
                       placeholder="one@example.com, two@example.com, three@example.com">
+                    <small id="uidHelp" class="form-text text-muted">Seperate with ","
+                      <br>Please make sure they are not in any other groups</small>
                   </div>
                 </div>
                 <div class="modal-footer">
@@ -198,10 +199,9 @@
               <div class="modal-header">
                 <h1 class="h4 modal-title" id="configModalLabel">Group Config</h1>
               </div>
-              <form name="config-Group-form" method="POST">
+              <form name="config-group-form" method="POST">
                 <div class="modal-body">
                   <span class="badge badge-secondary">id</span> <%= config_info.id %><br>
-                  <span class="badge badge-secondary">course_instance_id</span>
                   <%= config_info.course_instance_id %><br>
                   <span class="badge badge-secondary">minimum size</span> <%= config_info.minimum %><br>
                   <span class="badge badge-secondary">maximum size</span> <%= config_info.maximum %><br>
@@ -209,11 +209,11 @@
                   <br>
                   <div class="form-min">
                     <label for="formmin">Minimum group size</label>
-                    <input type="text" value=<%= config_info.defaultmin %> class="form-control" id="formmin" name="minsize">
+                    <input type="text" value=<%= config_info.defaultMin %> class="form-control" id="formmin" name="minsize">
                   </div>
                   <div class="form-max">
                     <label for="formman">Maximum group size</label>
-                    <input type="text" value=<%= config_info.defaultmax %> class="form-control" id="formmax" name="maxsize">
+                    <input type="text" value=<%= config_info.defaultMax %> class="form-control" id="formmax" name="maxsize">
                   </div>
                   <label for="formman">Student Permissions</label> <br>
                   <div class="form-check form-check-inline">
@@ -300,7 +300,7 @@
               <i class="fas fa-robot" aria-hidden="true"></i> Auto
             </button>
             <div class="mt-2">
-              Quick group students into teams by system.
+              Automatically assign students to groups.
             </div>
           </div>
           <div class="col-sm bg-light py-4 border" align="center">
@@ -334,21 +334,42 @@
               <td class="text-center"><small><%= row.uids %></small></td>
               <td class="text-center">
                 <div class="dropdown">
-                  <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
-                    aria-expanded="false">
+                  <button type="button" 
+                          class="btn btn-xs dropdown-toggle" 
+                          data-toggle="dropdown" 
+                          aria-haspopup="true"
+                          aria-expanded="false">
                     Action <span class="caret"></span>
                   </button>
-                  <div id="row<%= iRow %>PopoverAdd" tabindex="0" data-toggle="popover" data-trigger="manual"
-                    data-container="body" data-html="true" data-placement="auto" title="Add Members"
-                    data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>">
+                  <div id="row<%= iRow %>PopoverAdd" 
+                        tabindex="0" 
+                        data-toggle="popover" 
+                        data-trigger="manual"
+                        data-container="body" 
+                        data-html="true" 
+                        data-placement="auto" 
+                        title="Add Members"
+                        data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>">
                   </div>
-                  <div id="row<%= iRow %>Popoverdeletemember" tabindex="0" data-toggle="popover" data-trigger="manual"
-                    data-container="body" data-html="true" data-placement="auto" title="Remove Members"
-                    data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>">
+                  <div id="row<%= iRow %>Popoverdeletemember" 
+                        tabindex="0" 
+                        data-toggle="popover" 
+                        data-trigger="manual"
+                        data-container="body" 
+                        data-html="true" 
+                        data-placement="auto" 
+                        title="Remove Members"
+                        data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>">
                   </div>
-                  <div id="row<%= iRow %>Popoverdeletegroup" tabindex="0" data-toggle="popover" data-trigger="manual"
-                    data-container="body" data-html="true" data-placement="auto" title="Confirm delete this group"
-                    data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
+                  <div id="row<%= iRow %>Popoverdeletegroup" 
+                        tabindex="0" 
+                        data-toggle="popover" 
+                        data-trigger="manual"
+                        data-container="body" 
+                        data-html="true" 
+                        data-placement="auto" 
+                        title="Confirm delete this group"
+                        data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
                   </div>
 
                   <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->

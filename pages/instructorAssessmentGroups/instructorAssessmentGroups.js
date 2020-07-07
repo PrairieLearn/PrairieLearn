@@ -14,15 +14,15 @@ function obtainInfo(req, res, next){
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.isgroup = true;
+        res.locals.isGroup = true;
         if (result.rowCount == 0) {
-            res.locals.isgroup = false;
+            res.locals.isGroup = false;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             return;
         }
         res.locals.config_info = result.rows[0];
-        res.locals.config_info.defaultmin = res.locals.config_info.minimum || 2;
-        res.locals.config_info.defaultmax = res.locals.config_info.maximum || 5;
+        res.locals.config_info.defaultMin = res.locals.config_info.minimum || 2;
+        res.locals.config_info.defaultMax = res.locals.config_info.maximum || 5;
 
         res.locals.config_info.permission = '';
         if (res.locals.config_info.student_auth_join) {
@@ -106,9 +106,7 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
-                    if (err){
-                        failedUids += '[' + uid + '] ';
-                    }
+                    failedUids += '[' + uid + '] ';
                 }
             }
             if (failedUids.length > 0) {
@@ -152,9 +150,7 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_add_member', params);
                 } catch (err) {
-                    if (err){
-                        failedUids += '[' + uid + '] ';
-                    }
+                    failedUids += '[' + uid + '] ';
                 }
             }
             if (failedUids.length > 0) {
@@ -179,9 +175,7 @@ router.post('/', function(req, res, next) {
                 try {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
                 } catch (err) {
-                    if (err){
-                        failedUids += '[' + uid + '] ';
-                    }
+                    failedUids += '[' + uid + '] ';
                 }
             }
             if (failedUids.length > 0) {
