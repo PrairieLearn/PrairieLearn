@@ -1,4 +1,3 @@
--- A Work in Progress to discuss shared schema for group storage in PL
 CREATE TABLE IF NOT EXISTS group_configs (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -15,7 +14,6 @@ CREATE TABLE IF NOT EXISTS group_configs (
 
 CREATE INDEX group_configs_course_instance_id_key ON group_configs (course_instance_id);
 CREATE INDEX group_configs_assessment_id_key ON group_configs (assessment_id);
-
 
 CREATE TABLE IF NOT EXISTS groups (
     id BIGSERIAL PRIMARY KEY,
