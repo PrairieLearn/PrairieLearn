@@ -11,17 +11,6 @@ FROM
 WHERE
     a.id = $assessment_id;
 
--- BLOCK select_assessment_instance
-SELECT
-    ai.id AS assessment_instance_id
-FROM
-    assessment_instances AS ai
-    JOIN users AS u ON (u.user_id = ai.user_id)
-WHERE
-    ai.assessment_id = $assessment_id
-    AND ai.number = $instance_number
-    AND u.uid = $uid;
-
 -- BLOCK select_enrollments
 SELECT 
     uid AS user_list
