@@ -348,13 +348,6 @@ describe('Group based homework assess control on student side', function() {
                 callback(null);
             });
         });
-        // it('should have 2 students in group 1 in db', function(callback) {
-        //     sqldb.query(sql.select_all_user_in_group, [], function(err, result) {
-        //         if (ERR(err, callback)) return;
-        //         assert.lengthOf(result.rows, 2);
-        //         callback(null);
-        //     });
-        // });
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });     

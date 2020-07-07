@@ -49,10 +49,8 @@ router.get('/', function(req, res, next) {
                             if (res.locals.needsize <= 0) {
                                 res.locals.start = true;
                             }
-                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                        } else {
-                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                         }
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 });
             } else {

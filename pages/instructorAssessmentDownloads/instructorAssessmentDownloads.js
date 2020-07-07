@@ -31,7 +31,7 @@ const setFilenames = function(locals) {
     locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
     locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
     locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
-    locals.groups = prefix + 'groups.csv';
+    locals.groupsCsvFilename = prefix + 'groups.csv';
     locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
     locals.finalFilesZipFilename = prefix + 'final_files.zip';
     locals.bestFilesZipFilename = prefix + 'best_files.zip';
@@ -294,8 +294,8 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             archive.finalize();
         });
-    } else if (req.params.filename == res.locals.groups) {
-        let params = {
+    } else if (req.params.filename == res.locals.groupsCsvFilename) {
+        const params = {
             assessment_id: res.locals.assessment.id,
         };
         sqldb.query(sql.group_configs, params, function(err, result) {

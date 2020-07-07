@@ -103,9 +103,9 @@ By default all assessments are *single instance*, meaning that each student has 
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
-## Enabling groupWork for collaborative assessments
+## Enabling group work for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `groupWork: true`, groupWork-related options will be enabled in the web interface, allowing multiple students to work on the same assessment instance.
+By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
 
 ### Instructor options for groupWork
 
@@ -134,7 +134,7 @@ A backup of the current group assignments can be saved from the "Downloads" tab,
 
 If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via an invite code, which they can get from another classmate.
 
-When calculating a student's grade for a groupWork assessment, PrairieLearn will always use the score of their group's assessment instance.
+When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
 
 > Note: Students cannot see eachother's edits in real-time, although this is planned for a future version of PrairieLearn.
 
