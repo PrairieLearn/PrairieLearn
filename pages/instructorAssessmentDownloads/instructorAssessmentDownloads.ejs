@@ -31,6 +31,7 @@
               </tr>
             </thead>
             <tbody>
+              <% if (assessment.group_work) { %>
               <tr>
                 <td>
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= groups %>"><%= groups %></a>
@@ -39,7 +40,7 @@
                   Current groups including group names and group members information
                 </td>
               </tr>
-              <tr>
+              <% } %>
               <tr>
                 <td>
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
