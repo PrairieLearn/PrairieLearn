@@ -34,10 +34,10 @@
               <% if (assessment.group_work) { %>
               <tr>
                 <td>
-                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= groups %>"><%= groups %></a>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads/<%= groupsCsvFilename %>"><%= groupsCsvFilename %></a>
                 </td>
                 <td>
-                  Current groups including group names and group members information
+                  Information about current groups, including group names and group members
                 </td>
               </tr>
               <% } %>

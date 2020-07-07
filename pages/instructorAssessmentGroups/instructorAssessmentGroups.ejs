@@ -23,7 +23,7 @@
   <%- include('../partials/navbar'); %>
   <div id="content" class="container-fluid">
 
-    <% if(typeof errormsg !== 'undefined' && errormsg.length > 0) { %>
+    <% if (typeof errormsg !== 'undefined' && errormsg.length > 0) { %>
       <div class="alert alert-danger" role="alert">
         <%= errormsg %>
       </div>
@@ -35,7 +35,7 @@
         <%= assessment_set.name %> <%= assessment.number %>: Groups
       </div>
       <div class="card-body">
-        This is not a group assessment. To enable this function, please set groupWork to be true in infoAssessment.json.
+        This is not a group assessment. To enable this function, please set <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
       </div>
     </div>
 
@@ -46,7 +46,7 @@
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group setting</h1>
+              <h1 class="h4 modal-title" id="uploadAssessmentGroupsModalLabel">Upload new group assignments</h1>
             </div>
             <div class="modal-body">
               <p>
@@ -64,9 +64,8 @@
             </div>
             <div class="modal-body">
               <p>
-                The <tt>groupname</tt> column is a unique identification for the group. To change the grouping, link
-                uids
-                to the groupname.
+                The <tt>groupname</tt> column should be a unique identifier for each group. To change the grouping, link
+                uids to the groupname.
               </p>
               <form name="upload-assessment-group-form" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
@@ -244,10 +243,10 @@
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h1 class="h4 modal-title" id="deleteAllGroupsModalLabel">Delete all exisitng groups</h1>
+                <h1 class="h4 modal-title" id="deleteAllGroupsModalLabel">Delete all existing groups</h1>
               </div>
               <div class="modal-body">
-                Are you sure you want to delete all exisitng groups
+                Are you sure you want to delete all existing groups
                 for <strong><%= assessment_set.name %>
                   <%= assessment.number %></strong>? This cannot be
                 undone.
@@ -291,7 +290,7 @@
               <i class="fas fa-upload" aria-hidden="true"></i> Upload
             </button>
             <div class="mt-2">
-              Upload a CSV format file for group setting.
+              Upload a CSV file with group assignments.
             </div>
           </div>
           <div class="col-sm bg-light py-4 border" align="center">
@@ -309,7 +308,7 @@
               <i class="fas fa-copy" aria-hidden="true"></i> Copy
             </button>
             <div class="mt-2">
-              Copy the group setting from another assessment.
+              Copy the group assignments from another assessment.
             </div>
           </div>
         </div>
