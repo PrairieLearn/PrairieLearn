@@ -28,11 +28,6 @@
       <div class="pr-1">Title:</div>
       <div><%= question.title %></div>
     </div>
-  <% if (locals.workspaceUrl != null) { %>
-  <div class="d-flex flex-wrap">
-    <a target="_blank" href="<%= locals.workspaceUrl %>">Open workspace</a>
-  </div>
-  <% } %>
   <div class="d-flex flex-wrap">
     <div class="pr-1">Started at: </div>
     <div><%= variant.formatted_date %></div>
