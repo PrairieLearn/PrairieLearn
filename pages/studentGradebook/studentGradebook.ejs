@@ -2,6 +2,27 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <script type="text/javascript">
+        $(document).ready(function(){
+
+            function getCollapseControl($this) {
+                return $(`[href=".collapse-id-${$this.attr('collapse-id')}"]`);
+            }
+
+            var collapseData =  $('.collapse-element');
+
+            collapseData.on('hide.bs.collapse', function() {
+                var control = getCollapseControl($(this));
+                control.text('Show instances');
+                control.attr('aria-expanded', 'false');
+            });
+            collapseData.on('show.bs.collapse', function() {
+                var control = getCollapseControl($(this));
+                control.text('Hide instances');
+                control.attr('aria-expanded', 'true');
+            });
+        });
+    </script>
   </head>
   <body>
     <script>
@@ -13,7 +34,7 @@
     <div id="content" class="container">
 
       <%- include('../partials/advertisement'); %>
-      
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Gradebook</div>
 
@@ -26,32 +47,34 @@
             </tr>
           </thead>
           <tbody>
-            <% rows.forEach(function(row) { %>
-            <% if (row.start_new_set) { %>
+            <% for (row_index = 0; row_index < rows.length; row_index++) { %>
+            <% var row = rows[row_index];
+            if (row.start_new_set) { %>
             <tr>
               <th colspan="3"><%= row.assessment_set_heading %></th>
             </tr>
             <% } %>
-            <tr>
+            <tr <% if (row.collapse) { %> class="collapse collapse-element collapse-id-<%= row.collapse_id %>" collapse-id=<%= row.collapse_id %> aria-expanded="false" <% } %> >
               <td class="align-middle" style="width: 1%">
-                <% if (row.multiple_instance_header) { %>
-                <span class="badge color-<%= row.assessment_set_color %>"><%= row.label %></span>
-                <% } else { %>
                 <span class="badge color-<%= row.assessment_set_color %> color-hover">
                   <%= row.label %>
                 </span>
-                <% } %>
               </td>
               <td class="align-middle">
-                <%= row.title %>
+                  <span><%= row.title %></span>
+                  <% if (row.collapse_control) { %>
+                      <button class="badge badge-light border color-hover" role="button" data-toggle="collapse" href=".collapse-id-<%= row.collapse_id %>">
+                          Show instances
+                      </button>
+                  <% } %>
               </td>
               <td class="text-center align-middle">
                 <% if (!row.multiple_instance_header) { %>
-                <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <%- include('../partials/scorebar', {score: row.display_score_perc}) %>
                 <% } %>
               </td>
             </tr>
-            <% }); %>
+            <% } %>
           </tbody>
         </table>
       </div>
