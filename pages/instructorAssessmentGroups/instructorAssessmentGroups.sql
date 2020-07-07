@@ -11,7 +11,7 @@ SELECT
     GID,
     groupname,
     COUNT(*) AS num,
-    array_to_string(array_agg(us.uid), ', ') AS uids
+    array_to_string(array_agg(u.uid), ', ') AS uids
 FROM (SELECT
         gr.id AS GID,
         gr.name AS groupname
@@ -24,7 +24,7 @@ FROM (SELECT
         AND gr.deleted_at IS NULL
     ) temp
     JOIN group_users as gu ON (gu.group_id = temp.GID)
-    JOIN users as us ON (us.user_id = gu.user_id)
+    JOIN users as u ON (u.user_id = gu.user_id)
 GROUP BY GID, groupname
 ORDER BY GID, groupname;
 

@@ -330,15 +330,15 @@ OFFSET
 
 -- BLOCK group_configs
 SELECT 
-    gr.name, us.uid
+    gr.name, u.uid
 FROM 
     group_configs AS gc
     JOIN groups AS gr ON gc.id = gr.group_config_id
     JOIN group_users AS gu ON gr.id = gu.group_id
-    JOIN users AS us ON gu.user_id = us.user_id
+    JOIN users AS u ON gu.user_id = u.user_id
 WHERE
     gc.assessment_id = $assessment_id 
     AND gc.deleted_at IS NULL 
     AND gr.deleted_at IS NULL
 ORDER BY 
-    gr.name, us.uid;
+    gr.name, u.uid;
