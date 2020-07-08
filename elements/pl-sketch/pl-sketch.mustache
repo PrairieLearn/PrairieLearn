@@ -1,0 +1,32 @@
+<div class="pl-sketch">
+    <div class="pl-sketch-controls">
+        <div class="pl-sketch-control-group">
+            <div class="pl-sketch-control fa fa-undo fa-2x" id="undo"></div>
+            <div class="pl-sketch-control fa fa-redo fa-2x" id="redo"></div>
+            <div class="pl-sketch-control fa fa-pen fa-2x" id="pen"></div>
+            <div class="pl-sketch-control fa fa-eraser fa-2x" id="eraser"></div>
+        </div>
+        <div class="pl-sketch-control-group">
+            <div class="pl-sketch-setting" id="color-picker">
+                <div class="pl-sketch-control pl-sketch-color-icon" id="color" style="background-color: #000000"></div>
+                <div class="pl-sketch-popup pl-sketch-hidden" id="color-popup">
+                    <div class="pl-sketch-circle" style="background-color: #FFEB3B"></div>
+                    <div class="pl-sketch-circle" style="background-color: #FF9800"></div>
+                    <div class="pl-sketch-circle" style="background-color: #F44336"></div>
+                    <div class="pl-sketch-circle" style="background-color: #E91E63"></div>
+                    <div class="pl-sketch-circle" style="background-color: #9C27B0"></div>
+                    <div class="pl-sketch-circle" style="background-color: #3F51B5"></div><br>
+                    <div class="pl-sketch-circle" style="background-color: #00BCD4"></div>
+                    <div class="pl-sketch-circle" style="background-color: #4CAF50"></div>
+                    <div class="pl-sketch-circle" style="background-color: #795548"></div>
+                    <div class="pl-sketch-circle" style="background-color: #E0E0E0"></div>
+                    <div class="pl-sketch-circle" style="background-color: #616161"></div>
+                    <div class="pl-sketch-circle" style="background-color: #000000"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas class=".pl-sketch-canvas" id="pl-sketch-canvas" data-width="80%" data-height="80%"></canvas>
+    <span id="pl-sketch-json" hidden>{{sketchpad_json}}</span>
+    <input type="hidden" id="pl-sketch-input" name="sketches" value="" />
+</div>
