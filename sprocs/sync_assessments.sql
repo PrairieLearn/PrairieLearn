@@ -183,7 +183,9 @@ BEGIN
                 title = EXCLUDED.title,
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
-                best_questions = EXCLUDED.best_questions
+                best_questions = EXCLUDED.best_questions,
+                sequence_enforce = EXCLUDED.sequence_enforce,
+                sequence_score_perc_threshold = EXCLUDED.sequence_score_perc_threshold
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
