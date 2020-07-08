@@ -13,15 +13,16 @@ function changeTool(tool, sketchpad) {
         curTool = 'pen';
         $('#pen').css('background', '#C0C0C0');
         $('#eraser').css('background', '#FAFAFA');
+        sketchpad.penSize = size;
+        sketchpad.color = color;
     } else {
         size = 30;
-        color = '#FFF';
         curTool = 'eraser';
         $('#eraser').css('background', '#C0C0C0');
         $('#pen').css('background', '#FAFAFA');
+        sketchpad.penSize = size;
+        sketchpad.color = '#FFF';
     }
-    sketchpad.penSize = size;
-    sketchpad.color = color;
 }
 
 function updateColor(col, sketchpad) {
