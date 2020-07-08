@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 var size = 5;
 var color = '#000000';
 var curTool = null;
@@ -81,7 +83,7 @@ $(function() {
           sketches.element = '#pl-sketch-canvas';
           console.log(sketches);
           sketchpad = new Sketchpad(sketches);
-        }, 500, "canvas resize");
+        }, 500, 'canvas resize');
     });
 
     $('#pen').on('click', () => { changeTool('pen', sketchpad); });
@@ -90,7 +92,7 @@ $(function() {
     $('#redo').on('click', () => { sketchpad.redo(); });
     changeTool('pen', sketchpad);
 
-    $('#color-picker').on("click", (ev) => {
+    $('#color-picker').on('click', (ev) => {
         $('#color-popup').toggleClass("pl-sketch-hidden");
     });
 
@@ -100,5 +102,5 @@ $(function() {
 
     $('.question-form').on('submit', () => {
         $('#pl-sketch-input').val(JSON.stringify(sketchpad.toObject()));
-    })
+    });
 })
