@@ -1,0 +1,42 @@
+{
+    "uuid": "C8091A09-46F0-4587-A4D9-58B2EBCB1283",
+    "type": "Homework",
+    "title": "Group Activity Template",
+    "set": "Homework",
+    "number": "1",
+    "groupWork": true,
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2019-01-18T00:00:01",
+            "endDate": "2019-01-28T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2019-01-28T00:00:01",
+            "endDate": "2019-01-30T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2019-01-30T00:00:01"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Fundamental questions",
+            "bestQuestions": 3,
+            "questions": [
+                {"id": "demo/demoNewton-page1",          "points": 1, "maxPoints": 5},
+                {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5}
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}

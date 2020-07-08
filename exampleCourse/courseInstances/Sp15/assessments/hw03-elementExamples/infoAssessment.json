@@ -4,7 +4,6 @@
     "title": "PrairieLearn element example gallery",
     "set": "Homework",
     "number": "3",
-    "groupWork": true,
     "allowAccess": [
         {
             "mode": "Public",
