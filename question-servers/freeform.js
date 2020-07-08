@@ -168,7 +168,7 @@ module.exports = {
      * Add clientFiles urls for elements.
      * Returns a copy of data with the new urls inserted.
      */
-    getElementClientFiles: function(data, elementName, context) {
+    getElementClientFiles: function(data, elementName, _context) {
         let dataCopy = _.cloneDeep(data);
         /* The options field wont contain URLs unless in the 'render' stage, so check
            if it is populated before adding the element url */
@@ -176,7 +176,7 @@ module.exports = {
             /* Join the URL using Posix join to avoid generating a path with backslashes,
                as would be the case when running on Windows */
             dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            /* This will add extension urls once those are added */
+            /* This will add extension urls once that is merged (and will use the context, I promise!) */
         }
         return dataCopy;
     },
