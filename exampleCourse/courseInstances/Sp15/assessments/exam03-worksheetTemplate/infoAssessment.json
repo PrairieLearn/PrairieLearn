@@ -1,7 +1,7 @@
 {
     "uuid": "E236920C-020C-448A-8E93-53CB6849BBDD",
     "type": "Exam",
-    "title": "Worksheet template: page order completion enforced",
+    "title": "Worksheet template: Newton's law",
     "set": "Worksheet",
     "number": "1",
     "allowAccess": [
@@ -15,13 +15,12 @@
            "title": "question 1",
             "sequence": {
                 "enforce": true,
-                "scorePercThreshold": 0.8
+                "scorePercThreshold": 80
             },
             "questions": [
                 {"id": "demoNewton-page1", "points": [5,4,3,2,1]},
                 {"id": "demoNewton-page2", "points": [5,4,3,2,1]}
             ]
         }
-    ],
-    "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+    ]
 }
