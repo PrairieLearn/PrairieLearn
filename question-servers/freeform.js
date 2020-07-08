@@ -165,7 +165,7 @@ module.exports = {
     },
 
     /**
-     * Add clientFiles urls for elements and extensions.
+     * Add clientFiles urls for elements.
      * Returns a copy of data with the new urls inserted.
      */
     getElementClientFiles: function(data, elementName, context) {
@@ -176,14 +176,7 @@ module.exports = {
             /* Join the URL using Posix join to avoid generating a path with backslashes,
                as would be the case when running on Windows */
             dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            dataCopy.options.client_files_extensions_url = {};
-
-            if (_.has(context.course_element_extensions, elementName)) {
-                Object.keys(context.course_element_extensions[elementName]).forEach(extension => {
-                    const url = path.posix.join(data.options.base_url, 'elementExtensions', elementName, extension, 'clientFilesExtension');
-                    dataCopy.options.client_files_extensions_url[extension] = url;
-                });
-            }
+            /* This will add extension urls once those are added */
         }
         return dataCopy;
     },
@@ -734,7 +727,6 @@ module.exports = {
         let options = {};
         options.question_path = context.question_dir;
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
-        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
         return options;
     },
 
