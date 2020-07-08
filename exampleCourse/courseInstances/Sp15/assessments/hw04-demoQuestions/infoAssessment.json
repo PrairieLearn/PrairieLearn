@@ -48,7 +48,8 @@
                 {"id": "demo/randomPlot",                      "points": 1, "maxPoints": 3},
                 {"id": "demo/randomDataFrame",                 "points": 2, "maxPoints": 6},
                 {"id": "demo/autograder/ansiOutput",                      "points": 2, "maxPoints": 4},
-                {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4}
+                {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4},
+                {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4}                
             ]
         }
     ]
