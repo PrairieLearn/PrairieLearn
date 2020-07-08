@@ -8,8 +8,11 @@ edit_uri: blob/master/docs/
 
 pages:
 - Main: 'index.md'
+- Getting Started:
+  - 'Requesting your course space': 'requestCourse.md'
+  - 'Creating content in the browser': 'getStarted.md'
 - User Guide:
-  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Installing and running PL locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'

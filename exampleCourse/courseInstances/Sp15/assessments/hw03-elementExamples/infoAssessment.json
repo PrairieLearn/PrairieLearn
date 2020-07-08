@@ -36,6 +36,7 @@
                 {"id": "element/panels",                   "points": 2, "maxPoints": 10},
                 {"id": "element/codeDocumentation",        "points": 2, "maxPoints": 10},
                 {"id": "element/checkbox",                 "points": 2, "maxPoints": 10},
+                {"id": "element/dropdown",                 "points": 2, "maxPoints": 10},
                 {"id": "element/numberInput",              "points": 2, "maxPoints": 10},
                 {"id": "element/integerInput",             "points": 2, "maxPoints": 10},
                 {"id": "element/symbolicInput",            "points": 2, "maxPoints": 10},
