@@ -3,9 +3,13 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
 const util = require('./util');
 const helperDb = require('../helperDb');
 
+const sql = sqlLoader.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 describe('Question syncing', () => {
@@ -98,6 +102,18 @@ describe('Question syncing', () => {
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await assert.isRejected(util.syncCourseData(courseDir));
+  });
+
+  it('fails if workspaceOptions["image"] is not synced correctly', async () => {
+    const courseData = util.getCourseData();
+    const question = courseData.questions[util.WORKSPACE_QUESTION_ID];
+    const quuid = question.uuid;
+    const imageJson = question.workspaceOptions.image;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const result = await sqldb.queryOneRowAsync(sql.get_workspace_image, {quuid});
+    const imageSql = result.rows[0].workspace_image;
+    await assert.equal(imageJson, imageSql);
   });
 
   it('fails if a question directory is missing an info.json file', async () => {

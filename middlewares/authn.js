@@ -122,6 +122,15 @@ module.exports = function(req, res, next) {
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
         res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
+
+        // reset cookie timeout (#2268)
+        var tokenData = {
+            user_id: authnData.user_id,
+            authn_provider_name: authnData.authn_provider_name || null,
+        };
+        var pl_authn = csrf.generateToken(tokenData, config.secretKey);
+        res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
+
         next();
     });
 };
