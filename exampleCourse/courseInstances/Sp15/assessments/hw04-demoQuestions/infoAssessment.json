@@ -34,6 +34,7 @@
         {
             "questions": [
                 {"id": "demo/calculation",                     "points": 1, "maxPoints": 5},
+                {"id": "demo/overlayDropdown",                 "points": 1, "maxPoints": 5},
                 {"id": "demo/autograder/codeEditor",            "points": 1, "maxPoints": 5},
                 {"id": "demo/autograder/codeUpload",            "points": 1, "maxPoints": 5},
                 {"id": "demo/manualGrade/codeUpload",           "points": 1, "maxPoints": 5},
@@ -43,6 +44,7 @@
                 {"id": "demo/matrixAlgebra",                   "points": 2, "maxPoints": 10},
                 {"id": "demo/matrixComplexAlgebra",            "points": 2, "maxPoints": 10},
                 {"id": "demo/custom/element",                   "points": 1, "maxPoints": 1},
+                {"id": "demo/custom/elementHiddenTag",          "points": 1, "maxPoints": 1},
                 {"id": "demo/custom/gradeFunction",             "points": 1, "maxPoints": 1},
                 {"id": "demo/randomSymbolic",                  "points": 2, "maxPoints": 10},
                 {"id": "demo/randomPlot",                      "points": 1, "maxPoints": 3},
