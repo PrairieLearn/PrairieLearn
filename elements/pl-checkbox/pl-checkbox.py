@@ -137,8 +137,7 @@ def render(element_html, data):
                 'key': answer['key'],
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
-                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
+                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
@@ -193,7 +192,8 @@ def render(element_html, data):
             'uuid': pl.get_uuid(),
             'info': info,
             'answers': answerset,
-            'inline': inline
+            'inline': inline,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
         }
 
         if not hide_help_text:

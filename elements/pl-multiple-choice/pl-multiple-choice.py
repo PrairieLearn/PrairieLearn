@@ -96,8 +96,7 @@ def render(element_html, data):
                 'key': answer['key'],
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
-                'display_score_badge': display_score and submitted_key == answer['key'],
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
+                'display_score_badge': display_score and submitted_key == answer['key']
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (correct_key == answer['key'])
@@ -133,7 +132,8 @@ def render(element_html, data):
         html_params = {
             'submission': True,
             'parse_error': parse_error,
-            'uuid': pl.get_uuid()
+            'uuid': pl.get_uuid(),
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
         }
 
         if parse_error is None:
