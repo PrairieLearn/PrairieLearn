@@ -43,7 +43,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
 
-    with open(join(job_dir, 'data', 'data.json')) as f:
+    with open(join(filenames_dir, 'data.json')) as f:
         data = json.load(f)
     with open(join(filenames_dir, 'setup_code.py'), 'r') as f:
         str_setup = f.read()
@@ -53,6 +53,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_student = f.read()
     with open(join(filenames_dir, 'test.py')) as f:
         str_test = f.read()
+
+    os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
     os.remove(join(filenames_dir, 'test.py'))
@@ -121,6 +123,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
+    with open(join(filenames_dir, 'data.json'), 'w') as f:
+        json.dump(data, f)
     with open(fname_ref, 'w') as f:
         f.write(str_ref)
     with open(join(filenames_dir, 'setup_code.py'), 'w') as f:
