@@ -934,6 +934,7 @@ module.exports = {
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
             data.options.base_url = locals.baseUrl;
+            data.options.workspace_url = locals.workspaceUrl || null;
 
             // Put key paths in data.options
             _.extend(data.options, module.exports.getContextOptions(context));

@@ -1,0 +1,18 @@
+{
+    "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
+    "title": "Workspace demo",
+    "topic": "Workspace",
+    "tags": [
+        "su20",
+        "tyang15"
+    ],
+    "type": "v3",
+    "workspaceOptions": {
+        "image": "prairielearn/vscode-workspace",
+        "port": 15000,
+        "gradedFiles": [
+            "animal.h",
+            "animal.cpp"
+        ]
+    }
+}

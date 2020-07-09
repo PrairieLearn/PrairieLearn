@@ -107,13 +107,18 @@ describe('Question syncing', () => {
   it('fails if workspaceOptions["image"] is not synced correctly', async () => {
     const courseData = util.getCourseData();
     const question = courseData.questions[util.WORKSPACE_QUESTION_ID];
+    const workspaceImage = question.workspaceOptions.image;
+    const workspacePort = question.workspaceOptions.port;
     const quuid = question.uuid;
-    const imageJson = question.workspaceOptions.image;
+
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const result = await sqldb.queryOneRowAsync(sql.get_workspace_image, {quuid});
-    const imageSql = result.rows[0].workspace_image;
-    await assert.equal(imageJson, imageSql);
+    const result = await sqldb.queryOneRowAsync(sql.get_workspace_options, {quuid});
+    const workspace_image = result.rows[0].workspace_image;
+    const workspace_port = result.rows[0].workspace_port;
+
+    await assert.equal(workspaceImage, workspace_image);
+    await assert.equal(workspacePort, workspace_port);
   });
 
   it('fails if a question directory is missing an info.json file', async () => {
