@@ -50,4 +50,3 @@ def render(element_html, data):
         html += '<pl-code language="python" no-highlight="{}">{}</pl-code>'.format(no_highlight, text)
 
     return html
-
