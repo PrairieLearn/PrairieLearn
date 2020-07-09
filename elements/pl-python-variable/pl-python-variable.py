@@ -9,6 +9,7 @@ SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=['params-name'], optional_attribs=['text', 'no-highlight', 'prefix', 'suffix', 'show-header', 'show-index', 'show-dimensions'])
@@ -49,3 +50,4 @@ def render(element_html, data):
         html += '<pl-code language="python" no-highlight="{}">{}</pl-code>'.format(no_highlight, text)
 
     return html
+
