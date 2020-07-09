@@ -906,6 +906,9 @@ Attribute | Type | Default | Description
 `prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
 `suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
 `no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+`show-header` | string | True | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)
+`show-index` | string | True | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)
+`show-dimensions` | string | True | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)
 
 #### Details
 
