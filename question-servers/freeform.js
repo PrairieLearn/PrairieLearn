@@ -1098,7 +1098,10 @@ module.exports = {
                             workers.returnPythonCaller(pc, (pcErr) => {
                                 if (ERR(pcErr, callback)) return;
                                 if (ERR(err, callback)) return;
-                                const fileDataBase64 = fileData.toString('base64');
+                                let fileDataBase64 = '';
+                                if (typeof fileData !== 'undefined' && fileData !== null) {
+                                    fileDataBase64 = fileData.toString('base64');
+                                }
                                 const cachedData = {courseIssues, fileDataBase64};
                                 callback(null, cachedData);
                             });
