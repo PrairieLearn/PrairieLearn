@@ -27,6 +27,8 @@ DECLARE
     assessment_instance_id bigint;
     course_id bigint;
     variant_id bigint;
+    question_workspace_image text;
+    workspace_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -112,12 +114,28 @@ BEGIN
         IF course_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_instance_id'; END IF;
     END IF;
 
+    -- check if workspace needed
+    SELECT q.workspace_image
+    INTO question_workspace_image
+    FROM questions as q
+    WHERE q.id = real_question_id;
+
+    -- create workspace if needed
+    IF question_workspace_image IS NOT NULL THEN
+        INSERT INTO workspaces
+        DEFAULT VALUES
+        RETURNING id
+        INTO workspace_id;
+    END IF;
+
     INSERT INTO variants
         (instance_question_id, question_id,      course_instance_id, user_id, group_id,
-        number,     variant_seed, params, true_answer, options, broken, authn_user_id)
+        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
+        workspace_id)
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
-        new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
+        new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
+        workspace_id)
     RETURNING id
     INTO variant_id;
 
