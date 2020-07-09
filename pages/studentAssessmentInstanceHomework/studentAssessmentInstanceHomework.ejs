@@ -48,7 +48,7 @@
           <% if (assessment.group_work) { %>
           <div class="container-fluid">
             <div class="row">
-              <% if (groupinfo[0].student_auth_join) { %>
+              <% if (groupinfo[0].student_authz_join) { %>
               <div class="col-sm bg-light py-4 px-4 border">
                 <p>This is a group homework. Use your friend code to invite others to join the group.</p>
                 <span class="badge badge-secondary">Group Name</span>
@@ -58,7 +58,7 @@
               </div>
               <% } %>
               <div class="col-sm bg-light py-4 px-4 border">
-                <% if (groupinfo[0].student_auth_quit) { %>
+                <% if (groupinfo[0].student_authz_quit) { %>
                 <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
                   <input type="hidden" name="__action" value="quitGroup">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

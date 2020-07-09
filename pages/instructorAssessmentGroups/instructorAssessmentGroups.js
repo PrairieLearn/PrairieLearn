@@ -25,13 +25,13 @@ function obtainInfo(req, res, next){
         res.locals.config_info.defaultMax = res.locals.config_info.maximum || 5;
 
         res.locals.config_info.permission = '';
-        if (res.locals.config_info.student_auth_join) {
+        if (res.locals.config_info.student_authz_join) {
             res.locals.config_info.permission += 'join ';
         }
-        if (res.locals.config_info.student_auth_create) {
+        if (res.locals.config_info.student_authz_create) {
             res.locals.config_info.permission += 'create ';
         }
-        if (res.locals.config_info.student_auth_quit) {
+        if (res.locals.config_info.student_authz_quit) {
             res.locals.config_info.permission += 'quit ';
         }
         const params = {

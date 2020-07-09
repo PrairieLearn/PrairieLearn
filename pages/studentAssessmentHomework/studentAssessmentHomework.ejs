@@ -16,7 +16,7 @@
             <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
           <% if (groupsize == 0) { %>
-            <% if (!permissions.student_auth_join && !permissions.student_auth_create) { %>
+            <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
               <p class="text-center">
                 This is a group homework. Please wait for the instructor to assign groups.
              </p>
@@ -31,7 +31,7 @@
           <% } %>
           <div class="container-fluid">
             <div class="row">
-                <% if (permissions.student_auth_create) { %>
+                <% if (permissions.student_authz_create) { %>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="create-form" name="create-form" method="POST">
                     <input type="text" class="form-control" name="groupName" placeholder="Group Name">
@@ -45,7 +45,7 @@
                   </form>
                 </div>
                 <% } %>
-                <% if (permissions.student_auth_join) { %>
+                <% if (permissions.student_authz_join) { %>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="joingroup-form" name="joingroup-form" method="POST">
                     <input type="text" class="form-control" name="friendcode" placeholder="Friend Code">
@@ -65,7 +65,7 @@
           <% } else {%>
             <div class="container-fluid">
               <div class="row">
-                <% if (permissions.student_auth_join) { %>
+                <% if (permissions.student_authz_join) { %>
                   <div class="col-sm bg-light py-4 px-4 border">
                     <p>This is a group homework. Use your friend code to invite others to join the group.</p>
                     <span class="badge badge-secondary">Group Name</span> 
@@ -75,7 +75,7 @@
                   </div>
                   <% } %>
                   <div class="col-sm bg-light py-4 px-4 border">
-                    <% if (permissions.student_auth_quit) { %>
+                    <% if (permissions.student_authz_quit) { %>
                     <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
                       <input type="hidden" name="__action" value="quitGroup">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
