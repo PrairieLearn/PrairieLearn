@@ -6,6 +6,7 @@ import chevron
 
 WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
 
 
 def prepare(element_html, data):
@@ -133,7 +134,7 @@ def render(element_html, data):
             'submission': True,
             'parse_error': parse_error,
             'uuid': pl.get_uuid(),
-            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if parse_error is None:

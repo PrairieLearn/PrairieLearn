@@ -13,6 +13,7 @@ PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
 
 
 def prepare(element_html, data):
@@ -193,7 +194,7 @@ def render(element_html, data):
             'info': info,
             'answers': answerset,
             'inline': inline,
-            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', False)
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if not hide_help_text:
