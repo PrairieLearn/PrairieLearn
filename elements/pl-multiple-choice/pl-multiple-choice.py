@@ -110,7 +110,8 @@ def render(element_html, data):
             'name': name,
             'editable': editable,
             'display_score_badge': display_score,
-            'answers': answerset
+            'answers': answerset,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         # Display the score badge if necessary
@@ -165,6 +166,10 @@ def render(element_html, data):
             html = 'ERROR: No true answer'
         else:
             html = '(%s) %s' % (correct_answer['key'], correct_answer['html'])
+
+        html_params = {
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+        }
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 

@@ -238,7 +238,8 @@ def render(element_html, data):
                 'submission': True,
                 'display_score_badge': (score is not None),
                 'answers': answers,
-                'inline': inline
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
             }
 
             if html_params['display_score_badge']:
@@ -275,7 +276,8 @@ def render(element_html, data):
                 html_params = {
                     'answer': True,
                     'inline': inline,
-                    'answers': correct_answer_list
+                    'answers': correct_answer_list,
+                    'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
                 }
                 with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
                     html = chevron.render(f, html_params).strip()
