@@ -81,10 +81,6 @@ describe('Group based homework assess control on student side', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should contain "Homework 3: Groups":', function() {
-            elemList = locals.$('div.card-header:contains("Homework 3: Groups")');
-            assert.lengthOf(elemList, 1);
-        });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 6);
@@ -153,10 +149,6 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should parse', function() {
             locals.$ = cheerio.load(page);
-        });
-        it('should contain "Homework 4: Groups":', function() {
-            elemList = locals.$('div.card-header:contains("Homework 4: Groups")');
-            assert.lengthOf(elemList, 1);
         });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');

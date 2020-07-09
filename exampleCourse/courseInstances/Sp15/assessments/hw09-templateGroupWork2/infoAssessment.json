@@ -1,9 +1,9 @@
 {
-    "uuid": "2ac41a99-3e86-4c19-bb82-9e06e4b930bc",
+    "uuid": "C8091A09-46F0-4587-A4D9-58B2EBCB1283",
     "type": "Homework",
-    "title": "Group Activity Template 2",
+    "title": "Group Activity Template",
     "set": "Homework",
-    "number": "9",
+    "number": "8",
     "groupWork": true,
     "allowAccess": [
         {
