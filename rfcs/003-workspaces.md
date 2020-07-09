@@ -146,7 +146,7 @@ The workspace options will need to be synced to the `questions` table via the us
 
 When a new variant of a question is created, the main server will create a corresponding workspace in the database associated with that particular variant. This database entry will contain a unique hash/id/something. However, we're not going to actually provision any containers, etc. for this workspace just yet. The `state` of the new workspace row will be `uninitialized`.
 
-We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_url` to `data.options`, and this element (or potentially other elements) can use this to render a button. `workspace_url` will be something of the form `/pl/[garbage]/workspace/[workspace_id]`, where `[garbage]` corresponds to the different places that questions can be accessed from (instructor question, student variant, maybe others?).
+We'll introduce a new `<pl-workspace>` element that renders (to start with) a "Launch workspace" button. We should introduce a new `workspace_url` to `data.options`, and this element (or potentially other elements) can use this to render a button. `workspace_url` will be something of the form `/workspace/[workspace_id]`.
 
 > Implementation notes:
 > * Workspace will be created and inserted into the DB in the `variants_insert` sproc
