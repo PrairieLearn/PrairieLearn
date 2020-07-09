@@ -6,11 +6,12 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 ### `info.json`
 
-The question's `info.json` should contain a `workspaceOptions` dictionary with three keys:
+The question's `info.json` should contain a `workspaceOptions` dictionary:
 
 * `image`: Dockerhub image that will be used to serve this question
 * `port`: port number used in the Docker image
 * `gradedFiles`: list of files or directories that will be copied for grading
+* `args`: command line arguments to pass to the Docker
 
 A full `info.json` file should look something like:
 
