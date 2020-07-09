@@ -25,6 +25,7 @@ A full `info.json` file should look something like:
     "workspaceOptions": {
         "image": "prairielearn/workspace-vscode",
         "port": 15000,
+        "args": "--auth none",
         "gradedFiles": [
             "animal.h",
             "animal.cpp"
