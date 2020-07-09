@@ -31,8 +31,8 @@ function obtainInfo(req, res, next){
         if (res.locals.config_info.student_authz_create) {
             res.locals.config_info.permission += 'create ';
         }
-        if (res.locals.config_info.student_authz_quit) {
-            res.locals.config_info.permission += 'quit ';
+        if (res.locals.config_info.student_authz_leave) {
+            res.locals.config_info.permission += 'leave ';
         }
         const params = {
             assessment_id: res.locals.assessment.id,
@@ -122,7 +122,7 @@ router.post('/', function(req, res, next) {
             maxsize: req.body.maxsize,
             joincheck: req.body.joincheck || false,
             createcheck: req.body.createcheck || false,
-            quitcheck: req.body.quitcheck || false,
+            leavecheck: req.body.leavecheck || false,
         };
         if (req.body.maxsize.length < 1 || req.body.minsize.length < 1) {
             res.locals.errormsg += 'Please enter group max size and min size';

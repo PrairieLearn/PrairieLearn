@@ -1,6 +1,6 @@
 --BLOCK config_info
 SELECT 
-    id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_quit
+    id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave
 FROM 
     group_configs
 WHERE 
@@ -70,6 +70,6 @@ SET
     maximum = $maxsize,
     student_authz_join = $joincheck,
     student_authz_create = $createcheck,
-    student_authz_quit = $quitcheck
+    student_authz_leave = $leavecheck
 WHERE
     assessment_id = $assessment_id AND deleted_at IS NULL;

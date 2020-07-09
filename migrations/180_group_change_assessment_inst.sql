@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS group_configs (
     maximum INT,
     student_authz_join boolean DEFAULT false,
     student_authz_create boolean DEFAULT false,
-    student_authz_quit boolean DEFAULT false,
+    student_authz_leave boolean DEFAULT false,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp with time zone
 );

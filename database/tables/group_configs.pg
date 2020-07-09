@@ -9,7 +9,7 @@ columns
     name: text
     student_authz_create: boolean default false
     student_authz_join: boolean default false
-    student_authz_quit: boolean default false
+    student_authz_leave: boolean default false
 
 indexes
     group_configs_pkey: PRIMARY KEY (id) USING btree (id)

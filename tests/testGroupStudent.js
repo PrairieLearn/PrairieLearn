@@ -104,7 +104,7 @@ describe('Group based homework assess control on student side', function() {
                 maxsize: '3',
                 joincheck: true,
                 createcheck: true,
-                quitcheck: true,
+                leavecheck: true,
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -177,7 +177,7 @@ describe('Group based homework assess control on student side', function() {
                 maxsize: '3',
                 joincheck: true,
                 createcheck: true,
-                quitcheck: true,
+                leavecheck: true,
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab_2, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -647,9 +647,9 @@ describe('Group based homework assess control on student side', function() {
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
-        it('should be able to quit the group', function(callback) {
+        it('should be able to Leave the group', function(callback) {
             var form = {
-                __action: 'quitGroup',
+                __action: 'leaveGroup',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentInstanceURL, form: form, followAllRedirects: true}, function (error, response, body) {

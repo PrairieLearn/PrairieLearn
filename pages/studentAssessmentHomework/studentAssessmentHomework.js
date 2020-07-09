@@ -141,7 +141,7 @@ router.post('/', function(req, res, next) {
                 res.redirect(req.originalUrl);
             });
         });
-    } else if (req.body.__action == 'quitGroup') {
+    } else if (req.body.__action == 'leaveGroup') {
         var params2 = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,

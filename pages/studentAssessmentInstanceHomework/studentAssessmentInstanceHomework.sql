@@ -37,7 +37,7 @@ WINDOW
 ORDER BY qo.row_order;
 
 -- BLOCK get_group_info
-SELECT gu.group_id, gr.name, us.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_quit
+SELECT gu.group_id, gr.name, us.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
 FROM
 assessment_instances ai
 JOIN group_configs gc ON ai.assessment_id = gc.assessment_id

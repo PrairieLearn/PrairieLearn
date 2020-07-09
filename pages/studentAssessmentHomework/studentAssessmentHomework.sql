@@ -13,7 +13,7 @@ WHERE
     AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
 
 -- BLOCK get_config_info
-SELECT gc.student_authz_join, gc.student_authz_create, gc.student_authz_quit
+SELECT gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
 FROM group_configs gc
 WHERE gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
 
