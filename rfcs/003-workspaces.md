@@ -112,8 +112,8 @@ Course staff will declare workspace config per question via `workspaceOptions` i
         "image": "some-docker-image-name",
         "port": 15000,
         "gradedFiles": [
-            "animal.h",
-            "animal.cpp"
+            "starter_code.h",
+            "starter_code.c"
         ]
     }
 }
