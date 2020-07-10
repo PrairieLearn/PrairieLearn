@@ -26,6 +26,7 @@ BEGIN
         r.user_id = ip_to_mode.authn_user_id
         AND r.delete_date IS NULL
         AND r.checked_in IS NOT NULL
+        AND r.access_start IS NOT NULL
         AND date BETWEEN r.access_start AND r.access_end;
 
     IF FOUND THEN
