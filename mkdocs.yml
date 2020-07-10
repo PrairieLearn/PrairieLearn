@@ -6,10 +6,17 @@ docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
 
+extra_javascript:
+  - mathjax-config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
 pages:
 - Main: 'index.md'
+- Getting Started:
+  - 'Requesting your course space': 'requestCourse.md'
+  - 'Creating content in the browser': 'getStarted.md'
 - User Guide:
-  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Installing and running PL locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
