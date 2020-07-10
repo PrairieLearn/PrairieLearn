@@ -41,7 +41,7 @@ select_default_institution AS (
 select_has_at_least_one_course AS (
     SELECT (EXISTS (
        SELECT TRUE FROM course_requests AS cr
-       WHERE cr.user_id = $user_id AND (cr.approved_status = 'pending' OR cr.approved_status = 'approved')
+       WHERE cr.user_id = $user_id AND cr.approved_status = 'pending'
     )) AS has_one_course
 )
 SELECT
@@ -64,9 +64,8 @@ WITH select_conflicting_courses AS (
 )
 SELECT u.name, u.uid
 FROM select_conflicting_courses as cc
-LEFT JOIN course_permissions AS cp ON cc.id = cp.course_id
-LEFT JOIN users AS u ON u.user_id = cp.user_id
-WHERE cp.course_role = 'Owner';
+LEFT JOIN course_permissions AS cp ON (cc.id = cp.course_id AND cp.course_role = 'Owner')
+LEFT JOIN users AS u ON u.user_id = cp.user_id;
 
 -- BLOCK insert_request
 INSERT INTO course_requests(short_name, title, institution_id, user_id, github_user)

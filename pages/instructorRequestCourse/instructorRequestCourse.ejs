@@ -1,101 +1,101 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <%- include('../partials/head'); %>
-    <link href="/stylesheets/issues.css" rel="stylesheet" />
-  </head>
-  <body>
-    <%- include('../partials/navbar', {navPage: 'requestCourse'}); %>
-    <div id="content" class="container">
-        <!-- Previous Course Requests -->
-        <% if (typeof error_message === 'undefined' && course_requests.length > 0) { %>
+    <head>
+        <%- include('../partials/head'); %>
+        <link href="/stylesheets/issues.css" rel="stylesheet" />
+    </head>
+    <body>
+        <%- include('../partials/navbar', {navPage: 'requestCourse'}); %>
+        <div id="content" class="container">
+
+            <% if (typeof error_message !== 'undefined') { %>
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white d-flex align-items-center">
+                        Error
+                    </div>
+                    <div class="card-body">
+                        <%- error_message  %>
+                    </div>
+                </div>
+            <% } /* error message */ %>
+
+            <!-- Previous Course Requests -->
+            <% if (course_requests.length > 0) { %>
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex align-items-center">
+                        Course Requests
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Short name</th>
+                                    <th>Title</th>
+                                    <th>Institution</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                            </thead>
+                            <tbody>
+                                <% course_requests.forEach(function(req, i) { %>
+                                    <tr>
+                                        <td><%= req.short_name %></td>
+                                        <td><%= req.title %></td>
+                                        <td><%= req.institution %></td>
+                                        <td><%- include('approvalStatusIcon', {status: req.status}); %> </td>
+                                        <td><%= req.details %></td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <% } /* non-zero course requests */ %>
+
+            <!-- New Request -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex align-items-center">
-                    Course Requests
+                    Request a New Course
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover table-striped">
-                        <thead>
-                            <tr>
-                                <th>Short name</th>
-                                <th>Title</th>
-                                <th>Institution</th>
-                                <th>Status</th>
-                                <th>Details</th>
-                        </thead>
-                        <tbody>
-                            <% course_requests.forEach(function(req, i) { %>
-                                <tr>
-                                    <td><%= req.short_name %></td>
-                                    <td><%= req.title %></td>
-                                    <td><%= req.institution %></td>
-                                    <td><%- include('approvalStatusIcon', {status: req.status}); %> </td>
-                                    <td><%= req.details %></td>
-                                </tr>
-                            <% }); %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        <% } /* non-zero course requests */ %>
-        <% if (typeof error_message !== 'undefined') { %>
-            <div class="card mb-4">
-                <div class="card-header bg-danger text-white d-flex align-items-center">
-                    Error
-                </div>
-                <div class="card-body">
-                    <%- error_message  %>
-                </div>
-            </div>
-        <% } /* error message */ %>
+                <form class="question-form" name="course-request" method="POST">
+                    <div class="card-body">
+                        <% if (!has_one_course) { %>
+                            <!-- Small blurb for people that have never requested a course before -->
+                            <p>
+                                To request a course space, you need to provide the <strong>course rubric and number</strong> (for example, XC 101), the course's <strong>title</strong>, and the <strong>institution</strong> that your course will be located at. You may also optionally provide your GitHub username if you would like the ability to edit content offline.
+                            </p>
+                        <% } else { %>
+                            <p>
+                                Your course request is pending. Once your request is reviewed by a member of staff and your course space is created, you will receive an email with further instructions and resources to get started.
+                            </p>
+                        <% } %>
 
-        <!-- New Request -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-                Request a New Course
+                        <div class="form-group">
+                            <label for="cr-shortname">Course Rubric and Number</label>
+                            <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101" pattern="[a-zA-Z]+ [a-zA-Z0-9]+" title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cr-title">Course Title</label>
+                            <input type="text" class="form-control" name="cr-title" placeholder="Example Course" minlength="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cr-institution">Course Institution</label>
+                            <select class="form-control" name="cr-institution">
+                                <% institutions.forEach(function(inst, i) { %>
+                                    <option value="<%= inst.id %>" <%= (inst.id == default_institution) ? 'selected' : '' %>><%= inst.short_name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cr-ghuser">GitHub Username (optional)</label>
+                            <input type="text" class="form-control" name="cr-ghuser">
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                        <button class="btn btn-primary" type="submit">Submit Request</button>
+                    </div>
+                </form>
             </div>
-            <form class="question-form" name="course-request" method="POST">
-                <div class="card-body">
-                    <% if (!has_one_course) { %>
-                        <!-- Small blurb for people that have never requested a course before -->
-                        <p>
-                            Welcome to PrairieLearn!  You may use this page to request a new repository for your course, this will contain all the relevant question and assessment content for your course's needs.
-                        </p>
-                        <p>
-                            The minimum amount of information needed to get started is the <strong>course rubric and number</strong> (for example, XC 101), the course's <strong>title</strong>, and the <strong>institution</strong> that your course will be located at.  You may also optionally provide your GitHub username if you would like the ability to edit content offline. </p>
-                        </p>
-                        <p>
-                            Once you have submitted your request, a member of the staff will review your request as quickly as possible and create your course.  You will receive an email with more details once your course has been finalized.
-                        </p>
-                    <% } /* has at least one course */ %>
-
-                    <div class="form-group">
-                        <label for="cr-shortname">Course Rubric and Number</label>
-                        <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101" pattern="[a-zA-Z]+ [a-zA-Z0-9]+" title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="cr-title">Course Title</label>
-                        <input type="text" class="form-control" name="cr-title" placeholder="Example Course" minlength="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="cr-institution">Course Institution</label>
-                        <select class="form-control" name="cr-institution">
-                            <% institutions.forEach(function(inst, i) { %>
-                                <option value="<%= inst.id %>" <%= (inst.id == default_institution) ? 'selected' : '' %>><%= inst.short_name %></option>
-                            <% }); %>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="cr-ghuser">GitHub Username (optional)</label>
-                        <input type="text" class="form-control" name="cr-ghuser">
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button class="btn btn-primary" type="submit">Submit Request</button>
-                </div>
-            </form>
         </div>
-    </div>
-  </body>
+    </body>
 </html>
