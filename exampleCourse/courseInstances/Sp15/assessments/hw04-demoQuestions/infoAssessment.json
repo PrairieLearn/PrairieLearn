@@ -34,6 +34,7 @@
         {
             "questions": [
                 {"id": "demo/calculation",                     "points": 1, "maxPoints": 5},
+                {"id": "demo/overlayDropdown",                 "points": 1, "maxPoints": 5},
                 {"id": "demo/autograder/codeEditor",            "points": 1, "maxPoints": 5},
                 {"id": "demo/autograder/codeUpload",            "points": 1, "maxPoints": 5},
                 {"id": "demo/manualGrade/codeUpload",           "points": 1, "maxPoints": 5},
