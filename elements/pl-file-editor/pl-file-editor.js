@@ -108,7 +108,10 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
 window.PLFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.setValue(contents);
     this.editor.gotoLine(1, 0);
-    this.editor.focus();
+    // Let's NOT set the focus here, because it can drag the window scroll
+    // down the page. Also, if there are multiple editors in one question,
+    // it's confusing to focus the last one.
+    // this.editor.focus();
     this.syncFileToHiddenInput();
 };
 
