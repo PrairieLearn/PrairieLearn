@@ -28,19 +28,6 @@ router.get('/', function(req, res, next) {
                 callback(null);
             });
         },
-        (callback) => {
-            var params = {
-                user_id: res.locals.user.user_id,
-                is_administrator: res.locals.is_administrator,
-                req_date: res.locals.req_date,
-                course_id: res.locals.course.id,
-            };
-            sqldb.query(sql.select_course_instances, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.rows = result.rows;
-                callback(null);
-            });
-        },
     ], (err) => {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

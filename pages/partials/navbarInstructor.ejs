@@ -6,13 +6,17 @@
         <a class="nav-link" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if (authz_data.has_course_permission_preview && locals.courses && courses.length > 0) { %>
+        <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.authn_courses && authz_data.authn_courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
-            <% courses.forEach(function(c) { %>
-                <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
-            <% }); %>
+            <% if (authz_data.overrides) { %>
+                <span class="dropdown-item-text small">Effective users may not switch between courses</span>
+            <% } else { %>
+                <% authz_data.authn_courses.forEach(function(c) { %>
+                    <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
+                <% }); %>
+            <% }%>
         </div>
         <% } %>
     </li>
@@ -38,20 +42,18 @@
             <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
-            <% if (authz_data.has_course_permission_preview) { %>
-            <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            </a>
-            <% if (typeof course_instances != 'undefined') { %>
+            <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
+                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
-                    <% course_instances.forEach(function(ci) { %>
+                    <% authz_data.course_instances.forEach(function(ci) { %>
                         <% if ((navPage == "instance_admin") || (navPage == "course_admin")) { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %> <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
                         <% } else { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %> <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
                         <% } %>
                     <% }); %>
                 </div>
-            <% } %>
             <% } %>
         </li>
 
@@ -82,7 +84,7 @@
             </li>
         <% } %>
     <% } else { %>
-        <% if (authz_data.has_course_permission_preview && locals.course_instances && course_instances.length > 0) { %>
+        <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.course_instances && authz_data.course_instances.length > 0) { %>
             <span class="navbar-text mx-2">
                 <i class="fas fa-circle"></i>
             </span>
@@ -92,8 +94,8 @@
                     Choose course instance...
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceChoose">
-                    <% course_instances.forEach(function(ci) { %>
-                        <a class="dropdown-item" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                    <% authz_data.course_instances.forEach(function(ci) { %>
+                        <a class="dropdown-item <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin<% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
                     <% }); %>
                 </div>
             </li>

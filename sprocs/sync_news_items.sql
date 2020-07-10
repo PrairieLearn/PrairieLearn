@@ -50,30 +50,7 @@ BEGIN
     IF existing_news_items_count > 0   -- IF we are updating a existing server
     OR notify_with_new_server          -- OR we should notify on new servers
     THEN                               -- THEN send notifications
-        WITH
-        users_as_instructors AS (
-            -- This is a more efficient implementation of
-            -- sprocs/users_is_instructor for all users at once
-            SELECT
-                u.user_id,
-                bool_or(
-                    adm.id IS NOT NULL
-                    OR (
-                        (cp.course_role > 'None' OR cip.course_instance_role > 'None')
-                        AND (c.deleted_at IS NULL AND ci.deleted_at IS NULL)
-                    )
-                ) AS is_instructor
-            FROM
-                users AS u
-                LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-                LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
-                LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
-                LEFT JOIN pl_courses AS c ON (c.id = cp.course_id)
-                LEFT JOIN course_instances AS ci ON (ci.id = cip.course_instance_id AND ci.course_id = c.id)
-            GROUP BY
-                u.user_id
-        ),
-        new_news_items AS (
+        WITH new_news_items AS (
             SELECT
                 ni.id,
                 ni.visible_to_students
@@ -87,7 +64,7 @@ BEGIN
             u.user_id
         FROM
             new_news_items AS ni
-            CROSS JOIN users_as_instructors AS u
+            CROSS JOIN users_are_instructors_in_any_course() AS u
         WHERE
             ni.visible_to_students
             OR u.is_instructor;

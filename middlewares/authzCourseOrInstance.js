@@ -62,8 +62,6 @@ module.exports = function(req, res, next) {
 
         let authn_mode = result.rows[0].mode;
         res.locals.course = result.rows[0].course;
-        res.locals.courses = result.rows[0].courses;
-        res.locals.course_instances = result.rows[0].course_instances;
 
         const permissions_course = result.rows[0].permissions_course;
         res.locals.authz_data = {
@@ -75,6 +73,8 @@ module.exports = function(req, res, next) {
             authn_has_course_permission_view: permissions_course.has_course_permission_view,
             authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
             authn_has_course_permission_own: permissions_course.has_course_permission_own,
+            authn_courses: result.rows[0].courses ? result.rows[0].courses : [],
+            authn_course_instances: result.rows[0].course_instances ? result.rows[0].course_instances : [],
             user: _.cloneDeep(res.locals.authn_user),
             mode: authn_mode,
             is_administrator: res.locals.is_administrator,
@@ -83,7 +83,11 @@ module.exports = function(req, res, next) {
             has_course_permission_view: permissions_course.has_course_permission_view,
             has_course_permission_edit: permissions_course.has_course_permission_edit,
             has_course_permission_own: permissions_course.has_course_permission_own,
+            courses: result.rows[0].courses ? result.rows[0].courses : [],
+            course_instances: result.rows[0].course_instances ? result.rows[0].course_instances : [],
         };
+
+        debug(res.locals.authz_data.course_instances);
 
         if (isCourseInstance) {
             res.locals.course_instance = result.rows[0].course_instance;
@@ -264,6 +268,10 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.has_course_permission_view = false;
                         res.locals.authz_data.has_course_permission_edit = false;
                         res.locals.authz_data.has_course_permission_own = false;
+
+                        res.locals.authz_data.courses = [];
+                        res.locals.authz_data.course_instances = [];
+
                         if (isCourseInstance) {
                             res.locals.authz_data.course_instance_role = 'None';
                             res.locals.authz_data.has_course_instance_permission_view = false;
@@ -361,6 +369,24 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.has_course_permission_view = result.rows[0].permissions_course.has_course_permission_view;
                     res.locals.authz_data.has_course_permission_edit = result.rows[0].permissions_course.has_course_permission_edit;
                     res.locals.authz_data.has_course_permission_own = result.rows[0].permissions_course.has_course_permission_own;
+
+                    // Empty courses (effective users are confined to one course)
+                    res.locals.authz_data.courses = [];
+
+                    // Update course_instances, adding a flag to disable any course
+                    // instance that is not also in authn_course_instances (i.e., to
+                    // which the authn user does not also have access)
+                    //
+                    // (Adding this flag is not necessary, actually, because the authn
+                    //  user must be at least a course Editor, and so must have access
+                    //  to all course instances. We will check anyway, just to be safe.)
+                    //
+                    res.locals.authz_data.course_instances = result.rows[0].course_instances ? result.rows[0].course_instances : [];
+                    res.locals.authz_data.course_instances.forEach((ci) => {
+                        ci.disabled = (! res.locals.authz_data.authn_course_instances.some((authn_ci) => {
+                            return ci.id == authn_ci.id;
+                        }));
+                    });
 
                     if (isCourseInstance) {
                         res.locals.authz_data.course_instance_role = result.rows[0].permissions_course_instance.course_instance_role;
