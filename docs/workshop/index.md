@@ -77,12 +77,12 @@ where `xxxx` is your netid.
 
 ## Workshop Schedule
 
-* [Day 1](Lesson1.md): create simple questions
+* [Day 1](lesson1.md): create simple questions
 
-* [Day 2](Lesson2.md): assessment configurations
+* [Day 2](lesson2.md): assessment configurations
 
-* [Day 3](Lesson3.md): explore other PL elements
+* [Day 3](lesson3.md): explore other PL elements
 
-* [Day 4](Lesson4.md): external grader and `pl-drawing`
+* [Day 4](lesson4.md): external grader and `pl-drawing`
 
-* [Day 5](Lesson5.md): TBD
+* [Day 5](lesson5.md): TBD
