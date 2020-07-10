@@ -2,108 +2,512 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <link href="/stylesheets/landing.css" rel="stylesheet">
   </head>
+
+  <%
+    var isAuthenticated = locals.authn_user;
+    var isAdministrator = locals.is_administrator;
+    var isStudent = typeof locals.authz_data !== "undefined" && locals.authz_data.role === 'Student';
+    var isInstructor = typeof locals.authz_data !== "undefined" && locals.authz_data.role === 'Instructor';
+  %>
+
   <body>
-    <%- include('../partials/navbar', {navPage: 'home'}); %>
-    <div id="content" class="container">
+    <header>
+      <% if (isAuthenticated) { %>
+      <%- include('../partials/navbar', {navPage: 'home'}); %>
+      <% } else { %> <!-- isAuthenticated -->
+      <nav class="navbar navbar-light bg-white">
+        <a class="navbar-brand" href="<%= homeUrl %>">
+          <span class="navbar-brand-label">PrairieLearn</span>
+          <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
+        </a>
+      </nav>
+      <% } %> <!-- isAuthenticated -->
+    </header>
 
-      <% if (devMode) { %>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Development Mode</div>
-        <div class="card-body">
-          <p>
-            PrairieLearn is running in Development Mode. Click
-            the <strong>“Load from disk”</strong> button above to load
-            question and assessment definitions from JSON files on
-            disk.
-          </p>
-          <p>
-            You need to click “Load from disk” every time that a JSON
-            file is changed on disk. Changes to other files (JS, HTML,
-            etc) will be automatically loaded every time you navigate
-            to a different page or if you reload the current page in
-            your web browser.
-          </p>
-          <p class="mb-0">
-            See
-            the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
-            documentation</a> for information on creating questions
-            and assessments.
-          </p>
-        </div>
-      </div>
-      <% } %>
+    <main>
+      <%
+        var bannerDivClasses = 'bg-white';
+        if (!isAuthenticated) {
+          bannerDivClasses += ' jumbotron pt-1 mt-0 pt-md-5 mt-md-4 mb-5';
+        }
+      %>
+      <div class="<%= bannerDivClasses %>">
+        <div class="container">
+          <%
+            var bannerRowClasses = 'row align-items-center';
+            if (isAuthenticated) {
+              bannerRowClasses += ' pt-4';
+            }
+          %>
+          <div class="<%= bannerRowClasses %>">
+            <%
+              var bannerColClasses = 'col-md-6';
+              if (isAuthenticated) {
+                bannerColClasses += ' my-1';
+              } else {
+                bannerColClasses += ' my-5';
+              }
+            %>
+            <div class="<%= bannerColClasses %>">
+              <%
+                var bannerH1Classes;
+                if (isAuthenticated) {
+                  bannerH1Classes = 'h2';
+                } else {
+                  bannerH1Classes = 'display-4 font-weight-normal';
+                }
+              %>
+              <h1 class="<%= bannerH1Classes %>">PrairieLearn</h1>
+              <%
+                var bannerLeadClasses = '';
+                if (!isAuthenticated) {
+                  bannerLeadClasses = 'lead font-weight-normal';
+                }
+              %>
+              <p class="<%= bannerLeadClasses %>">
+                <i class="fa fa-sync-alt fa-fw" aria-ignore="true"></i>
+                Mastery learning meets online assessment
+              </p>
+            </div>
+            <div class="col-md-6">
+              <div class="list-group">
+                <% if (!isAuthenticated || isStudent) { %>
+                <div class="list-group-item py-3 px-4">
+                  <h2 class="h6 d-inline font-weight-bold">Students</h2>
+                  <p class="d-inline text-muted text-right">&mdash; Master course content through randomized, spaced
+                    repetition</p>
+                  <p class="mt-2 mb-0">
+                    <% if (!isAuthenticated) { %>
+                    <a href="<%= plainUrlPrefix %>/login" class="btn btn-primary mb-1">
+                      <i class="fa fa-fw fa-user-graduate" aria-hidden="true"></i>
+                      Log in
+                    </a>
+                    <% } %>
+                    <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>primary mb-1">
+                      <i class="fa fa-fw fa-edit" aria-hidden="true"></i>
+                      <% if (isAuthenticated) { %>
+                      Add or remove courses
+                      <% } else { %>
+                      Add course
+                      <% } %>
+                    </a>
+                  </p>
+                </div> <!-- list-group-item -->
+                <% } %> <!-- role === 'Student' -->
+                <% if (!isAuthenticated || (isAdministrator || isInstructor)) { %>
+                <div class="list-group-item py-3 px-4">
+                  <h2 class="h6 d-inline font-weight-bold">Instructors</h2>
+                  <p class="d-inline text-muted text-right">&mdash; Build autograded assessments using premade widgets and
+                    custom code</p>
+                  <p class="mt-2 mb-0">
+                    <% if (!isAuthenticated) { %>
+                    <a href="<%= plainUrlPrefix %>/login" class="btn btn-info mb-1">
+                      <i class="fa fa-fw fa-chalkboard-teacher" aria-hidden="true"></i>
+                      Log in
+                    </a>
+                    <% } %>
+                    <a href="#" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>info mb-1">
+                      <i class="fab fa-fw fa-wpforms" aria-hidden="true"></i>
+                      <% if (isAuthenticated) { %>
+                      Request a course
+                      <% } else { %>
+                      Request course
+                      <% } %>
+                    </a>
+                    <a href="#" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>info mb-1">
+                      <i class="fa fa-fw fa-book" aria-hidden="true"></i>
+                      <% if (isAuthenticated) { %>
+                      View the documentation
+                      <% } else { %>
+                      View docs
+                      <% } %>
+                    </a>
+                  </p>
+                </div> <!-- list-group-item -->
+                <% } %> <!-- role === 'Instructor' -->
+              </div> <!-- list-group -->
+            </div> <!-- col -->
+          </div> <!-- row -->
+        </div> <!-- container -->
+      </div> <!-- jumbotron -->
 
-      <%- include('../partials/advertisement'); %>
-
-      <% if (courses && courses.length > 0) { %>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Courses</div>
-
-        <table class="table table-sm table-hover table-striped">
-          <tbody>
-            <% courses.forEach(function(course) { %>
-            <tr>
-              <td>
-                <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-                  <%= course.label %>
-                </a>
-              </td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
-
-      </div>
-      <% } %> <!-- course_instances.length -->
-
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <% if (courses && courses.length > 0) { %>
-          Course instances
-          <% } else { %>
-          Courses
-          <% } %>
-          <% if (authn_provider_name !== 'LTI') { %>
-          <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
-            <i class="fa fa-edit" aria-hidden="true"></i>
-            <span class="d-none d-sm-inline">Add or remove courses</span>
-          </a>
-          <% } %>
-        </div>
-
-        <% if (course_instances && course_instances.length == 0) { %>
-
+      <% if (isAuthenticated) { %>
+      <div id="content" class="container py-5">
         <% if (devMode) { %>
-        <div class="card-body">
-          No courses loaded. Click <strong>“Load from disk”</strong>
-          above and then click <strong>“Home”</strong> to come back to
-          this page.
-        </div>
-        <% } else { %> <!-- devMode -->
-        <div class="card-body">
-          No courses found. Use the “Add or remove courses” button to add one.
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">Development Mode</div>
+          <div class="card-body">
+            <p>
+              PrairieLearn is running in Development Mode. Click
+              the <strong>“Load from disk”</strong> button above to load
+              question and assessment definitions from JSON files on
+              disk.
+            </p>
+            <p>
+              You need to click “Load from disk” every time that a JSON
+              file is changed on disk. Changes to other files (JS, HTML,
+              etc) will be automatically loaded every time you navigate
+              to a different page or if you reload the current page in
+              your web browser.
+            </p>
+            <p class="mb-0">
+              See
+              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+              documentation</a> for information on creating questions
+              and assessments.
+            </p>
+          </div>
         </div>
         <% } %> <!-- devMode -->
 
-        <% } else { %> <!-- course_instances.length -->
+        <%- include('../partials/advertisement'); %>
 
-        <table class="table table-sm table-hover table-striped">
-          <tbody>
-            <% course_instances.forEach(function(course_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
-                  <%= course_instance.label %>
-                </a>
-              </td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+        <% if (courses && courses.length > 0) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">Courses</div>
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <% courses.forEach(function(course) { %>
+              <tr>
+                <td>
+                  <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
+                    <%= course.label %>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% } %> <!-- courses.length -->
 
-        <% } %> <!-- course_instances.length -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
+            <% if (courses && courses.length > 0) { %>
+            Course instances
+            <% } else { %>
+            Courses
+            <% } %>
+            <% if (authn_provider_name !== 'LTI') { %>
+            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
+              <i class="fa fa-edit" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Add or remove courses</span>
+            </a>
+            <% } %>
+          </div>
+
+          <% if (course_instances && course_instances.length == 0) { %>
+          <% if (devMode) { %>
+          <div class="card-body">
+            No courses loaded. Click <strong>“Load from disk”</strong>
+            above and then click <strong>“Home”</strong> to come back to
+            this page.
+          </div>
+          <% } else { %> <!-- devMode -->
+          <div class="card-body">
+            No courses found. Use the “Add or remove courses” button to add one.
+          </div>
+          <% } %> <!-- devMode -->
+          <% } else { %> <!-- course_instances.length -->
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <% course_instances.forEach(function(course_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
+                    <%= course_instance.label %>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% } %> <!-- course_instances.length -->
+        </div>
       </div>
-    </div>
+      <% } %> <!-- isAuthenticated -->
+
+      <div class="position-relative bg-students text-white text-center pt-5">
+        <div class="container">
+          <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Empower students to master content</h2>
+          <div class="row row-cols-1 row-cols-md-3">
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-light text-center display-2">
+                  <i class="fas fa-clock" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Real-time</h3>
+                  <p class="card-text">
+                    Students receive immediate feedback about mastery level
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-light text-center display-2">
+                  <i class="fas fa-random" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Randomized</h3>
+                  <p class="card-text">
+                    Students solve randomized question variants until mastery
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-light text-center display-2">
+                  <i class="fas fa-brain" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Repetition</h3>
+                  <p class="card-text">
+                    Students are incentivized to repeat questions until mastery
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+          </div> <!-- row -->
+        </div> <!-- container -->
+        <div class="flare-students"></div>
+      </div>
+
+      <div class="position-relative bg-instructors text-center pt-5">
+        <div class="container">
+          <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Improve teaching workflows</h2>
+          <div class="row row-cols-1 row-cols-md-3">
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-center display-2">
+                  <i class="fas fa-tasks text-dark" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Adaptive</h3>
+                  <p class="card-text">
+                    Score adaptively based on student mastery and question difficulty
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-center display-2">
+                  <i class="fas fa-magic text-dark" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Automated</h3>
+                  <p class="card-text">
+                    Automate the submission and grading process
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+            <div class="col pb-5">
+              <div class="card bg-transparent text-center border-0">
+                <div class="card-img-top text-center display-2">
+                  <i class="fas fa-chart-line text-dark" aria-hidden="true"></i>
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">Analytics</h3>
+                  <p class="card-text">
+                    Analyze assessment quality and student outcomes
+                  </p>
+                </div>
+              </div> <!-- card -->
+            </div> <!-- col -->
+          </div> <!-- row -->
+        </div> <!-- container -->
+        <div class="flare-instructors"></div>
+      </div>
+
+      <div class="jumbotron bg-white my-3">
+        <div class="container px-5">
+          <h2 class="text-center">Jumpstart your assessments with PrairieLearn elements</h2>
+          <p class="text-center lead mb-5">
+            PrairieLearn offers a wide range of built-in widgets to accelerate your question writing development
+          </p>
+          <div class="card-columns">
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Selectors
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Select correct answers from a pool of distractors
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Radio buttons</li>
+                <li class="list-group-item py-1">Checkboxes</li>
+                <li class="list-group-item py-1">Dropdowns</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Inputs
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Fill in the blank
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Numerics</li>
+                <li class="list-group-item py-1">Integers</li>
+                <li class="list-group-item py-1">Strings</li>
+                <li class="list-group-item py-1">Symbolic expressions</li>
+                <li class="list-group-item py-1">Pandas dataframes</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Editors
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Work with in-browser, live-preview editors
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Markdown</li>
+                <li class="list-group-item py-1">LaTeX</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Visualizations
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Display 2D and 3D visuals
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Images (static or generated)</li>
+                <li class="list-group-item py-1">GraphViz graphs</li>
+                <li class="list-group-item py-1">Drawing canvases</li>
+                <li class="list-group-item py-1">Element overlays</li>
+                <li class="list-group-item py-1">3D scenes and objects</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Files
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Work with external files
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">File uploads</li>
+                <li class="list-group-item py-1">File downloads</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Draggables
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Drag and drop items into order or orientation
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Lines of code</li>
+                <li class="list-group-item py-1">Chronological events</li>
+                <li class="list-group-item py-1">2D vectors</li>
+                <li class="list-group-item py-1">3D objects</li>
+              </ul>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                Workspaces
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Work remotely in custom Docker containers via in-browser frontends
+                </p>
+              </div>
+              <ul class="list-group list-group-flush small font-italic">
+                <li class="list-group-item py-1">Visual Studio Code</li>
+                <li class="list-group-item py-1">Jupyter notebooks</li>
+                <li class="list-group-item py-1">RStudio</li>
+              </ul>
+              <div class="card-footer small font-weight-bold py-1 border-0">
+                <i class="fas fa-fw fa-hourglass-half" aria-hidden="true"></i>
+                Coming soon!
+              </div>
+            </div> <!-- card -->
+            <div class="card shadow">
+              <h3 class="h6 card-header font-weight-bold py-2">
+                And more &hellip;
+              </h3>
+              <div class="card-body py-2">
+                <p class="card-text">
+                  Check out the docs to see more elements or how to roll your own!
+                </p>
+                <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                  <i class="fas fa-fw fa-shapes" aria-hidden="true"></i>
+                  Use elements
+                </a>
+                <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                  <i class="fas fa-fw fa-laptop-code" aria-hidden="true"></i>
+                  Write elements
+                </a>
+              </div>
+            </div> <!-- card -->
+          </div> <!-- card-columns -->
+        </div> <!-- container -->
+      </div> <!-- jumbotron -->
+
+      <div class="jumbotron bg-light mb-0">
+        <div class="container">
+          <h2>Ready to get started?</h2>
+          <p class="lead">
+            Start by requesting a course and creating some content. Join the Slack workspace for ad hoc
+            assistance or some random banter!
+          </p>
+          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="#">
+            <i class="fab fa-fw fa-wpforms" aria-hidden="true"></i>
+            Request your course
+          </a>
+          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="#">
+            <i class="fas fa-fw fa-laptop-code" aria-hidden="true"></i>
+            Create your content
+          </a>
+          <a class="btn btn-outline-dark btn-lg mb-2" href="#">
+            <i class="fab fa-fw fa-slack" aria-hidden="true"></i>
+            Join our community
+          </a>
+        </div> <!-- container -->
+      </div> <!-- jumbotron -->
+
+      <div class="jumbotron bg-dark text-light text-right mb-0">
+        <div class="container">
+          <h2>Want to contribute?</h2>
+          <p class="lead">
+            PrairieLearn is open source, so anyone can add features or fix bugs!
+          </p>
+          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="#">
+            <i class="fab fa-fw fa-github" aria-hidden="true"></i>
+            GitHub
+          </a>
+          <a class="btn btn-outline-light btn-lg mb-2" href="#">
+            <i class="fab fa-fw fa-slack" aria-hidden="true"></i>
+            Slack
+          </a>
+          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="#">
+            <i class="fas fa-fw fa-book" aria-hidden="true"></i>
+            Developer guide
+          </a>
+        </div> <!-- container -->
+      </div> <!-- jumbotron -->
+    </main>
   </body>
 </html>
