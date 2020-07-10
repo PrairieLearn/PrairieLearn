@@ -38,7 +38,7 @@ Provide the following information in the [`#request-course`](https://go.illinois
 ```html
 I want access to the course listed below:
 Course rubric: XX-100
-Instructor name: 
+Instructor name: <INSERT INSTRUCTOR NAME>
 Your email: netid@illinois.edu
 ```
 
