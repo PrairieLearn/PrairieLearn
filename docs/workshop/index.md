@@ -13,9 +13,13 @@ We will introduce a new topic in each session, and provide an activity to be com
 
 ## What you need to do BEFORE the workshop
 
-We will need to give you access to PrairieLearn before the workshop starts. The first thing you need to do is to login at [https://prairielearn.engr.illinois.edu/pl/](https://prairielearn.engr.illinois.edu/pl/) (in case you have never done this before). 
+1. **Login to PrairieLearn** at [https://prairielearn.engr.illinois.edu/pl/](https://prairielearn.engr.illinois.edu/pl/) (in case you have never done this before). This is necessary so that we can give you access to PrairieLearn before the workshop starts.
 
-We are processing all the access requests using the PrairieLearn Slack [`#request-course`](https://go.illinois.edu/joinplslack) channel. Check the options below, and see which one best fits your situation:
+2. **Request course access.** We are processing all the access requests using the PrairieLearn Slack [`#request-course`](https://go.illinois.edu/joinplslack) channel. Check the options below for instructions.
+
+3. **Complete Homework 0.** See below for instructions on Homework 0. It would be very helpful if you can do this before the first meeting on Monday.
+
+## Request access to a PrairieLearn course
 
 ### 1) You are a Course Instructor:
 
