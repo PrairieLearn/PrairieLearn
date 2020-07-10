@@ -8,7 +8,7 @@ In this 5-day training course, we will provide an introduction to the following 
 * how to use the external grader
 * how to use the drawing tools
 
-We will introduce a new topic in each session, and provide an activity to be completed during the meeting time. You will also receive a small "homework" after each session.
+We will introduce a new topic in each session, and provide an activity to be completed during the meeting time. You will also receive a small "homework" to do before each session, and I will be giving feedback on your homework solutions.
 
 
 ## What you need to do BEFORE the workshop
