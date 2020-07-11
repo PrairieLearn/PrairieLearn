@@ -44,6 +44,12 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setOption('maxLines', Infinity);
     }
 
+    if (options.plOptionFocus) {
+        this.plOptionFocus = true;
+    } else {
+        this.plOptionFocus = false;
+    }
+
     if (options.preview == 'markdown') {
         let renderer = new showdown.Converter();
 
@@ -108,10 +114,9 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
 window.PLFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.setValue(contents);
     this.editor.gotoLine(1, 0);
-    // Let's NOT set the focus here, because it can drag the window scroll
-    // down the page. Also, if there are multiple editors in one question,
-    // it's confusing to focus the last one.
-    // this.editor.focus();
+    if (this.plOptionFocus) {
+        this.editor.focus();
+    }
     this.syncFileToHiddenInput();
 };
 

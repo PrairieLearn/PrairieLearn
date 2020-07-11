@@ -670,13 +670,16 @@ Attribute | Type | Default | description
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
-`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
+`focus` | boolean | true | Specifies that the editor should begin with the cursor captured and focused. See Details below for notes.
 
 #### Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
+
+If there are multiple file editor elements on the page that have `focus="true"` (or not specified), then they will capture the focus sequentially when the page is loaded, typically causing the last editor to be focused. To focus only the first editor, set all but the first to `focus="false"`. To focus none of the editors, set all to false. Note that focusing any editor may cause the question page to scroll down to the editor's position immediately when the page is loaded.
 
 #### Example implementations
 
