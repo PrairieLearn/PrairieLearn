@@ -1,0 +1,25 @@
+{
+    "uuid": "15B5A838-C8D7-4E50-A8EF-C6D7A2ED942A",
+    "type": "Homework",
+    "title": "Workshop Lessons",
+    "set": "Homework",
+    "number": "8",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "workshop/Lesson1_example1_v1", "points": 1, "maxPoints": 2},
+                {"id": "workshop/Lesson1_example1_v2", "points": 1, "maxPoints": 2},
+                {"id": "workshop/Lesson1_example2", "points": 1, "maxPoints": 2},
+                {"id": "workshop/Lesson1_example3_v1", "points": 1, "maxPoints": 2},
+                {"id": "workshop/Lesson1_example3_v2", "points": 1, "maxPoints": 2},
+                {"id": "workshop/Lesson1_example3_v3", "points": 1, "maxPoints": 2}
+            ]
+        }
+    ]
+}
