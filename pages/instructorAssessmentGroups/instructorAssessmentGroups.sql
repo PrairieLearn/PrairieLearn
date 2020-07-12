@@ -6,51 +6,6 @@ FROM
 WHERE 
     assessment_id = $assessment_id AND deleted_at IS NULL;
 
--- BLOCK select_groups
-SELECT
-    GID,
-    groupname,
-    COUNT(*) AS num,
-    array_to_string(array_agg(u.uid), ', ') AS uids
-FROM (SELECT
-        gr.id AS GID,
-        gr.name AS groupname
-    FROM
-        group_configs AS gc
-        JOIN groups as gr ON (gc.id = gr.group_config_id)
-    WHERE
-        gc.assessment_id = $assessment_id
-        AND gc.deleted_at IS NULL
-        AND gr.deleted_at IS NULL
-    ) temp
-    JOIN group_users as gu ON (gu.group_id = temp.GID)
-    JOIN users as u ON (u.user_id = gu.user_id)
-GROUP BY GID, groupname
-ORDER BY GID, groupname;
-
--- BLOCK not_assigned_users
-SELECT 
-    uid
-FROM 
-    ((SELECT 
-        user_id
-    FROM 
-        assessments AS a
-        JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
-    WHERE 
-        a.id = $assessment_id AND e.role = 'Student')
-    EXCEPT
-    (SELECT 
-        user_id
-    FROM
-        group_configs AS gc
-        JOIN groups as gr ON (gc.id = gr.group_config_id)
-        JOIN group_users as gu ON (gu.group_id = gr.id)
-    WHERE 
-        gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND gr.deleted_at IS NULL)) temp
-JOIN users u ON u.user_id = temp.user_id
-ORDER BY uid;
-
 -- BLOCK assessment_list
 SELECT 
     id, tid, title
@@ -61,6 +16,23 @@ WHERE
     AND id != $assessment_id 
     AND course_instance_id = $course_instance_id
 ORDER BY tid;
+
+-- BLOCK select_group_users
+SELECT DISTINCT
+    u.uid,
+    gr.name,
+    gu.group_id AS GID,
+    e.role
+FROM
+    groups AS gr
+    JOIN group_users AS gu ON gu.group_id = gr.id AND gr.deleted_at IS NULL
+    RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id
+    JOIN users AS u ON u.user_id = e.user_id
+WHERE
+    gr.group_config_id = $group_config_id
+    OR gr.group_config_id IS NULL
+    AND e.course_instance_id = $course_instance_id
+ORDER BY GID
 
 --BLOCK config_group
 UPDATE 

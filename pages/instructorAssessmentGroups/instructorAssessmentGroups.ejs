@@ -325,12 +325,12 @@
             </tr>
           </thead>
           <tbody>
-            <% groups_rows.forEach(function(row, iRow) { %>
+            <% groups.forEach(function(row, iRow) { %>
             <tr>
               <td><%= row.gid %></td>
-              <td><%= row.groupname %></td>
-              <td class="text-center"><%= row.num %></td>
-              <td class="text-center"><small><%= row.uids %></small></td>
+              <td><%= row.name %></td>
+              <td class="text-center"><%= row.size %></td>
+              <td class="text-center"><small><%= row.members.join(", ") %></small></td>
               <td class="text-center">
                 <div class="dropdown">
                   <button type="button" 
@@ -412,19 +412,19 @@
         </table>
         <div class="card-footer">
           <small>
-            <% if (not_assigned_users_rows.length == 0) { %>
+            <% if (notAssigned.length == 0) { %>
             <strong>
               All students have been assigned groups.
             </strong>
             <% } else { %>
             <strong>
-              <%= not_assigned_users_rows.length %>
-              student<% if (not_assigned_users_rows.length > 1) { %>s<% } %>
+              <%= notAssigned.length %>
+              student<% if (notAssigned.length > 1) { %>s<% } %>
               not yet assigned:
             </strong>
             <ul class="mb-0">
-              <% not_assigned_users_rows.forEach(function(row, iRow) {%>
-              <li><%= row.uid %></li>
+              <% notAssigned.forEach(function(row, iRow) {%>
+              <li><%= row %></li>
               <% }); %>
             </ul>
             <% } %>

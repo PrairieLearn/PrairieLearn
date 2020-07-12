@@ -8,6 +8,7 @@ const error = require('@prairielearn/prairielib/error');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const { forEach } = require('lodash');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 function obtainInfo(req, res, next){
@@ -37,19 +38,49 @@ function obtainInfo(req, res, next){
         const params = {
             assessment_id: res.locals.assessment.id,
             course_instance_id: res.locals.config_info.course_instance_id,
+            group_config_id: res.locals.config_info.id,
         };
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.assessment_list_rows = result.rows;
-            sqldb.query(sql.select_groups, params, function(err, result) {
+            // sqldb.query(sql.select_groups, params, function(err, result) {
+            //     if (ERR(err, next)) return;
+            //     res.locals.groups_rows = result.rows;
+            //     sqldb.query(sql.not_assigned_users, params, function(err, result) {
+            //         if (ERR(err, next)) return;
+            //         res.locals.not_assigned_users_rows = result.rows;
+            //         debug('render page');
+            //         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            //     });
+            // });
+            sqldb.query(sql.select_group_users, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.groups_rows = result.rows;
-                sqldb.query(sql.not_assigned_users, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.locals.not_assigned_users_rows = result.rows;
+                let groups = new Array();
+                let notAssigned = new Array();
+                (async () => {
+                    result.rows.forEach(user => {
+                        if (user.gid) {
+                            if (groups[user.gid]) {
+                                groups[user.gid]['size'] += 1;
+                                groups[user.gid]['members'].push(user.uid);
+                            } else {
+                                groups[user.gid] = new Array();
+                                groups[user.gid]['gid'] = user.gid;
+                                groups[user.gid]['name'] = user.name;
+                                groups[user.gid]['size'] = 1;
+                                groups[user.gid]['members'] = [user.uid];
+                            }
+                        } else {
+                            if (user.role == 'Student') {
+                                notAssigned.push(user.uid);
+                            }
+                        }
+                    });
+                    res.locals.groups = groups;
+                    res.locals.notAssigned = notAssigned;
                     debug('render page');
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                });
+                })();
             });
         });
     });
@@ -104,7 +135,7 @@ router.post('/', function(req, res, next) {
                     uid,
                 ];
                 try {
-                    await sqldb.callAsync('assessment_groups_update', params);
+                    // await sqldb.callAsync('assessment_groups_update', params);
                 } catch (err) {
                     failedUids += '[' + uid + '] ';
                 }
