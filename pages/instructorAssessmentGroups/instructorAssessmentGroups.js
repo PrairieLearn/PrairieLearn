@@ -8,7 +8,6 @@ const error = require('@prairielearn/prairielib/error');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const { forEach } = require('lodash');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 function obtainInfo(req, res, next){
@@ -178,7 +177,7 @@ router.post('/', function(req, res, next) {
         const gid = req.body.gid;
         const uids = req.body.addmemberuids;
         const uidlist = uids.split(/[ ,]+/);
-        failedUids = '';
+        let failedUids = '';
         res.locals.errormsg = '';
         (async () => {
             for (const uid of uidlist) {
@@ -203,7 +202,7 @@ router.post('/', function(req, res, next) {
         const gid = req.body.gid;
         const uids = req.body.deletememberuids;
         const uidlist = uids.split(/[ ,]+/);
-        failedUids = '';
+        let failedUids = '';
         res.locals.errormsg = '';
         (async () => {
             for (const uid of uidlist) {
