@@ -24,6 +24,25 @@ BEGIN
     -- start update group info: traverse each groupName and uid in update_list
     FOREACH group_user SLICE 1 IN ARRAY update_list LOOP
         BEGIN
+        -- get user_id from uid
+        SELECT user_id
+        INTO arg_user_id
+        FROM users
+        WHERE uid = group_user[2];
+        -- make sure this user does not belong to another group in the same assessment
+        IF EXISTS (
+                    SELECT 1
+                    FROM group_users AS gu
+                    JOIN groups AS gr ON gu.group_id = gr.id
+                    WHERE gu.user_id = arg_user_id
+                    AND gr.group_config_id = arg_group_config_id
+                    AND gr.deleted_at IS NULL
+                  ) THEN
+            SELECT array_append(already_in_group, group_user[2])
+            INTO already_in_group;
+            CONTINUE;
+        END IF;
+        
         -- insert groups if not exist
         IF NOT EXISTS (SELECT 1 FROM groups WHERE name = group_user[1] AND group_config_id = arg_group_config_id AND deleted_at IS NULL) THEN
             INSERT INTO groups (name, group_config_id, course_instance_id)
@@ -34,11 +53,6 @@ BEGIN
         INTO arg_group_id
         FROM groups
         WHERE name = group_user[1] AND group_config_id = arg_group_config_id AND deleted_at IS NULL;
-        -- get user_id from uid
-        SELECT user_id
-        INTO arg_user_id
-        FROM users
-        WHERE uid = group_user[2];
         -- insert group_user
         INSERT INTO group_users (group_id, user_id)
         VALUES (arg_group_id, arg_user_id);

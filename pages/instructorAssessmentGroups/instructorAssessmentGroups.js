@@ -123,28 +123,37 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'addGroup') {
         const assessment_id = res.locals.assessment.id;
         const groupname = req.body.groupname;
+        if (String(groupname).length < 1) {
+            res.locals.errormsg = 'Please enter a group name when adding a group';
+            obtainInfo(req, res, next);
+            return;
+        }
         const uids = req.body.uids;
         const uidlist = uids.split(/[ ,]+/);
-        var failedUids = '';
         res.locals.errormsg = '';
-        (async () => {
-            for (const uid of uidlist) {
-                let params = [
-                    assessment_id,
-                    groupname,
-                    uid,
-                ];
-                try {
-                    // await sqldb.callAsync('assessment_groups_update', params);
-                } catch (err) {
-                    failedUids += '[' + uid + '] ';
+        let updateList = new Array();
+        uidlist.forEach(uid => {
+            updateList.push([groupname, uid]);
+        });
+        const params2 = [
+            assessment_id,
+            updateList,
+        ];
+        sqldb.call('assessment_groups_update', params2, (err, result) => {
+            if (err) {
+                res.locals.errormsg = 'ERROR when adding group ' + groupname + ' - Internal ' + String(err);
+            } else {
+                const notExist = result.rows[0].not_exist_user;
+                if (notExist) {
+                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + notExist.toString() + '] do not exist. Please check if their uids are correct.';
+                }
+                const inGroup = result.rows[0].already_in_group;
+                if (inGroup) {
+                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + inGroup.toString() + '] are already in another group.';
                 }
             }
-            if (failedUids.length > 0) {
-                res.locals.errormsg += 'Failed to add ' + failedUids + 'to [' + groupname + ']. Please check if the uid exist.\n';
-            }
             obtainInfo(req, res, next);
-        })();
+        });
     } else if (req.body.__action == 'configGroup') {
         res.locals.errormsg = '';
         const params = {
