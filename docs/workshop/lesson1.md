@@ -18,7 +18,34 @@ $ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 - Instead of implementing the solution for $y = 4 - x^2$, consider the function $y = a - x^b$, where $a$ and $b$ are randomized parameters (or parameters picked out at random from a given list). 
 
+
 ## Example 2: 
+
+For a given metal, $Q_v = 2 \rm \,ev$  is the energy required for vacancy formation. When the temperature is $T_1 = 800^o\rm C$, the vacancy concentration is 1 for every 10000 atoms.
+
+Detemine the temperature $T_2$ needed to achieve a concentration of 1 vacancy for every 1000 atoms.
+
+**Solution:**
+
+The temperature dependence of vacancy concentration $N_v$ is given by:
+
+$$ N_v = N \, \exp(-Q_v/(k T)) $$
+
+where $N$ is the concentration of atomic sites, $k$ is the Boltzmann constant and $T$ is the absolute temperature. Hence we can write:
+
+$$ \ln(N) = \ln(N_{v1}) + \frac{Q_v}{k T_1} = \ln(N_{v2}) + \frac{Q_v}{k T_2}$$
+
+where $T_1 = (800 + 273) \rm K$, $ N_{v1} = 1/10000$ and $ N_{v2} = 1/1000$. Solving for $T_2$ we get:
+
+$$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \right)$$
+
+**Take one step further:**
+
+- Randomize the parameters
+- Think about some typical issues that appear with questions like this: will you provide the constant to convert from Celsius to Kelvin? What about the Boltzmann constant? If not, take into account rounding when deciding on the tolerance criteria for the question.
+
+
+## Example 3: 
 
 Determine the equivalent resistence of the circuit below:
 
