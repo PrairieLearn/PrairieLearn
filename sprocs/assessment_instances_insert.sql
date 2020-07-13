@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,bigint,enum_mode,integer,timestamp with time zone);
 DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,boolean,bigint,enum_mode,integer,timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION
@@ -42,49 +43,36 @@ BEGIN
             AND gc.assessment_id = assessment_instances_insert.assessment_id
             AND gc.deleted_at IS NULL
             AND g.deleted_at IS NULL;
-        
-        IF assessment.multiple_instance THEN
-            SELECT coalesce(max(ai.number), 0) + 1
-            INTO number
-            FROM assessment_instances AS ai
-            WHERE
-                ai.assessment_id = assessment_instances_insert.assessment_id
-                AND ai.group_id = tmp_group_id;
-        END IF;
-        -- if a.multiple_instance is FALSE then we use
-        -- number = 1 so we will error on INSERT if there
-        -- are existing assessment_instances
-        
-        -- ######################################################################
-        -- do the actual insert
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
+            END IF;
+    END IF;    
 
-        INSERT INTO assessment_instances
-                (auth_user_id, assessment_id, group_id, mode, auto_close, date_limit, number)
-        VALUES (authn_user_id, assessment_id, tmp_group_id, mode, auto_close, date_limit, number)
-        RETURNING id
-        INTO assessment_instance_id;
-    ELSE 
-         IF assessment.multiple_instance THEN
-            SELECT coalesce(max(ai.number), 0) + 1
-            INTO number
-            FROM assessment_instances AS ai
-            WHERE
-                ai.assessment_id = assessment_instances_insert.assessment_id
-                AND ai.user_id = assessment_instances_insert.user_id;
-        END IF;
-        -- if a.multiple_instance is FALSE then we use
-        -- number = 1 so we will error on INSERT if there
-        -- are existing assessment_instances
-        
-        -- ######################################################################
-        -- do the actual insert
-
-        INSERT INTO assessment_instances
-                (auth_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
-        VALUES (authn_user_id, assessment_id, user_id, mode, auto_close, date_limit, number)
-        RETURNING id
-        INTO assessment_instance_id;
+    IF assessment.multiple_instance THEN
+        SELECT coalesce(max(ai.number), 0) + 1
+        INTO number
+        FROM assessment_instances AS ai
+        WHERE
+            ai.assessment_id = assessment_instances_insert.assessment_id
+            AND (CASE 
+                    WHEN group_work THEN ai.group_id = tmp_group_id 
+                    ELSE ai.user_id = assessment_instances_insert.user_id
+                 END);
     END IF;
+        -- if a.multiple_instance is FALSE then we use
+        -- number = 1 so we will error on INSERT if there
+        -- are existing assessment_instances
+        
+        -- ######################################################################
+        -- do the actual insert
+
+    INSERT INTO assessment_instances
+            ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
+    VALUES  (authn_user_id, assessment_id, 
+            CASE WHEN group_work THEN NULL      ELSE user_id END,
+            CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
+    RETURNING id
+    INTO assessment_instance_id;
 
     -- ######################################################################
     -- determine other properties
@@ -96,8 +84,6 @@ BEGIN
     IF assessment.auto_close AND assessment.type = 'Exam' THEN
         auto_close := TRUE;
     END IF;
-
-
 
     -- ######################################################################
     -- start a record of the last access time
