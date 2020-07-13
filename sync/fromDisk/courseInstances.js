@@ -23,7 +23,6 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
             const accessRules = (courseInstance.allowAccess || [])
                 .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role == 'Student')))
                 .map(accessRule => ({
-                    role: _(accessRule).has('role') ? accessRule.role : null,
                     uids: _(accessRule).has('uids') ? accessRule.uids : null,
                     start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
                     end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
