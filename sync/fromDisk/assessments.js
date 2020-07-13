@@ -9,7 +9,7 @@ const perf = require('../performance')('assessments');
 
 /**
  * SYNCING PROCESS:
- * 
+ *
  * 1. Assign order_by number to every assessment
  * 2. Check that no UUIDs are duplicated within this course instance
  * 3. Check that no UUIDS are duplicated in any other course instance
@@ -61,22 +61,28 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             constant_question_value: _.has(assessment, 'constantQuestionValue') ? assessment.constantQuestionValue : false,
         };
 
+
+        // It used to be the case that assessment access rules could be associated with a
+        // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
+        // apply only to students. So, we filter out (and ignore) any access rule with a
+        // non-empty role that is not Student.
         const allowAccess = assessment.allowAccess || [];
-        assessmentParams.allowAccess = allowAccess.map((accessRule, index) => {
-            return {
-                number: index + 1,
-                mode: _(accessRule).has('mode') ? accessRule.mode : null,
-                role: _(accessRule).has('role') ? accessRule.role : null,
-                uids: _(accessRule).has('uids') ? accessRule.uids : null,
-                start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-                end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-                credit: _(accessRule).has('credit') ? accessRule.credit : null,
-                time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
-                password: _(accessRule).has('password') ? accessRule.password : null,
-                seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
-                exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-            }
-        });
+        assessmentParams.allowAccess = allowAccess
+            .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role == 'Student')))
+            .map((accessRule, index) => {
+                return {
+                    number: index + 1,
+                    mode: _(accessRule).has('mode') ? accessRule.mode : null,
+                    uids: _(accessRule).has('uids') ? accessRule.uids : null,
+                    start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
+                    end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
+                    credit: _(accessRule).has('credit') ? accessRule.credit : null,
+                    time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
+                    password: _(accessRule).has('password') ? accessRule.password : null,
+                    seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
+                    exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+                }
+            });
 
         const zones = assessment.zones || [];
         assessmentParams.zones = zones.map((zone, index) => {

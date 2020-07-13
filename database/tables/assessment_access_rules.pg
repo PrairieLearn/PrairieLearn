@@ -7,7 +7,6 @@ columns
     mode: enum_mode
     number: integer
     password: text
-    role: enum_role
     seb_config: jsonb
     start_date: timestamp with time zone
     time_limit_min: integer
