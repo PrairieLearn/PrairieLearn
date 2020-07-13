@@ -39,7 +39,6 @@ BEGIN
         INSERT INTO course_instance_access_rules (
             course_instance_id,
             number,
-            role,
             uids,
             start_date,
             end_date,
@@ -47,7 +46,6 @@ BEGIN
         ) SELECT
             new_course_instance_id,
             number,
-            (access_rule->>'role')::enum_role,
             CASE
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
                 ELSE jsonb_array_to_text_array(access_rule->'uids')
@@ -58,7 +56,6 @@ BEGIN
         FROM JSONB_ARRAY_ELEMENTS(course_instance->'access_rules') WITH ORDINALITY AS t(access_rule, number)
         ON CONFLICT (number, course_instance_id) DO UPDATE
         SET
-            role = EXCLUDED.role,
             uids = EXCLUDED.uids,
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,

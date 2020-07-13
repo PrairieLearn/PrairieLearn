@@ -1,10 +1,6 @@
 -- BLOCK course_instance_access_rules
 SELECT
     CASE
-        WHEN ciar.role IS NULL THEN '—'
-        ELSE ciar.role::text
-    END AS role,
-    CASE
         WHEN ciar.uids IS NULL THEN '—'
         ELSE array_to_string(ciar.uids, ', ')
     END AS uids,

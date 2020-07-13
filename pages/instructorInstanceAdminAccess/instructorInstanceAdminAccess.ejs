@@ -21,7 +21,6 @@
             <table class="table table-sm table-hover">
               <thead>
                 <tr>
-                  <th>Role</th>
                   <th>UIDs</th>
                   <th>Start date</th>
                   <th>End date</th>
@@ -31,7 +30,6 @@
               <tbody>
                 <% access_rules.forEach(function(access_rule) { %>
                 <tr>
-                  <td><%= access_rule.role %></td>
                   <td><%= access_rule.uids %></td>
                   <td><%= access_rule.start_date %></td>
                   <td><%= access_rule.end_date %></td>

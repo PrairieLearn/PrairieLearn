@@ -16,13 +16,19 @@ module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
         const courseInstancesParam = Object.keys(courseInstanceDB).map(courseInstanceShortName => {
             const courseInstance = courseInstanceDB[courseInstanceShortName];
 
-            const accessRules = (courseInstance.allowAccess || []).map(accessRule => ({
-                role: _(accessRule).has('role') ? accessRule.role : null,
-                uids: _(accessRule).has('uids') ? accessRule.uids : null,
-                start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-                end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-                institution: _(accessRule).has('institution') ? accessRule.institution : null,
-            }));
+            // It used to be the case that course instance access rules could be associated
+            // with a particular user role, e.g., Student, TA, or Instructor. Now, all access
+            // rules apply only to students. So, we filter out (and ignore) any access rule
+            // with a non-empty role that is not Student.
+            const accessRules = (courseInstance.allowAccess || [])
+                .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role == 'Student')))
+                .map(accessRule => ({
+                    role: _(accessRule).has('role') ? accessRule.role : null,
+                    uids: _(accessRule).has('uids') ? accessRule.uids : null,
+                    start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
+                    end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
+                    institution: _(accessRule).has('institution') ? accessRule.institution : null,
+                }));
 
             return {
                 uuid: courseInstance.uuid,
