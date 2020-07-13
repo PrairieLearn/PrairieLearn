@@ -1,4 +1,4 @@
-# Lesson 1:
+# Lesson 1: Creating simple questions
 
 Choose one of the examples below, and convert the question from the "paper-pencil" format to PrairieLearn. 
 

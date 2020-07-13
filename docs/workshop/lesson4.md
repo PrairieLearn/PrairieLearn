@@ -1,1 +1,1 @@
-# Lesson 4:
+# Lesson 4: Customizing the grading method
