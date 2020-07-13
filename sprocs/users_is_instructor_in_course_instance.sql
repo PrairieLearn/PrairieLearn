@@ -5,8 +5,6 @@ CREATE OR REPLACE FUNCTION
         OUT is_instructor boolean
     )
 AS $$
-DECLARE
-    course_instance_course_id bigint;
 BEGIN
     -- returns TRUE if the user has either:
     --      (1) non-none course role for the course with the given course instance, or
