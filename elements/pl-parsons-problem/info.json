@@ -11,6 +11,12 @@
             "jquery-ui.min.js",
             "jquery.ui.touch-punch.min.js", 
             "pl-parsons-problem.js"
+        ],
+        "nodeModulesScripts": [
+            "jquery-ui-dist/jquery-ui.min.js"
+        ],
+        "nodeModulesStyles": [
+            "jquery-ui-dist/jquery-ui.min.css"
         ]
     }    
 }

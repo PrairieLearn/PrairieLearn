@@ -1,7 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import random
-
+import base64
 DEFAULT_CHECK_INDENTATION = False
 
 # answers are submitted using the following form:    a:b-c:d-e:f
@@ -72,7 +72,7 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column']
+    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column','file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -135,8 +135,8 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
     #change
-    header_left = pl.get_string_attrib(element, 'header-left-column')
-    header_right = pl.get_string_attrib(element, 'header-right-column')
+    header_left = pl.get_string_attrib(element, 'header-left-column',"Drag from here")
+    header_right = pl.get_string_attrib(element, 'header-right-column', "Construct your solution here")
     #change
     pieces = data['params'].get(name, [])
     if len(pieces) == 0:
@@ -217,6 +217,15 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    #change
+    file_name = pl.get_string_attrib(element, 'file-name', None)# this should be pulled from an attribute
+    if file_name != None:
+        file_data = """ ... build the file data here ... """
+        data['submitted_answers']['_files'] = [{
+        'name': file_name,
+        'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
+        }]
+    #change 
     name = pl.get_string_attrib(element, 'answers-name')
 
     submitted = data['submitted_answers'].get(name, '')

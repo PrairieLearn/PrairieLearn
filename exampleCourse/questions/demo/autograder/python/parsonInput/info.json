@@ -1,0 +1,21 @@
+{
+    "uuid": "1c207c47-eee1-42fb-974c-904c62c12fe2",
+    "title": "Autograder demo: pl-parsons-problem_write a python function",
+    "topic": "Autograder",
+    "tags": [
+        "v3",
+        "sp20",
+        "mfsilva",
+        "nnytko2",
+        "short-coding"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}
