@@ -158,7 +158,6 @@ module.exports = {
             'sync_question_tags.sql',
             'sync_questions.sql',
             'sync_assessments.sql',
-            'sync_course_staff.sql',
             'sync_assessment_sets.sql',
             'sync_topics.sql',
             'sync_course_instances.sql',

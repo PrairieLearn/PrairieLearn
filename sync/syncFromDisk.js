@@ -8,7 +8,6 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
-const syncCourseStaff = require('./fromDisk/courseStaff');
 const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
@@ -42,14 +41,10 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
             perf.timedFunc.bind(null, "syncAssessmentSets", syncAssessmentSets.sync.bind(null, course.courseInfo)),
             (callback) => {
-                perf.start("syncCourseInstaces");
                 // TODO: is running these in parallel safe? Everything should be isolated by course instance.
                 async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     perf.start(`syncCourseInstance${courseInstanceShortName}`);
                     async.series([
-                        function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                        + " courseInstance from git repository to database..."); callback(null);},
-                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Staff`, syncCourseStaff.sync.bind(null, courseInstance)),
                         function(callback) {logger.info("Syncing " + courseInstanceShortName
                                                         + " assessments from git repository to database..."); callback(null);},
                         perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Assessments`, syncAssessments.sync.bind(null, course.courseInfo, courseInstance, course.questionDB)),
