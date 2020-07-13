@@ -2,8 +2,7 @@
 
 Convert these questions from the "paper-pencil" format to PrairieLearn.
 
-
-## Example 1: 
+## Example 1:
 
 Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y = Ab$
 
@@ -14,4 +13,7 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 * How do you want students to submit their answers? Take a look at `pl-matrix-component-input` and `pl-matrix-input`.
 
 
-## Example 2: 
+## Example 2:
+
+
+## Example 3:
