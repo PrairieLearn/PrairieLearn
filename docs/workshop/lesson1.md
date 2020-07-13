@@ -73,22 +73,21 @@ $R_T = R_1 + R_2 + R_3 = 170 \Omega$
 
 $I_T = V_T/R_T = 0.735 A$
 
-## Homework 1
-
+## Homework 1`
+`
 Create one or two questions using some of these basic elements:
 
-`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/6312319/preview/)
+`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/6312319/preview)
 
+`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1420145/preview)
 
-`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/1420145/preview)
+`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911603/preview)
 
-`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/7911603/preview)
+`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637014/preview)
 
-`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/3637014/preview)
+`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3131525/preview)
 
-`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/3131525/preview)
-
-`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/611923/preview)
+`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611923/preview)
 
 Copy the url link to your question in this spreadsheet:
 [https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing).
