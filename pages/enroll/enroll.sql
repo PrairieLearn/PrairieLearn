@@ -22,15 +22,26 @@ ORDER BY
 
 -- BLOCK enroll
 INSERT INTO enrollments AS e
-        (user_id, course_instance_id)
+        (user_id, course_instance_id, role)
 (
+    WITH users_with_access AS (
+        SELECT
+            u.user_id,
+            users_is_instructor_in_course(u.user_id, ci.course_id) AS is_instructor,
+            check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date) AS has_student_access
+        FROM
+            users AS u
+            JOIN course_instances AS ci ON ci.id = $course_instance_id
+        WHERE
+            u.user_id = $user_id
+    )
     SELECT
-        u.user_id, $course_instance_id
+        u.user_id, $course_instance_id, CASE WHEN u.is_instructor THEN 'Instructor'::enum_role ELSE 'Student'::enum_role END
     FROM
-        users AS u
+        users_with_access AS u
     WHERE
-        u.user_id = $user_id
-        AND check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date)
+        u.is_instructor
+        OR u.has_student_access
 )
 RETURNING e.id;
 
