@@ -1,12 +1,14 @@
 DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone);
 DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone,text);
 DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,bigint,text,timestamp with time zone,text);
+DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,bigint,text,timestamp with time zone,text);
 
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
         IN authz_mode enum_mode,
-        IN role enum_role,
+        IN course_role enum_course_role,
+        IN course_instance_role enum_course_instance_role,
         IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
@@ -53,7 +55,7 @@ BEGIN
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
@@ -75,7 +77,7 @@ BEGIN
     END IF;
 
     -- Override if we are an Instructor
-    IF role >= 'Instructor' THEN
+    IF (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') THEN
         authorized = TRUE;
         credit = 100;
         credit_date_string = '100% (Instructor override)';
@@ -86,7 +88,7 @@ BEGIN
         seb_config = NULL;
     END IF;
 
-    -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
+    -- List of all access rules that will grant access to this user/mode at some date (past or future),
     -- computed by ignoring the date argument.
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
@@ -101,7 +103,7 @@ BEGIN
         access_rules
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id

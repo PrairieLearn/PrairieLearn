@@ -59,11 +59,12 @@ BEGIN
         END IF;
     END IF;
 
-    -- give access if we are an instructor
-    IF (authz_data->>'authn_has_instructor_view')::boolean THEN
+    -- give view access if we are a Student Data Viewer
+    IF (authz_data->>'authn_has_course_instance_permission_view')::boolean THEN
         authorized := TRUE;
     END IF;
-    IF (authz_data->>'authn_has_instructor_edit')::boolean THEN
+    -- give edit access if we are a Student Data Editor
+    IF (authz_data->>'authn_has_course_instance_permission_edit')::boolean THEN
         authorized_edit := TRUE;
     END IF;
 

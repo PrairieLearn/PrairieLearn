@@ -30,7 +30,8 @@ BEGIN
         check_assessment_access(
             assessment_id,
             (authz_data->>'authn_mode')::enum_mode,
-            (authz_data->>'authn_role')::enum_role,
+            (authz_data->>'authn_course_role')::enum_course_role,
+            (authz_data->>'authn_course_instance_role')::enum_course_instance_role,
             (authz_data->'authn_user'->>'user_id')::bigint,
             authz_data->'authn_user'->>'uid',
             req_date,
@@ -44,7 +45,8 @@ BEGIN
         check_assessment_access(
             assessment_id,
             (authz_data->>'mode')::enum_mode,
-            (authz_data->>'role')::enum_role,
+            (authz_data->>'course_role')::enum_course_role,
+            (authz_data->>'course_instance_role')::enum_course_instance_role,
             (authz_data->'user'->>'user_id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
@@ -60,8 +62,8 @@ BEGIN
         -- this is the normal case
         authorized_edit := TRUE;
     END IF;
-    IF (authz_data->>'authn_has_instructor_edit')::boolean THEN
-        -- also allow editing if we are really an instructor with edit permissions
+    IF (authz_data->>'authn_has_course_instance_permission_edit')::boolean THEN
+        -- also allow editing if we are a Student Data Editor
         authorized_edit := TRUE;
     END IF;
 
