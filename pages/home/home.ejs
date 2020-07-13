@@ -5,13 +5,6 @@
     <link href="/stylesheets/landing.css" rel="stylesheet">
   </head>
 
-  <%
-    var isAuthenticated = locals.authn_user;
-    var isAdministrator = locals.is_administrator;
-    var isStudent = typeof locals.authz_data !== "undefined" && locals.authz_data.role === 'Student';
-    var isInstructor = typeof locals.authz_data !== "undefined" && locals.authz_data.role === 'Instructor';
-  %>
-
   <body>
     <header>
       <% if (isAuthenticated) { %>
@@ -73,7 +66,6 @@
             </div>
             <div class="col-md-6">
               <div class="list-group">
-                <% if (!isAuthenticated || isStudent) { %>
                 <div class="list-group-item py-3 px-4">
                   <h2 class="h6 d-inline font-weight-bold">Students</h2>
                   <p class="d-inline text-muted text-right">&mdash; Master course content through randomized, spaced
@@ -95,8 +87,6 @@
                     </a>
                   </p>
                 </div> <!-- list-group-item -->
-                <% } %> <!-- role === 'Student' -->
-                <% if (!isAuthenticated || (isAdministrator || isInstructor)) { %>
                 <div class="list-group-item py-3 px-4">
                   <h2 class="h6 d-inline font-weight-bold">Instructors</h2>
                   <p class="d-inline text-muted text-right">&mdash; Build autograded assessments using premade widgets and
@@ -126,7 +116,6 @@
                     </a>
                   </p>
                 </div> <!-- list-group-item -->
-                <% } %> <!-- role === 'Instructor' -->
               </div> <!-- list-group -->
             </div> <!-- col -->
           </div> <!-- row -->

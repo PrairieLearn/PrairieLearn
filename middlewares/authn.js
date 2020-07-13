@@ -17,7 +17,7 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    if (/^\/$/.test(req.path) && config.authType !== 'none') {
+    if (/^\/(pl)$/.test(req.path) && config.authType !== 'none') {
       // Landing page should not be authenticated unless running locally
       next();
       return;
