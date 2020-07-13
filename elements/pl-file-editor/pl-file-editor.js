@@ -44,7 +44,7 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setOption('maxLines', Infinity);
     }
 
-    this.plOptionFocus = !!options.plOptionFocus;
+    this.plOptionFocus = options.plOptionFocus;
 
     if (options.preview == 'markdown') {
         let renderer = new showdown.Converter();
