@@ -1,10 +1,10 @@
 # Lesson 1:
 
-Choose one of the examples below, and convert the question from the "paper-pencil" format to PrairieLearn. 
+Choose one of the examples below, and convert the question from the "paper-pencil" format to PrairieLearn.
 
-## Example 1: 
+## Example 1:
 
-Find the area for a region bounded by 
+Find the area for a region bounded by
 
 $y = 4 - x^2$
 
@@ -16,10 +16,10 @@ $ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 **Take one step further:**
 
-- Instead of implementing the solution for $y = 4 - x^2$, consider the function $y = a - x^b$, where $a$ and $b$ are randomized parameters (or parameters picked out at random from a given list). 
+- Instead of implementing the solution for $y = 4 - x^2$, consider the function $y = a - x^b$, where $a$ and $b$ are randomized parameters (or parameters picked out at random from a given list).
 
 
-## Example 2: 
+## Example 2:
 
 For a given metal, $Q_v = 2 \rm \,ev$  is the energy required for vacancy formation. When the temperature is $T_1 = 800^o\rm C$, the vacancy concentration is 1 for every 10000 atoms.
 
@@ -45,15 +45,15 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 - Think about some typical issues that appear with questions like this: will you provide the constant to convert from Celsius to Kelvin? What about the Boltzmann constant? If not, take into account rounding when deciding on the tolerance criteria for the question.
 
 
-## Example 3: 
+## Example 3:
 
-Determine the equivalent resistence of the circuit below:
+Determine the equivalent resistance of the circuit below:
 
 ![](figs/circ1.png)
 
 **Solution:**
 
-For this solution, we will use $V_T = 125V$, $R_1 = 20\Omega$, $R_2 = 100\Omega$ and $R_3 = 50\Omega$. 
+For this solution, we will use $V_T = 125V$, $R_1 = 20\Omega$, $R_2 = 100\Omega$ and $R_3 = 50\Omega$.
 
 $\frac{1}{R_T} = \frac{1}{R_1} + \frac{1}{R_2} + \frac{1}{R_3} = \frac{8}{100}\Omega$
 
