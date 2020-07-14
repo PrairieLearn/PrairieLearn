@@ -4,12 +4,19 @@ import random
 import base64
 DEFAULT_CHECK_INDENTATION = False
 
+def getAnswer(submitted):
+    if submitted == '':
+        return ''
+    answer = ''
+    for piece in submitted.split('-'):
+        piece_no, indent = piece.split(':')
+        answer = answer + piece_no + indent
+    return answer
 # answers are submitted using the following form:    a:b-c:d-e:f
 # where a, c, and e are indices into the list of pieces given by the problem, and
 #       b, d, and f are the number of levels they are indented.
 # This function checks that a submitted answer is formatted correct and converts it
 # into the following format:  [(a, b), (c, d), (e, f)]
-
 
 def unpack_answer(submitted, num_pieces, data, name):
     if submitted == '':
@@ -217,19 +224,19 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+    #
+    submitted = data['submitted_answers'].get(name, '')
+    num_pieces = len(data['params'].get(name, []))
     #change
     file_name = pl.get_string_attrib(element, 'file-name', None)# this should be pulled from an attribute
     if file_name != None:
-        file_data = """ ... build the file data here ... """
+        file_data = getAnswer(submitted)
         data['submitted_answers']['_files'] = [{
         'name': file_name,
         'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
         }]
     #change 
-    name = pl.get_string_attrib(element, 'answers-name')
-
-    submitted = data['submitted_answers'].get(name, '')
-    num_pieces = len(data['params'].get(name, []))
 
     if num_pieces == 0:
         raise Exception('number of pieces is zero')
