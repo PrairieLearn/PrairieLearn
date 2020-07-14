@@ -23,7 +23,7 @@ app.get('/', function(req, res) {
 
 app.post('/', function(req, res) {
 
-    async function _reinitializeS3(workspace_id, callback) {
+    function _reinitializeS3(workspace_id, callback) {
         var cmd = "aws s3 cp s3://pl-workspace/question-0 s3://pl-workspace/workspace-0 --recursive";
 
         var _ = exec(cmd, function (error, stdout, stderr) {
@@ -37,7 +37,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _syncPullContainer(workspace_id, callback) {
+    function _syncPullContainer(workspace_id, callback) {
         if (fs.existsSync("./workspace-0")) {
             // we already had a local copy of the latest code, no need to sync
             callback(null, workspace_id);
@@ -56,7 +56,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _syncPushContainer(workspace_id, callback) {
+    function _syncPushContainer(workspace_id, callback) {
         var cmd = "aws s3 sync ./workspace-0 s3://pl-workspace/workspace-0";
         
         var _ = exec(cmd, function (error, stdout, stderr) {
@@ -70,7 +70,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _createContainer(workspace_id, callback) {
+    function _createContainer(workspace_id, callback) {
         // remove --rm for production 
         var cmd = 'docker create -it --name "workspace-0" -p 13746:8080 -v "$PWD/workspace-0:/home/coder/project" -u "$(id -u):$(id -g)" codercom/code-server:latest --auth none';
 
@@ -89,7 +89,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _delContainer(workspace_id, callback) {
+    function _delContainer(workspace_id, callback) {
         // Do what you gotta do to shutdown the container
         var cmd = `docker rm workspace-${workspace_id}`;
         var _ = exec(cmd, function (error, stdout, stderr) {
@@ -104,7 +104,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _startContainer(workspace_id, callback) {
+    function _startContainer(workspace_id, callback) {
         // Do what you gotta do to start the container
         var cmd = `docker start workspace-${workspace_id} && sleep 2`;
         var _ = exec(cmd, function (error, stdout, stderr) {
@@ -119,7 +119,7 @@ app.post('/', function(req, res) {
         });
     };
 
-    async function _stopContainer(workspace_id, callback) {
+    function _stopContainer(workspace_id, callback) {
         var cmd = `docker stop workspace-${workspace_id}`;
         var _ = exec(cmd, function (error, stdout, stderr) {
             if (stdout) {          
