@@ -829,7 +829,7 @@ Attribute | Type | Default | Description
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
 `source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
-`prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
+`prevent-select` | boolean | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
 `highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
 `highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
 
@@ -902,10 +902,13 @@ def generate(data):
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | The name of the key in `data['params']` to get a value from
-`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`text` | boolean | false | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
 `prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
 `suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
-`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+`no-highlight` | boolean | false | Disable syntax highlighting in `text` mode.
+`show-header` | boolean | true | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)
+`show-index` | boolean | true | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)
+`show-dimensions` | boolean | true | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)
 
 #### Details
 
@@ -1355,7 +1358,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `width` | float | - | The width of the overlay canvas in pixels.  Required only if no background is specified.
 `height` | float | - | The height of the overlay canvas in pixels.  Required only if no background is specified.
-`clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
+`clip` | boolean | true | If true, children will be cut off when exceeding overlay boundaries.
 
 #### `pl-location` Customizations
 
