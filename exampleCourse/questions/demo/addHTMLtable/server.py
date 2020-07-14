@@ -6,7 +6,7 @@ def generate(data):
 
     name_list = ["Carla", "Manoel", "Sam", "Laura", "Amanda"]
     age_list =  [24, 18, 30, 45, 32]
-    name_greek_list = ["$\\gamma$", "$\\mu$", "$\\sigma$", "$\\lambda$", "$\\alpha$" ]
+    name_greek_list = ["$\\gamma$", "$\\mu$", "$\\sigma$", "$\\lambda$", "$\\alpha$"]
 
     # Generate complete html string
     mytable = '<table style="width:30%"><tr><th> Name </th> <th> Age </th> <th> Id </th></tr>'
