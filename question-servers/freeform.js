@@ -373,21 +373,21 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
-        err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
-        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
-        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
-        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                   if (err) return err;
-        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);      if (err) return err;
-        err = checkProp('editable',              'boolean', ['render'],                           []);                         if (err) return err;
-        err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
-        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
-        err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
-        err = checkProp('test_type',             'string',  ['test'],                             []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);          if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse']); if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhases,                            []);                               if (err) return err;
+        err = checkProp('options',               'object',  allPhases,                            []);                               if (err) return err;
+        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);               if (err) return err;
+        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);       if (err) return err;
+        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                         if (err) return err;
+        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);                if (err) return err;
+        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);                if (err) return err;
+        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);            if (err) return err;
+        err = checkProp('editable',              'boolean', ['render'],                           []);                               if (err) return err;
+        err = checkProp('panel',                 'string',  ['render'],                           []);                               if (err) return err;
+        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                               if (err) return err;
+        err = checkProp('filename',              'string',  ['file'],                             []);                               if (err) return err;
+        err = checkProp('test_type',             'string',  ['test'],                             []);                               if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
