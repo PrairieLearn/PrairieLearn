@@ -68,6 +68,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
+            min_continue_score_perc: assessment.minContinueScorePerc,
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -90,15 +91,13 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
 
         const zones = assessment.zones || [];
         assessmentParams.zones = zones.map((zone, index) => {
-            zone.sequence = zone.sequence || {};
             return {
                 number: index + 1,
                 title: zone.title,
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
-                sequence_enforce: zone.sequence.enforce,
-                sequence_score_perc_threshold: zone.sequence.scorePercThreshold ? Math.min(100, Math.max(0, zone.sequence.scorePercThreshold)) : 100,
+                min_continue_score_perc: zone.minContinueScorePerc,
             };
         });
 
@@ -119,6 +118,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                     throw new Error(`Assessment "${assessment.tid}" cannot specify an array of points for a question if real-time grading is disabled`);
                 }
                 let alternatives;
+                // Alternative group (multiple questions)
                 if (_(question).has('alternatives')) {
                     if (_(question).has('id')) throw error.make(400, 'Cannot have both "id" and "alternatives" in one question', {question});
                     question.alternatives.forEach(a => checkAndRecordQID(a.id));
@@ -133,9 +133,12 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
                                 : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                             triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
+                            minContinueScorePerc: alternative.minContinueScorePerc,
                         };
                     });
-                } else if (_(question).has('id')) {
+                }
+                // Not an alternative group (single question)
+                else if (_(question).has('id')) {
                     checkAndRecordQID(question.id);
                     alternatives = [
                         {
@@ -144,6 +147,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             points: question.points,
                             forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false,
                             triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : 1,
+                            minContinueScorePerc: question.minContinueScorePerc,
                         },
                     ];
                 } else {
@@ -186,6 +190,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 const alternativeGroupParams = {
                     number: alternativeGroupNumber,
                     number_choose: question.numberChoose,
+                    min_continue_score_perc: question.minContinueScorePerc,
                 };
 
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
@@ -205,6 +210,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         tries_per_variant: alternative.triesPerVariant,
                         question_id: questionId,
                         number_in_alternative_group: alternativeIndex + 1,
+                        min_continue_score_perc: alternative.minContinueScorePerc,
                     };
 
                 });

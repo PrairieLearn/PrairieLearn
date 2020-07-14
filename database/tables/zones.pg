@@ -5,8 +5,7 @@ columns
     max_points: double precision
     number: integer
     number_choose: integer
-    sequence_enforce: boolean default false
-    sequence_score_perc_threshold: double precision not null default 100
+    min_continue_score_perc: double precision
     title: text
 
 indexes
