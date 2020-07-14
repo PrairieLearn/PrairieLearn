@@ -18,6 +18,12 @@ $ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 - Instead of implementing the solution for $y = 4 - x^2$, consider the function $y = a - x^b$, where $a$ and $b$ are randomized parameters (or parameters picked out at random from a given list).
 
+**PrairieLearn implementation:**
+
+- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036811/preview)
+
+- [Randomized parameters and dynamic figure](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036812/preview)
+
 
 ## Example 2:
 
@@ -43,6 +49,10 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 - Randomize the parameters
 - Think about some typical issues that appear with questions like this: will you provide the constant to convert from Celsius to Kelvin? What about the Boltzmann constant? If not, take into account rounding when deciding on the tolerance criteria for the question.
+
+**PrairieLearn implementation:**
+
+- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036815/preview)
 
 
 ## Example 3:
@@ -73,23 +83,34 @@ $R_T = R_1 + R_2 + R_3 = 170 \Omega$
 
 $I_T = V_T/R_T = 0.735 A$
 
+**PrairieLearn implementation:**
+
+- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036813/preview)
+
+- [Add question about current](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036814/preview)
+
+- [Parallel and Series options](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036816/preview)
+
 ## Homework 1
 
 Create one or two questions using some of these basic elements:
 
-`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/6312319/preview/)
+`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-multiple-choice-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/6312319/preview)
 
+`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1420145/preview)
 
-`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/1420145/preview)
+`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911603/preview)
 
-`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-dropdown-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/7911603/preview)
+`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637014/preview)
 
-`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/3637014/preview)
+`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3131525/preview)
 
-`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/3131525/preview)
-
-`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/611923/preview)
+`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611923/preview)
 
 Copy the url link to your question in this spreadsheet:
 [https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing).
 Use the tab for `Homework 1`. I will take a look at your question and provide feedback.
+
+## Video
+
+- [Lesson 1 Recording](https://mediaspace.illinois.edu/media/t/1_8v9b8gqe/169265112)
