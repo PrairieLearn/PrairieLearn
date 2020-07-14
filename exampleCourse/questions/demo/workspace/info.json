@@ -10,9 +10,10 @@
     "workspaceOptions": {
         "image": "prairielearn/vscode-workspace",
         "port": 15000,
+        "args": "--auth none",
         "gradedFiles": [
-            "animal.h",
-            "animal.cpp"
+            "starter_code.h",
+            "starter_code.c"
         ]
     }
 }

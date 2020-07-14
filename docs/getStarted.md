@@ -210,13 +210,9 @@ You should also have access to the example course `XC 101`. From the top menu, n
 
 ![](start-guide/change-example-course.png)
 
-You will find a variety of questions in the example course. From the `Assessments` tab, you can find the questions organized by type. This is probably your best starting point when creating questions for the first time.
+You will find a variety of questions in the example course. This is probably your best starting point when creating questions for the first time. Let's see how you can copy one of the example questions to your own course:
 
-Let's see how you can copy one of the example questions to your own course:
-
-* click on the assessment `HW1: Template homework - copy this to start a new HW`.
-
-* click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
+* from the `Questions` tab, click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
 
 * click on the `Settings` tab.
 
