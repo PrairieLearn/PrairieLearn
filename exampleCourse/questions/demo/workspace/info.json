@@ -3,13 +3,13 @@
     "title": "Workspace demo",
     "topic": "Workspace",
     "tags": [
-        "v3",
         "su20",
         "tyang15"
     ],
     "type": "v3",
     "workspaceOptions": {
-        "image": "prairielearn/grader-python",
+        "image": "prairielearn/vscode-workspace",
+        "port": 15000,
         "gradedFiles": [
             "animal.h",
             "animal.cpp"
