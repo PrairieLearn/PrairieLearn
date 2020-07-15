@@ -108,7 +108,8 @@ app.post('/', function(req, res) {
                 callback(null, container);
             };
         });
-        // TODO: recursive remove all the local copy of the code
+        // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
+        fs.rmdirSync("./workspace-0", { recursive: true });
     };
 
     function _startContainer(container, callback) {
