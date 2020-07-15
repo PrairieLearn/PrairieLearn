@@ -80,18 +80,6 @@
                        data-html="true"
                        data-content="Of these questions, only the <%= question.zone_best_questions %> with the highest number of awarded points will count toward your total points.">Best <%= question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></a>
                 <% } %>
-                <% if (question.zone_sequence_enforce) { %>
-                    <a tabindex="0" class="btn btn-xs btn-secondary text-white" role="button"
-                      data-toggle="popover" data-trigger="focus" data-container="body"
-                      data-html="true"
-                      data-content="You must score at least <%= question.zone_sequence_score_perc_threshold %>% on each question in order to unlock the next.">
-                      Order matters
-                      <% if (question.zone_sequence_score_perc_threshold) { %>
-                        (<%= question.zone_sequence_score_perc_threshold %>% threshold)
-                      <% } %>
-                      <i class="far fa-question-circle" aria-hidden="true"></i>
-                    </a>
-                <% } %>
               </th>
             </tr>
             <% } %>
@@ -105,6 +93,14 @@
                   <% } %>
                 >
                   <%= question.question_number %>. <%= question.question_title %>
+                  <% if (question.sequence_blocked) { %>
+                    <a tabindex="0" class="btn btn-xs border text-secondary" role="button"
+                       data-toggle="popover" data-trigger="focus" data-container="body"
+                       data-html="true"
+                       data-content="You must score at least <%= question.prev_iq_mincontsp %>% on <%= question.prev_iq_title %> to unlock this question.">
+                         <i class="fas fa-lock" aria-hidden="true"></i>
+                    </a>
+                  <% } %>
                 </a>
                 <% if (question.file_count > 0) { %>
                   <i class="fas fa-paperclip"></i>
