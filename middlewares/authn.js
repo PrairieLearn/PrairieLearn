@@ -104,7 +104,7 @@ module.exports = function(req, res, next) {
         return;
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
-    if (authnData == null && !/^\/(pl)$/.test(req.path)) {
+    if (authnData == null && !/^(\/?)$|^(\/pl\/?)$/.test(req.path)) {
         // if authn cookie check failed then clear the cookie and redirect to login
         res.clearCookie('pl_authn');
         res.redirect('/pl/login');
