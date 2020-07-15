@@ -727,6 +727,7 @@ module.exports = {
         let options = {};
         options.question_path = context.question_dir;
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+        options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
         return options;
     },
 
