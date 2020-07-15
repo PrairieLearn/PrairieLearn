@@ -23,7 +23,6 @@ router.get('/', function(req, res, next) {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     } else {
-        console.log(`\n\ncourses: ${res.locals.courses}\n\n`);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
 });
