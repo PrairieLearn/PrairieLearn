@@ -20,9 +20,9 @@ $ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 **PrairieLearn implementation:**
 
-- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036811/preview)
+- [workshop/Lesson1\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036811/preview)
 
-- [Randomized parameters and dynamic figure](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036812/preview)
+- [workshop/Lesson1\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036812/preview)
 
 
 ## Example 2:
@@ -52,7 +52,7 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 **PrairieLearn implementation:**
 
-- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036815/preview)
+- [workshop/Lesson1\_example2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036815/preview)
 
 
 ## Example 3:
@@ -85,11 +85,11 @@ $I_T = V_T/R_T = 0.735 A$
 
 **PrairieLearn implementation:**
 
-- [Randomized parameters](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036813/preview)
+- [workshop/Lesson1\_example3\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036813/preview)
 
-- [Add question about current](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036814/preview)
+- [workshop/Lesson1\_example3\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036814/preview)
 
-- [Parallel and Series options](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036816/preview)
+- [workshop/Lesson1\_example3\_v3](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036816/preview)
 
 ## Homework 1
 
