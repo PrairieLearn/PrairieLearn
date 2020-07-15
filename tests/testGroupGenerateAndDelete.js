@@ -8,7 +8,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 var groupUpdate = require('../lib/group-update');
 var locals = {};
-locals.courseDir = path.join(__dirname, '..', 'exampleCourse');
+locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 describe('test auto group and delete groups', function() {
     this.timeout(20000);

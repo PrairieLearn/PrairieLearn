@@ -12,7 +12,7 @@ var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var page, form, elemList; 
 const helperServer = require('./helperServer');
-const courseDir = path.join(__dirname, '..', 'exampleCourse');
+const courseDir = path.join(__dirname, '..', 'testCourse');
 
 const locals = {};
 locals.helperClient = require('./helperClient');
@@ -191,7 +191,7 @@ describe('assessment instance group synchorization test', function () {
     });
     describe('5. question submission', function(){
         it('should be able to enter question page', function(callback){
-            const questionUrl = locals.$('a:contains("HW8.2")').attr('href');
+            const questionUrl = locals.$('a:contains("HW5.2")').attr('href');
             locals.questionUrl = `${locals.siteUrl}${questionUrl}`;
             request(locals.questionUrl, function (error, response, body) {
                 if (error) {

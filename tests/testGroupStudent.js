@@ -27,7 +27,7 @@ locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
-locals.courseDir = path.join(__dirname, '..', 'exampleCourse');
+locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
