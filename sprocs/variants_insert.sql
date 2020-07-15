@@ -14,7 +14,6 @@ CREATE OR REPLACE FUNCTION
         IN course_instance_id bigint,   -- can be NULL for some instructor questions
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
-        IN group_work boolean,
         OUT variant jsonb
     )
 AS $$
