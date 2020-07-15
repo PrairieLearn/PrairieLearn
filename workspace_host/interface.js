@@ -7,20 +7,11 @@ const fs = require("fs");
 const async = require('async');
 
 const bodyParser = require('body-parser');
-const osu = require('node-os-utils');
-const cpu = osu.cpu;
 const docker = new Docker();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 
-app.get('/', function(req, res) {
-    cpu.usage().then(v => {
-        // let them know that the workspace host is online
-        // also send something useful back
-        res.status(200).send({cpu_usage: v});
-    });
-});
 
 app.post('/', function(req, res) {
 
