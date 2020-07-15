@@ -190,9 +190,13 @@ module.exports = {
 
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
@@ -222,9 +226,13 @@ module.exports = {
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
