@@ -15,6 +15,114 @@
                 sanitize: false
             });
         });
+	expansionFilter = function(e, n, f, idx, $r, c, data) { 
+	    var row = $r[0];
+	    var tab = row.parentElement;	// the table
+	    var first = e.search (f);
+	    var flen = f.length;
+	    var next;
+
+	    // WARNING: setting widget option searchFiltered to true
+	    // (the default) will confuse people.  It *works*, but 
+	    // keep in mind that the expansion is based on the 
+	    // items that matched the last filter only.  Best to turn
+	    // it off.
+
+	    // first execution overall
+	    if (undefined == tab.__expand_info) {
+	        tab.__expand_info = new Array ();
+	    }
+	    // first execution overall per column
+	    if (undefined == tab.__expand_info[idx]) {
+	        tab.__expand_info[idx] = new Object ();
+		tab.__expand_info[idx].lastMatch = null;
+	    }
+	    var xi = tab.__expand_info[idx];
+
+	    // first row seen for this search, whether or not 
+	    // widget option searchFiltered is true or false
+	    // (if it's false, we can also check whether
+	    // tab.firstElementChild == row)
+	    if (f != xi.lastMatch) {
+		// if the new search is a prefix of the old, we
+		// do not try to expand (user probably pressed
+		// backspace).  xi.result is the expanded value
+		// from the last search.  Unfortunately, we are
+		// not called with empty f values, so clearing
+		// the entry and typing the first character of
+		// the last result is another special case...
+		if (null != xi.lastMatch && 0 == xi.result.search (f) &&
+		    (1 < flen || 2 < xi.result.length)) {
+		    xi.prefix = "";
+		    xi.suffix = "";
+		    xi.result = f; // final result without expansion
+		} else {
+		    xi.prefix = null;
+		    xi.suffix = null;
+		}
+		xi.lastMatch = f;
+	    }
+
+	    var result = (-1 != first);
+	    if (result) {
+		if (null == xi.prefix) {
+		    xi.prefix = e.slice (0, first);
+		    xi.suffix = e.slice (first + flen);
+		    next = e.slice (first + 1).search (f);
+		    if (-1 == next) {
+			first = -1;
+		    } else {
+			first = first + 1 + next;
+		    }
+		}
+		if ("" != xi.prefix || "" != xi.suffix) {
+		    while (-1 != first) {
+			if ("" != xi.prefix) {
+			    var plen = xi.prefix.length;
+			    for (var j = plen; 0 < j--; ) {
+				if (xi.prefix.charAt (j) != 
+				    e.charAt (first - plen + j)) {
+				    xi.prefix = xi.prefix.slice (j + 1);
+				    break;
+				}
+			    }
+			}
+			if ("" != xi.suffix) {
+			    var slen = xi.suffix.length;
+			    for (var j = 0; slen > j; j++) {
+				if (xi.suffix.charAt (j) != 
+				    e.charAt (first + flen + j)) {
+				    xi.suffix = xi.suffix.slice (0, j);
+				    break;
+				}
+			    }
+			}
+			next = e.slice (first + 1).search (f);
+			if (-1 == next) {
+			    first = -1;
+			} else {
+			    first = first + 1 + next;
+			}
+		    }
+		}
+	    }
+	    // last row only, unless we might not see the last row
+	    // (check the filter's searchFiltered setting)
+	    if ((c.widgetOptions.filter_searchFiltered || 
+		 tab.lastElementChild == row) && 
+		 undefined != xi.prefix) {
+		if ("" != xi.prefix || "" != xi.suffix) {
+		    var entry = c.$filters[idx].firstElementChild;
+		    //var sstart = entry.selectionStart;
+		    //var send = entry.selectionEnd;
+		    //var addlen = xi.prefix.length + xi.suffix.length;
+		    entry.value = xi.prefix + f + xi.suffix;
+		    //entry.setSelectionRange (sstart + addlen, send + addlen);
+		}
+		xi.result = xi.prefix + f + xi.suffix;
+	    }
+	    return result; 
+	}
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -92,7 +200,16 @@
                             zebra: ["even", "odd"],
                             filter_reset: "#resetFilter",
                             filter_cssFilter: "form-control",
+			    filter_searchFiltered: false,
                             filter_functions: {
+				0: function(e, n, f, idx, $r, c, data) { 
+				    return expansionFilter 
+					    (e, n, f, idx, $r, c, data);
+				},
+				1: function(e, n, f, idx, $r, c, data) { 
+				    return expansionFilter 
+					    (e, n, f, idx, $r, c, data);
+				},
                                 3: {
                                     <% all_tags.forEach(function(tag) { %>
                                     "<%= tag.name %>": function(e, n, f, i, $r, c, data) {
