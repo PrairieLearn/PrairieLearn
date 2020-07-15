@@ -9,9 +9,6 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
 
 
 function processSubmission(req, res, callback) {
@@ -32,7 +29,7 @@ function processSubmission(req, res, callback) {
     }
     const submission = {
         variant_id: variant_id,
-        auth_user_id: res.locals.user.user_id,
+        auth_user_id: res.locals.authn_user.user_id,
         submitted_answer: submitted_answer,
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
@@ -84,24 +81,11 @@ router.post('/', function(req, res, next) {
                 + '/?variant_id=' + variant_id);
         });
     } else if (req.body.__action == 'report_issue') {
-        sqldb.query(sql.get_group_work, {vid: req.body.__variant_id}, (err, result) => {
+        util.callbackify(studentInstanceQuestion.processIssue)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
-            if (result.rowCount != 0) {
-                res.locals.leader_user_id = result.rows[0].user_id;
-                util.callbackify(studentInstanceQuestion.processGroupIssue)(req, res, function(err, variant_id) {
-                    if (ERR(err, next)) return;
-                    res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                                 + '/?variant_id=' + variant_id);
-                });
-            }else {
-                util.callbackify(studentInstanceQuestion.processIssue)(req, res, function(err, variant_id) {
-                    if (ERR(err, next)) return;
-                    res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
-                                 + '/?variant_id=' + variant_id);
-                });
-            }
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                         + '/?variant_id=' + variant_id);
         });
-
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {locals: res.locals, body: req.body}));
     }
