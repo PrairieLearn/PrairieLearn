@@ -20,103 +20,71 @@
     </header>
 
     <main>
-      <%
-        var bannerDivClasses = 'bg-white';
-        if (!isAuthenticated) {
-          bannerDivClasses += ' jumbotron pt-1 mt-0 pt-md-5 mt-md-4 mb-5';
-        }
-      %>
-      <div class="<%= bannerDivClasses %>">
+      <div class="bg-white jumbotron <% if (isAuthenticated) { %>my-0 pt-4 pb-0<% } else { %>mb-5 mt-md-4<% } %>">
         <div class="container">
-          <%
-            var bannerRowClasses = 'row align-items-center';
-            if (isAuthenticated) {
-              bannerRowClasses += ' pt-4';
-            }
-          %>
-          <div class="<%= bannerRowClasses %>">
-            <%
-              var bannerColClasses = 'col-md-6';
-              if (isAuthenticated) {
-                bannerColClasses += ' my-1';
-              } else {
-                bannerColClasses += ' my-5';
-              }
-            %>
-            <div class="<%= bannerColClasses %>">
-              <%
-                var bannerH1Classes;
-                if (isAuthenticated) {
-                  bannerH1Classes = 'h2';
-                } else {
-                  bannerH1Classes = 'display-4 font-weight-normal';
-                }
-              %>
-              <h1 class="<%= bannerH1Classes %>">PrairieLearn</h1>
-              <%
-                var bannerLeadClasses = '';
-                if (!isAuthenticated) {
-                  bannerLeadClasses = 'lead font-weight-normal';
-                }
-              %>
-              <p class="<%= bannerLeadClasses %>">
+          <div class="row align-items-center">
+            <div class="pb-4 <% if (isAuthenticated) { %>d-none<% } else { %>col-md-6 col-lg-7<% } %>">
+              <h1 class="display-4 font-weight-normal">PrairieLearn</h1>
+              <p class="lead font-weight-normal">
                 <i class="fa fa-sync-alt fa-fw" aria-ignore="true"></i>
                 Mastery learning meets online assessment
               </p>
-            </div>
-            <div class="col-md-6">
-              <div class="list-group">
-                <div class="list-group-item py-3 px-4">
-                  <h2 class="h6 d-inline font-weight-bold">Students</h2>
-                  <p class="d-inline text-muted text-right">&mdash; Master course content through randomized, spaced
-                    repetition</p>
-                  <p class="mt-2 mb-0">
-                    <% if (!isAuthenticated) { %>
-                    <a href="<%= plainUrlPrefix %>/login" class="btn btn-primary mb-1">
-                      <i class="fa fa-fw fa-user-graduate" aria-hidden="true"></i>
-                      Log in
-                    </a>
-                    <% } %>
-                    <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>primary mb-1">
-                      <i class="fa fa-fw fa-edit" aria-hidden="true"></i>
-                      <% if (isAuthenticated) { %>
-                      Add or remove courses
-                      <% } else { %>
-                      Add course
-                      <% } %>
-                    </a>
-                  </p>
-                </div> <!-- list-group-item -->
-                <div class="list-group-item py-3 px-4">
-                  <h2 class="h6 d-inline font-weight-bold">Instructors</h2>
-                  <p class="d-inline text-muted text-right">&mdash; Build autograded assessments using premade elements and
-                    custom code</p>
-                  <p class="mt-2 mb-0">
-                    <% if (!isAuthenticated) { %>
-                    <a href="<%= plainUrlPrefix %>/login" class="btn btn-info mb-1">
-                      <i class="fa fa-fw fa-chalkboard-teacher" aria-hidden="true"></i>
-                      Log in
-                    </a>
-                    <% } %>
-                    <a href="#" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>info mb-1">
-                      <i class="fab fa-fw fa-wpforms" aria-hidden="true"></i>
-                      <% if (isAuthenticated) { %>
-                      Request a course
-                      <% } else { %>
-                      Request course
-                      <% } %>
-                    </a>
-                    <a href="#" class="btn btn-<% if (!isAuthenticated) { %>outline-<% } %>info mb-1">
-                      <i class="fa fa-fw fa-book" aria-hidden="true"></i>
-                      <% if (isAuthenticated) { %>
-                      View the documentation
-                      <% } else { %>
-                      View docs
-                      <% } %>
-                    </a>
-                  </p>
-                </div> <!-- list-group-item -->
-              </div> <!-- list-group -->
+              <a href="<%= plainUrlPrefix %>/login" class="btn btn-lg btn-primary">
+                <i class="fa fa-sign-in-alt" aria-hidden="true"></i>
+                Log in
+              </a>
+            </div> <!-- col -->
+
+            <div class="<% if (isAuthenticated) { %>col-12<% } else { %>col-md-6 col-lg-5<% } %>">
+              <div class="row">
+                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
+                  <div class="card shadow-sm rounded-pill my-1">
+                    <div class="card-body d-flex align-items-center p-2">
+                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                        <i class="fas fa-circle fa-stack-2x text-secondary"></i>
+                        <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
+                      </span>
+                      <span>
+                        <p class="h6">
+                          <% if (isAuthenticated) { %>
+                          Student quicklinks
+                          <% } else { %>
+                          Are you a student?
+                          <% } %>
+                        </p>
+                        <a href="<%= plainUrlPrefix %>/login" class="btn btn-sm btn-outline-primary mb-1">
+                          Add course
+                        </a>
+                      </span>
+                    </div><!-- card-body -->
+                  </div> <!-- card -->
+                </div><!-- col -->
+                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
+                  <div class="card shadow-sm rounded-pill my-1">
+                    <div class="card-body d-flex align-items-center p-2">
+                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                        <i class="fas fa-circle fa-stack-2x text-secondary"></i>
+                        <i class="fas fa-user-tie fa-stack-1x text-light"></i>
+                      </span>
+                      <span>
+                        <p class="h6">
+                          <% if (isAuthenticated) { %>
+                          Instructor quicklinks
+                          <% } else { %>
+                          Are you an instructor?
+                          <% } %>
+                        </p>
+                        <a href="<%= plainUrlPrefix %>/login" class="btn btn-sm btn-outline-info mb-1">
+                          Request course
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-info mb-1">
+                          View docs
+                        </a>
+                      </span>
+                    </div><!-- card-body -->
+                  </div> <!-- card -->
+                </div><!-- col -->
+              </div><!-- row -->
             </div> <!-- col -->
           </div> <!-- row -->
         </div> <!-- container -->
@@ -142,10 +110,11 @@
               your web browser.
             </p>
             <p class="mb-0">
-              See
-              the <a href="https://prairielearn.readthedocs.io/">PrairieLearn
-              documentation</a> for information on creating questions
-              and assessments.
+              See the
+              <a href="https://prairielearn.readthedocs.io">
+                PrairieLearn documentation
+              </a>
+              for information on creating questions and assessments.
             </p>
           </div>
         </div>
@@ -318,7 +287,7 @@
         <div class="container px-5">
           <h2 class="text-center">Jumpstart your assessments with PrairieLearn elements</h2>
           <p class="text-center lead mb-5">
-            PrairieLearn offers a wide range of built-in elements to accelerate your question writing development
+            PrairieLearn offers a wide range of built-in widgets to accelerate your question writing development
           </p>
           <div class="card-columns">
             <div class="card shadow">
@@ -441,11 +410,11 @@
                 <p class="card-text">
                   Check out the docs to see more elements or how to roll your own!
                 </p>
-                <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                <a class="btn btn-outline-primary btn-sm btn-block" href="https://prairielearn.readthedocs.io/en/latest/elements">
                   <i class="fas fa-fw fa-shapes" aria-hidden="true"></i>
                   Use elements
                 </a>
-                <a class="btn btn-outline-primary btn-sm btn-block" href="#">
+                <a class="btn btn-outline-primary btn-sm btn-block" href="https://prairielearn.readthedocs.io/en/latest/devElements">
                   <i class="fas fa-fw fa-laptop-code" aria-hidden="true"></i>
                   Write elements
                 </a>
@@ -491,7 +460,7 @@
             <i class="fab fa-fw fa-slack" aria-hidden="true"></i>
             Slack
           </a>
-          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="https://prairielearn.readthedocs.io/en/latest/dev-guide/">
+          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="https://prairielearn.readthedocs.io/en/latest/dev-guide">
             <i class="fas fa-fw fa-book" aria-hidden="true"></i>
             Developer guide
           </a>
