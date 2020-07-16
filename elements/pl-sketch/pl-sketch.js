@@ -33,19 +33,6 @@ function updateColor(col, sketchpad) {
     }
 }
 
-var waitForFinalEvent = (function () {
-  var timers = {};
-  return function (callback, ms, uniqueId) {
-    if (!uniqueId) {
-      uniqueId = "Don't call this twice without a uniqueId";
-    }
-    if (timers[uniqueId]) {
-      clearTimeout (timers[uniqueId]);
-    }
-    timers[uniqueId] = setTimeout(callback, ms);
-  };
-})();
-
 $(function() {
     var width = 600;
     var height = 700;
@@ -74,18 +61,6 @@ $(function() {
             height: height
         });
     }
-
-    // $(window).resize(function () {
-    //     waitForFinalEvent(function(){
-    //       let sketches = sketchpad.toObject();
-    //       console.log(sketches);
-    //       let width = $('#pl-sketch-canvas').parent().width() * .8;
-    //       sketches.width = width;
-    //       sketches.element = '#pl-sketch-canvas';
-    //       console.log(sketches);
-    //       sketchpad = new Sketchpad(sketches);
-    //     }, 500, 'canvas resize');
-    // });
 
     $('#pen').on('click', () => { changeTool('pen', sketchpad); });
     $('#eraser').on('click', () => { changeTool('eraser', sketchpad); });
