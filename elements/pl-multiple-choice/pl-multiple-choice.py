@@ -11,6 +11,7 @@ FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
 NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
+EXTERNAL_JSON_DEFAULT = None
 
 
 def categorize_options(element, data):
@@ -30,7 +31,7 @@ def categorize_options(element, data):
                 incorrect_answers.append(answer_tuple)
             index += 1
 
-    file_path = pl.get_string_attrib(element, 'external-json', None)
+    file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not None:
         json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
         with open(json_file, mode='r', encoding='utf-8') as f:
