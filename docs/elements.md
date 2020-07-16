@@ -111,6 +111,7 @@ Attribute | Type | Default | Description
 `inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
 
@@ -166,6 +167,7 @@ Attribute | Type | Default | Description
 `hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
