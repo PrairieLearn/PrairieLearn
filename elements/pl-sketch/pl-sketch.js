@@ -47,8 +47,8 @@ var waitForFinalEvent = (function () {
 })();
 
 $(function() {
-    var width = $('#pl-sketch-canvas').parent().width() * .8;
-    var height = $('#pl-sketch-canvas').parent().height() * 3;
+    var width = 600;
+    var height = 700;
     var sketches_string = $('#pl-sketch-json').html();
     var sketchpad;
     if (sketches_string.length != 0) {
@@ -75,17 +75,17 @@ $(function() {
         });
     }
 
-    $(window).resize(function () {
-        waitForFinalEvent(function(){
-          let sketches = sketchpad.toObject();
-          console.log(sketches);
-          let width = $('#pl-sketch-canvas').parent().width() * .8;
-          sketches.width = width;
-          sketches.element = '#pl-sketch-canvas';
-          console.log(sketches);
-          sketchpad = new Sketchpad(sketches);
-        }, 500, 'canvas resize');
-    });
+    // $(window).resize(function () {
+    //     waitForFinalEvent(function(){
+    //       let sketches = sketchpad.toObject();
+    //       console.log(sketches);
+    //       let width = $('#pl-sketch-canvas').parent().width() * .8;
+    //       sketches.width = width;
+    //       sketches.element = '#pl-sketch-canvas';
+    //       console.log(sketches);
+    //       sketchpad = new Sketchpad(sketches);
+    //     }, 500, 'canvas resize');
+    // });
 
     $('#pen').on('click', () => { changeTool('pen', sketchpad); });
     $('#eraser').on('click', () => { changeTool('eraser', sketchpad); });

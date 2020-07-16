@@ -1,0 +1,27 @@
+<!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
+<div class="card mb-4" id="sketchpad-panel">
+  <div class="card-header bg-light text-dark d-flex align-items-center collapsed" data-toggle="collapse">
+    <div class="mr-auto">
+        Sketchpad
+    </div>
+    <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
+      <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+    </button>
+  </div>
+
+  <div class="collapse show" id="sketchpad-panel-body">
+    <div class="card-body" >
+        <pl-sketch></pl-sketch>
+    </div>
+  </div>
+</div>
+
+<script>
+// $(function() {
+//   $('button[data-submission-id="<%= submission.id %>"]').on('click', function(e) {
+//     // Prevent this click from also expanding the submission
+//     $('#submissionInfoModal-<%= submission.id %>').modal('show');
+//     e.stopPropagation();
+//   });
+// });
+</script>
