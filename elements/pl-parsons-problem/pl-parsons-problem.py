@@ -4,6 +4,7 @@ import random
 import base64
 DEFAULT_CHECK_INDENTATION = False
 
+
 def getAnswer(submitted, pieces):
     if submitted == '':
         return ''
@@ -19,6 +20,7 @@ def getAnswer(submitted, pieces):
 #       b, d, and f are the number of levels they are indented.
 # This function checks that a submitted answer is formatted correct and converts it
 # into the following format:  [(a, b), (c, d), (e, f)]
+
 
 def unpack_answer(submitted, num_pieces, data, name):
     if submitted == '':
@@ -43,6 +45,7 @@ def unpack_answer(submitted, num_pieces, data, name):
         unpacked.append(piece_tuple)
     return unpacked
 
+
 # this function takes an unpacked submission and checks it against the correct
 # solution piece by piece.  Returns an overall score (all right or all wrong),
 # textual feedback that could be provided to a learner, and flags for pieces
@@ -61,12 +64,12 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
         if piece.get('html', '') != pieces[submitted_idx]:
             score = 0
             flags.append('incorrect')
-            feedback = 'wrong piece in position {} (counting from 1)'.format(idx+1)
+            feedback = 'wrong piece in position {} (counting from 1)'.format(idx + 1)
             break
         if check_indentation and piece.get('indent', 0) != submitted_indent:
             score = 0
             flags.append('misaligned')
-            feedback = 'wrong indentation in position {} (counting from 1)'.format(idx+1)
+            feedback = 'wrong indentation in position {} (counting from 1)'.format(idx + 1)
             break
         flags.append('correct')
 
@@ -81,13 +84,13 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column','file-name']
+    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column', 'file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
     # parse the sub-elements, making lists of both correct answers and distractors
     correct_answers = []
-    distractors = [] 
+    distractors = []
     for child in element:
         child_html = pl.inner_html(child).strip()
         if child.tag == 'pl-answer':
@@ -99,9 +102,6 @@ def prepare(element_html, data):
             pl.check_attribs(child, required_attribs=[], optional_attribs=[])
             answer_tuple = {'html': child_html}
             distractors.append(answer_tuple)
-
-    # error check the input and 
-
     len_correct = len(correct_answers)
     if len_correct < 1:
         raise Exception('pl-parsons-problem element must have at least one answer element')
@@ -115,9 +115,7 @@ def prepare(element_html, data):
     random.shuffle(sampled_answers)
 
     pieces = list(map(lambda x: x['html'], sampled_answers))
-
-    # store stuff in 'data' 
-
+    # store stuff in 'data'
     if name in data['params']:
         raise Exception('duplicate params variable name: %s' % name)
     if name in data['correct_answers']:
@@ -129,6 +127,7 @@ def prepare(element_html, data):
 def render_piece(id, indent, text, flag):
     return '<li id={} class="prettyprint lang-py indent{} {}">{}</li>'.format(id, indent, flag, text)
 
+
 def decorate_submitted_with_flags(unpacked_submitted, flags):
     output = []
     for idx, piece in enumerate(unpacked_submitted):
@@ -137,16 +136,14 @@ def decorate_submitted_with_flags(unpacked_submitted, flags):
         output.append(new_tuple)
 
     return output
-       
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
-    #change
-    header_left = pl.get_string_attrib(element, 'header-left-column','Drag from here')
+    header_left = pl.get_string_attrib(element, 'header-left-column', 'Drag from here')
     header_right = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here')
-    #change
     pieces = data['params'].get(name, [])
     if len(pieces) == 0:
         raise Exception("No pieces in Parson's problem")
@@ -154,14 +151,13 @@ def render(element_html, data):
     correct = data['correct_answers'].get(name, [])
     submitted_str = data['submitted_answers'].get(name, '')
     unpacked_submitted = unpack_answer(submitted_str, len(pieces), data, name)
-    
     submitted = list(map(lambda x: x[0], unpacked_submitted))
     indents = {}
     for idx, indent in unpacked_submitted:
         indents[idx] = indent
 
     if data['panel'] == 'question':
-        editable = data['editable']
+        # editable = data['editable']
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         flags = [] if score is None else grade_submitted(pieces, correct, unpacked_submitted, check_indentation)[2]
@@ -170,10 +166,10 @@ def render(element_html, data):
         unused_items = ''.join([render_piece(id, 0, piece, '') for id, piece in enumerate(pieces) if id not in submitted])
         answer_items = ''.join([render_piece(id, indent, pieces[id], flag) for (id, indent, flag) in decorated_submitted])
 
-        html =  '<div id="sortable-unused"  class="sortable-code">' 
+        html = '<div id="sortable-unused"  class="sortable-code">'
         html += header_left
-        html += '<ul id="ul-unused">' + unused_items + '</ul></div>' 
-        html += '<div id="sortable-answer" class="sortable-code">' 
+        html += '<ul id="ul-unused">' + unused_items + '</ul></div>'
+        html += '<div id="sortable-answer" class="sortable-code">'
         html += header_right
         html += '<ul id="ul-answer">' + answer_items + '</ul></div>'
         html += '<input type="hidden" id="parsons-input" name="' + name + '" value="' + submitted_str + '">'
@@ -185,7 +181,6 @@ def render(element_html, data):
         else:
             # partial_score = data['partial_scores'].get(name, {'score': None})
             # score = partial_score.get('score', None)
-        
             html = '<pre>'
             for piece_idx, indent in unpacked_submitted:
                 html += ('    ' * indent) + pieces[piece_idx] + '\n'
@@ -206,8 +201,7 @@ def render(element_html, data):
             #     except Exception:
             #         raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
-        html = "Your submission is graded from top to bottom.  Pieces shown in green are in the correct position with the correct indentation.  Yellow pieces are in the right position but with the wrong indentation.  Red pieces are in the wrong position.  Grading stops as soon as you hit a red or yellow piece."
-
+        html = 'Your submission is graded from top to bottom.  Pieces shown in green are in the correct position with the correct indentation.  Yellow pieces are in the right position but with the wrong indentation.  Red pieces are in the wrong position.  Grading stops as soon as you hit a red or yellow piece.'
         # correct_answer = data['correct_answers'].get(name, None)
         # if correct_answer is None:
         #     html = 'ERROR: No true answer'
@@ -223,34 +217,26 @@ def render(element_html, data):
     return html
 
 
-
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    #
     submitted = data['submitted_answers'].get(name, '')
     num_pieces = len(data['params'].get(name, []))
     pieces = data['params'].get(name, [])
-    #change
-    file_name = pl.get_string_attrib(element, 'file-name', None)# this should be pulled from an attribute
-    if file_name != None:
+    file_name = pl.get_string_attrib(element, 'file-name', None)
+    if file_name is not None:
         file_data = getAnswer(submitted, pieces)
         data['submitted_answers']['_files'] = [{
-        'name': file_name,
-        'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
+            'name': file_name,
+            'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
         }]
-    #change 
-
     if num_pieces == 0:
         raise Exception('number of pieces is zero')
-        
     if len(submitted) == 0:
         data['format_errors'][name] = 'No submitted answer.'
         return
 
-    unpack_answer(submitted, num_pieces, data, name)        
-
-
+    unpack_answer(submitted, num_pieces, data, name)
 
 
 def grade(element_html, data):
@@ -258,7 +244,6 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
-    
     pieces = data['params'].get(name, [])
     correct = data['correct_answers'].get(name, [])
     submitted_str = data['submitted_answers'].get(name, '')
