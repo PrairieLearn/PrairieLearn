@@ -1,4 +1,6 @@
 import prairielearn as pl
+import pathlib
+import json
 import lxml.html
 import random
 import math
@@ -11,7 +13,7 @@ NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
 
 
-def categorize_options(element):
+def categorize_options(element, data):
     """Get provided corret and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
@@ -27,16 +29,28 @@ def categorize_options(element):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
+
+    file_path = pl.get_string_attrib(element, 'external-json', None)
+    if file_path is not None:
+        json_file = pathlib.PurePath.joinpath(data['options']['question_path'], file_path)
+        with open(json_file, mode='r', encoding='utf-8') as f:
+            data = json.load(f)
+            for text in data['correct']:
+                correct_answers.append((index, True, text))
+                index += 1
+            for text in data['incorrect']:
+                incorrect_answers.append((index, False, text))
+                index += 1
     return correct_answers, incorrect_answers
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above', 'external-json']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    correct_answers, incorrect_answers = categorize_options(element)
+    correct_answers, incorrect_answers = categorize_options(element, data)
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
