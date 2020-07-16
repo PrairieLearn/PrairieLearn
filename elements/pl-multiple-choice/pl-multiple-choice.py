@@ -11,6 +11,7 @@ NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
 
+
 def categorize_options(element):
     """Get provided corret and incorrect answers"""
     correct_answers = []
