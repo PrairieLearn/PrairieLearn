@@ -6,7 +6,6 @@ import chevron
 
 WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
-HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
 
 
@@ -162,25 +161,22 @@ def render(element_html, data):
         with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        if not pl.get_boolean_attrib(element, 'hide-answer-panel', HIDE_ANSWER_PANEL_DEFAULT):
-            correct_answer = data['correct_answers'].get(name, None)
+        correct_answer = data['correct_answers'].get(name, None)
 
-            if correct_answer is None:
-                raise ValueError('No true answer.')
-            else:
-                html_params = {
-                    'answer': True,
-                    'answers': correct_answer,
-                    'key': correct_answer['key'],
-                    'html': correct_answer['html'],
-                    'inline': inline,
-                    'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
-                }
-                with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
-                    html = chevron.render(f, html_params).strip()
-                    print(f'html: {html}')
+        if correct_answer is None:
+            raise ValueError('No true answer.')
         else:
-            html = ''
+            html_params = {
+                'answer': True,
+                'answers': correct_answer,
+                'key': correct_answer['key'],
+                'html': correct_answer['html'],
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+            }
+            with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
+                print(f'html: {html}')
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 
