@@ -11,13 +11,8 @@ NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
 
 
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above']
-    pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers-name')
-
+def categorize_options(element):
+    """Get provided corret and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
     index = 0
@@ -32,6 +27,16 @@ def prepare(element_html, data):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
+    return correct_answers, incorrect_answers
+
+def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above']
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+
+    correct_answers, incorrect_answers = categorize_options(element)
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -130,13 +135,11 @@ def prepare(element_html, data):
 
     if enable_aota:
         # Add 'All of the above' option after shuffling
-        sampled_answers.append((index, aota_correct, 'All of the above'))
-        index += 1
+        sampled_answers.append((len_total, aota_correct, 'All of the above'))
 
     if enable_nota:
         # Add 'None of the above' option after shuffling
-        sampled_answers.append((index, nota_correct, 'None of the above'))
-        index += 1
+        sampled_answers.append((len_total + 1, nota_correct, 'None of the above'))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
