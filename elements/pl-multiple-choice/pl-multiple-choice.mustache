@@ -80,3 +80,15 @@
     
 {{/parse_error}}
 {{/submission}}
+
+{{#answer}}
+    {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
+    {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
+    {{#answers}}
+        <li {{#inline}}class="list-inline-item"{{/inline}}>
+            {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
+        </li>
+    {{/answers}}
+    {{#inline}}</ul></span>{{/inline}}
+    {{^inline}}</ul></div>{{/inline}}
+{{/answer}}
