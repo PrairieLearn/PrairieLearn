@@ -6,12 +6,13 @@ import chevron
 
 WEIGHT_DEFAULT = 1
 INLINE_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'hide-letter-keys']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -109,7 +110,8 @@ def render(element_html, data):
             'name': name,
             'editable': editable,
             'display_score_badge': display_score,
-            'answers': answerset
+            'answers': answerset,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         # Display the score badge if necessary
@@ -132,7 +134,8 @@ def render(element_html, data):
         html_params = {
             'submission': True,
             'parse_error': parse_error,
-            'uuid': pl.get_uuid()
+            'uuid': pl.get_uuid(),
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if parse_error is None:
@@ -159,10 +162,20 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         correct_answer = data['correct_answers'].get(name, None)
+
         if correct_answer is None:
-            html = 'ERROR: No true answer'
+            raise ValueError('No true answer.')
         else:
-            html = '(%s) %s' % (correct_answer['key'], correct_answer['html'])
+            html_params = {
+                'answer': True,
+                'answers': correct_answer,
+                'key': correct_answer['key'],
+                'html': correct_answer['html'],
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+            }
+            with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 
