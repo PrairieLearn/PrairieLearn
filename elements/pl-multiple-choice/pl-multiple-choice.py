@@ -64,17 +64,30 @@ def prepare(element_html, data):
         raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
 
     # 1. Pick the choice(s) to display
-    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total + enable_nota + enable_aota)
+    number_answers = pl.get_integer_attrib(element, 'number-answers', -1)
+    # determine if user provides number-answers
+    set_num_answers = True
+    if number_answers == -1:
+        set_num_answers = False
+        number_answers = len_total + enable_nota + enable_aota
     # figure out how many choice(s) to choose from the *provided* choices,
     # excluding 'none-of-the-above' and 'all-of-the-above'
     number_answers -= (enable_nota + enable_aota)
 
+    expected_num_answers = number_answers
+
     if enable_aota:
         # min number if 'All of the above' is correct
         number_answers = min(len_correct, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise Exception(f'Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more')
     if enable_nota:
         # if nota correct
         number_answers = min(len_incorrect, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise Exception(f'Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more')
     # this is the case for
     # - 'All of the above' is incorrect
     # - 'None of the above' is incorrect
