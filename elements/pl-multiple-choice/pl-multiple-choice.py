@@ -29,6 +29,7 @@ def categorize_options(element):
             index += 1
     return correct_answers, incorrect_answers
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
