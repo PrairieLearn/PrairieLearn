@@ -60,31 +60,32 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
-        let authn_mode = result.rows[0].mode;
         res.locals.course = result.rows[0].course;
 
+        const authn_courses = result.rows[0].courses ? result.rows[0].courses : [];
+        const authn_course_instances = result.rows[0].course_instances ? result.rows[0].course_instances : [];
         const permissions_course = result.rows[0].permissions_course;
         res.locals.authz_data = {
             authn_user: _.cloneDeep(res.locals.authn_user),
-            authn_mode: authn_mode,
+            authn_mode: result.rows[0].mode,
             authn_is_administrator: res.locals.is_administrator,
             authn_course_role: permissions_course.course_role,
             authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
             authn_has_course_permission_view: permissions_course.has_course_permission_view,
             authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
             authn_has_course_permission_own: permissions_course.has_course_permission_own,
-            authn_courses: result.rows[0].courses ? result.rows[0].courses : [],
-            authn_course_instances: result.rows[0].course_instances ? result.rows[0].course_instances : [],
+            authn_courses: authn_courses,
+            authn_course_instances: authn_course_instances,
             user: _.cloneDeep(res.locals.authn_user),
-            mode: authn_mode,
+            mode: result.rows[0].mode,
             is_administrator: res.locals.is_administrator,
             course_role: permissions_course.course_role,
             has_course_permission_preview: permissions_course.has_course_permission_preview,
             has_course_permission_view: permissions_course.has_course_permission_view,
             has_course_permission_edit: permissions_course.has_course_permission_edit,
             has_course_permission_own: permissions_course.has_course_permission_own,
-            courses: result.rows[0].courses ? result.rows[0].courses : [],
-            course_instances: result.rows[0].course_instances ? result.rows[0].course_instances : [],
+            courses: authn_courses,
+            course_instances: authn_course_instances,
         };
 
         debug(res.locals.authz_data.course_instances);
