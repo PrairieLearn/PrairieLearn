@@ -143,6 +143,8 @@ app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_qu
 app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id', upload.single('file'));
 app.post('/pl/course/:course_id/question/:question_id', upload.single('file'));
+app.post('/pl/course/:course_id/question/:question_id/file_view', upload.single('file'));
+app.post('/pl/course/:course_id/question/:question_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/settings', upload.single('file'));

@@ -1,4 +1,4 @@
 #! /bin/bash
 
 cd /PrairieLearn
-cat coverage/lcov.info | ./node_modules/.bin/coveralls -v
+cat coverage/lcov.info | ./node_modules/.bin/coveralls -v || true
