@@ -249,26 +249,59 @@ if (config.devMode) {
 app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
-app.use('/', require('./pages/home/home'));
-app.use('/pl', require('./pages/home/home'));
-app.use('/pl/settings', require('./pages/userSettings/userSettings'));
-app.use('/pl/enroll', require('./pages/enroll/enroll'));
-app.use('/pl/logout', require('./pages/authLogout/authLogout'));
-app.use('/pl/password', require('./pages/authPassword/authPassword'));
-app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
-app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
+app.use('/', [
+  function(req, res, next) {res.locals.navPage = 'home'; next();},
+  require('./pages/home/home'),
+]);
+app.use('/pl', [
+  function(req, res, next) {res.locals.navPage = 'home'; next();},
+  require('./pages/home/home'),
+]);
+app.use('/pl/settings', [
+  function(req, res, next) {res.locals.navPage = 'user_settings'; next();},
+  require('./pages/userSettings/userSettings'),
+]);
+app.use('/pl/enroll', [
+  function(req, res, next) {res.locals.navPage = 'enroll'; next();},
+  require('./pages/enroll/enroll'),
+]);
+app.use('/pl/logout', [
+  function(req, res, next) {res.locals.navPage = 'logout'; next();},
+  require('./pages/authLogout/authLogout'),
+]);
+app.use('/pl/password', [
+  function(req, res, next) {res.locals.navPage = 'password'; next();},
+  require('./pages/authPassword/authPassword'),
+]);
+app.use('/pl/news_items', [
+  function(req, res, next) {res.locals.navPage = 'news'; next();},
+  require('./pages/news_items/news_items.js'),
+]);
+app.use('/pl/news_item', [
+  function(req, res, next) {res.locals.navPage = 'news'; next();},
+  function(req, res, next) {res.locals.navSubPage = 'news_item'; next();},
+  require('./pages/news_item/news_item.js'),
+]);
 
 app.use('/workspace/', require('./pages/workspace/workspace'));
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
-    app.use('/pl/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-    app.use('/pl/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+    app.use('/pl/loadFromDisk', [
+      function(req, res, next) {res.locals.navPage = 'load_from_disk'; next();},
+      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+    ]);
+    app.use('/pl/jobSequence', [
+      function(req, res, next) {res.locals.navPage = 'job_sequence'; next();},
+      require('./pages/instructorJobSequence/instructorJobSequence'),
+    ]);
 }
 
 // all pages under /pl/course_instance require authorization
-app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseInstance')); // sets res.locals.course and res.locals.courseInstance
-app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
-app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
+app.use('/pl/course_instance/:course_instance_id', [
+  function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
+  function(req, res, next) {res.locals.navbarType = 'student'; next();},
+  require('./middlewares/authzCourseInstance'),
+]);
 
 // Redirect plain course page to Instructor or Student assessments page.
 // We have to do this after initial authz so we know whether we are an Instructor,
@@ -571,11 +604,13 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/gradebook', [
+    function(req, res, next) {res.locals.navSubPage = 'gradebook'; next();},
     require('./middlewares/logPageView')('studentGradebook'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessments', [
+    function(req, res, next) {res.locals.navSubPage = 'assessments'; next();},
     require('./middlewares/logPageView')('studentAssessments'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
@@ -607,7 +642,10 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/report_cheating', require('./pages/studentReportCheating/studentReportCheating'));
+app.use('/pl/course_instance/:course_instance_id/report_cheating', [
+  function(req, res, next) {res.locals.navSubPage = 'report_cheating'; next();},
+  require('./pages/studentReportCheating/studentReportCheating'),
+]);
 if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
@@ -823,8 +861,11 @@ app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 //////////////////////////////////////////////////////////////////////
 // Error handling ////////////////////////////////////////////////////
 
-app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
-app.use(require('./pages/error/error'));
+// if no earlier routes matched, this will match and generate a 404 error
+app.use([
+  require('./middlewares/notFound'),
+  require('./pages/error/error'),
+]);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
