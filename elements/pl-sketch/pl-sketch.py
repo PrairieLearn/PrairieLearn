@@ -1,14 +1,15 @@
-import random
 import chevron
 import prairielearn as pl
+
 
 def prepare(element_html, data):
     return data
 
+
 def render(element_html, data):
     if data['panel'] == 'question':
         if len(data['raw_submitted_answers']) == 0:
-            skp_json = '';
+            skp_json = ''
         else:
             skp_json = data['raw_submitted_answers']
 
@@ -21,4 +22,4 @@ def render(element_html, data):
         with open('pl-sketch.mustache', 'r') as f:
             return chevron.render(f, html_params).strip()
     else:
-        return ""
+        return ''
