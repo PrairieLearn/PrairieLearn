@@ -99,7 +99,7 @@ module.exports = function(req, res, next) {
     var authnData = null;
     if (req.cookies.pl_authn) {
         // if we have a authn cookie then we try and unpack it
-        authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
+        authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: config.authnCookieMaxAgeMilliseconds});
         // if the cookie unpacking failed then authnData will be null
     }
     if (authnData == null) {
