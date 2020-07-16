@@ -4,13 +4,15 @@ import random
 import base64
 DEFAULT_CHECK_INDENTATION = False
 
-def getAnswer(submitted):
+def getAnswer(submitted, pieces):
     if submitted == '':
         return ''
     answer = ''
     for piece in submitted.split('-'):
         piece_no, indent = piece.split(':')
-        answer = answer + piece_no + indent
+        indent = int(indent)
+        piece_no = int(piece_no)
+        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n'
     return answer
 # answers are submitted using the following form:    a:b-c:d-e:f
 # where a, c, and e are indices into the list of pieces given by the problem, and
@@ -27,13 +29,13 @@ def unpack_answer(submitted, num_pieces, data, name):
         try:
             if not 0 <= int(piece_no) < num_pieces:
                 raise ValueError()
-        except:
+        except ValueError:
             data['format_errors'][name] = 'INVALID piece number: ' + piece_no
             return []
         try:
             if not 0 <= int(indent) <= 4:
                 raise ValueError()
-        except:
+        except ValueError:
             data['format_errors'][name] = 'INVALID indentation: ' + str(indent)
             return []
 
@@ -87,7 +89,7 @@ def prepare(element_html, data):
     correct_answers = []
     distractors = [] 
     for child in element:
-        child_html = pl.inner_html(child)
+        child_html = pl.inner_html(child).strip()
         if child.tag == 'pl-answer':
             pl.check_attribs(child, required_attribs=[], optional_attribs=['indent'])
             indent = pl.get_integer_attrib(child, 'indent', -1)
@@ -142,8 +144,8 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', DEFAULT_CHECK_INDENTATION)
     #change
-    header_left = pl.get_string_attrib(element, 'header-left-column',"Drag from here")
-    header_right = pl.get_string_attrib(element, 'header-right-column', "Construct your solution here")
+    header_left = pl.get_string_attrib(element, 'header-left-column','Drag from here')
+    header_right = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here')
     #change
     pieces = data['params'].get(name, [])
     if len(pieces) == 0:
@@ -228,10 +230,11 @@ def parse(element_html, data):
     #
     submitted = data['submitted_answers'].get(name, '')
     num_pieces = len(data['params'].get(name, []))
+    pieces = data['params'].get(name, [])
     #change
     file_name = pl.get_string_attrib(element, 'file-name', None)# this should be pulled from an attribute
     if file_name != None:
-        file_data = getAnswer(submitted)
+        file_data = getAnswer(submitted, pieces)
         data['submitted_answers']['_files'] = [{
         'name': file_name,
         'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
