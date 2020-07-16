@@ -124,7 +124,7 @@
     {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
     {{#answers}}
         <li {{#inline}}class="list-inline-item"{{/inline}}>
-            ({{key}}) {{{html}}}
+            {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
         </li>
     {{/answers}}
     {{#inline}}</ul></span>{{/inline}}
