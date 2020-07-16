@@ -126,6 +126,19 @@ Before you start creating your assessments, make sure you have at least 4 questi
 You will be able to find the `examUuid` in the CBTF scheduler app.  
 
 
+## Homework 2
+
+Continue creating questions using the elements highlighted in lesson 1. Copy the url link to your question in this [spreadsheet]
+(https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1763628636).
+Use the tab for `Homework 2`. I will take a look at your question and provide feedback.
+
+You can also create one assessment as well. What options do you think will be useful for you in the Fall semester? We can provide feedback! Copy the link in the same [spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1763628636).
+
+## Video
+
+- [Lesson 2 Recording](https://mediaspace.illinois.edu/media/t/1_g3stfhgp/169265112)
+
+
 
 
 
