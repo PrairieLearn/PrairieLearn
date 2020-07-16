@@ -176,7 +176,6 @@ def render(element_html, data):
             }
             with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
-                print(f'html: {html}')
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 
