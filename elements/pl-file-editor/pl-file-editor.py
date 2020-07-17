@@ -14,7 +14,7 @@ MIN_LINES_DEFAULT = None
 MAX_LINES_DEFAULT = None
 AUTO_RESIZE_DEFAULT = True
 PREVIEW_DEFAULT = None
-FOCUS_DEFAULT = True
+FOCUS_DEFAULT = False
 
 
 def get_answer_name(file_name):

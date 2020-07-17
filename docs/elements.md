@@ -672,14 +672,14 @@ Attribute | Type | Default | description
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
-`focus` | boolean | true | Specifies that the editor should begin with the cursor captured and focused. See Details below for notes.
+`focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
 
 #### Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
 
-If there are multiple file editor elements on the page that have `focus="true"` (or not specified), then they will capture the focus sequentially when the page is loaded, typically causing the last editor to be focused. To focus only the first editor, set all but the first to `focus="false"`. To focus none of the editors, set all to false. Note that focusing any editor may cause the question page to scroll down to the editor's position immediately when the page is loaded.
+The `focus` attribute defaults to `"false"`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers. In any case, only one editor element should ever have `focus` set to true, or else the behavior may be unpredictable.
 
 #### Example implementations
 
