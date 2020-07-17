@@ -13,6 +13,7 @@ router.get('/', function(req, res, next) {
     var params = {
         ip: req.ip,
         force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
+        authn_user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
     };
     sqldb.query(sql.get_mode, params, function(err, result) {
