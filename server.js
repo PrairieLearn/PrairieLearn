@@ -284,7 +284,7 @@ app.use('/pl/news_item', [
 ]);
 app.use('/pl/request_course', [
     function(req, res, next) {res.locals.navPage = 'request_course'; next();},
-    require('./pages/instructorRequestCourse/instructorRequestCourse.js')
+    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
 ]);
 
 app.use('/workspace/', require('./pages/workspace/workspace'));
