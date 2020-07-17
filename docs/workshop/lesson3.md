@@ -92,8 +92,8 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 ## Homework 3
 
-Create new questions using some of the elements discussed today and add the url link to the [spreadsheet]
-(https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
+Create new questions using some of the elements discussed today and add the url link to the 
+[spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
 Use the tab for `Homework 3`. I will take a look at your question and provide feedback.
 
 `pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793641/preview)

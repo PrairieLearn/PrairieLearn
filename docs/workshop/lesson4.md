@@ -62,8 +62,8 @@ Write a question where you provide a matrix $A$, and the code has to return the 
 
 ## Homework 4
 
-Continue creating more questions using the PL elements that best fit your needs. The topics discussed today can be helpful when creating more advanced questions, but not everyone will need this type of customized grading. As usual, add the url link to the [spreadsheet]
-(https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
+Continue creating more questions using the PL elements that best fit your needs. The topics discussed today can be helpful when creating more advanced questions, but not everyone will need this type of customized grading. As usual, add the url link to the 
+[spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
 Use the tab for `Homework 4`. I will take a look at your question and provide feedback. 
 
 ## Video
