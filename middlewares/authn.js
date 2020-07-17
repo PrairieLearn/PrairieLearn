@@ -96,19 +96,27 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    // otherwise look for auth cookies
-    if (req.cookies.pl_authn == null) {
-        // if no authn cookie then redirect to the login page
-        res.cookie('preAuthUrl', req.originalUrl);
-        res.redirect('/pl/login');
-        return;
+    var authnData = null;
+    if (req.cookies.pl_authn) {
+        // if we have a authn cookie then we try and unpack it
+        authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: config.authnCookieMaxAgeMilliseconds});
+        // if the cookie unpacking failed then authnData will be null
     }
-    var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
-    if (authnData == null || authnData.authn_provider_name == null) { // force re-authn if authn_provider_name is missing (for upgrade)
-        // if authn cookie check failed then clear the cookie and redirect to login
-        res.clearCookie('pl_authn');
-        res.redirect('/pl/login');
-        return;
+    if (authnData == null) {
+        // we failed to authenticate
+        if (/^(\/?)$|^(\/pl\/?)$/.test(req.path)) {
+            // the requested path is the homepage, so allow this request to proceed without an authenticated user
+            next();
+            return;
+        } else {
+            // we aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page
+            // first set the preAuthUrl cookie for redirection after authn
+            res.cookie('preAuthUrl', req.originalUrl);
+            // clear the pl_authn cookie in case it was bad
+            res.clearCookie('pl_authn');
+            res.redirect('/pl/login');
+            return;
+        }
     }
 
     let params = {
@@ -122,6 +130,15 @@ module.exports = function(req, res, next) {
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.is_administrator = result.rows[0].is_administrator;
         res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
+
+        // reset cookie timeout (#2268)
+        var tokenData = {
+            user_id: authnData.user_id,
+            authn_provider_name: authnData.authn_provider_name || null,
+        };
+        var pl_authn = csrf.generateToken(tokenData, config.secretKey);
+        res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
+
         next();
     });
 };

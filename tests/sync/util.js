@@ -147,6 +147,14 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} enableNetworking
  */
 
+/**
+ * @typedef {Object} QuestionWorkspaceOptions
+ * @property {string} image
+ * @property {number} port
+ * @property {string} args
+ * @property {string[]} gradedFiles
+ */
+
  /**
   * @typedef {Object} Question
   * @property {string} uuid
@@ -163,6 +171,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {boolean} partialCredit
   * @property {Object} options
   * @property {QuestionExternalGradingOptions} externalGradingOptions
+  * @property {QuestionWorkspaceOptions} workspaceOptions
   */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
@@ -230,6 +239,7 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
+module.exports.WORKSPACE_QUESTION_ID = 'test3';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -298,6 +308,23 @@ const questions = {
     secondaryTopics: [],
     tags: ['test'],
     type: 'Calculation',
+  },
+  [module.exports.WORKSPACE_QUESTION_ID]: {
+    uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
+    title: 'Workspace test question',
+    topic: 'Workspace',
+    secondaryTopics: [],
+    tags: ['workspace'],
+    type: 'v3',
+    workspaceOptions: {
+      image: 'prairielearn/workspace-vscode',
+      port: 15000,
+      args: '--auth none',
+      gradedFiles: [
+        'animal.h',
+        'animal.c',
+      ],
+    },
   },
 };
 
