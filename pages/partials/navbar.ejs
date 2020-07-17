@@ -28,17 +28,22 @@
 <%
 if (!locals.effective_user_has_no_access_to_course_instance) {
   var displayedName = '';
-  if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) {
-      if (authz_data.user.name) {
-          displayedName = authz_data.user.name;
-      } else {
-          displayedName = authz_data.user.uid;
-      }
-      displayedName += ' (' + authz_data.role;
+  var showStatus = [];
+  if (typeof authz_data !== 'undefined') {
+    if (authz_data.user.name) {
+      displayedName = authz_data.user.name;
+    } else {
+      displayedName = authz_data.user.uid;
+    }
+    if (authz_data.authn_has_instructor_view) {
+      showStatus.push(authz_data.role);
       if (authz_data.mode != 'Public') {
-          displayedName += ', ' + authz_data.mode;
+        showStatus.push(`${authz_data.mode} mode`);
       }
-      displayedName += ')';
+    }
+    if (showStatus.length > 0) {
+      displayedName += ' (' + showStatus.join(', ') + ')';
+    }
   } else {
       if (typeof authn_user == 'undefined') {
           displayedName = '(No user)';
@@ -72,7 +77,16 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
                 <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
               <% } %>
             </a>
+            <% if (typeof authz_data !== 'undefined' && authz_data.mode == 'Exam') { %>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item disabled" type="button">
+Exam mode means you have a<br>
+checked in reservation to CBTF.<br>
+Your interactions with PrairieLearn<br>
+are limited to your checked-in exam<br>
+for the duration of your reservation.</button>
         </div>
+            <% } %>
     </li>
     <% } %>
 

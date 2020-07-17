@@ -111,6 +111,7 @@ Attribute | Type | Default | Description
 `inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -164,6 +165,7 @@ Attribute | Type | Default | Description
 `hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -670,13 +672,16 @@ Attribute | Type | Default | description
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
-`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
+`focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
 
 #### Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
+
+The `focus` attribute defaults to `"false"`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers, so use caution. If you have multiple file editors on the same question page, only one element should have `focus` set to true, or else the behavior may be unpredictable.
 
 #### Example implementations
 

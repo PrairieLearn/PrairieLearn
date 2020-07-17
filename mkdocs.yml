@@ -15,6 +15,7 @@ pages:
 - Getting Started:
   - 'Requesting your course space': 'requestCourse.md'
   - 'Creating content in the browser': 'getStarted.md'
+  - 'Workshop': 'workshop/index.md'
 - User Guide:
   - 'Installing and running PL locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
