@@ -21,7 +21,6 @@ router.get('/', get);
 router.post('/', function(req, res, next) {
     const short_name = req.body['cr-shortname'].toUpperCase() || '';
     const title = req.body['cr-title'] || '';
-    const institution = req.body['cr-institution'] || '';
     const github_user = req.body['cr-ghuser'] || null;
 
     if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
@@ -62,7 +61,6 @@ router.post('/', function(req, res, next) {
             const sql_params = {
                 short_name,
                 title,
-                institution,
                 github_user,
                 user_id: res.locals.authn_user.user_id,
             };

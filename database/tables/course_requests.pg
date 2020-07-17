@@ -3,7 +3,6 @@ columns
     approved_status: enum_course_request_status default 'pending'::enum_course_request_status
     github_user: text
     id: bigint not null default nextval('course_requests_id_seq'::regclass)
-    institution_id: bigint
     short_name: text
     title: text
     user_id: bigint
@@ -12,6 +11,6 @@ indexes
     course_requests_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
-    course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES administrators(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_requests_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_requests_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
