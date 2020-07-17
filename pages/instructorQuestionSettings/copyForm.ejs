@@ -7,10 +7,8 @@
       <% if (course.options.isExampleCourse) { %>
       <option hidden disabled selected value> -- select a course -- </option>
       <% } %>
-      <% courses.forEach((c) => { %>
-        <% if (! c.options.isExampleCourse) { // cannot copy to example course %>
+      <% editable_courses.forEach((c) => { %>
         <option value="<%= c.id %>" <% if (c.id == course.id) { %>selected<% } %>><%= c.short_name %></option>
-        <% } %>
       <% }); %>
     </select>
     <div class="invalid-feedback" id="invalidIdMessage">
