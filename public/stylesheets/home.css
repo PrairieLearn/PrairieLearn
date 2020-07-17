@@ -5,7 +5,7 @@
 }
 
 .bg-flourish {
-  background: url('/images/grassy_landscape.svg');
+  background-image: url('/images/grassy_landscape.svg');
   background-size: auto 8rem;
   background-repeat: repeat-x;
   background-position: bottom left;
