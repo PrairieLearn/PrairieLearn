@@ -4,6 +4,18 @@
   --flare-width-after: calc(3*var(--flare-width-before));
 }
 
+.bg-flourish {
+  background: url('/images/grassy_landscape.svg');
+  background-size: auto 8rem;
+  background-repeat: repeat-x;
+  background-position: bottom left;
+}
+
+.p-flourish {
+  padding-top: 6rem;
+  padding-bottom: 8rem;
+}
+
 .bg-students {
   background-image: linear-gradient(to bottom right, var(--primary), mediumseagreen);
 }
