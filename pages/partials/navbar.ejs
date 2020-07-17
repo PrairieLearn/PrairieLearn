@@ -37,9 +37,9 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
     }
     if (authz_data.authn_has_instructor_view) {
       showStatus.push(authz_data.role);
-    }
-    if (authz_data.mode != 'Public') {
-      showStatus.push(`${authz_data.mode} mode`);
+      if (authz_data.mode != 'Public') {
+        showStatus.push(`${authz_data.mode} mode`);
+      }
     }
     if (showStatus.length > 0) {
       displayedName += ' (' + showStatus.join(', ') + ')';
