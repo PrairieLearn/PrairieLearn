@@ -8,6 +8,3 @@ indexes
 
 foreign-key constraints
     administrators_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-
-referenced by
-    course_requests: FOREIGN KEY (approved_by) REFERENCES administrators(id) ON UPDATE CASCADE ON DELETE CASCADE

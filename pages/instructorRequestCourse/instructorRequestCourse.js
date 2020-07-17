@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const _ = require('lodash');
 const router = express.Router();
+const opsbot = require('../../lib/opsbot');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -66,6 +67,11 @@ router.post('/', function(req, res, next) {
             };
             sqldb.query(sql.insert_request, sql_params, (err, _result) => {
                 if (ERR(err, next)) return;
+                /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                opsbot.sendCourseRequestMessage(`Course rubric: ${short_name}\n` +
+                                                `Course title: ${title}\n` +
+                                                `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                                                `GitHub username: ${github_user || 'not provided'}`, () => {});
                 next();
             });
         }
