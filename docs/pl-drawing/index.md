@@ -27,13 +27,14 @@ Attribute | Type | Default | Description
 `width` | integer | 580 | Horizontal width of the canvas (in pixels).
 `height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
-`snap-to-grid` | boolean | true | Objects placed in the canvas snap to closest grid point.
+`snap-to-grid` | boolean | false | If true, objects placed in the canvas snap to closest grid point. Otherwise, they can be placed outside of the grid.
 `correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
 `tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
 `disregard-extra-elements` | boolean | false | If true, extra elements are ignored if they match the same reference object.  Otherwise, multiple matching elements will reduce the awarded points.
+`hide-answer-panel` | boolean | true | If true, the correct answer is not displayed in the answer panel. 
 
 
 ## `pl-drawing-initial` element
