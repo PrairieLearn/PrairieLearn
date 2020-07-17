@@ -5,10 +5,10 @@
 </pl-question-panel>
 <div class="container">
 <pl-multiple-choice answers-name="student" inline="true">
-    <pl-answer correct="true"><img src="{{params.image0}}" width="140px"></pl-answer>
-    <pl-answer correct="false"><img src="{{params.image1}}" width="140px"></pl-answer>
-    <pl-answer correct="false"><img src="{{params.image2}}" width="140px"></pl-answer>
-    <pl-answer correct="false"><img src="{{params.image3}}" width="140px"></pl-answer>
-    <pl-answer correct="false"><img src="{{params.image4}}" width="140px"></pl-answer>
+    {{#params.students}}
+    <pl-answer correct="{{#correct}}true{{/correct}}{{^correct}}false{{/correct}}">
+        <pl-figure file-name="student_images/{{uin}}.png" width="140px" directory="clientFilesCourse"></pl-figure>
+    </pl-answer>
+    {{/params.students}}
 </pl-multiple-choice>
 </div>

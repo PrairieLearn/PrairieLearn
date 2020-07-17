@@ -13,13 +13,14 @@ PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -192,7 +193,8 @@ def render(element_html, data):
             'uuid': pl.get_uuid(),
             'info': info,
             'answers': answerset,
-            'inline': inline
+            'inline': inline,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if not hide_help_text:
@@ -236,7 +238,8 @@ def render(element_html, data):
                 'submission': True,
                 'display_score_badge': (score is not None),
                 'answers': answers,
-                'inline': inline
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
             }
 
             if html_params['display_score_badge']:
@@ -273,7 +276,8 @@ def render(element_html, data):
                 html_params = {
                     'answer': True,
                     'inline': inline,
-                    'answers': correct_answer_list
+                    'answers': correct_answer_list,
+                    'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
                 }
                 with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
                     html = chevron.render(f, html_params).strip()
