@@ -77,12 +77,21 @@ where `xxxx` is your netid.
 
 ## Workshop Schedule
 
-* [Day 1](lesson1.md): create simple questions
+* [Day 1](lesson1.md): creating simple questions
 
-* [Day 2](lesson2.md): assessment configurations
+* [Day 2](lesson2.md): creating assessments
 
-* [Day 3](lesson3.md): explore other PL elements
+* [Day 3](lesson3.md): looking at more specialized elements
 
-* [Day 4](lesson4.md): external grader and `pl-drawing`
+* [Day 4](lesson4.md): customizing the grading method
 
-* [Day 5](lesson5.md): TBD
+* [Day 5](lesson5.md): using graphical/drawing elements
+
+
+## PrairieLearn Overview Video
+
+This [video](https://mediaspace.illinois.edu/media/t/1_e1gprkci) offers a high-level description of PrairieLearn and its usage in courses for homework and exams.
+
+## Workshop Videos
+
+We will record the zoom meetings, and post them on the [Activity #3 MediaSpace channel](https://mediaspace.illinois.edu/channel/Assessment/169265112)

@@ -15,13 +15,19 @@ Go to the main PrairieLearn GitHub organization: https://github.com/PrairieLearn
 
 Make sure you are on the `Repositories` tab and click `New` to make a new repository with settings:
 
+* Repository template: `PrairieLearn/pl-template`
 * Repository name: `pl-uiuc-cs101`
 * Description: leave blank
 * Privacy: select `Private`
-* Select `Initialize this repository with a README`
 
+## Update the `infoCourse.json` file
+In the web editor (or clone locally), edit the `infoCourse.json` file and update the following fields:
+* `uuid` - Generate locally with `uuidgen` or use https://www.uuidgenerator.net/
+* `name` - The short name of the course (`CS 101`)
+* `title` - The official title of the course (`Temp`)
 
-## Give the instructor Admin access to the repo
+## Give the instructor Admin access to the repo (optional)
+Skip this step if the instructor didn't give or doesn't have a GitHub username.
 
 * Go to the repository page on GitHub (e.g., https://github.com/PrairieLearn/pl-uiuc-cs101)
 * Click "Settings"

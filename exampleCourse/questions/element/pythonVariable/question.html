@@ -12,7 +12,11 @@
   <pl-code source-file-name="test.py"></pl-code>
   <pl-python-variable params-name="df"></pl-python-variable>
   <p>
-    Here is the same example with <code>text="true"</code>, forcing the variable to be rendered in its textual representation:
+    By default, a Pandas DataFrame will display its index column and header row, as well as a postscript label with the table dimensions. You can toggle these with attributes on the <code>pl-python-variable</code> tag. Here, we've added <code>show-header="false" show-index="false" show-dimensions="false"</code>:
+  </p>
+  <pl-python-variable params-name="df" show-header="false" show-index="false" show-dimensions="false"></pl-python-variable>
+  <p>
+    Here is the same example with <code>text="true"</code>, forcing the variable to be rendered in its textual representation. The <code>show-header</code>, <code>show-index</code>, and <code>show-dimensions</code> attributes don't affect this.
   </p>
   <pl-python-variable params-name="df" text="true"></pl-python-variable>
   </div>
