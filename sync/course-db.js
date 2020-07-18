@@ -233,6 +233,14 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} enableNetworking
  */
 
+/**
+ * @typedef {Object} QuestionWorkspaceOptions
+ * @property {string} image
+ * @property {number} port
+ * @property {string} args
+ * @property {string[]} gradedFiles
+ */
+
  /**
   * @typedef {Object} Question
   * @property {any} id
@@ -250,6 +258,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {boolean} partialCredit
   * @property {Object} options
   * @property {QuestionExternalGradingOptions} externalGradingOptions
+  * @property {QuestionWorkspaceOptions} [workspaceOptions]
   * @property {Object} dependencies
   */
 
