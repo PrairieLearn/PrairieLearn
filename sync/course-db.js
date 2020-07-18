@@ -705,15 +705,13 @@ async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, 
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
 async function loadInfoForDirectory({ coursePath, directory, infoFilename, defaultInfo, schema, validate, recursive = false }) {
-    const infoFiles = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
-
     // Recursive lookup might not be enabled for some info types - if it's
     // disabled, we'll still utilize the same recursive function, but the
     // recursive function won't actually recurse.
     const infoFilesRootDir = path.join(coursePath, directory);
     const walk = async (relativeDir) => {
-        let files;
-        files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
+        const infoFiles = /** @type {{ [id: string]: InfoFile<T> }} */ ({});
+        const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
         // For each file in the directory, assume it is a question directory
         // and attempt to access `info.json`. If we can successfully read it,
@@ -734,8 +732,13 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
                 infoFiles[path.join(relativeDir, dir)] = info;
             } else if (recursive) {
                 try {
-                    await walk(path.join(relativeDir, dir));
+                    const subInfoFiles = await walk(path.join(relativeDir, dir));
+                    if (_.size(subInfoFiles) == 0) {
+                        infoFiles[path.join(relativeDir, dir)] = infofile.makeError(`Missing JSON file: ${infoFilePath}`);
+                    }
+                    _.assign(infoFiles, subInfoFiles);
                 } catch (e) {
+                    console.log('error', path.join(relativeDir, dir), e.code);
                     if (e.code === 'ENOTDIR') {
                         // This wasn't a directory; ignore it.
                     } else if (e.code === 'ENOENT') {
@@ -748,10 +751,10 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
                 }
             }
         });
+        return infoFiles;
     };
 
-    await walk('');
-    return infoFiles;
+    return await walk('');
 }
 
 /**
