@@ -1,6 +1,6 @@
 # Python Autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page. 
+This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
@@ -47,7 +47,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively, and thus the question markup should be structured as:
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively.  It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -56,6 +56,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 <pl-submission-panel>
   <pl-external-grading-results></pl-external-grading-results>
+  <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
 
@@ -169,7 +170,7 @@ Be careful not to switch the ordering of the student and reference arguments.  T
 
 ## Banning/Disallowing library functions
 
-One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
+One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the [demo/autograder/python/numpy] question.
 
 By setting the library functions equal to `Feedback.not_allowed`:
 
@@ -193,3 +194,7 @@ The grading Python scripts will load any sensitive files into memory (setup code
 After grading, results will be written to the secret filename generated above.  If this file does not exist or the filename does not match then the grading job will fail and students will not receive points.  This is mostly a failsafe in case the grader code were to crash, but in theory could also prevent crafty students from writing their own results file.
 
 The grading job will now drop back to `root` in the `run.sh` script and will copy any output to the correct location, as expected by the external grading framework.
+
+
+
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy

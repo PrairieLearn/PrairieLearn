@@ -55,6 +55,8 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 thumbnail_filename: (q.thumbnail && q.thumbnail.filename),
                 filename_location: (q.thumbnail && q.thumbnail.location),
                 dependencies: q.dependencies || {},
+                workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
+                workspace_graded_files: (q.workspaceOptions && q.workspaceOptions.gradedFiles),
             };
         });
 

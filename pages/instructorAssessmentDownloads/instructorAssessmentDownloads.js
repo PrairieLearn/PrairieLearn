@@ -185,6 +185,7 @@ router.get('/:filename', function(req, res, next) {
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
                 ['submitted_answer', 'submitted_answer'],
+                ['partial_scores', 'partial_scores'],
                 ['score_perc', null],
                 ['feedback', null],
             ];
@@ -225,6 +226,7 @@ router.get('/:filename', function(req, res, next) {
                 ['submission_id', 'submission_id'],
                 ['Submission date', 'submission_date_formatted'],
                 ['Submitted answer', 'submitted_answer'],
+                ['Partial Scores', 'partial_scores'],
                 ['Override score', 'override_score'],
                 ['Credit', 'credit'],
                 ['Mode', 'mode'],

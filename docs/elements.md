@@ -16,6 +16,7 @@ PrairieLearn presently provides the following templated **input field** elements
   **one option** from a list.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -56,6 +57,7 @@ images, files, and code display. The following **decorative** elements are avail
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
+- [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables): Displays expected and given variables for externally graded questions.
 
 **Conditional** elements are meant to improve the feedback and question structure.
@@ -119,8 +121,8 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [elementMultipleChoice]
-- [demoRandomMultipleChoice]
+- [element/multipleChoice]
+- [demo/randomMultipleChoice]
 
 #### See also
 
@@ -180,14 +182,15 @@ Two grading methods are available when using `partial-credit="true"`:
 
 #### Example implementations
 
-- [elementCheckbox]
-- [demoRandomCheckbox]
+- [element/checkbox]
+- [demo/randomCheckbox]
 
 #### See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
 
 -----
+
 
 ## `pl-number-input` element
 
@@ -263,14 +266,74 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [elementNumberInput]
-- [demoCalculation]
+- [element/numberInput]
+- [demo/calculation]
 
 #### See also
 
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
+
+-----
+
+## `pl-dropdown` element
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
+
+#### Sample Element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+<p> Select the correct word in the following quotes:</p>
+The 
+<pl-dropdown answers-name="aristotle" blank="true">
+
+    {{#params.aristotle}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    {{/params.aristotle}}
+
+</pl-dropdown> 
+is more than the sum of its parts. <p></p>
+
+A <pl-dropdown sort="ascend" answers-name="hume">
+    <pl-answer correct="true">wise</pl-answer>
+    <pl-answer correct="false">clumsy</pl-answer>
+    <pl-answer correct="false">reckless</pl-answer>
+</pl-dropdown> man proportions his belief to the evidence. <p></p>
+```
+
+**server.py**
+```python
+def generate(data):
+
+  QUESTION1 = 'aristotle'
+
+  data['params'][QUESTION1] = [
+    {'tag': 'true', 'ans': 'whole'},
+    {'tag': 'false', 'ans': 'part'},
+    {'tag': 'false', 'ans': 'inverse'}
+  ]
+
+  return data
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | - | The key of the correct answer.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`sort` | string | random | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.
+`blank` | boolean | True | Option to add blank dropdown entry as default selection in drop-down list.
+
+#### Example implementation
+
+- [demo/overlayDropdown]
+- [element/dropdown]
 
 -----
 
@@ -315,7 +378,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [elementIntegerInput]
+- [element/integerInput]
 
 #### See also
 
@@ -380,7 +443,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 #### Example implementations
 
-- [elementSymbolicInput]
+- [element/symbolicInput]
 
 #### See also
 
@@ -431,7 +494,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [elementStringInput]
+- [element/stringInput]
 
 #### See also
 
@@ -492,7 +555,7 @@ The question will only be graded when all matrix components are entered.
 
 #### Example implementations
 
-- [elementMatrixComponentInput]
+- [element/matrixComponentInput]
 
 #### See also
 
@@ -567,7 +630,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### Example implementations
 
-- [demoMatrixComplexAlgebra]
+- [demo/matrixComplexAlgebra]
 
 #### See also
 
@@ -617,8 +680,8 @@ This will initialize the editor area with a sufficient number of lines to displa
 
 #### Example implementations
 
-- [elementFileEditor]
-- [demoCodeEditorAutograded]
+- [element/fileEditor]
+- [demo/autograder/codeEditor]
 
 #### See also
 
@@ -652,8 +715,8 @@ Attribute | Type | Default | description
 
 #### Example implementations
 
-- [demoCodeUploadAutograded]
-- [demoCodeUploadAutograded]
+- [demo/autograder/codeUpload]
+- [demo/manualGrade/codeUpload]
 
 #### See also
 
@@ -733,7 +796,7 @@ that if there are many submitted answers, the page will load slowly.
 
 #### Example implementations
 
-- [elementThreeJS]
+- [element/threeJS]
 
 #### See also
 
@@ -780,7 +843,7 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 #### Example implementations
 
-- [elementCode]
+- [element/code]
 
 #### See also
 
@@ -850,8 +913,8 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 
 #### Example implementations
 
-- [elementPythonVariable]
-- [demoRandomDataFrame]
+- [element/pythonVariable]
+- [demo/randomDataFrame]
 
 #### See also
 
@@ -900,9 +963,9 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [demoRandomPlot]
-- [demoFixedCheckbox]
-- [demoStudentNames]
+- [demo/randomPlot]
+- [demo/fixedCheckbox]
+- [demo/studentNames]
 
 #### See also
 
@@ -954,7 +1017,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 #### Example implementations
 
-- [elementFileDownload]
+- [element/fileDownload]
 
 #### See also
 
@@ -1060,9 +1123,9 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 #### Example implementations
 
-- [elementVariableOutput]
-- [elementMatrixComponentInput]
-- [demoMatrixComplexAlgebra]
+- [element/variableOutput]
+- [element/matrixComponentInput]
+- [demo/matrixComplexAlgebra]
 
 #### See also
 
@@ -1141,8 +1204,8 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 #### Example implementations
 
-- [elementMatrixLatex]
-- [demoRandomCheckbox]
+- [element/matrixLatex]
+- [demo/randomCheckbox]
 
 #### See also
 
@@ -1177,7 +1240,7 @@ The provided `script-name` corresponds to a file located within the director for
 
 #### Example implementations
 
-- [elementPrairieDrawFigure]
+- [element/prairieDrawFigure]
 
 #### See also
 
@@ -1238,7 +1301,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [elementGraph]
+- [element/graph]
 
 #### See also
 
@@ -1257,6 +1320,67 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
+## `pl-overlay` element
+
+The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
+
+#### Sample Element
+
+![](elements/pl-overlay.png)
+
+```html
+<pl-overlay width="400" height="400" clip="false">
+    <pl-background>
+        <pl-drawing width="398" height="398" hide-answer-panel="false">
+            <pl-drawing-initial>
+                <pl-triangle x1="50" y1="350" x2="350" y2="350" x3="350" y3="50"></pl-triangle>
+            </pl-drawing-initial>
+        </pl-drawing>
+    </pl-background>
+    <pl-location left="200" top="375">
+        $$3$$
+    </pl-location>
+    <pl-location left="375" top="200">
+        $$3$$
+    </pl-location>
+    <pl-location left="170" top="170">
+        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+    </pl-location>
+</pl-overlay>
+```
+
+#### `pl-overlay` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`width` | float | - | The width of the overlay canvas in pixels.  Required only if no background is specified.
+`height` | float | - | The height of the overlay canvas in pixels.  Required only if no background is specified.
+`clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
+
+#### `pl-location` Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`left` | float | - | The x coordinate of the child element (relative to the left of the overlay)
+`top` | float | - | The y coordinate of the child element (relative to the top of the overlay)
+`right` | float | - | The x coordinate of the child element (relative to the right of the overlay)
+`bottom` | float | - | The y coordinate of the child element (relative to the bottom of the overlay)
+`valign` | string | `middle` | Specifies the vertical alignment of the contents.  Can be one of `top`, `middle`, or `bottom`.
+`halign` | string | `center` | Specifies the horizontal alignment of the contents.  Can be one of `left`, `center`, or `right`.
+
+#### `pl-background` Customizations
+
+The `pl-background` child tag does not have any extra attributes that need to be set.  All relevant positioning and sizing information is obtained from the tag's contents.
+
+#### Details
+
+An overlay is pre-defined as a "overlay area" with a static size.  By default, elements that exceed these boundaries will get partially or totally cut off.  A background can be specified by wrapping HTML in a `<pl-background>` tag, in this case the overlay will automatically size itself to fit the background and a `width` and `height` do not need to be specified.   Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
+
+#### Example Implementations
+
+- [element/overlay]
+
+----
 ## `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
@@ -1305,13 +1429,13 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demoCodeEditorAutograded]
-- [demoCodeUploadAutograded]
-- [demoAutograderSquare]
-- [demoAutograderNumpy]
-- [demoAutograderPandas]
-- [demoAutograderPlots]
-- [demoAutograderRandom]
+- [demo/autograder/codeEditor]
+- [demo/autograder/codeUpload]
+- [demo/autograder/python/square]
+- [demo/autograder/python/numpy]
+- [demo/autograder/python/pandas]
+- [demo/autograder/python/plots]
+- [demo/autograder/python/random]
 
 ## Conditional Elements
 
@@ -1336,7 +1460,7 @@ then it will be displayed alongside or answer.
 
 #### Example implementations
 
-- [demoCalculation]
+- [demo/calculation]
 
 #### See also
 
@@ -1365,9 +1489,9 @@ may be correct, incorrect, or invalid.
 
 #### Example implementations
 
-- [demoCustomGradeFunction]
-- [demoCodeUploadAutograded]
-- [demoCodeEditorAutograded]
+- [demo/custom/gradeFunction]
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
 
 #### See also
 
@@ -1403,7 +1527,7 @@ Common reasons that trigger the display of this element are:
 
 #### Example implementations
 
-- [demoCustomGradeFunction]
+- [demo/custom/gradeFunction]
 
 #### See also
 
@@ -1447,7 +1571,7 @@ element contents only in a specific panel.
 
 #### Example implementations
 
-- [elementPanels]
+- [element/panels]
 
 #### See also
 
@@ -1476,8 +1600,8 @@ It expects results to follow [the reference schema for external grading results]
 
 ### Example Implementations
 
-- [demoCodeUploadAutograded]
-- [demoCodeEditorAutograded]
+- [demo/autograder/codeUpload]
+- [demo/autograder/codeEditor]
 
 ### See also
 
@@ -1504,54 +1628,53 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to display score for.
 
 <!-- Switch to using reference style links for elements -->
-[demoAnsiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAnsiOutput
-[demoCalculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCalculation
-[demoCodeEditorAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeEditorAutograded
-[demoCodeUploadAutograded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadAutograded
-[demoCodeUploadManualGrade]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCodeUploadManualGrade
-[demoCustomElement]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomElement
-[demoCustomGradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoCustomGradeFunction
-[demoDrawingCentroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCentroid
-[demoDrawingCollarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingCollarRod
-[demoDrawingGradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGradeVector
-[demoDrawingGraphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingGraphs
-[demoDrawingInclinedPlane]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingInclinedPlane
-[demoDrawingLiftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingLiftingMechanism
-[demoDrawingPulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingPulley
-[demoDrawingSimpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingSimpleTutorial
-[demoDrawingVMDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoDrawingVMDiagrams
-[demoFixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoFixedCheckbox
-[demoMatrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixAlgebra
-[demoMatrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoMatrixComplexAlgebra
-[demoRandomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomCheckbox
-[demoRandomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomDataFrame
-[demoRandomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomMultipleChoice
-[demoRandomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomPlot
-[demoRandomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoRandomSymbolic
-[demoStudentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentFaces
-[demoStudentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoStudentNames
-[elementCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCheckbox
-[elementCode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementCode
-[elementDrawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementDrawingGallery
-[elementElementCodeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementElementCodeDocumentation
-[elementFileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileDownload
-[elementFileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementFileEditor
-[elementGraph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementGraph
-[elementIntegerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementIntegerInput
-[elementMarkdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMarkdown
-[elementMatrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixComponentInput
-[elementMatrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMatrixLatex
-[elementMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementMultipleChoice
-[elementNumberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementNumberInput
-[elementPanels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPanels
-[elementPrairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPrairieDrawFigure
-[elementPythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementPythonVariable
-[elementStringInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementStringInput
-[elementSymbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementSymbolicInput
-[elementThreeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementThreeJS
-[elementVariableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/elementVariableOutput
-[demoAutograderSquare]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderSquare
-[demoAutograderNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderNumpy
-[demoAutograderPandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPandas
-[demoAutograderPlots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderPlots
-[demoAutograderRandom]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demoAutograderRandom
+[demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput
+[demo/autograder/codeEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
+[demo/autograder/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
+[demo/autograder/python/square]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/square
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy
+[demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
+[demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
+[demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
+
+[demo/manualGrade/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGrade/codeUpload
+
+[demo/custom/element]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/element
+[demo/custom/gradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
+
+[demo/calculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/calculation
+[demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
+[demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
+[demo/matrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixComplexAlgebra
+[demo/overlayDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown)
+[demo/randomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomCheckbox
+[demo/randomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
+[demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
+[demo/randomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
+[demo/randomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
+
+[demo/studentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
+[demo/studentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
+
+[element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
+[element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
+[element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
+[element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
+[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
+[element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
+[element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
+[element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
+[element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
+[element/markdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/markdown
+[element/matrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput
+[element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
+[element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
+[element/numberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
+[element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
+[element/prairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
+[element/pythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
+[element/stringInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
+[element/symbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
+[element/threeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
+[element/variableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput

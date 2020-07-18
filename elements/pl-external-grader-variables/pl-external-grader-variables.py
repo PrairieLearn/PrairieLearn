@@ -12,7 +12,7 @@ def prepare(element_html, element_index, data):
 
     params_name = pl.get_string_attrib(element, 'params-name', PARAMS_NAME_DEFAULT)
     if params_name is None:
-        raise Exception(f'Attribute "params-name" is not defined.')
+        raise Exception('Attribute "params-name" is not defined.')
     if params_name not in data['params']:
         raise Exception(f"Variable name {params_name} does not exist in data['params'].")
 
