@@ -114,6 +114,9 @@ Attribute | Type | Default | Description
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
+`external-json` | string | special | Optional [abs,rel]path to a json file that stores choices as lists under "correct" and "incorrect" attribute names.
+`external-json-correct` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
+`external-json-incorrect` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
