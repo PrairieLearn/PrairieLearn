@@ -37,6 +37,10 @@ function getParamsForQuestion(q) {
         external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
         external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
         dependencies: q.dependencies || {},
+        workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
+        workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
+        workspace_args: (q.workspaceOptions && q.workspaceOptions.args),
+        workspace_graded_files: (q.workspaceOptions && q.workspaceOptions.gradedFiles),
     };
 }
 

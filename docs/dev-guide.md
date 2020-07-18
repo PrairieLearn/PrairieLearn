@@ -72,6 +72,12 @@ npm run lint -s
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
+* Individual tests can be run with:
+
+```sh
+npx mocha tests/[testName].js
+```
+
 ## Debugging server-side JavaScript
 
 * Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
@@ -118,6 +124,11 @@ psql postgres
 RAISE NOTICE 'This is logging: % and %', var1, var2;
 ```
 
+* To manually run a function:
+
+```sql
+SELECT the_sql_function(arg1, arg2);
+```
 
 ## HTML page generation
 
@@ -349,6 +360,87 @@ ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessm
 -- add a constraint
 ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
 ```
+
+
+## JSON syncing
+
+* Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
+
+```diff
+@@ -16,2 +16,3 @@ columns
+     order_by: integer
++    require_honor_code: boolean default true
+     shuffle_questions: boolean default false
+```
+
+* Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
+
+```diff
+@@ -0,0 +1 @@
++ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
+```
+
+* Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
+
+```diff
+@@ -89,2 +89,7 @@
+             "default": true
++        },
++        "requireHonorCode": {
++            "description": "Requires the student to accept an honor code before starting exam assessments.",
++            "type": "boolean",
++            "default": true
+         }
+```
+
+* Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
+
+```diff
+@@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+         const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
++        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+
+@@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+             allow_real_time_grading: allowRealTimeGrading,
++            require_honor_code: requireHonorCode,
+             auto_close: !!_.get(assessment, 'autoClose', true),
+```
+
+* Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
+
+```diff
+@@ -44,3 +44,4 @@ BEGIN
+             allow_issue_reporting,
+-            allow_real_time_grading)
++            allow_real_time_grading,
++            require_honor_code)
+             (
+@@ -64,3 +65,4 @@ BEGIN
+                 (assessment->>'allow_issue_reporting')::boolean,
+-                (assessment->>'allow_real_time_grading')::boolean
++                (assessment->>'allow_real_time_grading')::boolean,
++                (assessment->>'require_honor_code')::boolean
+         )
+@@ -83,3 +85,4 @@ BEGIN
+             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+-            allow_real_time_grading = EXCLUDED.allow_real_time_grading
++            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
++            require_honor_code = EXCLUDED.require_honor_code
+         WHERE
+```
+
+* Edit the sync tests; e.g., modify `tests/sync/util.js`:
+
+```diff
+@@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
+  * @property {boolean} allowRealTimeGrading
++ * @property {boolean} requireHonorCode
+  * @property {boolean} multipleInstance
+```
+
+* Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
+
+* Add [tests](#unit-tests-and-integration-tests).
 
 
 ## Database access

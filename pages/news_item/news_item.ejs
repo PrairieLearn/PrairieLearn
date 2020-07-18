@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: news_item.formatted_date, pageTitle: news_item.title}); %>
     <link href="/stylesheets/issues.css" rel="stylesheet" />
   </head>
   <body>

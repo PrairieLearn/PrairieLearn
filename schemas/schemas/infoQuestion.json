@@ -201,6 +201,38 @@
                     }
                 }
             }
+        },
+        "workspaceOptions": {
+            "description": "Options for workspace questions.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "image",
+                "port",
+                "gradedFiles"
+            ],
+            "properties": {
+                "image": {
+                    "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
+                    "type": "string"
+                },
+                "port": {
+                    "description": "The port number used in the Docker image.",
+                    "type": "integer"
+                },
+                "args": {
+                    "description": "Command line arguments to pass to the Docker.",
+                    "type": "string"
+                },
+                 "gradedFiles": {
+                    "description": "The list of files or directories that will be copied for grading.",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be copied for grading.",
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }

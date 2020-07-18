@@ -38,6 +38,7 @@ const DEFAULT_ASSESSMENT_SETS = [
     {'abbreviation': 'PE', 'name': 'Practice Exam', 'heading': 'Practice Exams', 'color': 'yellow1'},
     {'abbreviation': 'P', 'name': 'Prep', 'heading': 'Question Preparation', 'color': 'gray1'},
     {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
+    {'abbreviation': 'WS', 'name': 'Worksheet', 'heading': 'Worksheets', 'color': 'purple1'},
     {'abbreviation': 'U', 'name': 'Unknown', 'heading': 'Unknown', 'color': 'red3'},
 ];
 

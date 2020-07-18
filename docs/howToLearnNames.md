@@ -84,8 +84,8 @@ node parse_images.js
 ## Create questions and an assessment
 
 Do the following things:
-* Copy the questions `exampleCourse/questions/demoStudentFaces` and `exampleCourse/questions/demoStudentNames` into your course (creating new uuids as usual).
-* Copy the assessment `exampleCourse/courseInstances/Sp18/assessments/learn_names` into your course (creating new uuids as usual).
+* Copy the questions [exampleCourse/questions/demo/studentFaces] and [exampleCourse/questions/demo/studentNames] into your course (creating new uuids as usual).
+* Copy the assessment [exampleCourse/courseInstances/Sp18/assessments/learn_names] into your course (creating new uuids as usual).
 
 You'll want to make sure that the student names and images are available neither to the public nor to other students. One way to do this would be to never push the new questions or new assessment to the remote server. Another way would be to use the access rule that appears in the example `infoAssessment.json`:
 ```
@@ -101,3 +101,7 @@ This allows access to `learn_names` assessment only to instructors.
 ## Learn some names!
 
 Keep at it. Never give up.
+
+[exampleCourse/questions/demo/studentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
+[exampleCourse/questions/demo/studentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
+[exampleCourse/courseInstances/Sp15/assessments/hw07-learnStudentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/Sp15/assessments/hw07-learnStudentNames

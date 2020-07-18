@@ -240,7 +240,6 @@ WITH all_submissions_with_files AS (
     SELECT
         s.id AS submission_id,
         u.uid,
-        u.uin,
         ai.number AS assessment_instance_number,
         q.qid,
         v.number AS variant_number,
@@ -304,7 +303,6 @@ all_files AS (
 SELECT
     (
         uid
-        || '_' || uin
         || '_' || assessment_instance_number
         || '_' || qid
         || '_' || variant_number
@@ -319,7 +317,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    uid, uin, assessment_instance_number, qid, variant_number, date
+    uid, assessment_instance_number, qid, variant_number, date
 LIMIT
     $limit
 OFFSET
