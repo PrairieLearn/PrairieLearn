@@ -8,12 +8,8 @@
 
     2) Add this line to the header of the host page:
 
-        <script src="/socket.io/socket.io.js"></script>
+        <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
 
-    Note: This file is not found in the PL source itself anymore, but it
-    will be made available dynamically at the relative URL above when the
-    server is running. It might also be found in the node_modules directory:
-    /node_modules/socket.io-client/dist/socket.io.js
 
     To include this partial more than once (e.g., to display the results of
     more than one job sequence on the same page), just pass 'job_sequence' as
