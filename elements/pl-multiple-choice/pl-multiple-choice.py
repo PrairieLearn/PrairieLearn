@@ -42,12 +42,14 @@ def categorize_options(element, data):
             json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
         with open(json_file, mode='r', encoding='utf-8') as f:
             obj = json.load(f)
-            for text in obj[correct_attrib]:
-                correct_answers.append((index, True, text))
-                index += 1
-            for text in obj[incorrect_attrib]:
-                incorrect_answers.append((index, False, text))
-                index += 1
+            if correct_attrib in obj:
+                for text in obj[correct_attrib]:
+                    correct_answers.append((index, True, text))
+                    index += 1
+            if incorrect_attrib in obj:
+                for text in obj[incorrect_attrib]:
+                    incorrect_answers.append((index, False, text))
+                    index += 1
     return correct_answers, incorrect_answers
 
 
