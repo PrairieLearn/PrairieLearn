@@ -1,24 +1,24 @@
--- BLOCK insert_xc101_viewer
-WITH
-example_course AS (
-    SELECT * FROM pl_courses WHERE (options->'isExampleCourse')::boolean IS TRUE
-)
-INSERT INTO course_permissions
-    (user_id, course_id, course_role)
-SELECT
-    $user_id, xc.id, 'Viewer'
-FROM
-    example_course as xc
-ON CONFLICT DO NOTHING
-
 -- BLOCK select_and_auth
-WITH issue_count AS (
+WITH
+issue_count AS (
     SELECT count(*) AS open_issue_count
     FROM issues AS i
     WHERE
         i.question_id = $question_id
         AND i.course_caused
         AND i.open
+),
+example_course AS (
+    SELECT * FROM pl_courses WHERE (options->'isExampleCourse')::boolean IS TRUE
+),
+xc101_viewer AS (
+    INSERT INTO course_permissions
+        (user_id, course_id, course_role)
+    SELECT
+        $user_id, xc.id, 'Viewer'
+    FROM
+        example_course as xc
+    ON CONFLICT DO NOTHING
 )
 SELECT
     to_json(q) AS question,
