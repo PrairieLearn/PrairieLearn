@@ -7,7 +7,7 @@ INSERT INTO course_permissions (user_id, course_id, course_role)
     SELECT
         cp.user_id, xc.id, 'Viewer'
     FROM
-        course_permissions_for_user AS cp
+        course_permissions AS cp
         JOIN example_course AS xc ON (xc.id != cp.course_id)
     WHERE
         cp.user_id = $user_id
