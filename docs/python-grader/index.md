@@ -92,6 +92,8 @@ Note that the `<pl-external-grader-variables>` element is for purely decorative 
 
 This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.  The code in this file is run only _once_ total for both student and reference code.  If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them.  `repeated_setup()` will always be run after the setup code itself is run.
 
+The server parameters in `data` can be accessed with `data` in this file.
+
 ### `tests/test.py`
 
 The test cases for each coding problem are defined as methods of a `test` class contained in the aptly named `test.py` file.  The class will have one of the following signatures, depending if you require plots from the student:
@@ -136,6 +138,8 @@ def test_0(self):
 ```
 
 Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case.  For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.
+
+The server parameters in `data` can be accessed from within the test cases using `self.data`.
 
 #### Multiple Iterations
 

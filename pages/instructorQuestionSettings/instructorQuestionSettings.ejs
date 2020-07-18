@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: question.qid}); %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -102,11 +102,11 @@
           We only want to show the card footer if it will have something inside. Since it is easy
           to make a mistake when merging logical conditions, we will simply "or" them all.
         -->
-        <% if ((authz_data.has_course_permission_edit && ((! course.options.isExampleCourse) || (courses && (courses.length > 1)))) ||
+        <% if ((editable_courses && editable_courses.length > 0) ||
                ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (authz_data.has_course_permission_edit && ((! course.options.isExampleCourse) || (courses && (courses.length > 1)))) { %>
+            <% if (editable_courses && editable_courses.length > 0) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>

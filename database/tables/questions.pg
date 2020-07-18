@@ -22,8 +22,10 @@ columns
     topic_id: bigint
     type: enum_question_type
     uuid: uuid not null
+    workspace_args: text
     workspace_graded_files: text[] default ARRAY[]::text[]
     workspace_image: text
+    workspace_port: integer
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
