@@ -21,14 +21,20 @@ module.exports = function(req, res, next) {
         });
     } else {
         const params = {
-            question_id: req.params.question_id,
-            course_id: res.locals.course.id,
+            user_id: res.locals.authn_user.user_id,
         };
-        sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function(err, result) {
+        sqldb.query(sql.insert_xc101_viewer, params, function(err, _result) {
             if (ERR(err, next)) return;
-            if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-            _.assign(res.locals, result.rows[0]);
-            next();
+            const params = {
+                question_id: req.params.question_id,
+                course_id: res.locals.course.id,
+            };
+            sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function(err, result) {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+                _.assign(res.locals, result.rows[0]);
+                next();
+            });
         });
     }
 };

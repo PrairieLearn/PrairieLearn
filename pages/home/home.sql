@@ -56,21 +56,6 @@ course_instances_list AS (
                 AND check_course_instance_access(ci.id, e.role, e.uid, e.institution_id, $req_date)
             )
         )
-),
-example_course AS (
-    SELECT * FROM pl_courses WHERE (options->'isExampleCourse')::boolean IS TRUE
-),
-xc101_course_viewer AS (
-    INSERT INTO course_permissions (user_id, course_id, course_role)
-        SELECT
-            cp.user_id, xc.id, 'Viewer'
-        FROM
-            course_permissions_for_user AS cp
-            JOIN example_course AS xc ON (xc.id != cp.course_id)
-        WHERE
-            cp.course_role IN ('Owner', 'Editor')
-        LIMIT 1
-    ON CONFLICT DO NOTHING
 )
 SELECT
     cl.courses,
