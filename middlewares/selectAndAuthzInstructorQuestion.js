@@ -21,7 +21,6 @@ module.exports = function(req, res, next) {
         });
     } else {
         const params = {
-            user_id: res.locals.authn_user.user_id,
             question_id: req.params.question_id,
             course_id: res.locals.course.id,
         };
