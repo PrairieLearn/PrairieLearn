@@ -754,7 +754,16 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
         return infoFiles;
     };
 
-    return await walk('');
+    try {
+        return await walk('');
+    } catch (e) {
+        if (e.code === 'ENOENT') {
+            // Missing directory; return an empty list
+            return /** @type {{ [id: string]: InfoFile<T> }} */ ({});
+        }
+        // Some other error; Throw it to abort.
+        throw e;
+    }
 }
 
 /**
