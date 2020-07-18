@@ -120,10 +120,10 @@ BEGIN
         external_grading_timeout = (dq.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (dq.data->>'external_grading_enable_networking')::boolean,
         dependencies = (dq.data->>'dependencies')::jsonb,
-        workspace_image = question->>'workspace_image',
-        workspace_port = (question->>'workspace_port')::integer,
-        workspace_args = question->>'workspace_args',
-        workspace_graded_files = jsonb_array_to_text_array(question->'workspace_graded_files'),
+        workspace_image = dq.data->>'workspace_image',
+        workspace_port = (dq.data->>'workspace_port')::integer,
+        workspace_args = dq.data->>'workspace_args',
+        workspace_graded_files = jsonb_array_to_text_array(dq.data->'workspace_graded_files'),
         sync_errors = NULL,
         sync_warnings = dq.warnings
     FROM
