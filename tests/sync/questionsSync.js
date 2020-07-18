@@ -4,13 +4,10 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 /**
