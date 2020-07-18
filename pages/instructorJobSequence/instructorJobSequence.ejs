@@ -2,7 +2,7 @@
 <html>
   <head>
     <%- include('../partials/head', {pageTitle: `${job_sequence.description} #${job_sequence.number}`}); %>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>

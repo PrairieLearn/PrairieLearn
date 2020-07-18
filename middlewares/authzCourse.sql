@@ -27,7 +27,8 @@ ON CONFLICT DO NOTHING
 SELECT
     authz_course($authn_user_id, $course_id, $is_administrator) AS permissions_course,
     to_jsonb(c.*) AS course,
-    courses_user_can_edit($authn_user_id, $is_administrator) AS courses,
+    courses_user_can_edit($authn_user_id, $is_administrator) AS editable_courses,
+    courses_user_can_view($authn_user_id, $is_administrator) AS viewable_courses,
     course_instances_instructor_can_view($authn_user_id, $is_administrator, $req_date, c.id) AS course_instances
 FROM
     pl_courses AS c
