@@ -40,6 +40,8 @@ BEGIN
             filename_location,
             dependencies,
             workspace_image,
+            workspace_port,
+            workspace_args,
             workspace_graded_files
         ) SELECT
             (question->>'uuid')::uuid,
@@ -66,6 +68,8 @@ BEGIN
             question->>'filename_location'::text,
             (question->>'dependencies')::jsonb,
             question->>'workspace_image',
+            (question->>'workspace_port')::integer,
+            question->>'workspace_args',
             jsonb_array_to_text_array(question->'workspace_graded_files')
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
@@ -92,6 +96,8 @@ BEGIN
             filename_location = EXCLUDED.filename_location,
             dependencies = EXCLUDED.dependencies,
             workspace_image = EXCLUDED.workspace_image,
+            workspace_port = EXCLUDED.workspace_port,
+            workspace_args = EXCLUDED.workspace_args,
             workspace_graded_files = EXCLUDED.workspace_graded_files
         WHERE
             questions.course_id = new_course_id

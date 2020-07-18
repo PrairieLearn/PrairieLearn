@@ -150,6 +150,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 /**
  * @typedef {Object} QuestionWorkspaceOptions
  * @property {string} image
+ * @property {number} port
+ * @property {string} args
  * @property {string[]} gradedFiles
  */
 
@@ -315,7 +317,9 @@ const questions = {
     tags: ['workspace'],
     type: 'v3',
     workspaceOptions: {
-      image: 'prairielearn/vscode-workspace',
+      image: 'prairielearn/workspace-vscode',
+      port: 15000,
+      args: '--auth none',
       gradedFiles: [
         'animal.h',
         'animal.c',

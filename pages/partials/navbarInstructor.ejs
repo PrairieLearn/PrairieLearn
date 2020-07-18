@@ -6,11 +6,11 @@
         <a class="nav-link <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %> <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if (locals.courses && courses.length > 0) { %>
+        <% if (locals.viewable_courses && viewable_courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
-            <% courses.forEach(function(c) { %>
+            <% viewable_courses.forEach(function(c) { %>
                 <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
             <% }); %>
         </div>

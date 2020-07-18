@@ -164,25 +164,39 @@ module.exports = {
         return path.join(element.directory, element.controller);
     },
 
+    /**
+     * Add clientFiles urls for elements.
+     * Returns a copy of data with the new urls inserted.
+     */
+    getElementClientFiles: function(data, elementName, _context) {
+        let dataCopy = _.cloneDeep(data);
+        /* The options field wont contain URLs unless in the 'render' stage, so check
+           if it is populated before adding the element url */
+        if ('base_url' in data.options) {
+            /* Join the URL using Posix join to avoid generating a path with backslashes,
+               as would be the case when running on Windows */
+            dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
+            /* This will add extension urls once that is merged (and will use the context, I promise!) */
+        }
+        return dataCopy;
+    },
+
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
+            const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
-            let dataCopy = _.cloneDeep(data);
-            /* The options field will be empty unless in the 'render' stage, so check
-               if it is populated before adding the element url */
-            if ('base_url' in data.options) {
-                /* Join the URL using Posix join to avoid generating a path with backslashes,
-                   as would be the case when running on Windows */
-                dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            }
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
@@ -205,22 +219,27 @@ module.exports = {
 
         const cwd = resolvedElement.directory;
         const controller = resolvedElement.controller;
+        const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            const pythonArgs = [elementHtml, data];
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
-                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
+                    return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
                 }
                 if (ERR(err, callback)) return;
                 debug(`elementFunction(): completed`);
@@ -228,7 +247,7 @@ module.exports = {
             });
         } else {
             // JS module (FIXME: delete this block of code in future)
-            const jsArgs = [$, element, null, data];
+            const jsArgs = [$, element, null, dataCopy];
             controller[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
@@ -362,21 +381,21 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
-        err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
-        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
-        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
-        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                   if (err) return err;
-        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);      if (err) return err;
-        err = checkProp('editable',              'boolean', ['render'],                           []);                         if (err) return err;
-        err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
-        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
-        err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
-        err = checkProp('test_type',             'string',  ['test'],                             []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);                   if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']); if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhases,                            []);                                        if (err) return err;
+        err = checkProp('options',               'object',  allPhases,                            []);                                        if (err) return err;
+        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);                        if (err) return err;
+        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);                if (err) return err;
+        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                                  if (err) return err;
+        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);                         if (err) return err;
+        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);                         if (err) return err;
+        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);                     if (err) return err;
+        err = checkProp('editable',              'boolean', ['render'],                           []);                                        if (err) return err;
+        err = checkProp('panel',                 'string',  ['render'],                           []);                                        if (err) return err;
+        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                                        if (err) return err;
+        err = checkProp('filename',              'string',  ['file'],                             []);                                        if (err) return err;
+        err = checkProp('test_type',             'string',  ['test'],                             []);                                        if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -705,6 +724,21 @@ module.exports = {
         }
     },
 
+    /**
+     * Gets any options that are available in any freeform phase.
+     * These include file paths that are relevant for questions and elements.
+     * URLs are not included here because those are only applicable during 'render'.
+     */
+    getContextOptions: function(context) {
+        /* These options are always available in any phase. */
+
+        let options = {};
+        options.question_path = context.question_dir;
+        options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+        options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
+        return options;
+    },
+
     generate: function(question, course, variant_seed, callback) {
         debug('generate()');
         module.exports.getContext(question, course, (err, context) => {
@@ -717,6 +751,7 @@ module.exports = {
                 variant_seed: parseInt(variant_seed, 36),
                 options: _.defaults({}, course.options, question.options),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -750,6 +785,7 @@ module.exports = {
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -810,10 +846,10 @@ module.exports = {
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
             data.options.base_url = locals.baseUrl;
+            data.options.workspace_url = locals.workspaceUrl || null;
 
             // Put key paths in data.options
-            data.options.question_path = context.question_dir;
-            data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+            _.extend(data.options, module.exports.getContextOptions(context));
 
             module.exports.getCachedDataOrCompute(
                 course,
@@ -1071,7 +1107,7 @@ module.exports = {
                             workers.returnPythonCaller(pc, (pcErr) => {
                                 if (ERR(pcErr, callback)) return;
                                 if (ERR(err, callback)) return;
-                                const fileDataBase64 = fileData.toString('base64');
+                                const fileDataBase64 = (fileData || '').toString('base64');
                                 const cachedData = {courseIssues, fileDataBase64};
                                 callback(null, cachedData);
                             });
@@ -1108,6 +1144,7 @@ module.exports = {
                 raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
                 gradable: _.get(submission, 'gradable', true),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1153,6 +1190,7 @@ module.exports = {
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1200,6 +1238,7 @@ module.exports = {
                 gradable: true,
                 test_type: test_type,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
