@@ -34,16 +34,18 @@ def categorize_options(element, data):
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not None:
+        correct = pl.get_string_attrib(element, 'external-json-correct', 'correct')
+        incorrect = pl.get_string_attrib(element, 'external-json-incorrect', 'incorrect')
         if pathlib.PurePath(file_path).is_absolute():
             json_file = file_path
         else:
             json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
         with open(json_file, mode='r', encoding='utf-8') as f:
             data = json.load(f)
-            for text in data['correct']:
+            for text in data[correct]:
                 correct_answers.append((index, True, text))
                 index += 1
-            for text in data['incorrect']:
+            for text in data[incorrect]:
                 incorrect_answers.append((index, False, text))
                 index += 1
     return correct_answers, incorrect_answers
@@ -53,7 +55,8 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline',
-                        'none-of-the-above', 'all-of-the-above', 'hide-letter-keys', 'external-json']
+                        'none-of-the-above', 'all-of-the-above', 'hide-letter-keys',
+                        'external-json', 'external-json-correct', 'external-json-incorrect']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
