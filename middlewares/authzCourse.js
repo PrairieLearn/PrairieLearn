@@ -27,6 +27,8 @@ module.exports = function(req, res, next) {
             var permissions_course = result.rows[0].permissions_course;
             res.locals.course = result.rows[0].course;
             res.locals.courses = result.rows[0].courses;
+            res.locals.editable_courses = result.rows[0].editable_courses;
+            res.locals.viewable_courses = result.rows[0].viewable_courses;
             res.locals.course_instances = result.rows[0].course_instances;
 
             if (permissions_course.course_role == 'None') {
