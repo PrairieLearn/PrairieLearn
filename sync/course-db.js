@@ -713,21 +713,11 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
     const infoFilesRootDir = path.join(coursePath, directory);
     const walk = async (relativeDir) => {
         let files;
-        try {
-            files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
-        } catch (e) {
-            if (e.code === 'ENOENT') {
-                // Missing directory; fail gracefully so we return an empty collections.
-                return 0;
-            }
-            // Some other error, permissions perhaps. Throw to abort sync.
-            throw e;
-        }
+        files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
         // For each file in the directory, assume it is a question directory
         // and attempt to access `info.json`. If we can successfully read it,
         // hooray, we're done.
-        let infoFileCount = 0;
         await async.each(files, async (/** @type {string} */ dir) => {
             const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
             const info = await loadAndValidateJsonNew({
@@ -742,22 +732,22 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
             });
             if (info) {
                 infoFiles[path.join(relativeDir, dir)] = info;
-                infoFileCount += 1;
             } else if (recursive) {
-                const recursiveFileCount = await walk(path.join(relativeDir, dir));
-                if (recursiveFileCount === 0) {
-                    // If we hit this case, this means we just operated on a
-                    // directory that didn't contain an `info.json` file and
-                    // also didn't contain any subdirectories. If this happend,
-                    // emit this directory as an infofile with an error attached.
-                    infoFiles[path.join(relativeDir, dir)] = infofile.makeError(`Missing JSON file: ${infoFilePath}`);
-                    infoFileCount += 1;
-                } else {
-                    infoFileCount += recursiveFileCount;
+                try {
+                    await walk(path.join(relativeDir, dir));
+                } catch (e) {
+                    if (e.code === 'ENOTDIR') {
+                        // This wasn't a directory; ignore it.
+                    } else if (e.code === 'ENOENT') {
+                        // Missing directory; record it
+                        infoFiles[path.join(relativeDir, dir)] = infofile.makeError(`Missing JSON file: ${infoFilePath}`);
+                    } else {
+                        // Some other error, permissions perhaps. Throw to abort sync.
+                        throw e;
+                    }
                 }
             }
         });
-        return infoFileCount;
     };
 
     await walk('');
