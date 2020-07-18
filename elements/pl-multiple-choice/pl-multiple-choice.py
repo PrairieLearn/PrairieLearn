@@ -34,7 +34,10 @@ def categorize_options(element, data):
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not None:
-        json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
+        if pathlib.PurePath(file_path).is_absolute():
+            json_file = file_path
+        else:
+            json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
         with open(json_file, mode='r', encoding='utf-8') as f:
             data = json.load(f)
             for text in data['correct']:
