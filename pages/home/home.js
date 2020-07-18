@@ -10,17 +10,23 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     res.locals.isAuthenticated = !!res.locals.authn_user;
     if (res.locals.isAuthenticated) {
-        var params = {
+        const params = {
             user_id: res.locals.authn_user.user_id,
-            is_administrator: res.locals.is_administrator,
-            req_date: res.locals.req_date,
-        };
-        sqldb.queryOneRow(sql.select_home, params, function(err, result) {
+        }
+        sqldb.query(sql.insert_xc101_viewer, params, function(err, _result) {
             if (ERR(err, next)) return;
-            res.locals.courses = result.rows[0].courses;
-            res.locals.course_instances = result.rows[0].course_instances;
+            const params = {
+                user_id: res.locals.authn_user.user_id,
+                is_administrator: res.locals.is_administrator,
+                req_date: res.locals.req_date,
+            };
+            sqldb.queryOneRow(sql.select_home, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.locals.courses = result.rows[0].courses;
+                res.locals.course_instances = result.rows[0].course_instances;
 
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
         });
     } else {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
