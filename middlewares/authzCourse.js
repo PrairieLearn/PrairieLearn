@@ -11,7 +11,7 @@ module.exports = function(req, res, next) {
     const params = {
         user_id: res.locals.authn_user.user_id,
         course_id: req.params.course_id,
-    }
+    };
     sqldb.query(sql.insert_xc101_viewer, params, function(err, _result) {
         if (ERR(err, next)) return;
 

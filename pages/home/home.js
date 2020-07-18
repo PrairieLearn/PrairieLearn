@@ -12,7 +12,7 @@ router.get('/', function(req, res, next) {
     if (res.locals.isAuthenticated) {
         const params = {
             user_id: res.locals.authn_user.user_id,
-        }
+        };
         sqldb.query(sql.insert_xc101_viewer, params, function(err, _result) {
             if (ERR(err, next)) return;
             const params = {
