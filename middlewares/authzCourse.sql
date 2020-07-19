@@ -6,7 +6,7 @@ INSERT INTO course_permissions (user_id, course_id, course_role)
         pl_courses AS c
     WHERE
         c.id = $course_id
-        AND c.is_example_course
+        AND c.example_course
 ON CONFLICT DO NOTHING
 
 -- BLOCK select_authz_data

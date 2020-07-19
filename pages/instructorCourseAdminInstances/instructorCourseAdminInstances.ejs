@@ -25,7 +25,7 @@
                         <div class="col-auto">
                             <span class="text-white">Course instances</span>
                         </div>
-                        <% if ((authz_data.has_course_permission_edit) && (! course.is_example_course) && (! locals.needToSync)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
                         <div class="col-auto">
                             <form name="add-course-instance-form" method="POST">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

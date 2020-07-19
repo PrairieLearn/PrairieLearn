@@ -5,7 +5,7 @@ INSERT INTO course_permissions (user_id, course_id, course_role)
     FROM
         pl_courses AS c
     WHERE
-        c.is_example_course
+        c.example_course
         AND EXISTS ( -- is the user at least a Viewer in some course?
             SELECT 1 FROM course_permissions
             WHERE cp.user_id = $user_id AND cp.course_role IN ('Owner', 'Editor', 'Viewer')

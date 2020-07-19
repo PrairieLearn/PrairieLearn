@@ -4,7 +4,7 @@
   <div class="form-group">
     <label for="to-course-id-select">The copied question will be added to the following course:</label>
     <select class="form-control" id="to-course-id-select" name="to_course_id" required>
-      <% if (course.is_example_course) { %>
+      <% if (course.example_course) { %>
       <option hidden disabled selected value> -- select a course -- </option>
       <% } %>
       <% editable_courses.forEach((c) => { %>

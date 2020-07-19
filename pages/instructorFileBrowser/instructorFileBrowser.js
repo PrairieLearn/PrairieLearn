@@ -185,11 +185,11 @@ function browseDirectory(file_browser, callback) {
                             path: path.relative(file_browser.paths.coursePath, filepath),
                             encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                             dir: file_browser.paths.workingPath,
-                            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
-                            canUpload: file_browser.has_course_permission_edit && (! file_browser.is_example_course),
+                            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+                            canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canDownload: file_browser.has_course_permission_edit,
-                            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
-                            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
+                            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+                            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     } else if (stats.isDirectory()) {
@@ -263,11 +263,11 @@ function browseFile(file_browser, callback) {
             path: path.relative(file_browser.paths.coursePath, filepath),
             encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
             dir: path.dirname(file_browser.paths.workingPath),
-            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
-            canUpload: file_browser.has_course_permission_edit && (! file_browser.is_example_course),
+            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+            canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
             canDownload: file_browser.has_course_permission_edit,
-            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
-            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.is_example_course),
+            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
         };
         callback(null);
@@ -278,7 +278,7 @@ router.get('/*', function(req, res, next) {
     debug('GET /');
     let file_browser = {
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        is_example_course: res.locals.course.is_example_course,
+        example_course: res.locals.course.example_course,
     };
     async.waterfall([
         (callback) => {

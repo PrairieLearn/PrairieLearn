@@ -5,7 +5,7 @@ columns
     grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
-    is_example_course: boolean not null default false
+    example_course: boolean not null default false
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
@@ -14,7 +14,7 @@ columns
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
-    pl_courses_is_example_course_key: USING btree (is_example_course)
+    pl_courses_example_course_key: USING btree (example_course)
 
 foreign-key constraints
     pl_courses_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
