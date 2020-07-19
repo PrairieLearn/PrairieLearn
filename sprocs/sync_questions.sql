@@ -6,8 +6,13 @@ CREATE OR REPLACE FUNCTION
         OUT new_questions_json JSONB
     )
 AS $$
+DECLARE
+    missing_question_qids TEXT;
+    missing_disk_question_qids TEXT;
+    mismatched_uuid_qids TEXT;
 BEGIN
     -- Move all our data into a temporary table so it's easier to work with
+
     CREATE TEMPORARY TABLE disk_questions (
         qid TEXT NOT NULL,
         uuid uuid,
@@ -15,86 +20,78 @@ BEGIN
         warnings TEXT,
         data JSONB
     ) ON COMMIT DROP;
+
     INSERT INTO disk_questions (
-        qid,
-        uuid,
-        errors,
-        warnings,
-        data
+                   qid,              uuid,                    errors,             warnings,            data
     ) SELECT
-        entries->>0,
-        (entries->>1)::uuid,
-        entries->>2,
-        entries->>3,
-        (entries->4)::JSONB
+        entries->>'qid', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
     FROM UNNEST(disk_questions_data) AS entries;
 
-    -- First, update the names of everything we have a UUID for
-    UPDATE questions AS q
-    SET qid = dq.qid, deleted_at = NULL
-    FROM disk_questions AS dq
-    WHERE
-        dq.uuid IS NOT NULL
-        AND q.uuid = dq.uuid
-        AND q.course_id = syncing_course_id;
+    -- Synchronize the dest (questions) with the src
+    -- (disk_questions). This soft-deletes, un-soft-deletes, and
+    -- inserts new rows in questions. No data is synced yet. Only the
+    -- (id, course_id, uuid, qid, deleted_at) columns are used.
 
-    -- Next, add known UUIDs to previously synced questions without UUIDS
-    UPDATE questions AS q
-    SET uuid = dq.uuid 
-    FROM disk_questions AS dq
-    WHERE
-        dq.uuid IS NOT NULL
-        AND q.qid = dq.qid
-        AND q.deleted_at IS NULL
-        AND q.uuid IS NULL
-        AND q.course_id = syncing_course_id;
-
-    -- Next, soft-delete any rows for which we have a mismatched UUID
-    UPDATE questions AS q
-    SET deleted_at = now()
-    FROM disk_questions AS dq
-    WHERE
-        q.qid = dq.qid
-        AND q.deleted_at IS NOT NULL
-        AND dq.uuid IS NOT NULL
-        AND q.uuid IS NOT NULL
-        AND q.uuid != dq.uuid
-        AND q.course_id = syncing_course_id;
-
-    -- Insert new rows for missing names for which we have a UUID
-    WITH qids_to_insert AS (
-        SELECT qid FROM disk_questions WHERE uuid IS NOT NULL
-        EXCEPT
-        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
+    WITH
+    matched_rows AS (
+        SELECT dq.qid AS dq_qid, dq.uuid AS dq_uuid, q.id AS q_id -- matched_rows cols have underscores
+        FROM disk_questions AS dq LEFT JOIN questions AS q ON (
+            q.course_id = syncing_course_id
+            AND (dq.uuid = q.uuid
+                 OR ((dq.uuid IS NULL OR q.uuid IS NULL)
+                     AND dq.qid = q.qid AND q.deleted_at IS NULL)))
+    ),
+    deactivate_unmatched_dest_rows AS (
+        UPDATE questions AS q
+        SET deleted_at = now()
+        WHERE q.id NOT IN (
+            SELECT q_id FROM matched_rows WHERE q_id IS NOT NULL
+        ) AND q.deleted_at IS NULL AND q.course_id = syncing_course_id
+    ),
+    update_matched_dest_rows AS (
+        UPDATE questions AS q
+        SET qid = dq_qid, uuid = dq_uuid, deleted_at = NULL
+        FROM matched_rows
+        WHERE q.id = q_id AND q.course_id = syncing_course_id
+    ),
+    insert_unmatched_src_rows AS (
+        INSERT INTO questions AS q (course_id, qid, uuid, deleted_at)
+        SELECT syncing_course_id, dq_qid, dq_uuid, NULL
+        FROM matched_rows
+        WHERE q_id IS NULL
+        RETURNING q.qid AS dq_qid, q.id AS inserted_q_id
     )
-    INSERT INTO questions (qid, uuid, course_id)
-    SELECT
-        qti.qid,
-        dq.uuid,
-        syncing_course_id
-    FROM
-        qids_to_insert AS qti
-        JOIN disk_questions AS dq ON (dq.qid = qti.qid);
+    -- Make a map from QID to ID to return to the caller
+    SELECT jsonb_object_agg(dq_qid, COALESCE(q_id, inserted_q_id))
+    INTO new_questions_json
+    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (dq_qid);
 
-    -- Insert new rows for missing names for which we do not have a UUID
-    WITH qids_to_insert AS (
-        SELECT qid FROM disk_questions WHERE uuid IS NULL
-        EXCEPT
-        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
-    )
-    INSERT INTO questions (qid, course_id)
-    SELECT qid, syncing_course_id FROM qids_to_insert;
+    -- Internal consistency checks to ensure that dest (questions) and
+    -- src (disk_questions) are in fact synchronized.
 
-    -- Finally, soft-delete rows with unwanted names
-    WITH qids_to_delete AS (
-        SELECT qid FROM questions WHERE deleted_at IS NULL AND course_id = syncing_course_id
-        EXCEPT
-        SELECT qid FROM disk_questions
-    )
-    UPDATE questions
-    SET deleted_at = now()
-    FROM qids_to_delete
-    WHERE questions.qid = qids_to_delete.qid;
+    SELECT string_agg(dq.qid, ', ')
+    INTO missing_question_qids
+    FROM disk_questions AS dq
+    WHERE dq.qid NOT IN (SELECT q.qid FROM questions AS q WHERE q.course_id = syncing_course_id AND q.deleted_at IS NULL);
+    IF (missing_question_qids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: QIDs on disk but not synced to DB: %', missing_question_qids;
+    END IF;
+
+    SELECT string_agg(q.qid, ', ')
+    INTO missing_disk_question_qids
+    FROM questions AS q
+    WHERE q.course_id = syncing_course_id AND q.deleted_at IS NULL AND q.qid NOT IN (SELECT dq.qid FROM disk_questions AS dq);
+    IF (missing_disk_question_qids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: QIDs in DB but not on disk: %', missing_disk_question_qids;
+    END IF;
+
+    SELECT string_agg(dq.qid, ', ')
+    INTO mismatched_uuid_qids
+    FROM disk_questions AS dq JOIN questions AS q ON (q.course_id = syncing_course_id AND q.qid = dq.qid AND q.deleted_at IS NULL)
+    WHERE NOT (dq.uuid = q.uuid OR dq.uuid IS NULL);
+    IF (mismatched_uuid_qids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: QIDs on disk with mismatched UUIDs in DB: %', mismatched_uuid_qids;
+    END IF;
 
     -- At this point, there will be exactly one non-deleted row for all qids
     -- that we loaded from disk. It is now safe to update all those rows with
@@ -128,7 +125,7 @@ BEGIN
         sync_warnings = dq.warnings
     FROM
         disk_questions AS dq,
-        -- Aggregates are not allowed in UPDATE clases, so we need to do them in a
+        -- Aggregates are not allowed in UPDATE clauses, so we need to do them in a
         -- subquery here
         (
             SELECT
@@ -155,25 +152,11 @@ BEGIN
         AND q.course_id = syncing_course_id
         AND (dq.errors IS NOT NULL AND dq.errors != '');
 
-    -- Make a map from QID to ID to return to the caller
-    SELECT
-        coalesce(
-            jsonb_agg(jsonb_build_array(q.qid, q.id)),
-            '[]'::jsonb
-        ) AS questions_json
-    FROM questions AS q, disk_questions AS dq
-    INTO new_questions_json
-    WHERE
-        q.qid = dq.qid
-        AND q.course_id = syncing_course_id;
-
     -- Ensure that all questions have numbers
     WITH
     questions_needing_numbers AS (
-        SELECT
-            id, row_number() OVER () AS index
-        FROM
-            questions
+        SELECT id, row_number() OVER () AS index
+        FROM questions
         WHERE
             number IS NULL
             AND course_id = syncing_course_id
@@ -189,12 +172,9 @@ BEGIN
         FROM questions_needing_numbers AS qnn
         JOIN new_numbers AS nn ON (qnn.index = nn.index)
     )
-    UPDATE
-        questions AS q
-    SET
-        number = qwnn.number
-    FROM
-        questions_with_new_numbers AS qwnn
+    UPDATE questions AS q
+    SET number = qwnn.number
+    FROM questions_with_new_numbers AS qwnn
     WHERE q.id = qwnn.id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
