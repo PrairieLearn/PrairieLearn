@@ -13,6 +13,7 @@ module.exports.sync = (courseInfo, course_id, callback) => {
         title: courseInfo.title,
         display_timezone: courseInfo.timezone || null,
         grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
+        is_example_course: courseInfo.isExampleCourse,
         options: courseInfo.options || {},
     };
     sqldb.queryZeroOrOneRow(sql.update_course, params, (err, result) => {

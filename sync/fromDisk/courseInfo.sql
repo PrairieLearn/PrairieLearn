@@ -5,6 +5,7 @@ SET
     title = $title,
     display_timezone = CASE WHEN $display_timezone::text IS NOT NULL THEN $display_timezone::text ELSE display_timezone END,
     grading_queue = $grading_queue,
+    is_example_course = $is_example_course,
     options = $options
 WHERE
     c.id = $course_id

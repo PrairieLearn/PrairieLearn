@@ -1,7 +1,7 @@
 -- BLOCK insert_xc101_viewer
 WITH
 example_course AS (
-    SELECT * FROM pl_courses WHERE (options->'isExampleCourse')::boolean IS TRUE
+    SELECT * FROM pl_courses WHERE is_example_course IS true
 )
 INSERT INTO course_permissions (user_id, course_id, course_role)
     SELECT
