@@ -1,5 +1,5 @@
 -- BLOCK insert_xc101_viewer_if_has_course
-INSERT INTO course_permissions AS cp (user_id, course_id, course_role)
+INSERT INTO course_permissions (user_id, course_id, course_role)
     SELECT
         $user_id, c.id, 'Viewer'
     FROM
@@ -7,7 +7,7 @@ INSERT INTO course_permissions AS cp (user_id, course_id, course_role)
     WHERE
         c.example_course
         AND EXISTS ( -- is the user at least a Viewer in some course?
-            SELECT 1 FROM course_permissions
+            SELECT 1 FROM course_permissions AS cp
             WHERE cp.user_id = $user_id AND cp.course_role IN ('Owner', 'Editor', 'Viewer')
         )
 ON CONFLICT DO NOTHING
