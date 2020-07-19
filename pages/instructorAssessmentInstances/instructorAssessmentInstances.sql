@@ -7,7 +7,7 @@ SELECT
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60)))::text || ' min'
+            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
