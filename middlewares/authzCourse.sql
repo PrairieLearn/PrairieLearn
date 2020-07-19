@@ -1,4 +1,4 @@
--- BLOCK insert_xc101_viewer
+-- BLOCK insert_xc101_viewer_on_access
 WITH example_course AS (
     SELECT * FROM pl_courses WHERE is_example_course IS true LIMIT 1
 )
