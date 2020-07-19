@@ -1,18 +1,15 @@
 -- BLOCK insert_xc101_viewer_if_has_course
-WITH
-example_course AS (
-    SELECT * FROM pl_courses WHERE is_example_course IS true
-)
 INSERT INTO course_permissions (user_id, course_id, course_role)
     SELECT
-        cp.user_id, xc.id, 'Viewer'
+        $user_id, c.id, 'Viewer'
     FROM
-        course_permissions AS cp
-        JOIN example_course AS xc ON (xc.id != cp.course_id)
+        pl_courses AS c
     WHERE
-        cp.user_id = $user_id
-        AND cp.course_role IN ('Owner', 'Editor', 'Viewer')
-    LIMIT 1
+        c.is_example_course
+        AND EXISTS ( -- is the user at least a Viewer in some course?
+            SELECT 1 FROM course_permissions
+            WHERE cp.user_id = $user_id AND cp.course_role IN ('Owner', 'Editor', 'Viewer')
+        )
 ON CONFLICT DO NOTHING
 
 -- BLOCK select_home

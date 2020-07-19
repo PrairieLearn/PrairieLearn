@@ -1,14 +1,12 @@
 -- BLOCK insert_xc101_viewer_on_access
-WITH example_course AS (
-    SELECT * FROM pl_courses WHERE is_example_course IS true LIMIT 1
-)
 INSERT INTO course_permissions (user_id, course_id, course_role)
     SELECT
-        $user_id, xc.id, 'Viewer'
+        $user_id, c.id, 'Viewer'
     FROM
-        example_course AS xc
+        pl_courses AS c
     WHERE
-        xc.id = $course_id
+        c.id = $course_id
+        AND c.is_example_course
 ON CONFLICT DO NOTHING
 
 -- BLOCK select_authz_data
