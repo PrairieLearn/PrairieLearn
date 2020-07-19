@@ -1,5 +1,5 @@
 -- BLOCK insert_xc101_viewer_if_has_course
-INSERT INTO course_permissions (user_id, course_id, course_role)
+INSERT INTO course_permissions AS cp (user_id, course_id, course_role)
     SELECT
         $user_id, c.id, 'Viewer'
     FROM
