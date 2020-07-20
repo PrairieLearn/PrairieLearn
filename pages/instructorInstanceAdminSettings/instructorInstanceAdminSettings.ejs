@@ -30,7 +30,7 @@
                     <tr><th>CIID</th>
                         <td>
                             <span class="pr-2"><%= course_instance.short_name %></span>
-                            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                             <button id="changeCiidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change CIID" data-content="<%= include('../partials/changeIdForm', {id_label: 'CIID', buttonID: 'changeCiidButton', id_old: course_instance.short_name, ids: short_names, changeIdFormHelpText: 'The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple versions, like <code>Fa19honors</code>.'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                 <i class="fa fa-i-cursor"></i>
                                 <span>Change CIID</span>
@@ -38,7 +38,7 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                    <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                     <tr><th>Configuration</th>
                         <td>
                             <a href="<%= urlPrefix %>/<%= navPage %>/file_view/<%= infoCourseInstancePath %>">
@@ -53,7 +53,7 @@
                     <% } %>
                 </tbody>
             </table>
-            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
             <div class="card-footer">
                 <div class="row">
                     <div class="col-auto">
