@@ -121,7 +121,7 @@ def prepare(element_html, data):
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
-    # 2. Sample corret and incorrect choices
+    # 2. Sample correct and incorrect choices
     sampled_correct = random.sample(correct_answers, number_correct)
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
