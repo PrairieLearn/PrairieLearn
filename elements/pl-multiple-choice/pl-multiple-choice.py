@@ -13,7 +13,7 @@ HIDE_LETTER_KEYS_DEFAULT = False
 
 
 def categorize_options(element):
-    """Get provided corret and incorrect answers"""
+    """Get provided correct and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
     index = 0
