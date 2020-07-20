@@ -14,18 +14,13 @@ FROM
     JOIN LATERAL authz_course_instance($user_id, ci.id, $is_administrator, $req_date, $req_course_instance_role) AS permissions_course_instance ON TRUE
 WHERE
     c.id = coalesce($course_id, ci.course_id)
-    AND c.deleted_at IS NULL
-    AND (
-            (permissions_course->>'course_role')::enum_course_role > 'None'
-            OR (permissions_course_instance->>'course_instance_role')::enum_course_instance_role > 'None'
-            OR (permissions_course_instance->>'is_enrolled_with_access')::boolean IS TRUE
-        );
+    AND c.deleted_at IS NULL;
 
 -- BLOCK ensure_enrollment
 INSERT INTO enrollments
-        (course_instance_id,  user_id,  role)
-VALUES ($course_instance_id, $user_id, $role)
-ON CONFLICT (user_id, course_instance_id) DO NOTHING;
+        (course_instance_id,  user_id)
+VALUES ($course_instance_id, $user_id)
+ON CONFLICT DO NOTHING;
 
 -- BLOCK select_user
 SELECT
