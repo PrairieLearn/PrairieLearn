@@ -71,10 +71,10 @@ def prepare(element_html, data):
         raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
 
     # 1. Pick the choice(s) to display
-    number_answers = pl.get_integer_attrib(element, 'number-answers', -1)
+    number_answers = pl.get_integer_attrib(element, 'number-answers', None)
     # determine if user provides number-answers
     set_num_answers = True
-    if number_answers == -1:
+    if number_answers is None:
         set_num_answers = False
         number_answers = len_total + enable_nota + enable_aota
     # figure out how many choice(s) to choose from the *provided* choices,
