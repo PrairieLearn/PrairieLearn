@@ -36,7 +36,26 @@
                 <td><%= access_rule.start_date %></td>
                 <td><%= access_rule.end_date %></td>
                 <td><%= access_rule.credit %></td>
-                <td><%= access_rule.time_limit %></td>
+                <td>
+                  <% if (access_rule.time_limit !== '—') { %>
+                    <form class="form-inline" method="POST">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <input type="hidden" name="access_rule_number" value="<%= access_rule.number %>">
+
+                      <button class="btn btn-xs btn-warning mr-1" name="__action" value="decrease_aar_time_limit">
+                        <i class="fa fa-minus" aria-hidden="true"></i><span class="sr-only">minus</span>
+                      </button>
+
+                      <%= access_rule.time_limit %>
+
+                      <button class="btn btn-xs btn-primary ml-1" name="__action" value="increase_aar_time_limit">
+                        <i class="fa fa-plus" aria-hidden="true"></i><span class="sr-only">plus</span>
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <%= access_rule.time_limit %>
+                  <% } %>
+                </td>
                 <td><%= access_rule.password %></td>
                 <td><%- access_rule.exam %></td>
               </tr>

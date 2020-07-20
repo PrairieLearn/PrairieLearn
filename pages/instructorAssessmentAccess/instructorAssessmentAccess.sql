@@ -1,3 +1,27 @@
+-- BLOCK increase_aar_time_limit
+WITH update_time_limit AS (
+    UPDATE assessment_access_rules AS aar
+    SET time_limit_min = time_limit_min + 5
+    WHERE
+        aar.assessment_id = $assessment_id
+        AND aar.number = $access_rule_number
+)
+UPDATE assessment_instances AS ai
+SET date_limit = date_limit + INTERVAL '5 min'
+WHERE ai.open
+
+-- BLOCK decrease_aar_time_limit
+WITH update_time_limit AS (
+    UPDATE assessment_access_rules AS aar
+    SET time_limit_min = GREATEST(0, time_limit_min - 5)
+    WHERE
+        aar.assessment_id = $assessment_id
+        AND aar.number = $access_rule_number
+)
+UPDATE assessment_instances AS ai
+SET date_limit = GREATEST(current_timestamp, date_limit - INTERVAL '5 min')
+WHERE ai.open
+
 -- BLOCK assessment_access_rules
 SELECT
     CASE
@@ -39,7 +63,8 @@ SELECT
         ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
             || ps_c.course_id || '/exam/' || e.exam_id || '">'
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
-    END AS exam
+    END AS exam,
+    aar.number AS number
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)
