@@ -56,28 +56,26 @@
                 </div>
                 <form class="question-form" name="course-request" method="POST">
                     <div class="card-body">
-                        <% if (!has_one_course) { %>
-                            <!-- Small blurb for people that have never requested a course before -->
-                            <p>
-                                To request a course space, you need to provide the <strong>course rubric and number</strong> (for example, XC 101) and the course's <strong>title</strong>. You may also optionally provide your GitHub username if you would like the ability to edit content offline.
-                            </p>
-                        <% } else { %>
-                            <p>
-                                Your course request is pending. Once your request is reviewed by a member of staff and your course space is created, you will receive an email with further instructions and resources to get started.
-                            </p>
-                        <% } %>
-
                         <div class="form-group">
                             <label for="cr-shortname">Course Rubric and Number</label>
-                            <input type="text" class="form-control" name="cr-shortname" placeholder="XC 101" pattern="[a-zA-Z]+ [a-zA-Z0-9]+" title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters" required>
+                            <input type="text" class="form-control" name="cr-shortname" placeholder="MATH 101" pattern="[A-Z]+ [a-zA-Z0-9]+" title="this is a series of capitalised letters, followed by a space, followed by a series of numbers and/or letters" required>
+                            <small class="form-text text-muted">
+                                Examples: MATH 101, PHYS 440.
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="cr-title">Course Title</label>
-                            <input type="text" class="form-control" name="cr-title" placeholder="Example Course" minlength="1" required>
+                            <input type="text" class="form-control" name="cr-title" placeholder="Elementary Mathematics" minlength="1" required>
+                            <small class="form-text text-muted">
+                                This is the official title of the course, as given in the course catalog.
+                            </small>
                         </div>
                         <div class="form-group">
                             <label for="cr-ghuser">GitHub Username (optional)</label>
                             <input type="text" class="form-control" name="cr-ghuser">
+                            <small class="form-text text-muted">
+                                Providing your GitHub username will allow you to edit course content offline.  You do not need to provide this if you would like to use the online web editor.
+                            </small>
                         </div>
                     </div>
                     <div class="card-footer">

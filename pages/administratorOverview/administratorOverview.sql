@@ -123,3 +123,6 @@ UPDATE course_requests
 SET approved_by = $user_id,
     approved_status = $action
 WHERE course_requests.id = $id;
+
+-- BLOCK select_course_request
+SELECT * FROM course_requests WHERE id = $id;

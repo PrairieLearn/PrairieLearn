@@ -81,6 +81,7 @@ module.exports = {
             'administrators_insert_by_user_uid.sql',
             'administrators_delete_by_user_id.sql',
             'courses_insert.sql',
+            'courses_insert_from_request.sql',
             'courses_update_column.sql',
             'courses_delete.sql',
             'courses_user_can_edit.sql',
@@ -159,6 +160,7 @@ module.exports = {
             'sync_topics.sql',
             'sync_course_instances.sql',
             'lock_timeout_set.sql',
+            'course_requests_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

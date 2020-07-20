@@ -7,6 +7,8 @@ const error = require('@prairielearn/prairielib/error');
 const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
 const cache = require('../../lib/cache');
+const github = require('../../lib/github');
+const opsbot = require('../../lib/opsbot');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -113,7 +115,28 @@ router.post('/', (req, res, next) => {
         };
         sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+
+            if (action === 'approved') {
+                sqlDb.queryOneRow(sql.select_course_request, {id}, (err, result) => {
+                    if (ERR(err, next)) return;
+
+                    result = result.rows[0];
+                    github.createAndAddCourseFromRequest(id, res.locals.authn_user, (err, repo) => {
+                        if (ERR(err, next)) return;
+
+                        opsbot.sendCourseRequestMessage(
+                            `*Created Course*\n` +
+                            `Course repo: ${repo}\n` +
+                            `Course rubric: ${result.short_name}\n` +
+                            `Approved by: ${res.locals.authn_user.name}`, (err) => {
+                                    ERR(err, (e) => {logger.error(err);});
+                                });
+                        res.redirect(req.originalUrl);
+                    });
+                });
+            } else {
+                res.redirect(req.originalUrl);
+            }
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
