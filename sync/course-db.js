@@ -643,7 +643,6 @@ module.exports.loadCourseInfo = async function(coursePath) {
         exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
-            isExampleCourse,
         },
     };
 
