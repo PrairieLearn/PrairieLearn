@@ -159,13 +159,22 @@ def prepare(element_html, data):
         # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     if enable_aota:
+        if inline:
+            aota_text = 'All of these'
+        else:
+            aota_text = 'All of the above'
         # Add 'All of the above' option after shuffling
-        sampled_answers.append((len_total, aota_correct, 'All of the above'))
+        sampled_answers.append((len_total, aota_correct, aota_text))
 
     if enable_nota:
+        if inline:
+            nota_text = 'None of these'
+        else:
+            nota_text = 'None of the above'
         # Add 'None of the above' option after shuffling
-        sampled_answers.append((len_total + 1, nota_correct, 'None of the above'))
+        sampled_answers.append((len_total + 1, nota_correct, nota_text))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
