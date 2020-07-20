@@ -1,3 +1,21 @@
+-- BLOCK increase_ai_date_limit
+UPDATE
+    assessment_instances AS ai
+SET
+    date_limit = date_limit + INTERVAL '5 min'
+WHERE
+    ai.open
+    AND ai.id = $assessment_instance_id
+
+-- BLOCK decrease_ai_date_limit
+UPDATE
+    assessment_instances AS ai
+SET
+    date_limit = GREATEST(current_timestamp, date_limit - INTERVAL '5 min')
+WHERE
+    ai.open
+    AND ai.id = $assessment_instance_id
+
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
@@ -7,7 +25,7 @@ SELECT
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || 'm'
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,

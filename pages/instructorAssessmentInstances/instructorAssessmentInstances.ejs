@@ -118,16 +118,35 @@
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
-                <td><%= row.uid %></td>
-                <td><%= row.name %></td>
-                <td class="text-center"><%= row.role %></td>
-                <td class="text-center"><%= row.number %></td>
-                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
-                <td class="text-center"><%= row.date_formatted %></td>
-                <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-                <td class="text-center"><%= row.time_remaining %></td>
-                <td class="text-center">
-                  <div class="dropdown">
+                <td class="align-middle"><%= row.uid %></td>
+                <td class="align-middle"><%= row.name %></td>
+                <td class="text-center align-middle"><%= row.role %></td>
+                <td class="text-center align-middle"><%= row.number %></td>
+                <td class="text-center align-middle align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center align-middle"><%= row.date_formatted %></td>
+                <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+                <td class="text-center align-middle">
+                  <% if (row.time_remaining.endsWith('m')) { %>
+                    <form class="form-inline justify-content-center" method="POST">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <input type="hidden" name="assessment_instance_id" value="<%= row.number %>">
+
+                      <button class="btn btn-xs btn-warning mr-1" name="__action" value="decrease_ai_date_limit">
+                        <i class="fa fa-minus" aria-hidden="true"></i><span class="sr-only">minus</span>
+                      </button>
+
+                      <%= row.time_remaining %>
+
+                      <button class="btn btn-xs btn-primary ml-1" name="__action" value="increase_ai_date_limit">
+                        <i class="fa fa-plus" aria-hidden="true"></i><span class="sr-only">plus</span>
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <%= row.time_remaining %>
+                  <% } %>
+                </td>
+                <td class="text-center align-middle">
+                  <div class="dropdown d-flex flex-row">
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
@@ -228,7 +247,11 @@
                     </div>
                   </div>
                 </td>
-                <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
+                <td class="text-center align-middle">
+                  <span class="d-flex flex-row">
+                    <a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a>
+                  </span>
+                </td>
               </tr>
               <% }); %>
             </tbody>
@@ -254,8 +277,8 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
-                      7: {sorter: false},
                       8: {sorter: false},
+                      9: {sorter: false},
                   },
               });
           });
