@@ -93,7 +93,6 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
 /**
  * @typedef {Object} CourseOptions
  * @property {boolean} useNewQuestionRenderer
- * @property {boolean} isExampleCourse
  */
 
 /**
@@ -125,6 +124,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} title
  * @property {string} path
  * @property {string} timezone
+ * @property {boolean} exampleCourse
  * @property {CourseOptions} options
  * @property {Tag[]} tags
  * @property {Topic[]} topics
@@ -627,7 +627,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
 
     const topics = [...knownTopics.values()];
 
-    const isExampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
+    const exampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
         && info.name === 'XC 101';
 
@@ -640,6 +640,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
         assessmentSets,
         tags,
         topics,
+        exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
             isExampleCourse,

@@ -25,7 +25,7 @@
                         <span class="text-white">Questions</span>
                     </div>
                     <div class="col-auto">
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse) && (! locals.needToSync)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
                         <form class="d-inline" name="add-question-form" method="POST">
                             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                             <button name="__action" value="add_question" class="btn btn-sm btn-light"><i class="fa fa-plus" aria-hidden="true"></i>

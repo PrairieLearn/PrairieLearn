@@ -40,6 +40,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} name
  * @property {string} title
  * @property {string} timezone
+ * @property {boolean} exampleCourse
  * @property {CourseOptions} options
  * @property {Tag[]} tags
  * @property {Topic[]} topics
