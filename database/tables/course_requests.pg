@@ -1,6 +1,7 @@
 columns
     approved_by: bigint
     approved_status: enum_course_request_status default 'pending'::enum_course_request_status
+    created_at: timestamp with time zone not null default now()
     github_user: text
     id: bigint not null default nextval('course_requests_id_seq'::regclass)
     short_name: text

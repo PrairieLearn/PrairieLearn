@@ -1,6 +1,5 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
-const _ = require('lodash');
 const router = express.Router();
 const opsbot = require('../../lib/opsbot');
 const github = require('../../lib/github');
@@ -75,7 +74,7 @@ router.post('/', function(req, res, next) {
                 /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
                 if (auto_created) {
                     github.createAndAddCourseFromRequest(creq_id, res.locals.authn_user, (err, repo) => {
-                        if (ERR(err, (e) => {logger.error(err);})) return;
+                        if (ERR(err, () => {logger.error(err);})) return;
 
                         opsbot.sendCourseRequestMessage(
                             `*Automatically created course*\n` +
@@ -84,7 +83,7 @@ router.post('/', function(req, res, next) {
                             `Course title: ${title}\n` +
                             `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                             `GitHub username: ${github_user || 'not provided'}`, (err) => {
-                                ERR(err, (e) => {logger.error(err);});
+                                ERR(err, () => {logger.error(err);});
                             });
                     });
                 } else {
@@ -94,7 +93,7 @@ router.post('/', function(req, res, next) {
                         `Course title: ${title}\n` +
                         `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                         `GitHub username: ${github_user || 'not provided'}`, (err) => {
-                            ERR(err, (e) => {logger.error(err);});
+                            ERR(err, () => {logger.error(err);});
                         });
                 }
                 next();

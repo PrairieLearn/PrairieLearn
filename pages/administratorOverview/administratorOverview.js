@@ -9,6 +9,7 @@ const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 const cache = require('../../lib/cache');
 const github = require('../../lib/github');
 const opsbot = require('../../lib/opsbot');
+const logger = require('../../lib/logger');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -129,8 +130,8 @@ router.post('/', (req, res, next) => {
                             `Course repo: ${repo}\n` +
                             `Course rubric: ${result.short_name}\n` +
                             `Approved by: ${res.locals.authn_user.name}`, (err) => {
-                                    ERR(err, (e) => {logger.error(err);});
-                                });
+                                ERR(err, () => {logger.error(err);});
+                            });
                         res.redirect(req.originalUrl);
                     });
                 });
