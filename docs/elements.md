@@ -49,8 +49,6 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python 
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
@@ -74,12 +72,16 @@ The following **Conditional** elements are available:
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
-Note: PrairieLearn Elements listed next have been **deprecated**. These elements
-will be removed at a future date.
+Note: PrairieLearn Elements listed next have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
 
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
     - **Deprecated** as submission elements in `v3` all have score display options.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+    - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
 
 ## Submission Elements
 
@@ -1223,39 +1225,6 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
-## `pl-prairiedraw-figure` element
-
-Create and display a prairiedraw image.
-
-#### Sample Element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-#### Details
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-#### Example implementations
-
-- [element/prairieDrawFigure]
-
-#### See also
-
-- [PrairieDraw graphics documentation](PrairieDraw.md)
-
------
-
 ## `pl-graph` element
 
 Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
@@ -1619,9 +1588,16 @@ It expects results to follow [the reference schema for external grading results]
 
 ## Deprecated Elements
 
+Note: The following PrairieLearn Elements have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
+
 ## `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
 
 #### Sample Element
 
@@ -1634,6 +1610,46 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+-----
+
+## `pl-prairiedraw-figure` element
+
+Create and display a prairiedraw image.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
+
+#### Sample Element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+#### Details
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+#### Example implementations
+
+- [element/prairieDrawFigure]
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
+
+
+
+
 
 <!-- Switch to using reference style links for elements -->
 [demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput
