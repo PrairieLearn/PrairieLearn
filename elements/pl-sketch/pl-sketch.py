@@ -1,5 +1,6 @@
 import chevron
 import prairielearn as pl
+import lxml.html
 
 
 def prepare(element_html, data):
@@ -7,6 +8,9 @@ def prepare(element_html, data):
 
 
 def render(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    width = pl.get_integer_attrib(element, 'width', 600);
+    height = pl.get_integer_attrib(element, 'height', 700);
     if data['panel'] == 'question':
         if len(data['raw_submitted_answers']) == 0:
             skp_json = ''
@@ -16,7 +20,9 @@ def render(element_html, data):
         html_params = {
             'uuid': pl.get_uuid(),
             'sketchpad_json': skp_json,
-            'test_elem': 'hello world'
+            'test_elem': 'hello world',
+            'width': width,
+            'height': height
         }
 
         with open('pl-sketch.mustache', 'r') as f:

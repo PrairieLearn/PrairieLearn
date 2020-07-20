@@ -1,82 +1,70 @@
 /* eslint-disable */
 
-var size = 5;
-var color = '#000000';
-var curTool = null;
+window.PLSketchApi = {
+    'sketchpad': {},
+    'color': '#000000',
+    'tool': null,
 
-function changeTool(tool, sketchpad) {
-    if (tool === curTool) {
-        return;
-    }
-    if (tool === 'pen') {
-        size = 5;
-        curTool = 'pen';
-        $('#pen').css('background', '#C0C0C0');
-        $('#eraser').css('background', '#FAFAFA');
-        sketchpad.penSize = size;
-        sketchpad.color = color;
-    } else {
-        size = 30;
-        curTool = 'eraser';
-        $('#eraser').css('background', '#C0C0C0');
-        $('#pen').css('background', '#FAFAFA');
-        sketchpad.penSize = size;
-        sketchpad.color = '#FFF';
-    }
-}
+    changeTool: function(toolName) {
+        if (toolName === this.tool) {
+            return;
+        }
+        if (toolName === 'pen') {
+            size = 5;
+            this.tool = 'pen';
+            $('#pen').css('background', '#C0C0C0');
+            $('#eraser').css('background', '#FAFAFA');
+            this.sketchpad.penSize = size;
+            this.sketchpad.color = this.color;
+        } else {
+            size = 30;
+            this.tool = 'eraser';
+            $('#eraser').css('background', '#C0C0C0');
+            $('#pen').css('background', '#FAFAFA');
+            this.sketchpad.penSize = size;
+            this.sketchpad.color = '#FFF';
+        }
+    },
 
-function updateColor(col, sketchpad) {
-    color = col;
-    $('.pl-sketch-color-icon').css('backgroundColor', color);
-    if (curTool === 'pen') {
-        sketchpad.color = color;
-    }
-}
+    updateColor: function(colorName) {
+        this.color = colorName;
+        $('.pl-sketch-color-icon').css('backgroundColor', this.color);
+        if (this.tool === 'pen') {
+            this.sketchpad.color = this.color;
+        }
+    },
 
-$(function() {
-    var width = 600;
-    var height = 700;
-    var sketches_string = $('#pl-sketch-json').html();
-    var sketchpad;
-    if (sketches_string.length != 0) {
-        sketches_string = sketches_string.replace(/'/g, '!@#$%');
-        sketches_string = sketches_string.replace(/"/g, '\'');
-        sketches_string = sketches_string.replace(/!@#\$%/g, '"');
-
-        var strokes = JSON.parse(sketches_string);
-        strokes = strokes.sketches;
-        strokes = strokes.replace(/'/g, '"');
-        strokes = JSON.parse(strokes);
+    setupSketchpad: function(width, height, past_sketches, uuid) {
+        console.log('hello world');
+        let element = '#pl-sketch-canvas-' + uuid;
         var sketchpadObject = {};
         sketchpadObject['width'] = width;
         sketchpadObject['height'] = height;
-        sketchpadObject['element'] = '#pl-sketch-canvas';
-        sketchpadObject['strokes'] = strokes['strokes'];
-        sketchpadObject['undoHistory'] = strokes['undoHistory'];
-        sketchpad = new Sketchpad(sketchpadObject);
-    } else {
-        sketchpad = new Sketchpad({
-            element: '#pl-sketch-canvas',
-            width: width,
-            height: height
+        sketchpadObject['element'] = element;
+        console.log(!jQuery.isEmptyObject(past_sketches));
+        if (!jQuery.isEmptyObject(past_sketches)) {
+          sketchpadObject['strokes'] = past_sketches['strokes'];
+          sketchpadObject['undoHistory'] = past_sketches['undoHistory'];
+          console.log(past_sketches);
+        }
+        this.sketchpad = new Sketchpad(sketchpadObject);
+
+        $('#pen').on('click', () => { this.changeTool('pen'); });
+        $('#eraser').on('click', () => { this.changeTool('eraser'); });
+        $('#undo').on('click', () => { this.sketchpad.undo(); });
+        $('#redo').on('click', () => { this.sketchpad.redo(); });
+        this.changeTool('pen');
+
+        $('#color-picker-' + uuid).on('click', (ev) => {
+            $('#color-popup-' + uuid).toggleClass("pl-sketch-hidden");
+        });
+
+        $('.pl-sketch-circle').on('click', (ev) => {
+            this.updateColor(ev.currentTarget.style.backgroundColor);
+        });
+
+        $('.question-form').on('submit', () => {
+            $('#pl-sketch-input-' + uuid).val(JSON.stringify(this.sketchpad.toObject()));
         });
     }
-
-    $('#pen').on('click', () => { changeTool('pen', sketchpad); });
-    $('#eraser').on('click', () => { changeTool('eraser', sketchpad); });
-    $('#undo').on('click', () => { sketchpad.undo(); });
-    $('#redo').on('click', () => { sketchpad.redo(); });
-    changeTool('pen', sketchpad);
-
-    $('#color-picker').on('click', (ev) => {
-        $('#color-popup').toggleClass("pl-sketch-hidden");
-    });
-
-    $('.pl-sketch-circle').on('click', (ev) => {
-        updateColor(ev.currentTarget.style.backgroundColor, sketchpad);
-    });
-
-    $('.question-form').on('submit', () => {
-        $('#pl-sketch-input').val(JSON.stringify(sketchpad.toObject()));
-    });
-})
+}
