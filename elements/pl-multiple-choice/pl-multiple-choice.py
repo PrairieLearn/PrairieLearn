@@ -155,7 +155,7 @@ def prepare(element_html, data):
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
     # true, the variable correct_answer will save it as correct, and
-    # overwritting previous choice(s)
+    # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
