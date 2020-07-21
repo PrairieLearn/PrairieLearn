@@ -191,7 +191,7 @@ describe('assessment instance group synchorization test', function () {
     });
     describe('5. question submission', function(){
         it('should be able to enter question page', function(callback){
-            const questionUrl = locals.$('a:contains("HW5.2")').attr('href');
+            const questionUrl = locals.$('a:contains("HW6.2")').attr('href');
             locals.questionUrl = `${locals.siteUrl}${questionUrl}`;
             request(locals.questionUrl, function (error, response, body) {
                 if (error) {
