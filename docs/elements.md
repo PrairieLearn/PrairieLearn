@@ -49,8 +49,6 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python 
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
@@ -74,12 +72,16 @@ The following **Conditional** elements are available:
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
-Note: PrairieLearn Elements listed next have been **deprecated**. These elements
-will be removed at a future date.
+Note: PrairieLearn Elements listed next have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
 
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
     - **Deprecated** as submission elements in `v3` all have score display options.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+    - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
 
 ## Submission Elements
 
@@ -111,6 +113,9 @@ Attribute | Type | Default | Description
 `inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
+`all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
+`none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -164,6 +169,7 @@ Attribute | Type | Default | Description
 `hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
+`hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -670,13 +676,16 @@ Attribute | Type | Default | description
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
-`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
+`focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
 
 #### Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
+
+The `focus` attribute defaults to `"false"`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers, so use caution. If you have multiple file editors on the same question page, only one element should have `focus` set to true, or else the behavior may be unpredictable.
 
 #### Example implementations
 
@@ -829,7 +838,7 @@ Attribute | Type | Default | Description
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
 `source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
-`prevent-select` | booelan | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
+`prevent-select` | boolean | false | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.
 `highlight-lines` | text | - | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.
 `highlight-lines-color` | text | `#b3d7ff` | Specifies the color of highlighted lines of code.
 
@@ -902,10 +911,13 @@ def generate(data):
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | The name of the key in `data['params']` to get a value from
-`text` | string | False | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
+`text` | boolean | false | Force the variable to be displayed in a textual format, as given by `repr(var)`.  By default, special types like DataFrames will be rendered as HTML tables.
 `prefix` | string | (empty) | Any prefix to append to the output in `text` mode.
 `suffix` | string | (empty) | Any suffix to append to the output in `text` mode.
-`no-highlight` | string | False | Disable syntax highlighting in `text` mode.
+`no-highlight` | boolean | false | Disable syntax highlighting in `text` mode.
+`show-header` | boolean | true | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)
+`show-index` | boolean | true | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)
+`show-dimensions` | boolean | true | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)
 
 #### Details
 
@@ -1215,39 +1227,6 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
-## `pl-prairiedraw-figure` element
-
-Create and display a prairiedraw image.
-
-#### Sample Element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-#### Details
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-#### Example implementations
-
-- [element/prairieDrawFigure]
-
-#### See also
-
-- [PrairieDraw graphics documentation](PrairieDraw.md)
-
------
-
 ## `pl-graph` element
 
 Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
@@ -1355,7 +1334,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `width` | float | - | The width of the overlay canvas in pixels.  Required only if no background is specified.
 `height` | float | - | The height of the overlay canvas in pixels.  Required only if no background is specified.
-`clip` | boolean | True | If true, children will be cut off when exceeding overlay boundaries.
+`clip` | boolean | true | If true, children will be cut off when exceeding overlay boundaries.
 
 #### `pl-location` Customizations
 
@@ -1611,9 +1590,16 @@ It expects results to follow [the reference schema for external grading results]
 
 ## Deprecated Elements
 
+Note: The following PrairieLearn Elements have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
+
 ## `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
 
 #### Sample Element
 
@@ -1626,6 +1612,46 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+-----
+
+## `pl-prairiedraw-figure` element
+
+Create and display a prairiedraw image.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
+
+#### Sample Element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+#### Details
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+#### Example implementations
+
+- [element/prairieDrawFigure]
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
+
+
+
+
 
 <!-- Switch to using reference style links for elements -->
 [demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput
