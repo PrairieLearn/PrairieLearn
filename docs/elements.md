@@ -49,9 +49,7 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
-- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python 
+- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
@@ -74,12 +72,16 @@ The following **Conditional** elements are available:
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
-Note: PrairieLearn Elements listed next have been **deprecated**. These elements
-will be removed at a future date.
+Note: PrairieLearn Elements listed next have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
 
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
     - **Deprecated** as submission elements in `v3` all have score display options.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+    - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
 
 ## Submission Elements
 
@@ -216,7 +218,7 @@ tolerances.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -227,7 +229,7 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
----- 
+----
 
 ![](elements/pl-number-input-sigfig.png)
 
@@ -239,7 +241,7 @@ def generate(data):
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -296,14 +298,14 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 ```html
 <p> Select the correct word in the following quotes:</p>
-The 
+The
 <pl-dropdown answers-name="aristotle" blank="true">
 
     {{#params.aristotle}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.aristotle}}
 
-</pl-dropdown> 
+</pl-dropdown>
 is more than the sum of its parts. <p></p>
 
 A <pl-dropdown sort="ascend" answers-name="hume">
@@ -359,7 +361,7 @@ Fill in the blank field that requires an **integer** input.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -414,7 +416,7 @@ import prairielearn as pl
 import sympy
 
 def generate(data):
-  
+
   # Declare math symbols
   x, y = sympy.symbols('x y')
 
@@ -616,8 +618,8 @@ Attribute | Type | Default | Description
 
 #### Details
 
-`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
-The following are valid input format options: 
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats.
+The following are valid input format options:
 
 **MATLAB format:**
 ```
@@ -677,13 +679,16 @@ Attribute | Type | Default | description
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
-`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied.
+`auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
+`focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
 
 #### Details
 
 When using `auto-resize`, consider specifying a custom `min-lines` or pre-populating the code editor window with a code sample.
 This will initialize the editor area with a sufficient number of lines to display all of the code simultaneously without the need for scrolling.
+
+The `focus` attribute defaults to `"false"`. Setting this to true will cause the file editor element to automatically capture the cursor focus when the question page is loaded, which may also cause the page to scroll down so that the file editor is in view, bypassing any written introduction. This may have negative implications for accessibility with screen readers, so use caution. If you have multiple file editors on the same question page, only one element should have `focus` set to true, or else the behavior may be unpredictable.
 
 #### Example implementations
 
@@ -1065,7 +1070,7 @@ def generate(data):
   matrixD = np.matrix('-1 4; 3 2')
   # Random matrices can be generated with:
   # mat = np.random.random((2, 2))
-  
+
   # Export each matrix as a JSON object for the question view.
   data['params']['matrixC'] = pl.to_json(matrixC)
   data['params']['matrixD'] = pl.to_json(matrixD)
@@ -1165,10 +1170,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  
+
   # Construct a matrix
   mat = np.matrix('1 2; 3 4')
-  
+
   # Export matrix to be displayed in question.html
   data['params']['matrixC'] = pl.to_json(mat)
 ```
@@ -1185,14 +1190,14 @@ Attribute | Type | Default | Description
 #### Details
 
 Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
-one of the following will be returned. 
+one of the following will be returned.
 
 - **scalar**
     - a string containing the scalar not wrapped in brackets.
 - **numpy 2D array**
     - a string formatted using the `bmatrix` LaTeX style.
 
-Sample LaTeX formatting: 
+Sample LaTeX formatting:
 
 ```latex
 \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
@@ -1225,42 +1230,9 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
-## `pl-prairiedraw-figure` element
-
-Create and display a prairiedraw image.
-
-#### Sample Element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-#### Details
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-#### Example implementations
-
-- [element/prairieDrawFigure]
-
-#### See also
-
-- [PrairieDraw graphics documentation](PrairieDraw.md)
-
------
-
 ## `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations.
 
 #### Sample Elements
@@ -1621,9 +1593,16 @@ It expects results to follow [the reference schema for external grading results]
 
 ## Deprecated Elements
 
+Note: The following PrairieLearn Elements have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
+
 ## `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
 
 #### Sample Element
 
@@ -1636,6 +1615,46 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+-----
+
+## `pl-prairiedraw-figure` element
+
+Create and display a prairiedraw image.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
+
+#### Sample Element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+#### Details
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+#### Example implementations
+
+- [element/prairieDrawFigure]
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
+
+
+
+
 
 <!-- Switch to using reference style links for elements -->
 [demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput

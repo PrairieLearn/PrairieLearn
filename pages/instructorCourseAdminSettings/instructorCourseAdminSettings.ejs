@@ -30,7 +30,7 @@
                         <tr><th>Grading Queue</th><td><%= course.grading_queue %></td></tr>
                         <tr><th>Path</th><td><%= course.path %></td></tr>
                         <tr><th>Repository</th><td><%= course.repository %></td></tr>
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                         <tr><th>Configuration</th>
                             <td>
                                 <% if (locals.needToSync) { %>

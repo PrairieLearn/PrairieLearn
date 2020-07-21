@@ -17,8 +17,8 @@ EXTERNAL_JSON_DEFAULT_CORRECT = 'correct'
 EXTERNAL_JSON_DEFAULT_INCORRECT = 'incorrect'
 
 
-def categorize_options(element, data):
-    """Get provided corret and incorrect answers"""
+def categorize_options(element):
+    """Get provided correct and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
     index = 0
@@ -33,6 +33,17 @@ def categorize_options(element, data):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
+    return correct_answers, incorrect_answers
+
+
+def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above', 'hide-letter-keys']
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+
+    correct_answers, incorrect_answers = categorize_options(element)
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not EXTERNAL_JSON_DEFAULT:
@@ -95,10 +106,10 @@ def prepare(element_html, data):
         raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
 
     # 1. Pick the choice(s) to display
-    number_answers = pl.get_integer_attrib(element, 'number-answers', -1)
+    number_answers = pl.get_integer_attrib(element, 'number-answers', None)
     # determine if user provides number-answers
     set_num_answers = True
-    if number_answers == -1:
+    if number_answers is None:
         set_num_answers = False
         number_answers = len_total + enable_nota + enable_aota
     # figure out how many choice(s) to choose from the *provided* choices,
@@ -145,7 +156,7 @@ def prepare(element_html, data):
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
-    # 2. Sample corret and incorrect choices
+    # 2. Sample correct and incorrect choices
     sampled_correct = random.sample(correct_answers, number_correct)
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
@@ -179,7 +190,7 @@ def prepare(element_html, data):
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
     # true, the variable correct_answer will save it as correct, and
-    # overwritting previous choice(s)
+    # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):

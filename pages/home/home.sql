@@ -1,3 +1,17 @@
+-- BLOCK insert_xc101_viewer_if_has_course
+INSERT INTO course_permissions (user_id, course_id, course_role)
+    SELECT
+        $user_id, c.id, 'Viewer'
+    FROM
+        pl_courses AS c
+    WHERE
+        c.example_course
+        AND EXISTS ( -- is the user at least a Viewer in some course?
+            SELECT 1 FROM course_permissions AS cp
+            WHERE cp.user_id = $user_id AND cp.course_role IN ('Owner', 'Editor', 'Viewer')
+        )
+ON CONFLICT DO NOTHING
+
 -- BLOCK select_home
 WITH
 course_permissions_for_user AS (
@@ -56,21 +70,6 @@ course_instances_list AS (
                 AND check_course_instance_access(ci.id, e.role, e.uid, e.institution_id, $req_date)
             )
         )
-),
-example_course AS (
-    SELECT * FROM pl_courses WHERE (options->'isExampleCourse')::boolean IS TRUE
-),
-xc101_course_viewer AS (
-    INSERT INTO course_permissions (user_id, course_id, course_role)
-        SELECT
-            cp.user_id, xc.id, 'Viewer'
-        FROM
-            course_permissions_for_user AS cp
-            JOIN example_course AS xc ON (xc.id != cp.course_id)
-        WHERE
-            cp.course_role IN ('Owner', 'Editor')
-        LIMIT 1
-    ON CONFLICT DO NOTHING
 )
 SELECT
     cl.courses,
