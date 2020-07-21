@@ -6,5 +6,6 @@
 ```sh
 $ cd workspace_host
 $ aws s3 sync ./example-files/ s3://YOUR_BUCKET_NAME/workspace-0
-$ node interface
+$ cd ..
+$ node workspace_host/interface
 ```
