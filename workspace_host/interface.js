@@ -7,9 +7,25 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require("fs");
 const async = require('async');
+const logger = require('../lib/logger');
+
+const aws = require('../lib/aws.js');
+aws.init((err) => {
+    if (err) logger.debug(err);
+});
+
+const config = require('../lib/config.js');
+const workspaceBucketName = config.workspaceS3Bucket;
+if (workspaceBucketName == '') {
+    logger.warn("Workspace bucket is not configed in config.js");
+} else {
+    logger.info("Workspace bucket is configed to: " + workspaceBucketName);
+}
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
+
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
@@ -50,7 +66,7 @@ function _resetS3(workspace_id, callback) {
 function _uploadToS3(filePath, S3FilePath, callback) {
     s3 = new AWS.S3();
     var uploadParams = {
-        Bucket: "pl-workspace",
+        Bucket: workspaceBucketName,
         Key: S3FilePath,
         Body: fs.readFileSync(filePath),
     };
@@ -69,7 +85,7 @@ function _downloadFromS3(filePath, S3FilePath, callback) {
     };
     s3 = new AWS.S3();
     var downloadParams = {
-        Bucket: 'pl-workspace',
+        Bucket: workspaceBucketName,
         Key: S3FilePath
     };
     var fileStream = fs.createWriteStream(filePath);
@@ -78,6 +94,7 @@ function _downloadFromS3(filePath, S3FilePath, callback) {
     s3Stream.on('error', function(err) {
         // This is for errors like no such file on S3, etc
         callback(null, [filePath, S3FilePath, err]);
+        return;
     });
     
     s3Stream.pipe(fileStream).on('error', function(err) {
@@ -106,13 +123,14 @@ function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     s3 = new AWS.S3();
     var listingParams = {
-        Bucket: 'pl-workspace',
+        Bucket: workspaceBucketName,
         Prefix: S3curDirPath
     };
     
     s3.listObjectsV2(listingParams, (err, data) => {
         if (err) {
             callback(err);
+            return;
         };
         var contents = data["Contents"];
         var ret = [];
@@ -131,6 +149,7 @@ function _syncPullContainer(workspace_id, callback) {
     _recursiveDownloadJobManager("workspace-0", "workspace-0", (err, jobs_params) => {
         if (err) {
             callback(err);
+            return;
         };
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
@@ -184,7 +203,7 @@ async function _syncPushContainer(workspace_id, callback) {
             callback(status);
         } else {
             callback(null, workspace_id);
-        }
+        };
     });
 };
 
@@ -227,6 +246,8 @@ function _createContainer(workspace_id, callback) {
 };
 
 function _delContainer(container, callback) {
+    // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
+    fs.rmdirSync("./workspace-0", { recursive: true });
     container.remove((err) => {
         if (err) {
             callback(err);
@@ -234,8 +255,6 @@ function _delContainer(container, callback) {
             callback(null, container);
         };
     });
-    // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    fs.rmdirSync("./workspace-0", { recursive: true });
 };
 
 function _startContainer(container, callback) {
