@@ -22,8 +22,6 @@ module.exports = function(req, res, next) {
         } else {
             _.assign(res.locals, result.rows[0]);
         }
-        
-        console.log(result.rows.instance_user);
         next();
     });
 };

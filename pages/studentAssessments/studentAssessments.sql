@@ -88,19 +88,20 @@ WITH
             ai.score_perc AS assessment_instance_score_perc,
             ai.open AS assessment_instance_open
         FROM
-            assessments AS a
+            -- join group_users first to find all group assessments
+            group_configs AS gc
+            JOIN groups AS gr ON (gr.group_config_id = gc.id AND gr.deleted_at IS NULL)
+            JOIN group_users AS gu ON (gu.group_id = gr.id AND gu.user_id = $user_id)
+            FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-            LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id AND gc.deleted_at IS NULL)
-            LEFT JOIN groups AS gr ON (gr.group_config_id = gc.id AND gr.deleted_at IS NULL)
-            LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
             LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
         WHERE
             ci.id = $course_instance_id
             AND NOT a.multiple_instance
-            AND (NOT a.group_work OR gu.user_id = $user_id)
             AND a.deleted_at IS NULL
+            AND gc.deleted_at IS NULL
     ),
 
     all_rows AS (
