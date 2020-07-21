@@ -76,7 +76,22 @@
                 <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
-                            <span class="text-monospace text-white"><%= fileEdit.fileNameForDisplay %></span>
+                            <span class="text-monospace text-white d-flex">
+                              <% fileEdit.paths.branch.forEach((dir, key, arr) => { %>
+                                <% if (dir.canView) { %>
+                                  <% if (!(Object.is(arr.length - 1, key))) { %>
+                                    <a class="text-white" href="<%= fileEdit.paths.urlPrefix %>/file_view/<%= dir.encodedPath %>"><%= dir.name %></a>
+                                  <% } else { %>
+                                    <a class="text-white" href="<%= fileEdit.paths.urlPrefix %>/file_edit/<%= dir.encodedPath %>"><%= dir.name %></a>
+                                  <% } %>
+                                <% } else { %>
+                                  <span><%= dir.name %></span>
+                                <% } %>
+                                <% if (!(Object.is(arr.length - 1, key))) { %>
+                                <span class="mx-2">/</span>
+                                <% } %>
+                              <% }); %>
+                            </span>
                         </div>
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
                             <a id="help-<%= fileEdit.uuid %>-button"
