@@ -25,7 +25,7 @@ module.exports = function(req, res, next) {
                 }
                 next();
             });
-        }else {
+        } else {
             sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));

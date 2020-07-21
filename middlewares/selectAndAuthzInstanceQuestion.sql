@@ -5,8 +5,10 @@ FROM
     assessment_instances AS ai
     LEFT JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
     JOIN group_users AS gu ON (ai.group_id = gu.group_id)
+    JOIN groups AS gr ON (gr.id = gu.group_id)
 WHERE
-    iq.id = $instance_question_id;
+    iq.id = $instance_question_id
+    AND gr.deleted_at IS NULL;
 
 -- BLOCK select_and_auth
 WITH instance_questions_info AS (
@@ -152,6 +154,7 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+    JOIN groups AS gr ON (gr.id = gu.group_id AND gr.deleted_at IS NULL)
     JOIN users AS u ON (u.user_id = gu.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, TRUE) AS aai ON TRUE
