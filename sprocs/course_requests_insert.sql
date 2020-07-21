@@ -24,7 +24,7 @@ BEGIN
     WHERE cr.user_id = course_requests_insert.user_id AND cr.created_at BETWEEN NOW() - INTERVAL '24 HOURS' AND NOW();
 
     IF auto_created IS TRUE THEN
-        status := 'approved';
+        status := 'creating';
     ELSE
         status := 'pending';
     END IF;

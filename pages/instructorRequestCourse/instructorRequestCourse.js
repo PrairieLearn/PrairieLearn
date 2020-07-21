@@ -34,71 +34,85 @@ router.post('/', function(req, res, next) {
         return next();
     }
 
-    sqldb.query(sql.get_conflicting_course_owners, { 'short_name': short_name.trim().toLowerCase() }, (err, result) => {
+    sqldb.queryOneRow(sql.get_existing_course_requests, { 'user_id': res.locals.authn_user.user_id, short_name, title }, (err, result) => {
         if (ERR(err, next)) return;
-        const course_owners = result.rows;
+        if (result.rows[0].has_existing_request) {
+            res.locals.error_message = `<p> You already have a request for this course. </p>`;
+            return next();
+        }
 
-        if (course_owners.length > 0) {
-            let error_message = `<p>The requested course (${short_name}) already exists.  Please contact the owner(s) of that course to request access to it.</p>`;
-            let formatted_owners = [];
-            course_owners.forEach(c => {
-                if (c.name !== null && c.uid !== null) {
-                    formatted_owners.push(`${c.name} (<code>${c.uid}</code>)`);
-                } else if (c.name !== null) {
-                    formatted_owners.push(c.name);
-                } else if (c.uid !== null) {
-                    formatted_owners.push(`<code> ${c.uid} </code>`);
-                }
-            });
-            if (formatted_owners.length > 0) {
-                error_message += '<ul>';
-                formatted_owners.forEach(o => {
-                    error_message += '<li>' + o + '</li>';
+        sqldb.query(sql.get_conflicting_course_owners, { 'short_name': short_name.trim().toLowerCase() }, (err, result) => {
+            if (ERR(err, next)) return;
+            const course_owners = result.rows;
+
+            if (course_owners.length > 0) {
+                /* If the course already exists, display an error message containing the owners */
+
+                let error_message = `<p>The requested course (${short_name}) already exists.  Please contact the owner(s) of that course to request access to it.</p>`;
+                let formatted_owners = [];
+                course_owners.forEach(c => {
+                    if (c.name !== null && c.uid !== null) {
+                        formatted_owners.push(`${c.name} (<code>${c.uid}</code>)`);
+                    } else if (c.name !== null) {
+                        formatted_owners.push(c.name);
+                    } else if (c.uid !== null) {
+                        formatted_owners.push(`<code> ${c.uid} </code>`);
+                    }
                 });
-                error_message += '</ul>';
-            }
-            res.locals.error_message = error_message;
-            next();
-        } else {
-            const sql_params = [
-                res.locals.authn_user.user_id,
-                short_name,
-                title,
-                github_user,
-            ];
-            sqldb.call('course_requests_insert', sql_params, (err, result) => {
-                if (ERR(err, next)) return;
-                const auto_created = result.rows[0].auto_created;
-                const creq_id = result.rows[0].course_request_id;
+                if (formatted_owners.length > 0) {
+                    error_message += '<ul>';
+                    formatted_owners.forEach(o => {
+                        error_message += '<li>' + o + '</li>';
+                    });
+                    error_message += '</ul>';
+                }
+                res.locals.error_message = error_message;
+                next();
+            } else {
+                /* Otherwise, insert the course request and send a Slack message */
 
-                /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
-                if (auto_created) {
-                    github.createAndAddCourseFromRequest(creq_id, res.locals.authn_user, (err, repo) => {
-                        if (ERR(err, () => {logger.error(err);})) return;
+                const sql_params = [
+                    res.locals.authn_user.user_id,
+                    short_name,
+                    title,
+                    github_user,
+                ];
+                sqldb.call('course_requests_insert', sql_params, (err, result) => {
+                    if (ERR(err, next)) return;
+                    const auto_created = result.rows[0].auto_created;
+                    const creq_id = result.rows[0].course_request_id;
 
+                    /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                    if (auto_created) {
+                        github.createAndAddCourseFromRequest(creq_id, res.locals.authn_user, (err, repo) => {
+                            if (ERR(err, () => {logger.error(err);})) return;
+
+                            opsbot.sendCourseRequestMessage(
+                                `*Automatically created course*\n` +
+                                `Course repo: ${repo}\n` +
+                                `Course rubric: ${short_name}\n` +
+                                `Course title: ${title}\n` +
+                                `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                                `GitHub username: ${github_user || 'not provided'}`, (err) => {
+                                    ERR(err, () => {logger.error(err);});
+                                });
+                        });
+                    } else {
                         opsbot.sendCourseRequestMessage(
-                            `*Automatically created course*\n` +
-                            `Course repo: ${repo}\n` +
+                            `*Incoming course request*\n` +
                             `Course rubric: ${short_name}\n` +
                             `Course title: ${title}\n` +
                             `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                             `GitHub username: ${github_user || 'not provided'}`, (err) => {
                                 ERR(err, () => {logger.error(err);});
                             });
-                    });
-                } else {
-                    opsbot.sendCourseRequestMessage(
-                        `*Incoming Course Request*\n` +
-                        `Course rubric: ${short_name}\n` +
-                        `Course title: ${title}\n` +
-                        `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-                        `GitHub username: ${github_user || 'not provided'}`, (err) => {
-                            ERR(err, () => {logger.error(err);});
-                        });
-                }
-                next();
-            });
-        }
+                    }
+
+                    /* Redirect on success so that refreshing doesn't create another request */
+                    res.redirect(req.originalUrl);
+                });
+            }
+        });
     });
 });
 router.post('/', get);

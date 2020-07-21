@@ -19,7 +19,8 @@ select_course_requests AS (
                 'title', r.title,
                 'user_name', u.name,
                 'user_id', u.uid,
-                'github_user', r.github_user
+                'github_user', r.github_user,
+                'status', r.approved_status
             )),
             '[]'::jsonb
         ) AS course_requests
@@ -27,7 +28,7 @@ select_course_requests AS (
         course_requests AS r
         INNER JOIN users AS u ON (u.user_id = r.user_id)
     WHERE
-        r.approved_status = 'pending'
+        r.approved_status = 'pending' OR r.approved_status = 'creating'
 ),
 select_courses AS (
     SELECT

@@ -102,7 +102,7 @@ router.post('/', (req, res, next) => {
         let action = req.body.approve_deny_action;
 
         if (action === 'approve') {
-            action = 'approved';
+            action = 'creating';
         } else if (action === 'deny') {
             action = 'denied';
         } else {
@@ -117,7 +117,11 @@ router.post('/', (req, res, next) => {
         sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
             if (ERR(err, next)) return;
 
-            if (action === 'approved') {
+            if (action === 'creating') {
+                res.redirect(req.originalUrl);
+
+                /* Create the course in the background */
+                /* TODO: Make this a server job? */
                 sqlDb.queryOneRow(sql.select_course_request, {id}, (err, result) => {
                     if (ERR(err, next)) return;
 
@@ -126,13 +130,12 @@ router.post('/', (req, res, next) => {
                         if (ERR(err, next)) return;
 
                         opsbot.sendCourseRequestMessage(
-                            `*Created Course*\n` +
+                            `*Created course*\n` +
                             `Course repo: ${repo}\n` +
                             `Course rubric: ${result.short_name}\n` +
                             `Approved by: ${res.locals.authn_user.name}`, (err) => {
                                 ERR(err, () => {logger.error(err);});
                             });
-                        res.redirect(req.originalUrl);
                     });
                 });
             } else {

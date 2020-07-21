@@ -17,6 +17,12 @@ LEFT JOIN users as u on r.approved_by = u.user_id
 WHERE r.user_id = $user_id
 ORDER BY created_at DESC;
 
+-- BLOCK get_existing_course_requests
+SELECT EXISTS(
+    SELECT cr.* FROM course_requests AS cr
+    WHERE cr.user_id = $user_id AND LOWER(BTRIM(cr.short_name)) = LOWER(BTRIM($short_name))
+) AS has_existing_request;
+
 -- BLOCK get_conflicting_course_owners
 WITH select_conflicting_courses AS (
     SELECT c.id

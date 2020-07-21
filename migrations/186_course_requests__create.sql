@@ -1,4 +1,4 @@
-CREATE TYPE enum_course_request_status AS ENUM ('pending', 'approved', 'denied');
+CREATE TYPE enum_course_request_status AS ENUM ('pending', 'approved', 'denied', 'creating');
 
 CREATE TABLE IF NOT EXISTS course_requests (
     approved_by bigint REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE,

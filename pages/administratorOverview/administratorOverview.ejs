@@ -238,6 +238,7 @@
                               <td><%= req.user_id %></td>
                               <td><%= req.github_user %></td>
                               <td class="align-middle">
+                                  <% if (req.status === 'pending') { %>
                                   <form name="approve-request-form-<%= req.id %>" method="POST">
                                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                                       <input type="hidden" name="__action" value="approve_deny_course_request">
@@ -252,6 +253,9 @@
                                           <i class="fa fa-check" aria-hidden="true"></i> Approve
                                       </button>
                                   </form>
+                                  <% } else if (req.status === 'creating') { %>
+                                  <span class="badge badge-info float-right"><i class="fa fa-sync-alt"></i> Creating Course </span>
+                                  <% } %>
                               </td>
                           </tr>
                       <% }); %>
@@ -260,8 +264,7 @@
           </div>
           <div class="card-footer">
               <small>
-                  Accepting or denying a course request is only used to signal to the original instructor that their request has been fulfilled.
-                  This will not create a new GitHub repository nor create the course in the database.
+                  Accepting a course request will automatically create a new GitHub repository and add the course to the database.
               </small>
           </div>
       </div>
