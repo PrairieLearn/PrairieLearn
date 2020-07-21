@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <%- include('../partials/head'); %>
+        <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
         <script src="/javascripts/lodash.min.js"></script>
         <script src="/javascripts/d3.min.js"></script>
         <script src="/localscripts/histmini.js"></script>
@@ -25,7 +25,7 @@
                         <div class="col-auto">
                             <span class="text-white">Course instances</span>
                         </div>
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse) && (! locals.needToSync)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
                         <div class="col-auto">
                             <form name="add-course-instance-form" method="POST">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

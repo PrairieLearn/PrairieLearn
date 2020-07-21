@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import itertools
+from os import path
 
 
 def get_name(student):
@@ -12,19 +13,17 @@ def get_name(student):
 
 
 def generate(data):
-    basedir = '../../../clientFilesCourse/'
+    # We will get our list of students from clientFilesCourse
+    base_path = data['options']['client_files_course_path']
 
     # Get list of students
-    with open(basedir + 'student_names.json', 'r') as infile:
+    with open(path.join(base_path, 'student_names.json'), 'r') as infile:
         all_students = json.load(infile)
 
     n = 5
     while True:
         # Choose n students uniformly at random without replacement
         students = np.random.choice(all_students, n, replace=False)
-
-        # The first student is the one we will ask about
-        uin = students[0]['uin']
 
         # Verify that none of these students have the same name
         duplicate = False
@@ -34,6 +33,7 @@ def generate(data):
         if not duplicate:
             break
 
+    # The first student is the one we will ask about
+    students[0]['correct'] = True
     data['params']['name'] = get_name(students[0])
-    for i in range(0, n):
-        data['params']['image{:d}'.format(i)] = '{:s}student_images/{:s}.png'.format(basedir, students[i]['uin'])
+    data['params']['students'] = students.tolist()

@@ -42,6 +42,10 @@ BEGIN
             UPDATE pl_courses AS c SET repository = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
+        WHEN 'institution_id' THEN
+            UPDATE pl_courses AS c SET institution_id = CAST(value AS BIGINT)
+            WHERE c.id = course_id
+            RETURNING c.* INTO new_row;
         ELSE
             RAISE EXCEPTION 'unknown column_name: %', column_name;
     END CASE;

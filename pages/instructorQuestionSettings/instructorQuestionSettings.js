@@ -152,7 +152,7 @@ router.get('/', function(req, res, next) {
                 if (GHfound) {
                     res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
-            } else if (res.locals.course.options.isExampleCourse) {
+            } else if (res.locals.course.example_course) {
                 res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);

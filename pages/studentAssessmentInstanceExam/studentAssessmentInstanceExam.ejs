@@ -8,7 +8,7 @@
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
-  
+
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
@@ -41,7 +41,7 @@
         </div>
       </div>
     </div>
-  
+
     <% if (showTimeLimitExpiredModal) { %>
       <div id="timeLimitExpiredModal" class="modal fade">
         <div class="modal-dialog">
@@ -63,14 +63,14 @@
         $(function() {$('#timeLimitExpiredModal').modal({})})
       </script>
     <% } // showTimeLimitExpiredModal %>
-  
+
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
         </div>
-  
+
         <div class="card-body">
           <% if (!assessment.allow_real_time_grading) { %>
             <div class="alert alert-warning">
@@ -121,7 +121,7 @@
               </div>
             <% } %>
           </div>
-  
+
           <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
           <div class="alert alert-secondary mt-4" role="alert">
             <div class="row">
@@ -140,7 +140,7 @@
             }) %>
           </div>
           <% } %>
-  
+
           <% if (assessment_text_templated) { %>
           <div class="card bg-light mb-0 mt-4">
             <div class="card-body">
@@ -149,7 +149,7 @@
           </div>
           <% } %>
         </div>
-  
+
         <table class="table table-sm table-hover">
           <thead>
             <tr>
@@ -222,7 +222,7 @@
           <% }); %>
           </tbody>
         </table>
-  
+
         <div class="card-footer">
           <% if (assessment.allow_real_time_grading) { %>
             <form name="grade-form" method="POST" class="form-inline">
