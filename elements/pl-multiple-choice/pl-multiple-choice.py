@@ -33,17 +33,6 @@ def categorize_options(element):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
-    return correct_answers, incorrect_answers
-
-
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above', 'hide-letter-keys']
-    pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers-name')
-
-    correct_answers, incorrect_answers = categorize_options(element)
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not EXTERNAL_JSON_DEFAULT:
