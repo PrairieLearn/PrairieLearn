@@ -42,44 +42,15 @@ function obtainInfo(req, res, next){
         sqldb.query(sql.assessment_list, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.assessment_list_rows = result.rows;
-            // sqldb.query(sql.select_groups, params, function(err, result) {
-            //     if (ERR(err, next)) return;
-            //     res.locals.groups_rows = result.rows;
-            //     sqldb.query(sql.not_assigned_users, params, function(err, result) {
-            //         if (ERR(err, next)) return;
-            //         res.locals.not_assigned_users_rows = result.rows;
-            //         debug('render page');
-            //         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            //     });
-            // });
             sqldb.query(sql.select_group_users, params, function(err, result) {
                 if (ERR(err, next)) return;
-                let groups = new Array();
-                let notAssigned = new Array();
-                (async () => {
-                    result.rows.forEach(user => {
-                        if (user.gid) {
-                            if (groups[user.gid]) {
-                                groups[user.gid]['size'] += 1;
-                                groups[user.gid]['members'].push(user.uid);
-                            } else {
-                                groups[user.gid] = new Array();
-                                groups[user.gid]['gid'] = user.gid;
-                                groups[user.gid]['name'] = user.name;
-                                groups[user.gid]['size'] = 1;
-                                groups[user.gid]['members'] = [user.uid];
-                            }
-                        } else {
-                            if (user.role == 'Student') {
-                                notAssigned.push(user.uid);
-                            }
-                        }
-                    });
-                    res.locals.groups = groups;
-                    res.locals.notAssigned = notAssigned;
+                res.locals.groups = result.rows;
+                sqldb.query(sql.select_not_in_group, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    notAssigned = result.rows;
                     debug('render page');
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                })();
+                });
             });
         });
     });
