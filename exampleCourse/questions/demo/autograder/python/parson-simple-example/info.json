@@ -1,0 +1,22 @@
+
+{
+    "uuid": "6ed405ca-6964-47d6-b74c-9eaeaaf9ca70",
+    "title": "Autograder demo: pl-parsons-problem simple example",
+    "topic": "Autograder",
+    "tags": [
+        "v3",
+        "sp20",
+        "mfsilva",
+        "nnytko2",
+        "short-coding"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}
