@@ -26,8 +26,10 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+          <% if (assessment.group_work) { %>
+            <i class="fas fa-users"></i>
+          <% } %>
         </div>
-
         <div class="card-body">
           <div class="row align-items-center mb-4">
             <div class="col-md-3 col-sm-6 col-xs-12">

@@ -29,6 +29,7 @@ FROM
     JOIN users AS u ON u.user_id = gu.user_id
 WHERE
     gr.group_config_id = $group_config_id
+    AND gr.deleted_at IS NULL
 GROUP BY
     gr.id
 ORDER BY
@@ -44,6 +45,7 @@ FROM
     JOIN users AS u ON u.user_id = e.user_id
 WHERE
     gr.id IS NULL
+    AND gr.deleted_at IS NULL
     AND e.role = 'Student'
 ORDER BY u.uid;
 
