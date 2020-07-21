@@ -1,34 +1,3 @@
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
-
-CREATE OR REPLACE FUNCTION
-    variants_insert(
-        IN variant_seed text,
-        IN params jsonb,
-        IN true_answer jsonb,
-        IN options jsonb,
-        IN broken boolean,
-        IN instance_question_id bigint, -- can be NULL
-        IN question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
-        IN course_instance_id bigint,   -- can be NULL for some instructor questions
-        IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
-        IN authn_user_id bigint,
-        IN group_work boolean,
-        OUT variant jsonb
-    )
-AS $$
-DECLARE
-    real_question_id bigint;
-    real_course_instance_id bigint;
-    real_user_id bigint;
-    real_group_id bigint;
-    new_number integer;
-    assessment_instance_id bigint;
-    course_id bigint;
-    variant_id bigint;
-    question_workspace_image text;
-    workspace_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -37,32 +6,57 @@ BEGIN
 
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
+        IF group_work THEN 
+            SELECT           q.id,    g.id,                  ai.id,                   ci.id
+            INTO real_question_id, real_group_id, assessment_instance_id, real_course_instance_id
+            FROM
+                instance_questions AS iq
+                JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+                JOIN questions AS q ON (q.id = aq.question_id)
+                JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+                JOIN assessments AS a ON (a.id = ai.assessment_id)
+                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                JOIN groups AS g ON (g.id = ai.group_id)
+            WHERE
+                iq.id = instance_question_id;
 
-        SELECT           q.id,          g.id,    u.user_id,                  ai.id,                   ci.id
-        INTO real_question_id, real_group_id, real_user_id, assessment_instance_id, real_course_instance_id
-        FROM
-            instance_questions AS iq
-            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-            JOIN questions AS q ON (q.id = aq.question_id)
-            JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-            JOIN assessments AS a ON (a.id = ai.assessment_id)
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-            LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at = NULL)
-            LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-        WHERE
-            iq.id = instance_question_id;
+            IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
 
-        IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+            PERFORM instance_questions_ensure_open(instance_question_id);
+            PERFORM assessment_instances_ensure_open(assessment_instance_id);
 
-        PERFORM instance_questions_ensure_open(instance_question_id);
-        PERFORM assessment_instances_ensure_open(assessment_instance_id);
+            SELECT max(v.number)
+            INTO new_number
+            FROM variants AS v
+            WHERE v.instance_question_id = variants_insert.instance_question_id;
 
-        SELECT max(v.number)
-        INTO new_number
-        FROM variants AS v
-        WHERE v.instance_question_id = variants_insert.instance_question_id;
+            new_number := coalesce(new_number + 1, 1);
+        ELSE 
+            SELECT           q.id,    u.user_id,                  ai.id,                   ci.id
+            INTO real_question_id, real_user_id, assessment_instance_id, real_course_instance_id
+            FROM
+                instance_questions AS iq
+                JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+                JOIN questions AS q ON (q.id = aq.question_id)
+                JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+                JOIN assessments AS a ON (a.id = ai.assessment_id)
+                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                JOIN users AS u ON (u.user_id = ai.user_id)
+            WHERE
+                iq.id = instance_question_id;
 
-        new_number := coalesce(new_number + 1, 1);
+            IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+
+            PERFORM instance_questions_ensure_open(instance_question_id);
+            PERFORM assessment_instances_ensure_open(assessment_instance_id);
+
+            SELECT max(v.number)
+            INTO new_number
+            FROM variants AS v
+            WHERE v.instance_question_id = variants_insert.instance_question_id;
+
+            new_number := coalesce(new_number + 1, 1);
+        END IF;
     ELSE
         -- we weren't given an instance_question_id, so we must have
         -- question_id and user_id
@@ -104,13 +98,11 @@ BEGIN
     END IF;
 
     INSERT INTO variants
-        (instance_question_id,      question_id,      course_instance_id,      user_id,      group_id,
-            number, variant_seed, params, true_answer, options, broken, authn_user_id,
+        (instance_question_id, question_id,      course_instance_id, user_id, group_id,
+        number,     variant_seed, params, true_answer, options, broken, authn_user_id,
         workspace_id)
     VALUES
-        (instance_question_id, real_question_id, real_course_instance_id, 
-        CASE WHEN group_work THEN NULL               ELSE real_user_id END, 
-        CASE WHEN group_work THEN real_group_id      ELSE NULL END, 
+        (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
         workspace_id)
     RETURNING id
