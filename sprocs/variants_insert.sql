@@ -1,6 +1,7 @@
 DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
 DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
 DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
+
 CREATE OR REPLACE FUNCTION
     variants_insert(
         IN variant_seed text,
@@ -107,7 +108,9 @@ BEGIN
             number, variant_seed, params, true_answer, options, broken, authn_user_id,
         workspace_id)
     VALUES
-        (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
+        (instance_question_id, real_question_id, real_course_instance_id, 
+        CASE WHEN group_work THEN NULL               ELSE real_user_id END, 
+        CASE WHEN group_work THEN real_group_id      ELSE NULL END, 
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
         workspace_id)
     RETURNING id
