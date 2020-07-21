@@ -1,3 +1,34 @@
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
+
+CREATE OR REPLACE FUNCTION
+    variants_insert(
+        IN variant_seed text,
+        IN params jsonb,
+        IN true_answer jsonb,
+        IN options jsonb,
+        IN broken boolean,
+        IN instance_question_id bigint, -- can be NULL
+        IN question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
+        IN course_instance_id bigint,   -- can be NULL for some instructor questions
+        IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
+        IN authn_user_id bigint,
+        IN group_work boolean,
+        OUT variant jsonb
+    )
+AS $$
+DECLARE
+    real_question_id bigint;
+    real_course_instance_id bigint;
+    real_user_id bigint;
+    real_group_id bigint;
+    new_number integer;
+    assessment_instance_id bigint;
+    course_id bigint;
+    variant_id bigint;
+    question_workspace_image text;
+    workspace_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
