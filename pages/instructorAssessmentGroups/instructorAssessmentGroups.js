@@ -47,7 +47,7 @@ function obtainInfo(req, res, next){
                 res.locals.groups = result.rows;
                 sqldb.query(sql.select_not_in_group, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    let notAssigned = result.rows;
+                    res.locals.notAssigned = result.rows;
                     debug('render page');
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
