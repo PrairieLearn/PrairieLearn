@@ -330,7 +330,7 @@
               <td><%= row.gid %></td>
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
-              <td class="text-center"><small><%= row.members.join(", ") %></small></td>
+              <td class="text-center"><small><%= row.uid_list %></small></td>
               <td class="text-center">
                 <div class="dropdown">
                   <button type="button" 
@@ -380,24 +380,17 @@
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
-                    <% } %>
 
                     <!-- ################################################## -->
 
-                    <% if (authz_data.has_instructor_edit) { %>
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
-                    <% } %>
 
                     <!-- ################################################## -->
 
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <% if (authz_data.has_instructor_edit) { %>
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('show')" href="#">
                       <i class="fa fa-times" aria-hidden="true"></i> Delete this group
-                    </a>
-                    <% } %>
                     </a>
                     <% } %>
 
@@ -424,7 +417,7 @@
             </strong>
             <ul class="mb-0">
               <% notAssigned.forEach(function(row, iRow) {%>
-              <li><%= row %></li>
+              <li><%= row.uid %></li>
               <% }); %>
             </ul>
             <% } %>
