@@ -12,7 +12,7 @@ const hljs = require('highlight.js');
 const FileType = require('file-type');
 const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
-const { encodePath, decodePath } = require('../../lib/uri-util');
+const { encodePath } = require('../../lib/uri-util');
 const {contains, getPaths} = require('../../lib/getPaths');
 
 function canEditFile(file) {
