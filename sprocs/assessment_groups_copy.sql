@@ -6,42 +6,50 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     temp_old_group_config_id BIGINT;
+    temp_copy_group_config_id BIGINT;
     temp_new_group_config_id BIGINT;
-    temp_old_group_id BIGINT;
+    temp_copy_group_id BIGINT;
     temp_new_group_id BIGINT;
 BEGIN
     -- ##################################################################
-    -- get a old group_config
-    SELECT id INTO temp_old_group_config_id
+    -- get a copying group_config
+    SELECT id INTO temp_copy_group_config_id
     FROM group_configs gc
     WHERE gc.assessment_id = assessment_groups_copy.copying_assessment_id AND gc.deleted_at IS NULL;
 
-    -- ##################################################################
-    -- delete old and create a new group_config
+    -- soft delete the old group config
     UPDATE group_configs gc
     SET deleted_at = NOW()
-    WHERE gc.assessment_id = assessment_groups_copy.assessment_id AND gc.deleted_at IS NULL;
+    WHERE gc.assessment_id = assessment_groups_copy.assessment_id AND gc.deleted_at IS NULL
+    RETURNING id INTO temp_old_group_config_id;
 
-    INSERT INTO group_configs(assessment_id, course_instance_id, type, name, minimum, maximum)
-    SELECT @assessment_groups_copy.assessment_id, course_instance_id, type, name, minimum, maximum
+    -- soft delete the old groups
+    UPDATE groups gr
+    SET deleted_at = NOW()
+    WHERE gr.group_config_id = temp_old_group_config_id;
+
+    -- add a new group config
+    INSERT INTO group_configs(assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave)
+    SELECT @assessment_groups_copy.assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave
     FROM group_configs gc
     WHERE gc.assessment_id = assessment_groups_copy.copying_assessment_id AND gc.deleted_at IS NULL
     RETURNING id INTO temp_new_group_config_id;
 
     -- ##################################################################
     -- for loop to traverse all groups in copying_assessment_id and copy rows in groups and group_users
-    FOR temp_old_group_id IN (SELECT id FROM groups gr where gr.group_config_id = temp_old_group_config_id AND gr.deleted_at IS NULL) LOOP
+    FOR temp_copy_group_id IN (SELECT id FROM groups gr where gr.group_config_id = temp_copy_group_config_id AND gr.deleted_at IS NULL) LOOP
+        -- insert a group
         INSERT INTO groups(group_config_id, course_instance_id, name)
         SELECT temp_new_group_config_id, course_instance_id, name
         FROM groups gr
-        WHERE gr.id = temp_old_group_id AND gr.deleted_at IS NULL
+        WHERE gr.id = temp_copy_group_id AND gr.deleted_at IS NULL
         RETURNING id INTO temp_new_group_id;
-
+        
+        -- insert group members
         INSERT INTO group_users(group_id, user_id)
         SELECT temp_new_group_id, user_id
         FROM group_users gu
-        WHERE gu.group_id = temp_old_group_id;
+        WHERE gu.group_id = temp_copy_group_id;
     END LOOP;
-
 END;
 $$ LANGUAGE plpgsql VOLATILE;
