@@ -18,6 +18,7 @@ def generate(data):
     data["params"]["t_c"] = round(t, 3)
     data["params"]["t_x1"] = round(math.sqrt(2*h/g), 3)
     data["params"]["t_x2"] = round(v0x*2/g, 3)
+    data["params"]["t_x3"] = round(h/m, 3)
 
     v0y = 0.5*g*t - h/t
 

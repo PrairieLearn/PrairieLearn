@@ -6,11 +6,16 @@ docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
 
+extra_javascript:
+  - mathjax-config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
 pages:
 - Main: 'index.md'
 - Getting Started:
   - 'Requesting your course space': 'requestCourse.md'
   - 'Creating content in the browser': 'getStarted.md'
+  - 'Workshop': 'workshop/index.md'
 - User Guide:
   - 'Installing and running PL locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
@@ -24,7 +29,6 @@ pages:
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
   - 'Regrading assessments': 'regrading.md'
-  - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Element for drawing': 'pl-drawing/index.md'
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'
@@ -41,6 +45,8 @@ pages:
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
-  - 'Old v1/v2 question format': 'oldQuestion.md'
 - Admin Guide:
   - 'Adding new courses': 'adminCourse.md'
+- Deprecated Features:
+  - 'Old v1/v2 question format': 'oldQuestion.md'
+  - 'Old PrairieDraw graphics': 'PrairieDraw.md'

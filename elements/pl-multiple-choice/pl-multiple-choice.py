@@ -5,16 +5,15 @@ import math
 import chevron
 
 WEIGHT_DEFAULT = 1
+FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
+NONE_OF_THE_ABOVE_DEFAULT = False
+ALL_OF_THE_ABOVE_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
 
 
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
-    pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers-name')
-
+def categorize_options(element):
+    """Get provided correct and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
     index = 0
@@ -29,34 +28,134 @@ def prepare(element_html, data):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
+    return correct_answers, incorrect_answers
+
+
+def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'none-of-the-above', 'all-of-the-above', 'hide-letter-keys']
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+
+    correct_answers, incorrect_answers = categorize_options(element)
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
-    if len_correct < 1:
-        raise Exception('pl-multiple-choice element must have at least one correct answer')
+    enable_nota = pl.get_boolean_attrib(element, 'none-of-the-above', NONE_OF_THE_ABOVE_DEFAULT)
+    enable_aota = pl.get_boolean_attrib(element, 'all-of-the-above', ALL_OF_THE_ABOVE_DEFAULT)
 
-    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
+    nota_correct = False
+    aota_correct = False
+    if enable_nota or enable_aota:
+        prob_space = len_correct + enable_nota + enable_aota
+        rand_int = random.randint(1, prob_space)
+        # Either 'None of the above' or 'All of the above' is correct
+        # with probability 1/(number_correct + enable-nota + enable-aota).
+        # However, if len_correct is 0, nota_correct is guaranteed to be True.
+        # Thus, if no correct option is provided, 'None of the above' will always
+        # be correct, and 'All of the above' always incorrect
+        nota_correct = enable_nota and (rand_int == 1 or len_correct == 0)
+        # 'All of the above' will always be correct when no incorrect option is
+        # provided, while still never both True
+        aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) and not nota_correct
 
-    number_answers = max(1, min(1 + len_incorrect, number_answers))
-    number_correct = 1
-    number_incorrect = number_answers - number_correct
+    if len_correct < 1 and not enable_nota:
+        # This means the code needs to handle the special case when len_correct == 0
+        raise Exception('pl-multiple-choice element must have at least 1 correct answer or set none-of-the-above')
+
+    if enable_aota and len_correct < 2:
+        # To prevent confusion on the client side
+        raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
+
+    # 1. Pick the choice(s) to display
+    number_answers = pl.get_integer_attrib(element, 'number-answers', None)
+    # determine if user provides number-answers
+    set_num_answers = True
+    if number_answers is None:
+        set_num_answers = False
+        number_answers = len_total + enable_nota + enable_aota
+    # figure out how many choice(s) to choose from the *provided* choices,
+    # excluding 'none-of-the-above' and 'all-of-the-above'
+    number_answers -= (enable_nota + enable_aota)
+
+    expected_num_answers = number_answers
+
+    if enable_aota:
+        # min number if 'All of the above' is correct
+        number_answers = min(len_correct, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise Exception(f'Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more')
+    if enable_nota:
+        # if nota correct
+        number_answers = min(len_incorrect, number_answers)
+        # raise exception when the *provided* number-answers can't be satisfied
+        if set_num_answers and number_answers < expected_num_answers:
+            raise Exception(f'Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more')
+    # this is the case for
+    # - 'All of the above' is incorrect
+    # - 'None of the above' is incorrect
+    # - nota and aota disabled
+    number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
+
+    if aota_correct:
+        # when 'All of the above' is correct, we choose all from correct
+        # and none from incorrect
+        number_correct = number_answers
+        number_incorrect = 0
+    elif nota_correct:
+        # when 'None of the above' is correct, we choose all from incorrect
+        # and none from correct
+        number_correct = 0
+        number_incorrect = number_answers
+    else:
+        # PROOF: by the above probability, if len_correct == 0, then nota_correct
+        # conversely; if not nota_correct, then len_correct != 0. Since len_correct
+        # is none negative, this means len_correct >= 1.
+        number_correct = 1
+        number_incorrect = max(0, number_answers - number_correct)
+
     if not (0 <= number_incorrect <= len_incorrect):
         raise Exception('INTERNAL ERROR: number_incorrect: (%d, %d, %d)' % (number_incorrect, len_incorrect, number_answers))
 
+    # 2. Sample correct and incorrect choices
     sampled_correct = random.sample(correct_answers, number_correct)
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
+    # 3. Modify sampled choices
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
+    if enable_aota:
+        if inline:
+            aota_text = 'All of these'
+        else:
+            aota_text = 'All of the above'
+        # Add 'All of the above' option after shuffling
+        sampled_answers.append((len_total, aota_correct, aota_text))
+
+    if enable_nota:
+        if inline:
+            nota_text = 'None of these'
+        else:
+            nota_text = 'None of the above'
+        # Add 'None of the above' option after shuffling
+        sampled_answers.append((len_total + 1, nota_correct, nota_text))
+
+    # 4. Write to data
+    # Because 'All of the above' is below all the correct choice(s) when it's
+    # true, the variable correct_answer will save it as correct, and
+    # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
@@ -109,7 +208,8 @@ def render(element_html, data):
             'name': name,
             'editable': editable,
             'display_score_badge': display_score,
-            'answers': answerset
+            'answers': answerset,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         # Display the score badge if necessary
@@ -132,7 +232,8 @@ def render(element_html, data):
         html_params = {
             'submission': True,
             'parse_error': parse_error,
-            'uuid': pl.get_uuid()
+            'uuid': pl.get_uuid(),
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if parse_error is None:
@@ -159,10 +260,20 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         correct_answer = data['correct_answers'].get(name, None)
+
         if correct_answer is None:
-            html = 'ERROR: No true answer'
+            raise ValueError('No true answer.')
         else:
-            html = '(%s) %s' % (correct_answer['key'], correct_answer['html'])
+            html_params = {
+                'answer': True,
+                'answers': correct_answer,
+                'key': correct_answer['key'],
+                'html': correct_answer['html'],
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+            }
+            with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 

@@ -15,7 +15,7 @@
                 <div class="col-auto">
                     <span class="text-white">Assessments</span>
                 </div>
-                <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                 <div class="col-auto">
                     <form name="add-assessment-form" method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -99,11 +99,11 @@
 
         <div class="card-footer">
           <p>
-            Download <a href="<%= urlPrefix %>/assessments/<%= csvFilename %>"><%= csvFilename %></a>
+            Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
           </p>
           <p class="mb-0">
-            Download <a href="<%= urlPrefix %>/assessments/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
+            Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
             (includes all files ever submitted for this course instance)
           </p>
         </div>
