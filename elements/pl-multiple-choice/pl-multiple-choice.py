@@ -17,7 +17,7 @@ EXTERNAL_JSON_DEFAULT_CORRECT = 'correct'
 EXTERNAL_JSON_DEFAULT_INCORRECT = 'incorrect'
 
 
-def categorize_options(element):
+def categorize_options(element, data):
     """Get provided correct and incorrect answers"""
     correct_answers = []
     incorrect_answers = []
