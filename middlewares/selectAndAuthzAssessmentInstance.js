@@ -14,24 +14,16 @@ module.exports = function(req, res, next) {
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
     };
-    sqldb.query(sql.get_group_work, params, function(err, result) {
+    sqldb.query(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount != 0) {
-            sqldb.query(sql.select_and_auth_group, params, function(err, result) {
-                if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-                for (let i = 0; i < result.rowCount; i++) {
-                    _.assign(res.locals, result.rows[i]);
-                }
-                next();
-            });
-        }else {
-            sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function(err, result) {
-                if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-                _.assign(res.locals, result.rows[0]);
-                next();
-            });
+        if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+        if (result.rowCount == 1){
+            _.assign(res.locals, result.rows[0]);
+        } else {
+            _.assign(res.locals, result.rows[0]);
         }
+        
+        console.log(result.rows.instance_user);
+        next();
     });
 };
