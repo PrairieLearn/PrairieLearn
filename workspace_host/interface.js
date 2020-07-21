@@ -220,7 +220,7 @@ function _createContainer(workspace_id, callback) {
         },
         HostConfig: {
             PortBindings: {'8080/tcp': [{"HostPort": '13746'}]},
-            Binds: ['/Users/yipenghan/Documents/PrairieLearn_SU20/workspaceServer/workspace-0:/home/coder/project'],
+            Binds: [path.join(process.cwd(), '/workspace-0') + ':/home/coder/project'],
             // Copied directly from externalGraderLocal.js
             Memory: 1 << 30, // 1 GiB
             MemorySwap: 1 << 30, // same as Memory, so no access to swap
@@ -238,7 +238,11 @@ function _createContainer(workspace_id, callback) {
           },
     }, (err, container) => {
         if (err) {
-            callback(err);
+            if (err.toString().includes("is already in use")) {
+                _getContainer(workspace_id, callback);
+            } else {
+                callback(err);
+            };
         } else {
             callback(null, container);
         };
@@ -259,9 +263,16 @@ function _delContainer(container, callback) {
 
 function _startContainer(container, callback) {
     container.start((err) => {
-        if (err) {callback(err); return;};
-        callback(null, container);
-    })
+        if (err) {
+            if (err.toString().includes("already started")) {
+                callback(null, container);
+            } else {
+                callback(err);
+            };
+        } else {
+            callback(null, container);
+        };
+    });
 };
 
 function _stopContainer(container, callback) {
