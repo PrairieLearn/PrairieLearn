@@ -70,6 +70,6 @@ module.exports.sync = async function(courseId, courseData) {
     perf.end('sproc:sync_questions');
 
     /** @type {[string, any][]} */
-    const newQuestions = result.rows[0].new_questions_json;
-    return newQuestions;
+    const nameToIdMap = result.rows[0].name_to_id_map;
+    return nameToIdMap;
 };

@@ -43,13 +43,13 @@ module.exports.sync = async function(courseId, courseData) {
     const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
     const courseInstanceParams = Object.entries(courseData.courseInstances).map(([shortName, courseIntanceData]) => {
         const { courseInstance } = courseIntanceData;
-        return JSON.stringify([
-            shortName,
-            courseInstance.uuid,
-            infofile.stringifyErrors(courseInstance),
-            infofile.stringifyWarnings(courseInstance),
-            getParamsForCourseInstance(courseInstance.data, courseTimezone),
-        ]);
+        return JSON.stringify({
+            short_name: shortName,
+            uuid: courseInstance.uuid,
+            errors: infofile.stringifyErrors(courseInstance),
+            warnings: infofile.stringifyWarnings(courseInstance),
+            data: getParamsForCourseInstance(courseInstance.data, courseTimezone),
+        });
     });
 
     const params = [
@@ -62,9 +62,6 @@ module.exports.sync = async function(courseId, courseData) {
     perf.end('sproc:sync_course_instances');
 
     /** @type {[string, any][]} */
-    const newCourseInstances = result.rows[0].course_instance_ids;
-    return newCourseInstances.reduce((acc, [shortName, id]) => {
-        acc[shortName] = id;
-        return acc;
-    }, {});
+    const nameToIdMap = result.rows[0].name_to_id_map;
+    return nameToIdMap;
 };

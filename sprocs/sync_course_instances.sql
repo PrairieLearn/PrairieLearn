@@ -3,17 +3,25 @@ CREATE OR REPLACE FUNCTION
     sync_course_instances(
         IN disk_course_instances_data JSONB[],
         IN syncing_course_id bigint,
-        OUT course_instance_ids JSONB
+        OUT name_to_id_map JSONB
     )
 AS $$
 DECLARE
+    missing_dest_short_names TEXT;
+    missing_src_short_names TEXT;
+    mismatched_uuid_short_names TEXT;
     valid_course_instance record;
     syncing_course_instance_id bigint;
     enrollment JSONB;
     new_user_ids bigint[];
     new_user_id bigint;
 BEGIN
+    -- The sync algorithm used here is described in the preprint
+    -- "Preserving identity during opportunistic unidirectional
+    -- synchronization via two-fold identifiers".
+
     -- Move all our data into a temporary table so it's easier to work with
+
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
@@ -21,112 +29,103 @@ BEGIN
         warnings TEXT,
         data JSONB
     ) ON COMMIT DROP;
+
     INSERT INTO disk_course_instances (
-        short_name,
-        uuid,
-        errors,
-        warnings,
-        data
+                   short_name,              uuid,                    errors,             warnings,            data
     ) SELECT
-        entries->>0,
-        (entries->>1)::uuid,
-        entries->>2,
-        entries->>3,
-        (entries->4)::JSONB
+        entries->>'short_name', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
     FROM UNNEST(disk_course_instances_data) AS entries;
 
-    -- First, update the names of everything we have a UUID for
-    UPDATE course_instances AS ci
-    SET short_name = dci.short_name, deleted_at = NULL
-    FROM disk_course_instances AS dci
-    WHERE
-        dci.uuid IS NOT NULL
-        AND ci.uuid = dci.uuid
-        AND ci.course_id = syncing_course_id;
+    -- Synchronize the dest (course_instances) with the src
+    -- (disk_course_instances). This soft-deletes, un-soft-deletes,
+    -- and inserts new rows in course_instances. No data is synced
+    -- yet. Only the (id, course_id, uuid, short_name, deleted_at)
+    -- columns are used.
 
-    -- Next, add known UUIDs to previously synced course instances without UUIDS
-    UPDATE course_instances AS ci
-    SET uuid = dci.uuid 
-    FROM disk_course_instances AS dci
-    WHERE
-        dci.uuid IS NOT NULL
-        AND ci.short_name = dci.short_name
-        AND ci.deleted_at IS NULL
-        AND ci.uuid IS NULL
-        AND ci.course_id = syncing_course_id;
-
-    -- Next, soft-delete any rows for which we have a mismatched UUID
-    UPDATE course_instances AS ci
-    SET deleted_at = now()
-    FROM disk_course_instances AS dci
-    WHERE
-        ci.short_name = dci.short_name
-        AND ci.deleted_at IS NOT NULL
-        AND dci.uuid IS NOT NULL
-        AND ci.uuid IS NOT NULL
-        AND ci.uuid != dci.uuid
-        AND ci.course_id = syncing_course_id;
-
-    -- Insert new rows for missing names for which we have a UUID
-    WITH short_names_to_insert AS (
-        SELECT short_name FROM disk_course_instances WHERE uuid IS NOT NULL
-        EXCEPT
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL AND course_id = syncing_course_id
+    WITH
+    matched_rows AS (
+        SELECT src.short_name AS src_short_name, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
+            dest.course_id = syncing_course_id
+            AND (src.uuid = dest.uuid
+                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
+                     AND src.short_name = dest.short_name AND dest.deleted_at IS NULL)))
+    ),
+    deactivate_unmatched_dest_rows AS (
+        UPDATE course_instances AS dest
+        SET deleted_at = now()
+        WHERE dest.id NOT IN (
+            SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
+        ) AND dest.deleted_at IS NULL AND dest.course_id = syncing_course_id
+    ),
+    update_matched_dest_rows AS (
+        UPDATE course_instances AS dest
+        SET short_name = src_short_name, uuid = src_uuid, deleted_at = NULL
+        FROM matched_rows
+        WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
+    ),
+    insert_unmatched_src_rows AS (
+        INSERT INTO course_instances AS dest (course_id, short_name, uuid, deleted_at)
+        SELECT syncing_course_id, src_short_name, src_uuid, NULL
+        FROM matched_rows
+        WHERE dest_id IS NULL
+        RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
-    INSERT INTO course_instances (short_name, uuid, course_id)
-    SELECT
-        snti.short_name,
-        dci.uuid,
-        syncing_course_id
-    FROM
-        short_names_to_insert AS snti
-        JOIN disk_course_instances AS dci ON (dci.short_name = snti.short_name);
+    -- Make a map from CIID to ID to return to the caller
+    SELECT jsonb_object_agg(src_short_name, COALESCE(dest_id, inserted_dest_id))
+    INTO name_to_id_map
+    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_short_name);
 
-    -- Insert new rows for missing names for which we do not have a UUID
-    WITH short_names_to_insert AS (
-        SELECT short_name FROM disk_course_instances WHERE uuid IS NULL
-        EXCEPT
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL AND course_id = syncing_course_id
-    )
-    INSERT INTO course_instances (short_name, course_id)
-    SELECT short_name, syncing_course_id FROM short_names_to_insert;
+    -- Internal consistency checks to ensure that dest (course_instances) and
+    -- src (disk_course_instances) are in fact synchronized.
 
-    -- Finally, soft-delete rows with unwanted names
-    WITH short_names_to_delete AS (
-        SELECT short_name FROM course_instances WHERE deleted_at IS NULL  AND course_id = syncing_course_id
-        EXCEPT
-        SELECT short_name FROM disk_course_instances
-    )
-    UPDATE course_instances
-    SET deleted_at = now()
-    FROM short_names_to_delete
-    WHERE
-        course_instances.short_name = short_names_to_delete.short_name
-        AND course_instances.course_id = syncing_course_id;
+    SELECT string_agg(src.short_name, ', ')
+    INTO missing_dest_short_names
+    FROM disk_course_instances AS src
+    WHERE src.short_name NOT IN (SELECT dest.short_name FROM course_instances AS dest WHERE dest.course_id = syncing_course_id AND dest.deleted_at IS NULL);
+    IF (missing_dest_short_names IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: CIIDs on disk but not synced to DB: %', missing_dest_short_names;
+    END IF;
 
+    SELECT string_agg(dest.short_name, ', ')
+    INTO missing_src_short_names
+    FROM course_instances AS dest
+    WHERE dest.course_id = syncing_course_id AND dest.deleted_at IS NULL AND dest.short_name NOT IN (SELECT src.short_name FROM disk_course_instances AS src);
+    IF (missing_src_short_names IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: CIIDs in DB but not on disk: %', missing_src_short_names;
+    END IF;
 
-    -- At this point, there will be exactly one non-deleted row for all short names
-    -- that we loaded from disk. It is now safe to update all those rows with
-    -- the new information from disk (if we have any).
+    SELECT string_agg(src.short_name, ', ')
+    INTO mismatched_uuid_short_names
+    FROM disk_course_instances AS src JOIN course_instances AS dest ON (dest.course_id = syncing_course_id AND dest.short_name = src.short_name AND dest.deleted_at IS NULL)
+    WHERE NOT (src.uuid = dest.uuid OR src.uuid IS NULL);
+    IF (mismatched_uuid_short_names IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: CIIDs on disk with mismatched UUIDs in DB: %', mismatched_uuid_short_names;
+    END IF;
+
+    -- At this point, there will be exactly one non-deleted row for
+    -- all short_names that we loaded from disk. It is now safe to
+    -- update all those rows with the new information from disk (if we
+    -- have any).
 
     -- First pass: update complete information for all course instances without errors
-    UPDATE course_instances AS ci
+    UPDATE course_instances AS dest
     SET
-        long_name = dci.data->>'long_name',
-        display_timezone = dci.data->>'display_timezone',
+        long_name = src.data->>'long_name',
+        display_timezone = src.data->>'display_timezone',
         sync_errors = NULL,
-        sync_warnings = dci.warnings
-    FROM disk_course_instances AS dci
+        sync_warnings = src.warnings
+    FROM disk_course_instances AS src
     WHERE
-        ci.short_name = dci.short_name
-        AND ci.course_id = syncing_course_id
-        AND (dci.errors IS NULL OR dci.errors = '');
+        dest.short_name = src.short_name
+        AND dest.course_id = syncing_course_id
+        AND (src.errors IS NULL OR src.errors = '');
 
     -- Now, loop over all valid course instances and sync access rules and course staff for them
     FOR valid_course_instance IN (
         SELECT short_name, data
-        FROM disk_course_instances AS dci
-        WHERE (dci.errors IS NULL OR dci.errors = '')
+        FROM disk_course_instances AS src
+        WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
         SELECT ci.id INTO syncing_course_instance_id
         FROM course_instances AS ci
@@ -211,26 +210,14 @@ BEGIN
     END LOOP;
 
     -- Second pass: add errors where needed.
-    UPDATE course_instances AS ci
+    UPDATE course_instances AS dest
     SET
-        sync_errors = dci.errors,
-        sync_warnings = dci.warnings
-    FROM disk_course_instances AS dci
+        sync_errors = src.errors,
+        sync_warnings = src.warnings
+    FROM disk_course_instances AS src
     WHERE
-        ci.short_name = dci.short_name
-        AND ci.course_id = syncing_course_id
-        AND (dci.errors IS NOT NULL AND dci.errors != '');
-
-    -- Make a map from CIID to ID to return to the caller
-    SELECT
-        coalesce(
-            jsonb_agg(jsonb_build_array(ci.short_name, ci.id)),
-            '[]'::jsonb
-        ) AS course_instances_json
-    FROM course_instances AS ci, disk_course_instances AS dci
-    INTO course_instance_ids
-    WHERE
-        ci.short_name = dci.short_name
-        AND ci.course_id = syncing_course_id;
+        dest.short_name = src.short_name
+        AND dest.course_id = syncing_course_id
+        AND (src.errors IS NOT NULL AND src.errors != '');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
