@@ -19,7 +19,7 @@ class SortTypes(Enum):
 
 def get_options(element, data):
     answers_name = pl.get_string_attrib(element, 'answers-name')
-    submitted_answer = data['submitted_answers'].get(answers_name, None)
+    submitted_answer = data.get('submitted_answers', {}).get(answers_name, None)
     options = []
     for child in element:
         if child.tag in ['pl-answer']:
@@ -79,7 +79,7 @@ def render(element_html, data):
             if score == 1:
                 correct = True
             else:
-                correct = True
+                correct = False
         except Exception:
             raise ValueError('invalid score' + score)
 
@@ -179,7 +179,7 @@ def test(element_html, data):
 
         for option in dropdown_options:
             if option['value'] != solution:
-                incorrect_ans = option
+                incorrect_ans = option['value']
 
         data['raw_submitted_answers'][answers_name] = incorrect_ans
         data['partial_scores'][answers_name] = {'score': 0, 'weight': weight}
