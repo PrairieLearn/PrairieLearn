@@ -1,3 +1,7 @@
+{{^inline}}
 <div class="container-fluid">
-    <img src="{{src}}" {{#width}}width="{{width}}"{{/width}} class="img-fluid mx-auto d-block" />
+{{/inline}}
+    <img src="{{src}}" {{#width}}width="{{width}}"{{/width}} class="img-fluid mx-auto {{#inline}}d-inline{{/inline}}{{^inline}}d-block{{/inline}}" />
+{{^inline}}
 </div>
+{{/inline}}
