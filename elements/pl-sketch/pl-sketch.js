@@ -35,13 +35,11 @@ window.PLSketchApi = {
     },
 
     setupSketchpad: function(width, height, past_sketches, uuid) {
-        console.log('hello world');
         let element = '#pl-sketch-canvas-' + uuid;
         var sketchpadObject = {};
         sketchpadObject['width'] = width;
         sketchpadObject['height'] = height;
         sketchpadObject['element'] = element;
-        console.log(!jQuery.isEmptyObject(past_sketches));
         if (!jQuery.isEmptyObject(past_sketches)) {
           sketchpadObject['strokes'] = past_sketches['strokes'];
           sketchpadObject['undoHistory'] = past_sketches['undoHistory'];
