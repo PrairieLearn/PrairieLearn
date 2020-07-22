@@ -227,17 +227,17 @@ app.use(function(req, res, next) {
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
-    pathRewrite: {
-        '^/workspace/[0-9]/container/': '/',
+    pathRewrite: (path) => {
+        return path.replace('container/', '');
     },
     logProvider: _provider => logger,
     router: async () => {
-        let url = 'http://host.docker.internal:13746/';
+        let url = 'http://host.docker.internal:8081/';
         return url;
     },
 };
 const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/*/container/', workspaceProxy);
+app.use('/workspace/([0-9])+/container/', workspaceProxy);
 
 // clear all cached course code in dev mode (no authorization needed)
 if (config.devMode) {

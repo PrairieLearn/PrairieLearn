@@ -8,6 +8,8 @@ const Docker = require('dockerode');
 const fs = require("fs");
 const async = require('async');
 const logger = require('../lib/logger');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+var net = require('net');
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
@@ -32,6 +34,44 @@ const docker = new Docker();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 
+var id_port_mapper = {};
+var port_id_mapper = {};
+const workspaceProxyOptions = {
+    target: 'invalid',
+    ws: true,
+    pathRewrite: (path) => {
+        var match = path.match('/workspace/[0-9]+');
+        if (match) {
+            var substring = match[0];
+            return path.replace(substring, '');
+        } else {
+            return path;
+        }
+    },
+    logProvider: _provider => logger,
+    router: (req) => {
+        var url = req.url;
+        var workspace_id = parseInt(url.replace("/workspace/", ""));
+        if (workspace_id in id_port_mapper) {
+            url = 'http://localhost:' + id_port_mapper[workspace_id];
+            return url;
+        } else {
+            return "";
+        };
+    },
+};
+const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
+app.get('/workspace/([0-9])+/*', workspaceProxy);
+
+// For development
+app.put('/', function(req, res) {
+    var workspace_id = req.body.workspace_id;
+    var port = req.body.port;
+    id_port_mapper[workspace_id] = port;
+    port_id_mapper[port] = workspace_id;
+    res.status(200).send("OK");
+});
+
 app.post('/', function(req, res) {
     var workspace_id = req.body.workspace_id;
     var action = req.body.action;
@@ -49,6 +89,24 @@ app.post('/', function(req, res) {
 });
 
 app.listen(port, () => console.log("Listening on http://localhost:" + port));
+
+function _getAvailablePort(workspace_id, curPort, callback) {
+    if (curPort > 65535) {
+        callback("No available port at this time.");
+        return;
+    };
+    var server = net.createServer()
+    server.listen(curPort, function (err) {
+        server.once('close', function () {
+            callback(null, workspace_id, curPort);
+        });
+        server.close();
+    });
+    server.on('error', function (err) {
+        _getAvailablePort(workspace_id, curPort + 1, callback);
+        return;
+    });
+};
 
 // DEPRECATED
 function _resetS3(workspace_id, callback) {
@@ -148,7 +206,8 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 };
 
 function _syncPullContainer(workspace_id, callback) {
-    _recursiveDownloadJobManager("workspace-0", "workspace-0", (err, jobs_params) => {
+    var workspaceName= "workspace-" + workspace_id;
+    _recursiveDownloadJobManager(workspaceName, workspaceName, (err, jobs_params) => {
         if (err) {
             callback(err);
             return;
@@ -179,12 +238,13 @@ function _syncPullContainer(workspace_id, callback) {
 };
 
 async function _syncPushContainer(workspace_id, callback) {
-    if (!fs.existsSync("./workspace-0")) {
+    var workspaceName= "workspace-" + workspace_id;
+    if (!fs.existsSync(workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
         callback(null, workspace_id);
         return;
     }
-    var jobs_params = _recursiveUploadJobManager("workspace-0", "workspace-0");
+    var jobs_params = _recursiveUploadJobManager(workspaceName, workspaceName);
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
         jobs.push( ((mockCallback) => {
@@ -210,19 +270,20 @@ async function _syncPushContainer(workspace_id, callback) {
 };
 
 function _getContainer(workspace_id, callback) {
-    var container = docker.getContainer("workspace-0");
+    var container = docker.getContainer("workspace-" + workspace_id);
     callback(null, container);
 };
 
-function _createContainer(workspace_id, callback) {
+function _createContainer(workspace_id, port, callback) {
+    var workspaceName= "workspace-" + workspace_id;
     docker.createContainer({
         Image: 'codercom/code-server',
         ExposedPorts: {
             "8080/tcp": {},
         },
         HostConfig: {
-            PortBindings: {'8080/tcp': [{"HostPort": '13746'}]},
-            Binds: [path.join(process.cwd(), '/workspace-0') + ':/home/coder/project'],
+            PortBindings: {'8080/tcp': [{"HostPort": port.toString()}]},
+            Binds: [path.join(process.cwd(), workspaceName) + ':/home/coder/project'],
             // Copied directly from externalGraderLocal.js
             Memory: 1 << 30, // 1 GiB
             MemorySwap: 1 << 30, // same as Memory, so no access to swap
@@ -234,7 +295,7 @@ function _createContainer(workspace_id, callback) {
             PidsLimit: 1024,
         },
         Cmd: ['--auth', 'none'],
-        name: 'workspace-0',
+        name: workspaceName,
         Volumes: {
             '/home/coder/project': {}
           },
@@ -246,14 +307,17 @@ function _createContainer(workspace_id, callback) {
                 callback(err);
             };
         } else {
+            id_port_mapper[workspace_id] = port;
+            port_id_mapper[port] = workspace_id;
             callback(null, container);
         };
     });
 };
 
 function _delContainer(container, callback) {
+    var workspaceName= container.id;
     // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    fs.rmdirSync("./workspace-0", { recursive: true });
+    fs.rmdirSync(workspaceName, { recursive: true });
     container.remove((err) => {
         if (err) {
             callback(err);
@@ -291,7 +355,9 @@ function _stopContainer(container, callback) {
 function initSequence(workspace_id, res) {
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback)},
+        (workspace_id, callback) => {_getAvailablePort(workspace_id, 1024, callback)},
         _createContainer,
+        _syncPullContainer,
         _startContainer,
     ], function(err) {
         if (err) {
