@@ -232,7 +232,7 @@ const workspaceProxyOptions = {
     },
     logProvider: _provider => logger,
     router: async () => {
-        let url = 'http://host.docker.internal:8081/';
+        let url = config.workspaceLocalhost;
         return url;
     },
 };
