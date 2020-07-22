@@ -1,7 +1,8 @@
 {{^inline}}
 <div class="container-fluid">
-{{/inline}}
-    <img src="{{src}}" {{#width}}width="{{width}}"{{/width}} class="img-fluid mx-auto {{#inline}}d-inline{{/inline}}{{^inline}}d-block{{/inline}}" />
-{{^inline}}
+    <img src="{{src}}" {{#width}}width="{{width}}"{{/width}} class="img-fluid mx-auto d-block" />
 </div>
+{{/inline}}
+{{#inline}}
+<img src="{{src}}" {{#width}}width="{{width}}"{{/width}} class="img-fluid mx-auto d-inline" />
 {{/inline}}
