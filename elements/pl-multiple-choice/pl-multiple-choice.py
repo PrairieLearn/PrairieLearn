@@ -51,8 +51,8 @@ def categorize_options(element, data):
                 for text in obj.get(incorrect_attrib, []):
                     incorrect_answers.append((index, False, text))
                     index += 1
-        except FileNotFoundError as err:
-            raise Exception('JSON answer file could not be found', err)
+        except FileNotFoundError:
+            raise Exception(f'JSON answer file: "{json_file}" could not be found')
     return correct_answers, incorrect_answers
 
 
