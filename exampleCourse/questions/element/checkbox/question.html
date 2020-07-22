@@ -203,3 +203,25 @@
         </pl-checkbox>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 8
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl-checkbox</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if exist,
+                from <code>group-work.json</code> file inside <code>serverFilesQuestion/</code> directory. By default, the external json file should have <code>"correct"</code>
+                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct-key"</code>
+                and <code>"external-json-incorrect-key"</code>.</p>
+
+            <p>Group work provides which of the following benefits:</p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v7" external-json="serverFilesQuestion/group-work.json" external-json-incorrect-key="incorrect_choices">
+        </pl-checkbox>
+
+    </div>
+</div>
