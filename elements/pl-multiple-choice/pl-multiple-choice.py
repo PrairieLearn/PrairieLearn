@@ -36,20 +36,23 @@ def categorize_options(element, data):
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not EXTERNAL_JSON_DEFAULT:
-        correct_attrib = pl.get_string_attrib(element, 'external-json-correct', EXTERNAL_JSON_DEFAULT_CORRECT)
-        incorrect_attrib = pl.get_string_attrib(element, 'external-json-incorrect', EXTERNAL_JSON_DEFAULT_INCORRECT)
+        correct_attrib = pl.get_string_attrib(element, 'external-json-correct-key', EXTERNAL_JSON_DEFAULT_CORRECT)
+        incorrect_attrib = pl.get_string_attrib(element, 'external-json-incorrect-key', EXTERNAL_JSON_DEFAULT_INCORRECT)
         if pathlib.PurePath(file_path).is_absolute():
             json_file = file_path
         else:
             json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
-        with open(json_file, mode='r', encoding='utf-8') as f:
-            obj = json.load(f)
-            for text in obj.get(correct_attrib, []):
-                correct_answers.append((index, True, text))
-                index += 1
-            for text in obj.get(incorrect_attrib, []):
-                incorrect_answers.append((index, False, text))
-                index += 1
+        try:
+            with open(json_file, mode='r', encoding='utf-8') as f:
+                obj = json.load(f)
+                for text in obj.get(correct_attrib, []):
+                    correct_answers.append((index, True, text))
+                    index += 1
+                for text in obj.get(incorrect_attrib, []):
+                    incorrect_answers.append((index, False, text))
+                    index += 1
+        except FileNotFoundError as err:
+            raise Exception('JSON answer file could not be found', err)
     return correct_answers, incorrect_answers
 
 
@@ -58,7 +61,7 @@ def prepare(element_html, data):
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline',
                         'none-of-the-above', 'all-of-the-above', 'hide-letter-keys',
-                        'external-json', 'external-json-correct', 'external-json-incorrect']
+                        'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
