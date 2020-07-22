@@ -33,7 +33,7 @@ WHERE
     AND (ai.user_id = $user_id OR ai.group_id IN (SELECT gr.id
                                                   FROM groups gr
                                                   JOIN group_users gu ON gr.id = gu.group_id 
-                                                  WHERE g.deleted_at IS NULL AND gu.user_id = $user_id))
+                                                  WHERE gr.deleted_at IS NULL AND gu.user_id = $user_id))
     AND a.deleted_at IS NULL
 ORDER BY
     aset.number, a.order_by, a.id, ai.number;
