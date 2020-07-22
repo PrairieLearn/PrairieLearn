@@ -117,8 +117,8 @@ Attribute | Type | Default | Description
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
 `external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
-`external-json-correct` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
-`external-json-incorrect` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
+`external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
+`external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:

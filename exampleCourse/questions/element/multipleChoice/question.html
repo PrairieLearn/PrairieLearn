@@ -156,15 +156,15 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices
+            <p>Here, the <code>pl-multiple-choice</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if exist,
                 from <code>sky-color.json</code> file inside <code>serverFilesQuestion/</code> directory. By default, the external json file should have <code>"correct"</code>
-                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct"</code>
-                and <code>"external-json-incorrect"</code>.</p>
+                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct-key"</code>
+                and <code>"external-json-incorrect-key"</code>.</p>
 
             <p> What is the color of the sky? </p>
         </pl-question-panel>
 
-        <pl-multiple-choice answers-name="sky-color6" external-json="serverFilesQuestion/sky-color.json" external-json-incorrect="incorrect_choices">
+        <pl-multiple-choice answers-name="sky-color6" external-json="serverFilesQuestion/sky-color.json" external-json-incorrect-key="incorrect_choices">
         </pl-multiple-choice>
 
     </div>
