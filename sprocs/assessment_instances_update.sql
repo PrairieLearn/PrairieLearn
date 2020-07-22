@@ -41,7 +41,7 @@ BEGIN
      -- get basic data about existing objects
     IF group_work THEN
         SELECT
-            c.id,      g.id, a.id,          a.type,
+            c.id,      gr.id, a.id,          a.type,
             a.max_points,          ai.max_points,
             ai.open
         INTO
@@ -53,7 +53,7 @@ BEGIN
             JOIN assessments AS a ON (a.id = ai.assessment_id)
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN pl_courses AS c ON (c.id = ci.course_id)
-            JOIN groups AS g ON (g.id = ai.group_id)
+            JOIN groups AS gr ON (gr.id = ai.group_id)
         WHERE
             ai.id = assessment_instance_id;
 

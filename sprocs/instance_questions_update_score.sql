@@ -41,6 +41,8 @@ BEGIN
         JOIN questions AS q on (q.id = aq.question_id)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT OUTER JOIN groups AS g ON (g.id = ai.group_id)
+        LEFT OUTER JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
