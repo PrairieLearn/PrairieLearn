@@ -78,6 +78,20 @@ WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
 
+-- BLOCK select_group_info
+SELECT
+    gr.name, gr.id AS gid, gr.deleted_at,
+    array_agg(u.uid) AS uid_list
+FROM
+    assessment_instances AS ai
+    JOIN groups AS gr ON (gr.id = ai.group_id)
+    JOIN group_users AS gu ON (gu.group_id = gr.id)
+    JOIN users AS u ON (u.user_id = gu.user_id)
+WHERE 
+    ai.id = $assessment_instance_id
+GROUP BY
+    gr.id;
+
 -- BLOCK select_log
 WITH
 event_log AS (
