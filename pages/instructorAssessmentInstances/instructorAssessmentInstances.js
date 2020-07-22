@@ -16,7 +16,7 @@ router.get('/', function(req, res, next) {
     debug('GET /');
     const params = {
         assessment_id: res.locals.assessment.id, 
-        group_work: res.locals.assessment.group_work
+        group_work: res.locals.assessment.group_work,
     };
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
