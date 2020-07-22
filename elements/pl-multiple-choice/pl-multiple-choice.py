@@ -13,8 +13,8 @@ NONE_OF_THE_ABOVE_DEFAULT = False
 ALL_OF_THE_ABOVE_DEFAULT = False
 EXTERNAL_JSON_DEFAULT = None
 HIDE_LETTER_KEYS_DEFAULT = False
-EXTERNAL_JSON_DEFAULT_CORRECT = 'correct'
-EXTERNAL_JSON_DEFAULT_INCORRECT = 'incorrect'
+EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
+EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 
 
 def categorize_options(element, data):
@@ -36,8 +36,8 @@ def categorize_options(element, data):
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not EXTERNAL_JSON_DEFAULT:
-        correct_attrib = pl.get_string_attrib(element, 'external-json-correct-key', EXTERNAL_JSON_DEFAULT_CORRECT)
-        incorrect_attrib = pl.get_string_attrib(element, 'external-json-incorrect-key', EXTERNAL_JSON_DEFAULT_INCORRECT)
+        correct_attrib = pl.get_string_attrib(element, 'external-json-correct-key', EXTERNAL_JSON_CORRECT_KEY_DEFAULT)
+        incorrect_attrib = pl.get_string_attrib(element, 'external-json-incorrect-key', EXTERNAL_JSON_INCORRECT_KEY_DEFAULT)
         if pathlib.PurePath(file_path).is_absolute():
             json_file = file_path
         else:
