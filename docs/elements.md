@@ -170,6 +170,9 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
+`external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
+`external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
+`external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
