@@ -15,9 +15,11 @@ aws.init((err) => {
 });
 
 const config = require('../lib/config.js');
+config.loadConfig("config.json");
+
 const workspaceBucketName = config.workspaceS3Bucket;
 if (workspaceBucketName == '') {
-    logger.warn("Workspace bucket is not configed in config.js");
+    logger.warn("Workspace bucket is not configed correctly. Check config.json.");
 } else {
     logger.info("Workspace bucket is configed to: " + workspaceBucketName);
 }
