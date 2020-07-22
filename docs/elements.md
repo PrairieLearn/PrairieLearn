@@ -49,7 +49,7 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python 
+- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
@@ -215,7 +215,7 @@ tolerances.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -226,7 +226,7 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
----- 
+----
 
 ![](elements/pl-number-input-sigfig.png)
 
@@ -238,7 +238,7 @@ def generate(data):
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -295,14 +295,14 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 ```html
 <p> Select the correct word in the following quotes:</p>
-The 
+The
 <pl-dropdown answers-name="aristotle" blank="true">
 
     {{#params.aristotle}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.aristotle}}
 
-</pl-dropdown> 
+</pl-dropdown>
 is more than the sum of its parts. <p></p>
 
 A <pl-dropdown sort="ascend" answers-name="hume">
@@ -358,7 +358,7 @@ Fill in the blank field that requires an **integer** input.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -413,7 +413,7 @@ import prairielearn as pl
 import sympy
 
 def generate(data):
-  
+
   # Declare math symbols
   x, y = sympy.symbols('x y')
 
@@ -615,8 +615,8 @@ Attribute | Type | Default | Description
 
 #### Details
 
-`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
-The following are valid input format options: 
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats.
+The following are valid input format options:
 
 **MATLAB format:**
 ```
@@ -1067,7 +1067,7 @@ def generate(data):
   matrixD = np.matrix('-1 4; 3 2')
   # Random matrices can be generated with:
   # mat = np.random.random((2, 2))
-  
+
   # Export each matrix as a JSON object for the question view.
   data['params']['matrixC'] = pl.to_json(matrixC)
   data['params']['matrixD'] = pl.to_json(matrixD)
@@ -1167,10 +1167,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  
+
   # Construct a matrix
   mat = np.matrix('1 2; 3 4')
-  
+
   # Export matrix to be displayed in question.html
   data['params']['matrixC'] = pl.to_json(mat)
 ```
@@ -1187,14 +1187,14 @@ Attribute | Type | Default | Description
 #### Details
 
 Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
-one of the following will be returned. 
+one of the following will be returned.
 
 - **scalar**
     - a string containing the scalar not wrapped in brackets.
 - **numpy 2D array**
     - a string formatted using the `bmatrix` LaTeX style.
 
-Sample LaTeX formatting: 
+Sample LaTeX formatting:
 
 ```latex
 \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
@@ -1229,7 +1229,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ## `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations.
 
 #### Sample Elements
@@ -1672,7 +1672,7 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
 [demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
 [demo/matrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixComplexAlgebra
-[demo/overlayDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown)
+[demo/overlayDropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown
 [demo/randomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomCheckbox
 [demo/randomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
@@ -1686,7 +1686,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
-[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
+[element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
 [element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
