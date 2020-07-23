@@ -16,7 +16,8 @@ FROM
     LEFT JOIN users AS u USING (user_id)
     LEFT JOIN groups AS gr ON (gr.id = ai.group_id)
 WHERE
-    ai.id = $assessment_instance_id;
+    ai.id = $assessment_instance_id
+    AND gr.deleted_at IS NULL;
 
 -- BLOCK select_regrade_assessment_info
 SELECT

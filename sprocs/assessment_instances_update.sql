@@ -39,49 +39,28 @@ BEGIN
         ai.id = assessment_instance_id;
     
      -- get basic data about existing objects
-    IF group_work THEN
-        SELECT
-            c.id,      gr.id, a.id,          a.type,
-            a.max_points,          ai.max_points,
-            ai.open
-        INTO
-            course_id, group_id,   assessment_id, assessment_type,
-            assessment_max_points, old_assessment_instance_max_points,
-            assessment_instance_open
-        FROM
-            assessment_instances AS ai
-            JOIN assessments AS a ON (a.id = ai.assessment_id)
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-            JOIN pl_courses AS c ON (c.id = ci.course_id)
-            JOIN groups AS gr ON (gr.id = ai.group_id)
-        WHERE
-            ai.id = assessment_instance_id;
+    SELECT
+        c.id,      gr.id,   u.user_id,            a.id,          a.type,
+        a.max_points,          ai.max_points,
+        ai.open
+    INTO
+        course_id, group_id,  user_id,   assessment_id, assessment_type,
+        assessment_max_points, old_assessment_instance_max_points,
+        assessment_instance_open
+    FROM
+        assessment_instances AS ai
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN pl_courses AS c ON (c.id = ci.course_id)
+        LEFT JOIN groups AS gr ON (gr.id = ai.group_id AND gr.deleted_at IS NULL)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE
+        ai.id = assessment_instance_id;
 
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'assessment_instance_update could not find assessment_instance_id: %', assessment_instance_id;
-        END IF;
-    ELSE 
-        SELECT
-            c.id,      u.user_id, a.id,          a.type,
-            a.max_points,          ai.max_points,
-            ai.open
-        INTO
-            course_id, user_id,   assessment_id, assessment_type,
-            assessment_max_points, old_assessment_instance_max_points,
-            assessment_instance_open
-        FROM
-            assessment_instances AS ai
-            JOIN assessments AS a ON (a.id = ai.assessment_id)
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-            JOIN pl_courses AS c ON (c.id = ci.course_id)
-            JOIN users AS u ON (u.user_id = ai.user_id)
-        WHERE
-            ai.id = assessment_instance_id;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'assessment_instance_update could not find assessment_instance_id: %', assessment_instance_id;
-        END IF;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'assessment_instance_update could not find assessment_instance_id: %', assessment_instance_id;
     END IF;
+   
     
     IF NOT assessment_instance_open THEN RETURN; END IF; -- silently return without updating
 
