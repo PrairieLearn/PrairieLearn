@@ -42,10 +42,10 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer. 
+            <p>Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices with one of the choices being the correct answer.
             In addition, the choices are placed "inline" instead of being displayed
             within a list. </p>
-               
+
             <p> What is the color of the sky? </p>
         </pl-question-panel>
 
@@ -70,7 +70,7 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices. 
+            <p>Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, which means there is no randomization of choices.
                Moreover, the weight of this question has also been increased meaning it will contribute more to the overall score than other elements.</p>
             <p> What is the color of the sky? </p>
         </pl-question-panel>
@@ -92,15 +92,15 @@
     <div class="card-header">
         Part 4
     </div>
-    
+
     <div class="card-body">
-    
+
         <pl-question-panel>
             <p>
               Here, letter keys are hidden with <code>hide-letter-keys="true"</code>.
               This option is especially useful when the answer options themselves are letters.
             </p>
-               
+
             <p>What is the color of the sky?</p>
         </pl-question-panel>
 
@@ -143,6 +143,28 @@
           <pl-answer>Yellow</pl-answer>
           <pl-answer>Brown</pl-answer>
           <pl-answer>Red</pl-answer>
+        </pl-multiple-choice>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 6
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl-multiple-choice</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if they exist,
+                from <code>sky-color.json</code> file inside <code>serverFilesQuestion/</code> directory. By default, the external json file should have <code>"correct"</code>
+                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct-key"</code>
+                and <code>"external-json-incorrect-key"</code>.</p>
+
+            <p> What is the color of the sky? </p>
+        </pl-question-panel>
+
+        <pl-multiple-choice answers-name="sky-color6" external-json="serverFilesQuestion/sky-color.json" external-json-incorrect-key="incorrect_choices">
         </pl-multiple-choice>
 
     </div>
