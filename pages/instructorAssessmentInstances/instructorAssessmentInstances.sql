@@ -33,6 +33,7 @@ FROM
                     JOIN users AS u ON (u.user_id = gu.user_id)
                 WHERE
                     gc.deleted_at IS NULL
+                    AND gr.deleted_at IS NULL
                     AND gc.assessment_id = $assessment_id
                 GROUP BY
                     gr.id

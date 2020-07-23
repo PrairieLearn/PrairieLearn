@@ -89,6 +89,7 @@ FROM
     JOIN users AS u ON (u.user_id = gu.user_id)
 WHERE 
     ai.id = $assessment_instance_id
+    AND gr.deleted_at IS NULL
 GROUP BY
     gr.id;
 
