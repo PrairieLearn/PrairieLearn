@@ -6,7 +6,6 @@
         ],
         "elementScripts": [
             "pl-drag-drop-element.js",
-            "jquery-1.12.4.js",
             "jquery-ui.js"
         ]
     }
