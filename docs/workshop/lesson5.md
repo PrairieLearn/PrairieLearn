@@ -28,7 +28,7 @@ Your question should provide the Google Matrix in the form of a graph like the c
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example1](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211639/preview)
+- [workshop/Lesson5\_example2](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211639/preview)
 
 ## pl-drawing
 
@@ -42,7 +42,7 @@ Write a question that uses the drawing canvas to collect input from student. Tak
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example1](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211641/preview)
+- [workshop/Lesson5\_example3](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/8211641/preview)
 
 #### Example 4:
 
@@ -50,4 +50,4 @@ Add a shape to the drawing canvas, and ask students to mark the centroid using a
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson5\_example1](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/4942650/preview)
+- [demo/drawing/centroid](https://prairielearn.engr.illinois.edu/pl/course_instance/4970/instructor/question/4942650/preview)
