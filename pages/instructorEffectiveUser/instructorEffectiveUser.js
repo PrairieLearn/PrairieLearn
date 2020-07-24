@@ -15,8 +15,6 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 const moment = require('moment');
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.authn_has_course_permission_edit) return next();
-
     debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
 
     var params = {
@@ -52,27 +50,15 @@ router.post('/', function(req, res, next) {
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeUid') {
         res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
-        if (res.locals.course_instance) {
-            res.clearCookie('pl_access_as_student', { path: `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`});
-        }
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeCourseRole') {
         res.cookie('pl_requested_course_role', req.body.pl_requested_course_role, {maxAge: 60 * 60 * 1000});
-        if (res.locals.course_instance) {
-            res.clearCookie('pl_access_as_student', { path: `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`});
-        }
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeCourseInstanceRole') {
         res.cookie('pl_requested_course_instance_role', req.body.pl_requested_course_instance_role, {maxAge: 60 * 60 * 1000});
-        if (res.locals.course_instance) {
-            res.clearCookie('pl_access_as_student', { path: `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`});
-        }
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeMode') {
         res.cookie('pl_requested_mode', req.body.pl_requested_mode, {maxAge: 60 * 60 * 1000});
-        if (res.locals.course_instance) {
-            res.clearCookie('pl_access_as_student', { path: `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`});
-        }
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeDate') {
         debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
@@ -81,9 +67,6 @@ router.post('/', function(req, res, next) {
             return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
         }
         res.cookie('pl_requested_date', date.toISOString(), {maxAge: 60 * 60 * 1000});
-        if (res.locals.course_instance) {
-            res.clearCookie('pl_access_as_student', { path: `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`});
-        }
         res.redirect(req.originalUrl);
     } else {
         return next(error.make(400, 'unknown action: ' + res.locals.__action, {__action: req.body.__action, body: req.body}));

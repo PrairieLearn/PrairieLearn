@@ -37,25 +37,8 @@ module.exports = function(req, res, next) {
             }
 
             sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
-                // If the SQL block threw an error or returned more than one row was returned, then something bad happened
                 if (ERR(err, callback)) return;
-
-                // If no row was returned, then either the course or the course instance does not exist
-                if (result.rowCount == 0) return callback(error.make(403, 'Access denied (either the course or the course instance does not exist)'));
-
-                // If one row was returned, then check for access
-                const hasAccessToCourseAsInstructor = result.rows[0].permissions_course.has_course_permission_preview;
-                if (isCourseInstance) {
-                    const hasAccessToInstanceAsInstructor = result.rows[0].permissions_course_instance.has_course_instance_permission_view;
-                    const hasAccessToInstanceAsStudent = result.rows[0].permissions_course_instance.has_student_access_with_enrollment;
-                    if (!(hasAccessToCourseAsInstructor || hasAccessToInstanceAsInstructor || hasAccessToInstanceAsStudent)) {
-                        return callback(error.make(403, 'Access denied'));
-                    }
-                } else {
-                    if (!hasAccessToCourseAsInstructor) {
-                        return callback(error.make(403, 'Access denied'));
-                    }
-                }
+                if (result.rowCount == 0) return callback(error.make(403, 'Access denied'));
 
                 // Now that we know the user has access, parse the authz data
                 res.locals.course = result.rows[0].course;
@@ -100,62 +83,8 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
                 }
 
-                callback(null);
-            });
-        },
-        (callback) => {
-            // Verify course instance
-            if (!isCourseInstance) return callback(null);
+                debug('authn user is authorized');
 
-            // Verify instructor access to course instance
-            if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) return callback(null);
-
-            // Verify student page route
-            const viewType = res.locals.viewType || 'none';
-            if (viewType != 'student') return callback(null);
-
-            // Verify student access type
-            const accessType = req.cookies.pl_access_as_student || 'none';
-            if (accessType != 'active') return callback(null);
-
-            // The user is an instructor who is trying to access a course instance
-            // through the student page route with no instructor override
-            res.locals.authz_data.student_view_with_student_access = true;
-
-            // Remove all instructor permissions
-            res.locals.authz_data.is_administrator = false;
-            res.locals.authz_data.course_role = 'None';
-            res.locals.authz_data.has_course_permission_preview = false;
-            res.locals.authz_data.has_course_permission_view = false;
-            res.locals.authz_data.has_course_permission_edit = false;
-            res.locals.authz_data.has_course_permission_own = false;
-            res.locals.authz_data.courses = [];
-            res.locals.authz_data.course_instances = [];
-            res.locals.authz_data.course_instance_role = 'None';
-            res.locals.authz_data.has_course_instance_permission_view = false;
-            res.locals.authz_data.has_course_instance_permission_edit = false;
-
-            // Verify student access
-            //
-            //  If the authn user had neither instructor nor student access, then
-            //  we would return an error. Since we are modifying the effective user,
-            //  we simply return (without error). This allows the user to keep access
-            //  to certain pages (e.g., the effective user page) for which only authn
-            //  permissions are required.
-            //
-            if (!res.locals.authz_data.authn_has_student_access) return callback(null);
-
-            // If the user is already enrolled, do nothing
-            if (res.locals.authz_data.authn_has_student_access_with_enrollment) return callback(null);
-
-            // Otherwise, enroll the user
-            const params = {
-                course_instance_id: res.locals.course_instance.id,
-                user_id: res.locals.authn_user.user_id,
-            };
-            sqldb.query(sql.ensure_enrollment, params, function(err, _result) {
-                if (ERR(err, callback)) return;
-                res.locals.authz_data.has_student_access_with_enrollment = true;
                 callback(null);
             });
         },
@@ -165,7 +94,12 @@ module.exports = function(req, res, next) {
         // Check if it is necessary to request a user data override - if not, return
         let overrides = [];
         if (req.cookies.pl_requested_uid) {
-            overrides.push({'name': 'UID', 'value': req.cookies.pl_requested_uid, 'cookie': 'pl_requested_uid'});
+            // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
+            if (req.cookies.pl_requested_uid == res.locals.authn_user.uid) {
+                res.clearCookie('pl_requested_uid');
+            } else {
+                overrides.push({'name': 'UID', 'value': req.cookies.pl_requested_uid, 'cookie': 'pl_requested_uid'});
+            }
         }
         if (req.cookies.pl_requested_course_role) {
             overrides.push({'name': 'Course role', 'value': req.cookies.pl_requested_course_role, 'cookie': 'pl_requested_course_role'});
@@ -180,33 +114,29 @@ module.exports = function(req, res, next) {
             overrides.push({'name': 'Date', 'value': req.cookies.pl_requested_date, 'cookie': 'pl_requested_date'});
         }
         if (overrides.length == 0) {
-             return next();
+            debug('no requested overrides');
+            return next();
         }
 
-        // Cannot request a user data override while viewing a student page with student access
-        if (res.locals.authz_data.student_view_with_student_access) {
+        // Cannot request a user data override without instructor permissions
+        if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) {
+            debug('requested overrides, but authn user does not have instructor permissions');
+
+            // If on a student page route, silently exit and ignore effective user requests
+            if ((res.locals.viewType || 'none') == 'student') {
+                debug('on student page, so silently exit and ignore requested overrides');
+                return next();
+            }
+
+            debug('not on student page, so clear all requested overrides and throw an error');
+
             overrides.forEach((override) => {
                 debug(`clearing cookie: ${override.cookie}`);
                 res.clearCookie(override.cookie);
             });
 
             let err = error.make(403, 'Access denied');
-            err.info =  `<p>You cannot request a change to the effective user while also choosing to ` +
-                        `view a student page with no instructor permissions. All requested changes to ` +
-                        `the effective user have been removed.</p>`;
-            return next(err);
-        }
-
-        // Cannot request a user data override without being at least a course editor
-        if (!res.locals.authz_data.authn_has_course_permission_edit) {
-            overrides.forEach((override) => {
-                debug(`clearing cookie: ${override.cookie}`);
-                res.clearCookie(override.cookie);
-            });
-
-            let err = error.make(403, 'Access denied');
-            err.info =  `<p>You must be at least an Editor in this course in order to change the effective ` +
-                        `user. Instead, your course role is: ${res.locals.authz_data.authn_course_role}. ` +
+            err.info =  `<p>You must be a member of the course staff in order to change the effective user. ` +
                         `All requested changes to the effective user have been removed.</p>`;
             return next(err);
         }
@@ -215,9 +145,9 @@ module.exports = function(req, res, next) {
         debug('trying to override the user data');
         debug(req.cookies);
 
-        // Get roles
         let user = res.locals.authz_data.user;
         let is_administrator = res.locals.is_administrator;
+        let user_with_requested_uid_has_instructor_access = false;
 
         async.series([
             (callback) => {
@@ -225,12 +155,12 @@ module.exports = function(req, res, next) {
                 if (!isCourseInstance) return callback(null);
 
                 // Verify student access
-                if (!res.locals.authz_data.has_student_access) return callback(null);
+                if (!res.locals.authz_data.authn_has_student_access) return callback(null);
 
                 // Verify non-enrollment
-                if (res.locals.authz_data.has_student_access_with_enrollment) return callback(null);
+                if (res.locals.authz_data.authn_has_student_access_with_enrollment) return callback(null);
 
-                // Enroll
+                // Enroll authenticated user in course instance
                 const params = {
                     course_instance_id: res.locals.course_instance.id,
                     user_id: user.user_id,
@@ -246,6 +176,7 @@ module.exports = function(req, res, next) {
 
                 const params = {
                     uid: req.cookies.pl_requested_uid,
+                    course_instance_id: isCourseInstance ? res.locals.course_instance.id : null,
                 };
 
                 sqldb.queryZeroOrOneRow(sql.select_user, params, function(err, result) {
@@ -281,8 +212,11 @@ module.exports = function(req, res, next) {
                         return callback(err);
                     }
 
-                    is_administrator = result.rows[0].is_administrator;
                     user = _.cloneDeep(result.rows[0].user);
+                    is_administrator = result.rows[0].is_administrator;
+                    user_with_requested_uid_has_instructor_access = result.rows[0].is_instructor;
+
+                    debug(`requested uid has instructor access: ${user_with_requested_uid_has_instructor_access}`);
 
                     // FIXME: also override institution?
                     return callback(null);
@@ -320,32 +254,13 @@ module.exports = function(req, res, next) {
                 };
 
                 sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
-                    // Something went wrong - immediately return with error
                     if (ERR(err, callback)) return;
-
-                    // If no row was returned, then either the course or the course instance does not exist
-                    if (result.rowCount == 0) return callback(error.make(403, 'Access denied (either the course or the course instance does not exist)'));
-
-                    // If one row was returned, then check for access.
-                    let has_access = true;
-                    const hasAccessToCourseAsInstructor = result.rows[0].permissions_course.has_course_permission_preview;
-                    if (isCourseInstance) {
-                        const hasAccessToInstanceAsInstructor = result.rows[0].permissions_course_instance.has_course_instance_permission_view;
-                        const hasAccessToInstanceAsStudent = result.rows[0].permissions_course_instance.has_student_access_with_enrollment;
-                        if (!(hasAccessToCourseAsInstructor || hasAccessToInstanceAsInstructor || hasAccessToInstanceAsStudent)) {
-                            has_access = false;
-                        }
-                    } else {
-                        if (!hasAccessToCourseAsInstructor) {
-                            has_access = false;
-                        }
-                    }
 
                     // If the authn user were denied access, then we would return an error. Here,
                     // we simply return (without error). This allows the authn user to keep access
                     // to pages (e.g., the effective user page) for which only authn permissions
                     // are required.
-                    if (!has_access) {
+                    if (result.rowCount == 0)  {
                         res.locals.authz_data.user = user;
                         res.locals.authz_data.is_administrator = false;
 
@@ -364,6 +279,10 @@ module.exports = function(req, res, next) {
                             res.locals.authz_data.has_course_instance_permission_edit = false;
                             res.locals.authz_data.has_student_access = false;
                             res.locals.authz_data.has_student_access_with_enrollment = false;
+
+                            if (res.locals.authz_data.user.uid != res.locals.authz_data.authn_user.uid) {
+                                res.locals.authz_data.user_with_requested_uid_has_instructor_access = user_with_requested_uid_has_instructor_access;
+                            }
                         }
 
                         res.locals.authz_data.overrides = overrides;
@@ -378,11 +297,53 @@ module.exports = function(req, res, next) {
 
                     // Now that we know the effective user has access, parse the authz data
 
+                    // The effective user is a Previewer and the authn_user is not - remove
+                    // all override cookies and return with error
+                    if ((!res.locals.authz_data.authn_has_course_permission_preview) && result.rows[0].permissions_course.has_course_permission_preview) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
+
+                        let err = error.make(403, 'Access denied');
+                        err.info =  `<p>You have tried to change the effective user to one who is a ` +
+                                    `course previewer, when you are not a course previewer. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
+                        return callback(err);
+                    }
+
+                    // The effective user is a Viewer and the authn_user is not - remove
+                    // all override cookies and return with error
+                    if ((!res.locals.authz_data.authn_has_course_permission_view) && result.rows[0].permissions_course.has_course_permission_view) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
+
+                        let err = error.make(403, 'Access denied');
+                        err.info =  `<p>You have tried to change the effective user to one who is a ` +
+                                    `course viewer, when you are not a course viewer. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
+                        return callback(err);
+                    }
+
+                    // The effective user is an Editor and the authn_user is not - remove
+                    // all override cookies and return with error
+                    if ((!res.locals.authz_data.authn_has_course_permission_edit) && result.rows[0].permissions_course.has_course_permission_edit) {
+                        overrides.forEach((override) => {
+                            debug(`clearing cookie: ${override.cookie}`);
+                            res.clearCookie(override.cookie);
+                        });
+
+                        let err = error.make(403, 'Access denied');
+                        err.info =  `<p>You have tried to change the effective user to one who is a ` +
+                                    `course editor, when you are not a course editor. ` +
+                                    `All requested changes to the effective user have been removed.</p>`;
+                        return callback(err);
+                    }
+
                     // The effective user is an Owner and the authn_user is not - remove
                     // all override cookies and return with error
-                    //
-                    // (note that the authn_user must be at least an Editor, so there is no
-                    // need to check that the effective user is anything less than Owner)
                     if ((!res.locals.authz_data.authn_has_course_permission_own) && result.rows[0].permissions_course.has_course_permission_own) {
                         overrides.forEach((override) => {
                             debug(`clearing cookie: ${override.cookie}`);
@@ -430,13 +391,13 @@ module.exports = function(req, res, next) {
                         }
 
                         // The effective user is a student (with no course or course instance role) with
-                        // a different UID than the authn user, and the authn user is not a Student Data
-                        // Editor - remove all override cookies and return with error
-                        if ((req.cookies.pl_requested_uid && (req.cookies.pl_requested_uid != res.locals.authn_user.uid))   // effective user has a different uid from authn user
-                            && result.rows[0].permissions_course_instance.has_student_access_with_enrollment                // effective user is enrolled with access
-                            && (result.rows[0].permissions_course_instance.course_instance_role == 'None')                  // effective user is not course instance staff
-                            && (result.rows[0].permissions_course.course_role == 'None')                                    // effective user is not course staff
-                            && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {                        // authn user is not a Student Data Editor
+                        // a different UID than the authn user (note UID is unique), and the authn user is
+                        // not a Student Data Editor - remove all override cookies and return with error
+                        if ((user.uid != res.locals.authn_user.uid)                                             // effective uid is not the same as authn uid
+                            && result.rows[0].permissions_course_instance.has_student_access_with_enrollment    // effective user is enrolled with access
+                            && (result.rows[0].permissions_course_instance.course_instance_role == 'None')      // effective user is not course instance staff
+                            && (result.rows[0].permissions_course.course_role == 'None')                        // effective user is not course staff
+                            && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {            // authn user is not a Student Data Editor
                             overrides.forEach((override) => {
                                 debug(`clearing cookie: ${override.cookie}`);
                                 res.clearCookie(override.cookie);
@@ -465,11 +426,6 @@ module.exports = function(req, res, next) {
                     // Update course_instances, adding a flag to disable any course
                     // instance that is not also in authn_course_instances (i.e., to
                     // which the authn user does not also have access)
-                    //
-                    // (Adding this flag is not necessary, actually, because the authn
-                    //  user must be at least a course Editor, and so must have access
-                    //  to all course instances. We will check anyway, just to be safe.)
-                    //
                     res.locals.authz_data.course_instances = result.rows[0].course_instances || [];
                     res.locals.authz_data.course_instances.forEach((ci) => {
                         ci.disabled = (! res.locals.authz_data.authn_course_instances.some((authn_ci) => {
@@ -483,6 +439,10 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.has_course_instance_permission_edit = result.rows[0].permissions_course_instance.has_course_instance_permission_edit;
                         res.locals.authz_data.has_student_access = result.rows[0].permissions_course_instance.has_student_access;
                         res.locals.authz_data.has_student_access_with_enrollment = result.rows[0].permissions_course_instance.has_student_access_with_enrollment;
+
+                        if (user.user_id != res.locals.authn_user.user_id) {
+                            res.locals.authz_data.user_with_requested_uid_has_instructor_access = user_with_requested_uid_has_instructor_access;
+                        }
                     }
 
                     res.locals.authz_data.overrides = overrides;

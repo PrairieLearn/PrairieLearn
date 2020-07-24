@@ -14,7 +14,12 @@ FROM
     JOIN LATERAL authz_course_instance($user_id, ci.id, $is_administrator, $req_date, $req_course_instance_role) AS permissions_course_instance ON TRUE
 WHERE
     c.id = coalesce($course_id, ci.course_id)
-    AND c.deleted_at IS NULL;
+    AND c.deleted_at IS NULL
+    AND (
+        (permissions_course->>'course_role')::enum_course_role > 'None'
+        OR (permissions_course_instance->>'course_instance_role')::enum_course_instance_role > 'None'
+        OR (permissions_course_instance->>'has_student_access_with_enrollment')::boolean IS TRUE
+    );
 
 -- BLOCK ensure_enrollment
 INSERT INTO enrollments
@@ -26,7 +31,8 @@ ON CONFLICT DO NOTHING;
 SELECT
     to_jsonb(u) AS user,
     to_jsonb(i) AS institution,
-    (adm.id IS NOT NULL) AS is_administrator
+    (adm.id IS NOT NULL) AS is_administrator,
+    users_is_instructor_in_course_instance(u.user_id, $course_instance_id) AS is_instructor
 FROM
     users AS u
     LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)

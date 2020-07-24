@@ -4,13 +4,23 @@
             <ul class="list-unstyled">
                 <li class="font-weight-bold"><%= override.name %></li>
                 <li><%= override.value %></li>
+                <li>blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah </li>
             </ul>
         </div>
         <div>
-            <button class="btn btn-xs btn-warning" role="button" type="button" onClick="document.cookie=&quot;<%= override.cookie %>=;max-age=3600000;path='/'&quot;; window.location.reload()">
+            <button class="btn btn-xs btn-warning" type="button" id="navbar-user-remove-<%= override.cookie %>-button">
                 <i class="fas fa-times mr-1"></i>
                 Remove
             </button>
         </div>
     </div>
 </div>
+
+<script>
+  $(function() {
+    $('#navbar-user-remove-<%= override.cookie %>-button').click(function() {
+      Cookies.remove('<%= override.cookie %>', { path: '/' });
+      location.reload();
+    });
+  });
+</script>
