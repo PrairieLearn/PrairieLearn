@@ -8,6 +8,8 @@
 
 If you are running natively, in PL's `config.json` set `"workspaceNativeLocalhost": "localhost"`.
 
+If you are running inside docker, add the [external grading flags](https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development) to your run command.
+
 4. Run `interface.js`.
 
 If you are running PL natively (outside docker), just run `node workspace_host/interface` from the main PL directory.
