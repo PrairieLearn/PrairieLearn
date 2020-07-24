@@ -31,7 +31,6 @@ def grade(data):
 
     Ac = math.pi*data['submitted_answers']['D']**2/4
     qf = -data['params']['k']*Ac*(data['submitted_answers']['T1'] - data['submitted_answers']['Tb'])/data['submitted_answers']['x1']
-    #data['correct_answers']['qf'] = qf
 
     if math.isclose(data['submitted_answers']['qf'], qf, rel_tol=1e-03, abs_tol=0.0):
         data['partial_scores']['qf'] = {'score': 1, 'weight': 1}
