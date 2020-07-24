@@ -43,7 +43,6 @@
                 {"id": "element/stringInput",              "points": 2, "maxPoints": 10},
                 {"id": "element/matrixComponentInput",     "points": 2, "maxPoints": 10},
                 {"id": "element/matrixLatex",              "points": 2, "maxPoints": 10},
-                {"id": "element/prairieDrawFigure",        "points": 2, "maxPoints": 10},
                 {"id": "element/variableOutput",           "points": 2, "maxPoints": 10},
                 {"id": "element/fileEditor",               "points": 2, "maxPoints": 10},
                 {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
