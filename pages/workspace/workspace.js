@@ -43,7 +43,6 @@ const s3Sync = function (s3Path, bucketName) {
                 console.log(`[workspace.js] synced ${bucketPath} to ${bucketName}`);
             }
         });
-
     });
 };
 
