@@ -75,6 +75,7 @@ router.get('/:workspace_id', (req, res, next) => {
             sqldb.query(sql.update_workspace_state, params, function(err, _result) {
                 if (ERR(err, next)) return;
                 console.log(`[workspace.js] set workspaces.state to 'stopped'`);
+                callback(null);
             });
         },
     ], (err) => {
