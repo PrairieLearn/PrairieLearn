@@ -159,6 +159,18 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
 
+// proxy workspaces to remote machines
+const workspaceProxyOptions = {
+    target: 'invalid',
+    ws: true,
+    logProvider: _provider => logger,
+    router: async () => {
+        let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
+        return url;
+    },
+};
+const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
+app.use('/workspace/([0-9])+/container/', workspaceProxy);
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -222,22 +234,6 @@ app.use(function(req, res, next) {
     });
     next();
 });
-
-// proxy workspaces to remote machines
-const workspaceProxyOptions = {
-    target: 'invalid',
-    ws: true,
-    pathRewrite: (path) => {
-        return path.replace('container/', '');
-    },
-    logProvider: _provider => logger,
-    router: async () => {
-        let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
-        return url;
-    },
-};
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/([0-9])+/container/', workspaceProxy);
 
 // clear all cached course code in dev mode (no authorization needed)
 if (config.devMode) {

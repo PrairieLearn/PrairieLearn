@@ -29,18 +29,13 @@ if (workspaceBucketName == '') {
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
-
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json())
-
 var id_port_mapper = {};
 var port_id_mapper = {};
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
     pathRewrite: (path) => {
-        var match = path.match('/workspace/[0-9]+');
+        var match = path.match('/workspace/[0-9]+/container/*');
         if (match) {
             var substring = match[0];
             return path.replace(substring, '');
@@ -61,7 +56,10 @@ const workspaceProxyOptions = {
     },
 };
 const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.get('/workspace/([0-9])+/*', workspaceProxy);
+app.use('/workspace/([0-9])+/*', workspaceProxy);
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json())
 
 // For development
 app.put('/', function(req, res) {
@@ -113,7 +111,7 @@ function _resetS3(workspace_id, callback) {
     var cmd = "aws s3 cp s3://pl-workspace/question-0 s3://pl-workspace/workspace-0 --recursive";
 
     var _ = exec(cmd, function (error, stdout, stderr) {
-        if (stdout) {   
+        if (stdout) {
             callback(null, workspace_id);
         } else if (stderr) {
             callback(stderr);
@@ -156,7 +154,7 @@ function _downloadFromS3(filePath, S3FilePath, callback) {
         callback(null, [filePath, S3FilePath, err]);
         return;
     });
-    
+
     s3Stream.pipe(fileStream).on('error', function(err) {
         // This is for errors like the connection is lost, etc
         callback(null, [filePath, S3FilePath, err]);
@@ -186,7 +184,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
         Bucket: workspaceBucketName,
         Prefix: S3curDirPath
     };
-    
+
     s3.listObjectsV2(listingParams, (err, data) => {
         if (err) {
             callback(err);
@@ -220,7 +218,7 @@ function _syncPullContainer(workspace_id, callback) {
             }));
         });
 
-        var status = []; 
+        var status = [];
         async.parallel(jobs, function(_, results) {
             results.forEach((res) => {
                 if (res != "OK") {
@@ -254,7 +252,7 @@ async function _syncPushContainer(workspace_id, callback) {
         }));
     });
 
-    var status = []; 
+    var status = [];
     async.parallel(jobs, function(_, results) {
         results.forEach((res) => {
             if (res != "OK") {
@@ -287,6 +285,9 @@ function _createContainer(workspace_id, port, callback) {
         ExposedPorts: {
             "8080/tcp": {},
         },
+        Env: [
+            `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
+        ],
         HostConfig: {
             PortBindings: {'8080/tcp': [{"HostPort": port.toString()}]},
             Binds: [`${workspacePath}:${containerPath}`],
