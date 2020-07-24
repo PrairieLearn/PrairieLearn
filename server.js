@@ -232,7 +232,7 @@ const workspaceProxyOptions = {
     },
     logProvider: _provider => logger,
     router: async () => {
-        let url = config.workspaceLocalhost;
+        let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
         return url;
     },
 };

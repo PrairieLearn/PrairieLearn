@@ -13,7 +13,7 @@ $ cd ..
 $ node workspace_host/interface
 ```
 
-4. If you are running PL natively (outside of docker), in PL's `config.json` set `"workspaceLocalhost": "http://localhost:8081/"`.
+4. If you are running PL natively (outside of docker), in PL's `config.json` set `"workspaceNativeLocalhost": "localhost"`.
 
 5. Run PL, either inside docker or natively. Navigate to `exampleCourse -> Questions -> Workspace demo` and click the `Open workspace` button.
 

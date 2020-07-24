@@ -53,7 +53,7 @@ const workspaceProxyOptions = {
         var url = req.url;
         var workspace_id = parseInt(url.replace("/workspace/", ""));
         if (workspace_id in id_port_mapper) {
-            url = 'http://localhost:' + id_port_mapper[workspace_id];
+            url = `http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`;
             return url;
         } else {
             return "";
@@ -88,7 +88,7 @@ app.post('/', function(req, res) {
     };
 });
 
-app.listen(port, () => console.log("Listening on http://localhost:" + port));
+app.listen(port, () => console.log(`Listening on http://${config.workspaceNativeLocalhost}:${port}/`));
 
 function _getAvailablePort(workspace_id, curPort, callback) {
     if (curPort > 65535) {
@@ -207,7 +207,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 
 function _syncPullContainer(workspace_id, callback) {
     var workspaceName= "workspace-" + workspace_id;
-    _recursiveDownloadJobManager(workspaceName, workspaceName, (err, jobs_params) => {
+    _recursiveDownloadJobManager(`/jobs/${workspaceName}`, workspaceName, (err, jobs_params) => {
         if (err) {
             callback(err);
             return;
@@ -244,7 +244,7 @@ async function _syncPushContainer(workspace_id, callback) {
         callback(null, workspace_id);
         return;
     }
-    var jobs_params = _recursiveUploadJobManager(workspaceName, workspaceName);
+    var jobs_params = _recursiveUploadJobManager(`/jobs/${workspaceName}`, workspaceName);
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
         jobs.push( ((mockCallback) => {
@@ -275,7 +275,11 @@ function _getContainer(workspace_id, callback) {
 };
 
 function _createContainer(workspace_id, port, callback) {
-    var workspaceName= "workspace-" + workspace_id;
+    const workspaceName = 'workspace-' + workspace_id;
+    const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
+    const workspacePath = path.join(workspaceDir, workspaceName);
+    const containerPath = '/home/coder/project';
+    logger.info("Workspace path is configed to: " + workspacePath);
     docker.createContainer({
         Image: 'codercom/code-server',
         ExposedPorts: {
@@ -283,7 +287,7 @@ function _createContainer(workspace_id, port, callback) {
         },
         HostConfig: {
             PortBindings: {'8080/tcp': [{"HostPort": port.toString()}]},
-            Binds: [path.join(process.cwd(), workspaceName) + ':/home/coder/project'],
+            Binds: [`${workspacePath}:${containerPath}`],
             // Copied directly from externalGraderLocal.js
             Memory: 1 << 30, // 1 GiB
             MemorySwap: 1 << 30, // same as Memory, so no access to swap
@@ -297,7 +301,7 @@ function _createContainer(workspace_id, port, callback) {
         Cmd: ['--auth', 'none'],
         name: workspaceName,
         Volumes: {
-            '/home/coder/project': {}
+            [containerPath]: {}
           },
     }, (err, container) => {
         if (err) {
