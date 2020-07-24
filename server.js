@@ -261,10 +261,13 @@ app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzC
 app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
 app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
 
-// Some course instance student pages only require the authn user to have permissions (already checked)
-app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
+// Some course instance student pages only require authorization (already checked)
 app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
 app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
+
+// Some course instance student pages only require the authn user to have permissions
+app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'));
+app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
 // All course instance instructor pages require the authn user to have permissions
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'));
