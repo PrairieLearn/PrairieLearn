@@ -206,8 +206,9 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 };
 
 function _syncPullContainer(workspace_id, callback) {
-    var workspaceName= "workspace-" + workspace_id;
-    _recursiveDownloadJobManager(`/jobs/${workspaceName}`, workspaceName, (err, jobs_params) => {
+    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+    const workspaceName= `workspace-${workspace_id}`;
+    _recursiveDownloadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName, (err, jobs_params) => {
         if (err) {
             callback(err);
             return;
@@ -238,13 +239,14 @@ function _syncPullContainer(workspace_id, callback) {
 };
 
 async function _syncPushContainer(workspace_id, callback) {
-    var workspaceName= "workspace-" + workspace_id;
+    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+    const workspaceName= `workspace-${workspace_id}`;
     if (!fs.existsSync(workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
         callback(null, workspace_id);
         return;
     }
-    var jobs_params = _recursiveUploadJobManager(`/jobs/${workspaceName}`, workspaceName);
+    var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
         jobs.push( ((mockCallback) => {
