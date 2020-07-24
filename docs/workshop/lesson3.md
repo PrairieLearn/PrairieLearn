@@ -1,5 +1,7 @@
 # Lesson 3: Looking at more specialized elements
 
+- [Lesson 3 Recording](https://mediaspace.illinois.edu/media/t/1_l4dh8cwm/170964131)
+
 Convert these questions from the "paper-pencil" format to PrairieLearn.
 
 ## Example 1:
@@ -14,18 +16,18 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8076705/preview)
+- [workshop/Lesson3\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211625/preview)
 
-- [workshop/Lesson3\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8078982/preview)
+- [workshop/Lesson3\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211627/preview)
 
-- [workshop/Lesson3\_example1\_v3](https://prairielearn.engr.illinois.edu/pl/course/146/question/8078983/preview)
+- [workshop/Lesson3\_example1\_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211626/preview)
 
 
 ## Example 2:
 
-Consider the Standard I-beam cross-section: 
+Consider the Standard I-beam cross-section:
 
-![](figs/cross-section.png) 
+![](figs/cross-section.png)
 
 The table below has the geometric properties for different specifications for a steel beam:
 
@@ -54,15 +56,15 @@ You can download the figure files and the table:
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example2\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8076706/preview)
+- [workshop/Lesson3\_example2\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211628/preview)
 
-- [workshop/Lesson3\_example2\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8078985/preview)
+- [workshop/Lesson3\_example2\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211629/preview)
 
-- [workshop/Lesson3\_example2\_v3](https://prairielearn.engr.illinois.edu/pl/course/146/question/8078986/preview)
+- [workshop/Lesson3\_example2\_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211630/preview)
 
 ## Example 3:
 
-Convert an integer number $x$ from decimal representation (base 10) to binary representation (base 2). 
+Convert an integer number $x$ from decimal representation (base 10) to binary representation (base 2).
 
 **Think about:**
 
@@ -70,7 +72,7 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example3](https://prairielearn.engr.illinois.edu/pl/course/146/question/8076707/preview)
+- [workshop/Lesson3\_example3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211631/preview)
 
 ## Example 4:
 
@@ -86,13 +88,13 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3\_example4\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8076708/preview)
+- [workshop/Lesson3\_example4\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211632/preview)
 
-- [workshop/Lesson3\_example4\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8078989/preview)
+- [workshop/Lesson3\_example4\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211633/preview)
 
 ## Homework 3
 
-Create new questions using some of the elements discussed today and add the url link to the 
+Create new questions using some of the elements discussed today and add the url link to the
 [spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
 Use the tab for `Homework 3`. I will take a look at your question and provide feedback.
 
@@ -109,9 +111,3 @@ Use the tab for `Homework 3`. I will take a look at your question and provide fe
 `pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793642/preview)
 
 `pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911589/preview)
-
-
-
-## Video
-
-- [Lesson 3 Recording](https://mediaspace.illinois.edu/media/t/1_l4dh8cwm/169265112)
