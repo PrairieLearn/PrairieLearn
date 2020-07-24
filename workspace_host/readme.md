@@ -35,3 +35,17 @@ $ docker build workspaces/xtermjs -t "prairielearn/workspace-xtermjs"
 Because the container image is currently hardcoded, you will need to update `Image` in `workspace_host/interface.js`.
 In the function `_createContainer()`, update the `Image` attribute to `prairielearn/workspace-xtermjs`.
 The exposed ports and bindings do not need to be changed; you can update them, but it will run as-is.
+
+# Using the Jupyter Lab workspace
+
+Build the container in `workspaces/jupyterlab`
+
+```sh
+$ docker build workspaces/jupyterlab -t "prairielearn/workspace-jupyterlab"
+```
+
+In the function `_createContainer()`:
+- Update `Image` in `workspace_host/interface.js` to point to `prairielearn/workspace-jupyterlab`.
+- Blank out the command-line arguments (i.e. change `Cmd` to an empty array &mdash; `[]`)
+
+In the `workspaceProxyOptions` dictionary remove the `pathRewrite` function or change it so that it returns the argument exactly (it does not rewrite the url).
