@@ -19,7 +19,7 @@
                {{#checked}}checked{{/checked}} id="{{name}}-{{key}}">
 
         <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
-            <div class="pl-checkbox-key-label">({{key}})</div>
+            {{^hide_letter_keys}}<div class="pl-checkbox-key-label">({{key}})</div>{{/hide_letter_keys}}
             <div class="ml-1 mr-1">{{{html}}}</div>
         </label>
             
@@ -85,7 +85,7 @@
     
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
-    ({{key}}) {{{html}}}
+    {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
 
     {{#display_score_badge}}
         {{#correct}}
@@ -124,7 +124,7 @@
     {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
     {{#answers}}
         <li {{#inline}}class="list-inline-item"{{/inline}}>
-            ({{key}}) {{{html}}}
+            {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
         </li>
     {{/answers}}
     {{#inline}}</ul></span>{{/inline}}

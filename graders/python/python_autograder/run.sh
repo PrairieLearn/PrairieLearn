@@ -44,7 +44,7 @@ chmod 1777 "$MERGE_DIR"
 export FILENAMES_DIR=$MERGE_DIR'/filenames'
 mkdir $FILENAMES_DIR
 chmod 777 $FILENAMES_DIR
-mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $FILENAMES_DIR
+mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $JOB_DIR/data/data.json $FILENAMES_DIR
 
 ##########################
 # RUN

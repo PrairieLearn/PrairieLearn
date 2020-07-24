@@ -8,7 +8,7 @@
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
-  
+
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');

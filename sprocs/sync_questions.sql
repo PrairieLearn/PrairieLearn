@@ -36,7 +36,11 @@ BEGIN
             external_grading_entrypoint,
             external_grading_timeout,
             external_grading_enable_networking,
-            dependencies
+            dependencies,
+            workspace_image,
+            workspace_port,
+            workspace_args,
+            workspace_graded_files
         ) SELECT
             (question->>'uuid')::uuid,
             question->>'qid',
@@ -58,7 +62,11 @@ BEGIN
             question->>'external_grading_entrypoint',
             (question->>'external_grading_timeout')::integer,
             (question->>'external_grading_enable_networking')::boolean,
-            (question->>'dependencies')::jsonb
+            (question->>'dependencies')::jsonb,
+            question->>'workspace_image',
+            (question->>'workspace_port')::integer,
+            question->>'workspace_args',
+            jsonb_array_to_text_array(question->'workspace_graded_files')
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
@@ -80,7 +88,11 @@ BEGIN
             external_grading_entrypoint = EXCLUDED.external_grading_entrypoint,
             external_grading_timeout = EXCLUDED.external_grading_timeout,
             external_grading_enable_networking = EXCLUDED.external_grading_enable_networking,
-            dependencies = EXCLUDED.dependencies
+            dependencies = EXCLUDED.dependencies,
+            workspace_image = EXCLUDED.workspace_image,
+            workspace_port = EXCLUDED.workspace_port,
+            workspace_args = EXCLUDED.workspace_args,
+            workspace_graded_files = EXCLUDED.workspace_graded_files
         WHERE
             questions.course_id = new_course_id
         RETURNING id, qid
