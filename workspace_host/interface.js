@@ -1,3 +1,4 @@
+const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express()
 const port = 8081;
@@ -25,6 +26,41 @@ if (workspaceBucketName == '') {
 } else {
     logger.info("Workspace bucket is configed to: " + workspaceBucketName);
 }
+
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+// FIXME: this is duped from server.js
+async.series([
+    function(callback) {
+        const pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            password: config.postgresqlPassword,
+            max: 100,
+            idleTimeoutMillis: 30000,
+        };
+        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+        const idleErrorHandler = function(err) {
+            logger.error('idle client error', err);
+            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
+            process.exit(1);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+], function(err, data) {
+    if (err) {
+        logger.error('Error initializing PrairieLearn database:', err, data);
+    } else {
+        logger.info('Initialized PrairieLearn database');
+    }
+});
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
@@ -96,7 +132,7 @@ function _getAvailablePort(workspace_id, curPort, callback) {
     var server = net.createServer()
     server.listen(curPort, function (err) {
         server.once('close', function () {
-            callback(null, workspace_id, curPort);
+            callback(null, curPort);
         });
         server.close();
     });
@@ -105,6 +141,29 @@ function _getAvailablePort(workspace_id, curPort, callback) {
         return;
     });
 };
+
+function _queryContainerSettings(workspace_id, callback) {
+    sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
+        if (err) return;
+        logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
+        const settings = {
+            workspace_image: result.rows[0].workspace_image || 'codercom/code-server',
+            workspace_port: result.rows[0].workspace_port || 8080,
+            workspace_args: result.rows[0].workspace_args || '--auth none',
+        }
+        callback(null, settings);
+    });
+};
+
+function _getContainerSettings(workspace_id, callback) {
+    async.parallel({
+        port: (parallelCallback) => {_getAvailablePort(workspace_id, 1024, parallelCallback)},
+        settings: (parallelCallback) => {_queryContainerSettings(workspace_id, parallelCallback)},
+    }, (err, results) => {
+        if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
+        callback(null, workspace_id, results.port, results.settings);
+    });
+}
 
 // DEPRECATED
 function _resetS3(workspace_id, callback) {
@@ -274,22 +333,25 @@ function _getContainer(workspace_id, callback) {
     callback(null, container);
 };
 
-function _createContainer(workspace_id, port, callback) {
-    const workspaceName = 'workspace-' + workspace_id;
+function _createContainer(workspace_id, port, settings, callback) {
+    const workspaceName = `workspace-${workspace_id}`;
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
     const workspacePath = path.join(workspaceDir, workspaceName);
     const containerPath = '/home/coder/project';
-    logger.info("Workspace path is configed to: " + workspacePath);
+    logger.info(`Workspace path is configed to: ${workspacePath}`);
+    logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
     docker.createContainer({
-        Image: 'codercom/code-server',
+        Image: settings.workspace_image,
         ExposedPorts: {
-            "8080/tcp": {},
+            [`${settings.workspace_port}/tcp`]: {},
         },
         Env: [
             `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
         ],
         HostConfig: {
-            PortBindings: {'8080/tcp': [{"HostPort": port.toString()}]},
+            PortBindings: {
+                [`${settings.workspace_port}/tcp`]: [{"HostPort": `${port}`}],
+            },
             Binds: [`${workspacePath}:${containerPath}`],
             // Copied directly from externalGraderLocal.js
             Memory: 1 << 30, // 1 GiB
@@ -301,7 +363,7 @@ function _createContainer(workspace_id, port, callback) {
             CpuQuota: 90000, // portion of the CpuPeriod for this container
             PidsLimit: 1024,
         },
-        Cmd: ['--auth', 'none'],
+        Cmd: settings.workspace_args.trim().split(' '),
         name: workspaceName,
         Volumes: {
             [containerPath]: {}
@@ -362,7 +424,7 @@ function _stopContainer(container, callback) {
 function initSequence(workspace_id, res) {
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback)},
-        (workspace_id, callback) => {_getAvailablePort(workspace_id, 1024, callback)},
+        _getContainerSettings,
         _createContainer,
         _syncPullContainer,
         _startContainer,
