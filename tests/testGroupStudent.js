@@ -248,7 +248,7 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name = 'Team BB';
+            locals.team_name = 'TeamBB';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,
@@ -274,7 +274,7 @@ describe('Group based homework assess control on student side', function() {
     describe('8. the group information after 1 user join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(0, elemList.text().indexOf(locals.team_name));
+            assert.equal(elemList.text(), locals.team_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -348,7 +348,7 @@ describe('Group based homework assess control on student side', function() {
     describe('10. the group information after 2 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(0, elemList.text().indexOf(locals.team_name));
+            assert.equal(elemList.text(), locals.team_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -427,7 +427,7 @@ describe('Group based homework assess control on student side', function() {
     describe('12. the group information after 3 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(0, elemList.text().indexOf(locals.team_name));
+            assert.equal(elemList.text(), locals.team_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -681,7 +681,7 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name_alternative1 = 'Team CC';
+            locals.team_name_alternative1 = 'TeamCC';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,
@@ -766,7 +766,7 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name_alternative2 = 'Team BB&CC';
+            locals.team_name_alternative2 = 'TeamBBCC';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,

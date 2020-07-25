@@ -23,9 +23,8 @@ CREATE INDEX group_configs_assessment_id_key ON group_configs (assessment_id);
 CREATE OR REPLACE FUNCTION
     get_random_string(
         IN string_length INTEGER,
-        IN possible_chars TEXT DEFAULT '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        OUT join_code TEXT
-    )
+        IN possible_chars TEXT DEFAULT '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    ) RETURNS text
 AS $$
 DECLARE
     output TEXT = '';
@@ -36,6 +35,7 @@ BEGIN
         pos := 1 + CAST( random() * ( LENGTH(possible_chars) - 1) AS INT4 );
         output := output || substr(possible_chars, pos, 1);
     END LOOP;
+    RETURN output;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 

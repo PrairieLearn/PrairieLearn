@@ -115,7 +115,7 @@ router.post('/', function(req, res, next) {
             } else {
                 const notExist = result.rows[0].not_exist_user;
                 if (notExist) {
-                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + notExist.toString() + '] do not exist. Please check if their uids are correct.';
+                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + notExist.toString() + ']. Please check if the group name is unique and whether their uids are correct.';
                 }
                 const inGroup = result.rows[0].already_in_group;
                 if (inGroup) {
