@@ -41,7 +41,7 @@ router.get('/', function(req, res, next) {
                         if (res.locals.groupsize > 0) {
                             res.locals.groupinfo = result.rows;
                             const group_id = res.locals.groupinfo[0].group_id || 0;
-                            res.locals.friendcode = Buffer.from(group_id, 'utf-8').toString('base64');
+                            res.locals.joincode = Buffer.from(group_id, 'utf-8').toString('base64');
                             res.locals.minsize = result.rows[0].minimum || 0;
                             res.locals.maxsize = result.rows[0].maximum || 999;
                             res.locals.needsize = res.locals.minsize - res.locals.groupsize;
@@ -90,8 +90,8 @@ router.post('/', function(req, res, next) {
             }
         });
     } else if (req.body.__action == 'joinGroup') {
-        const friendcode = req.body.friendcode;
-        const group_id = Buffer.from(friendcode, 'base64').toString('utf8');
+        const joincode = req.body.joincode;
+        const group_id = Buffer.from(joincode, 'base64').toString('utf8');
         const params = {
             assessment_id: res.locals.assessment.id,
             group_id,
@@ -123,7 +123,7 @@ router.post('/', function(req, res, next) {
                 if (joinerror){
                     res.locals.groupsize = 0;
                     //display the error on frontend
-                    res.locals.usedfriendcode = friendcode;
+                    res.locals.usedjoincode = joincode;
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 }
             });
