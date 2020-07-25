@@ -53,11 +53,7 @@
               <th>QID</th>
               <td>
                   <span class="mr-2"><%= question.qid %></span>
-<<<<<<< HEAD
-                  <% if (authz_data.has_course_permission_edit && !course.options.isExampleCourse) { %>
-=======
                   <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
->>>>>>> master
                   <button type="button" class="btn btn-xs btn-secondary mr-2" id="changeQidButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change QID" data-content="<%= include('../partials/changeIdForm', {id_label: 'QID', buttonID: 'changeQidButton', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                       <i class="fa fa-i-cursor"></i>
                       <span>Change QID</span>
@@ -66,11 +62,7 @@
                   <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
               </td>
             </tr>
-<<<<<<< HEAD
-            <% if (authz_data.has_course_permission_edit && !course.options.isExampleCourse) { %>
-=======
             <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
->>>>>>> master
             <tr>
               <th>Configuration</th>
               <td>
