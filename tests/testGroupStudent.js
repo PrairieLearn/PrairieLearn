@@ -279,7 +279,7 @@ describe('Group based homework assess control on student side', function() {
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
             locals.joinCode = elemList.text();
-            assert.lengthOf(locals.joinCode, 4);
+            assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
         });
         it('should not be able to start assessment', function() {
             elemList = locals.$('#start-assessment');

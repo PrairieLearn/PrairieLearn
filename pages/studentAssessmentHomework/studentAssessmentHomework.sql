@@ -14,7 +14,7 @@ WHERE
 
 -- BLOCK get_config_info
 SELECT 
-    gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
+    gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave, gc.maximum, gc.minimum
 FROM 
     group_configs gc
 WHERE 
@@ -22,21 +22,26 @@ WHERE
 
 -- BLOCK check_group_size
 SELECT 
-    gc.maximum, gu.user_id, gu.group_id, gc.assessment_id
+    COUNT(gu) AS cur_size, AVG(gc.maximum) AS maximum
 FROM 
     groups gr
     JOIN group_configs gc ON gr.group_config_id = gc.id
-    JOIN group_users gu ON gu.group_id = gr.id
+    LEFT JOIN group_users gu ON gu.group_id = gr.id
 WHERE 
-    gr.id = $group_id 
+    gr.name = $group_name
+    AND gr.join_code = $join_code 
     AND gc.assessment_id = $assessment_id 
     AND gr.deleted_at IS NULL 
-    AND gc.deleted_at IS NULL;
+    AND gc.deleted_at IS NULL
+GROUP BY
+    gr.id;
 
 -- BLOCK join_group
 INSERT INTO 
-    group_users (group_id, user_id)
-    VALUES ($group_id, $user_id);
+    group_users (user_id, group_id)
+    VALUES ($user_id, (SELECT id
+                       FROM groups
+                       WHERE name = $group_name AND join_code = $join_code AND deleted_at IS NULL));
 
 -- BLOCK create_group
 INSERT INTO groups (name, group_config_id, course_instance_id)
@@ -54,7 +59,7 @@ INSERT INTO group_users (group_id, user_id)
 
 -- BLOCK get_group_info
 SELECT 
-    gu.group_id, gr.name, us.uid, gc.minimum, gc.maximum
+    gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
 FROM 
     assessments ass
     JOIN group_configs gc ON gc.assessment_id = ass.id
