@@ -98,7 +98,7 @@ router.post('/', function(req, res, next) {
             assessment_instance_id: res.locals.assessment_instance.id,
             user_id: res.locals.user.user_id,
         };
-        sqldb.query(sql.quit_group, params, function(err, _result) {
+        sqldb.query(sql.leave_group, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect('/pl/course_instance/' + res.locals.course_instance.id + '/assessment/' + res.locals.assessment.id);
         });

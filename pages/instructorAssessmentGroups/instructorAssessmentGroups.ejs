@@ -225,7 +225,7 @@
                   </div>
                   <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" name="leavecheck" value="true">
-                    <label class="form-check-label" for="inlineCheckbox3">Quit Groups</label>
+                    <label class="form-check-label" for="inlineCheckbox3">Leave Groups</label>
                   </div>                   
                 </div>
                 <div class="modal-footer">
@@ -317,7 +317,6 @@
         <table id="usersTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
-              <th>GID</th>
               <th>Name</th>
               <th>Size</th>
               <th class="text-center">Group Members (UIDs)</th>
@@ -327,7 +326,6 @@
           <tbody>
             <% groups.forEach(function(row, iRow) { %>
             <tr>
-              <td><%= row.gid %></td>
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
               <td class="text-center"><small><%= row.uid_list %></small></td>
@@ -433,8 +431,7 @@
             headerTemplate: '{content} {icon}',
             widgets: ["uitheme"],
             headers: {
-              7: { sorter: false },
-              8: { sorter: false },
+              3: { sorter: false },
             },
           });
         });

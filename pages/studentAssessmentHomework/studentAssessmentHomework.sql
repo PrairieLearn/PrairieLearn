@@ -68,7 +68,7 @@ WHERE
     AND gr.deleted_at IS NULL 
     AND gc.deleted_at IS NULL;
 
--- BLOCK quit_group
+-- BLOCK leave_group
 DELETE FROM 
     group_users
 WHERE 

@@ -104,7 +104,6 @@
             <thead>
               <tr>
                 <% if (assessment.group_work) { %>
-                  <th>GID</th>
                   <th>Name</th>
                   <th>Group Members</th>
                 <% } else { %>
@@ -125,7 +124,6 @@
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
                 <% if (assessment.group_work) { %>
-                  <td><%= row.gid %></td>
                   <td><%= row.group_name %></td>
                   <td><%= row.uid_list %></td>
                 <% } else { %>
@@ -266,8 +264,13 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
+                    <% if (assessment.group_work) { %>
+                      7: {sorter: false},
+                      8: {sorter: false},
+                    <% } else { %>
                       8: {sorter: false},
                       9: {sorter: false},
+                    <% } %>
                   },
               });
           });

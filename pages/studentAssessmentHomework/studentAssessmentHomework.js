@@ -146,7 +146,7 @@ router.post('/', function(req, res, next) {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
         };
-        sqldb.query(sql.quit_group, params2, function(err, _result) {
+        sqldb.query(sql.leave_group, params2, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
