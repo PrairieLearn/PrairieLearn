@@ -15,13 +15,32 @@ SELECT
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
-    (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
+    (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score,
+    (row_number() OVER (PARTITION BY group_info.gid)) = 1 AS unique_group,
+    group_info.name AS groupname,
+    group_info.uid_list
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+    LEFT JOIN (
+                SELECT
+                    gr.id AS gid, gr.name,
+                    array_agg(substring(u.uid from '^[^@]+')) AS uid_list
+                FROM
+                    group_configs AS gc
+                    JOIN groups AS gr ON (gr.group_config_id = gc.id)
+                    JOIN group_users AS gu ON (gu.group_id = gr.id)
+                    JOIN users AS u ON (u.user_id = gu.user_id)
+                WHERE
+                    gc.deleted_at IS NULL
+                    AND gr.deleted_at IS NULL
+                    AND gc.assessment_id = $assessment_id
+                GROUP BY
+                    gr.id
+    ) AS group_info ON (group_info.gid = ai.group_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = group_info.gid)
     JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
@@ -47,7 +66,10 @@ SELECT
     iq.highest_submission_score,
     iq.last_submission_score,
     iq.number_attempts,
-    extract(epoch FROM iq.duration) AS duration_seconds
+    extract(epoch FROM iq.duration) AS duration_seconds,
+    (row_number() OVER (PARTITION BY group_info.gid)) = 1 AS unique_group,
+    group_info.name AS groupname,
+    group_info.uid_list
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -56,7 +78,23 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+    LEFT JOIN (
+                SELECT
+                    gr.id AS gid, gr.name,
+                    array_agg(substring(u.uid from '^[^@]+')) AS uid_list
+                FROM
+                    group_configs AS gc
+                    JOIN groups AS gr ON (gr.group_config_id = gc.id)
+                    JOIN group_users AS gu ON (gu.group_id = gr.id)
+                    JOIN users AS u ON (u.user_id = gu.user_id)
+                WHERE
+                    gc.deleted_at IS NULL
+                    AND gr.deleted_at IS NULL
+                    AND gc.assessment_id = $assessment_id
+                GROUP BY
+                    gr.id
+    ) AS group_info ON (group_info.gid = ai.group_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = group_info.gid)
     JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE

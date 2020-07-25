@@ -18,24 +18,42 @@ const setFilenames = function(locals) {
     const prefix = sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
     locals.scoresCsvFilename = prefix + 'scores.csv';
     locals.scoresAllCsvFilename = prefix + 'scores_all.csv';
-    locals.scoresByUsernameCsvFilename = prefix + 'scores_by_username.csv';
-    locals.scoresByUsernameAllCsvFilename = prefix + 'scores_by_username_all.csv';
     locals.pointsCsvFilename = prefix + 'points.csv';
     locals.pointsAllCsvFilename = prefix + 'points_all.csv';
-    locals.pointsByUsernameCsvFilename = prefix + 'points_by_username.csv';
-    locals.pointsByUsernameAllCsvFilename = prefix + 'points_by_username_all.csv';
-    locals.instancesCsvFilename = prefix + 'instances.csv';
-    locals.instancesAllCsvFilename = prefix + 'instances_all.csv';
-    locals.instanceQuestionsCsvFilename = prefix + 'instance_questions.csv';
-    locals.submissionsForManualGradingCsvFilename = prefix + 'submissions_for_manual_grading.csv';
-    locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
-    locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
-    locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
-    locals.groupsCsvFilename = prefix + 'groups.csv';
-    locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
-    locals.finalFilesZipFilename = prefix + 'final_files.zip';
-    locals.bestFilesZipFilename = prefix + 'best_files.zip';
-    locals.allFilesZipFilename = prefix + 'all_files.zip';
+    if (!locals.assessment.group_work){
+        locals.scoresByUsernameCsvFilename = prefix + 'scores_by_username.csv';
+        locals.scoresByUsernameAllCsvFilename = prefix + 'scores_by_username_all.csv';
+        locals.pointsByUsernameCsvFilename = prefix + 'points_by_username.csv';
+        locals.pointsByUsernameAllCsvFilename = prefix + 'points_by_username_all.csv';
+        locals.instancesCsvFilename = prefix + 'instances.csv';
+        locals.instancesAllCsvFilename = prefix + 'instances_all.csv';
+        locals.instanceQuestionsCsvFilename = prefix + 'instance_questions.csv';
+        locals.submissionsForManualGradingCsvFilename = prefix + 'submissions_for_manual_grading.csv';
+        locals.finalSubmissionsCsvFilename = prefix + 'final_submissions.csv';
+        locals.bestSubmissionsCsvFilename = prefix + 'best_submissions.csv';
+        locals.allSubmissionsCsvFilename = prefix + 'all_submissions.csv';
+        locals.filesForManualGradingZipFilename = prefix + 'files_for_manual_grading.zip';
+        locals.finalFilesZipFilename = prefix + 'final_files.zip';
+        locals.bestFilesZipFilename = prefix + 'best_files.zip';
+        locals.allFilesZipFilename = prefix + 'all_files.zip';
+    } else {
+        locals.groupsCsvFilename = prefix + 'groups.csv';
+        locals.scoresByGroupnameCsvFilename = prefix + 'scores_by_groupname.csv';
+        locals.scoresByGroupnameAllCsvFilename = prefix + 'scores_by_groupname_all.csv';
+        locals.pointsByGroupnameCsvFilename = prefix + 'points_by_groupname.csv';
+        locals.pointsByGroupnameAllCsvFilename = prefix + 'points_by_groupname_all.csv';
+        locals.instancesGroupCsvFilename = prefix + 'instances.csv';
+        locals.instancesGroupAllCsvFilename = prefix + 'instances_all.csv';
+        locals.instanceQuestionsGroupCsvFilename = prefix + 'instance_questions.csv';
+        locals.submissionsForManualGradingGroupCsvFilename = prefix + 'submissions_for_manual_grading.csv';
+        locals.finalSubmissionsGroupCsvFilename = prefix + 'final_submissions.csv';
+        locals.bestSubmissionsGroupCsvFilename = prefix + 'best_submissions.csv';
+        locals.allSubmissionsGroupCsvFilename = prefix + 'all_submissions.csv';
+        locals.filesForManualGradingGroupZipFilename = prefix + 'files_for_manual_grading.zip';
+        locals.finalFilesGroupZipFilename = prefix + 'final_files.zip';
+        locals.bestFilesGroupZipFilename = prefix + 'best_files.zip';
+        locals.allFilesGroupZipFilename = prefix + 'all_files.zip';
+    }
 };
 
 router.get('/', function(req, res, _next) {
@@ -53,7 +71,9 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
         if (options.only_highest) {
             rows = _.filter(rows, 'highest_score');
         }
-
+        if (options.unique_group) {
+            rows = _.filter(rows, 'unique_group');
+        }
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);
@@ -71,14 +91,14 @@ router.get('/:filename', function(req, res, next) {
         ['UIN', 'uin'],
         [assessmentName, 'score_perc'],
     ];
-    var scoresByUsernameColumns = [
-        ['Username', 'username'],
-        [assessmentName, 'score_perc'],
-    ];
     var pointsColumns = [
         ['UID', 'uid'],
         ['UIN', 'uin'],
         [assessmentName, 'points'],
+    ];
+    var scoresByUsernameColumns = [
+        ['Username', 'username'],
+        [assessmentName, 'score_perc'],
     ];
     var pointsByUsernameColumns = [
         ['Username', 'username'],
@@ -100,7 +120,29 @@ router.get('/:filename', function(req, res, next) {
         ['Duration (min)', 'duration_mins'],
         ['Hightest score', 'highest_score'],
     ];
-
+    var scoresByGroupnameColumns = [
+        ['Groupname', 'groupname'],
+        ['Usernames', 'uid_list'],
+        [assessmentName, 'score_perc'],
+    ];
+    var pointsByGroupnameColumns = [
+        ['Groupname', 'groupname'],
+        ['Usernames', 'uid_list'],
+        [assessmentName, 'points'],
+    ];
+    var instancesGroupColumns = [
+        ['Groupname', 'groupname'],
+        ['Usernames', 'uid_list'],
+        ['Assessment', 'assessment_label'],
+        ['Instance', 'number'],
+        ['Started', 'date_formatted'],
+        ['Remaining', 'time_remaining'],
+        ['Score (%)', 'score_perc'],
+        ['Points', 'points'],
+        ['Max points', 'max_points'],
+        ['Duration (min)', 'duration_mins'],
+        ['Hightest score', 'highest_score'],
+    ];
     if (req.params.filename == res.locals.scoresCsvFilename) {
         sendInstancesCsv(res, req, scoresColumns, {only_highest: true}, (err) => {
             if (ERR(err, next)) return;
@@ -304,6 +346,59 @@ router.get('/:filename', function(req, res, next) {
                 ['groupName', 'name'],
                 ['UID', 'uid'],
             ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.scoresByGroupnameCsvFilename) {
+        sendInstancesCsv(res, req, scoresByGroupnameColumns, {only_highest: true, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.scoresByGroupnameAllCsvFilename) {
+        sendInstancesCsv(res, req, scoresByGroupnameColumns, {only_highest: false, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.pointsByGroupnameCsvFilename) {
+        sendInstancesCsv(res, req, pointsByGroupnameColumns, {only_highest: true, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.pointsByGroupnameAllCsvFilename) {
+        sendInstancesCsv(res, req, pointsByGroupnameColumns, {only_highest: false, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instancesGroupCsvFilename) {
+        sendInstancesCsv(res, req, instancesGroupColumns, {only_highest: true, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instancesGroupAllCsvFilename) {
+        sendInstancesCsv(res, req, instancesGroupColumns, {only_highest: false, unique_group: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instanceQuestionsGroupCsvFilename) {
+        let params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.select_instance_questions, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['Groupname', 'groupname'],
+                ['Usernames', 'uid_list'],
+                ['Assessment', 'assessment_label'],
+                ['Assessment instance', 'assessment_instance_number'],
+                ['Question', 'qid'],
+                ['Question instance', 'instance_question_number'],
+                ['Question points', 'points'],
+                ['Max points', 'max_points'],
+                ['Question % score', 'score_perc'],
+                ['Date', 'date_formatted'],
+                ['Highest submission score', 'highest_submission_score'],
+                ['Last submission score', 'last_submission_score'],
+                ['Number attempts', 'number_attempts'],
+                ['Duration seconds', 'duration_seconds'],
+            ];
+            rows = _.filter(rows, 'unique_group');
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
