@@ -25,10 +25,11 @@ SELECT
     array_agg(u.uid) AS uid_list
 FROM
     groups AS gr
-    JOIN group_users AS gu ON gu.group_id = gr.id AND gr.deleted_at IS NULL
-    JOIN users AS u ON u.user_id = gu.user_id
+    LEFT JOIN group_users AS gu ON gu.group_id = gr.id
+    LEFT JOIN users AS u ON u.user_id = gu.user_id
 WHERE
-    gr.group_config_id = $group_config_id
+    gr.deleted_at IS NULL
+    AND gr.group_config_id = $group_config_id
 GROUP BY
     gr.id
 ORDER BY
