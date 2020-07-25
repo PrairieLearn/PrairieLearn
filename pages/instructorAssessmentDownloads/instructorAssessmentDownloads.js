@@ -398,8 +398,9 @@ router.get('/:filename', function(req, res, next) {
                 ['Number attempts', 'number_attempts'],
                 ['Duration seconds', 'duration_seconds'],
             ];
+            var rows = result.rows;
             rows = _.filter(rows, 'unique_group');
-            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+            csvMaker.rowsToCsv(rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
