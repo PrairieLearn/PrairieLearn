@@ -507,9 +507,9 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-    const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
-    const syncedAssessment = await findSyncedAssessment('fail');
+      const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+      const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
+      const syncedAssessment = await findSyncedAssessment('fail');
     assert.isOk(syncedAssessment);
     assert.equal(syncedAssessment.assessment_set_id, unknownAssessmentSet.id);
     assert.equal(syncedAssessment.number, '0');

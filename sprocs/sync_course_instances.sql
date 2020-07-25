@@ -1,4 +1,6 @@
 DROP FUNCTION IF EXISTS sync_course_instances(JSONB, bigint);
+DROP FUNCTION IF EXISTS sync_course_instances(JSONB[], bigint);
+
 CREATE OR REPLACE FUNCTION
     sync_course_instances(
         IN disk_course_instances_data JSONB[],

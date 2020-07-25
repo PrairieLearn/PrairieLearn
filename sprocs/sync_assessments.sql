@@ -1,13 +1,19 @@
 DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
 DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
+DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
+
 CREATE OR REPLACE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
-        IN syncing_course_instance_id bigint
-    ) RETURNS void
+        IN syncing_course_instance_id bigint,
+        OUT name_to_id_map JSONB
+    )
 AS $$
 DECLARE
+    missing_dest_tids TEXT;
+    missing_src_tids TEXT;
+    mismatched_uuid_tids TEXT;
     valid_assessment record;
     access_rule JSONB;
     zone JSONB;
@@ -21,7 +27,12 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
 BEGIN
+    -- The sync algorithm used here is described in the preprint
+    -- "Preserving identity during opportunistic unidirectional
+    -- synchronization via two-fold identifiers".
+
     -- Move all our data into a temporary table so it's easier to work with
+
     CREATE TEMPORARY TABLE disk_assessments (
         tid TEXT NOT NULL,
         uuid uuid,
@@ -29,111 +40,87 @@ BEGIN
         warnings TEXT,
         data JSONB
     ) ON COMMIT DROP;
+
     INSERT INTO disk_assessments (
-        tid,
-        uuid,
-        errors,
-        warnings,
-        data
+                   tid,              uuid,                    errors,             warnings,            data
     ) SELECT
-        entries->>0,
-        (entries->>1)::uuid,
-        entries->>2,
-        entries->>3,
-        (entries->4)::JSONB
+        entries->>'tid', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
     FROM UNNEST(disk_assessments_data) AS entries;
 
-    -- First, update the names of everything we have a UUID for
-    UPDATE assessments AS a
-    SET tid = da.tid, deleted_at = NULL
-    FROM disk_assessments AS da
-    WHERE
-        da.uuid IS NOT NULL
-        AND a.uuid = da.uuid
-        AND a.course_instance_id = syncing_course_instance_id;
+    -- Synchronize the dest (assessments) with the src
+    -- (disk_assessments). This soft-deletes, un-soft-deletes, and
+    -- inserts new rows in assessments. No data is synced yet. Only the
+    -- (id, course_instance_id, uuid, tid, deleted_at) columns are used.
 
-    -- Next, add known UUIDs to previously synced assessments without UUIDS
-    UPDATE assessments AS a
-    SET uuid = da.uuid 
-    FROM disk_assessments AS da
-    WHERE
-        da.uuid IS NOT NULL
-        AND a.tid = da.tid
-        AND a.deleted_at IS NULL
-        AND a.uuid IS NULL
-        AND a.course_instance_id = syncing_course_instance_id;
+    WITH
+    matched_rows AS (
+        SELECT src.tid AS src_tid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        FROM disk_assessments AS src LEFT JOIN assessments AS dest ON (
+            dest.course_instance_id = syncing_course_instance_id
+            AND (src.uuid = dest.uuid
+                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
+                     AND src.tid = dest.tid AND dest.deleted_at IS NULL)))
+    ),
+    deactivate_unmatched_dest_rows AS (
+        UPDATE assessments AS dest
+        SET deleted_at = now()
+        WHERE dest.id NOT IN (
+            SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
+        ) AND dest.deleted_at IS NULL AND dest.course_instance_id = syncing_course_instance_id
+    ),
+    update_matched_dest_rows AS (
+        UPDATE assessments AS dest
+        SET tid = src_tid, uuid = src_uuid, deleted_at = NULL
+        FROM matched_rows
+        WHERE dest.id = dest_id AND dest.course_instance_id = syncing_course_instance_id
+    ),
+    insert_unmatched_src_rows AS (
+        INSERT INTO assessments AS dest (course_instance_id, tid, uuid, deleted_at)
+        SELECT syncing_course_instance_id, src_tid, src_uuid, NULL
+        FROM matched_rows
+        WHERE dest_id IS NULL
+        RETURNING dest.tid AS src_tid, dest.id AS inserted_dest_id
+    )
+    -- Make a map from TID to ID to return to the caller
+    SELECT jsonb_object_agg(src_tid, COALESCE(dest_id, inserted_dest_id))
+    INTO name_to_id_map
+    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_tid);
 
-    -- Next, soft-delete any rows for which we have a mismatched UUID
-    UPDATE assessments AS a
-    SET deleted_at = now()
-    FROM disk_assessments AS da
-    WHERE
-        a.tid = da.tid
-        AND a.deleted_at IS NOT NULL
-        AND da.uuid IS NOT NULL
-        AND a.uuid IS NOT NULL
-        AND a.uuid != da.uuid
-        AND a.course_instance_id = syncing_course_instance_id;
+    -- Internal consistency checks to ensure that dest (assessments) and
+    -- src (disk_assessments) are in fact synchronized.
 
-    -- Insert new rows for missing names for which we have a UUID
-    WITH tids_to_insert AS (
-        SELECT tid FROM disk_assessments WHERE uuid IS NOT NULL
-        EXCEPT
-        SELECT tid FROM assessments WHERE deleted_at IS NULL AND course_instance_id = syncing_course_instance_id
-    )
-    INSERT INTO assessments (
-        tid,
-        uuid,
-        assessment_set_id,
-        number,
-        course_instance_id
-    )
-    SELECT
-        ati.tid,
-        da.uuid,
-        (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id),
-        '0',
-        syncing_course_instance_id
-    FROM
-        tids_to_insert AS ati
-        JOIN disk_assessments AS da ON (da.tid = ati.tid);
+    SELECT string_agg(src.tid, ', ')
+    INTO missing_dest_tids
+    FROM disk_assessments AS src
+    WHERE src.tid NOT IN (SELECT dest.tid FROM assessments AS dest WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL);
+    IF (missing_dest_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs on disk but not synced to DB: %', missing_dest_tids;
+    END IF;
 
-    -- Insert new rows for missing names for which we do not have a UUID
-    WITH tids_to_insert AS (
-        SELECT tid FROM disk_assessments WHERE uuid IS NULL
-        EXCEPT
-        SELECT tid FROM assessments WHERE deleted_at IS NULL AND course_instance_id = syncing_course_instance_id
-    )
-    INSERT INTO assessments (
-        tid,
-        assessment_set_id,
-        number,
-        course_instance_id
-    )
-    SELECT
-        tid,
-        (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id),
-        '0',
-        syncing_course_instance_id FROM tids_to_insert;
+    SELECT string_agg(dest.tid, ', ')
+    INTO missing_src_tids
+    FROM assessments AS dest
+    WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL AND dest.tid NOT IN (SELECT src.tid FROM disk_assessments AS src);
+    IF (missing_src_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs in DB but not on disk: %', missing_src_tids;
+    END IF;
 
-    -- Finally, soft-delete rows with unwanted names
-    WITH tids_to_delete AS (
-        SELECT tid FROM assessments WHERE deleted_at IS NULL AND course_instance_id = syncing_course_instance_id
-        EXCEPT
-        SELECT tid FROM disk_assessments
-    )
-    UPDATE assessments
-    SET deleted_at = now()
-    FROM tids_to_delete
-    WHERE assessments.tid = tids_to_delete.tid;
+    SELECT string_agg(src.tid, ', ')
+    INTO mismatched_uuid_tids
+    FROM disk_assessments AS src JOIN assessments AS dest ON (dest.course_instance_id = syncing_course_instance_id AND dest.tid = src.tid AND dest.deleted_at IS NULL)
+    WHERE NOT (src.uuid = dest.uuid OR src.uuid IS NULL);
+    IF (mismatched_uuid_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs on disk with mismatched UUIDs in DB: %', mismatched_uuid_tids;
+    END IF;
 
     -- At this point, there will be exactly one non-deleted row for all tids
     -- that we loaded from disk. It is now safe to update all those rows with
     -- the new information from disk (if we have any).
+
     FOR valid_assessment IN (
         SELECT tid, data, warnings
-        FROM disk_assessments AS da
-        wHERE (da.errors IS NULL OR da.errors = '')
+        FROM disk_assessments AS src
+        wHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
         UPDATE assessments AS a
         SET
@@ -359,10 +346,15 @@ BEGIN
         AND a.course_instance_id = syncing_course_instance_id;
 
     -- Second pass: add errors and warnings where needed
+    -- Also add an assessment_set_id if we don't have one yet, to
+    -- catch cases where we are adding a new assessment set that has
+    -- errors and so was skipped above.
     UPDATE assessments AS a
     SET
         sync_errors = da.errors,
-        sync_warnings = da.warnings
+        sync_warnings = da.warnings,
+        assessment_set_id = COALESCE(a.assessment_set_id,
+            (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id))
     FROM disk_assessments AS da
     WHERE
         a.tid = da.tid
@@ -370,6 +362,7 @@ BEGIN
         AND (da.errors IS NOT NULL AND da.errors != '');
 
     -- Finally, clean up any other leftover models
+
     -- Soft-delete unused assessment questions
     UPDATE assessment_questions AS aq
     SET

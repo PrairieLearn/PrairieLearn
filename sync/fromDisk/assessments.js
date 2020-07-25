@@ -228,13 +228,13 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
         });
     }
     const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-        return JSON.stringify([
-            tid,
-            assessment.uuid,
-            infofile.stringifyErrors(assessment),
-            infofile.stringifyWarnings(assessment),
-            getParamsForAssessment(assessment, questionIds),
-        ]);
+        return JSON.stringify({
+            tid: tid,
+            uuid: assessment.uuid,
+            errors: infofile.stringifyErrors(assessment),
+            warnings: infofile.stringifyWarnings(assessment),
+            data: getParamsForAssessment(assessment, questionIds),
+        });
     });
 
     const params = [
@@ -243,6 +243,9 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
         courseInstanceId,
     ];
     perf.start('sproc:sync_assessments');
-    await sqldb.callAsync('sync_assessments', params);
+    const result = await sqldb.callOneRowAsync('sync_assessments', params);
     perf.end('sproc:sync_assessments');
+
+    /** @type {[string, any][]} */
+    const _nameToIdMap = result.rows[0].name_to_id_map;
 };

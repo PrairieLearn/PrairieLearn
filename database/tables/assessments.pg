@@ -11,7 +11,7 @@ columns
     max_points: double precision
     mode: enum_mode
     multiple_instance: boolean
-    number: text
+    number: text not null default '0'::text
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
@@ -33,7 +33,7 @@ indexes
     assessments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
-    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessments_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 

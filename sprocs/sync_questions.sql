@@ -1,4 +1,6 @@
 DROP FUNCTION IF EXISTS sync_questions(JSONB, bigint);
+DROP FUNCTION IF EXISTS sync_questions(JSONB[], bigint);
+
 CREATE OR REPLACE FUNCTION
     sync_questions(
         IN disk_questions_data JSONB[],
