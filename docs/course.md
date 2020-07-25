@@ -95,6 +95,7 @@ abbreviation | name | purpose
 `E` | Exam | Long-form midterm or final exams.
 `PE` | Practice Exam | Practice exams.
 `P` | Prep | Temporary assessments used while writing new questions.
+`WS` | Worksheet | Guided activity, often completed in groups.
 
 ## Adding your own assessment sets
 
