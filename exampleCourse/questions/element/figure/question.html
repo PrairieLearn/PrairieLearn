@@ -13,7 +13,20 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                
+                Here is an example of of a static figure.
+            </p>
+            <pl-figure file-name="sin-x.png"></pl-figure>
+            <br>
+            <p>
+                The code looks like:
+            </p>
+            <pl-code language="html">&lt;pl-figure file-name="sin-x.png"&gt;&lt;/pl-figure&gt;</pl-code>
+            <p>
+                By default, <code>pl-figure</code> will read static files from <code>clientFilesQuestion</code> directory.
+                Or, from <code>clientFilesCourse</code> directory if overriding using <code>directory</code> attribute 
+            </p>
+            <p>
+                Depending on the display size of the window, the size of the displayed figure will automatically adjust to fit within the window.
             </p>
         </pl-question-panel>
     </div>
@@ -21,14 +34,21 @@
 
 <div class="card my-2">
     <div class="card-header">
-        Part 1
+        Part 2
     </div>
 
     <div class="card-body">
         <pl-question-panel>
             <p>
-                
+                Here is an example of a fixed width image.
             </p>
+            <pl-figure file-name="sin-x.png" width="300px"></pl-figure>
+            <br>
+            <p>
+                The width of the displayed figure can be set using the <code>width</code> attribute.
+                The size of the figure will automatically shrink if the the specified <code>width</code> is too big for the display window.
+            </p>
+            <pl-code language="html">&lt;pl-figure file-name="sin-x.png" width="300px"&gt;&lt;/pl-figure&gt;</pl-code>
         </pl-question-panel>
     </div>
 </div>
