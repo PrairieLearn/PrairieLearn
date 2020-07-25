@@ -99,6 +99,10 @@
 
   * Add Python library regex to plbase (Nathan Bowman).
 
+  * Add `all-of-the-above` and `none-of-the-above` attributes to `<pl-multiple-choice>` (Bojin Yao)
+
+  * Add `external-json` attribute to `<pl-multiple-choice>` (Bojin Yao)
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
