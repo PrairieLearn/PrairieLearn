@@ -35,22 +35,32 @@ const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
     pathRewrite: (path) => {
-        var match = path.match('/workspace/[0-9]+/container/*');
+        logger.info(`proxy pathRewrite: path="${path}"`);
+        var match = path.match('/workspace/([0-9]+)/container/(.*)');
         if (match) {
-            var substring = match[0];
-            return path.replace(substring, '');
+            const workspace_id = parseInt(match[1]);
+            logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_port_mapper[${workspace_id}]=${id_port_mapper[workspace_id]}`);
+            var pathSuffix = match[2];
+            const newPath = '/' + pathSuffix;
+            logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
+            return newPath;
         } else {
+            logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
             return path;
         }
     },
     logProvider: _provider => logger,
     router: (req) => {
+        logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
         var url = req.url;
         var workspace_id = parseInt(url.replace("/workspace/", ""));
+        logger.info(`workspace_id: ${workspace_id}`);
         if (workspace_id in id_port_mapper) {
             url = `http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`;
+            console.log(`proxy router: Router URL: ${url}`);
             return url;
         } else {
+            console.log(`proxy router: Router URL is empty`);
             return "";
         };
     },
@@ -275,6 +285,7 @@ function _getContainer(workspace_id, callback) {
 };
 
 function _createContainer(workspace_id, port, callback) {
+    logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
     const workspaceName = 'workspace-' + workspace_id;
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
     const workspacePath = path.join(workspaceDir, workspaceName);
@@ -309,6 +320,7 @@ function _createContainer(workspace_id, port, callback) {
     }, (err, container) => {
         if (err) {
             if (err.toString().includes("is already in use")) {
+                logger.info(`_createContainer: received error: ${err}`);
                 _getContainer(workspace_id, callback);
             } else {
                 callback(err);
@@ -316,6 +328,8 @@ function _createContainer(workspace_id, port, callback) {
         } else {
             id_port_mapper[workspace_id] = port;
             port_id_mapper[port] = workspace_id;
+            logger.info(`Set id_port_mapper[${workspace_id}] = ${port}`);
+            logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
             callback(null, container);
         };
     });
@@ -368,8 +382,10 @@ function initSequence(workspace_id, res) {
         _startContainer,
     ], function(err) {
         if (err) {
+            logger.error(`Error for workspace_id=${workspace_id}: ${err}`);
             res.status(500).send(err);
         } else {
+            logger.info(`Container initialized for workspace_id=${workspace_id}`);
             res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
         };
     });
