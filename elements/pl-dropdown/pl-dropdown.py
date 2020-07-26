@@ -18,12 +18,17 @@ class SortTypes(Enum):
 
 
 def get_options(element, data):
+    answers_name = pl.get_string_attrib(element, 'answers-name')
+    submitted_answer = data.get('submitted_answers', {}).get(answers_name, None)
     options = []
     for child in element:
         if child.tag in ['pl-answer']:
             pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
             child_html = pl.inner_html(child).strip()
-            options.append(child_html)
+            options.append({
+                'value': child_html,
+                'selected': (child_html == submitted_answer)
+            })
     return options
 
 
@@ -65,16 +70,26 @@ def render(element_html, data):
     sort_type = pl.get_string_attrib(element, 'sort', SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
 
-    html_params = {}
-    html = ''
+    correct = None
+    partial_score = data['partial_scores'].get(answers_name, {'score': None})
+    score = partial_score.get('score', None)
+    if score is not None:
+        try:
+            score = float(score)
+            if score == 1:
+                correct = True
+            else:
+                correct = False
+        except Exception:
+            raise ValueError('invalid score' + score)
 
     if data['panel'] == 'question':
         if sort_type == SortTypes.FIXED.name:
             pass
         elif sort_type == SortTypes.DESCEND.name:
-            dropdown_options.sort(reverse=True)
+            dropdown_options.sort(key=lambda opt: opt['value'], reverse=True)
         elif sort_type == SortTypes.ASCEND.name:
-            dropdown_options.sort(reverse=False)
+            dropdown_options.sort(key=lambda opt: opt['value'], reverse=False)
         elif sort_type == SortTypes.RANDOM.name:
             random.shuffle(dropdown_options)
 
@@ -86,31 +101,20 @@ def render(element_html, data):
             'question': True,
             'uuid': uuid,
             'options': dropdown_options,
+            'has_submission': correct is not None,
+            'correct': correct
         }
 
     elif data['panel'] == 'submission':
-        partial_score = data['partial_scores'].get(answers_name, {'score': None})
-        score = partial_score.get('score', None)
-
         html_params = {
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answers_name, None),
             'submission': True,
             'submitted-answer': submitted_answer,
+            'correct': correct
         }
 
-        if score is not None:
-            try:
-                score = float(score)
-                if score == 1:
-                    html_params['correct'] = True
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError('invalid score' + score)
-
     elif data['panel'] == 'answer':
-
         html_params = {
             'answer': True,
             'correct-answer': data['correct_answers'][answers_name]
@@ -174,8 +178,8 @@ def test(element_html, data):
         incorrect_ans = ''
 
         for option in dropdown_options:
-            if option != solution:
-                incorrect_ans = option
+            if option['value'] != solution:
+                incorrect_ans = option['value']
 
         data['raw_submitted_answers'][answers_name] = incorrect_ans
         data['partial_scores'][answers_name] = {'score': 0, 'weight': weight}
