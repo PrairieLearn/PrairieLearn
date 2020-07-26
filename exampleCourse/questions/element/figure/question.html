@@ -40,7 +40,7 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Here is an example of a fixed width image.
+                Here is an example of a fixed width figure.
             </p>
             <pl-figure file-name="sin-x.png" width="300px"></pl-figure>
             <br>
@@ -55,14 +55,81 @@
 
 <div class="card my-2">
     <div class="card-header">
-        Part 1
+        Part 3
     </div>
 
     <div class="card-body">
         <pl-question-panel>
             <p>
-                
+                Here is an example of a dynamic figure.
+            </p>
+            <pl-figure file-name="cos-x.png" type="dynamic"></pl-figure>
+            <br>
+            <p>
+                A dynamic image can be generated using <code>file()</code> inside <code>server.py</code> while
+                setting the attribute <code>type="dynamic"</code> in the element tag.
+            </p>
+            <p>
+                For example, to generate the above image, the element tag looks like:
+                <pl-code language="html">&lt;pl-figure file-name="cos-x.png" type="dynamic"&gt;&lt;/pl-figure&gt;</pl-code>
+            </p>
+            <p>
+                And the <code>server.py</code> looks like:
+            </p>
+<pl-code language="python">
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+    import random
+    
+    def file(data):
+        if data['filename'] == 'cos-x.png':
+            # data points
+            # coeff cos(x) from -5 * pi 5 * pi, stepping 0.01
+            coeff = random.randint(1, 5)
+            x = np.arange(-5 * np.pi, 5 * np.pi, 0.01)
+            y = coeff * np.cos(x)
+    
+            # create plot
+            plt.plot(x, y)
+            plt.title(f"{coeff} * cos(x)")
+            plt.xlabel("x values")
+            plt.ylabel("y values")
+            plt.ylim(-6, 6)
+    
+            # save plot as utf-8 bytes
+            f = io.BytesIO()
+            plt.savefig(f, format='png')
+            return f    
+</pl-code>
+        </pl-question-panel>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 4
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here is an example of inline figures.
+            </p>
+            <br>
+            <p>
+                Select <pl-figure file-name="true.png" inline="true"></pl-figure> instead of <pl-figure file-name="false.png" inline="true"></pl-figure> from below.
             </p>
         </pl-question-panel>
+        <pl-multiple-choice answers-name="booleans">
+            <pl-answer correct="true">Select this: <pl-figure file-name="true.png" inline="true"></pl-figure></pl-answer>
+            <pl-answer>Not this: <pl-figure file-name="false.png" inline="true"></pl-figure></pl-answer>
+        </pl-multiple-choice>
+        <br>
+        <p>
+            Use <code>inline="true"</code> to embed a figure inline with the rest of the elements, like texts.
+            For example, the "true" image is displayed with:
+        </p>
+        <pl-code language="html">&lt;pl-figure file-name="true.png" inline="true"&gt;&lt;/pl-figure&gt;</pl-code>
     </div>
 </div>
