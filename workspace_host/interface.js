@@ -65,7 +65,7 @@ async.series([
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
-var id_port_mapper = {};
+var id_workspace_mapper = {};
 var port_id_mapper = {};
 const workspaceProxyOptions = {
     target: 'invalid',
@@ -75,7 +75,16 @@ const workspaceProxyOptions = {
         var match = path.match('/workspace/([0-9]+)/container/(.*)');
         if (match) {
             const workspace_id = parseInt(match[1]);
-            logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_port_mapper[${workspace_id}]=${id_port_mapper[workspace_id]}`);
+            if (!(workspace_id in id_workspace_mapper)) {
+                logger.info(`proxy pathRewrite: Could not find workspace_id=${workspace_id}`);
+                return path;
+            }
+            const workspace = id_workspace_mapper[workspace_id];
+            logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_workspace_mapper[${workspace_id}].port=${id_workspace_mapper[workspace_id].port}`);
+            if (!workspace.settings.workspace_url_rewrite) {
+                logger.info(`proxy pathRewrite: URL rewriting disabled for workspace_id=${workspace_id}`);
+                return path;
+            }
             var pathSuffix = match[2];
             const newPath = '/' + pathSuffix;
             logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
@@ -91,8 +100,8 @@ const workspaceProxyOptions = {
         var url = req.url;
         var workspace_id = parseInt(url.replace("/workspace/", ""));
         logger.info(`workspace_id: ${workspace_id}`);
-        if (workspace_id in id_port_mapper) {
-            url = `http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`;
+        if (workspace_id in id_workspace_mapper) {
+            url = `http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`;
             logger.info(`proxy router: Router URL: ${url}`);
             return url;
         } else {
@@ -111,7 +120,10 @@ app.use(bodyParser.json())
 app.put('/', function(req, res) {
     var workspace_id = req.body.workspace_id;
     var port = req.body.port;
-    id_port_mapper[workspace_id] = port;
+    if (!(workspace_id in id_workspace_mapper)) {
+        id_workspace_mapper[workspace_id] = {};
+    }
+    id_workspace_mapper[workspace_id].port = port;
     port_id_mapper[port] = workspace_id;
     res.status(200).send("OK");
 });
@@ -154,12 +166,23 @@ function _getAvailablePort(workspace_id, curPort, callback) {
 
 function _queryContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
-        if (err) return;
+        if (err) {
+            logger.error('Error getting workspace settings', err);
+            return;
+        }
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
+
+        /* We can't use the || idiom for url_rewrite because it'll override if false */
+        let url_rewrite = result.rows[0].workspace_url_rewrite;
+        if (url_rewrite == null) {
+            url_rewrite = true;
+        }
+
         const settings = {
             workspace_image: result.rows[0].workspace_image,
             workspace_port: result.rows[0].workspace_port,
             workspace_args: result.rows[0].workspace_args || '',
+            workspace_url_rewrite: url_rewrite,
         }
         callback(null, settings);
     });
@@ -351,6 +374,13 @@ function _createContainer(workspace_id, port, settings, callback) {
     const containerPath = '/home/coder/project';
     logger.info(`Workspace path is configed to: ${workspacePath}`);
     logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
+    let args = settings.workspace_args.trim();
+    if (args.length == 0) {
+        args = null;
+    } else {
+        args = args.split(' ');
+    }
+
     docker.createContainer({
         Image: settings.workspace_image,
         ExposedPorts: {
@@ -374,7 +404,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             CpuQuota: 90000, // portion of the CpuPeriod for this container
             PidsLimit: 1024,
         },
-        Cmd: settings.workspace_args.trim().split(' '), // FIXME: proper arg parsing
+        Cmd: args, // FIXME: proper arg parsing
         name: workspaceName,
         Volumes: {
             [containerPath]: {}
@@ -388,9 +418,13 @@ function _createContainer(workspace_id, port, settings, callback) {
                 callback(err);
             };
         } else {
-            id_port_mapper[workspace_id] = port;
+            if (!(workspace_id in id_workspace_mapper)) {
+                id_workspace_mapper[workspace_id] = {};
+            }
+            id_workspace_mapper[workspace_id].port = port;
+            id_workspace_mapper[workspace_id].settings = settings;
             port_id_mapper[port] = workspace_id;
-            logger.info(`Set id_port_mapper[${workspace_id}] = ${port}`);
+            logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
             callback(null, container);
         };
