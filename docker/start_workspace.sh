@@ -5,6 +5,6 @@ TMUX_CONF=/PrairieLearn/.tmux.conf
 
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \
-  send-keys "node workspace_host/interface" C-m \; \
-  split-window -h -p 50 \; \
   send-keys "docker/init.sh" C-m \; \
+  split-window -h -p 50 \; \
+  send-keys "node workspace_host/interface" C-m \; \
