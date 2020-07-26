@@ -979,6 +979,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 - [demo/randomPlot]
 - [demo/fixedCheckbox]
 - [demo/studentNames]
+- [element/figure]
 
 #### See also
 
@@ -1688,6 +1689,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
 [element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
+[element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
