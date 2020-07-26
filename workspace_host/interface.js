@@ -374,7 +374,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             CpuQuota: 90000, // portion of the CpuPeriod for this container
             PidsLimit: 1024,
         },
-        Cmd: settings.workspace_args.trim().split(' '),
+        Cmd: settings.workspace_args.trim().split(' '), // FIXME: proper arg parsing
         name: workspaceName,
         Volumes: {
             [containerPath]: {}
