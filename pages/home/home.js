@@ -2,6 +2,9 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -15,8 +18,9 @@ router.get('/', function(req, res, next) {
     };
     sqldb.queryOneRow(sql.select_home, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.courses = result.rows[0].courses;
-        res.locals.course_instances = result.rows[0].course_instances;
+
+        res.locals.instructor_courses = result.rows[0].instructor_courses;
+        res.locals.student_courses = result.rows[0].student_courses;
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
