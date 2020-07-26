@@ -167,8 +167,8 @@ function _queryContainerSettings(workspace_id, callback) {
 
 function _getContainerSettings(workspace_id, callback) {
     async.parallel({
-        port: (parallelCallback) => {_getAvailablePort(workspace_id, 1024, parallelCallback)},
-        settings: (parallelCallback) => {_queryContainerSettings(workspace_id, parallelCallback)},
+        port: (callback) => {_getAvailablePort(workspace_id, 1024, callback)},
+        settings: (callback) => {_queryContainerSettings(workspace_id, callback)},
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         callback(null, workspace_id, results.port, results.settings);
