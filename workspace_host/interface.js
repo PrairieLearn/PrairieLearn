@@ -157,9 +157,9 @@ function _queryContainerSettings(workspace_id, callback) {
         if (err) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
         const settings = {
-            workspace_image: result.rows[0].workspace_image || 'codercom/code-server',
-            workspace_port: result.rows[0].workspace_port || 8080,
-            workspace_args: result.rows[0].workspace_args || '--auth none',
+            workspace_image: result.rows[0].workspace_image,
+            workspace_port: result.rows[0].workspace_port,
+            workspace_args: result.rows[0].workspace_args || '',
         }
         callback(null, settings);
     });
