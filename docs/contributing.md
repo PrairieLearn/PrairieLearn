@@ -59,17 +59,6 @@ This makes local code changes and then pushes them up to your forked repository 
 
 Once your code is accepted, you can then get it back into your master by updating your fork from upstream, and then you can delete your branch that was merged. See also [Using pull requests](https://help.github.com/articles/using-pull-requests/) on GitHub Help.
 
-**Updating the ChangeLog:** Before issuing a PR, you should update the file `ChangeLog.md`, which we use to maintain an ordered list of changes made to each version of PrairieLearn. Each line in `ChangeLog.md` must be one short sentence with this format:
-```
-  * [Keyword] [description] ([First name] [Last name]).
-```
-The keyword must be either `Add`, `Remove`, `Fix`, or `Change`. For example:
-```
-  * Fix broken popovers in input elements (Tim Bretl).
-```
-One empty line must separate each item in the ChangeLog. Items should be ordered first by category (`Add`, `Remove`, `Fix`, `Change`) and then chronologically, with the most recent item appearing at the end of each category list.
-
-
 ## Branches and tags
 
 PrairieLearn version numbers have the format `major.minor.patch`. Patch-level changes are only for bugfixes.
