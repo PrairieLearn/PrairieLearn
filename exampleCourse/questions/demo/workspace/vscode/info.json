@@ -1,6 +1,6 @@
 {
     "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
-    "title": "Workspace demo",
+    "title": "Workspace demo: VS Code",
     "topic": "Workspace",
     "tags": [
         "su20",
@@ -8,8 +8,8 @@
     ],
     "type": "v3",
     "workspaceOptions": {
-        "image": "prairielearn/vscode-workspace",
-        "port": 15000,
+        "image": "codercom/code-server",
+        "port": 8080,
         "args": "--auth none",
         "gradedFiles": [
             "starter_code.h",
