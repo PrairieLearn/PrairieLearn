@@ -56,21 +56,10 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Here is an example of a dynamic figure.
+                Here is an example of a dynamic figure.  The contents of a dynamic image can be generated using the <code>file()</code> function inside <code>server.py</code> when
+                the attribute <code>type="dynamic"</code> is set in the element tag.
             </p>
             <pl-figure file-name="cos-x.png" type="dynamic"></pl-figure>
-            <br>
-            <p>
-                A dynamic image can be generated using <code>file()</code> inside <code>server.py</code> while
-                setting the attribute <code>type="dynamic"</code> in the element tag.
-            </p>
-            <p>
-                For example, to generate the above image, the element tag looks like:
-                <pl-code language="html">&lt;pl-figure file-name="cos-x.png" type="dynamic"&gt;&lt;/pl-figure&gt;</pl-code>
-            </p>
-            <p>
-                And the <code>server.py</code> looks like:
-            </p>
 <pl-code language="python">
     import matplotlib.pyplot as plt
     import numpy as np
