@@ -1,7 +1,6 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const request = require('request');
 
 const AWS = require('aws-sdk');
 const path = require('path');
