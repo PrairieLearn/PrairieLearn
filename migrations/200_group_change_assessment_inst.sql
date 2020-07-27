@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS groups (
     group_config_id BIGINT REFERENCES group_configs(id) ON DELETE CASCADE ON UPDATE CASCADE,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp with time zone,
-    CONSTRAINT unique_group_name UNIQUE (group_config_id, name)
+    CONSTRAINT unique_group_name UNIQUE (group_config_id, name, deleted_at)
 );
 
 CREATE INDEX groups_course_instance_id_key ON groups (course_instance_id);

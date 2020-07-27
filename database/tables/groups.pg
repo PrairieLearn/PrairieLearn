@@ -9,7 +9,7 @@ columns
 
 indexes
     groups_pkey: PRIMARY KEY (id) USING btree (id)
-    unique_group_name: UNIQUE (group_config_id, name) USING btree (group_config_id, name)
+    unique_group_name: UNIQUE (group_config_id, name, deleted_at) USING btree (group_config_id, name, deleted_at)
     groups_course_instance_id_key: USING btree (course_instance_id)
     groups_group_config_id_key: USING btree (group_config_id)
 
