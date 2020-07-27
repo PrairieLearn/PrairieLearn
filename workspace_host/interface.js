@@ -161,7 +161,7 @@ function _getAvailablePort(workspace_id, curPort, callback) {
             if (curPort in port_id_mapper) {
                 _getAvailablePort(workspace_id, curPort + 1, callback);
             } else {
-                callback(null, workspace_id, curPort);
+                callback(null, curPort);
             }
         });
         server.close();
@@ -174,7 +174,7 @@ function _getAvailablePort(workspace_id, curPort, callback) {
 
 function _checkServer(workspace_id, container, callback) {
     var trigger = setTimeout(() => {
-        request(`http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`, function(_, res, _) {
+        request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(_, res, _) {
             if (res && res.statusCode == 200) {
                 callback(null, workspace_id, container);
             } else {
