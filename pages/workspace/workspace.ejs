@@ -1,72 +1,103 @@
-<html>
-  <head>
-    <%- include('../partials/head'); %>
-  </head>
-  <body style="margin: 0; overflow: hidden; height: 100%; width: 100%;">
-    <div>
-      <%- include('../partials/navbar', {navPage: ''}); %>
-      <style>
-        .mb-4 {
-          margin-bottom: 0 !important;
-        }
-      </style>
-    </div>
-    <div style="position: fixed; height: 100%; width: 100%;">
-      <div id="loading_page"><%- include('../partials/loading'); %></div>
-      <iframe
-        id="workspace_container"
-        style="margin: 0; border: none; width: 100%; height: calc(100% - 57px);"
-      ></iframe>
-    </div>
-    <button id="button" style="position: absolute; left: 250px; bottom: 0;">
-      Ping the Server
-    </button>
-    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
-    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
-    <script>
-      $(function () {
-        var socket = io("/workspace", {
-          query: 'workspace_id=<%= workspace_id %>',
-          upgrade: false,
-        });
-        socket.on("connect", function () {
-          document.getElementById("button").onclick = function () {
-            socket.emit("heartbeat", "I am still alive");
-          };
-        });
+<!DOCTYPE html>
+<html lang="en" class="h-100">
 
-        // save the progress every 5 sec
-        setInterval(function () {
-          socket.emit("heartbeat", "I am still alive");
-        }, 5000);
+<head>
+  <%- include('../partials/head'); %>
+  <link href="/stylesheets/workspace.css" rel="stylesheet">
+  <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+</head>
 
-        const iframe = document.getElementById("workspace_container");
-        iframe.addEventListener("load", function () {
-          var elems = iframe.contentWindow.document.getElementsByTagName("pre");
-          if (elems.length == 1) {
-            var elem = elems[0];
-            elem.innerText = "";
-            if (elem.innerText.includes("Error occured")) {
-              console.log("Found error");
-              setTimeout(function () {
-                iframe.contentWindow.location.reload();
-              }, 1000);
-            }
-          } else {
-            console.log("Loading the page");
-            document.getElementById("loading_page").style.display = "none";
-          }
-        });
+<body class="d-flex flex-column h-100">
+  <%- include('../partials/navbarWorkspace', {navPage: ''}); %>
 
-        socket.on("host-ready", function () {
-          console.log("host is ready");
-          iframe.src = window.location.href + "/container/";
-        });
+  <main class="d-flex flex-column flex-grow h-100">
+      <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
+        <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info"></i>
+      </div>
+      <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
+  </main>
 
-        socket.on("update", function (msg) {
-          console.log("receive update: " + msg);
-        });
+  <script>
+    $(function () {
+      var socket = io('/workspace', {
+        query: 'workspace_id=<%= workspace_id %>',
+        upgrade: false,
       });
-    </script>
-  </body>
+
+      // save progress and poll state machine every 5 sec
+      setInterval(() => {
+        socket.emit('heartbeat', 'I am still alive');
+      }, 5000);
+
+      const showLoadingFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
+      };
+
+      const showWorkspaceFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
+      };
+
+      const iframe = document.getElementById('workspace_container');
+      iframe.addEventListener('load', function () {
+        var elems = iframe.contentWindow.document.getElementsByTagName('pre');
+        if (elems.length == 1) {
+          var elem = elems[0];
+          elem.innerText = '';
+          if (elem.innerText.includes('Error occurred')) {
+            console.log('Found error');
+            document.getElementById('state').innerHTML = 'loading error';
+            setTimeout(function () {
+              iframe.contentWindow.location.reload();
+            }, 1000);
+          }
+        } else {
+          console.log('Loading the page');
+          document.getElementById('state').innerHTML = 'loading';
+          showWorkspaceFrame();
+        }
+      });
+
+      socket.on('connect', () => {
+        // reload only the iframe
+        document.getElementById('reload').onclick = () => {
+          console.log('Reloading iframe');
+          document.getElementById('state').innerHTML = 'reloading';
+          showLoadingFrame();
+          document.getElementById('workspace_container').contentWindow.location.reload();
+        };
+
+        // reload whole page after destroying container
+        document.getElementById('restart').onclick = () => {
+          console.log('Rebooting container');
+          socket.emit('destroy', 'Destroying container');
+          showLoadingFrame();
+          window.location.href = `/workspace/<%= workspace_id %>`;
+        };
+
+        // close tab after destroying container
+        document.getElementById('close').onclick = () => {
+          console.log('Destroying container');
+          socket.emit('destroy', 'Destroying container');
+          window.open('', '_self').close();
+        };
+
+        document.getElementById('state').innerHTML = 'connected';
+      });
+
+      socket.on('host-ready', () => {
+        console.log('host is ready');
+        iframe.src = `${window.location.href}/container/`;
+        document.getElementById('state').innerHTML = 'host ready';
+      });
+
+      socket.on('state', (msg) => {
+        console.log(`socket['state']: ${msg}`);
+        document.getElementById('state').innerHTML = msg;
+      });
+    });
+  </script>
+</body>
+
 </html>

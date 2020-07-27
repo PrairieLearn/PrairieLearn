@@ -1,0 +1,41 @@
+<nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
+  <a class="navbar-brand" href="<%= homeUrl %>">
+    <span class="navbar-brand-label">PL Workspace</span>
+    <span class="navbar-brand-hover-label text-light">Go home <i class="fa fa-angle-right"
+        aria-hidden="true"></i></span>
+  </a>
+
+  <div class="d-flex flex-row ml-auto align-items-center">
+    <ul class="navbar-nav flex-row">
+      <li class="mr-2">
+        <span id="state" class="badge badge-dark text-uppercase"></span>
+      </li>
+    </ul>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+
+  <div class="collapse navbar-collapse" id="workspace-nav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item ml-2">
+        <a id="reload" class="nav-item btn btn-light" href="#">
+          <i class="fas fa-redo text-primary" aria-hidden="true"></i>
+          Reload
+        </a>
+      </li>
+      <li class="nav-item ml-2">
+        <a id="restart" class="nav-item btn btn-light" href="#">
+          <i class="fas fa-sync text-info" aria-hidden="true"></i>
+          Restart
+        </a>
+      </li>
+      <li class="nav-item ml-2">
+        <a id="close" class="nav-item btn btn-light" href="#">
+          <i class="fas fa-power-off text-danger" aria-hidden="true"></i>
+          Close
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>
