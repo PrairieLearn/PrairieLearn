@@ -12,7 +12,8 @@
 
   <main class="d-flex flex-column flex-grow h-100">
       <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
-        <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info"></i>
+        <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
+        <span class="sr-only">Loading workspace &hellip;</span>
       </div>
       <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
   </main>
