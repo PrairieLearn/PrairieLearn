@@ -17,6 +17,7 @@ CREATE OR REPLACE FUNCTION
         OUT password text,           -- Password (if any) for this assessment.
         OUT mode enum_mode,
         OUT seb_config JSONB,
+        OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -41,6 +42,7 @@ BEGIN
     access_rules := assessment_result.access_rules;
     mode := assessment_result.mode;
     seb_config := assessment_result.seb_config;
+    show_closed_assessment := assessment_result.show_closed_assessment;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN

@@ -3,9 +3,13 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
 const util = require('./util');
 const helperDb = require('../helperDb');
 
+const sql = sqlLoader.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 describe('Question syncing', () => {
@@ -100,10 +104,55 @@ describe('Question syncing', () => {
     await assert.isRejected(util.syncCourseData(courseDir));
   });
 
+  it('fails if workspaceOptions are not synced correctly', async () => {
+    const courseData = util.getCourseData();
+    const question = courseData.questions[util.WORKSPACE_QUESTION_ID];
+    const workspaceImage = question.workspaceOptions.image;
+    const workspacePort = question.workspaceOptions.port;
+    const workspaceArgs = question.workspaceOptions.args;
+    const quuid = question.uuid;
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const result = await sqldb.queryOneRowAsync(sql.get_workspace_options, {quuid});
+    const workspace_image = result.rows[0].workspace_image;
+    const workspace_port = result.rows[0].workspace_port;
+    const workspace_args = result.rows[0].workspace_args;
+
+    await assert.equal(workspaceImage, workspace_image);
+    await assert.equal(workspacePort, workspace_port);
+    await assert.equal(workspaceArgs, workspace_args);
+  });
+
   it('fails if a question directory is missing an info.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await fs.ensureDir(path.join(courseDir, 'questions', 'badQuestion'));
+    await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
+  });
+
+  it('allows arbitrary nesting of questions in subfolders', async() => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'subfolder4', 'subfolder5', 'subfolder6', 'nestedQuestion'];
+    const nestedQid = path.join(...nestedQuestionStructure);
+    const questionPath = path.join(courseDir, 'questions', nestedQid);
+
+    await fs.ensureDir(questionPath);
+    await fs.copyFile(path.join(courseDir, 'questions', util.QUESTION_ID, 'info.json'), path.join(questionPath, 'info.json'));
+    await fs.rmdir(path.join(courseDir, 'questions', util.QUESTION_ID), {'recursive': true});
+
+    await util.syncCourseData(courseDir);
+  });
+
+  it('fails if a nested question directory does not eventually contain an info.json file', async() => {
+    const courseData = util.getCourseData();
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'subfolder4', 'subfolder5', 'subfolder6', 'badQuestion'];
+    const nestedQid = path.join(...nestedQuestionStructure);
+    const questionPath = path.join(courseDir, 'questions', nestedQid);
+
+    await fs.ensureDir(questionPath);
     await assert.isRejected(util.syncCourseData(courseDir), /ENOENT/);
   });
 });

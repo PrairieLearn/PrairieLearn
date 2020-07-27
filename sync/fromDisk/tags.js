@@ -23,7 +23,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         // duplicates are present.
         const duplicateNames = getDuplicatesByKey(tags, 'name');
         if (duplicateNames.length > 0) {
-            const duplicateNamesJoined = duplicateNames.join(', ')
+            const duplicateNamesJoined = duplicateNames.join(', ');
             throw new Error(`Duplicate tag names found: ${duplicateNamesJoined}. Tag names must be unique within the course.`);
         }
 
@@ -95,4 +95,4 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
 
         await sqldb.callAsync('sync_question_tags', [JSON.stringify(paramQuestionTags)]);
     })(callback);
-}
+};

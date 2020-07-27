@@ -12,7 +12,7 @@ const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
 router.get('/:submission_id', (req, res, next) => {
     const params = {
-        course_instance_id: req.params.course_instance_id,
+        course_instance_id: res.locals.course_instance.id,
         assessment_instance_id: null,
         submission_id: req.params.submission_id,
     };

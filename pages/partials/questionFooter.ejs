@@ -5,8 +5,16 @@
     <% } else { %>
     <div class="row">
       <div class="col d-flex justify-content-between">
-        <span class="d-flex">
-          <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">Save only</button><% } %>
+        <span class="d-flex align-items-center">
+          <% if (showSaveButton) { %>
+            <button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">
+              <% if (showGradeButton) { %>
+                Save only
+              <% } else { %>
+                Save
+              <% } %>
+            </button>
+          <% } %>
           <% if (showGradeButton) { %>
               <% if (question_context == 'student_homework') { %>
                   <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
@@ -22,7 +30,7 @@
               <% } %>
           <% } %>
           <% if (showManualGradingMsg) { %>
-          This question will be manually graded.
+          <span class="order-3 ml-2">This question will be manually graded.</span>
           <% } %>
         </span>
         <span class="d-flex">
@@ -43,8 +51,16 @@
       <% } else { %>
       <div class="row">
         <div class="col d-flex justify-content-between">
-          <span class="d-flex">
-              <% if (showSaveButton) { %><button class="btn btn-info question-save disable-on-submit order-2">Save only</button><% } %>
+          <span class="d-flex align-items-center">
+              <% if (showSaveButton) { %>
+                <button class="btn btn-info question-save disable-on-submit order-2">
+                  <% if (showGradeButton) { %>
+                    Save only
+                  <% } else { %>
+                    Save
+                  <% } %>
+                </button>
+              <% } %>
               <% if (showGradeButton) { %>
                   <% if (question_context == 'student_homework') { %>
                       <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
@@ -60,7 +76,7 @@
                   <% } %>
               <% } %>
               <% if (showManualGradingMsg) { %>
-              This question will be manually graded.
+              <span class="order-3 ml-2">This question will be manually graded.</span>
               <% } %>
           </span>
           <span class="d-flex">
@@ -74,30 +90,11 @@
       </div>
       <% } %>
     </form>
-
-    <script>
-      $('form').on('submit', function(e) {
-          if (!$(this).data('submitted')) {
-              $(this).data('submitted', true);
-
-              var form = $(this);
-              form.find('.disable-on-submit').each(function (index) {
-                  // Create a disabled clone of the submit button
-                  $(this).clone(false).removeAttr('id').prop('disabled', true).insertBefore($(this));
-
-                  // Hide the actual submit button and move it to the beginning of the form
-                  $(this).hide();
-                  form.prepend($(this));
-              });
-
-          } else {
-              e.preventDefault();
-          }
-      });
-
-      $('a.disable-on-click').on('click', function() {
-          $(this).addClass('disabled');
-      });
-    </script>
   </div>
 <% } %>
+<script>
+  // Install on page load and reinstall on websocket re-render
+  $('a.disable-on-click').on('click', function() {
+    $(this).addClass('disabled');
+  });
+</script>

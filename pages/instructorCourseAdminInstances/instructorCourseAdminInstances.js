@@ -44,7 +44,7 @@ router.post('/', (req, res, next) => {
         editor.canEdit((err) => {
             if (ERR(err, next)) return;
             editor.doEdit((err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
+                if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
                     debug(`Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);

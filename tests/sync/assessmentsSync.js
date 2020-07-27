@@ -310,4 +310,53 @@ describe('Assessment syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await assert.isRejected(util.syncCourseData(courseDir), /used in multiple assessments/);
   });
+
+  it('fails if real-time grading is disallowed on a homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.allowRealTimeGrading = false;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /cannot disable real-time grading/);
+  });
+
+  it('fails if points array is specified for a question when real-time grading is disallowed', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = false;
+    assessment.zones = [{
+      title: 'zone 1',
+      questions: [{
+        id: util.QUESTION_ID,
+        points: [5, 4, 3],
+      }, {
+        id: util.ALTERNATIVE_QUESTION_ID,
+        points: [10, 9, 8],
+      }],
+    }];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /cannot specify an array of points/);
+  });
+
+  it('fails if points array is specified for an alternative when real-time grading is disallowed', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = false;
+    assessment.zones = [{
+      title: 'zone 1',
+      questions: [{
+        points: [10, 9, 8],
+        alternatives: [{
+          id: util.QUESTION_ID,
+        }, {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: [5, 4, 3],
+        }],
+      }],
+    }];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await assert.isRejected(util.syncCourseData(courseDir), /cannot specify an array of points/);
+  });
 });

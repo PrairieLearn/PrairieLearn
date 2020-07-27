@@ -30,7 +30,7 @@ BEGIN
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
 
     max_points := aq.max_points;
-    highest_submission_score := greatest(submission_score, coalesce(highest_submission_score, 0));
+    highest_submission_score := greatest(submission_score, coalesce(iq.highest_submission_score, 0));
 
     open := TRUE;
     points_list := NULL;

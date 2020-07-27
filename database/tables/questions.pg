@@ -2,6 +2,7 @@ columns
     client_files: text[] default ARRAY[]::text[]
     course_id: bigint not null
     deleted_at: timestamp with time zone
+    dependencies: jsonb not null default '{}'::jsonb
     directory: text
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
@@ -21,6 +22,11 @@ columns
     topic_id: bigint
     type: enum_question_type
     uuid: uuid not null
+    workspace_args: text
+    workspace_graded_files: text[] default ARRAY[]::text[]
+    workspace_image: text
+    workspace_port: integer
+    workspace_url_rewrite: boolean default true
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)

@@ -245,62 +245,14 @@ def parse(element_html, data):
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
-    # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
-    if a_sub is None:
-        data['format_errors'][name] = 'No submitted answer.'
-        data['submitted_answers'][name] = None
-        return
+    value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex)
 
-    if a_sub.strip() == '':
-        data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'the submitted answer was blank.')
-        data['submitted_answers'][name] = None
-        return
-
-    # support FANCY division characters
-    a_sub = a_sub.replace(u'\u2215', '/')  # unicode /
-    a_sub = a_sub.replace(u'\u00F7', '/')  # division symbol, because why not
-
-    if a_sub.count('/') == 1:
-        # Specially handle fractions.
-
-        if allow_fractions:
-            a_sub_splt = a_sub.split('/')
-            try:
-                a_parse_l = pl.string_to_number(a_sub_splt[0], allow_complex=allow_complex)
-                a_parse_r = pl.string_to_number(a_sub_splt[1], allow_complex=allow_complex)
-
-                if a_parse_l is None or not np.isfinite(a_parse_l):
-                    raise ValueError('the numerator could not be interpreted as a decimal number.')
-                if a_parse_r is None or not np.isfinite(a_parse_r):
-                    raise ValueError('the denominator could not be interpreted as a decimal number.')
-
-                a_frac = a_parse_l / a_parse_r
-                if not np.isfinite(a_frac):
-                    raise ValueError('The submitted answer is not a finite number.')
-
-                data['submitted_answers'][name] = pl.to_json(a_frac)
-            except ZeroDivisionError:
-                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'your fraction resulted in a division by zero.')
-                data['submitted_answers'][name] = None
-            except Exception as error:
-                data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, error)
-                data['submitted_answers'][name] = None
-        else:
-            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, 'fractional answers are not allowed.')
-            data['submitted_answers'][name] = None
+    if value is not None:
+        data['submitted_answers'][name] = newdata['submitted_answers']
     else:
-        # Not a fraction, just convert to float or complex
-        try:
-            a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
-            if a_sub_parsed is None:
-                raise ValueError('invalid submitted answer (wrong type)')
-            if not np.isfinite(a_sub_parsed):
-                raise ValueError('invalid submitted answer (not finite)')
-            data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
-        except Exception:
-            data['format_errors'][name] = get_format_string(allow_complex, allow_fractions)
-            data['submitted_answers'][name] = None
+        data['format_errors'][name] = get_format_string(allow_complex, allow_fractions, newdata['format_errors'])
+        data['submitted_answers'][name] = None
 
 
 def grade(element_html, data):
@@ -385,7 +337,7 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}

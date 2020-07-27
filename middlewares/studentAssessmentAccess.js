@@ -1,8 +1,6 @@
-//var ERR = require('async-stacktrace');
-//var _ = require('lodash');
-//var sha256 = require('crypto-js/sha256');
 const express = require('express');
-var router = express.Router();
+const router = express.Router();
+const _ = require('lodash');
 
 var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
@@ -37,26 +35,35 @@ router.all('/', function(req, res, next) {
         'password' in res.locals.authz_result &&
         res.locals.authz_result.password) {
 
-            // If the assessment is complete, use this middleware to show the logout page
-            if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
-                return badSEB(req, res);
-            }
-
-            // No password yet case
-            if (req.cookies.pl_assessmentpw == null) {
-                return badPassword(res, req);
-            }
-
-            // Invalid or expired password case
-            var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
-                                             {maxAge: timeout * 60 * 60 * 1000});
-            if (pwData == null
-                || pwData.password !== res.locals.authz_result.password) {
-                    return badPassword(res, req);
-            }
-
-            // Successful password case: falls though
+        // If the assessment is complete, use this middleware to show the logout page
+        if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
+            return badSEB(req, res);
         }
+
+        // No password yet case
+        if (req.cookies.pl_assessmentpw == null) {
+            return badPassword(res, req);
+        }
+
+        // Invalid or expired password case
+        var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
+                                            {maxAge: timeout * 60 * 60 * 1000});
+        if (pwData == null
+            || pwData.password !== res.locals.authz_result.password) {
+                return badPassword(res, req);
+        }
+
+        // Successful password case: falls though
+    }
+
+    if (
+        !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
+        !_.get(res.locals, 'assessment_instance.open', true)
+    ) {
+        // This assessment instance is closed and can no longer be viewed
+        closedAssessmentNotViewable(res);
+        return;
+    }
 
     // Pass-through for everything else
     next();
@@ -85,7 +92,7 @@ function badSEB(req, res) {
     //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
     res.locals.SEBUrl = config.SEBDownloadUrl;
     res.locals.prompt = 'SEB';
-    return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    return res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function checkUserAgent(res, userAgent) {
@@ -111,4 +118,9 @@ function checkUserAgent(res, userAgent) {
         // Assessment list view, enable the mode
         res.locals.authz_data.mode = 'SEB';
     }
+}
+
+function closedAssessmentNotViewable(res) {
+    res.locals.prompt = 'closedAssessmentNotViewable';
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }

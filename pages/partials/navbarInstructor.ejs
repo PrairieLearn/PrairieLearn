@@ -34,12 +34,9 @@
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
-        <span class="navbar-text mx-2">
-            <i class="fas fa-circle"></i>
-        </span>
-
-        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
-            <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
+        <span class="navbar-text mx-2 no-select">/</span>
+        <li class="nav-item btn-group">
+            <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
             <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
@@ -64,12 +61,9 @@
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-            <span class="navbar-text mx-2">
-                <i class="fas fa-circle"></i>
-            </span>
-
-            <li class="nav-item btn-group <% if (navPage == "assessment") { %>active<% } %>">
-                <a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
+            <span class="navbar-text mx-2 no-select">/</span>
+            <li class="nav-item btn-group">
+                <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
                 <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -85,9 +79,7 @@
         <% } %>
     <% } else { %>
         <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.course_instances && authz_data.course_instances.length > 0) { %>
-            <span class="navbar-text mx-2">
-                <i class="fas fa-circle"></i>
-            </span>
+            <span class="navbar-text mx-2 no-select">/</span>
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceChoose" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

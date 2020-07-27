@@ -1,5 +1,37 @@
 -- BLOCK select_home
 WITH
+    example_courses AS (
+        SELECT
+            c.short_name || ': ' || c.title AS label,
+            c.id AS id,
+            TRUE AS do_link,
+            coalesce(jsonb_agg(jsonb_build_object(
+                'label', ci.long_name,
+                'id', ci.id
+            ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC), '[]'::jsonb) AS course_instances
+        FROM
+            pl_courses AS c
+            JOIN course_instances AS ci ON (
+                ci.course_id = c.id
+                AND ci.deleted_at IS NULL
+            ),
+            LATERAL (
+                SELECT
+                    min(ar.start_date) AS start_date,
+                    max(ar.end_date) AS end_date
+                FROM
+                    course_instance_access_rules AS ar
+                WHERE
+                    ar.course_instance_id = ci.id
+            ) AS d
+        WHERE
+            c.deleted_at IS NULL
+            AND c.example_course IS TRUE
+        GROUP BY
+            c.id
+        ORDER BY
+            c.short_name, c.title, c.id
+    ),
     instructor_courses AS (
         SELECT
             c.short_name || ': ' || c.title AS label,
@@ -76,9 +108,11 @@ WITH
             u.user_id = $user_id
     )
 SELECT
+    coalesce(jsonb_agg(ec.*), '[]'::jsonb) AS example_courses,
     coalesce(jsonb_agg(ic.*), '[]'::jsonb) AS instructor_courses,
     sc.course_instances AS student_courses
 FROM
+    example_courses AS ec,
     instructor_courses AS ic,
     student_courses AS sc
 GROUP BY

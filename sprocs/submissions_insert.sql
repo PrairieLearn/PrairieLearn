@@ -21,6 +21,7 @@ DECLARE
     assessment_instance_id bigint;
     last_access timestamptz;
     delta interval;
+    new_status enum_instance_question_status;
 BEGIN
     PERFORM variants_lock(variant_id);
 
@@ -94,10 +95,13 @@ BEGIN
         first_duration = coalesce(first_duration, delta)
     WHERE id = variant_id;
 
+    new_status := 'saved';
+    IF gradable = FALSE THEN new_status := 'invalid'; END IF;
+
     IF assessment_instance_id IS NOT NULL THEN
         UPDATE instance_questions
         SET
-            status = 'saved',
+            status = new_status,
             duration = duration + delta,
             first_duration = coalesce(first_duration, delta),
             modified_at = now()

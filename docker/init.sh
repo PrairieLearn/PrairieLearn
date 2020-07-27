@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ -n $DELAYED_START ]]; then
+    echo "Waiting $DELAYED_START seconds to start"
+    sleep $DELAYED_START
+fi
 cd /PrairieLearn
 
 
@@ -14,7 +18,7 @@ else
     # Uncomment to start redis to test message passing
     # redis-server --daemonize yes
 
-    if [[ -n $NODEMON ]] && [[ $NODEMON == "true" ]]; then
+    if [[ $NODEMON == "true" ]]; then
         npm run start-nodemon
     else
         npm start

@@ -1,6 +1,6 @@
 -- BLOCK select_authz_data
 SELECT
-    coalesce($req_mode, ip_to_mode($ip, $req_date)) AS mode,
+    coalesce($req_mode, ip_to_mode($ip, $req_date, $user_id)) AS mode,
     to_jsonb(c.*) AS course,
     to_jsonb(ci.*) AS course_instance,
     permissions_course.*,

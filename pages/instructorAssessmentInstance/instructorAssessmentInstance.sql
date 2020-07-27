@@ -35,11 +35,14 @@ GROUP BY
 ORDER BY
     aq.number;
 
--- BLOCK select_formatted_duration
+-- BLOCK select_date_formatted_duration
 SELECT
+    format_date_full_compact(ai.date, ci.display_timezone) AS assessment_instance_date_formatted,
     format_interval(ai.duration) AS assessment_instance_duration
 FROM
     assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
     ai.id = $assessment_instance_id;
 

@@ -55,7 +55,7 @@
           <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[3] %>%; height: 10px;" class="bg-success m-0"></span>
           <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[4] %>%; height: 10px;" class="bg-danger m-0"></span>
         </div>
-        <% if (course_instance) { %>
+        <% if (typeof course_instance != 'undefined' && course_instance != null) { %>
         <a class="btn btn-primary mt-2" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
         <% } else { %>
         <a class="btn btn-primary mt-2" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>

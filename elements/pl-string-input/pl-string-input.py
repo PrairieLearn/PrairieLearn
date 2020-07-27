@@ -16,12 +16,14 @@ REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 IGNORE_CASE_DEFAULT = False
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'ignore-case', 'placeholder']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'ignore-case', 'placeholder', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
@@ -75,6 +77,8 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'placeholder': placeholder,
+            'size': pl.get_integer_attrib(element, 'size', SIZE_DEFAULT),
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid()
         }
 
@@ -91,6 +95,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['display_append_span'] = html_params['show_info'] or suffix
 
         if display == 'inline':
             html_params['inline'] = True
@@ -220,10 +226,12 @@ def grade(element_html, data):
     # Remove the leading and trailing characters
     if (remove_leading_trailing):
         a_sub = a_sub.strip()
+        a_tru = a_tru.strip()
 
     # Remove the blank spaces between characters
     if (remove_spaces):
         a_sub = a_sub.replace(' ', '')
+        a_tru = a_tru.replace(' ', '')
 
     # Modify string case for submission and true answer to be lower.
     if (ignore_case):
@@ -249,11 +257,10 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    if allow_blank:
-        # no invalid answer implemented when allow-blank="true"
-        result = random.choices(['correct', 'incorrect'], [5, 5])[0]
-    else:
-        result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
+    if result == 'invalid' and allow_blank:
+        # We can't have an invalid submission with allow_blank, so just test correct
+        result = 'correct'
 
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru

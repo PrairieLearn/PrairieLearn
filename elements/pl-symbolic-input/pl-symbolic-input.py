@@ -15,6 +15,9 @@ LABEL_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
 
 
 def get_variables_list(variables_string):
@@ -28,7 +31,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -52,6 +55,7 @@ def render(element_html, data):
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
     operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
@@ -81,8 +85,11 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': size,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'uuid': pl.get_uuid(),
             'allow_complex': allow_complex,
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD
         }
 
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -359,7 +366,7 @@ def test(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name]))
         data['partial_scores'][name] = {'score': 1, 'weight': weight}

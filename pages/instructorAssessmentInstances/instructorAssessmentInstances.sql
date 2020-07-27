@@ -11,7 +11,7 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
-    format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
+    format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,

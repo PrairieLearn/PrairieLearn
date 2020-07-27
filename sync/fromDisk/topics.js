@@ -23,7 +23,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         // duplicates are present.
         const duplicateNames = getDuplicatesByKey(topics, 'name');
         if (duplicateNames.length > 0) {
-            const duplicateNamesJoined = duplicateNames.join(', ')
+            const duplicateNamesJoined = duplicateNames.join(', ');
             throw new Error(`Duplicate topic names found: ${duplicateNamesJoined}. Topic names must be unique within the course.`);
         }
 
@@ -42,7 +42,7 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
             description: 'Auto-generated from use in a question; add this topic to your courseInfo.json file to customize',
         })));
 
-        const topicsParams = topics.map((topic, index) => ({
+        const topicsParams = topics.map((topic) => ({
             name: topic.name,
             color: topic.color,
             description: topic.description,
@@ -54,4 +54,4 @@ module.exports.sync = function(courseInfo, questionDB, callback) {
         ];
         await sqldb.callAsync('sync_topics', params);
     })(callback);
-}
+};

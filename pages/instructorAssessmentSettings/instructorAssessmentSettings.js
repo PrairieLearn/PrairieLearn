@@ -44,7 +44,7 @@ router.post('/', function(req, res, next) {
         editor.canEdit((err) => {
             if (ERR(err, next)) return;
             editor.doEdit((err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
+                if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
                     debug(`Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`);
@@ -63,7 +63,7 @@ router.post('/', function(req, res, next) {
         editor.canEdit((err) => {
             if (ERR(err, next)) return;
             editor.doEdit((err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
+                if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
                     res.redirect(res.locals.urlPrefix + '/instance_admin/assessments');
@@ -73,7 +73,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'change_id') {
         debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
         if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
-        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid TID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) return next(new Error(`Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`));
         let tid_new;
         try {
             tid_new = path.normalize(req.body.id);
@@ -92,7 +92,7 @@ router.post('/', function(req, res, next) {
             editor.canEdit((err) => {
                 if (ERR(err, next)) return;
                 editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         res.redirect(req.originalUrl);

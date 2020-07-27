@@ -11,12 +11,15 @@ CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -33,6 +36,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -55,6 +59,9 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': size,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD,
             'uuid': pl.get_uuid()
         }
 
@@ -71,6 +78,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['display_append_span'] = html_params['show_info'] or suffix
 
         if display == 'inline':
             html_params['inline'] = True
@@ -223,7 +232,7 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}

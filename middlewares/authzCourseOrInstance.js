@@ -83,6 +83,13 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
                 }
 
+                // FIXME
+                //
+                //  Added these to complete merge. Should eliminate them completely.
+                //
+                res.locals.editable_courses = res.locals.authz_data.courses;
+                res.locals.viewable_courses = res.locals.authz_data.courses;
+
                 debug('authn user is authorized');
 
                 callback(null);

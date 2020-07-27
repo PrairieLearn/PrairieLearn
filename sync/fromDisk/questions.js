@@ -52,6 +52,12 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
+                dependencies: q.dependencies || {},
+                workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
+                workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
+                workspace_args: (q.workspaceOptions && q.workspaceOptions.args),
+                workspace_graded_files: (q.workspaceOptions && q.workspaceOptions.gradedFiles),
+                workspace_url_rewrite: (q.workspaceOptions && q.workspaceOptions.rewriteUrl),
             };
         });
 
@@ -71,4 +77,4 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
             questionDB[idMapping.qid].id = idMapping.id;
         });
     })(callback);
-}
+};

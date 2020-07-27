@@ -3,31 +3,49 @@
   <table class="table table-sm two-column-description-no-header">
     <tbody>
       <% if (assessment.type === 'Exam') { %>
-      <tr>
-        <td>Best submission:</td>
-        <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-      </tr>
-      <tr>
-        <td>Available points:</td>
-        <td><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
-      </tr>
-      <tr>
-        <td>Awarded points:</td>
-        <td><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
-      </tr>
+        <tr>
+          <% if (assessment.allow_real_time_grading) { %>
+            <td>Best submission:</td>
+          <% } else { %>
+            <td>Submission status:</td>
+          <% } %>
+          <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+        </tr>
+        <% if (assessment.allow_real_time_grading) { %>
+          <tr>
+            <td>Available points:</td>
+            <td><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
+          </tr>
+          <tr>
+            <td>Awarded points:</td>
+            <td><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
+          </tr>
+        <% } else { %>
+          <tr>
+            <td>Points:</td>
+            <td>
+              <% include('../partials/pointsFormatter'); %>
+              <% if (assessment_instance.open) { %>
+                <%= getStringFromFloat(assessment_question.max_points) %>
+              <% } else { %>
+                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: assessment_question.max_points}); %>
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
       <% } else if (assessment.type === 'Homework') { %>
-      <tr>
-        <td>Value:</td>
-        <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
-      </tr>
-      <tr>
-        <td>History:</td>
-        <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
-      </tr>
-      <tr>
-        <td>Awarded points:</td>
-        <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
-      </tr>
+        <tr>
+          <td>Value:</td>
+          <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
+        </tr>
+        <tr>
+          <td>History:</td>
+          <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+        </tr>
+        <tr>
+          <td>Awarded points:</td>
+          <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
+        </tr>
       <% } %>
     </tbody>
   </table>

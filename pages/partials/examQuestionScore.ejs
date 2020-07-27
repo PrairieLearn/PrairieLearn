@@ -1,5 +1,7 @@
 <% if (instance_question.status == 'unanswered') { %>
     <span class="badge badge-danger">unanswered</span>
+<% } else if (instance_question.status == 'invalid') { %>
+    <span class="badge badge-danger">invalid</span>
 <% } else if (instance_question.status == 'saved') { %>
     <span class="badge badge-info">saved</span>
 <% } else if (instance_question.status == 'grading') { %>

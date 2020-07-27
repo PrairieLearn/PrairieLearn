@@ -12,8 +12,22 @@ AS $$
 DECLARE
     course_role enum_course_role;
     permissions_course jsonb;
+    is_example_course boolean;
 BEGIN
-    SELECT cp.course_role INTO course_role
+    SELECT
+        c.example_course
+    INTO
+        is_example_course
+    FROM
+        pl_courses AS c
+    WHERE
+        c.id = authz_course.course_id
+        AND c.deleted_at IS NULL;
+
+    SELECT
+        cp.course_role
+    INTO
+        course_role
     FROM
         course_permissions AS cp
     WHERE
@@ -22,6 +36,10 @@ BEGIN
 
     IF NOT FOUND THEN
         course_role := 'None';
+    END IF;
+
+    IF is_example_course THEN
+        course_role := 'Viewer';
     END IF;
 
     IF is_administrator THEN

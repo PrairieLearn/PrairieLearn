@@ -43,10 +43,10 @@ router.get('/:filename', function(req, res, next) {
                 if (ERR(err, next)) return;
                 var userScores = result.rows;
 
-                var csvHeaders = ['UID', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
+                var csvHeaders = ['UID', 'UIN', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
                 var csvData = _.map(userScores, function(row) {
                     const score_percs = _.map(row.scores, s => s.score_perc);
-                    return [row.uid, row.user_name, row.role].concat(score_percs);
+                    return [row.uid, row.uin, row.user_name, row.role].concat(score_percs);
                 });
                 csvData.splice(0, 0, csvHeaders);
                 csvStringify(csvData, function(err, csv) {

@@ -1,4 +1,5 @@
-<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4">
+<div class="mb-4">
+<nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">
     <span class="navbar-brand-label">PrairieLearn</span>
     <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
@@ -6,7 +7,7 @@
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
-  <div class="collapse navbar-collapse">
+  <div id="course-nav" class="collapse navbar-collapse">
     <ul class="nav navbar-nav mr-auto" id="main-nav">
       <% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
         <%- include('navbarPlain'); %>
@@ -246,6 +247,13 @@
 
           <% } %>
 
+          <% if (locals.authz_data && authz_data.mode == 'Exam') { %>
+            <div class="dropdown-item-text">
+              Exam mode means you have a checked-in reservation to CBTF. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
+            </div>
+            <div class="dropdown-divider"></div>
+          <% } %>
+
           <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
           <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
             News
@@ -408,3 +416,18 @@
   </script>
 
 </nav>
+<% // Mapping navPage to navtab sets
+const navPagesTabs = {
+    instance_admin: 'navTabs/instructorInstanceAdmin',
+    course_admin: 'navTabs/instructorCourseAdmin',
+    assessment: 'navTabs/instructorAssessment',
+    question: 'navTabs/instructorQuestion'
+};
+// If navPage matches any of the keys in navPagesTabs, include the page given by its value
+if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
+    <!-- Instructor navigation tabs -->
+    <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
+        <%- include(navPagesTabs[navPage]); %>
+    </ul>
+<% } %>
+</div>

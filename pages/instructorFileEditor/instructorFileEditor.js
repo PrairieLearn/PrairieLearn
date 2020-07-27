@@ -7,7 +7,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const fs = require('fs-extra');
 const path = require('path');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
@@ -87,7 +87,7 @@ router.get('/*', (req, res, next) => {
     }
 
     // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
+    if (res.locals.course.example_course) {
         return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
@@ -216,7 +216,7 @@ router.post('/*', (req, res, next) => {
     };
 
     // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
+    if (res.locals.course.example_course) {
         return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
@@ -663,7 +663,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _pullFromRemoteHash = () => {
             debug(`${job_sequence_id}: _pullFromRemoteHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 _checkHash();
             });
         };
@@ -885,7 +885,7 @@ function saveAndSync(fileEdit, locals, callback) {
         const _updateCommitHash = () => {
             debug(`${job_sequence_id}: _updateCommitHash`);
             courseUtil.updateCourseCommitHash(locals.course, (err) => {
-                ERR(err, (e) => logger.error(e));
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 if (fileEdit.needToSync) {
                     _syncFromDisk();
                 } else {

@@ -1,4 +1,4 @@
-<% if (authz_data.has_instructor_view) { %>
+<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
 <div class="card mb-4 border-warning">
   <div class="card-header bg-warning">Instructor information</div>
   <div class="card-body">
@@ -15,7 +15,11 @@
   <div class="d-flex flex-wrap">
     <div class="pr-1">QID:</div>
     <div>
+      <% if (locals.course_instance) { %>
       <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
+      <% } else { %>
+      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
+      <% } %>
         <%= question.qid %>
       </a>
     </div>

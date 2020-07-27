@@ -62,6 +62,10 @@ router.post('/', function(req, res, next) {
         if (res.locals.authz_result.time_limit_expired) {
             return next(new Error('time limit is expired, please go back and finish your assessment'));
         }
+        if (req.body.__action == 'grade' && !res.locals.assessment.allow_real_time_grading) {
+            next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+            return;
+        }
         processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
