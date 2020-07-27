@@ -100,7 +100,7 @@ router.get('/:workspace_id', (req, res, next) => {
     async.series([
         (callback) => {
             sqldb.queryOneRow(sql.select_workspace_paths, params, function(err, result) {
-                if (ERR(err, next)) return;
+                if (ERR(err, callback)) return;
 
                 const course_path = result.rows[0].course_path;
                 const question_qid = result.rows[0].question_qid;
@@ -116,7 +116,7 @@ router.get('/:workspace_id', (req, res, next) => {
         (callback) => {
             // TODO: add locking
             sqldb.query(sql.update_workspace_state, params, function(err, _result) {
-                if (ERR(err, next)) return;
+                if (ERR(err, callback)) return;
                 console.log(`[workspace.js] set workspaces.state to 'stopped'`);
                 callback(null);
             });

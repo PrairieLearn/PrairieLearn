@@ -3,6 +3,7 @@ SELECT
     workspace_image,
     workspace_port,
     workspace_args,
+    workspace_home,
     workspace_url_rewrite
 FROM
     questions AS q
