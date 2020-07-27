@@ -24,6 +24,7 @@ columns
     uuid: uuid not null
     workspace_args: text
     workspace_graded_files: text[] default ARRAY[]::text[]
+    workspace_home: text
     workspace_image: text
     workspace_port: integer
     workspace_url_rewrite: boolean default true

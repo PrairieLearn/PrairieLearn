@@ -181,6 +181,7 @@ function _queryContainerSettings(workspace_id, callback) {
         const settings = {
             workspace_image: result.rows[0].workspace_image,
             workspace_port: result.rows[0].workspace_port,
+            workspace_home: result.rows[0].workspace_home,
             workspace_args: result.rows[0].workspace_args || '',
             workspace_url_rewrite: url_rewrite,
         }
@@ -371,7 +372,7 @@ function _createContainer(workspace_id, port, settings, callback) {
     const workspaceName = `workspace-${workspace_id}`;
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
     const workspacePath = path.join(workspaceDir, workspaceName);
-    const containerPath = '/home/coder/project';
+    const containerPath = settings.workspace_home;
     logger.info(`Workspace path is configed to: ${workspacePath}`);
     logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
     let args = settings.workspace_args.trim();
