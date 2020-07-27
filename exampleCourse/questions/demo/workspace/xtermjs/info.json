@@ -11,6 +11,7 @@
     "workspaceOptions": {
         "image": "prairielearn/workspace-xtermjs",
         "port": 8080,
+        "home": "/home/prairie",
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c"
