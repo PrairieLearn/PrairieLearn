@@ -8,14 +8,55 @@
 </head>
 
 <body class="d-flex flex-column h-100">
-  <%- include('../partials/navbarWorkspace', {navPage: ''}); %>
+
+  <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
+    <a class="navbar-brand" href="<%= homeUrl %>">
+      <span class="navbar-brand-label">PL Workspace</span>
+      <span class="navbar-brand-hover-label text-light">Go home <i class="fa fa-angle-right"
+          aria-hidden="true"></i></span>
+    </a>
+
+    <div class="d-flex flex-row ml-auto align-items-center">
+      <ul class="navbar-nav flex-row">
+        <li class="mr-2">
+          <span id="state" class="badge badge-dark text-uppercase"></span>
+        </li>
+      </ul>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
+
+    <div class="collapse navbar-collapse" id="workspace-nav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item ml-2">
+          <a id="reload" class="nav-item btn btn-light" href="#">
+            <i class="fas fa-redo text-primary" aria-hidden="true"></i>
+            Reload
+          </a>
+        </li>
+        <li class="nav-item ml-2">
+          <a id="restart" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
+            <i class="fas fa-sync text-info" aria-hidden="true"></i>
+            Restart
+          </a>
+        </li>
+        <li class="nav-item ml-2">
+          <a id="close" class="nav-item btn btn-light" href="#">
+            <i class="fas fa-power-off text-danger" aria-hidden="true"></i>
+            Close
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
 
   <main class="d-flex flex-column flex-grow h-100">
-      <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
-        <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
-        <span class="sr-only">Loading workspace &hellip;</span>
-      </div>
-      <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
+    <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
+      <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
+      <span class="sr-only">Loading workspace &hellip;</span>
+    </div>
+    <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
   </main>
 
   <script>
@@ -61,7 +102,9 @@
       });
 
       socket.on('connect', () => {
-        // reload only the iframe
+        document.getElementById('state').innerHTML = 'connected';
+
+        // onclick for reloading only iframe
         document.getElementById('reload').onclick = () => {
           console.log('Reloading iframe');
           document.getElementById('state').innerHTML = 'reloading';
@@ -69,22 +112,10 @@
           document.getElementById('workspace_container').contentWindow.location.reload();
         };
 
-        // reload whole page after destroying container
-        document.getElementById('restart').onclick = () => {
-          console.log('Rebooting container');
-          socket.emit('destroy', 'Destroying container');
-          showLoadingFrame();
-          window.location.href = `/workspace/<%= workspace_id %>`;
-        };
-
-        // close tab after destroying container
+        // onclick for closing tab
         document.getElementById('close').onclick = () => {
-          console.log('Destroying container');
-          socket.emit('destroy', 'Destroying container');
           window.open('', '_self').close();
         };
-
-        document.getElementById('state').innerHTML = 'connected';
       });
 
       socket.on('host-ready', () => {
