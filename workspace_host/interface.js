@@ -9,6 +9,7 @@ const fs = require("fs");
 const async = require('async');
 const logger = require('../lib/logger');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const watch = require('node-watch');
 var net = require('net');
 
 const aws = require('../lib/aws.js');
@@ -35,29 +36,29 @@ const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
     pathRewrite: (path) => {
-        logger.info(`proxy pathRewrite: path="${path}"`);
+        // logger.info(`proxy pathRewrite: path="${path}"`);
         var match = path.match('/workspace/([0-9]+)/container/(.*)');
         if (match) {
             const workspace_id = parseInt(match[1]);
-            logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_port_mapper[${workspace_id}]=${id_port_mapper[workspace_id]}`);
+            // logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_port_mapper[${workspace_id}]=${id_port_mapper[workspace_id]}`);
             var pathSuffix = match[2];
             const newPath = '/' + pathSuffix;
-            logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
+            // logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
             return newPath;
         } else {
-            logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
+            // logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
             return path;
         }
     },
     logProvider: _provider => logger,
     router: (req) => {
-        logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
+        // logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
         var url = req.url;
         var workspace_id = parseInt(url.replace("/workspace/", ""));
-        logger.info(`workspace_id: ${workspace_id}`);
+        // logger.info(`workspace_id: ${workspace_id}`);
         if (workspace_id in id_port_mapper) {
             url = `http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`;
-            console.log(`proxy router: Router URL: ${url}`);
+            // console.log(`proxy router: Router URL: ${url}`);
             return url;
         } else {
             console.log(`proxy router: Router URL is empty`);
@@ -70,15 +71,6 @@ app.use('/workspace/([0-9])+/*', workspaceProxy);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
-
-// For development
-app.put('/', function(req, res) {
-    var workspace_id = req.body.workspace_id;
-    var port = req.body.port;
-    id_port_mapper[workspace_id] = port;
-    port_id_mapper[port] = workspace_id;
-    res.status(200).send("OK");
-});
 
 app.post('/', function(req, res) {
     var workspace_id = req.body.workspace_id;
@@ -97,6 +89,20 @@ app.post('/', function(req, res) {
 });
 
 app.listen(port, () => console.log(`Listening on http://${config.workspaceNativeLocalhost}:${port}/`));
+
+// For detecting file changes
+var update_queue = {};  // key: path of file on local, value: action ("update" or "remove").
+const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
+    console.log(filename, eventType);
+    if (filename in update_queue && update_queue[filename] == "skip" && eventType == "update") {
+        delete update_queue[filename];
+    } else {
+        update_queue[filename] = eventType;
+    };
+});
+setInterval(_autoUpdateJobManager, 5000);
+
 
 function _getAvailablePort(workspace_id, curPort, callback) {
     if (curPort > 65535) {
@@ -132,25 +138,65 @@ function _resetS3(workspace_id, callback) {
 };
 
 function _uploadToS3(filePath, S3FilePath, callback) {
+    if (!fs.existsSync(filePath)) {
+        callback(null, [filePath, S3FilePath, "File no longer exist on host."]);
+        return;
+    };
     s3 = new AWS.S3();
+    if (fs.lstatSync(filePath).isDirectory()) {
+        var body = "";
+        S3FilePath += '/';
+    } else if (fs.lstatSync(filePath).isFile()) {
+        var body = fs.readFileSync(filePath);
+    } else {
+        callback(null, [filePath, S3FilePath, "Illiegal file type."]);
+        return;
+    };
     var uploadParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
-        Body: fs.readFileSync(filePath),
+        Body: body,
     };
     s3.upload(uploadParams, function(err, data) {
         if (err) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         };
+        console.log(filePath + " uploaded!");
+        callback(null, "OK");
+    });
+};
+
+function _deleteFromS3(filePath, S3FilePath, callback) {
+    s3 = new AWS.S3();
+    var deleteParams = {
+        Bucket: workspaceBucketName,
+        Key: S3FilePath
+    };
+    s3.deleteObject(deleteParams, function(err, data) {
+        if (err) {
+            callback(null, [filePath, S3FilePath, err]);
+            return;
+        };
+        console.log(filePath + " deleted!");
         callback(null, "OK");
     });
 };
 
 function _downloadFromS3(filePath, S3FilePath, callback) {
-    if (!fs.existsSync(path.dirname(filePath))){
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    };
+    if (filePath.slice(-1) == '/') {
+        // this is a directory
+        if (!fs.existsSync(filePath)){
+            fs.mkdirSync(filePath, { recursive: true });
+        }; 
+        callback(null, "OK");
+        return;
+    } else {
+        // this is a file
+        if (!fs.existsSync(path.dirname(filePath))){
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        };
+    }
     s3 = new AWS.S3();
     var downloadParams = {
         Bucket: workspaceBucketName,
@@ -172,7 +218,7 @@ function _downloadFromS3(filePath, S3FilePath, callback) {
         callback(null, "OK");
     });
 };
-
+// DEPRECATED
 function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
     var ret = [];
     fs.readdirSync(curDirPath).forEach(function (name) {
@@ -186,6 +232,37 @@ function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
         };
     });
     return ret;
+};
+
+
+function _autoUpdateJobManager() {
+    var jobs = [];
+    console.log(update_queue);
+    for (const path in update_queue) {
+        if (update_queue[path] == "update") {
+            jobs.push((mockCallback) => {
+                _uploadToS3(path, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+            });
+        } else if (update_queue[path] == "remove") {
+            jobs.push((mockCallback) => {
+                _deleteFromS3(path, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+            });
+        };     
+    };
+    update_queue = {};
+    var status = [];
+    async.parallel(jobs, function(_, results) {
+        results.forEach((res) => {
+            if (res != "OK") {
+                res[2].fileLocalPath = res[0];
+                res[2].fileS3Path = res[1];
+                status.push(res[2]);
+            };
+        });
+        if (status.length != 0) {
+            logger.error(status);
+        };
+    });
 };
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
@@ -214,7 +291,6 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 };
 
 function _syncPullContainer(workspace_id, callback) {
-    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
     _recursiveDownloadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName, (err, jobs_params) => {
         if (err) {
@@ -224,7 +300,12 @@ function _syncPullContainer(workspace_id, callback) {
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((mockCallback) => {
-                _downloadFromS3(filePath, S3filePath, mockCallback);
+                _downloadFromS3(filePath, S3filePath, (_, status) => {
+                    if (status == "OK") {
+                        update_queue[filePath] = "skip";
+                    };
+                    mockCallback(null, status);
+                });
             }));
         });
 
@@ -246,6 +327,7 @@ function _syncPullContainer(workspace_id, callback) {
     });
 };
 
+// DEPRECATED
 async function _syncPushContainer(workspace_id, callback) {
     const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
@@ -378,7 +460,6 @@ function initSequence(workspace_id, res) {
         (callback) => {_syncPullContainer(workspace_id, callback)},
         (workspace_id, callback) => {_getAvailablePort(workspace_id, 1024, callback)},
         _createContainer,
-        _syncPullContainer,
         _startContainer,
     ], function(err) {
         if (err) {
@@ -394,6 +475,8 @@ function initSequence(workspace_id, res) {
 // Called by the main server when the user need to save the file to S3
 // Will be trigger by the user's heartbeats and when user has lost connection with the websocket
 function syncSequence(workspace_id, res) {
+    res.status(404).send(`This action is unused any more.`);
+    return;
     async.waterfall([
         (callback) => {_syncPushContainer(workspace_id, callback)},
     ], function(err) {
