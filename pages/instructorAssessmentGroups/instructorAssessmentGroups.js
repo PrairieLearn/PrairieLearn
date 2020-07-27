@@ -4,12 +4,20 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const csvMaker = require('../../lib/csv-maker');
+const sanitizeName = require('../../lib/sanitize-name');
 const error = require('@prairielearn/prairielib/error');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const setFilenames = function(locals) {
+    const prefix = sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
+    locals.groupsCsvFilename = prefix + 'groups.csv';
+};
+
 function obtainInfo(req, res, next){
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
@@ -57,7 +65,31 @@ function obtainInfo(req, res, next){
 }
 router.get('/', function(req, res, next) {
     debug('GET /');
+    setFilenames(res.locals);
     obtainInfo(req, res, next);
+});
+
+router.get('/:filename', function(req, res, next) {
+    setFilenames(res.locals);
+    if (req.params.filename == res.locals.groupsCsvFilename) {
+        const params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.group_configs, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['groupName', 'name'],
+                ['UID', 'uid'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else {
+    next(new Error('Unknown filename: ' + req.params.filename));
+    }
 });
 
 router.post('/', function(req, res, next) {
@@ -206,4 +238,5 @@ router.post('/', function(req, res, next) {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
-module.exports = router;
+
+module.exports = router;    
