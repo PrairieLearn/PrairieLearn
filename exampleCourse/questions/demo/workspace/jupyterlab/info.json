@@ -10,6 +10,7 @@
     "workspaceOptions": {
         "image": "prairielearn/workspace-jupyterlab",
         "port": 8080,
+        "home": "/home/prairie",
         "rewriteUrl": false,
         "gradedFiles": [
             "starter_code.h",
