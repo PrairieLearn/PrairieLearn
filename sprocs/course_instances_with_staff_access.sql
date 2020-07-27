@@ -9,11 +9,12 @@ AS $$
 BEGIN
     -- returns a list of all course instances to which the user "has staff access":
     --
-    -- if either the user is an administrator or the user has a non-None course role,
-    -- then this means all course instances of the given course
+    --  if either the user is an administrator, the user has a non-None course role,
+    --  or the course is the example course, then this means all course instances
     --
-    -- otherwise, this means all course instances for which the user has a non-None
-    -- course instance role
+    --  otherwise, this means all course instances for which the user has a non-None
+    --  course instance role
+    --
     SELECT
         jsonb_agg(
             jsonb_build_object(
@@ -72,6 +73,7 @@ BEGIN
             is_administrator
             OR cp.course_role > 'None'
             OR cip.course_instance_role > 'None'
+            OR c.example_course IS TRUE
         );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
