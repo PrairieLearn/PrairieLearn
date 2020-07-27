@@ -66,6 +66,7 @@ WITH
             ) AS d
         WHERE
             c.deleted_at IS NULL
+            AND c.example_course IS FALSE
             AND (
                 $is_administrator
                 OR cp.course_role > 'None'
