@@ -1,0 +1,70 @@
+.connectedSortable {
+  /* applies to MCQ options draggable blocks*/
+  border: 3px solid #eee;
+  border-radius: 4px;
+  /*width: 302px;*/
+  background-color: #efefff;
+  min-width: 200px;
+  width: 350px;
+  min-height: 20px;
+  list-style-type: none;
+  margin: 0;
+  padding: 5px 0 20px 0;
+  float: left;
+  margin-right: 50px;
+}
+/* Dropzones are the answer boxes, which should be denoted
+   with an extra yellow background sheen */
+.dropzone {
+  background-color: #FFA;
+  min-height: 30px;
+}
+
+.info {
+  /*style for question instruction blocks*/
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.code {
+  /*style for question instructions that are programming code*/
+  font-family: "Lucida Console", Monaco, monospace;
+}
+
+
+.connectedSortable li, .dropzone li{
+  /*connectedSortable is the MCQ options column, and dropzone is the answers column*/
+  background-color: #EFEFEF;
+  border: 1px solid;
+  border-radius: 4px;
+  margin: 0 5px 5px 5px;
+  padding: 5px;
+  font-size: 1.2em;
+  width: 95%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connectedSortable li:hover, .dropzone li:hover{
+	white-space: normal;
+	height: auto;
+	max-height: none;
+	overflow: visible;
+}
+
+
+.ui-state-highlight { 
+  /*This is used for when hovering over what the <li> being dropped would go*/
+  height: 40px;
+  border: none !important;
+  color: #efefff !important; 
+  background-color: #efefff !important; 
+}
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
