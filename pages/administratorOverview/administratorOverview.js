@@ -101,14 +101,11 @@ router.post('/', (req, res, next) => {
         const user_id = res.locals.authn_user.user_id;
         let action = req.body.approve_deny_action;
 
-        if (action === 'approve') {
-            action = 'creating';
-        } else if (action === 'deny') {
+        if (action === 'deny') {
             action = 'denied';
         } else {
             return next(new Error(`Unknown course request action "${action}"`));
         }
-
         const params = {
             id,
             user_id,
@@ -116,31 +113,44 @@ router.post('/', (req, res, next) => {
         };
         sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
             if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action === 'create_course_from_request') {
+        const id = req.body.request_id;
+        const user_id = res.locals.authn_user.user_id;
+        const params = {
+            id,
+            user_id,
+            'action': 'creating',
+        };
+        sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+            if (ERR(err, next)) return;
 
-            if (action === 'creating') {
-                res.redirect(req.originalUrl);
+            /* Create the course in the background */
+            if (ERR(err, next)) return;
+            const repo_options = {
+                short_name: req.body.short_name,
+                title: req.body.title,
+                institution_id: req.body.institution_id,
+                display_timezone: req.body.display_timezone,
+                path: req.body.path,
+                repo_short_name: req.body.repository_short_name,
+                github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
+                course_request_id: id,
+            };
 
-                /* Create the course in the background */
-                /* TODO: Make this a server job? */
-                sqlDb.queryOneRow(sql.select_course_request, {id}, (err, result) => {
-                    if (ERR(err, next)) return;
+            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {
+                if (ERR(err, next)) return;
 
-                    result = result.rows[0];
-                    github.createAndAddCourseFromRequest(id, res.locals.authn_user, (err, repo) => {
-                        if (ERR(err, next)) return;
-
-                        opsbot.sendCourseRequestMessage(
-                            `*Created course*\n` +
-                            `Course repo: ${repo}\n` +
-                            `Course rubric: ${result.short_name}\n` +
-                            `Approved by: ${res.locals.authn_user.name}`, (err) => {
-                                ERR(err, () => {logger.error(err);});
-                            });
+                res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
+                opsbot.sendCourseRequestMessage(
+                    `*Created course*\n` +
+                    `Course rubric: ${repo_options.short_name}\n` +
+                    `Course title: ${repo_options.title}\n` +
+                    `Approved by: ${res.locals.authn_user.name}`, (err) => {
+                        ERR(err, () => {logger.error(err);});
                     });
-                });
-            } else {
-                res.redirect(req.originalUrl);
-            }
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

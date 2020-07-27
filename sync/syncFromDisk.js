@@ -16,6 +16,8 @@ const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
 
+const { promisify } = require('util');
+
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
@@ -96,6 +98,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
         }
     });
 };
+module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
 
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {

@@ -34,3 +34,10 @@ SELECT u.name, u.uid
 FROM select_conflicting_courses as cc
 LEFT JOIN course_permissions AS cp ON (cc.id = cp.course_id AND cp.course_role = 'Owner')
 LEFT JOIN users AS u ON u.user_id = cp.user_id;
+
+-- BLOCK get_existing_owner_course_settings
+SELECT co.institution_id, co.display_timezone
+FROM course_permissions AS cp
+JOIN pl_courses AS co ON co.id = cp.course_id
+WHERE (cp.user_id = $user_id AND cp.course_role = 'Owner')
+LIMIT 1;

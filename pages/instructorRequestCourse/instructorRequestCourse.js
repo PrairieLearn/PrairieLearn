@@ -4,6 +4,8 @@ const router = express.Router();
 const opsbot = require('../../lib/opsbot');
 const github = require('../../lib/github');
 const logger = require('../../lib/logger');
+const config = require('../../lib/config.js');
+const path = require('path');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -82,22 +84,41 @@ router.post('/', function(req, res, next) {
                     const auto_created = result.rows[0].auto_created;
                     const creq_id = result.rows[0].course_request_id;
 
-                    /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
                     if (auto_created) {
-                        github.createAndAddCourseFromRequest(creq_id, res.locals.authn_user, (err, repo) => {
-                            if (ERR(err, () => {logger.error(err);})) return;
+                        /* Automatically fill in institution id and display timezone from the user's other courses */
+                        sqldb.queryOneRow(sql.get_existing_owner_course_settings, { 'user_id': res.locals.authn_user.user_id }, (err, result) => {
+                            if (ERR(err, next)) return;
+                            const repo_short_name = github.reponameFromShortname(short_name);
+                            const repo_options = {
+                                short_name: short_name,
+                                title: title,
+                                institution_id: result.rows[0].institution_id,
+                                display_timezone: result.rows[0].display_timezone,
+                                path: path.join(config.coursesRoot, repo_short_name),
+                                repo_short_name: repo_short_name,
+                                github_user: github_user.length > 0 ? github_user : null,
+                                course_request_id: creq_id,
+                            };
+                            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, repo) => {
+                                if (ERR(err, () => {logger.error(err);})) return;
 
-                            opsbot.sendCourseRequestMessage(
-                                `*Automatically created course*\n` +
-                                `Course repo: ${repo}\n` +
-                                `Course rubric: ${short_name}\n` +
-                                `Course title: ${title}\n` +
-                                `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-                                `GitHub username: ${github_user || 'not provided'}`, (err) => {
-                                    ERR(err, () => {logger.error(err);});
-                                });
+                                /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                                opsbot.sendCourseRequestMessage(
+                                    `*Automatically creating course*\n` +
+                                    `Course repo: ${repo}\n` +
+                                    `Course rubric: ${short_name}\n` +
+                                    `Course title: ${title}\n` +
+                                    `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                                    `GitHub username: ${github_user || 'not provided'}`, (err) => {
+                                        ERR(err, () => {logger.error(err);});
+                                    });
+
+                                /* Redirect on success so that refreshing doesn't create another request */
+                                res.redirect(req.originalUrl);
+                            });
                         });
                     } else {
+                        /* Not automatically created */
                         opsbot.sendCourseRequestMessage(
                             `*Incoming course request*\n` +
                             `Course rubric: ${short_name}\n` +
@@ -106,10 +127,8 @@ router.post('/', function(req, res, next) {
                             `GitHub username: ${github_user || 'not provided'}`, (err) => {
                                 ERR(err, () => {logger.error(err);});
                             });
+                        res.redirect(req.originalUrl);
                     }
-
-                    /* Redirect on success so that refreshing doesn't create another request */
-                    res.redirect(req.originalUrl);
                 });
             }
         });

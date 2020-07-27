@@ -81,7 +81,6 @@ module.exports = {
             'administrators_insert_by_user_uid.sql',
             'administrators_delete_by_user_id.sql',
             'courses_insert.sql',
-            'courses_insert_from_request.sql',
             'courses_update_column.sql',
             'courses_delete.sql',
             'courses_user_can_edit.sql',

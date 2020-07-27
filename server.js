@@ -851,6 +851,7 @@ app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
 app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+app.use('/pl/administrator/jobSequence/', require('./pages/administratorJobSequence/administratorJobSequence'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

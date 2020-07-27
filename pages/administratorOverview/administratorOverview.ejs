@@ -227,6 +227,8 @@
                           <th>Requested By</th>
                           <th>User ID</th>
                           <th>GitHub Username</th>
+                          <th>Status</th>
+                          <th></th>
                           <th></th>
                   </thead>
                   <tbody>
@@ -237,6 +239,7 @@
                               <td><%= req.user_name %></td>
                               <td><%= req.user_id %></td>
                               <td><%= req.github_user %></td>
+                              <td>
                               <td class="align-middle">
                                   <% if (req.status === 'pending') { %>
                                   <form name="approve-request-form-<%= req.id %>" method="POST">
@@ -248,13 +251,15 @@
                                               name="approve_deny_action" value="deny" tabindex="0">
                                           <i class="fa fa-times" aria-hidden="true"></i> Deny
                                       </button>
-                                      <button type="submit" class="btn btn-sm btn-success float-right mr-2"
-                                              name="approve_deny_action" value="approve" tabindex="0">
+                                      <button type="button" class="btn btn-sm btn-success float-right mr-2" id="approve-request-button-<%= req.id %>"
+                                              name="approve_deny_action" value="approve" tabindex="0"
+                                              data-toggle="popover" data-container="body"
+                                              data-html="true" data-placement="auto" title="Approve course request"
+                                              data-content="<%= include('courseRequestApproveForm', {request: req, id: 'approve-request-button-' + req.id}) %>"
+                                              data-trigger="manual" onclick="$(this).popover('show')">
                                           <i class="fa fa-check" aria-hidden="true"></i> Approve
                                       </button>
                                   </form>
-                                  <% } else if (req.status === 'creating') { %>
-                                  <span class="badge badge-info float-right"><i class="fa fa-sync-alt"></i> Creating Course </span>
                                   <% } %>
                               </td>
                           </tr>
