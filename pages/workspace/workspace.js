@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const request = require('request');
 
 const AWS = require('aws-sdk');
 const path = require('path');
@@ -9,13 +10,53 @@ const async = require('async');
 
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
-const workspace = require('../../lib/workspace');
-
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+// FIXME: duped from lib/workspaceSocket.js
+async function controlContainer(workspace_id, action) {
+    let promise = new Promise(resolve => {
+        request.post(`http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`, {
+            json: {
+                workspace_id: workspace_id,
+                action: action,
+            },
+        }, (error, response, body) => {
+            if (error) {
+                logger.info(`controlContainer error: ${error}`);
+                return;
+            }
+            logger.info(`controlContainer ${action} statusCode: ${response.statusCode}`);
+            logger.info(`controlContainer body: ${body}`);
+            if (response.statusCode == 200) {
+                resolve(true);
+            } else {
+                /* Display an error if we have one from the server */
+                let server_error = 'unknown error';
+                if ('json' in body) {
+                    if ('data' in body.json) {
+                        server_error = new Buffer.from(body.json.data).toString();
+                    } else if ('message' in body.json) {
+                        server_error = body.json.message;
+                    }
+                }
+                logger.error(`Could not connect to workspace host: ${server_error}`);
+                resolve(false);
+            }
+        });
+    });
+    let res = await promise;
+    if (res) {
+        if (action == 'init') {
+            console.log('Container started');
+        }
+    } else {
+        console.log(`Failed to execute ${action}`);
+    }
+}
 
 // https://stackoverflow.com/a/46213474/13138364
 const s3Sync = function (s3Path, bucketName) {
@@ -92,7 +133,7 @@ router.get('/:workspace_id/:action', (req, res, next) => {
 
     if (action === 'reboot') {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
-        workspace.controlContainer(null, workspace_id, 'destroy');
+        controlContainer(workspace_id, 'destroy');
         res.redirect(`/workspace/${workspace_id}`);
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
