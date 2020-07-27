@@ -10,6 +10,7 @@ const syncHelpers = require('../shared/syncHelpers');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
     const params = {course_id: res.locals.course.id};
     sqlDb.query(sql.select_sync_job_sequences, params, function(err, result) {
         if (ERR(err, next)) return;
