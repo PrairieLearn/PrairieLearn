@@ -108,12 +108,10 @@ WITH
             u.user_id = $user_id
     )
 SELECT
-    coalesce(jsonb_agg(ec.*), '[]'::jsonb) AS example_courses,
-    coalesce(jsonb_agg(ic.*), '[]'::jsonb) AS instructor_courses,
+    ec.courses AS example_courses,
+    ic.courses AS instructor_courses,
     sc.course_instances AS student_courses
 FROM
-    example_courses AS ec,
-    instructor_courses AS ic,
-    student_courses AS sc
-GROUP BY
-    sc.course_instances;
+    (SELECT coalesce(jsonb_agg(ec.*), '[]'::jsonb) AS courses FROM example_courses AS ec) AS ec,
+    (SELECT coalesce(jsonb_agg(ic.*), '[]'::jsonb) AS courses FROM instructor_courses AS ic) AS ic,
+    student_courses AS sc;
