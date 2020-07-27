@@ -16,6 +16,7 @@ WHERE
     u.user_id = $user_id
     AND ci.deleted_at IS NULL
     AND c.deleted_at IS NULL
+    AND c.example_course IS FALSE
     AND users_is_instructor_in_course(u.user_id, c.id) IS FALSE
     AND check_course_instance_access(ci.id, u.uid, u.institution_id, $req_date)
 ORDER BY
