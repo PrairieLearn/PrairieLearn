@@ -1,1 +1,1 @@
-ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS port smallint;
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS port integer;
