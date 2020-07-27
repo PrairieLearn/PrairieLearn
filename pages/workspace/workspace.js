@@ -7,7 +7,11 @@ const path = require('path');
 const fs = require('fs');
 const async = require('async');
 
+const logger = require('../../lib/logger');
 const config = require('../../lib/config');
+const workspace = require('../../lib/workspace');
+
+const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -80,6 +84,19 @@ router.get('/:workspace_id', (req, res, next) => {
     ], (err) => {
         if (ERR(err, next)) return;
     });
+});
+
+router.get('/:workspace_id/:action', (req, res, next) => {
+    const workspace_id = req.params.workspace_id;
+    const action = req.params.action;
+
+    if (action === 'reboot') {
+        logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
+        workspace.controlContainer(null, workspace_id, 'destroy');
+        res.redirect(`/workspace/${workspace_id}`);
+    } else {
+        return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
+    }
 });
 
 module.exports = router;

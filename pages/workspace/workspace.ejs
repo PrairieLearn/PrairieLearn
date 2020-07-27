@@ -1,59 +1,136 @@
-<html>
-  <head>
-    <%- include('../partials/head'); %>
-  </head>
-  <body style="margin: 0; overflow: hidden; height: 100%; width: 100%;">
-    <div>
-      <%- include('../partials/navbar', {navPage: ''}); %>
-      <style>
-        .mb-4 {
-          margin-bottom: 0 !important;
-        }
-      </style>
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+
+<head>
+  <%- include('../partials/head'); %>
+  <link href="/stylesheets/workspace.css" rel="stylesheet">
+  <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+</head>
+
+<body class="d-flex flex-column h-100">
+
+  <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
+    <a class="navbar-brand" href="<%= homeUrl %>">
+      <span class="navbar-brand-label">PL Workspace</span>
+      <span class="navbar-brand-hover-label text-light">Go home <i class="fa fa-angle-right"
+          aria-hidden="true"></i></span>
+    </a>
+
+    <div class="d-flex flex-row ml-auto align-items-center">
+      <ul class="navbar-nav flex-row">
+        <li class="mr-2">
+          <span id="state" class="badge badge-dark text-uppercase"></span>
+        </li>
+      </ul>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
     </div>
-    <div style="position: fixed; height: 100%; width: 100%;">
-      <div id="loading_page"><%- include('../partials/loading'); %></div>
-      <iframe
-        id="workspace_container"
-        style="margin: 0; border: none; width: 100%; height: calc(100% - 57px);"
-      ></iframe>
+
+    <div class="collapse navbar-collapse" id="workspace-nav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item ml-2">
+          <a id="reload" class="nav-item btn btn-light" href="#">
+            <i class="fas fa-redo text-primary" aria-hidden="true"></i>
+            Reload
+          </a>
+        </li>
+        <li class="nav-item ml-2">
+          <a id="restart" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
+            <i class="fas fa-sync text-info" aria-hidden="true"></i>
+            Restart
+          </a>
+        </li>
+        <li class="nav-item ml-2">
+          <a id="close" class="nav-item btn btn-light" href="#">
+            <i class="fas fa-power-off text-danger" aria-hidden="true"></i>
+            Close
+          </a>
+        </li>
+      </ul>
     </div>
-    <button id="button" style="position: absolute; left: 250px; bottom: 0;">
-      Ping the Server
-    </button>
-    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
-    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
-    <script>
-      $(function () {
-        var socket = io("/workspace", {
-          query: 'workspace_id=<%= workspace_id %>',
-          upgrade: false,
-        });
-        socket.on("connect", function () {
-          document.getElementById("button").onclick = function () {
-            socket.emit("heartbeat", "I am still alive");
-          };
-        });
+  </nav>
 
-        // save the progress every 5 sec
-        // setInterval(function () {
-        //   socket.emit("heartbeat", "I am still alive");
-        // }, 5000);
+  <main class="d-flex flex-column flex-grow h-100">
+    <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
+      <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
+      <span class="sr-only">Loading workspace &hellip;</span>
+    </div>
+    <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
+  </main>
 
-        const iframe = document.getElementById("workspace_container");
-        iframe.addEventListener("load", function() {
-          document.getElementById("loading_page").style.display = "none";
-        });
-
-        socket.on("host-ready", function () {
-          console.log("host is ready");
-          iframe.src = window.location.href + "/container/";
-        });
-
-        socket.on("update", function (msg) {
-          console.log("receive update: " + msg);
-        });
+  <script>
+    $(function () {
+      var socket = io('/workspace', {
+        query: 'workspace_id=<%= workspace_id %>',
+        upgrade: false,
       });
-    </script>
-  </body>
+
+      // save progress and poll state machine every 5 sec
+      setInterval(() => {
+        socket.emit('heartbeat', 'I am still alive');
+      }, 5000);
+
+      const showLoadingFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
+      };
+
+      const showWorkspaceFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
+      };
+
+      const iframe = document.getElementById('workspace_container');
+      iframe.addEventListener('load', function () {
+        var elems = iframe.contentWindow.document.getElementsByTagName('pre');
+        if (elems.length == 1) {
+          var elem = elems[0];
+          elem.innerText = '';
+          if (elem.innerText.includes('Error occurred')) {
+            console.log('Found error');
+            document.getElementById('state').innerHTML = 'loading error';
+            setTimeout(function () {
+              iframe.contentWindow.location.reload();
+            }, 1000);
+          }
+        } else {
+          console.log('Loading the page');
+          document.getElementById('state').innerHTML = 'loading';
+          showWorkspaceFrame();
+        }
+      });
+
+      socket.on('connect', () => {
+        document.getElementById('state').innerHTML = 'connected';
+
+        // onclick for reloading only iframe
+        document.getElementById('reload').onclick = () => {
+          console.log('Reloading iframe');
+          document.getElementById('state').innerHTML = 'reloading';
+          showLoadingFrame();
+          document.getElementById('workspace_container').contentWindow.location.reload();
+        };
+
+        // onclick for closing tab
+        document.getElementById('close').onclick = () => {
+          // TODO: also kill container
+          window.open('', '_self').close();
+        };
+      });
+
+      socket.on('host-ready', () => {
+        console.log('host is ready');
+        iframe.src = `${window.location.href}/container/`;
+        document.getElementById('state').innerHTML = 'host ready';
+      });
+
+      socket.on('state', (msg) => {
+        console.log(`socket['state']: ${msg}`);
+        document.getElementById('state').innerHTML = msg;
+      });
+    });
+  </script>
+</body>
+
 </html>
