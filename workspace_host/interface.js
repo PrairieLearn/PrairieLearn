@@ -178,16 +178,26 @@ function _getAvailablePort(workspace_id, curPort, callback) {
 }
 
 function _checkServer(workspace_id, container, callback) {
-    setTimeout(() => {
+    const checkMilliseconds = 500;
+    const maxMilliseconds = 30000;
+
+    const startTime = (new Date()).getTime();
+    function checkWorkspace() {
         request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
-            if (ERR(err, callback)) return;
+            if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode == 200) {
                 callback(null, workspace_id, container);
             } else {
-                _checkServer(workspace_id, container, callback);
+                const endTime = (new Date()).getTime();
+                if (endTime - startTime > maxMilliseconds) {
+                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace_id}`));
+                } else {
+                    setTimeout(checkWorkspace, checkMilliseconds);
+                }
             }
         });
-    }, 1000);  
+    }
+    setTimeout(checkWorkspace, checkMilliseconds);
 }
 
 function _queryContainerSettings(workspace_id, callback) {
