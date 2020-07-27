@@ -1,5 +1,6 @@
 const express = require('express');
-const app = express()
+const app = express();
+const request = require("request");
 const port = 8081;
 const { spawn, exec } = require("child_process");   // use dockerode and aws-sdk instead
 const path = require("path");
@@ -112,7 +113,11 @@ function _getAvailablePort(workspace_id, curPort, callback) {
     var server = net.createServer()
     server.listen(curPort, function (err) {
         server.once('close', function () {
-            callback(null, workspace_id, curPort);
+            if (curPort in port_id_mapper) {
+                _getAvailablePort(workspace_id, curPort + 1, callback);
+            } else {
+                callback(null, workspace_id, curPort);
+            }
         });
         server.close();
     });
@@ -120,6 +125,18 @@ function _getAvailablePort(workspace_id, curPort, callback) {
         _getAvailablePort(workspace_id, curPort + 1, callback);
         return;
     });
+};
+
+function _checkServer(workspace_id, container, callback) {
+    var trigger = setTimeout(() => {
+        request(`http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`, function(_, res, _) {
+            if (res && res.statusCode == 200) {
+                callback(null, workspace_id, container);
+            } else {
+                _checkServer(workspace_id, container, callback);
+            }
+        });
+    }, 1000);  
 };
 
 // DEPRECATED
@@ -186,6 +203,7 @@ function _deleteFromS3(filePath, S3FilePath, callback) {
 function _downloadFromS3(filePath, S3FilePath, callback) {
     if (filePath.slice(-1) == '/') {
         // this is a directory
+        filePath = filePath.slice(0, -1);
         if (!fs.existsSync(filePath)){
             fs.mkdirSync(filePath, { recursive: true });
         }; 
@@ -363,7 +381,7 @@ async function _syncPushContainer(workspace_id, callback) {
 
 function _getContainer(workspace_id, callback) {
     var container = docker.getContainer("workspace-" + workspace_id);
-    callback(null, container);
+    callback(null, workspace_id, container);
 };
 
 function _createContainer(workspace_id, port, callback) {
@@ -412,44 +430,48 @@ function _createContainer(workspace_id, port, callback) {
             port_id_mapper[port] = workspace_id;
             logger.info(`Set id_port_mapper[${workspace_id}] = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            callback(null, container);
+            callback(null, workspace_id, container);
         };
     });
 };
 
-function _delContainer(container, callback) {
-    var workspaceName= container.id;
+function _delContainer(workspace_id, container, callback) {
+    var workspaceName = container.id;
     // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    fs.rmdirSync(workspaceName, { recursive: true });
+    // Commented out because we don't want to delete on S3 in fs.watch's callback
+    // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
+
     container.remove((err) => {
         if (err) {
             callback(err);
         } else {
-            callback(null, container);
+            delete(port_id_mapper[id_port_mapper[workspace_id]]);
+            delete(id_port_mapper[workspace_id]);
+            callback(null, workspace_id, container);
         };
     });
 };
 
-function _startContainer(container, callback) {
+function _startContainer(workspace_id, container, callback) {
     container.start((err) => {
         if (err) {
             if (err.toString().includes("already started")) {
-                callback(null, container);
+                callback(null, workspace_id, container);
             } else {
                 callback(err);
             };
         } else {
-            callback(null, container);
+            callback(null, workspace_id, container);
         };
     });
 };
 
-function _stopContainer(container, callback) {
+function _stopContainer(workspace_id, container, callback) {
     container.stop((err) => {
         if (err) {
             callback(err);
         } else {
-            callback(null, container);
+            callback(null, workspace_id, container);
         };
     });
 };
@@ -461,6 +483,7 @@ function initSequence(workspace_id, res) {
         (workspace_id, callback) => {_getAvailablePort(workspace_id, 1024, callback)},
         _createContainer,
         _startContainer,
+        _checkServer,
     ], function(err) {
         if (err) {
             logger.error(`Error for workspace_id=${workspace_id}: ${err}`);
