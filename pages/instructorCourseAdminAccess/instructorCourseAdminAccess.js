@@ -12,8 +12,8 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-    debug(res.locals.courses);
-
+    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Access denied (must be course owner)'));
+    
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.course_users = result.rows;
@@ -22,7 +22,8 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Access denied (must be course owner)'));
+
     if (req.body.__action == 'course_permissions_insert_by_user_uid') {
         const params = [
             res.locals.course.id,
