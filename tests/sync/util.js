@@ -319,7 +319,7 @@ const questions = {
     workspaceOptions: {
       image: 'prairielearn/workspace-vscode',
       port: 8080,
-      home: "/home/coder",
+      home: '/home/coder',
       args: '--auth none',
       gradedFiles: [
         'animal.h',
