@@ -1,3 +1,4 @@
+const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
 const request = require("request");
@@ -28,41 +29,85 @@ if (workspaceBucketName == '') {
     logger.info("Workspace bucket is configed to: " + workspaceBucketName);
 }
 
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+// FIXME: this is duped from server.js
+async.series([
+    function(callback) {
+        const pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            password: config.postgresqlPassword,
+            max: 100,
+            idleTimeoutMillis: 30000,
+        };
+        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+        const idleErrorHandler = function(err) {
+            logger.error('idle client error', err);
+            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
+            process.exit(1);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+], function(err, data) {
+    if (err) {
+        logger.error('Error initializing PrairieLearn database:', err, data);
+    } else {
+        logger.info('Initialized PrairieLearn database');
+    }
+});
+
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
-var id_port_mapper = {};
+var id_workspace_mapper = {};
 var port_id_mapper = {};
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
     pathRewrite: (path) => {
-        // logger.info(`proxy pathRewrite: path="${path}"`);
+        //logger.info(`proxy pathRewrite: path="${path}"`);
         var match = path.match('/workspace/([0-9]+)/container/(.*)');
         if (match) {
             const workspace_id = parseInt(match[1]);
-            // logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_port_mapper[${workspace_id}]=${id_port_mapper[workspace_id]}`);
+            if (!(workspace_id in id_workspace_mapper)) {
+                logger.info(`proxy pathRewrite: Could not find workspace_id=${workspace_id}`);
+                return path;
+            }
+            const workspace = id_workspace_mapper[workspace_id];
+            //logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_workspace_mapper[${workspace_id}].port=${id_workspace_mapper[workspace_id].port}`);
+            if (!workspace.settings.workspace_url_rewrite) {
+                logger.info(`proxy pathRewrite: URL rewriting disabled for workspace_id=${workspace_id}`);
+                return path;
+            }
             var pathSuffix = match[2];
             const newPath = '/' + pathSuffix;
-            // logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
+            //logger.info(`proxy pathRewrite: Matched suffix="${pathSuffix}"; returning newPath: ${newPath}`);
             return newPath;
         } else {
-            // logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
+            logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
             return path;
         }
     },
     logProvider: _provider => logger,
     router: (req) => {
-        // logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
+        //logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
         var url = req.url;
         var workspace_id = parseInt(url.replace("/workspace/", ""));
-        // logger.info(`workspace_id: ${workspace_id}`);
-        if (workspace_id in id_port_mapper) {
-            url = `http://${config.workspaceNativeLocalhost}:${id_port_mapper[workspace_id]}/`;
-            // console.log(`proxy router: Router URL: ${url}`);
+        //logger.info(`workspace_id: ${workspace_id}`);
+        if (workspace_id in id_workspace_mapper) {
+            url = `http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`;
+            //logger.info(`proxy router: Router URL: ${url}`);
             return url;
         } else {
-            console.log(`proxy router: Router URL is empty`);
+            logger.info(`proxy router: Router URL is empty`);
             return "";
         };
     },
@@ -138,6 +183,40 @@ function _checkServer(workspace_id, container, callback) {
         });
     }, 1000);  
 };
+
+function _queryContainerSettings(workspace_id, callback) {
+    sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
+        if (err) {
+            logger.error('Error getting workspace settings', err);
+            return;
+        }
+        logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
+
+        /* We can't use the || idiom for url_rewrite because it'll override if false */
+        let url_rewrite = result.rows[0].workspace_url_rewrite;
+        if (url_rewrite == null) {
+            url_rewrite = true;
+        }
+
+        const settings = {
+            workspace_image: result.rows[0].workspace_image,
+            workspace_port: result.rows[0].workspace_port,
+            workspace_args: result.rows[0].workspace_args || '',
+            workspace_url_rewrite: url_rewrite,
+        }
+        callback(null, settings);
+    });
+};
+
+function _getContainerSettings(workspace_id, callback) {
+    async.parallel({
+        port: (callback) => {_getAvailablePort(workspace_id, 1024, callback)},
+        settings: (callback) => {_queryContainerSettings(workspace_id, callback)},
+    }, (err, results) => {
+        if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
+        callback(null, workspace_id, results.port, results.settings);
+    });
+}
 
 // DEPRECATED
 function _resetS3(workspace_id, callback) {
@@ -384,23 +463,33 @@ function _getContainer(workspace_id, callback) {
     callback(null, workspace_id, container);
 };
 
-function _createContainer(workspace_id, port, callback) {
+function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
-    const workspaceName = 'workspace-' + workspace_id;
+    const workspaceName = `workspace-${workspace_id}`;
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
     const workspacePath = path.join(workspaceDir, workspaceName);
     const containerPath = '/home/coder/project';
-    logger.info("Workspace path is configed to: " + workspacePath);
+    logger.info(`Workspace path is configed to: ${workspacePath}`);
+    logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
+    let args = settings.workspace_args.trim();
+    if (args.length == 0) {
+        args = null;
+    } else {
+        args = args.split(' ');
+    }
+
     docker.createContainer({
-        Image: 'codercom/code-server',
+        Image: settings.workspace_image,
         ExposedPorts: {
-            "8080/tcp": {},
+            [`${settings.workspace_port}/tcp`]: {},
         },
         Env: [
             `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
         ],
         HostConfig: {
-            PortBindings: {'8080/tcp': [{"HostPort": port.toString()}]},
+            PortBindings: {
+                [`${settings.workspace_port}/tcp`]: [{"HostPort": `${port}`}],
+            },
             Binds: [`${workspacePath}:${containerPath}`],
             // Copied directly from externalGraderLocal.js
             Memory: 1 << 30, // 1 GiB
@@ -412,7 +501,7 @@ function _createContainer(workspace_id, port, callback) {
             CpuQuota: 90000, // portion of the CpuPeriod for this container
             PidsLimit: 1024,
         },
-        Cmd: ['--auth', 'none'],
+        Cmd: args, // FIXME: proper arg parsing
         name: workspaceName,
         Volumes: {
             [containerPath]: {}
@@ -426,9 +515,13 @@ function _createContainer(workspace_id, port, callback) {
                 callback(err);
             };
         } else {
-            id_port_mapper[workspace_id] = port;
+            if (!(workspace_id in id_workspace_mapper)) {
+                id_workspace_mapper[workspace_id] = {};
+            }
+            id_workspace_mapper[workspace_id].port = port;
+            id_workspace_mapper[workspace_id].settings = settings;
             port_id_mapper[port] = workspace_id;
-            logger.info(`Set id_port_mapper[${workspace_id}] = ${port}`);
+            logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
             callback(null, workspace_id, container);
         };
@@ -480,7 +573,7 @@ function _stopContainer(workspace_id, container, callback) {
 function initSequence(workspace_id, res) {
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback)},
-        (workspace_id, callback) => {_getAvailablePort(workspace_id, 1024, callback)},
+        _getContainerSettings,
         _createContainer,
         _startContainer,
         _checkServer,

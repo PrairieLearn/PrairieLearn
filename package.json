@@ -135,7 +135,8 @@
         "ignore": [
             "public/*",
             "exampleCourse/*",
-            "testCourse/*"
+            "testCourse/*",
+            "workspace_host/*"
         ],
         "ext": "js,json,sql"
     }

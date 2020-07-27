@@ -40,7 +40,8 @@ BEGIN
             workspace_image,
             workspace_port,
             workspace_args,
-            workspace_graded_files
+            workspace_graded_files,
+            workspace_url_rewrite
         ) SELECT
             (question->>'uuid')::uuid,
             question->>'qid',
@@ -66,7 +67,8 @@ BEGIN
             question->>'workspace_image',
             (question->>'workspace_port')::integer,
             question->>'workspace_args',
-            jsonb_array_to_text_array(question->'workspace_graded_files')
+            jsonb_array_to_text_array(question->'workspace_graded_files'),
+            (question->>'workspace_url_rewrite')::boolean
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
         SET
@@ -92,7 +94,8 @@ BEGIN
             workspace_image = EXCLUDED.workspace_image,
             workspace_port = EXCLUDED.workspace_port,
             workspace_args = EXCLUDED.workspace_args,
-            workspace_graded_files = EXCLUDED.workspace_graded_files
+            workspace_graded_files = EXCLUDED.workspace_graded_files,
+            workspace_url_rewrite = EXCLUDED.workspace_url_rewrite
         WHERE
             questions.course_id = new_course_id
         RETURNING id, qid
