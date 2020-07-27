@@ -92,8 +92,10 @@ router.get('/:workspace_id/:action', (req, res, next) => {
 
     if (action === 'reboot') {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
-        workspace.controlContainer(null, workspace_id, 'destroy');
-        res.redirect(`/workspace/${workspace_id}`);
+        workspace.controlContainer(workspace_id, 'destroy', (err) => {
+            if (ERR(err, next)) return;
+            res.redirect(`/workspace/${workspace_id}`);
+        });
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
     }
