@@ -185,7 +185,9 @@ function _checkServer(workspace_id, container, callback) {
     function checkWorkspace() {
         request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
-            if (res && res.statusCode == 200) {
+            if (res && (res.statusCode == 200 || res.statusCode == 404)) {
+                /* We might get a 404 because the URL is not being rewritten and the application doesn't
+                   have a page at root.  This is okay since it still means the server is running. */
                 callback(null, workspace_id, container);
             } else {
                 const endTime = (new Date()).getTime();
