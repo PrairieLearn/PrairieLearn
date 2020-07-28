@@ -1,3 +1,6 @@
+/* eslint-env jquery */
+/* eslint-env browser */
+
 function set_answer(event) {
     /* We only care about when this function is fired
     / from an ANSWER DROPZONE, aka dropzones with yellow backgrounds */
@@ -65,7 +68,7 @@ function update_indent(leftDiff, id, ui) {
 }
 
 
-$(document).ready(function() {
+$( document ).ready(function() {
     //Add drag and drop functionality for options elements
     //that has the connectedSortable class
     $('.connectedSortable').sortable({
@@ -85,6 +88,6 @@ $(document).ready(function() {
         },
     }).disableSelection();
     $('.dropzone').sortable({
-        grid: [50, 1]
+        grid: [50, 1],
     });
 });
