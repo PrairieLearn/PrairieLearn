@@ -73,7 +73,7 @@ def render(element_html, data):
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
         permutationMode = pl.get_string_attrib(element, 'permutation-mode')
-        permutationMode = ' in <strong> any </strong> order" if permutationMode == 'any' else "in <strong> the specified </strong> order'
+        permutationMode = ' in <strong> any </strong> order' if permutationMode == 'any' else 'in <strong> the specified </strong> order'
         return f"<strong>Correct answer: </strong> {data['correct_answers'][answerName]} {permutationMode} <br><br>"
 
 
