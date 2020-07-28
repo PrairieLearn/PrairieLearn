@@ -8,6 +8,7 @@ const fs = require('fs');
 const async = require('async');
 
 const logger = require('../../lib/logger');
+const socketServer = require('../../lib/socket-server');
 const config = require('../../lib/config');
 const workspace = require('../../lib/workspace');
 
@@ -50,6 +51,11 @@ const s3Sync = function (s3Path, bucketName) {
     });
 };
 
+module.exports.init = function(callback) {
+    socketServer.io.on('connection', this.connection);
+    callback(null);
+};
+
 router.get('/:workspace_id', (req, res, next) => {
     res.locals.workspace_id = req.params.workspace_id;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -78,6 +84,7 @@ router.get('/:workspace_id', (req, res, next) => {
             sqldb.query(sql.update_workspace_state, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 console.log(`[workspace.js] set workspaces.state to 'stopped'`);
+                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id: req.params.workspace_id, state: 'launching'});
                 callback(null);
             });
         },

@@ -9,6 +9,14 @@ FROM
 WHERE 
     v.workspace_id = $workspace_id;
 
+-- BLOCK select_workspace_state
+SELECT
+    w.state
+FROM
+    workspaces as w
+WHERE
+    w.id = $workspace_id;
+
 -- BLOCK update_workspace_state
 UPDATE
     workspaces as w

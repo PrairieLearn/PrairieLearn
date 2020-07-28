@@ -95,7 +95,7 @@
           }
         } else {
           console.log('Loading the page');
-          document.getElementById('state').innerHTML = 'loading';
+        //   document.getElementById('state').innerHTML = 'loading';
           showWorkspaceFrame();
         }
       });
@@ -118,16 +118,23 @@
         };
       });
 
-      socket.on('host-ready', () => {
-        console.log('host is ready');
-        iframe.src = `${window.location.href}/container/`;
-        document.getElementById('state').innerHTML = 'host ready';
+      socket.on('change:state', (msg) => {
+        if (msg.state === 'running') {
+          iframe.src = `${window.location.href}/container/`;
+        }
+        document.getElementById('state').innerHTML = msg.state;
       });
+      
+    //   socket.on('host-ready', () => {
+    //     console.log('host is ready');
+    //     iframe.src = `${window.location.href}/container/`;
+    //     document.getElementById('state').innerHTML = 'host ready';
+    //   });
 
-      socket.on('state', (msg) => {
-        console.log(`socket['state']: ${msg}`);
-        document.getElementById('state').innerHTML = msg;
-      });
+    //   socket.on('state', (msg) => {
+    //     console.log(`socket['state']: ${msg}`);
+    //     document.getElementById('state').innerHTML = msg;
+    //   });
     });
   </script>
 </body>
