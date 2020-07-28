@@ -347,10 +347,10 @@ function _getWorkspaceByPath(path) {
         return;
     }
     const workspace_id = Object.keys(id_workspace_mapper).find(
-        key => id_workspace_mapper[key].localName === localName
+        key => id_workspace_mapper[key].localName === localName,
     );
     
-    return {workspace_id, localPath}
+    return {workspace_id, localPath};
 }
 
 function _autoUpdateJobManager() {
@@ -361,14 +361,14 @@ function _autoUpdateJobManager() {
         logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
         let s3Path;
         if (!workspace_id) {
-            logger.info(`watch return: workspace_id not mapped yet`)
+            logger.info(`watch return: workspace_id not mapped yet`);
             return;
         } else if (localPath === '') {
-            logger.info(`watch continue: empty (root) path`)
+            logger.info(`watch continue: empty (root) path`);
             continue;
         } else {
             s3Path = `workspace-${workspace_id}/${localPath}`;
-            logger.info(`watch s3Path: ${s3Path}`)
+            logger.info(`watch s3Path: ${s3Path}`);
         }
 
         if (update_queue[path] == 'update') {
@@ -495,7 +495,7 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _getContainer(workspace_id, callback) {
-    const localName = id_workspace_mapper[workspace_id].localName
+    const localName = id_workspace_mapper[workspace_id].localName;
     const container = docker.getContainer(localName);
     callback(null, workspace_id, container);
 }
