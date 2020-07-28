@@ -64,7 +64,7 @@ authorized_questions AS (
                 ELSE aq.max_points
             END,
             'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-            'min_advance_perc', instance_questions_determine_unblock_score_perc(iq.id)
+            'min_advance_perc', assessment_questions_find_unlock_score_perc(aq.id)
         ) AS instance_question_info,
         to_jsonb(aq) AS assessment_question,
         to_jsonb(q) AS question,

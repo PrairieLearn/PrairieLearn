@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS boolean AS $$
 DECLARE
     ai_id bigint;
-    prev_iq_id bigint;
+    prev_aq_id bigint;
     prev_iq_highest_submission_score double precision;
     relevant_min_advance_perc double precision;
     prev_iq_score_met boolean;
@@ -18,11 +18,11 @@ BEGIN
     WHERE iq.id = iq_id;
 
     -- 1. Get the id and score_perc of the previous instance question in the assessment.
-    SELECT _prev_iq_id, _prev_iq_highest_submission_score INTO prev_iq_id, prev_iq_highest_submission_score
+    SELECT _prev_aq_id, _prev_iq_highest_submission_score INTO prev_aq_id, prev_iq_highest_submission_score
     FROM (
         SELECT
             iq.id AS cur_iq,
-            (lag(iq.id) OVER w) AS _prev_iq_id,
+            (lag(aq.id) OVER w) AS _prev_aq_id,
             (lag(iq.highest_submission_score) OVER w) AS _prev_iq_highest_submission_score
         FROM
             assessment_instances AS ai
@@ -38,7 +38,7 @@ BEGIN
     WHERE cur_iq = iq_id;
 
     -- Return false early if iq_id is the first question in the assessment.
-    IF prev_iq_id IS NULL THEN
+    IF prev_aq_id IS NULL THEN
         RETURN false;
     END IF;
 
@@ -48,7 +48,7 @@ BEGIN
     END IF;
 
     -- 2. Store the lowest-level non-null `min_advance_perc`
-    SELECT instance_questions_determine_unblock_score_perc(prev_iq_id) INTO relevant_min_advance_perc;
+    SELECT assessment_questions_find_unlock_score_perc(prev_aq_id) INTO relevant_min_advance_perc;
 
     -- 3. Don't block if the score of the previous question
     -- is greater than or equal to the minimum score to continue.

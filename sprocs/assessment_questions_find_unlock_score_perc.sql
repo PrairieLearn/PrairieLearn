@@ -5,8 +5,8 @@
 -- > Zone
 -- > Assessment
 CREATE OR REPLACE FUNCTION
-    instance_questions_determine_unblock_score_perc (
-        iq_id bigint
+    assessment_questions_find_unlock_score_perc (
+        aq_id bigint
     ) RETURNS double precision AS $$
 DECLARE
     ret_min_advance_perc double precision;
@@ -25,12 +25,11 @@ BEGIN
         prev_z_min_advance_perc,
         prev_ag_min_advance_perc,
         prev_aq_min_advance_perc
-    FROM instance_questions iq
-        JOIN assessment_questions aq ON (aq.id = iq.assessment_question_id)
+    FROM assessment_questions aq
         JOIN alternative_groups ag ON (ag.id = aq.alternative_group_id)
         JOIN zones z ON (z.id = ag.zone_id)
         JOIN assessments a ON (a.id = aq.assessment_id)
-    WHERE iq.id = iq_id;
+    WHERE aq.id = aq_id;
 
     -- Store the lowest-level non-null `min_advance_perc`
     SELECT 0 INTO ret_min_advance_perc;

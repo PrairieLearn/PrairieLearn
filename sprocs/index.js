@@ -158,7 +158,7 @@ module.exports = {
             'sync_topics.sql',
             'sync_course_instances.sql',
             'lock_timeout_set.sql',
-            'instance_questions_determine_unblock_score_perc.sql',
+            'assessment_questions_find_unlock_score_perc.sql',
             'instance_questions_check_sequence_blocked.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
