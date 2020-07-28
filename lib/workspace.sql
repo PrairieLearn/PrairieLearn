@@ -7,4 +7,4 @@ UPDATE
 SET
     workspace_host_id = $workspace_host_id
 WHERE
-    w.id = $workspace_id
+    w.id = $workspace_id;
