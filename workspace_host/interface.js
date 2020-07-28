@@ -32,8 +32,8 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// FIXME: this is duped from server.js
 async.series([
+    // FIXME: this sqldb init function is duped from server.js
     function(callback) {
         const pgConfig = {
             user: config.postgresqlUser,
@@ -52,6 +52,19 @@ async.series([
         sqldb.init(pgConfig, idleErrorHandler, function(err) {
             if (ERR(err, callback)) return;
             logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+    function(callback) {
+        const params = {
+            hostname: config.workspaceContainerLocalhost,
+            // hostname: config.workspaceNativeLocalhost,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+            if (err) {
+                logger.error('Error creating workspace_hosts row', err);
+                return;
+            }
             callback(null);
         });
     },
