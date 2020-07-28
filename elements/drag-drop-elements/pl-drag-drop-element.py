@@ -42,7 +42,7 @@ def render(element_html, data):
 
         for mcq_options_text in mcq_options:
             # render options column
-            html_string += f"<li>{mcq_options_text}</li>"
+            html_string += f'<li>{mcq_options_text}</li>'
 
         html_string += f'</ul></div><div class="column"><ul id="{str(answerName) + str("-dropzone")}" name="{str(answerName)}" class="connectedSortable dropzone"><li class="ui-sortable-handle info info-fixed">Drag your answers below:</li>'
 
@@ -55,7 +55,7 @@ def render(element_html, data):
             submission_indent = data['submitted_answers'][answerName]['student_answer_indent'][index]
             submission_indent = (int(submission_indent) * 50) + 5
             html_string += f"<li style='margin-left: {submission_indent}px;'>{mcq_options_text}</li>"
-        html_string += "</ul></div></div>"
+        html_string += '</ul></div></div>'
 
         answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
         html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
@@ -68,12 +68,12 @@ def render(element_html, data):
         answerName = pl.get_string_attrib(element, 'answers-name')
         html_string = str(data['submitted_answers'][answerName]['student_raw_submission'])
         question_notes = str(data['partial_scores'][answerName]['feedback'])
-        return f"<strong>Your answer: </strong> {str(html_string)}<br> {str(question_notes)}<br>"
+        return f'<strong>Your answer: </strong> {str(html_string)}<br> {str(question_notes)}<br>'
     elif data['panel'] == 'answer':
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
         permutationMode = pl.get_string_attrib(element, 'permutation-mode')
-        permutationMode = " in <strong> any </strong> order" if permutationMode == 'any' else "in <strong> the specified </strong> order"
+        permutationMode = ' in <strong> any </strong> order" if permutationMode == 'any' else "in <strong> the specified </strong> order'
         return f"<strong>Correct answer: </strong> {data['correct_answers'][answerName]} {permutationMode} <br><br>"
 
 
