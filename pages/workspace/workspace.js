@@ -8,7 +8,6 @@ const fs = require('fs');
 const async = require('async');
 
 const logger = require('../../lib/logger');
-const socketServer = require('../../lib/socket-server');
 const config = require('../../lib/config');
 const workspace = require('../../lib/workspace');
 
@@ -51,11 +50,6 @@ const s3Sync = function (s3Path, bucketName) {
     });
 };
 
-module.exports.init = function(callback) {
-    socketServer.io.on('connection', this.connection);
-    callback(null);
-};
-
 router.get('/:workspace_id', (req, res, next) => {
     const workspace_id = req.params.workspace_id;
     res.locals.workspace_id = workspace_id;
@@ -78,14 +72,7 @@ router.get('/:workspace_id', (req, res, next) => {
             });
         },
         (callback) => {
-            // TODO: add locking
-            const state = 'launching';
-            sqldb.call('workspaces_state_update', [workspace_id, state], function(err, _result) {
-                if (ERR(err, callback)) return;
-                logger.info(`[workspace.js] set workspaces.state to '${state}'`);
-                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id, state});
-                callback(null);
-            });
+            workspace.updateState(workspace_id, 'launching', callback);
         },
     ], (err) => {
         if (ERR(err, next)) return;
@@ -100,11 +87,7 @@ router.get('/:workspace_id/:action', (req, res, next) => {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
         workspace.controlContainer(workspace_id, 'destroy', (err) => {
             if (ERR(err, next)) return;
-            const state = 'stopped';
-            sqldb.call('workspaces_state_update', [workspace_id, state], function(err, _result) {
-                if (ERR(err, e => logger.error(e))) return;
-                logger.info(`[workspace.js] set workspaces.state to '${state}'`);
-                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id, state});
+            workspace.updateState(workspace_id, 'stopped', () => {
                 res.redirect(`/workspace/${workspace_id}`);
             });
         });
