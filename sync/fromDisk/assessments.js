@@ -68,7 +68,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
-            min_continue_score_perc: assessment.minContinueScorePerc,
+            min_advance_perc: assessment.minContinueScorePerc,
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -97,7 +97,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
-                min_continue_score_perc: zone.minContinueScorePerc,
+                min_advance_perc: zone.minContinueScorePerc,
             };
         });
 
@@ -190,7 +190,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 const alternativeGroupParams = {
                     number: alternativeGroupNumber,
                     number_choose: question.numberChoose,
-                    min_continue_score_perc: question.minContinueScorePerc,
+                    min_advance_perc: question.minContinueScorePerc,
                 };
 
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
@@ -210,7 +210,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         tries_per_variant: alternative.triesPerVariant,
                         question_id: questionId,
                         number_in_alternative_group: alternativeIndex + 1,
-                        min_continue_score_perc: alternative.minContinueScorePerc,
+                        min_advance_perc: alternative.minContinueScorePerc,
                     };
 
                 });

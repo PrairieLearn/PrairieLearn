@@ -4,7 +4,7 @@ columns
     number: integer
     number_choose: integer
     zone_id: bigint not null
-    min_continue_score_perc: double precision
+    min_advance_perc: double precision
 
 indexes
     alternative_groups_pkey: PRIMARY KEY (id) USING btree (id)

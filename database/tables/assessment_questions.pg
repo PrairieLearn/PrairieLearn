@@ -39,7 +39,7 @@ columns
     submission_score_array_averages: double precision[]
     submission_score_array_variances: double precision[]
     tries_per_variant: integer default 1
-    min_continue_score_perc: double precision
+    min_advance_perc: double precision
 
 indexes
     assessment_questions_pkey: PRIMARY KEY (id) USING btree (id)

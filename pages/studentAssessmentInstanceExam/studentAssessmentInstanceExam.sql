@@ -14,7 +14,7 @@ SELECT
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
     (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count,
     instance_questions_check_sequence_blocked(iq.id) AS sequence_blocked,
-    instance_questions_determine_unblock_score_perc(lag(iq.id) OVER w) AS prev_iq_mincontsp,
+    instance_questions_determine_unblock_score_perc(lag(iq.id) OVER w) AS prev_iq_min_advance_perc,
     'Question ' || (lag(qo.question_number) OVER w) AS prev_iq_title
 FROM
     instance_questions AS iq

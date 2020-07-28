@@ -8,7 +8,7 @@ DECLARE
     ai_id bigint;
     prev_iq_id bigint;
     prev_iq_highest_submission_score double precision;
-    relevant_mincontsp double precision;
+    relevant_min_advance_perc double precision;
     prev_iq_score_met boolean;
 
 BEGIN
@@ -42,12 +42,17 @@ BEGIN
         RETURN false;
     END IF;
 
-    -- 2. Store the lowest-level non-null `min_continue_score_perc`
-    SELECT instance_questions_determine_unblock_score_perc(prev_iq_id) INTO relevant_mincontsp;
+    -- Treat null as 0 for comparison logic
+    IF prev_iq_highest_submission_score IS NULL THEN
+        SELECT 0 INTO prev_iq_highest_submission_score;
+    END IF;
+
+    -- 2. Store the lowest-level non-null `min_advance_perc`
+    SELECT instance_questions_determine_unblock_score_perc(prev_iq_id) INTO relevant_min_advance_perc;
 
     -- 3. Don't block if the score of the previous question
     -- is greater than or equal to the minimum score to continue.
-    SELECT (prev_iq_highest_submission_score >= relevant_mincontsp) INTO prev_iq_score_met;
+    SELECT (prev_iq_highest_submission_score >= relevant_min_advance_perc) INTO prev_iq_score_met;
     RETURN NOT prev_iq_score_met;
 END;
 $$ LANGUAGE plpgsql STABLE;

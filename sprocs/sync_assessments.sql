@@ -44,7 +44,7 @@ BEGIN
             allow_issue_reporting,
             allow_real_time_grading,
             require_honor_code,
-            min_continue_score_perc)
+            min_advance_perc)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -66,7 +66,7 @@ BEGIN
                 (assessment->>'allow_issue_reporting')::boolean,
                 (assessment->>'allow_real_time_grading')::boolean,
                 (assessment->>'require_honor_code')::boolean,
-                (assessment->>'min_continue_score_perc')::double precision
+                (assessment->>'min_advance_perc')::double precision
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -87,7 +87,7 @@ BEGIN
             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
             allow_real_time_grading = EXCLUDED.allow_real_time_grading,
             require_honor_code = EXCLUDED.require_honor_code,
-            min_continue_score_perc = EXCLUDED.min_continue_score_perc
+            min_advance_perc = EXCLUDED.min_advance_perc
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
@@ -169,7 +169,7 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
-                min_continue_score_perc
+                min_advance_perc
             )
             VALUES (
                 new_assessment_id,
@@ -178,7 +178,7 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
-                (zone->>'min_continue_score_perc')::double precision
+                (zone->>'min_advance_perc')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
@@ -186,7 +186,7 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
-                min_continue_score_perc = EXCLUDED.min_continue_score_perc
+                min_advance_perc = EXCLUDED.min_advance_perc
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -194,20 +194,20 @@ BEGIN
                 INSERT INTO alternative_groups (
                     number,
                     number_choose,
-                    min_continue_score_perc,
+                    min_advance_perc,
                     assessment_id,
                     zone_id
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
-                    (alternative_group->>'min_continue_score_perc')::integer,
+                    (alternative_group->>'min_advance_perc')::integer,
                     new_assessment_id,
                     new_zone_id
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
                     zone_id = EXCLUDED.zone_id,
-                    min_continue_score_perc = EXCLUDED.min_continue_score_perc
+                    min_advance_perc = EXCLUDED.min_advance_perc
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -224,7 +224,7 @@ BEGIN
                         question_id,
                         alternative_group_id,
                         number_in_alternative_group,
-                        min_continue_score_perc
+                        min_advance_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
@@ -237,7 +237,7 @@ BEGIN
                         (assessment_question->>'question_id')::bigint,
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
-                        (assessment_question->>'min_continue_score_perc')::double precision
+                        (assessment_question->>'min_advance_perc')::double precision
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -250,7 +250,7 @@ BEGIN
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
-                        min_continue_score_perc = EXCLUDED.min_continue_score_perc
+                        min_advance_perc = EXCLUDED.min_advance_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
                 END LOOP;

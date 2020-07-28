@@ -5,7 +5,7 @@ columns
     max_points: double precision
     number: integer
     number_choose: integer
-    min_continue_score_perc: double precision
+    min_advance_perc: double precision
     title: text
 
 indexes

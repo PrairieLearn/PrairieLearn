@@ -9,22 +9,22 @@ CREATE OR REPLACE FUNCTION
         iq_id bigint
     ) RETURNS double precision AS $$
 DECLARE
-    ret_mincontsp double precision;
-    a_mincontsp double precision;
-    prev_z_mincontsp double precision;
-    prev_ag_mincontsp double precision;
-    prev_aq_mincontsp double precision;
+    ret_min_advance_perc double precision;
+    a_min_advance_perc double precision;
+    prev_z_min_advance_perc double precision;
+    prev_ag_min_advance_perc double precision;
+    prev_aq_min_advance_perc double precision;
 BEGIN
     SELECT
-        a.min_continue_score_perc,
-        z.min_continue_score_perc,
-        ag.min_continue_score_perc,
-        aq.min_continue_score_perc
+        a.min_advance_perc,
+        z.min_advance_perc,
+        ag.min_advance_perc,
+        aq.min_advance_perc
     INTO
-        a_mincontsp,
-        prev_z_mincontsp,
-        prev_ag_mincontsp,
-        prev_aq_mincontsp
+        a_min_advance_perc,
+        prev_z_min_advance_perc,
+        prev_ag_min_advance_perc,
+        prev_aq_min_advance_perc
     FROM instance_questions iq
         JOIN assessment_questions aq ON (aq.id = iq.assessment_question_id)
         JOIN alternative_groups ag ON (ag.id = aq.alternative_group_id)
@@ -32,21 +32,21 @@ BEGIN
         JOIN assessments a ON (a.id = aq.assessment_id)
     WHERE iq.id = iq_id;
 
-    -- Store the lowest-level non-null `min_continue_score_perc`
-    SELECT 0 INTO ret_mincontsp;
-    IF a_mincontsp IS NOT NULL THEN
-        SELECT a_mincontsp INTO ret_mincontsp;
+    -- Store the lowest-level non-null `min_advance_perc`
+    SELECT 0 INTO ret_min_advance_perc;
+    IF a_min_advance_perc IS NOT NULL THEN
+        SELECT a_min_advance_perc INTO ret_min_advance_perc;
     END IF;
-    IF prev_z_mincontsp IS NOT NULL THEN
-        SELECT prev_z_mincontsp INTO ret_mincontsp;
+    IF prev_z_min_advance_perc IS NOT NULL THEN
+        SELECT prev_z_min_advance_perc INTO ret_min_advance_perc;
     END IF;
-    IF prev_ag_mincontsp IS NOT NULL THEN
-        SELECT prev_ag_mincontsp INTO ret_mincontsp;
+    IF prev_ag_min_advance_perc IS NOT NULL THEN
+        SELECT prev_ag_min_advance_perc INTO ret_min_advance_perc;
     END IF;
-    IF prev_aq_mincontsp IS NOT NULL THEN
-        SELECT prev_aq_mincontsp INTO ret_mincontsp;
+    IF prev_aq_min_advance_perc IS NOT NULL THEN
+        SELECT prev_aq_min_advance_perc INTO ret_min_advance_perc;
     END IF;
 
-    RETURN ret_mincontsp;
+    RETURN ret_min_advance_perc;
 END;
 $$ LANGUAGE plpgsql STABLE;

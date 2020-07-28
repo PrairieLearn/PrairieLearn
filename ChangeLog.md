@@ -97,7 +97,7 @@
 
   * Add Python library regex to plbase (Nathan Bowman).
 
-  * Add `sequence` attribute to assessment zones to force students to complete questions in-order (David Mitchell).
+  * Add `minAdvancePerc` attribute to assessment configs to force students to complete questions in-order (David Mitchell).
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
