@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION
 DECLARE
     ai_id bigint;
     prev_iq_id bigint;
-    prev_iq_score_perc double precision;
+    prev_iq_highest_submission_score double precision;
     relevant_mincontsp double precision;
     prev_iq_score_met boolean;
 
@@ -18,12 +18,12 @@ BEGIN
     WHERE iq.id = iq_id;
 
     -- 1. Get the id and score_perc of the previous instance question in the assessment.
-    SELECT _prev_iq_id, _prev_iq_score_perc INTO prev_iq_id, prev_iq_score_perc
+    SELECT _prev_iq_id, _prev_iq_highest_submission_score INTO prev_iq_id, prev_iq_highest_submission_score
     FROM (
         SELECT
             iq.id AS cur_iq,
             (lag(iq.id) OVER w) AS _prev_iq_id,
-            (lag(iq.score_perc) OVER w) AS _prev_iq_score_perc
+            (lag(iq.highest_submission_score) OVER w) AS _prev_iq_highest_submission_score
         FROM
             assessment_instances AS ai
             JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -47,7 +47,7 @@ BEGIN
 
     -- 3. Don't block if the score of the previous question
     -- is greater than or equal to the minimum score to continue.
-    SELECT (prev_iq_score_perc >= relevant_mincontsp) INTO prev_iq_score_met;
+    SELECT (prev_iq_highest_submission_score >= relevant_mincontsp) INTO prev_iq_score_met;
     RETURN NOT prev_iq_score_met;
 END;
 $$ LANGUAGE plpgsql STABLE;
