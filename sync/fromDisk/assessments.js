@@ -68,7 +68,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
-            min_advance_perc: assessment.minContinueScorePerc,
+            min_advance_perc: assessment.minAdvancePerc,
         };
 
         const allowAccess = assessment.allowAccess || [];
@@ -97,7 +97,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 number_choose: zone.numberChoose,
                 max_points: zone.maxPoints,
                 best_questions: zone.bestQuestions,
-                min_advance_perc: zone.minContinueScorePerc,
+                min_advance_perc: zone.minAdvancePerc,
             };
         });
 
@@ -133,7 +133,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
                                 : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                             triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
-                            minContinueScorePerc: alternative.minContinueScorePerc,
+                            minAdvancePerc: alternative.minAdvancePerc,
                         };
                     });
                 }
@@ -147,7 +147,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                             points: question.points,
                             forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false,
                             triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : 1,
-                            minContinueScorePerc: question.minContinueScorePerc,
+                            minAdvancePerc: question.minAdvancePerc,
                         },
                     ];
                 } else {
@@ -190,7 +190,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                 const alternativeGroupParams = {
                     number: alternativeGroupNumber,
                     number_choose: question.numberChoose,
-                    min_advance_perc: question.minContinueScorePerc,
+                    min_advance_perc: question.minAdvancePerc,
                 };
 
                 alternativeGroupParams.questions = alternatives.map((alternative, alternativeIndex) => {
@@ -210,7 +210,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
                         tries_per_variant: alternative.triesPerVariant,
                         question_id: questionId,
                         number_in_alternative_group: alternativeIndex + 1,
-                        min_advance_perc: alternative.minContinueScorePerc,
+                        min_advance_perc: alternative.minAdvancePerc,
                     };
 
                 });

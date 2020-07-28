@@ -93,8 +93,8 @@
             "type": "boolean",
             "default": true
         },
-        "minContinueScorePerc": {
-            "$ref": "#/definitions/minContinueScorePerc"
+        "minAdvancePerc": {
+            "$ref": "#/definitions/minAdvancePerc"
         }
     },
     "definitions": {
@@ -211,8 +211,8 @@
                         "$ref": "#/definitions/zoneQuestion"
                     }
                 },
-                "minContinueScorePerc": {
-                    "$ref": "#/definitions/minContinueScorePerc"
+                "minAdvancePerc": {
+                    "$ref": "#/definitions/minAdvancePerc"
                 }
             },
             "required": [
@@ -253,8 +253,8 @@
                     "type": "number",
                     "default": 1
                 },
-                "minContinueScorePerc": {
-                    "$ref": "#/definitions/minContinueScorePerc"
+                "minAdvancePerc": {
+                    "$ref": "#/definitions/minAdvancePerc"
                 }
             }
         },
@@ -278,8 +278,8 @@
                     "type": "number",
                     "default": 1
                 },
-                "minContinueScorePerc": {
-                    "$ref": "#/definitions/minContinueScorePerc"
+                "minAdvancePerc": {
+                    "$ref": "#/definitions/minAdvancePerc"
                 }
             }
         },
@@ -316,7 +316,7 @@
             "type": "boolean",
             "default": false
         },
-        "minContinueScorePerc": {
+        "minAdvancePerc": {
             "description": "Minimum score percentage to unlock access to subsequent questions",
             "type": "number",
             "minimum": 0,

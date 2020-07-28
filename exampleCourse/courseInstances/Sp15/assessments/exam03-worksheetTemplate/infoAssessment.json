@@ -12,9 +12,9 @@
     ],
     "zones": [
         {
-            "minContinueScorePerc": 80,
+            "minAdvancePerc": 80,
             "questions": [
-                {"id": "demoNewton-page1", "points": [5,4,3,2,1], "minContinueScorePerc": 50},
+                {"id": "demoNewton-page1", "points": [5,4,3,2,1], "minAdvancePerc": 50},
                 {"id": "demoNewton-page2", "points": [5,4,3,2,1]}
             ]
         }
