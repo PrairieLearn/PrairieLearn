@@ -838,6 +838,9 @@ Attribute | Type | Default | Description
 `check-indentation`| boolean | `true` | Whether check the indentation
 `header-left-column`| string | `Drag from here` | Initial the header of the left column
 `header-right-column`| string| `construct your solution here` |  Initial the header of the right column
+`file-name`|string|None| The file name of the user code
+`leading-code`|string|None| The file name of the leading code
+`trailing-code`|string|None| The file name of the trailing code
 
 ### Details
 
@@ -846,7 +849,9 @@ This element using Parson method to make a shuffle list of things to display and
 
 ### Example Implementations
 
-- [elementParsons]
+- [element/parsons]
+- [demo/autograder/python/parson-simple-example]
+- [demo/autograder/python/parsonInput]
 
 
 ## Decorative Elements
@@ -1701,6 +1706,8 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
 [demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
 [demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
+[demo/autograder/python/parson-simple-example]:https://github.com/PrairieLearn/PrairieLearn/tree/pl-parsons-problem/exampleCourse/questions/demo/autograder/python/parson-simple-example
+[demo/autograder/python/parsonInput]:https://github.com/PrairieLearn/PrairieLearn/tree/pl-parsons-problem/exampleCourse/questions/demo/autograder/python/parsonInput
 
 [demo/manualGrade/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGrade/codeUpload
 
@@ -1743,3 +1750,4 @@ The provided `script-name` corresponds to a file located within the director for
 [element/symbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
+[element/parsons]:https://github.com/PrairieLearn/PrairieLearn/tree/pl-parsons-problem/exampleCourse/questions/element/parsons

@@ -2,10 +2,11 @@ import prairielearn as pl
 import lxml.html
 import random
 import base64
+import os
 DEFAULT_CHECK_INDENTATION = False
 
 
-def getAnswer(submitted, pieces):
+def getallAnswer(submitted, pieces, leading_code, trailing_code):
     if submitted == '':
         return ''
     answer = ''
@@ -13,7 +14,31 @@ def getAnswer(submitted, pieces):
         piece_no, indent = piece.split(':')
         indent = int(indent)
         piece_no = int(piece_no)
-        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n'
+        answer = leading_code + '\n' + answer + ('    ' * indent) + pieces[piece_no] + '\n' + trailing_code + '\n'
+    return answer
+
+
+def gettarilAnswer(submitted, pieces, trailing_code):
+    if submitted == '':
+        return ''
+    answer = ''
+    for piece in submitted.split('-'):
+        piece_no, indent = piece.split(':')
+        indent = int(indent)
+        piece_no = int(piece_no)
+        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n' + trailing_code + '\n'
+    return answer
+
+
+def getleadAnswer(submitted, pieces, leading_code):
+    if submitted == '':
+        return ''
+    answer = ''
+    for piece in submitted.split('-'):
+        piece_no, indent = piece.split(':')
+        indent = int(indent)
+        piece_no = int(piece_no)
+        answer = leading_code + '\n' + answer + ('    ' * indent) + pieces[piece_no] + '\n'
     return answer
 # answers are submitted using the following form:    a:b-c:d-e:f
 # where a, c, and e are indices into the list of pieces given by the problem, and
@@ -84,7 +109,7 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column', 'file-name']
+    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column', 'file-name', 'leading-code', 'trailing-code']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -224,12 +249,28 @@ def parse(element_html, data):
     num_pieces = len(data['params'].get(name, []))
     pieces = data['params'].get(name, [])
     file_name = pl.get_string_attrib(element, 'file-name', None)
+    leading_code = pl.get_string_attrib(element, 'leading-code', None)
+    trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
+    base_path = data['options']['question_path']
+    if leading_code is not None:
+        file_lead_path = os.path.join(base_path, leading_code)
+        with open(file_lead_path, 'r') as file:
+            leadingnew_code = file.read()
+    if trailing_code is not None:
+        file_trail_path = os.path.join(base_path, trailing_code)
+        with open(file_trail_path, 'r') as file:
+            trailnewx_code = file.read()
     if file_name is not None:
-        file_data = getAnswer(submitted, pieces)
-        data['submitted_answers']['_files'] = [{
-            'name': file_name,
-            'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
-        }]
+        if leading_code is not None and trailing_code is not None:
+            file_data = getallAnswer(submitted, pieces, leadingnew_code, trailnewx_code)
+        if leading_code is None and trailing_code is not None:
+            file_data = gettarilAnswer(submitted, pieces, trailnewx_code)
+        if leading_code is not None and trailing_code is None:
+            file_data = getleadAnswer(submitted, pieces, leadingnew_code)
+            data['submitted_answers']['_files'] = [{
+                'name': file_name,
+                'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
+            }]
     if num_pieces == 0:
         raise Exception('number of pieces is zero')
     if len(submitted) == 0:
