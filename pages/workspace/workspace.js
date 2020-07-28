@@ -57,22 +57,20 @@ module.exports.init = function(callback) {
 };
 
 router.get('/:workspace_id', (req, res, next) => {
-    res.locals.workspace_id = req.params.workspace_id;
+    const workspace_id = req.params.workspace_id;
+    res.locals.workspace_id = workspace_id;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 
-    const params = {
-        workspace_id: res.locals.workspace_id,
-    };
     async.series([
         (callback) => {
-            sqldb.queryOneRow(sql.select_workspace_paths, params, function(err, result) {
+            sqldb.queryOneRow(sql.select_workspace_paths, {workspace_id}, function(err, result) {
                 if (ERR(err, callback)) return;
 
                 const course_path = result.rows[0].course_path;
                 const question_qid = result.rows[0].question_qid;
 
                 const workspaceLocalPath = `${course_path}/questions/${question_qid}/workspace`;
-                const workspaceS3Path = `${config.workspaceS3Bucket}/workspace-${params.workspace_id}`;
+                const workspaceS3Path = `${config.workspaceS3Bucket}/workspace-${workspace_id}`;
 
                 console.log(`[workspace.js] syncing ${workspaceLocalPath} to ${workspaceS3Path}`);
                 s3Sync(workspaceLocalPath, workspaceS3Path);
@@ -81,10 +79,11 @@ router.get('/:workspace_id', (req, res, next) => {
         },
         (callback) => {
             // TODO: add locking
-            sqldb.query(sql.update_workspace_state, params, function(err, _result) {
+            const state = 'launching';
+            sqldb.call('workspaces_state_update', [workspace_id, state], function(err, _result) {
                 if (ERR(err, callback)) return;
-                console.log(`[workspace.js] set workspaces.state to 'stopped'`);
-                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id: req.params.workspace_id, state: 'launching'});
+                console.log(`[workspace.js] set workspaces.state to '${state}'`);
+                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id, state});
                 callback(null);
             });
         },

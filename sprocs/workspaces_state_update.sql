@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION
     workspaces_state_update(
         workspace_id bigint,
-        workspace_state text,
+        workspace_state text
     ) returns void
 AS $$
 BEGIN
