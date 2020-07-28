@@ -504,10 +504,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/tags', 
     function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
     require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/grading', [
-    function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
-    require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
-]);
 app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_edit', [
     function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
     require('./pages/instructorFileEditor/instructorFileEditor'),
@@ -776,10 +772,6 @@ app.use('/pl/course/:course_id/course_admin/topics', [
 app.use('/pl/course/:course_id/course_admin/tags', [
     function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
     require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
-]);
-app.use('/pl/course/:course_id/course_admin/grading', [
-    function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
-    require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
 ]);
 app.use('/pl/course/:course_id/course_admin/file_edit', [
     function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
