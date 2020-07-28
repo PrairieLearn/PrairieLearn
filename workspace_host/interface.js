@@ -143,7 +143,6 @@ app.listen(port, () => console.log(`Listening on http://${config.workspaceNative
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
 watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
-    console.log(`watch: ${filename}, ${eventType}`);
     if (filename in update_queue && update_queue[filename] == 'skip' && eventType == 'update') {
         delete update_queue[filename];
     } else {
@@ -152,30 +151,40 @@ watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
 });
 setInterval(_autoUpdateJobManager, 5000);
 
-
-function _getAvailablePort(workspace_id, curPort, callback) {
-    if (curPort > 65535) {
-        callback('No available port at this time.');
-        return;
-    }
-    var server = net.createServer();
-    server.listen(curPort, function (err) {
-        if (ERR(err, callback)) return;
-        server.once('close', function () {
-            if (curPort in port_id_mapper) {
-                _getAvailablePort(workspace_id, curPort + 1, callback);
-            } else {
-                callback(null, curPort);
-            }
+function _checkPortAvailability(port) {
+    return new Promise((res) => {
+        var server = net.createServer();
+        server.listen(port, function (err) {
+            server.once('close', function () {
+                res(true);
+            });
+            server.close();
         });
-        server.close();
-    });
-    server.on('error', function (err) {
-        if (ERR(err, callback)) return;
-        _getAvailablePort(workspace_id, curPort + 1, callback);
-        return;
-    });
+        server.on('error', function (err) {
+            res(false);
+        });
+    })
+    
 }
+
+async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
+    for (var i = lowest_usable_port; i < 65535; i++) {
+        if (i in id_workspace_mapper) {
+            continue;
+        } else {
+            if (await _checkPortAvailability(i)) {
+                if (!(workspace_id in id_workspace_mapper)) {
+                    id_workspace_mapper[workspace_id] = {};     // To prevent race condition
+                }
+                id_workspace_mapper[workspace_id].port = i;
+                callback(null, i);
+                return;
+            }; 
+        };
+    };
+    callback('No available port at this time.');
+    return;
+};
 
 function _checkServer(workspace_id, container, callback) {
     const checkMilliseconds = 500;
