@@ -12,6 +12,7 @@ const logger = require('../lib/logger');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const watch = require('node-watch');
 var net = require('net');
+const { v4: uuidv4 } = require('uuid');
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
@@ -335,17 +336,48 @@ function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
     return ret;
 }
 
+// Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
+function _getWorkspaceByPath(path) {
+    let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
+    const localName = localPath.shift();
+    localPath = localPath.join('/');
+
+    if (typeof id_workspace_mapper === 'undefined') {
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
+        return;
+    }
+    const workspace_id = Object.keys(id_workspace_mapper).find(
+        key => id_workspace_mapper[key].localName === localName
+    );
+    
+    return {workspace_id, localPath}
+}
+
 function _autoUpdateJobManager() {
     var jobs = [];
     console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const path in update_queue) {
+        const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
+        let s3Path;
+        if (!workspace_id) {
+            logger.info(`watch return: workspace_id not mapped yet`)
+            return;
+        } else if (localPath === '') {
+            logger.info(`watch continue: empty (root) path`)
+            continue;
+        } else {
+            s3Path = `workspace-${workspace_id}/${localPath}`;
+            logger.info(`watch s3Path: ${s3Path}`)
+        }
+
         if (update_queue[path] == 'update') {
             jobs.push((mockCallback) => {
-                _uploadToS3(path, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+                _uploadToS3(path, s3Path, mockCallback);
             });
         } else if (update_queue[path] == 'remove') {
             jobs.push((mockCallback) => {
-                _deleteFromS3(path, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+                _deleteFromS3(path, s3Path, mockCallback);
             });
         }
     }
@@ -391,8 +423,9 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 }
 
 function _syncPullContainer(workspace_id, callback) {
-    const workspaceName= `workspace-${workspace_id}`;
-    _recursiveDownloadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName, (err, jobs_params) => {
+    const localName = id_workspace_mapper[workspace_id].localName;
+    const s3Name = id_workspace_mapper[workspace_id].s3Name;
+    _recursiveDownloadJobManager(`${workspacePrefix}/${localName}`, s3Name, (err, jobs_params) => {
         if (err) {
             callback(err);
             return;
@@ -462,15 +495,19 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _getContainer(workspace_id, callback) {
-    var container = docker.getContainer('workspace-' + workspace_id);
+    const localName = id_workspace_mapper[workspace_id].localName
+    const container = docker.getContainer(localName);
     callback(null, workspace_id, container);
 }
 
 function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
-    const workspaceName = `workspace-${workspace_id}`;
+
+    const localName = id_workspace_mapper[workspace_id].localName;
+    logger.info(`_createContainer localName=${localName}`);
+
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
-    const workspacePath = path.join(workspaceDir, workspaceName);
+    const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     logger.info(`Workspace path is configed to: ${workspacePath}`);
     logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
@@ -505,7 +542,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             PidsLimit: 1024,
         },
         Cmd: args, // FIXME: proper arg parsing
-        name: workspaceName,
+        name: localName,
         Volumes: {
             [containerPath]: {},
           },
@@ -518,9 +555,6 @@ function _createContainer(workspace_id, port, settings, callback) {
                 callback(err);
             }
         } else {
-            if (!(workspace_id in id_workspace_mapper)) {
-                id_workspace_mapper[workspace_id] = {};
-            }
             id_workspace_mapper[workspace_id].port = port;
             id_workspace_mapper[workspace_id].settings = settings;
             port_id_mapper[port] = workspace_id;
@@ -573,6 +607,13 @@ function _stopContainer(workspace_id, container, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, res) {
+    if (!(workspace_id in id_workspace_mapper)) {
+        id_workspace_mapper[workspace_id] = {};
+        id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
+        id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+        logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
+    }
+    
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
         _getContainerSettings,
