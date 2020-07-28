@@ -82,7 +82,7 @@ router.get('/:workspace_id', (req, res, next) => {
             const state = 'launching';
             sqldb.call('workspaces_state_update', [workspace_id, state], function(err, _result) {
                 if (ERR(err, callback)) return;
-                console.log(`[workspace.js] set workspaces.state to '${state}'`);
+                logger.info(`[workspace.js] set workspaces.state to '${state}'`);
                 socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id, state});
                 callback(null);
             });
@@ -100,7 +100,13 @@ router.get('/:workspace_id/:action', (req, res, next) => {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
         workspace.controlContainer(workspace_id, 'destroy', (err) => {
             if (ERR(err, next)) return;
-            res.redirect(`/workspace/${workspace_id}`);
+            const state = 'stopped';
+            sqldb.call('workspaces_state_update', [workspace_id, state], function(err, _result) {
+                if (ERR(err, e => logger.error(e))) return;
+                logger.info(`[workspace.js] set workspaces.state to '${state}'`);
+                socketServer.io.of('/workspace').to(req.params.workspace_id).emit('change:state', {workspace_id, state});
+                res.redirect(`/workspace/${workspace_id}`);
+            });
         });
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
