@@ -58,7 +58,9 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
                 workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
                 workspace_args: (q.workspaceOptions && q.workspaceOptions.args),
+                workspace_home: (q.workspaceOptions && q.workspaceOptions.home),
                 workspace_graded_files: (q.workspaceOptions && q.workspaceOptions.gradedFiles),
+                workspace_url_rewrite: (q.workspaceOptions && q.workspaceOptions.rewriteUrl),
             };
         });
 
