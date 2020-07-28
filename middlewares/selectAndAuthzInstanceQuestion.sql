@@ -63,7 +63,8 @@ authorized_questions AS (
                 WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
                 ELSE aq.max_points
             END,
-            'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
+            'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
+            'mincontsp', instance_questions_determine_unblock_score_perc(iq.id)
         ) AS instance_question_info,
         to_jsonb(aq) AS assessment_question,
         to_jsonb(q) AS question,
@@ -71,8 +72,7 @@ authorized_questions AS (
         to_jsonb(aset) AS assessment_set,
         to_jsonb(aai) AS authz_result,
         assessment_instance_label(ai, a, aset) AS assessment_instance_label,
-        fl.list AS file_list,
-        z.sequence_score_perc_threshold AS zone_sequence_score_perc_threshold
+        fl.list AS file_list
     FROM
         instance_questions AS iq
         JOIN instance_questions_info AS iqi ON (iqi.id = iq.id)
