@@ -185,7 +185,8 @@ function _checkServer(workspace_id, container, callback) {
     function checkWorkspace() {
         request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
-            if (res && res.statusCode == 200) {
+            if (res && res.statusCode) {
+                /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
                 callback(null, workspace_id, container);
             } else {
                 const endTime = (new Date()).getTime();
