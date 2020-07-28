@@ -143,7 +143,7 @@ app.listen(port, () => console.log(`Listening on http://${config.workspaceNative
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
 watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
-    console.log(filename, eventType);
+    console.log(`watch: ${filename}, ${eventType}`);
     if (filename in update_queue && update_queue[filename] == 'skip' && eventType == 'update') {
         delete update_queue[filename];
     } else {
@@ -261,7 +261,7 @@ function _uploadToS3(filePath, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(filePath + ' uploaded!');
+        console.log(`watch: ${filePath} uploaded!`);
         callback(null, 'OK');
     });
 }
@@ -277,7 +277,7 @@ function _deleteFromS3(filePath, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(filePath + ' deleted!');
+        console.log(`watch: ${filePath} deleted!`);
         callback(null, 'OK');
     });
 }
@@ -337,7 +337,7 @@ function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
 
 function _autoUpdateJobManager() {
     var jobs = [];
-    console.log(update_queue);
+    console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const path in update_queue) {
         if (update_queue[path] == 'update') {
             jobs.push((mockCallback) => {
