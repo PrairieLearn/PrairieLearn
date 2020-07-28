@@ -28,13 +28,14 @@
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+                <th>Min. Advancement Score Perc</th>
               </tr>
             </thead>
             <tbody>
               <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="9">
+                <th colspan="10">
                   <span class="mr-1">Zone <%= question.zone_number %>. <%= question.zone_title %></span>
                   <span class="badge border">
                     <% if (question.zone_number_choose == null) { %>
@@ -56,7 +57,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="9">
+                <td colspan="10">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
@@ -121,6 +122,9 @@
                   <%- include('../partials/assessment', {assessment: assessment}); %>
                   <% }); %>
                   <% } %>
+                </td>
+                <td <% if (!question.assessment_question_unlock_score_perc) { %>class="text-muted"<% } %> >
+                  <%= question.assessment_question_unlock_score_perc %>%
                 </td>
               </tr>
               <% }); %>
