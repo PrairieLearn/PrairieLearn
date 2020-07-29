@@ -125,7 +125,7 @@
               <tr>
                 <% if (assessment.group_work) { %>
                   <td><%= row.group_name %></td>
-                  <td><%= row.uid_list %></td>
+                  <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
                 <% } else { %>
                 <td><%= row.uid %></td>
                 <td><%= row.name %></td>
