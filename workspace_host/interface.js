@@ -286,20 +286,6 @@ function _getContainerSettings(workspace_id, callback) {
     });
 }
 
-// function _fsAsyncCallWrapper(func, ...rest) {
-//     return new Promise(res => {
-//         rest.push((err, ret) => {
-//             if (err) {
-//                 console.log(err);
-//                 res(null);
-//             } else {
-//                 res(ret);
-//             }
-//         });
-//         func.apply(this, rest);
-//     });
-// }
-
 async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
     const s3 = new AWS.S3();
     let body;
