@@ -3,9 +3,9 @@ columns
     best_questions: integer
     id: bigint not null default nextval('zones_id_seq'::regclass)
     max_points: double precision
+    min_advance_perc: double precision
     number: integer
     number_choose: integer
-    min_advance_perc: double precision
     title: text
 
 indexes

@@ -10,6 +10,7 @@ columns
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_points: double precision
     mode: enum_mode
+    min_advance_perc: double precision
     multiple_instance: boolean
     number: text
     obj: jsonb
@@ -22,7 +23,6 @@ columns
     title: text
     type: enum_assessment_type
     uuid: uuid not null
-    min_advance_perc: double precision
 
 indexes
     assessments_pkey: PRIMARY KEY (id) USING btree (id)
