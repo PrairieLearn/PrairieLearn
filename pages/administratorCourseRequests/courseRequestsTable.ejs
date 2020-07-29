@@ -39,24 +39,26 @@
                         <td class="align-middle"><%- include('courseRequestStatusIcon', { status: req.status }) %></td>
                         <% if (locals.show_all) { %> <td class="align-middle"><%= (req.approved_by_name || 'Automatically Approved') %> </td> <% } %>
                         <td class="align-middle">
-                            <form name="approve-request-form-<%= req.id %>" method="POST">
-                                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                <input type="hidden" name="__action" value="approve_deny_course_request">
-                                <input type="hidden" name="request_id" value="<%= req.id %>">
+                            <% if (req.status !== 'approved') { %>
+                                <form name="approve-request-form-<%= req.id %>" method="POST">
+                                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                    <input type="hidden" name="__action" value="approve_deny_course_request">
+                                    <input type="hidden" name="request_id" value="<%= req.id %>">
 
-                                <button type="submit" class="btn btn-sm btn-danger float-right"
-                                        name="approve_deny_action" value="deny" tabindex="0">
-                                    <i class="fa fa-times" aria-hidden="true"></i> Deny
-                                </button>
-                                <button type="button" class="btn btn-sm btn-success float-right mr-2" id="approve-request-button-<%= req.id %>"
-                                        name="approve_deny_action" value="approve" tabindex="0"
-                                        data-toggle="popover" data-container="body"
-                                        data-html="true" data-placement="auto" title="Approve course request"
-                                        data-content="<%= include('courseRequestApproveForm', {request: req, id: 'approve-request-button-' + req.id}) %>"
-                                        data-trigger="manual" onclick="$(this).popover('show')">
-                                    <i class="fa fa-check" aria-hidden="true"></i> Approve
-                                </button>
-                            </form>
+                                    <button type="submit" class="btn btn-sm btn-danger float-right"
+                                            name="approve_deny_action" value="deny" tabindex="0">
+                                        <i class="fa fa-times" aria-hidden="true"></i> Deny
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-success float-right mr-2" id="approve-request-button-<%= req.id %>"
+                                            name="approve_deny_action" value="approve" tabindex="0"
+                                            data-toggle="popover" data-container="body"
+                                            data-html="true" data-placement="auto" title="Approve course request"
+                                            data-content="<%= include('courseRequestApproveForm', {request: req, id: 'approve-request-button-' + req.id}) %>"
+                                            data-trigger="manual" onclick="$(this).popover('show')">
+                                        <i class="fa fa-check" aria-hidden="true"></i> Approve
+                                    </button>
+                                </form>
+                            <% } %>
                         </td>
                         <td class="align-middle">
                             <% if (req.jobs.length > 0) { %>

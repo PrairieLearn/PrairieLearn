@@ -99,13 +99,13 @@ router.post('/', function(req, res, next) {
                                 github_user: github_user.length > 0 ? github_user : null,
                                 course_request_id: creq_id,
                             };
-                            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, repo) => {
+                            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job) => {
                                 if (ERR(err, () => {logger.error(err);})) return;
 
                                 /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
                                 opsbot.sendCourseRequestMessage(
                                     `*Automatically creating course*\n` +
-                                    `Course repo: ${repo}\n` +
+                                    `Course repo: ${repo_short_name}\n` +
                                     `Course rubric: ${short_name}\n` +
                                     `Course title: ${title}\n` +
                                     `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +

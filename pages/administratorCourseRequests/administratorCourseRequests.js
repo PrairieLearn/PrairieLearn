@@ -73,7 +73,7 @@ router.post('/', (req, res, next) => {
 
                 res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
                 opsbot.sendCourseRequestMessage(
-                    `*Created course*\n` +
+                    `*Creating course*\n` +
                     `Course rubric: ${repo_options.short_name}\n` +
                     `Course title: ${repo_options.title}\n` +
                     `Approved by: ${res.locals.authn_user.name}`, (err) => {
