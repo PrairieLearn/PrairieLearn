@@ -21,9 +21,9 @@ CREATE INDEX group_configs_assessment_id_key ON group_configs (assessment_id);
 ------------------------------------------------------------------------------
 -- a random string generator for a 4-character join code suffix
 CREATE OR REPLACE FUNCTION
-    get_random_string(
+    random_string(
         IN string_length INTEGER,
-        IN possible_chars TEXT DEFAULT '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        IN possible_chars TEXT DEFAULT '0123456789'
     ) RETURNS text
 AS $$
 DECLARE
@@ -41,20 +41,21 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- one-to-many relationship for each group_configs: an assessment with a group_config has many groups
 -- groups table only stores id and names
--- unique_group_name constraint will make sure no duplicate group name in the same assessment
 CREATE TABLE IF NOT EXISTS groups (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances(id) ON DELETE CASCADE ON UPDATE CASCADE,
     name TEXT NOT NULL,      -- visible name of the group; alpha & number only; no space or special character
-    join_code TEXT NOT NULL DEFAULT get_random_string(4), -- random 4-character suffix join code identifier
+    join_code TEXT NOT NULL DEFAULT random_string(4), -- random 4-character suffix join code identifier
     group_config_id BIGINT REFERENCES group_configs(id) ON DELETE CASCADE ON UPDATE CASCADE,
     date timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp with time zone,
-    CONSTRAINT unique_group_name UNIQUE (group_config_id, name, deleted_at)
+    deleted_at timestamp with time zone
 );
 
 CREATE INDEX groups_course_instance_id_key ON groups (course_instance_id);
 CREATE INDEX groups_group_config_id_key ON groups (group_config_id);
+-- unique_group_name index will make sure no duplicate group name in the same assessment regardless of CAP or lowercase
+CREATE UNIQUE INDEX unique_group_name ON groups (group_config_id, lower(name))
+    WHERE deleted_at IS NULL;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------

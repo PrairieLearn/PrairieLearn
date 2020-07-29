@@ -4,12 +4,12 @@ columns
     deleted_at: timestamp with time zone
     group_config_id: bigint
     id: bigint not null default nextval('groups_id_seq'::regclass)
-    join_code: text not null default get_random_string(4)
+    join_code: text not null default random_string(4)
     name: text not null
 
 indexes
     groups_pkey: PRIMARY KEY (id) USING btree (id)
-    unique_group_name: UNIQUE (group_config_id, name, deleted_at) USING btree (group_config_id, name, deleted_at)
+    unique_group_name: USING btree (group_config_id, lower(name)) WHERE deleted_at IS NULL
     groups_course_instance_id_key: USING btree (course_instance_id)
     groups_group_config_id_key: USING btree (group_config_id)
 
