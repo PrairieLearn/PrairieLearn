@@ -122,6 +122,10 @@
             </thead>
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
+                <!-- Not showing already deleted group -->
+                <% if (assessment.group_work && !row.group_name) { %>
+                  <% return; %>
+                <% } %>
               <tr>
                 <% if (assessment.group_work) { %>
                   <td><%= row.group_name %></td>
