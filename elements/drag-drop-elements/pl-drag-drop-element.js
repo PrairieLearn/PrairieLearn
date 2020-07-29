@@ -1,5 +1,4 @@
-/* eslint-env jquery */
-/* eslint-env browser */
+/* eslint-env jquery, browser */
 
 function set_answer(event) {
     /* We only care about when this function is fired
@@ -31,12 +30,11 @@ function set_answer(event) {
 function update_indent(leftDiff, id, ui) {
     if (!ui.item.parent()[0].classList.contains('dropzone')){
         //no need to support indent on MCQ option panel
-        ui.item.context.style = 'margin-left: 5px;';
+        ui.item.style = 'margin-left: 5px;';
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
-
-    var currentIndent = ui.item.context.style.marginLeft;
+    var currentIndent = ui.item[0].style.marginLeft;
     if (parseInt(currentIndent) <= 5 && leftDiff < 0){
         return; //if answer is not indented, and the student drag it left
                 // do nothing
@@ -64,7 +62,7 @@ function update_indent(leftDiff, id, ui) {
 
     }
 
-    ui.item.context.style = 'margin-left: ' + Math.max(leftDiff, 5) + 'px;';
+    ui.item[0].style = 'margin-left: ' + Math.max(leftDiff, 5) + 'px;';
 }
 
 
