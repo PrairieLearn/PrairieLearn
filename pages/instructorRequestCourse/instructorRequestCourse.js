@@ -99,7 +99,7 @@ router.post('/', function(req, res, next) {
                                 github_user: github_user.length > 0 ? github_user : null,
                                 course_request_id: creq_id,
                             };
-                            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job) => {
+                            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, _job) => {
                                 if (ERR(err, () => {logger.error(err);})) return;
 
                                 /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
