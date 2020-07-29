@@ -9,8 +9,8 @@ columns
     deleted_at: timestamp with time zone
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_points: double precision
-    mode: enum_mode
     min_advance_perc: double precision
+    mode: enum_mode
     multiple_instance: boolean
     number: text
     obj: jsonb
