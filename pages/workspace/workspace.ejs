@@ -101,7 +101,7 @@
       });
 
       socket.on('connect', () => {
-        document.getElementById('state').innerHTML = 'connected';
+        // document.getElementById('state').innerHTML = 'connected';
 
         // onclick for reloading only iframe
         document.getElementById('reload').onclick = () => {
@@ -119,6 +119,7 @@
       });
 
       socket.on('change:state', (msg) => {
+        console.log(`msg = ${JSON.stringify(msg)}`);
         if (msg.state === 'running') {
           iframe.src = `${window.location.href}/container/`;
         }

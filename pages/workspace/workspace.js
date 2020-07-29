@@ -72,7 +72,8 @@ router.get('/:workspace_id', (req, res, next) => {
             });
         },
         (callback) => {
-            workspace.updateState(workspace_id, 'launching', callback);
+            const state = 'launching';
+            workspace.updateState(workspace_id, state, callback);
         },
     ], (err) => {
         if (ERR(err, next)) return;
@@ -87,7 +88,8 @@ router.get('/:workspace_id/:action', (req, res, next) => {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
         workspace.controlContainer(workspace_id, 'destroy', (err) => {
             if (ERR(err, next)) return;
-            workspace.updateState(workspace_id, 'stopped', () => {
+            const state = 'stopped';
+            workspace.updateState(workspace_id, state, () => {
                 res.redirect(`/workspace/${workspace_id}`);
             });
         });

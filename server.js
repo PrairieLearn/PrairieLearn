@@ -26,7 +26,7 @@ const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
-const workspaceSocket = require('./lib/workspaceSocket');
+const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
 const { sqldb, migrations } = require('@prairielearn/prairielib');
 const sprocs = require('./sprocs');
@@ -1049,7 +1049,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            workspaceSocket.init(function(err) {
+            workspace.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
