@@ -284,6 +284,7 @@ function _queryContainerSettings(workspace_id, callback) {
             workspace_image: result.rows[0].workspace_image,
             workspace_port: result.rows[0].workspace_port,
             workspace_home: result.rows[0].workspace_home,
+            workspace_graded_files: result.rows[0].workspace_graded_files,
             workspace_args: result.rows[0].workspace_args || '',
             workspace_url_rewrite: url_rewrite,
         };

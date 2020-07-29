@@ -4,6 +4,7 @@ SELECT
     workspace_port,
     workspace_args,
     workspace_home,
+    workspace_graded_files,
     workspace_url_rewrite
 FROM
     questions AS q
