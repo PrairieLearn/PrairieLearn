@@ -32,8 +32,8 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// FIXME: this is duped from server.js
 async.series([
+    // FIXME: this sqldb init function is duped from server.js
     function(callback) {
         const pgConfig = {
             user: config.postgresqlUser,
@@ -52,6 +52,19 @@ async.series([
         sqldb.init(pgConfig, idleErrorHandler, function(err) {
             if (ERR(err, callback)) return;
             logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+    function(callback) {
+        const params = {
+            hostname: config.workspaceContainerLocalhost,
+            // hostname: config.workspaceNativeLocalhost,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+            if (err) {
+                logger.error('Error creating workspace_hosts row', err);
+                return;
+            }
             callback(null);
         });
     },
@@ -143,7 +156,7 @@ app.listen(port, () => console.log(`Listening on http://${config.workspaceNative
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
 watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
-    console.log(filename, eventType);
+    console.log(`watch: ${filename}, ${eventType}`);
     if (filename in update_queue && update_queue[filename] == 'skip' && eventType == 'update') {
         delete update_queue[filename];
     } else {
@@ -185,7 +198,8 @@ function _checkServer(workspace_id, container, callback) {
     function checkWorkspace() {
         request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
-            if (res && res.statusCode == 200) {
+            if (res && res.statusCode) {
+                /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
                 callback(null, workspace_id, container);
             } else {
                 const endTime = (new Date()).getTime();
@@ -261,7 +275,7 @@ function _uploadToS3(filePath, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(filePath + ' uploaded!');
+        console.log(`watch: ${filePath} uploaded!`);
         callback(null, 'OK');
     });
 }
@@ -277,7 +291,7 @@ function _deleteFromS3(filePath, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(filePath + ' deleted!');
+        console.log(`watch: ${filePath} deleted!`);
         callback(null, 'OK');
     });
 }
@@ -337,7 +351,7 @@ function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
 
 function _autoUpdateJobManager() {
     var jobs = [];
-    console.log(update_queue);
+    console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const path in update_queue) {
         if (update_queue[path] == 'update') {
             jobs.push((mockCallback) => {
