@@ -1,5 +1,5 @@
 -- Given an instance question id `iq_id`, returns a boolean that's true if an
--- assessment's zone "sequence" configuration will block user access.
+-- assessment's 'minAdvancePerc' settings should prevent user access.
 CREATE OR REPLACE FUNCTION
     instance_questions_check_sequence_blocked (
         iq_id bigint
@@ -52,7 +52,7 @@ BEGIN
 
     -- 3. Don't block if the score of the previous question
     -- is greater than or equal to the minimum score to continue.
-    SELECT (prev_iq_highest_submission_score >= relevant_min_advance_perc) INTO prev_iq_score_met;
+    SELECT (prev_iq_highest_submission_score*100 >= relevant_min_advance_perc) INTO prev_iq_score_met;
     RETURN NOT prev_iq_score_met;
 END;
 $$ LANGUAGE plpgsql STABLE;
