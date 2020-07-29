@@ -211,7 +211,7 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
     }
 
     for (var i = lowest_usable_port; i < 65535; i++) {
-        if (i in id_workspace_mapper) {
+        if (i in port_id_mapper) {
             continue;
         } else {
             if (await _checkPortAvailability(i)) {
@@ -219,6 +219,7 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
                     id_workspace_mapper[workspace_id] = {};     // To prevent race condition
                 }
                 id_workspace_mapper[workspace_id].port = i;
+                port_id_mapper[i] = workspace_id;
                 callback(null, i);
                 return;
             } 
