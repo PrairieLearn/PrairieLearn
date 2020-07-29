@@ -201,12 +201,9 @@ function _checkServer(workspace_id, container, callback) {
     setTimeout(checkWorkspace, checkMilliseconds);
 }
 
-function _queryContainerSettings(workspace_id, callback) {
+function _querySelectContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
-        if (err) {
-            logger.error('Error getting workspace settings', err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
         /* We can't use the || idiom for url_rewrite because it'll override if false */
@@ -226,10 +223,10 @@ function _queryContainerSettings(workspace_id, callback) {
     });
 }
 
-function _getContainerSettings(workspace_id, callback) {
+function _getSettingsWrapper(workspace_id, callback) {
     async.parallel({
         port: (callback) => {_getAvailablePort(workspace_id, 1024, callback);},
-        settings: (callback) => {_queryContainerSettings(workspace_id, callback);},
+        settings: (callback) => {_querySelectContainerSettings(workspace_id, callback);},
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         callback(null, workspace_id, results.port, results.settings);
@@ -462,6 +459,13 @@ async function _syncPushContainer(workspace_id, callback) {
     });
 }
 
+function _queryUpdateWorkspacePort(workspace_id, port, callback) {
+    sqldb.query(sql.update_workspace_port, {workspace_id, port}, function(err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
 function _getContainer(workspace_id, callback) {
     var container = docker.getContainer('workspace-' + workspace_id);
     callback(null, workspace_id, container);
@@ -527,8 +531,18 @@ function _createContainer(workspace_id, port, settings, callback) {
             port_id_mapper[port] = workspace_id;
             logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            callback(null, workspace_id, container);
+            callback(null, container);
         }
+    });
+}
+
+function _createContainerWrapper(workspace_id, port, settings, callback) {
+    async.parallel({
+        query: (callback) => {_queryUpdateWorkspacePort(workspace_id, port, callback);},
+        container: (callback) => {_createContainer(workspace_id, port, settings, callback);},
+    }, (err, results) => {
+        if (ERR(err, callback)) return;
+        callback(null, workspace_id, results.container);
     });
 }
 
@@ -576,8 +590,8 @@ function _stopContainer(workspace_id, container, callback) {
 function initSequence(workspace_id, res) {
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
-        _getContainerSettings,
-        _createContainer,
+        _getSettingsWrapper,
+        _createContainerWrapper,
         _startContainer,
         _checkServer,
     ], function(err) {

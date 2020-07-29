@@ -10,3 +10,10 @@ FROM
     JOIN variants AS v ON (v.question_id = q.id)
 WHERE
     v.workspace_id = $workspace_id;
+
+-- BLOCK update_workspace_port
+UPDATE workspaces AS w
+SET
+    port = $port
+WHERE
+    w.id = $workspace_id;
