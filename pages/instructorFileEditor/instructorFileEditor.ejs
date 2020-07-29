@@ -55,9 +55,9 @@
                     });
                 <% } %>
 
-                var helpBox = $('#help-<%= fileEdit.uuid %>');
-                var helpButton =  $('#help-<%= fileEdit.uuid %>-button');
-                var helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
+                const helpBox = $('#help-<%= fileEdit.uuid %>');
+                const helpButton =  $('#help-<%= fileEdit.uuid %>-button');
+                const helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
                 helpBox.on('hide.bs.collapse', function () {
                     helpButtonLabel.text('Show help');
                     helpButton.attr('aria-expanded', 'false');
