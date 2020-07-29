@@ -1,7 +1,7 @@
 -- Given an instance question id `iq_id`, returns a boolean that's true if an
 -- assessment's 'minAdvancePerc' settings should prevent user access.
 CREATE OR REPLACE FUNCTION
-    instance_questions_check_sequence_blocked (
+    instance_questions_check_sequence_locked (
         iq_id bigint
     ) RETURNS boolean AS $$
 DECLARE

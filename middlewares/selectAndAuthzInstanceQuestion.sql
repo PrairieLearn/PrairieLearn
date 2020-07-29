@@ -5,12 +5,12 @@ WITH instance_questions_info AS (
         jsonb_build_object(
             'id', (lag(iq.id) OVER w),
             'score_perc', (lag(iq.score_perc) OVER w),
-            'sequence_blocked', instance_questions_check_sequence_blocked((lag(iq.id) OVER w))
+            'sequence_blocked', instance_questions_check_sequence_locked((lag(iq.id) OVER w))
         ) AS prev_instance_question,
         jsonb_build_object(
             'id', (lead(iq.id) OVER w),
             'score_perc', (lead(iq.score_perc) OVER w),
-            'sequence_blocked', instance_questions_check_sequence_blocked((lead(iq.id) OVER w))
+            'sequence_blocked', instance_questions_check_sequence_locked((lead(iq.id) OVER w))
         ) AS next_instance_question,
         qo.question_number
     FROM
@@ -94,4 +94,4 @@ authorized_questions AS (
         AND aai.authorized
 )
 SELECT * FROM authorized_questions AS azq
-WHERE NOT instance_questions_check_sequence_blocked((azq.instance_question_info->'id')::bigint);
+WHERE NOT instance_questions_check_sequence_locked((azq.instance_question_info->'id')::bigint);
