@@ -26,7 +26,7 @@
     <% const repo_name = 'pl-' + request.short_name.replace(' ', '').toLowerCase(); %>
     <div class="form-group">
         <label for="courseRequestAddInputPath">Path:</label>
-        <input type="text" class="form-control" id="courseRequestAddInputPath" name="path" value="/data1/courses/<%= repo_name %>">
+        <input type="text" class="form-control" id="courseRequestAddInputPath" name="path" value="<%= coursesRoot %>/<%= repo_name %>">
     </div>
     <div class="form-group">
         <label for="courseRequestAddInputRepositoryName">Repository Name:</label>

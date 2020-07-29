@@ -7,6 +7,7 @@ const error = require('@prairielearn/prairielib/error');
 const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
 const cache = require('../../lib/cache');
+const config = require('../../lib/config');
 const github = require('../../lib/github');
 const opsbot = require('../../lib/opsbot');
 const logger = require('../../lib/logger');
@@ -14,6 +15,7 @@ const logger = require('../../lib/logger');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
+    res.locals.coursesRoot = config.coursesRoot;
     sqlDb.queryOneRow(sql.select, [], (err, result) => {
         if (ERR(err, next)) return;
 
