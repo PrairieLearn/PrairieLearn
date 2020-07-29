@@ -1,5 +1,7 @@
 # Lesson 2: Creating assessments
 
+- [Lesson 2 Recording](https://mediaspace.illinois.edu/media/t/1_g3stfhgp/170964131)
+
 ## Quick overview
 
 Let's take a look at some of the features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment.md).
@@ -16,9 +18,9 @@ The beginning of the `infoAssessment.json` usually looks like this:
 	"allowAccess": [
 		{
     	"role": "TA",
-    	"mode": "Public", 
+    	"mode": "Public",
     	"endDate":  "2020-05-15T23:59:59"
-		}	
+		}
 	]
 ```
 
@@ -29,7 +31,7 @@ There are two available options:
 ```json
 "type": "Homework"
 ```
-and 
+and
 
 ```json
 "type": "Exam"
@@ -63,7 +65,7 @@ There are two available options:
 ```json
 "mode": "Public"
 ```
-and 
+and
 
 ```json
 "mode": "Exam"
@@ -76,7 +78,7 @@ and
 Before you start creating your assessments, make sure you have at least 4 questions inside your course. If you don't have that yet, copy some from the example course `XC 101` as we discussed in the previous lesson.
 
 
-### Configuration 1: "Traditional" homework 
+### Configuration 1: "Traditional" homework
 
 * Use `"mode": "Public"`
 * Use `"type":"Homework"`
@@ -114,7 +116,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 ### Configuration 4: Synchronous exam using CBTF
 
 * Start from `Configuration 2`
-* Remove `startDate` and `endDate` from `allowAccess`. Instead use: 
+* Remove `startDate` and `endDate` from `allowAccess`. Instead use:
 
 ```json
 {
@@ -123,7 +125,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
     "credit": 100
 }
 ```
-You will be able to find the `examUuid` in the CBTF scheduler app.  
+You will be able to find the `examUuid` in the CBTF scheduler app.
 
 
 ## Homework 2
@@ -133,16 +135,3 @@ Continue creating questions using the elements highlighted in lesson 1. Copy the
 Use the tab for `Homework 2`. I will take a look at your question and provide feedback.
 
 You can also create one assessment as well. What options do you think will be useful for you in the Fall semester? We can provide feedback! Copy the link in the same [spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1763628636).
-
-## Video
-
-- [Lesson 2 Recording](https://mediaspace.illinois.edu/media/t/1_g3stfhgp/169265112)
-
-
-
-
-
-
-
-
-

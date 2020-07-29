@@ -1,5 +1,7 @@
 # Lesson 1: Creating simple questions
 
+- [Lesson 1 Recording](https://mediaspace.illinois.edu/media/t/1_8v9b8gqe/170964131)
+
 Choose one of the examples below, and convert the question from the "paper-pencil" format to PrairieLearn.
 
 ## Example 1:
@@ -20,9 +22,9 @@ $ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036811/preview)
+- [workshop/Lesson1\_example1\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211618/preview)
 
-- [workshop/Lesson1\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036812/preview)
+- [workshop/Lesson1\_example1\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211620/preview)
 
 
 ## Example 2:
@@ -52,7 +54,7 @@ $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1\_example2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036815/preview)
+- [workshop/Lesson1\_example2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211621/preview)
 
 
 ## Example 3:
@@ -85,11 +87,11 @@ $I_T = V_T/R_T = 0.735 A$
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson1\_example3\_v1](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036813/preview)
+- [workshop/Lesson1\_example3\_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211622/preview)
 
-- [workshop/Lesson1\_example3\_v2](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036814/preview)
+- [workshop/Lesson1\_example3\_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211624/preview)
 
-- [workshop/Lesson1\_example3\_v3](https://prairielearn.engr.illinois.edu/pl/course/146/question/8036816/preview)
+- [workshop/Lesson1\_example3\_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211623/preview)
 
 ## Homework 1
 
@@ -110,7 +112,3 @@ Create one or two questions using some of these basic elements:
 Copy the url link to your question in this spreadsheet:
 [https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing).
 Use the tab for `Homework 1`. I will take a look at your question and provide feedback.
-
-## Video
-
-- [Lesson 1 Recording](https://mediaspace.illinois.edu/media/t/1_8v9b8gqe/169265112)
