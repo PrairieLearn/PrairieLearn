@@ -3,6 +3,7 @@ columns
     authn_user_id: bigint
     course_id: bigint
     course_instance_id: bigint
+    course_request_id: bigint
     description: text
     finish_date: timestamp with time zone
     id: bigint not null default nextval('job_sequences_id_seq'::regclass)

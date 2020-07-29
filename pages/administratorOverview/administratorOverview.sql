@@ -10,6 +10,24 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
+select_course_request_jobs AS (
+    SELECT
+        cr.id,
+        count(js.start_date) AS num_jobs,
+        jsonb_agg(jsonb_build_object(
+            'start_date', js.start_date,
+            'finish_date', js.finish_date,
+            'authn_user_id', u.user_id,
+            'authn_user_name', u.name,
+            'status', js.status,
+            'id', js.id,
+            'number', js.number
+        )) AS jobs
+    FROM job_sequences AS js
+    LEFT JOIN course_requests AS cr ON cr.id = js.course_request_id
+    LEFT JOIN users AS u ON js.authn_user_id = u.user_id
+    GROUP BY cr.id
+),
 select_course_requests AS (
     SELECT
         coalesce(
@@ -20,15 +38,15 @@ select_course_requests AS (
                 'user_name', u.name,
                 'user_id', u.uid,
                 'github_user', r.github_user,
-                'status', r.approved_status
+                'status', r.approved_status,
+                'jobs', coalesce(j.jobs, '{}'::jsonb)
             )),
             '[]'::jsonb
         ) AS course_requests
-    FROM
-        course_requests AS r
-        INNER JOIN users AS u ON (u.user_id = r.user_id)
-    WHERE
-        r.approved_status = 'pending' OR r.approved_status = 'creating'
+    FROM course_requests AS r
+    INNER JOIN users AS u ON u.user_id = r.user_id
+    LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
+    WHERE r.approved_status != 'approved' AND r.approved_status != 'denied'
 ),
 select_courses AS (
     SELECT

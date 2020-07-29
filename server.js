@@ -848,6 +848,7 @@ app.use('/pl/administrator/overview', require('./pages/administratorOverview/adm
 app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
 app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
 app.use('/pl/administrator/jobSequence/', require('./pages/administratorJobSequence/administratorJobSequence'));
+app.use('/pl/administrator/courseRequests/', require('./pages/administratorCourseRequests/administratorCourseRequests'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
