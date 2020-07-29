@@ -63,10 +63,7 @@ async.series([
             // hostname: config.workspaceNativeLocalhost,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
-            if (err) {
-                logger.error('Error creating workspace_hosts row', err);
-                return;
-            }
+            if (ERR(err, callback)) return;
             callback(null);
         });
     },
@@ -269,10 +266,7 @@ function _checkServer(workspace_id, container, callback) {
 
 function _queryContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
-        if (err) {
-            logger.error('Error getting workspace settings', err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
         /* We can't use the || idiom for url_rewrite because it'll override if false */
@@ -421,9 +415,15 @@ function _getWorkspaceByPath(path) {
         logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
         return;
     }
+
     const workspace_id = Object.keys(id_workspace_mapper).find(
         key => id_workspace_mapper[key].localName === localName,
     );
+
+    if (typeof workspace_id === 'undefined') {
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
+        return;
+    }
 
     return {workspace_id, localPath};
 }
@@ -484,10 +484,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     };
 
     s3.listObjectsV2(listingParams, (err, data) => {
-        if (err) {
-            callback(err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         var contents = data['Contents'];
         var ret = [];
         contents.forEach(dict => {
@@ -505,10 +502,7 @@ function _syncPullContainer(workspace_id, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
     const s3Name = id_workspace_mapper[workspace_id].s3Name;
     _recursiveDownloadJobManager(`${workspacePrefix}/${localName}`, s3Name, (err, jobs_params) => {
-        if (err) {
-            callback(err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((mockCallback) => {
@@ -647,13 +641,10 @@ function _delContainer(workspace_id, container, callback) {
     // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
 
     container.remove((err) => {
-        if (err) {
-            callback(err);
-        } else {
-            delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
-            delete(id_workspace_mapper[workspace_id]);
-            callback(null, workspace_id, container);
-        }
+        if (ERR(err, callback)) return;
+        delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
+        delete(id_workspace_mapper[workspace_id]);
+        callback(null, workspace_id, container);
     });
 }
 
@@ -673,11 +664,8 @@ function _startContainer(workspace_id, container, callback) {
 
 function _stopContainer(workspace_id, container, callback) {
     container.stop((err) => {
-        if (err) {
-            callback(err);
-        } else {
-            callback(null, workspace_id, container);
-        }
+        if (ERR(err, callback)) return;
+        callback(null, workspace_id, container);
     });
 }
 
