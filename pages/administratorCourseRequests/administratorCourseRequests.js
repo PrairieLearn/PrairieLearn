@@ -6,7 +6,6 @@ const router = express.Router();
 const error = require('@prairielearn/prairielib/error');
 const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
-const cache = require('../../lib/cache');
 const github = require('../../lib/github');
 const opsbot = require('../../lib/opsbot');
 const logger = require('../../lib/logger');
