@@ -64,6 +64,7 @@ async.series([
 });
 
 const bodyParser = require('body-parser');
+const { logging } = require('googleapis/build/src/apis/logging');
 const docker = new Docker();
 
 var id_workspace_mapper = {};
@@ -151,23 +152,24 @@ watch(workspacePrefix, {recursive: true}, (eventType, filename) => {
 });
 setInterval(_autoUpdateJobManager, 5000);
 
-function _checkPortAvailability(port) {
-    return new Promise((res) => {
-        var server = net.createServer();
-        server.listen(port, function (err) {
-            server.once('close', function () {
-                res(true);
-            });
-            server.close();
-        });
-        server.on('error', function (err) {
-            res(false);
-        });
-    })
-    
-}
 
 async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
+
+    function _checkPortAvailability(port) {
+        return new Promise((res) => {
+            var server = net.createServer();
+            server.listen(port, function (err) {
+                server.once('close', function () {
+                    res(true);
+                });
+                server.close();
+            });
+            server.on('error', function (err) {
+                res(false);
+            });
+        });
+    };
+
     for (var i = lowest_usable_port; i < 65535; i++) {
         if (i in id_workspace_mapper) {
             continue;
@@ -244,18 +246,34 @@ function _getContainerSettings(workspace_id, callback) {
     });
 }
 
-function _uploadToS3(filePath, S3FilePath, callback) {
-    if (!fs.existsSync(filePath)) {
+function _fsAsyncCallWrapper(func, ...rest) {
+    return new Promise(res => {
+        rest.push((err, ret) => {
+            if (err) {
+                console.log(err);
+                res(null);
+            } else {
+                res(ret);
+            };
+        })
+        func.apply(this, rest);
+    });
+};
+
+async function _uploadToS3(filePath, S3FilePath, callback) {
+    const s3 = new AWS.S3();
+    let body;
+    var stat = await _fsAsyncCallWrapper(fs.lstat, filePath);
+    if (!stat) {
+        logger.info("File no longer exist on host.");
         callback(null, [filePath, S3FilePath, 'File no longer exist on host.']);
         return;
     }
-    const s3 = new AWS.S3();
-    let body;
-    if (fs.lstatSync(filePath).isDirectory()) {
+    if (stat.isDirectory()) {
         body = '';
         S3FilePath += '/';
-    } else if (fs.lstatSync(filePath).isFile()) {
-        body = fs.readFileSync(filePath);
+    } else if (stat.isFile()) {
+        body = await _fsAsyncCallWrapper(fs.readFile, filePath);
     } else {
         callback(null, [filePath, S3FilePath, 'Illiegal file type.']);
         return;
@@ -291,19 +309,19 @@ function _deleteFromS3(filePath, S3FilePath, callback) {
     });
 }
 
-function _downloadFromS3(filePath, S3FilePath, callback) {
+async function _downloadFromS3(filePath, S3FilePath, callback) {
     if (filePath.slice(-1) == '/') {
         // this is a directory
         filePath = filePath.slice(0, -1);
-        if (!fs.existsSync(filePath)){
-            fs.mkdirSync(filePath, { recursive: true });
+        if (!await _fsAsyncCallWrapper(fs.lstat, filePath)){
+            await _fsAsyncCallWrapper(fs.mkdir,filePath, { recursive: true });
         }
         callback(null, 'OK');
         return;
     } else {
         // this is a file
-        if (!fs.existsSync(path.dirname(filePath))){
-            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        if (!await _fsAsyncCallWrapper(fs.lstat, path.dirname(filePath))){
+            await _fsAsyncCallWrapper(fs.mkdir, path.dirname(filePath), { recursive: true });
         }
     }
     const s3 = new AWS.S3();
@@ -329,12 +347,12 @@ function _downloadFromS3(filePath, S3FilePath, callback) {
 }
 
 // DEPRECATED
-function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
+async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
     var ret = [];
-    fs.readdirSync(curDirPath).forEach(function (name) {
+    await _fsAsyncCallWrapper(fs.readdir, curDirPath).forEach(async function (name) {
         var filePath = path.join(curDirPath, name);
         var S3filePath = path.join(S3curDirPath, name);
-        var stat = fs.statSync(filePath);
+        var stat = await _fsAsyncCallWrapper(fs.lstat, filePath);
         if (stat.isFile()) {
             ret.push([filePath, S3filePath]);
         } else if (stat.isDirectory()) {
@@ -440,7 +458,7 @@ function _syncPullContainer(workspace_id, callback) {
 async function _syncPushContainer(workspace_id, callback) {
     const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
-    if (!fs.existsSync(workspaceName)) {
+    if (!await _fsAsyncCallWrapper(fs.lstat, workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
         callback(null, workspace_id);
         return;
