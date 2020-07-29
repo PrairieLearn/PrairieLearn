@@ -11,6 +11,7 @@ const async = require('async');
 const logger = require('../lib/logger');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const chokidar = require('chokidar');
+const fsPromises = require('fs').promises;
 var net = require('net');
 
 const aws = require('../lib/aws.js');
@@ -64,7 +65,6 @@ async.series([
 });
 
 const bodyParser = require('body-parser');
-const { S3 } = require('aws-sdk');
 const docker = new Docker();
 
 var id_workspace_mapper = {};
@@ -148,47 +148,47 @@ const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
     depth: 10,
 });
-watcher.on("add", filename => {
+watcher.on('add', filename => {
     // Handle new files
     var key = [filename, false];
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ("File created " + filename);
-        update_queue[key] = {action: "update"};
-    };
+        console.log ('File created ' + filename);
+        update_queue[key] = {action: 'update'};
+    }
 });
-watcher.on("addDir", filename => {
+watcher.on('addDir', filename => {
     // Handle new directory
     var key = [filename, true];
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ("Directory created " + filename);
-        update_queue[key] = {action: "update"};
-    };
+        console.log ('Directory created ' + filename);
+        update_queue[key] = {action: 'update'};
+    }
 });
-watcher.on("change", filename => {
+watcher.on('change', filename => {
     // Handle file changes
     var key = [filename, false];
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ("File changed " + filename);
-        update_queue[key] = {action: "update"};
-    };
+        console.log ('File changed ' + filename);
+        update_queue[key] = {action: 'update'};
+    }
 });
-watcher.on("unlink", filename => {
+watcher.on('unlink', filename => {
     // Handle removed files
-    console.log ("File removed " + filename);
+    console.log ('File removed ' + filename);
     var key = [filename, false];
-    update_queue[key] = {action: "delete"};
+    update_queue[key] = {action: 'delete'};
 });
-watcher.on("unlinkDir", filename => {
+watcher.on('unlinkDir', filename => {
     // Handle removed directory
-    console.log ("Directory removed " + filename);
+    console.log ('Directory removed ' + filename);
     var key = [filename, true];
-    update_queue[key] = {action: "delete"};
+    update_queue[key] = {action: 'delete'};
 });
 setInterval(_autoUpdateJobManager, interval * 1000);
 
@@ -198,17 +198,17 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
     function _checkPortAvailability(port) {
         return new Promise((res) => {
             var server = net.createServer();
-            server.listen(port, function (err) {
+            server.listen(port, function (_) {
                 server.once('close', function () {
                     res(true);
                 });
                 server.close();
             });
-            server.on('error', function (err) {
+            server.on('error', function (_) {
                 res(false);
             });
         });
-    };
+    }
 
     for (var i = lowest_usable_port; i < 65535; i++) {
         if (i in id_workspace_mapper) {
@@ -221,12 +221,12 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
                 id_workspace_mapper[workspace_id].port = i;
                 callback(null, i);
                 return;
-            }; 
-        };
-    };
+            } 
+        }
+    }
     callback('No available port at this time.');
     return;
-};
+}
 
 function _checkServer(workspace_id, container, callback) {
     const checkMilliseconds = 500;
@@ -286,19 +286,19 @@ function _getContainerSettings(workspace_id, callback) {
     });
 }
 
-function _fsAsyncCallWrapper(func, ...rest) {
-    return new Promise(res => {
-        rest.push((err, ret) => {
-            if (err) {
-                console.log(err);
-                res(null);
-            } else {
-                res(ret);
-            };
-        })
-        func.apply(this, rest);
-    });
-};
+// function _fsAsyncCallWrapper(func, ...rest) {
+//     return new Promise(res => {
+//         rest.push((err, ret) => {
+//             if (err) {
+//                 console.log(err);
+//                 res(null);
+//             } else {
+//                 res(ret);
+//             }
+//         });
+//         func.apply(this, rest);
+//     });
+// }
 
 async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
     const s3 = new AWS.S3();
@@ -307,11 +307,14 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
         body = '';
         S3FilePath += '/';
     } else {
-        body = await _fsAsyncCallWrapper(fs.readFile, filePath);
-    // } else {
-    //     callback(null, [filePath, S3FilePath, 'Illiegal file type.']);
-    //     return;
-    };
+        try {
+            body = await fsPromises.readFile(filePath);
+        } catch(err) {
+            console.log(err);
+            callback(null, [filePath, S3FilePath, err]);
+            return;
+        }
+    }
     var uploadParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
@@ -331,7 +334,7 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
     const s3 = new AWS.S3();
     if (isDirectory) {
         S3FilePath += '/';
-    };
+    }
     var deleteParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
@@ -350,16 +353,20 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     if (filePath.slice(-1) == '/') {
         // this is a directory
         filePath = filePath.slice(0, -1);
-        if (!await _fsAsyncCallWrapper(fs.lstat, filePath)){
-            await _fsAsyncCallWrapper(fs.mkdir,filePath, { recursive: true });
-        };
+        try {
+            await fsPromises.lstat(filePath);
+        } catch(err) {
+            await fsPromises.mkdir(filePath, { recursive: true });
+        }
         callback(null, 'OK');
         update_queue[[filePath, true]] = {action: 'skip'};
         return;
     } else {
         // this is a file
-        if (!await _fsAsyncCallWrapper(fs.lstat, path.dirname(filePath))){
-            await _fsAsyncCallWrapper(fs.mkdir, path.dirname(filePath), { recursive: true });
+        try {
+            await fsPromises.lstat(path.dirname(filePath));
+        } catch(err) {
+            await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
         }
     }
     const s3 = new AWS.S3();
@@ -388,10 +395,10 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
 // DEPRECATED
 async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
     var ret = [];
-    await _fsAsyncCallWrapper(fs.readdir, curDirPath).forEach(async function (name) {
+    await fsPromises.readdir(curDirPath).forEach(async function (name) {
         var filePath = path.join(curDirPath, name);
         var S3filePath = path.join(S3curDirPath, name);
-        var stat = await _fsAsyncCallWrapper(fs.lstat, filePath);
+        var stat = await fsPromises.lstat(filePath);
         if (stat.isFile()) {
             ret.push([filePath, S3filePath]);
         } else if (stat.isDirectory()) {
@@ -404,8 +411,8 @@ async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
 function _autoUpdateJobManager() {
     var jobs = [];
     for (const key in update_queue) {
-        const [path, isDirectory_str] = key.split(",");
-        const isDirectory = isDirectory_str == "true";
+        const [path, isDirectory_str] = key.split(',');
+        const isDirectory = isDirectory_str == 'true';
         if (update_queue[key].action == 'update') {
             jobs.push((mockCallback) => {
                 _uploadToS3(path, isDirectory, path.replace(`${workspacePrefix}/`, ''), mockCallback);
@@ -414,8 +421,8 @@ function _autoUpdateJobManager() {
             jobs.push((mockCallback) => {
                 _deleteFromS3(path, isDirectory, path.replace(`${workspacePrefix}/`, ''), mockCallback);
             });
-        };
-    };
+        }
+    }
     update_queue = {};
     var status = [];
     async.parallel(jobs, function(_, results) {
@@ -495,7 +502,7 @@ function _syncPullContainer(workspace_id, callback) {
 async function _syncPushContainer(workspace_id, callback) {
     const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
-    if (!await _fsAsyncCallWrapper(fs.lstat, workspaceName)) {
+    if (!await fsPromises.lstat(workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
         callback(null, workspace_id);
         return;
