@@ -442,7 +442,7 @@ function _autoUpdateJobManager() {
         if (!workspace_id) {
             logger.info(`watch return: workspace_id not mapped yet`);
             return;
-        } else if (localPath === '') { // TODO: check if this is still needed after rebase
+        } else if (localPath === '') {
             logger.info(`watch continue: empty (root) path`);
             continue;
         } else {
