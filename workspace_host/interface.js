@@ -635,7 +635,10 @@ function _createContainer(workspace_id, port, settings, callback) {
             port_id_mapper[port] = workspace_id;
             logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            callback(null, workspace_id, container);
+            sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null, workspace_id, container);
+            });
         }
     });
 }
@@ -649,7 +652,10 @@ function _delContainer(workspace_id, container, callback) {
         if (ERR(err, callback)) return;
         delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
         delete(id_workspace_mapper[workspace_id]);
-        callback(null, workspace_id, container);
+        sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null, workspace_id, container);
+        });
     });
 }
 
