@@ -459,8 +459,11 @@ async function _syncPushContainer(workspace_id, callback) {
     });
 }
 
-function _queryUpdateWorkspacePort(workspace_id, port, callback) {
-    sqldb.query(sql.update_workspace_port, {workspace_id, port}, function(err, _result) {
+function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
+    const hostname = `${config.workspaceNativeLocalhost}:${port}`;
+    // NOTE: change to this line once #2787 merges
+    // const hostname = ${config.workspaceDevContainer}
+    sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
     });
@@ -538,7 +541,7 @@ function _createContainer(workspace_id, port, settings, callback) {
 
 function _createContainerWrapper(workspace_id, port, settings, callback) {
     async.parallel({
-        query: (callback) => {_queryUpdateWorkspacePort(workspace_id, port, callback);},
+        query: (callback) => {_queryUpdateWorkspaceHostname(workspace_id, port, callback);},
         container: (callback) => {_createContainer(workspace_id, port, settings, callback);},
     }, (err, results) => {
         if (ERR(err, callback)) return;

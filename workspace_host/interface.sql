@@ -11,9 +11,9 @@ FROM
 WHERE
     v.workspace_id = $workspace_id;
 
--- BLOCK update_workspace_port
+-- BLOCK update_workspace_hostname
 UPDATE workspaces AS w
 SET
-    port = $port
+    hostname = $hostname
 WHERE
     w.id = $workspace_id;
