@@ -2,7 +2,8 @@ CREATE OR REPLACE FUNCTION
     assessment_groups_delete_member(
         assessment_id bigint,
         arg_gid bigint,
-        arg_uid text
+        arg_uid text,
+        authn_user_id bigint
     ) RETURNS void
 AS $$
 DECLARE
@@ -19,6 +20,11 @@ BEGIN
     -- insert group_user
     DELETE FROM group_users
     WHERE group_id = arg_gid AND user_id = arg_user_id;
+
+    INSERT INTO group_logs 
+        (authn_user_id, user_id, group_id, action)
+    VALUES 
+        (assessment_groups_delete_member.authn_user_id, arg_user_id, arg_gid, 'leave');
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;

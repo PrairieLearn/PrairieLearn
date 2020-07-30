@@ -83,6 +83,7 @@ router.post('/', function(req, res, next) {
         const params = [
             res.locals.assessment.id,
             req.body.inputGroupSelect01,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
             if (ERR(err, next)) return;
@@ -115,6 +116,7 @@ router.post('/', function(req, res, next) {
         const params2 = [
             assessment_id,
             updateList,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('assessment_groups_update', params2, (err, result) => {
             if (err) {
@@ -163,6 +165,7 @@ router.post('/', function(req, res, next) {
                     assessment_id,
                     gid,
                     uid,
+                    res.locals.authn_user.user_id,
                 ];
                 try {
                     await sqldb.callAsync('assessment_groups_add_member', params);
@@ -188,6 +191,7 @@ router.post('/', function(req, res, next) {
                     assessment_id,
                     gid,
                     uid,
+                    res.locals.authn_user.user_id,
                 ];
                 try {
                     await sqldb.callAsync('assessment_groups_delete_member', params);
@@ -204,6 +208,7 @@ router.post('/', function(req, res, next) {
         const params = [
             res.locals.assessment.id,
             req.body.gid,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
             if (ERR(err, next)) return;

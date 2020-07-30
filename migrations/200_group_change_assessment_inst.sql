@@ -73,7 +73,6 @@ CREATE INDEX group_users_user_id_key ON group_users (user_id);
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
 -- add needed group work information into previous tables
 ALTER TABLE assessments ADD COLUMN group_work boolean DEFAULT FALSE;
 ALTER TABLE assessment_instances ADD COLUMN group_id BIGINT REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -86,3 +85,15 @@ ALTER TABLE audit_logs ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CA
 ALTER TABLE variants ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE variants ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
 ALTER TABLE variants ALTER COLUMN user_id DROP NOT NULL;
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+-- a log table to store all create, join, leave, delete activities
+CREATE TABLE IF NOT EXISTS group_logs (
+    id BIGSERIAL PRIMARY KEY,
+    date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    authn_user_id BIGINT,
+    user_id BIGINT,
+    group_id BIGINT,
+    action TEXT
+);

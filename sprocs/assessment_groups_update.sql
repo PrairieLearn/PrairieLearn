@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION
     assessment_groups_update(
         IN arg_assessment_id bigint,
         IN update_list text[][], -- [[groupName1, uid1], [groupName2, uid2], ...]
+        IN authn_user_id bigint,
         OUT not_exist_user text[],
         OUT already_in_group text[]
     )
@@ -45,8 +46,17 @@ BEGIN
         
         -- insert groups if not exist
         IF NOT EXISTS (SELECT 1 FROM groups WHERE name = group_user[1] AND group_config_id = arg_group_config_id AND deleted_at IS NULL) THEN
-            INSERT INTO groups (name, group_config_id, course_instance_id)
-            VALUES (group_user[1], arg_group_config_id, arg_course_instance_id);
+            WITH log AS (
+                INSERT INTO groups (name, group_config_id, course_instance_id)
+                VALUES (group_user[1], arg_group_config_id, arg_course_instance_id)
+                RETURNING id
+            )
+            INSERT INTO group_logs 
+                (authn_user_id, user_id, group_id, action)
+            SELECT 
+                assessment_groups_update.authn_user_id, assessment_groups_update.authn_user_id, id, 'create'
+            FROM
+                log;
         END IF;
         -- get group_id from groupname
         SELECT id
@@ -56,6 +66,11 @@ BEGIN
         -- insert group_user
         INSERT INTO group_users (group_id, user_id)
         VALUES (arg_group_id, arg_user_id);
+
+        INSERT INTO group_logs 
+            (authn_user_id, user_id, group_id, action)
+        VALUES 
+            (assessment_groups_update.authn_user_id, arg_user_id, arg_group_id, 'join');
         -- record violations
         EXCEPTION 
             WHEN unique_violation THEN

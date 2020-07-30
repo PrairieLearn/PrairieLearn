@@ -37,25 +37,53 @@ GROUP BY
     gr.id;
 
 -- BLOCK join_group
-INSERT INTO 
-    group_users (user_id, group_id)
-    VALUES ($user_id, (SELECT id
-                       FROM groups
-                       WHERE name = $group_name AND join_code = $join_code AND deleted_at IS NULL));
+WITH log AS (
+    INSERT INTO 
+        group_users (user_id, group_id)
+    VALUES 
+        ($user_id, (SELECT id
+                    FROM groups
+                    WHERE name = $group_name AND join_code = $join_code AND deleted_at IS NULL))
+    RETURNING group_id
+)
+INSERT INTO group_logs 
+    (authn_user_id, user_id, group_id, action)
+SELECT $user_id, $user_id, group_id, 'join'
+FROM log;
+
 
 -- BLOCK create_group
-INSERT INTO groups (name, group_config_id, course_instance_id)
-        VALUES (
+WITH log AS (
+    INSERT INTO groups 
+        (name, group_config_id, course_instance_id)
+    VALUES 
+        (
             $group_name, 
             (SELECT id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL),
             (SELECT course_instance_id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL)
-            );
+        )
+    RETURNING id
+)
+INSERT INTO group_logs 
+    (authn_user_id, user_id, group_id, action)
+SELECT $user_id, $user_id, id, 'create'
+FROM log;
 
 -- BLOCK join_justcreated_group
-INSERT INTO group_users (group_id, user_id)
-    VALUES(
-        (SELECT id FROM groups WHERE name = $group_name AND deleted_at IS NULL),
-        $user_id);
+WITH log AS (
+    INSERT INTO group_users 
+        (group_id, user_id)
+    VALUES 
+        (
+            (SELECT id FROM groups WHERE name = $group_name AND deleted_at IS NULL),
+            $user_id
+        )
+    RETURNING group_id
+)
+INSERT INTO group_logs 
+    (authn_user_id, user_id, group_id, action)
+SELECT $user_id, $user_id, group_id, 'join'
+FROM log;
 
 -- BLOCK get_group_info
 SELECT 
@@ -74,14 +102,21 @@ WHERE
     AND gc.deleted_at IS NULL;
 
 -- BLOCK leave_group
-DELETE FROM 
-    group_users
-WHERE 
-    user_id = $user_id 
-    AND group_id IN (SELECT gr.id
-                     FROM assessments ass
-                     JOIN group_configs gc ON gc.assessment_id = ass.id
-                     JOIN groups gr ON gr.group_config_id = gc.id
-                     WHERE ass.id = $assessment_id
-                     AND gr.deleted_at IS NULL
-                     AND gc.deleted_at IS NULL);
+WITH log AS (
+    DELETE FROM 
+        group_users
+    WHERE 
+        user_id = $user_id 
+        AND group_id IN (SELECT gr.id
+                        FROM assessments ass
+                        JOIN group_configs gc ON gc.assessment_id = ass.id
+                        JOIN groups gr ON gr.group_config_id = gc.id
+                        WHERE ass.id = $assessment_id
+                        AND gr.deleted_at IS NULL
+                        AND gc.deleted_at IS NULL)
+    RETURNING group_id
+) 
+INSERT INTO group_logs 
+    (authn_user_id, user_id, group_id, action)
+SELECT $user_id, $user_id, group_id, 'leave'
+FROM log;

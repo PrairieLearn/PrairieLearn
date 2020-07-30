@@ -53,14 +53,21 @@ WHERE
     AND gc.deleted_at IS NULL;
 
 -- BLOCK leave_group
-DELETE FROM 
-    group_users
-WHERE 
-    user_id = $user_id 
-    AND group_id IN (SELECT gr.id
-                     FROM assessment_instances ai
-                     JOIN group_configs gc ON gc.assessment_id = ai.assessment_id
-                     JOIN groups gr ON gr.group_config_id = gc.id
-                     WHERE ai.id = $assessment_instance_id
-                     AND gr.deleted_at IS NULL
-                     AND gc.deleted_at IS NULL);
+WITH log AS (
+    DELETE FROM 
+        group_users
+    WHERE 
+        user_id = $user_id 
+        AND group_id IN (SELECT gr.id
+                        FROM assessment_instances ai
+                        JOIN group_configs gc ON gc.assessment_id = ai.assessment_id
+                        JOIN groups gr ON gr.group_config_id = gc.id
+                        WHERE ai.id = $assessment_instance_id
+                        AND gr.deleted_at IS NULL
+                        AND gc.deleted_at IS NULL)
+    RETURNING group_id
+) 
+INSERT INTO group_logs 
+    (authn_user_id, user_id, group_id, action)
+SELECT $user_id, $user_id, group_id, 'leave'
+FROM log;
