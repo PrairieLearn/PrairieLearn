@@ -17,11 +17,7 @@ module.exports = function(req, res, next) {
     sqldb.query(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-        if (result.rowCount == 1){
-            _.assign(res.locals, result.rows[0]);
-        } else {
-            _.assign(res.locals, result.rows[0]);
-        }
+        _.assign(res.locals, result.rows[0]);
         next();
     });
 };
