@@ -14,14 +14,19 @@ const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
+const argv = require('yargs-parser') (process.argv.slice(2));
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
     if (err) logger.debug(err);
 });
 
-const config = require('../lib/config.js');
-config.loadConfig('config.json');
+const config = require('../lib/config');
+let configFilename = 'config.json';
+if ('config' in argv) {
+    configFilename = argv['config'];
+}
+config.loadConfig(configFilename);
 
 const workspaceBucketName = config.workspaceS3Bucket;
 if (workspaceBucketName == '') {
