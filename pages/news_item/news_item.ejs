@@ -18,15 +18,15 @@
           <%= news_item.title %>
         </h1>
 
-        <p class="text-muted">
-          <i>
+        <p>
+          <i class="mr-2 text-muted">
             Posted on <%= news_item.formatted_date %>
             <% if (news_item.author) { %>
             by <%- news_item.author %>
             <% } %>
           </i>
           <% if (news_item.show_student_badge) { %>
-              <span class="badge badge-secondary ml-2">Visible to students</span>
+              <span class="badge badge-secondary">Visible to students</span>
           <% } %>
         </p>
       </header>
