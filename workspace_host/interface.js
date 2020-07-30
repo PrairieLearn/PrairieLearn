@@ -303,7 +303,15 @@ function _getContainerSettings(workspace_id, callback) {
 }
 
 async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    var config = {
+        s3ForcePathStyle: true,
+        accessKeyId: 'S3RVER',
+        secretAccessKey: 'S3RVER',
+        endpoint: new AWS.Endpoint('http://localhost:5000')
+    }
+
+    const s3 = new AWS.S3(config)
+
     let body;
     if (isDirectory) {
         body = '';
@@ -333,7 +341,15 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
 }
 
 function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    var config = {
+        s3ForcePathStyle: true,
+        accessKeyId: 'S3RVER',
+        secretAccessKey: 'S3RVER',
+        endpoint: new AWS.Endpoint('http://localhost:5000')
+    }
+
+    const s3 = new AWS.S3(config)
+
     if (isDirectory) {
         S3FilePath += '/';
     }
@@ -371,7 +387,15 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
         }
     }
-    const s3 = new AWS.S3();
+    var config = {
+        s3ForcePathStyle: true,
+        accessKeyId: 'S3RVER',
+        secretAccessKey: 'S3RVER',
+        endpoint: new AWS.Endpoint('http://localhost:5000')
+    }
+
+    const s3 = new AWS.S3(config)
+
     var downloadParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
@@ -442,7 +466,15 @@ function _autoUpdateJobManager() {
 }
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
-    const s3 = new AWS.S3();
+    var config = {
+        s3ForcePathStyle: true,
+        accessKeyId: 'S3RVER',
+        secretAccessKey: 'S3RVER',
+        endpoint: new AWS.Endpoint('http://localhost:5000')
+    }
+
+    const s3 = new AWS.S3(config)
+
     var listingParams = {
         Bucket: workspaceBucketName,
         Prefix: S3curDirPath,
