@@ -61,13 +61,15 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
     <a class="nav-link" href="<%= urlPrefix %>/news_items"
       <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
         title="News (<%= news_item_notification_count %> unread)"
+        aria-label="News (<%= news_item_notification_count %> unread)"
       <% } else { %>
         title="News"
+        aria-label="News"
       <% } %>
     >
-      <i class="fas fa-bullhorn"></i>
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
       <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-        <span class="fas fa-circle small text-primary"></span>
+        <i class="fas fa-circle small text-primary" aria-hidden="true"></i>
       <% } %>
     </a>
     <% if (!locals.effective_user_has_no_access_to_course_instance) { %>
