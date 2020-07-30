@@ -165,12 +165,14 @@ const workspaceProxyOptions = {
     ws: true,
     logProvider: _provider => logger,
     router: async (req) => {
+        // let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
+        let url = 'not-matched';
         const workspace_id = req.url.match(/^\/workspace\/([0-9]+)\/container\//)[1];
         const result = await sqldb.queryZeroOrOneRowAsync(`SELECT hostname FROM workspaces WHERE id = ${workspace_id};`, []);
-        const hostname = result.rows[0].hostname;
-        logger.info(`server.js proxy: workspace_id=${workspace_id}, hostname=${hostname}`);
-        // let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
-        const url = `http://${hostname}/`;
+        if (result.length > 0) {
+            url = `http://${result.rows[0].hostname}/`;
+        }
+        logger.info(`server.js proxy: workspace_id=${workspace_id}, url=${url}`);
         return url;
     },
 };
