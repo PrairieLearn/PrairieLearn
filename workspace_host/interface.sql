@@ -4,6 +4,7 @@ SELECT
     workspace_port,
     workspace_args,
     workspace_home,
+    workspace_graded_files,
     workspace_url_rewrite
 FROM
     questions AS q
@@ -17,3 +18,9 @@ SET
     hostname = $hostname
 WHERE
     w.id = $workspace_id;
+
+-- BLOCK insert_workspace_hosts
+INSERT INTO workspace_hosts
+    (hostname)
+VALUES
+    ($hostname);
