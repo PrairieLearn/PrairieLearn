@@ -5,20 +5,22 @@ CREATE OR REPLACE FUNCTION
 AS $$
 WITH
 relevant_assessment_instances AS (
-    SELECT ai.*
+    SELECT DISTINCT ai.*, e.user_id AS e_user_id
     FROM
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN enrollments AS e ON (e.user_id = ai.user_id AND e.course_instance_id = a.course_instance_id)
+        LEFT JOIN groups AS gr ON (gr.id = ai.group_id AND gr.deleted_at IS NULL)
+        LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+        JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param
         AND e.role = 'Student'
 ),
 relevant_instance_questions AS (
-    SELECT
+    SELECT DISTINCT
         iq.*,
-        ai.user_id
+        ai.e_user_id AS user_id
     FROM
         instance_questions AS iq
         JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -26,10 +28,10 @@ relevant_instance_questions AS (
 ),
 assessment_scores_by_user AS (
     SELECT
-        ai.user_id,
+        ai.e_user_id AS user_id,
         max(ai.score_perc) AS score_perc
     FROM relevant_assessment_instances AS ai
-    GROUP BY ai.user_id
+    GROUP BY ai.e_user_id
 ),
 question_stats_by_user AS (
     SELECT
