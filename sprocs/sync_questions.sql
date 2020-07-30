@@ -42,6 +42,7 @@ BEGIN
             workspace_args,
             workspace_home,
             workspace_graded_files,
+            workspace_sync_ignore,
             workspace_url_rewrite
         ) SELECT
             (question->>'uuid')::uuid,
@@ -70,6 +71,7 @@ BEGIN
             question->>'workspace_args',
             question->>'workspace_home',
             jsonb_array_to_text_array(question->'workspace_graded_files'),
+            jsonb_array_to_text_array(question->'workspace_sync_ignore'),
             (question->>'workspace_url_rewrite')::boolean
         FROM JSONB_ARRAY_ELEMENTS(sync_questions.new_questions) AS question
         ON CONFLICT (course_id, uuid) DO UPDATE
@@ -98,6 +100,7 @@ BEGIN
             workspace_args = EXCLUDED.workspace_args,
             workspace_home = EXCLUDED.workspace_home,
             workspace_graded_files = EXCLUDED.workspace_graded_files,
+            workspace_sync_ignore = EXCLUDED.workspace_sync_ignore,
             workspace_url_rewrite = EXCLUDED.workspace_url_rewrite
         WHERE
             questions.course_id = new_course_id
