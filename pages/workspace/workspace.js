@@ -19,14 +19,14 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 // https://stackoverflow.com/a/46213474/13138364
 const s3Sync = function (s3Path, bucketName) {
-    const config = {
+    const awsConfig = {
         s3ForcePathStyle: true,
         accessKeyId: 'S3RVER',
         secretAccessKey: 'S3RVER',
         endpoint: new AWS.Endpoint('http://localhost:5000'),
     };
 
-    const s3 = new AWS.S3(config);
+    const s3 = new AWS.S3(awsConfig);
 
     function walkSync(currentDirPath, callback) {
         fs.readdirSync(currentDirPath).forEach(function (name) {
