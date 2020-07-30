@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
 const request = require('request');
+// TODO: change to be configurable
 const PORT = 8081;
 const path = require('path');
 const AWS = require('aws-sdk');
