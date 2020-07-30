@@ -18,20 +18,10 @@ INSERT INTO workspace_hosts
 VALUES
     ($hostname);
 
--- BLOCK increment_load_count
+-- BLOCK update_load_count
 UPDATE workspace_hosts as wh
 SET
-    load_count = load_count + 1
-FROM
-    workspaces as w
-WHERE
-    w.id = $workspace_id
-    AND w.workspace_host_id = wh.id;
-
--- BLOCK decrement_load_count
-UPDATE workspace_hosts as wh
-SET
-    load_count = load_count - 1
+    load_count = load_count + $count
 FROM
     workspaces as w
 WHERE
