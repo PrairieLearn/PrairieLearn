@@ -13,14 +13,26 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');
+const { v4: uuidv4 } = require('uuid');
+const argv = require('yargs-parser') (process.argv.slice(2));
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
     if (err) logger.debug(err);
 });
+const awsConfig = {
+    s3ForcePathStyle: true,
+    accessKeyId: 'S3RVER',
+    secretAccessKey: 'S3RVER',
+    endpoint: new AWS.Endpoint('http://localhost:5000'),
+};
 
-const config = require('../lib/config.js');
-config.loadConfig('config.json');
+const config = require('../lib/config');
+let configFilename = 'config.json';
+if ('config' in argv) {
+    configFilename = argv['config'];
+}
+config.loadConfig(configFilename);
 
 const workspaceBucketName = config.workspaceS3Bucket;
 if (workspaceBucketName == '') {
@@ -62,10 +74,7 @@ async.series([
             // hostname: config.workspaceNativeLocalhost,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
-            if (err) {
-                logger.error('Error creating workspace_hosts row', err);
-                return;
-            }
+            if (ERR(err, callback)) return;
             callback(null);
         });
     },
@@ -268,10 +277,7 @@ function _checkServer(workspace_id, container, callback) {
 
 function _queryContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
-        if (err) {
-            logger.error('Error getting workspace settings', err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
         /* We can't use the || idiom for url_rewrite because it'll override if false */
@@ -280,6 +286,8 @@ function _queryContainerSettings(workspace_id, callback) {
             url_rewrite = true;
         }
 
+        const syncIgnore = result.rows[0].workspace_sync_ignore || [];
+        id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
         const settings = {
             workspace_image: result.rows[0].workspace_image,
             workspace_port: result.rows[0].workspace_port,
@@ -303,7 +311,8 @@ function _getContainerSettings(workspace_id, callback) {
 }
 
 async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     let body;
     if (isDirectory) {
         body = '';
@@ -333,7 +342,8 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
 }
 
 function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     if (isDirectory) {
         S3FilePath += '/';
     }
@@ -371,7 +381,9 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
         }
     }
-    const s3 = new AWS.S3();
+
+    const s3 = new AWS.S3(awsConfig);
+
     var downloadParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
@@ -410,18 +422,64 @@ async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
     return ret;
 }
 
+// Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
+function _getWorkspaceByPath(path) {
+    let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
+    const localName = localPath.shift();
+    localPath = localPath.join('/');
+
+    if (typeof id_workspace_mapper === 'undefined') {
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
+        return;
+    }
+
+    const workspace_id = Object.keys(id_workspace_mapper).find(
+        key => id_workspace_mapper[key].localName === localName,
+    );
+
+    if (typeof workspace_id === 'undefined') {
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
+        return;
+    }
+
+    return {workspace_id, localPath};
+}
+
 function _autoUpdateJobManager() {
     var jobs = [];
+    console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
+        const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        const s3Name = id_workspace_mapper[workspace_id].s3Name;
+        const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
+        logger.info(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`watch: localPath=${localPath}`);
+        logger.info(`watch: syncIgnore=${id_workspace_mapper[workspace_id].syncIgnore}`);
+        
+        let s3Path;
+        if (!workspace_id) {
+            logger.info(`watch return: workspace_id not mapped yet`);
+            return;
+        } else if (localPath === '') {
+            logger.info(`watch continue: empty (root) path`);
+            continue;
+        } else if (syncIgnore.filter((ignored) => {return localPath.startsWith(ignored);})) {
+            logger.info(`watch continue: syncIgnored`);
+            continue;
+        } else {
+            s3Path = `${s3Name}/${localPath}`;
+            logger.info(`watch s3Path: ${s3Path}`);
+        }
+
         if (update_queue[key].action == 'update') {
             jobs.push((mockCallback) => {
-                _uploadToS3(path, isDirectory, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+                _uploadToS3(path, isDirectory, s3Path, mockCallback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((mockCallback) => {
-                _deleteFromS3(path, isDirectory, path.replace(`${workspacePrefix}/`, ''), mockCallback);
+                _deleteFromS3(path, isDirectory, s3Path, mockCallback);
             });
         }
     }
@@ -442,17 +500,15 @@ function _autoUpdateJobManager() {
 }
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     var listingParams = {
         Bucket: workspaceBucketName,
         Prefix: S3curDirPath,
     };
 
     s3.listObjectsV2(listingParams, (err, data) => {
-        if (err) {
-            callback(err);
-            return;
-        }
+        if (ERR(err, callback)) return;
         var contents = data['Contents'];
         var ret = [];
         contents.forEach(dict => {
@@ -467,12 +523,10 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 }
 
 function _syncPullContainer(workspace_id, callback) {
-    const workspaceName= `workspace-${workspace_id}`;
-    _recursiveDownloadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName, (err, jobs_params) => {
-        if (err) {
-            callback(err);
-            return;
-        }
+    const localName = id_workspace_mapper[workspace_id].localName;
+    const s3Name = id_workspace_mapper[workspace_id].s3Name;
+    _recursiveDownloadJobManager(`${workspacePrefix}/${localName}`, s3Name, (err, jobs_params) => {
+        if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((mockCallback) => {
@@ -535,15 +589,19 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _getContainer(workspace_id, callback) {
-    var container = docker.getContainer('workspace-' + workspace_id);
+    const localName = id_workspace_mapper[workspace_id].localName;
+    const container = docker.getContainer(localName);
     callback(null, workspace_id, container);
 }
 
 function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
-    const workspaceName = `workspace-${workspace_id}`;
+
+    const localName = id_workspace_mapper[workspace_id].localName;
+    logger.info(`_createContainer localName=${localName}`);
+
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
-    const workspacePath = path.join(workspaceDir, workspaceName);
+    const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     logger.info(`Workspace path is configed to: ${workspacePath}`);
     logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
@@ -578,7 +636,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             PidsLimit: 1024,
         },
         Cmd: args, // FIXME: proper arg parsing
-        name: workspaceName,
+        name: localName,
         Volumes: {
             [containerPath]: {},
           },
@@ -591,15 +649,15 @@ function _createContainer(workspace_id, port, settings, callback) {
                 callback(err);
             }
         } else {
-            if (!(workspace_id in id_workspace_mapper)) {
-                id_workspace_mapper[workspace_id] = {};
-            }
             id_workspace_mapper[workspace_id].port = port;
             id_workspace_mapper[workspace_id].settings = settings;
             port_id_mapper[port] = workspace_id;
             logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            callback(null, workspace_id, container);
+            sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null, workspace_id, container);
+            });
         }
     });
 }
@@ -610,13 +668,13 @@ function _delContainer(workspace_id, container, callback) {
     // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
 
     container.remove((err) => {
-        if (err) {
-            callback(err);
-        } else {
-            delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
-            delete(id_workspace_mapper[workspace_id]);
+        if (ERR(err, callback)) return;
+        delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
+        delete(id_workspace_mapper[workspace_id]);
+        sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
+            if (ERR(err, callback)) return;
             callback(null, workspace_id, container);
-        }
+        });
     });
 }
 
@@ -636,16 +694,20 @@ function _startContainer(workspace_id, container, callback) {
 
 function _stopContainer(workspace_id, container, callback) {
     container.stop((err) => {
-        if (err) {
-            callback(err);
-        } else {
-            callback(null, workspace_id, container);
-        }
+        if (ERR(err, callback)) return;
+        callback(null, workspace_id, container);
     });
 }
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, res) {
+    if (!(workspace_id in id_workspace_mapper)) {
+        id_workspace_mapper[workspace_id] = {};
+        id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
+        id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+        logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
+    }
+    
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
         _getContainerSettings,
