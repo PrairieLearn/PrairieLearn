@@ -21,24 +21,8 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    authn_result record;
     user_result record;
 BEGIN
-    -- authorization for the authn_user
-    SELECT *
-    INTO authn_result
-    FROM
-        check_assessment_access(
-            assessment_id,
-            (authz_data->>'authn_mode')::enum_mode,
-            (authz_data->>'authn_course_role')::enum_course_role,
-            (authz_data->>'authn_course_instance_role')::enum_course_instance_role,
-            (authz_data->'authn_user'->>'user_id')::bigint,
-            authz_data->'authn_user'->>'uid',
-            req_date,
-            display_timezone
-        );
-
     -- authorization for the effective user
     SELECT *
     INTO user_result
@@ -54,21 +38,27 @@ BEGIN
             display_timezone
         );
 
-    -- we need to be authorized for both our authn_user and effective user
-    authorized := authn_result.authorized AND user_result.authorized;
-
+    -- start with no acccess
+    authorized := FALSE;
     authorized_edit := FALSE;
+
+    -- give access if we aren't emulating
     IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
-        -- allow editing if we are not emulating a different user
-        -- this is the normal case
-        authorized_edit := TRUE;
+        authorized := user_result.authorized;
+        authorized_edit := user_result.authorized;
     END IF;
+
+    -- give view access if we are a Student Data Viewer
+    IF (authz_data->>'authn_has_course_instance_permission_view')::boolean THEN
+        authorized := TRUE;
+    END IF;
+
+    -- give edit access if we are a Student Data Editor
     IF (authz_data->>'authn_has_course_instance_permission_edit')::boolean THEN
-        -- also allow editing if we are a Student Data Editor
         authorized_edit := TRUE;
     END IF;
 
-    -- only allow editing if we are authorized to view
+    -- we can't have higher edit access than view access
     authorized_edit := authorized_edit AND authorized;
 
     -- all other variables are from the effective user authorization

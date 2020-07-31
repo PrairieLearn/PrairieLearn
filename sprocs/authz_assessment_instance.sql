@@ -65,6 +65,7 @@ BEGIN
     IF (authz_data->>'authn_has_course_instance_permission_view')::boolean THEN
         authorized := TRUE;
     END IF;
+    
     -- give edit access if we are a Student Data Editor
     IF (authz_data->>'authn_has_course_instance_permission_edit')::boolean THEN
         authorized_edit := TRUE;
