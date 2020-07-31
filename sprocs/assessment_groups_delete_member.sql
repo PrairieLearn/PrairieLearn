@@ -17,7 +17,7 @@ BEGIN
     WHERE uid = arg_uid;
 
     -- ##################################################################
-    -- insert group_user
+    -- remove group_user
     DELETE FROM group_users
     WHERE group_id = arg_gid AND user_id = arg_user_id;
 

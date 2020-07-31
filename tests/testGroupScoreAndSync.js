@@ -25,7 +25,7 @@ const storedConfig = {};
 const question = [{qid: 'addNumbers', type: 'Freeform', maxPoints:5}];
 const questions = _.keyBy(question, 'qid');
 
-describe('assessment instance group synchorization test', function () {
+describe('assessment instance group synchronization test', function () {
     this.timeout(10000);
 
     before('set authenticated user', function(callback) {
@@ -63,7 +63,6 @@ describe('assessment instance group synchorization test', function () {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });

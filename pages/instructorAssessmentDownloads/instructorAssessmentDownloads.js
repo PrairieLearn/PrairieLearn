@@ -192,7 +192,7 @@ router.get('/:filename', function(req, res, next) {
         };
         sqldb.query(sql.submissions_for_manual_grading, params, function(err, result) {
             if (ERR(err, next)) return;
-            var columns = identityColumn.concat([
+            const columns = identityColumn.concat([
                 ['qid', 'qid'],
                 ['old_score_perc', 'old_score_perc'],
                 ['submission_id', 'submission_id'],
