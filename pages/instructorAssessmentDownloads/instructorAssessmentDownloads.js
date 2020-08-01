@@ -37,10 +37,10 @@ const setFilenames = function(locals) {
     locals.allFilesZipFilename = prefix + 'all_files.zip';
     if (locals.assessment.group_work){
         locals.groupsCsvFilename = prefix + 'groups.csv';
-        locals.scoresGroupCsvFilename = prefix + 'scores_group.csv';
-        locals.scoresGroupAllCsvFilename = prefix + 'scores_group_all.csv';
-        locals.pointsGroupCsvFilename = prefix + 'points_group.csv';
-        locals.pointsGroupAllCsvFilename = prefix + 'points_group_all.csv';
+        locals.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
+        locals.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
+        locals.pointsGroupCsvFilename = prefix + 'points_by_group.csv';
+        locals.pointsGroupAllCsvFilename = prefix + 'points_by_group_all.csv';
     }
 };
 
