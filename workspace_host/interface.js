@@ -587,9 +587,8 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
-    const hostname = `${config.workspaceNativeLocalhost}:${port}`;
-    // NOTE: change to this line once #2787 merges
-    // const hostname = ${config.workspaceDevContainer}
+    //const hostname = `${config.workspaceDevContainerHostname}:${port}`;
+    const hostname = `${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}`;
     sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
         if (ERR(err, callback)) return;
         callback(null);

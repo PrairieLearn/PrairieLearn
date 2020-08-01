@@ -165,15 +165,20 @@ const workspaceProxyOptions = {
     ws: true,
     logProvider: _provider => logger,
     router: async (req) => {
-        // let url = `http://${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}/`;
-        let url = 'not-matched';
-        const workspace_id = req.url.match(/^\/workspace\/([0-9]+)\/container\//)[1];
-        const result = await sqldb.queryZeroOrOneRowAsync(`SELECT hostname FROM workspaces WHERE id = ${workspace_id};`, []);
-        if (result.length > 0) {
-            url = `http://${result.rows[0].hostname}/`;
+        try {
+            const match = req.url.match(/^\/workspace\/([0-9]+)\/container\//);
+            if (!match) throw new Error(`Could not match URL: ${req.url}`);
+            const workspace_id = match[1];
+            const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
+            const url = `http://${result.rows[0].hostname}/`;
+            logger.info(`server.js proxy: workspace_id=${workspace_id}, url=${url}`);
+            return url;
+        } catch (err) {
+            logger.error(err);
+            const url = 'not-matched';
+            logger.info(`server.js proxy: from=${req.url}, to=${url}`);
+            return url;
         }
-        logger.info(`server.js proxy: workspace_id=${workspace_id}, url=${url}`);
-        return url;
     },
 };
 const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
