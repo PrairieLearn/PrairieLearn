@@ -8,3 +8,8 @@ SET
     workspace_host_id = $workspace_host_id
 WHERE
     w.id = $workspace_id;
+
+-- BLOCK select_workspace
+SELECT *
+FROM workspaces
+WHERE id = $workspace_id;

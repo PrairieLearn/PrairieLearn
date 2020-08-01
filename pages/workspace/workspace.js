@@ -61,6 +61,7 @@ router.get('/:workspace_id', (req, res, next) => {
     const workspace_id = req.params.workspace_id;
     res.locals.workspace_id = workspace_id;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    // we've now rendered the page, anything past this point cannot render or use next()
 
     async.series([
         (callback) => {
@@ -74,16 +75,45 @@ router.get('/:workspace_id', (req, res, next) => {
                 const workspaceS3Path = `${config.workspaceS3Bucket}/workspace-${workspace_id}`;
 
                 console.log(`[workspace.js] syncing ${workspaceLocalPath} to ${workspaceS3Path}`);
-                s3Sync(workspaceLocalPath, workspaceS3Path);
+                s3Sync(workspaceLocalPath, workspaceS3Path); // FIXME: replace with async version
                 callback(null);
             });
         },
         (callback) => {
             const state = 'launching';
-            workspace.updateState(workspace_id, state, callback);
+            workspace.updateState(workspace_id, state, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        // query available hosts
+        (callback) => {
+            sqldb.query(sql.select_workspace_hosts, {}, function(err, result) {
+                if (ERR(err, callback)) return;
+                logger.info(`controlContainer workspace_hosts query: ${JSON.stringify(result.rows)}`);
+                const workspace_hosts = result.rows;
+                callback(null, workspace_hosts);
+            });
+        },
+        // choose host
+        (workspace_hosts, callback) => {
+            const index = Math.floor(Math.random() * workspace_hosts.length);
+            const workspace_host = workspace_hosts[index];
+            logger.info(`controlContainer workspace_host: ${JSON.stringify(workspace_host)}`);
+            const params = {
+                workspace_id,
+                workspace_host_id: workspace_host.id,
+            };
+            sqldb.query(sql.update_workspaces_workspace_host_id, params, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null, workspace_host);
+            });
         },
     ], (err) => {
-        if (ERR(err, next)) return;
+        if (err) {
+            logger.error(err);
+            // FIXME: we should set the workspace state to 
+        }
     });
 });
 
@@ -96,7 +126,8 @@ router.get('/:workspace_id/:action', (req, res, next) => {
         workspace.controlContainer(workspace_id, 'destroy', (err) => {
             if (ERR(err, next)) return;
             const state = 'stopped';
-            workspace.updateState(workspace_id, state, () => {
+            workspace.updateState(workspace_id, state, (err) => {
+                if (ERR(err, callback)) return;
                 res.redirect(`/workspace/${workspace_id}`);
             });
         });
