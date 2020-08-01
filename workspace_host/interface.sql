@@ -1,11 +1,6 @@
 -- BLOCK select_workspace_settings
 SELECT
-    workspace_image,
-    workspace_port,
-    workspace_args,
-    workspace_home,
-    workspace_graded_files,
-    workspace_url_rewrite
+    *
 FROM
     questions AS q
     JOIN variants AS v ON (v.question_id = q.id)
@@ -24,3 +19,13 @@ INSERT INTO workspace_hosts
     (hostname)
 VALUES
     ($hostname);
+
+-- BLOCK update_load_count
+UPDATE workspace_hosts as wh
+SET
+    load_count = load_count + $count
+FROM
+    workspaces as w
+WHERE
+    w.id = $workspace_id
+    AND w.workspace_host_id = wh.id;

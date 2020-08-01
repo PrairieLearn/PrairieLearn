@@ -2,7 +2,6 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
 const request = require('request');
-const port = 8081;
 const path = require('path');
 const AWS = require('aws-sdk');
 const Docker = require('dockerode');
@@ -14,14 +13,25 @@ const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
+const argv = require('yargs-parser') (process.argv.slice(2));
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
     if (err) logger.debug(err);
 });
+const awsConfig = {
+    s3ForcePathStyle: true,
+    accessKeyId: 'S3RVER',
+    secretAccessKey: 'S3RVER',
+    endpoint: new AWS.Endpoint('http://localhost:5000'),
+};
 
-const config = require('../lib/config.js');
-config.loadConfig('config.json');
+const config = require('../lib/config');
+let configFilename = 'config.json';
+if ('config' in argv) {
+    configFilename = argv['config'];
+}
+config.loadConfig(configFilename);
 
 const workspaceBucketName = config.workspaceS3Bucket;
 if (workspaceBucketName == '') {
@@ -59,8 +69,7 @@ async.series([
     },
     function(callback) {
         const params = {
-            hostname: config.workspaceContainerLocalhost,
-            // hostname: config.workspaceNativeLocalhost,
+            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
             if (ERR(err, callback)) return;
@@ -114,7 +123,7 @@ const workspaceProxyOptions = {
         var workspace_id = parseInt(url.replace('/workspace/', ''));
         //logger.info(`workspace_id: ${workspace_id}`);
         if (workspace_id in id_workspace_mapper) {
-            url = `http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`;
+            url = `http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`;
             //logger.info(`proxy router: Router URL: ${url}`);
             return url;
         } else {
@@ -149,7 +158,7 @@ app.post('/', function(req, res) {
     }
 });
 
-app.listen(port, () => console.log(`Listening on http://${config.workspaceNativeLocalhost}:${port}/`));
+app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${config.workspaceDevHostPort}`));
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
@@ -246,7 +255,7 @@ function _checkServer(workspace_id, container, callback) {
 
     const startTime = (new Date()).getTime();
     function checkWorkspace() {
-        request(`http://${config.workspaceNativeLocalhost}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
+        request(`http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode) {
                 /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
@@ -275,6 +284,8 @@ function _querySelectContainerSettings(workspace_id, callback) {
             url_rewrite = true;
         }
 
+        const syncIgnore = result.rows[0].workspace_sync_ignore || [];
+        id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
         const settings = {
             workspace_image: result.rows[0].workspace_image,
             workspace_port: result.rows[0].workspace_port,
@@ -298,7 +309,8 @@ function _getSettingsWrapper(workspace_id, callback) {
 }
 
 async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     let body;
     if (isDirectory) {
         body = '';
@@ -328,7 +340,8 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
 }
 
 function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     if (isDirectory) {
         S3FilePath += '/';
     }
@@ -366,7 +379,9 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
         }
     }
-    const s3 = new AWS.S3();
+
+    const s3 = new AWS.S3(awsConfig);
+
     var downloadParams = {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
@@ -436,14 +451,20 @@ function _autoUpdateJobManager() {
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, localPath} = _getWorkspaceByPath(path);
         const s3Name = id_workspace_mapper[workspace_id].s3Name;
-        logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}, isDirectory_str=${isDirectory_str}`);
-
+        const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
+        logger.info(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`watch: localPath=${localPath}`);
+        logger.info(`watch: syncIgnore=${id_workspace_mapper[workspace_id].syncIgnore}`);
+        
         let s3Path;
         if (!workspace_id) {
             logger.info(`watch return: workspace_id not mapped yet`);
             return;
         } else if (localPath === '') {
             logger.info(`watch continue: empty (root) path`);
+            continue;
+        } else if (syncIgnore.filter((ignored) => {return localPath.startsWith(ignored);})) {
+            logger.info(`watch continue: syncIgnored`);
             continue;
         } else {
             s3Path = `${s3Name}/${localPath}`;
@@ -477,7 +498,8 @@ function _autoUpdateJobManager() {
 }
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
-    const s3 = new AWS.S3();
+    const s3 = new AWS.S3(awsConfig);
+
     var listingParams = {
         Bucket: workspaceBucketName,
         Prefix: S3curDirPath,
@@ -640,7 +662,10 @@ function _createContainer(workspace_id, port, settings, callback) {
             port_id_mapper[port] = workspace_id;
             logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            callback(null, container);
+            sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null, container);
+            });
         }
     });
 }
@@ -664,7 +689,10 @@ function _delContainer(workspace_id, container, callback) {
         if (ERR(err, callback)) return;
         delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
         delete(id_workspace_mapper[workspace_id]);
-        callback(null, workspace_id, container);
+        sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null, workspace_id, container);
+        });
     });
 }
 

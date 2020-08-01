@@ -10,8 +10,11 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 
 * `image`: Dockerhub image that will be used to serve this question
 * `port`: port number used in the Docker image
+* `home`: home directory in the Docker image
 * `gradedFiles`: list of files or directories that will be copied for grading
-* `args`: command line arguments to pass to the Docker
+* `args` (optional): command line arguments to pass to the Docker
+* `syncIgnore` (optional): list of files or directories that will be excluded from sync
+* `urlRewrite` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 A full `info.json` file should look something like:
 
@@ -24,11 +27,15 @@ A full `info.json` file should look something like:
     "type": "v3",
     "workspaceOptions": {
         "image": "prairielearn/workspace-vscode",
-        "port": 15000,
+        "port": 8080,
+        "home": "/home/coder",
         "args": "--auth none",
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c"
+        ],
+        "syncIgnore": [
+            ".local/share/code-server/"
         ]
     }
 }
