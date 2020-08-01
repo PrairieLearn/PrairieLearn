@@ -8,7 +8,6 @@ const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
 const logger = require('../lib/logger');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');

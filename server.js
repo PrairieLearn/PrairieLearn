@@ -172,7 +172,7 @@ const workspaceProxyOptions = {
                   = 'SELECT q.*'
                   + ' FROM questions AS q'
                   + ' JOIN variants AS v ON (v.question_id = q.id)'
-                  + ' WHERE v.workspace_id = $workspace_id;'
+                  + ' WHERE v.workspace_id = $workspace_id;';
             const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
             let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
             if (workspace_url_rewrite == null) workspace_url_rewrite = true;
