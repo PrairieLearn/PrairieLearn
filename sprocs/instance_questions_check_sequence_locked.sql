@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS boolean AS $$
 DECLARE
     ai_id bigint;
+    prev_iq_open boolean;
     prev_aq_id bigint;
     prev_iq_highest_submission_score double precision;
     relevant_min_advance_perc double precision;
@@ -13,16 +14,17 @@ DECLARE
 
 BEGIN
 
-    SELECT iq.assessment_instance_id INTO ai_id
+    SELECT iq.assessment_instance_id, iq.open INTO ai_id
     FROM instance_questions iq
     WHERE iq.id = iq_id;
 
     -- 1. Get the id and score_perc of the previous instance question in the assessment.
-    SELECT _prev_aq_id, _prev_iq_highest_submission_score INTO prev_aq_id, prev_iq_highest_submission_score
+    SELECT _prev_aq_id, _prev_iq_open, _prev_iq_highest_submission_score INTO prev_aq_id, prev_iq_open, prev_iq_highest_submission_score
     FROM (
         SELECT
             iq.id AS cur_iq,
             (lag(aq.id) OVER w) AS _prev_aq_id,
+            (lag(iq.open) OVER w) AS _prev_iq_open,
             (lag(iq.highest_submission_score) OVER w) AS _prev_iq_highest_submission_score
         FROM
             assessment_instances AS ai
@@ -37,8 +39,9 @@ BEGIN
     ) AS prev_iq
     WHERE cur_iq = iq_id;
 
-    -- Return false early if iq_id is the first question in the assessment.
-    IF prev_aq_id IS NULL THEN
+    -- Return false early if iq_id is the first question in the assessment,
+    -- or if no attempts for credit remain.
+    IF (prev_aq_id IS NULL) OR (prev_iq_open = false) THEN
         RETURN false;
     END IF;
 
