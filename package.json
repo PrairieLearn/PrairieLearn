@@ -22,6 +22,7 @@
         "byline": "^5.0.0",
         "chart.js": "^2.9.3",
         "cheerio": "^0.22.0",
+        "chokidar": "^3.4.1",
         "clipboard": "^2.0.6",
         "cookie-parser": "^1.4.5",
         "crypto-js": "^4.0.0",
@@ -135,7 +136,8 @@
         "ignore": [
             "public/*",
             "exampleCourse/*",
-            "testCourse/*"
+            "testCourse/*",
+            "workspace_host/*"
         ],
         "ext": "js,json,sql"
     }

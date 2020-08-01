@@ -209,6 +209,7 @@
             "required": [
                 "image",
                 "port",
+                "home",
                 "gradedFiles"
             ],
             "properties": {
@@ -220,11 +221,19 @@
                     "description": "The port number used in the Docker image.",
                     "type": "integer"
                 },
+                "home": {
+                    "description": "The home directory of the workspace container.",
+                    "type": "string"
+                },
                 "args": {
                     "description": "Command line arguments to pass to the Docker.",
                     "type": "string"
                 },
-                 "gradedFiles": {
+                "rewriteUrl": {
+                    "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
+                    "type": "boolean"
+                },
+                "gradedFiles": {
                     "description": "The list of files or directories that will be copied for grading.",
                     "type": "array",
                     "items": {
