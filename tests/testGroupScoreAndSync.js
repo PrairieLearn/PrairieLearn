@@ -21,18 +21,12 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
 
-const storedConfig = {};
 const question = [{qid: 'addNumbers', type: 'Freeform', maxPoints:5}];
 const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
     this.timeout(10000);
-    before('set authenticated user', function(callback) {
-        storedConfig.authUid = config.authUid;
-        storedConfig.authName = config.authName;
-        storedConfig.authUin = config.authUin;
-        callback(null);
-    });
+    
     before('set up testing server', helperServer.before(courseDir));
     after('shut down testing server', helperServer.after);
     describe('1. database initialization', function() {
