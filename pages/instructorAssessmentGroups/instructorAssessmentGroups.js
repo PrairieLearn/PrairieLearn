@@ -12,6 +12,10 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+/*
+This function run all needed SQL queries to load the page at the same time that res passed in will be saved.
+e.g res.locals.errormsg from POST functions can be displayed on the frontend.
+*/
 function obtainInfo(req, res, next){
     //downloads
     const prefix = sanitizeName.assessmentFilenamePrefix(res.locals.assessment, res.locals.assessment_set, res.locals.course_instance, res.locals.course);
