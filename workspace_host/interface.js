@@ -68,6 +68,7 @@ async.series([
     },
     function(callback) {
         const params = {
+            instance_id: config.workspaceDevHostInstanceId,
             hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
@@ -232,12 +233,6 @@ function _querySelectContainerSettings(workspace_id, callback) {
         if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
-        /* We can't use the || idiom for url_rewrite because it'll override if false */
-        let url_rewrite = result.rows[0].workspace_url_rewrite;
-        if (url_rewrite == null) {
-            url_rewrite = true;
-        }
-
         const syncIgnore = result.rows[0].workspace_sync_ignore || [];
         id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
         const settings = {
@@ -246,7 +241,6 @@ function _querySelectContainerSettings(workspace_id, callback) {
             workspace_home: result.rows[0].workspace_home,
             workspace_graded_files: result.rows[0].workspace_graded_files,
             workspace_args: result.rows[0].workspace_args || '',
-            workspace_url_rewrite: url_rewrite,
         };
         callback(null, settings);
     });
@@ -382,7 +376,7 @@ function _getWorkspaceByPath(path) {
 
     if (typeof id_workspace_mapper === 'undefined') {
         logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
-        return;
+        return {workspace_id: null, localPath: null};
     }
 
     const workspace_id = Object.keys(id_workspace_mapper).find(
@@ -391,7 +385,7 @@ function _getWorkspaceByPath(path) {
 
     if (typeof workspace_id === 'undefined') {
         logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
-        return;
+        return {workspace_id: null, localPath: null};
     }
 
     return {workspace_id, localPath};
@@ -404,11 +398,13 @@ function _autoUpdateJobManager() {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        if (workspace_id == null) continue;
+        logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
         const s3Name = id_workspace_mapper[workspace_id].s3Name;
         const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
         logger.info(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         logger.info(`watch: localPath=${localPath}`);
-        logger.info(`watch: syncIgnore=${id_workspace_mapper[workspace_id].syncIgnore}`);
+        logger.info(`watch: syncIgnore=${syncIgnore}`);
         
         let s3Path;
         if (!workspace_id) {
@@ -417,7 +413,7 @@ function _autoUpdateJobManager() {
         } else if (localPath === '') {
             logger.info(`watch continue: empty (root) path`);
             continue;
-        } else if (syncIgnore.filter((ignored) => {return localPath.startsWith(ignored);})) {
+        } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
             logger.info(`watch continue: syncIgnored`);
             continue;
         } else {
@@ -426,12 +422,12 @@ function _autoUpdateJobManager() {
         }
 
         if (update_queue[key].action == 'update') {
-            jobs.push((mockCallback) => {
-                _uploadToS3(path, isDirectory, s3Path, mockCallback);
+            jobs.push((callback) => {
+                _uploadToS3(path, isDirectory, s3Path, callback);
             });
         } else if (update_queue[key].action == 'delete') {
-            jobs.push((mockCallback) => {
-                _deleteFromS3(path, isDirectory, s3Path, mockCallback);
+            jobs.push((callback) => {
+                _deleteFromS3(path, isDirectory, s3Path, callback);
             });
         }
     }
@@ -481,9 +477,9 @@ function _syncPullContainer(workspace_id, callback) {
         if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
-            jobs.push( ((mockCallback) => {
+            jobs.push( ((callback) => {
                 _downloadFromS3(filePath, S3filePath, (_, status) => {
-                    mockCallback(null, status);
+                    callback(null, status);
                 });
             }));
         });
@@ -518,9 +514,9 @@ async function _syncPushContainer(workspace_id, callback) {
     var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
-        jobs.push( ((mockCallback) => {
-            _uploadToS3(filePath, S3filePath, mockCallback);
-        }));
+        jobs.push((callback) => {
+            _uploadToS3(filePath, S3filePath, callback);
+        });
     });
 
     var status = [];
@@ -672,12 +668,10 @@ function _stopContainer(workspace_id, container, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, res) {
-    if (!(workspace_id in id_workspace_mapper)) {
-        id_workspace_mapper[workspace_id] = {};
-        id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
-        id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
-        logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
-    }
+    id_workspace_mapper[workspace_id] = {};
+    id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
+    id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+    logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
     
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},

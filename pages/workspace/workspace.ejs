@@ -28,24 +28,32 @@
 
     <div class="collapse navbar-collapse" id="workspace-nav">
       <ul class="navbar-nav ml-auto">
+        <!--
         <li class="nav-item ml-2">
           <a id="reload" class="nav-item btn btn-light" href="#">
             <i class="fas fa-redo text-primary" aria-hidden="true"></i>
             Reload
           </a>
         </li>
+        -->
         <li class="nav-item ml-2">
-          <a id="restart" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
+          <!-- this looks horrible -->
+          You can refresh this tab at any time, or close and re-open it.
+        </li>
+        <li class="nav-item ml-2">
+          <a id="reboot" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
-            Restart
+            Reboot
           </a>
         </li>
+        <!--
         <li class="nav-item ml-2">
           <a id="close" class="nav-item btn btn-light" href="#">
             <i class="fas fa-power-off text-danger" aria-hidden="true"></i>
             Close
           </a>
         </li>
+        -->
       </ul>
     </div>
   </nav>
@@ -60,6 +68,7 @@
 
   <script>
     $(function () {
+        const iframe = document.getElementById('workspace_container');
         var socket = io('/workspace');
 
         const showLoadingFrame = () => {
@@ -72,7 +81,7 @@
             document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
         };
 
-        const iframe = document.getElementById('workspace_container');
+        /*
         iframe.addEventListener('load', function () {
             var elems = iframe.contentWindow.document.getElementsByTagName('pre');
             if (elems.length == 1) {
@@ -91,7 +100,9 @@
                 showWorkspaceFrame();
             }
         });
+        */
 
+        /*
         socket.on('connect', () => {
             // document.getElementById('state').innerHTML = 'connected';
 
@@ -109,10 +120,15 @@
                 window.open('', '_self').close();
             };
         });
+        */
 
         function setState(state) {
-            if (state === 'running') {
+            if (state == 'running') {
+                showWorkspaceFrame();
                 iframe.src = `${window.location.href}/container/`;
+            }
+            if (state == 'stopped') {
+                iframe.src = 'about:blank';
             }
             document.getElementById('state').innerHTML = state;
         }
