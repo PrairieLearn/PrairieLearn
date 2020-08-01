@@ -10,7 +10,7 @@ pycryptodome==3.9.8
 pyquaternion==0.9.5
 regex==2020.6.8
 scipy==1.5.2
-sympy==1.6
+sympy==1.6.1
 rpy2==3.3.5
 pygraphviz==1.5
 ansi2html==1.5.2
