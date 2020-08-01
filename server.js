@@ -163,10 +163,43 @@ app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
+    pathRewrite: async (path) => {
+        try {
+            const match = path.match('/workspace/([0-9]+)/container/(.*)');
+            if (!match) throw new Error(`Could not match path: ${path}`);
+            const workspace_id = parseInt(match[1]);
+            const sql
+                  = 'SELECT q.*'
+                  + ' FROM questions AS q'
+                  + ' JOIN variants AS v ON (v.question_id = q.id)'
+                  + ' WHERE v.workspace_id = $workspace_id;';
+            const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
+            let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+            if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+            if (!workspace_url_rewrite) {
+                return path;
+            }
+            var pathSuffix = match[2];
+            const newPath = '/' + pathSuffix;
+            return newPath;
+        } catch (err) {
+            logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+            return path;
+        }
+    },
     logProvider: _provider => logger,
-    router: async () => {
-        let url = `http://${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}/`;
-        return url;
+    router: async (req) => {
+        try {
+            const match = req.url.match(/^\/workspace\/([0-9]+)\/container\//);
+            if (!match) throw new Error(`Could not match URL: ${req.url}`);
+            const workspace_id = match[1];
+            const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
+            const url = `http://${result.rows[0].hostname}/`;
+            return url;
+        } catch (err) {
+            logger.error(`Error in router for url=${req.url}: ${err}`);
+            return 'not-matched';
+        }
     },
 };
 const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);

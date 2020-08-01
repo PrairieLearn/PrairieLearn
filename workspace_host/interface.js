@@ -8,7 +8,6 @@ const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
 const logger = require('../lib/logger');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');
@@ -89,51 +88,6 @@ const docker = new Docker();
 
 var id_workspace_mapper = {};
 var port_id_mapper = {};
-const workspaceProxyOptions = {
-    target: 'invalid',
-    ws: true,
-    pathRewrite: (path) => {
-        //logger.info(`proxy pathRewrite: path='${path}'`);
-        var match = path.match('/workspace/([0-9]+)/container/(.*)');
-        if (match) {
-            const workspace_id = parseInt(match[1]);
-            if (!(workspace_id in id_workspace_mapper)) {
-                logger.info(`proxy pathRewrite: Could not find workspace_id=${workspace_id}`);
-                return path;
-            }
-            const workspace = id_workspace_mapper[workspace_id];
-            //logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_workspace_mapper[${workspace_id}].port=${id_workspace_mapper[workspace_id].port}`);
-            if (!workspace.settings.workspace_url_rewrite) {
-                logger.info(`proxy pathRewrite: URL rewriting disabled for workspace_id=${workspace_id}`);
-                return path;
-            }
-            var pathSuffix = match[2];
-            const newPath = '/' + pathSuffix;
-            //logger.info(`proxy pathRewrite: Matched suffix='${pathSuffix}'; returning newPath: ${newPath}`);
-            return newPath;
-        } else {
-            logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
-            return path;
-        }
-    },
-    logProvider: _provider => logger,
-    router: (req) => {
-        //logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
-        var url = req.url;
-        var workspace_id = parseInt(url.replace('/workspace/', ''));
-        //logger.info(`workspace_id: ${workspace_id}`);
-        if (workspace_id in id_workspace_mapper) {
-            url = `http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`;
-            //logger.info(`proxy router: Router URL: ${url}`);
-            return url;
-        } else {
-            logger.info(`proxy router: Router URL is empty`);
-            return '';
-        }
-    },
-};
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/([0-9])+/*', workspaceProxy);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -273,7 +227,7 @@ function _checkServer(workspace_id, container, callback) {
     setTimeout(checkWorkspace, checkMilliseconds);
 }
 
-function _queryContainerSettings(workspace_id, callback) {
+function _querySelectContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
         if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
@@ -298,10 +252,10 @@ function _queryContainerSettings(workspace_id, callback) {
     });
 }
 
-function _getContainerSettings(workspace_id, callback) {
+function _getSettingsWrapper(workspace_id, callback) {
     async.parallel({
         port: (callback) => {_getAvailablePort(workspace_id, 1024, callback);},
-        settings: (callback) => {_queryContainerSettings(workspace_id, callback);},
+        settings: (callback) => {_querySelectContainerSettings(workspace_id, callback);},
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         callback(null, workspace_id, results.port, results.settings);
@@ -586,6 +540,15 @@ async function _syncPushContainer(workspace_id, callback) {
     });
 }
 
+function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
+    const hostname = `${config.workspaceDevContainerHostname}:${port}`;
+    //const hostname = `${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}`;
+    sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
 function _getContainer(workspace_id, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
     const container = docker.getContainer(localName);
@@ -654,9 +617,19 @@ function _createContainer(workspace_id, port, settings, callback) {
             logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
             sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
                 if (ERR(err, callback)) return;
-                callback(null, workspace_id, container);
+                callback(null, container);
             });
         }
+    });
+}
+
+function _createContainerWrapper(workspace_id, port, settings, callback) {
+    async.parallel({
+        query: (callback) => {_queryUpdateWorkspaceHostname(workspace_id, port, callback);},
+        container: (callback) => {_createContainer(workspace_id, port, settings, callback);},
+    }, (err, results) => {
+        if (ERR(err, callback)) return;
+        callback(null, workspace_id, results.container);
     });
 }
 
@@ -708,8 +681,8 @@ function initSequence(workspace_id, res) {
     
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
-        _getContainerSettings,
-        _createContainer,
+        _getSettingsWrapper,
+        _createContainerWrapper,
         _startContainer,
         _checkServer,
     ], function(err) {
