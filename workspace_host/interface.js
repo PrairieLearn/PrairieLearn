@@ -376,7 +376,7 @@ function _getWorkspaceByPath(path) {
 
     if (typeof id_workspace_mapper === 'undefined') {
         logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
-        return;
+        return {workspace_id: null, localPath: null};
     }
 
     const workspace_id = Object.keys(id_workspace_mapper).find(
@@ -385,7 +385,7 @@ function _getWorkspaceByPath(path) {
 
     if (typeof workspace_id === 'undefined') {
         logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
-        return;
+        return {workspace_id: null, localPath: null};
     }
 
     return {workspace_id, localPath};
@@ -398,11 +398,13 @@ function _autoUpdateJobManager() {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        if (workspace_id == null) continue;
+        logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
         const s3Name = id_workspace_mapper[workspace_id].s3Name;
         const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
         logger.info(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         logger.info(`watch: localPath=${localPath}`);
-        logger.info(`watch: syncIgnore=${id_workspace_mapper[workspace_id].syncIgnore}`);
+        logger.info(`watch: syncIgnore=${syncIgnore}`);
         
         let s3Path;
         if (!workspace_id) {
@@ -411,7 +413,7 @@ function _autoUpdateJobManager() {
         } else if (localPath === '') {
             logger.info(`watch continue: empty (root) path`);
             continue;
-        } else if (syncIgnore.filter((ignored) => {return localPath.startsWith(ignored);})) {
+        } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
             logger.info(`watch continue: syncIgnored`);
             continue;
         } else {
