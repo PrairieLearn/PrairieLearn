@@ -2,8 +2,6 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
 const request = require('request');
-// TODO: change to be configurable
-const PORT = 8081;
 const path = require('path');
 const AWS = require('aws-sdk');
 const Docker = require('dockerode');
@@ -60,7 +58,7 @@ async.series([
     },
     function(callback) {
         const params = {
-            hostname: config.workspaceDevHost,
+            hostname: config.workspaceDevHostHostname + ':' config.workspaceDevHostPort,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
             if (ERR(err, callback)) return;
@@ -114,7 +112,7 @@ const workspaceProxyOptions = {
         var workspace_id = parseInt(url.replace('/workspace/', ''));
         //logger.info(`workspace_id: ${workspace_id}`);
         if (workspace_id in id_workspace_mapper) {
-            url = `http://${config.workspaceDevContainer}:${id_workspace_mapper[workspace_id].port}/`;
+            url = `http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`;
             //logger.info(`proxy router: Router URL: ${url}`);
             return url;
         } else {
@@ -149,7 +147,7 @@ app.post('/', function(req, res) {
     }
 });
 
-app.listen(PORT, () => console.log(`Listening on http://${config.workspaceDevContainer}:${PORT}/`));
+app.listen(config.workspaceDevHostPost, () => console.log(`Listening on port ${config.workspaceDevHostPost}`));
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
@@ -246,7 +244,7 @@ function _checkServer(workspace_id, container, callback) {
 
     const startTime = (new Date()).getTime();
     function checkWorkspace() {
-        request(`http://${config.workspaceDevContainer}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
+        request(`http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode) {
                 /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
