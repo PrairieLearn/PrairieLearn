@@ -1,6 +1,6 @@
 -- BLOCK select_workspace_settings
 SELECT
-    *
+    q.*
 FROM
     questions AS q
     JOIN variants AS v ON (v.question_id = q.id)

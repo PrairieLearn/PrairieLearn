@@ -89,51 +89,6 @@ const docker = new Docker();
 
 var id_workspace_mapper = {};
 var port_id_mapper = {};
-const workspaceProxyOptions = {
-    target: 'invalid',
-    ws: true,
-    pathRewrite: (path) => {
-        //logger.info(`proxy pathRewrite: path='${path}'`);
-        var match = path.match('/workspace/([0-9]+)/container/(.*)');
-        if (match) {
-            const workspace_id = parseInt(match[1]);
-            if (!(workspace_id in id_workspace_mapper)) {
-                logger.info(`proxy pathRewrite: Could not find workspace_id=${workspace_id}`);
-                return path;
-            }
-            const workspace = id_workspace_mapper[workspace_id];
-            //logger.info(`proxy pathRewrite: Matched workspace_id=${workspace_id}, id_workspace_mapper[${workspace_id}].port=${id_workspace_mapper[workspace_id].port}`);
-            if (!workspace.settings.workspace_url_rewrite) {
-                logger.info(`proxy pathRewrite: URL rewriting disabled for workspace_id=${workspace_id}`);
-                return path;
-            }
-            var pathSuffix = match[2];
-            const newPath = '/' + pathSuffix;
-            //logger.info(`proxy pathRewrite: Matched suffix='${pathSuffix}'; returning newPath: ${newPath}`);
-            return newPath;
-        } else {
-            logger.info(`proxy pathRewrite: No match; returning path: ${path}`);
-            return path;
-        }
-    },
-    logProvider: _provider => logger,
-    router: (req) => {
-        //logger.info(`proxy router: Creating workspace router for URL: ${req.url}`);
-        var url = req.url;
-        var workspace_id = parseInt(url.replace('/workspace/', ''));
-        //logger.info(`workspace_id: ${workspace_id}`);
-        if (workspace_id in id_workspace_mapper) {
-            url = `http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`;
-            //logger.info(`proxy router: Router URL: ${url}`);
-            return url;
-        } else {
-            logger.info(`proxy router: Router URL is empty`);
-            return '';
-        }
-    },
-};
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/([0-9])+/*', workspaceProxy);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -587,8 +542,8 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
-    //const hostname = `${config.workspaceDevContainerHostname}:${port}`;
-    const hostname = `${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}`;
+    const hostname = `${config.workspaceDevContainerHostname}:${port}`;
+    //const hostname = `${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}`;
     sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
