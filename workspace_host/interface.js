@@ -672,12 +672,10 @@ function _stopContainer(workspace_id, container, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, res) {
-    if (!(workspace_id in id_workspace_mapper)) {
-        id_workspace_mapper[workspace_id] = {};
-        id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
-        id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
-        logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
-    }
+    id_workspace_mapper[workspace_id] = {};
+    id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
+    id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+    logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
     
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
