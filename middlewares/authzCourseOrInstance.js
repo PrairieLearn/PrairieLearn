@@ -397,13 +397,13 @@ module.exports = function(req, res, next) {
                             return callback(err);
                         }
 
-                        // The effective user is a student (with no course or course instance role) with
-                        // a different UID than the authn user (note UID is unique), and the authn user is
-                        // not a Student Data Editor - remove all override cookies and return with error
+                        // The effective user is a student (with no course or course instance role prior to
+                        // other overrides) with a different UID than the authn user (note UID is unique), and
+                        // the authn user is not a Student Data Editor - remove all override cookies and return
+                        // with error
                         if ((user.uid != res.locals.authn_user.uid)                                             // effective uid is not the same as authn uid
                             && result.rows[0].permissions_course_instance.has_student_access_with_enrollment    // effective user is enrolled with access
-                            && (result.rows[0].permissions_course_instance.course_instance_role == 'None')      // effective user is not course instance staff
-                            && (result.rows[0].permissions_course.course_role == 'None')                        // effective user is not course staff
+                            && (!user_with_requested_uid_has_instructor_access)                                 // effective user is not an instructor (i.e., is a student)
                             && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {            // authn user is not a Student Data Editor
                             overrides.forEach((override) => {
                                 debug(`clearing cookie: ${override.cookie}`);
