@@ -93,16 +93,15 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        -- if it is a group work AND group_configs does not exist, insert new
-        PERFORM 1 FROM group_configs WHERE assessment_id = new_assessment_id AND deleted_at IS NULL;
-        IF NOT FOUND AND (assessment->>'group_work')::boolean THEN
+        -- if it is a group work try to insert a group_config
+        IF (assessment->>'group_work')::boolean THEN
             INSERT INTO group_configs
                 (course_instance_id,
                 assessment_id
             ) VALUES (
                 new_course_instance_id,
                 new_assessment_id
-            ); 
+            ) ON CONFLICT DO NOTHING;
         END IF;
         
         -- Now process all access rules for this assessment

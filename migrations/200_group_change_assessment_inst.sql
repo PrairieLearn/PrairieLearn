@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS group_configs (
 
 CREATE INDEX group_configs_course_instance_id_key ON group_configs (course_instance_id);
 CREATE INDEX group_configs_assessment_id_key ON group_configs (assessment_id);
+CREATE UNIQUE INDEX unique_group_config_per_assessment ON group_configs (assessment_id)
+    WHERE deleted_at IS NULL;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -39,6 +41,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- one-to-many relationship for each group_configs: an assessment with a group_config has many groups
 -- groups table only stores id and names
 CREATE TABLE IF NOT EXISTS groups (
@@ -59,7 +63,6 @@ CREATE UNIQUE INDEX unique_group_name ON groups (group_config_id, lower(name))
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
 -- simple join table, no extra metadata - that could be stored in audit logs if needed
 -- one-to-many relationship for each group; this table joins group_id with user_id together
 CREATE TABLE IF NOT EXISTS group_users (
@@ -90,6 +93,7 @@ ALTER TABLE last_accesses ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE
 ALTER TABLE last_accesses ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
 ALTER TABLE last_accesses ADD CONSTRAINT last_accesses_group_id_key UNIQUE (group_id);
 ALTER TABLE last_accesses ALTER COLUMN user_id DROP NOT NULL;
+
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 -- a log table to store all create, join, leave, delete activities
