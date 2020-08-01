@@ -68,6 +68,7 @@ async.series([
     },
     function(callback) {
         const params = {
+            instance_id: config.workspaceDevHostInstanceId,
             hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {

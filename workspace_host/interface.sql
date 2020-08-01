@@ -16,9 +16,10 @@ WHERE
 
 -- BLOCK insert_workspace_hosts
 INSERT INTO workspace_hosts
-    (hostname)
-VALUES
-    ($hostname);
+        (instance_id,  hostname)
+VALUES ($instance_id, $hostname)
+ON CONFLICT (instance_id) DO UPDATE
+SET hostname = EXCLUDED.hostname;
 
 -- BLOCK update_load_count
 UPDATE workspace_hosts as wh
