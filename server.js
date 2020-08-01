@@ -165,7 +165,7 @@ const workspaceProxyOptions = {
     ws: true,
     logProvider: _provider => logger,
     router: async () => {
-        let url = `http://${config.workspaceDevHost}/`;
+        let url = `http://${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}/`;
         return url;
     },
 };
