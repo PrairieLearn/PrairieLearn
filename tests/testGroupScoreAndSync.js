@@ -27,7 +27,6 @@ const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
     this.timeout(10000);
-
     before('set authenticated user', function(callback) {
         storedConfig.authUid = config.authUid;
         storedConfig.authName = config.authName;
@@ -50,16 +49,11 @@ describe('assessment instance group synchronization test', function () {
                 callback(null);
             });
         });
-        
-    
-        
     });
     describe('2. GET to instructor assessments URL group tab for the first assessment', function() {
         it('should load successfully', function(callback) {
             request(locals.instructorAssessmentsUrlGroupTab, function(error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
@@ -97,10 +91,8 @@ describe('assessment instance group synchronization test', function () {
                 groupname: 'test_group',
                 uids: locals.studentUsers[0].uid+','+ locals.studentUsers[1].uid+',' + locals.studentUsers[2].uid,
             };
-            request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response) {
-                if (error) {
-                    return callback(error);
-                }
+            request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (err, response) {
+                if (ERR(err, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
@@ -115,10 +107,9 @@ describe('assessment instance group synchronization test', function () {
             sqldb.query(sql.select_group_users, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 assert.equal(result.rowCount, 3);
+                callback(null);
             });
-            callback(null);
         });
-
     });
     
     describe('4. assessment_instance initialization', function(){
@@ -131,9 +122,7 @@ describe('assessment instance group synchronization test', function () {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -157,9 +146,7 @@ describe('assessment instance group synchronization test', function () {
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
@@ -193,9 +180,7 @@ describe('assessment instance group synchronization test', function () {
             const questionUrl = locals.$('a:contains("HW6.2")').attr('href');
             locals.questionUrl = `${locals.siteUrl}${questionUrl}`;
             request(locals.questionUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
@@ -256,9 +241,7 @@ describe('assessment instance group synchronization test', function () {
             };
             _.assign(form, locals.submittedAnswer);
             request.post({url: locals.questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
@@ -298,12 +281,6 @@ describe('assessment instance group synchronization test', function () {
                 callback(null);
             });
         });
-        // it('should have the correct assessment_instance points', function() {
-        //     assert.approximately(locals.assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
-        // });
-        // it('should have the correct assessment_instance score_perc', function() {
-        //     assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 6e-2);
-        // });
     });
     describe('7. check Score for another student',function(){
         it('should be able to switch user we generated', function(callback) {
@@ -315,9 +292,7 @@ describe('assessment instance group synchronization test', function () {
         });
         it('should load assessment page successfully', function(callback) {
             request({url: locals.assessmentUrl, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -343,12 +318,6 @@ describe('assessment instance group synchronization test', function () {
                 callback(null);
             });
         });
-        // it('should have the correct assessment_instance points', function() {
-        //     assert.approximately(locals.assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
-        // });
-        // it('should have the correct assessment_instance score_perc', function() {
-        //     assert.approximately(locals.assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 6e-2);
-        // });
     });
 });
       
