@@ -38,28 +38,48 @@ BEGIN
             display_timezone
         );
 
-    -- start with no acccess
-    authorized := FALSE;
-    authorized_edit := FALSE;
-
-    -- give access if we aren't emulating
-    IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
-        authorized := user_result.authorized;
-        authorized_edit := user_result.authorized;
-    END IF;
-
-    -- give view access if we are a Student Data Viewer
-    IF (authz_data->>'authn_has_course_instance_permission_view')::boolean THEN
-        authorized := TRUE;
-    END IF;
-
-    -- give edit access if we are a Student Data Editor
-    IF (authz_data->>'authn_has_course_instance_permission_edit')::boolean THEN
-        authorized_edit := TRUE;
-    END IF;
-
-    -- we can't have higher edit access than view access
-    authorized_edit := authorized_edit AND authorized;
+    -- Assessment access is granted based only on effective user permissions.
+    --
+    -- You might wonder if it is necessary to check authn user permissions as well.
+    -- There are two things in particular you might worry about:
+    --
+    -- 1) Does the effective user have more permissions than the authn user?
+    --
+    --      No. We have already verified (middlewares/authzCourseOrInstance) that
+    --      the effective user has no more permissions than the authn user, throwing
+    --      an error otherwise.
+    --
+    -- 2) Is the effective user a student, and if so does the authn user have
+    --    permission to view or edit student data?
+    --
+    --      This concern only makes sense if the effective user has a different UID
+    --      than the authn user. There are two possibilities:
+    --
+    --      a) The effective user is an instructor. In this case, there is no need
+    --         to worry about student data permissions.
+    --
+    --      b) The effective user is a student. In this case, we would want to restrict
+    --         access depending on the course instance role of the authn user. However,
+    --         an authn user must be a "Student Data Editor" in order to emulate an
+    --         effective user with a different UID who is a student - again, this has
+    --         already been verified (middlewares/authzCourseOrInstance). So, we already
+    --         know that the authn user has exactly the course instance role that would
+    --         be required to keep access.
+    --
+    --       When we say that the effective user "is a student" or "is an instructor"
+    --       in this context, we mean without other overrides.
+    --
+    --  In short, don't worry about authn permissions.
+    --
+    --  Note that the situation is different for assessment instance access, because
+    --  an assessment instance - unlike an assessment - is associated with a particular
+    --  user (see authz_assessment_instance).
+    --
+    --  You might also wonder why we bother to distinguish between view (authorized)
+    --  and edit (authorized_edit) permissions, when clearly they will always be the
+    --  same. This is for legacy reasons and is something that should be cleaned up.
+    authorized := user_result.authorized;
+    authorized_edit := user_result.authorized;
 
     -- all other variables are from the effective user authorization
     credit := user_result.credit;
