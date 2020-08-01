@@ -2,119 +2,15 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const AWS = require('aws-sdk');
-const path = require('path');
-const fs = require('fs');
-const async = require('async');
-
 const logger = require('../../lib/logger');
-const config = require('../../lib/config');
 const workspace = require('../../lib/workspace');
 
 const error = require('@prairielearn/prairielib/error');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
-// https://stackoverflow.com/a/46213474/13138364
-const s3Sync = function (s3Path, bucketName) {
-    const awsConfig = {
-        s3ForcePathStyle: true,
-        accessKeyId: 'S3RVER',
-        secretAccessKey: 'S3RVER',
-        endpoint: new AWS.Endpoint('http://localhost:5000'),
-    };
-
-    const s3 = new AWS.S3(awsConfig);
-
-    function walkSync(currentDirPath, callback) {
-        fs.readdirSync(currentDirPath).forEach(function (name) {
-            const filePath = path.join(currentDirPath, name);
-            const stat = fs.statSync(filePath);
-            if (stat.isFile()) {
-                callback(filePath, stat);
-            } else if (stat.isDirectory()) {
-                walkSync(filePath, callback);
-            }
-        });
-    }
-
-    walkSync(s3Path, function (filePath, _stat) {
-        const bucketPath = filePath.substring(s3Path.length + 1);
-        const params = {
-            Bucket: bucketName,
-            Key: bucketPath,
-            Body: fs.readFileSync(filePath),
-        };
-        s3.putObject(params, function (err, _data) {
-            if (err) {
-                console.log(err);
-            } else {
-                console.log(`[workspace.js] synced ${bucketPath} to ${bucketName}`);
-            }
-        });
-    });
-};
-
-router.get('/:workspace_id', (req, res, next) => {
+router.get('/:workspace_id', (req, res, _next) => {
     const workspace_id = req.params.workspace_id;
     res.locals.workspace_id = workspace_id;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    // we've now rendered the page, anything past this point cannot render or use next()
-
-    async.series([
-        (callback) => {
-            sqldb.queryOneRow(sql.select_workspace_paths, {workspace_id}, function(err, result) {
-                if (ERR(err, callback)) return;
-
-                const course_path = result.rows[0].course_path;
-                const question_qid = result.rows[0].question_qid;
-
-                const workspaceLocalPath = `${course_path}/questions/${question_qid}/workspace`;
-                const workspaceS3Path = `${config.workspaceS3Bucket}/workspace-${workspace_id}`;
-
-                console.log(`[workspace.js] syncing ${workspaceLocalPath} to ${workspaceS3Path}`);
-                s3Sync(workspaceLocalPath, workspaceS3Path); // FIXME: replace with async version
-                callback(null);
-            });
-        },
-        (callback) => {
-            const state = 'launching';
-            workspace.updateState(workspace_id, state, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        // query available hosts
-        (callback) => {
-            sqldb.query(sql.select_workspace_hosts, {}, function(err, result) {
-                if (ERR(err, callback)) return;
-                logger.info(`controlContainer workspace_hosts query: ${JSON.stringify(result.rows)}`);
-                const workspace_hosts = result.rows;
-                callback(null, workspace_hosts);
-            });
-        },
-        // choose host
-        (workspace_hosts, callback) => {
-            const index = Math.floor(Math.random() * workspace_hosts.length);
-            const workspace_host = workspace_hosts[index];
-            logger.info(`controlContainer workspace_host: ${JSON.stringify(workspace_host)}`);
-            const params = {
-                workspace_id,
-                workspace_host_id: workspace_host.id,
-            };
-            sqldb.query(sql.update_workspaces_workspace_host_id, params, function(err, _result) {
-                if (ERR(err, callback)) return;
-                callback(null, workspace_host);
-            });
-        },
-    ], (err) => {
-        if (err) {
-            logger.error(err);
-            // FIXME: we should set the workspace state to 
-        }
-    });
 });
 
 router.get('/:workspace_id/:action', (req, res, next) => {
@@ -127,7 +23,7 @@ router.get('/:workspace_id/:action', (req, res, next) => {
             if (ERR(err, next)) return;
             const state = 'stopped';
             workspace.updateState(workspace_id, state, (err) => {
-                if (ERR(err, callback)) return;
+                if (ERR(err, next)) return;
                 res.redirect(`/workspace/${workspace_id}`);
             });
         });
