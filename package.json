@@ -92,7 +92,7 @@
         "tmp-promise": "^3.0.2",
         "unified": "^9.0.0",
         "unified-stream": "^1.0.6",
-        "unist-util-visit": "^2.0.2",
+        "unist-util-visit": "^2.0.3",
         "uuid": "^8.2.0",
         "viz.js": "^2.1.2",
         "winston": "^3.3.3",
