@@ -84,7 +84,7 @@ describe('Group based homework assess control on student side', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 6);
-            // there are 6 occurances of the same csrf, we will pick the first one
+            // there are 6 occurrences of the same csrf, we will pick the first one
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);

@@ -10,8 +10,6 @@ const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-
-
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
@@ -102,6 +100,5 @@ router.get('/', function(req, res, next) {
         });
     });
 });
-
 
 module.exports = router;

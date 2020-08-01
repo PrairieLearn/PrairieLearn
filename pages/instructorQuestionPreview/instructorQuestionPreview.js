@@ -59,6 +59,7 @@ function processIssue(req, res, callback) {
     const variant_id = req.body.__variant_id;
     sqldb.callOneRow('variants_ensure_question', [variant_id, res.locals.question.id], (err, _result) => {
         if (ERR(err, callback)) return;
+
         const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
         const params = [
             variant_id,
@@ -73,7 +74,7 @@ function processIssue(req, res, callback) {
         sqldb.call('issues_insert_for_variant', params, (err) => {
             if (ERR(err, callback)) return;
             callback(null, variant_id);
-        });   
+        });
     });
 }
 

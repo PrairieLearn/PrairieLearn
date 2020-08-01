@@ -126,13 +126,13 @@ teamB,four@example.com
 
 3. Copying the group assignments from another assessment.
 
-A backup of the current group assignments can be saved from the "Downloads" tab, under `<asssessment>_group_configs.csv`
+A copy of the current group assignments can be saved from the "Downloads" tab, under `<assessment>_group_configs.csv`
 
 ### Student options for groupWork
 
 ![Student perspective for joining a group](groupwork_student_perspective_join.png)
 
-If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via an invite code, which they can get from another classmate.
+If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via a join code, which they can get from another classmate.
 
 When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
 
