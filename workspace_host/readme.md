@@ -64,4 +64,4 @@ $ docker build workspaces/jupyterlab -t "prairielearn/workspace-jupyterlab"
 
 ## Notes for running natively
 
-In principle you can run both PL and `interface.js` natively, by setting `"workspaceNativeLocalhost": "localhost"` in PL's `config.json`. It's not clear whether this is currently working.
+In principle you can run both PL and `interface.js` natively, by setting `"workspaceDevContainer": "localhost"` in PL's `config.json`. It's not clear whether this is currently working.
