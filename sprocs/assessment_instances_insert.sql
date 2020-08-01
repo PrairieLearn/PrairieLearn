@@ -88,11 +88,21 @@ BEGIN
     -- ######################################################################
     -- start a record of the last access time
 
-    INSERT INTO last_accesses
-            (user_id, last_access)
-    VALUES  (user_id, current_timestamp)
-    ON CONFLICT (user_id) DO UPDATE
-    SET last_access = EXCLUDED.last_access;
+    -- (Just a question that I tried the CASE WHEN in ON CONFLICT but it does not work so I do the else if in that part)
+    -- After code review I will delete those two lines of comment
+    IF group_work THEN 
+        INSERT INTO last_accesses
+                (group_id, last_access)
+        VALUES  (tmp_group_id, current_timestamp)
+        ON CONFLICT (group_id) DO UPDATE
+        SET last_access = EXCLUDED.last_access;
+    ELSE 
+        INSERT INTO last_accesses
+                (user_id, last_access)
+        VALUES  (user_id, current_timestamp)
+        ON CONFLICT (user_id) DO UPDATE
+        SET last_access = EXCLUDED.last_access;
+    END IF;
 
     -- ######################################################################
     -- create new questions if necessary

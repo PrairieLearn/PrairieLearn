@@ -86,6 +86,10 @@ ALTER TABLE variants ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASC
 ALTER TABLE variants ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
 ALTER TABLE variants ALTER COLUMN user_id DROP NOT NULL;
 
+ALTER TABLE last_accesses ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE last_accesses ADD CONSTRAINT user_group_XOR CHECK ((user_id IS NOT NULL AND group_id is NULL) OR (group_id IS NOT NULL AND user_id is NULL));
+ALTER TABLE last_accesses ADD CONSTRAINT last_accesses_group_id_key UNIQUE (group_id);
+ALTER TABLE last_accesses ALTER COLUMN user_id DROP NOT NULL;
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 -- a log table to store all create, join, leave, delete activities
