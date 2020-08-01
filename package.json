@@ -75,7 +75,7 @@
         "remark-math": "^2.0.1",
         "remark-parse": "^8.0.2",
         "remark-rehype": "^7.0.0",
-        "request-promise-native": "^1.0.8",
+        "request-promise-native": "^1.0.9",
         "requirejs": "^2.3.5",
         "rimraf": "^3.0.2",
         "s3-upload-stream": "^1.0.7",
