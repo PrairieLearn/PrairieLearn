@@ -88,7 +88,7 @@
         "streamifier": "^0.1.1",
         "supports-color": "^7.1.0",
         "tar": "^6.0.2",
-        "three": "^0.118.3",
+        "three": "^0.119.1",
         "tmp-promise": "^3.0.2",
         "unified": "^9.1.0",
         "unified-stream": "^1.0.6",
