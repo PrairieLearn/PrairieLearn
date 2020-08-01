@@ -233,12 +233,6 @@ function _querySelectContainerSettings(workspace_id, callback) {
         if (ERR(err, callback)) return;
         logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
-        /* We can't use the || idiom for url_rewrite because it'll override if false */
-        let url_rewrite = result.rows[0].workspace_url_rewrite;
-        if (url_rewrite == null) {
-            url_rewrite = true;
-        }
-
         const syncIgnore = result.rows[0].workspace_sync_ignore || [];
         id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
         const settings = {
@@ -247,7 +241,6 @@ function _querySelectContainerSettings(workspace_id, callback) {
             workspace_home: result.rows[0].workspace_home,
             workspace_graded_files: result.rows[0].workspace_graded_files,
             workspace_args: result.rows[0].workspace_args || '',
-            workspace_url_rewrite: url_rewrite,
         };
         callback(null, settings);
     });
@@ -427,12 +420,12 @@ function _autoUpdateJobManager() {
         }
 
         if (update_queue[key].action == 'update') {
-            jobs.push((mockCallback) => {
-                _uploadToS3(path, isDirectory, s3Path, mockCallback);
+            jobs.push((callback) => {
+                _uploadToS3(path, isDirectory, s3Path, callback);
             });
         } else if (update_queue[key].action == 'delete') {
-            jobs.push((mockCallback) => {
-                _deleteFromS3(path, isDirectory, s3Path, mockCallback);
+            jobs.push((callback) => {
+                _deleteFromS3(path, isDirectory, s3Path, callback);
             });
         }
     }
@@ -482,9 +475,9 @@ function _syncPullContainer(workspace_id, callback) {
         if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
-            jobs.push( ((mockCallback) => {
+            jobs.push( ((callback) => {
                 _downloadFromS3(filePath, S3filePath, (_, status) => {
-                    mockCallback(null, status);
+                    callback(null, status);
                 });
             }));
         });
@@ -519,9 +512,9 @@ async function _syncPushContainer(workspace_id, callback) {
     var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
-        jobs.push( ((mockCallback) => {
-            _uploadToS3(filePath, S3filePath, mockCallback);
-        }));
+        jobs.push((callback) => {
+            _uploadToS3(filePath, S3filePath, callback);
+        });
     });
 
     var status = [];
