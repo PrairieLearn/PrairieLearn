@@ -33,22 +33,38 @@ app.use('/xterm-fit', express.static('node_modules/xterm-addon-fit'));
 /* Create one pseudoterminal that all connections share */
 let websockets = {};
 let ws_id = 0;
-let term_output = '';
-let term = pty.spawn(options.command, [], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 24,
-    cwd: options['working-dir'],
-    env: Object.assign({}, default_env, process.env),
-});
-term.on('data', function(data) {
-    term_output += data;
-    Object.values(websockets).forEach(ws => {
-        if (ws.readyState === 1) {
-            ws.send(data);
-        }
+let term_output;
+let term;
+
+/* Wrap the initialization so we can restart the terminal if the client
+   kills it (for example with ctrl-d) */
+const spawn_terminal = () => {
+    term_output = '';
+    term = pty.spawn(options.command, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 24,
+        cwd: options['working-dir'],
+        env: Object.assign({}, default_env, process.env),
     });
-});
+    term.on('data', function(data) {
+        term_output += data;
+        Object.values(websockets).forEach(ws => {
+            if (ws.readyState === 1) {
+                ws.send(data);
+            }
+        });
+    });
+    term.on('exit', () => {
+        Object.values(websockets).forEach(ws => {
+            if (ws.readyState === 1) {
+                ws.send('[Process completed]\r\n\r\n');
+            }
+        });
+        spawn_terminal();
+    });
+}
+spawn_terminal();
 
 /* Listen for any incoming websocket connections */
 app.ws('/', (ws, req) => {
