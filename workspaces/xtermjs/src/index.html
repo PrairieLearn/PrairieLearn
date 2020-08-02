@@ -27,8 +27,8 @@
 
          let socket = new WebSocket('ws://' + window.location.host + window.location.pathname);
          socket.onopen = () => {
-             term.onKey((ev) => {
-                 socket.send(JSON.stringify({ 'event': 'keypress', 'value': ev }));
+             term.onData((ev) => {
+                 socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
              });
              window.onresize = () => {
                  fit.fit();
