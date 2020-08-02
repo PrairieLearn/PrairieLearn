@@ -1,4 +1,11 @@
-<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
+<% if (authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) {
+
+  // Here, we are only checking if the effective user is an instructor. We are not
+  // attempting to check if this user has permission to view student data. That check
+  // would have already been made (when necessary) before granting access to the page
+  // on which this partial is included (an assessment instance or question instance).
+
+%>
 <div class="card mb-4 border-warning">
   <div class="card-header bg-warning">Instructor information</div>
   <div class="card-body">
