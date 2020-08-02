@@ -95,7 +95,7 @@ BEGIN
     -- Again, we only need to consider cases (3) and (4), both of which can be
     -- handled in exactly the same way with respect to access.
     IF (authz_data->'user'->>'user_id')::bigint != assessment_instance.user_id THEN
-        authorized := authorized AND authz_data->>'has_course_instance_permission_view'::boolean;
+        authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;
     END IF;
 END;
