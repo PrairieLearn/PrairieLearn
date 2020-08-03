@@ -26,7 +26,7 @@ const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
-const workspaceSocket = require('./lib/workspaceSocket');
+const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
 const { sqldb, migrations } = require('@prairielearn/prairielib');
 const sprocs = require('./sprocs');
@@ -160,6 +160,52 @@ app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
+// proxy workspaces to remote machines
+const workspaceProxyOptions = {
+    target: 'invalid',
+    ws: true,
+    pathRewrite: async (path) => {
+        try {
+            const match = path.match('/workspace/([0-9]+)/container/(.*)');
+            if (!match) throw new Error(`Could not match path: ${path}`);
+            const workspace_id = parseInt(match[1]);
+            const sql
+                  = 'SELECT q.*'
+                  + ' FROM questions AS q'
+                  + ' JOIN variants AS v ON (v.question_id = q.id)'
+                  + ' WHERE v.workspace_id = $workspace_id;';
+            const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
+            let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+            if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+            if (!workspace_url_rewrite) {
+                return path;
+            }
+            var pathSuffix = match[2];
+            const newPath = '/' + pathSuffix;
+            return newPath;
+        } catch (err) {
+            logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+            return path;
+        }
+    },
+    logProvider: _provider => logger,
+    router: async (req) => {
+        try {
+            const match = req.url.match(/^\/workspace\/([0-9]+)\/container\//);
+            if (!match) throw new Error(`Could not match URL: ${req.url}`);
+            const workspace_id = match[1];
+            const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
+            const url = `http://${result.rows[0].hostname}/`;
+            return url;
+        } catch (err) {
+            logger.error(`Error in router for url=${req.url}: ${err}`);
+            return 'not-matched';
+        }
+    },
+};
+const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
+app.use('/workspace/([0-9])+/container/', workspaceProxy);
+
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
 app.use(bodyParser.urlencoded({extended: false, limit: 1536 * 1024}));
@@ -222,22 +268,6 @@ app.use(function(req, res, next) {
     });
     next();
 });
-
-// proxy workspaces to remote machines
-const workspaceProxyOptions = {
-    target: 'invalid',
-    ws: true,
-    pathRewrite: {
-        '^/workspace/[0-9]/container/': '/',
-    },
-    logProvider: _provider => logger,
-    router: async () => {
-        let url = 'http://localhost:13746/';
-        return url;
-    },
-};
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/*/container/', workspaceProxy);
 
 // clear all cached course code in dev mode (no authorization needed)
 if (config.devMode) {
@@ -1057,10 +1087,8 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            workspaceSocket.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
+            workspace.init();
+            callback(null);
         },
         function(callback) {
             serverJobs.init(function(err) {

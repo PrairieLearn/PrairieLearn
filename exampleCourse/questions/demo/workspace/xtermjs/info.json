@@ -1,16 +1,17 @@
 {
-    "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
-    "title": "Workspace demo",
+    "uuid": "8a75c8cf-ed51-4141-9910-2da2f74cc8af",
+    "title": "Workspace demo: Xterm.js",
     "topic": "Workspace",
     "tags": [
         "su20",
+        "nnytko2",
         "tyang15"
     ],
     "type": "v3",
     "workspaceOptions": {
-        "image": "prairielearn/vscode-workspace",
-        "port": 15000,
-        "args": "--auth none",
+        "image": "prairielearn/workspace-xtermjs",
+        "port": 8080,
+        "home": "/home/prairie",
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c"

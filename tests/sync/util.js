@@ -151,8 +151,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @typedef {Object} QuestionWorkspaceOptions
  * @property {string} image
  * @property {number} port
+ * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
+ * @property {string[]} syncIgnore
+ * @property {string} urlRewrite
  */
 
  /**
@@ -318,11 +321,15 @@ const questions = {
     type: 'v3',
     workspaceOptions: {
       image: 'prairielearn/workspace-vscode',
-      port: 15000,
+      port: 8080,
+      home: '/home/coder',
       args: '--auth none',
       gradedFiles: [
         'animal.h',
         'animal.c',
+      ],
+      syncIgnore: [
+        '.local/share/code-server/',
       ],
     },
   },

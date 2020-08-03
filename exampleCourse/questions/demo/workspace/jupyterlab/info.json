@@ -1,0 +1,20 @@
+{
+    "uuid": "d9046679-ca5d-496d-8120-98aed21281ad",
+    "title": "Workspace demo: JupyterLab",
+    "topic": "Workspace",
+    "tags": [
+        "su20",
+        "nnytko2"
+    ],
+    "type": "v3",
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-jupyterlab",
+        "port": 8080,
+        "home": "/home/jovyan",
+        "rewriteUrl": false,
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ]
+    }
+}
