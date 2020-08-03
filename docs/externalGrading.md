@@ -268,8 +268,13 @@ docker run -it --rm -p 3000:3000 \
 ```
 
 On Windows PowerShell, `cd` to your course directory and copy the following command **except** with your own username in `HOST_JOBS_DIR`:
-```sh
-docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
+```powershell
+docker run -it --rm -p 3000:3000 `
+    -v $PWD\:/course `
+    -v $HOME\pl_ag_jobs:/jobs `
+    -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
+    -v /var/run/docker.sock:/var/run/docker.sock `
+    prairielearn/prairielearn
 ```
 
 **Note** the following about `HOST_JOBS_DIR` on PowerShell:
