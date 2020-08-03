@@ -58,7 +58,6 @@ describe('Group based homework assess control on student side', function() {
                 locals.assessment_id_2 = result.rows[1].id == locals.assessment_id ? result.rows[0].id : result.rows[1].id;
                 locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
                 locals.instructorAssessmentsUrlGroupTab_2 = locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
-                
                 callback(null);
             });
         });
@@ -67,13 +66,10 @@ describe('Group based homework assess control on student side', function() {
     describe('2. GET to instructor assessments URL group tab for the first assessment', function() {
         it('should load successfully', function(callback) {
             request(locals.instructorAssessmentsUrlGroupTab, function(error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -104,13 +100,10 @@ describe('Group based homework assess control on student side', function() {
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -136,13 +129,10 @@ describe('Group based homework assess control on student side', function() {
     describe('4. GET to instructor assessments URL group tab for the second assessment', function() {
         it('should load successfully', function(callback) {
             request(locals.instructorAssessmentsUrlGroupTab_2, function(error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -173,13 +163,10 @@ describe('Group based homework assess control on student side', function() {
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.instructorAssessmentsUrlGroupTab_2, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -226,12 +213,9 @@ describe('Group based homework assess control on student side', function() {
     describe('7. POST to assessment page to create group', function() {
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    //return callback(new Error(locals.assessmentUrl));
                 }
                 page = body;
                 callback(null);
@@ -255,13 +239,10 @@ describe('Group based homework assess control on student side', function() {
                 groupName: locals.team_name,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -301,12 +282,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    //return callback(new Error(locals.assessmentUrl));
                 }
                 page = body;
                 callback(null);
@@ -329,13 +307,10 @@ describe('Group based homework assess control on student side', function() {
                 joincode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -374,9 +349,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -401,13 +374,10 @@ describe('Group based homework assess control on student side', function() {
                 joincode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -444,9 +414,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -471,13 +439,10 @@ describe('Group based homework assess control on student side', function() {
                 joincode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -501,9 +466,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -521,7 +484,6 @@ describe('Group based homework assess control on student side', function() {
             locals.__csrf_token = elemList[1].attribs.value;
             assert.isString(locals.__csrf_token);
         });
-
         it('should have a non-disabled "start assessment" button', function() {
             elemList = locals.$('#start-assessment');
             assert.isNotTrue(elemList.is(':disabled'));
@@ -543,13 +505,10 @@ describe('Group based homework assess control on student side', function() {
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -569,12 +528,9 @@ describe('Group based homework assess control on student side', function() {
     describe('15. access control of all members of group 1', function() {
         it('should be able to access the assessment instance 1 as the 1st group member', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));                 
                 }
                 page = body;
                 callback(null);
@@ -592,12 +548,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to access the assessment instance 1 as the 2nd group member', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));                
                 }
                 page = body;
                 callback(null);
@@ -615,12 +568,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to access the assessment instance 1 as the 3rd group member', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    
+                    return callback(new Error('bad status: ' + response.statusCode, {response, body})); 
                 }
                 page = body;
                 callback(null);
@@ -645,13 +595,10 @@ describe('Group based homework assess control on student side', function() {
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentInstanceURL, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
@@ -661,9 +608,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to access the assessment instance 1 as a ungrouped student', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 403) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
                 }
@@ -688,22 +633,17 @@ describe('Group based homework assess control on student side', function() {
                 groupName: locals.team_name_alternative1,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
         });
         it('should NOT be able to access the assessment instance 1 as a student from a different group', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 403) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
                 }
@@ -723,9 +663,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to access the assessment instance 1 as a ungrouped student', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 403) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
                 }
@@ -745,9 +683,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load assessment page successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
                 }
@@ -773,22 +709,17 @@ describe('Group based homework assess control on student side', function() {
                 groupName: locals.team_name_alternative2,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
         });
         it('should NOT be able to access the assessment instance 1 as a student from a different group', function(callback) {
             request(locals.assessmentInstanceURL, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 403) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));  
                 }
@@ -809,12 +740,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should load the second assessment page successfully', function(callback) {
             request(locals.assessmentUrl_2, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode, {response, body}));
-                    //return callback(new Error(locals.assessmentUrl));
                 }
                 page = body;
                 callback(null);
@@ -837,13 +765,10 @@ describe('Group based homework assess control on student side', function() {
                 joincode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl_2, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
+                if (ERR(error, callback)) return;
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                //res = response;
                 page = body;
                 callback(null);
             });
