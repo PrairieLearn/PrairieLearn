@@ -117,15 +117,30 @@ app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${c
 
 // For detecting file changes
 class jobQueue {
-    constructor() {
+    constructor(skip_ttl=5) {
+        this.ttl = skip_ttl;     // ttl for item on skip_queue
         this.update_queue = {};  // key: [path of file on local, isDirectory] value: action ('update' or 'delete').
         this.skip_queue = {}; // key: [path of file on local, isDirectory], value: {'skipUpdate':boolean, 'skipDelete': boolean}
+    }
+
+    get updateQueue() {
+        return this.update_queue;
+    }
+
+    resetUpdateQueue() {
+        this.update_queue = {};
+        for (var key in this.skip_queue) {
+            this.skip_queue[key].ttl -= 1;
+            if (this.skip_queue[key].ttl == 0) {
+                delete this.skip_queue[key];
+            }
+        }
     }
 
     addSkip(filePath, isDirectory, action) {
         const key = [filePath, isDirectory];
         if (!(key in this.skip_queue)) {
-            this.skip_queue[key] = {skipUpdate: false, skipDelete: false};
+            this.skip_queue[key] = {skipUpdate: false, skipDelete: false, ttl: this.ttl};
         }
         if (action == 'update') {
             this.skip_queue[key].skipUpdate = true;
@@ -159,7 +174,7 @@ class jobQueue {
     }
 }
 
-var queue = new jobQueue();
+var queue = new jobQueue(10);
 const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
 var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
@@ -415,8 +430,9 @@ function _getWorkspaceByPath(path) {
 
 function _autoUpdateJobManager() {
     var jobs = [];
-    var update_queue = queue.update_queue;
+    var update_queue = queue.updateQueue;
     console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
+    console.log(`watch skip: ${JSON.stringify(queue.skip_queue)}`);
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
@@ -454,7 +470,7 @@ function _autoUpdateJobManager() {
             });
         }
     }
-    queue.update_queue = {};
+    queue.resetUpdateQueue;
     var status = [];
     async.parallel(jobs, function(_, results) {
         results.forEach((res) => {
@@ -652,18 +668,39 @@ function _createContainerWrapper(workspace_id, port, settings, callback) {
     });
 }
 
-function _delContainer(workspace_id, container, callback) {
+async function _delContainer(workspace_id, container) {
+    async function skipAllFilesAndDirs(path){
+        var files = await fsPromises.readdir(path);
+            for (const file of files) {
+                var subpath = path + '/' + file;
+                var lstat = await fsPromises.lstat(subpath);
+                if(lstat.isDirectory()){
+                    queue.addSkip(subpath, true, 'delete');
+                    await skipAllFilesAndDirs(subpath);
+                } else {
+                    queue.addSkip(subpath, false, 'delete');
+                }
+            }
+        return new Promise((resolve) => {
+            resolve();
+        });
+    }
+    await skipAllFilesAndDirs(`${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`);
+
     // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    // Commented out because we don't want to delete on S3 in fs.watch's callback
-    // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
+    await fsPromises.rmdir(`${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`, { recursive: true });
 
     container.remove((err) => {
-        if (ERR(err, callback)) return;
+        if (err) {
+            return err;
+        }
         delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
         delete(id_workspace_mapper[workspace_id]);
         sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null, workspace_id, container);
+            if (err) {
+                return err;
+            }
+            return(null, workspace_id, container);
         });
     });
 }
