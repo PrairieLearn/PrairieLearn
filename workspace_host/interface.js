@@ -116,54 +116,75 @@ app.post('/', function(req, res) {
 app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${config.workspaceDevHostPort}`));
 
 // For detecting file changes
-var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+class jobQueue {
+    constructor() {
+        this.update_queue = {};  // key: [path of file on local, isDirectory] value: action ('update' or 'delete').
+        this.skip_queue = {}; // key: [path of file on local, isDirectory], value: {'skipUpdate':boolean, 'skipDelete': boolean}
+    }
+
+    addSkip(filePath, isDirectory, action) {
+        const key = [filePath, isDirectory];
+        if (!(key in this.skip_queue)) {
+            this.skip_queue[key] = {skipUpdate: false, skipDelete: false};
+        }
+        if (action == 'update') {
+            this.skip_queue[key].skipUpdate = true;
+        } else if (action == 'delete') {
+            this.skip_queue[key].skipDelete = true;
+        }
+    }
+
+    addUpdate(filePath, isDirectory) {
+        const key = [filePath, isDirectory];
+        if (key in this.skip_queue && this.skip_queue[key].skipUpdate) {
+            this.skip_queue[key].skipUpdate = false;
+            if (!this.skip_queue[key].skipDelete) {
+                delete this.skip_queue[key];
+            }
+        } else {
+            this.update_queue[key] = {action: 'update'};
+        }
+    }
+
+    addDelete(filePath, isDirectory) {
+        const key = [filePath, isDirectory];
+        if (key in this.skip_queue && this.skip_queue[key].skipDelete) {
+            this.skip_queue[key].skipDelete = false;
+            if (!this.skip_queue[key].skipUpdate) {
+                delete this.skip_queue[key];
+            }
+        } else {
+            this.update_queue[key] = {action: 'delete'};
+        }
+    }
+}
+
+var queue = new jobQueue();
 const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
 var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
     depth: 10,
 });
-watcher.on('add', filename => {
+watcher.on('add', fileName => {
     // Handle new files
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        console.log ('File created ' + filename);
-        update_queue[key] = {action: 'update'};
-    }
+    queue.addUpdate(fileName, false);
 });
-watcher.on('addDir', filename => {
+watcher.on('addDir', dirName => {
     // Handle new directory
-    var key = [filename, true];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        console.log ('Directory created ' + filename);
-        update_queue[key] = {action: 'update'};
-    }
+    queue.addUpdate(dirName, true);
 });
-watcher.on('change', filename => {
+watcher.on('change', fileName => {
     // Handle file changes
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        console.log ('File changed ' + filename);
-        update_queue[key] = {action: 'update'};
-    }
+    queue.addUpdate(fileName, false);
 });
-watcher.on('unlink', filename => {
+watcher.on('unlink', fileName => {
     // Handle removed files
-    console.log ('File removed ' + filename);
-    var key = [filename, false];
-    update_queue[key] = {action: 'delete'};
+    queue.addDelete(fileName, false);
 });
-watcher.on('unlinkDir', filename => {
+watcher.on('unlinkDir', dirName => {
     // Handle removed directory
-    console.log ('Directory removed ' + filename);
-    var key = [filename, true];
-    update_queue[key] = {action: 'delete'};
+    queue.addDelete(dirName, true);
 });
 setInterval(_autoUpdateJobManager, interval * 1000);
 
@@ -317,7 +338,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.mkdir(filePath, { recursive: true });
         }
         callback(null, 'OK');
-        update_queue[[filePath, true]] = {action: 'skip'};
+        queue.addSkip(filePath, true, 'update');
         return;
     } else {
         // this is a file
@@ -334,6 +355,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
         Bucket: workspaceBucketName,
         Key: S3FilePath,
     };
+    console.log(workspaceBucketName);
     var fileStream = fs.createWriteStream(filePath);
     var s3Stream = s3.getObject(downloadParams).createReadStream();
 
@@ -347,26 +369,26 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
         // This is for errors like the connection is lost, etc
         callback(null, [filePath, S3FilePath, err]);
     }).on('close', function() {
-        update_queue[[filePath, false]] = {action: 'skip'};
+        queue.addSkip(filePath, false, 'update');
         callback(null, 'OK');
     });
 }
 
 // DEPRECATED
-async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
-    var ret = [];
-    await fsPromises.readdir(curDirPath).forEach(async function (name) {
-        var filePath = path.join(curDirPath, name);
-        var S3filePath = path.join(S3curDirPath, name);
-        var stat = await fsPromises.lstat(filePath);
-        if (stat.isFile()) {
-            ret.push([filePath, S3filePath]);
-        } else if (stat.isDirectory()) {
-            ret = ret.concat(_recursiveUploadJobManager(filePath, S3filePath));
-        }
-    });
-    return ret;
-}
+// async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
+//     var ret = [];
+//     await fsPromises.readdir(curDirPath).forEach(async function (name) {
+//         var filePath = path.join(curDirPath, name);
+//         var S3filePath = path.join(S3curDirPath, name);
+//         var stat = await fsPromises.lstat(filePath);
+//         if (stat.isFile()) {
+//             ret.push([filePath, S3filePath]);
+//         } else if (stat.isDirectory()) {
+//             ret = ret.concat(_recursiveUploadJobManager(filePath, S3filePath));
+//         }
+//     });
+//     return ret;
+// }
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
 function _getWorkspaceByPath(path) {
@@ -393,6 +415,7 @@ function _getWorkspaceByPath(path) {
 
 function _autoUpdateJobManager() {
     var jobs = [];
+    var update_queue = queue.update_queue;
     console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
@@ -431,7 +454,7 @@ function _autoUpdateJobManager() {
             });
         }
     }
-    update_queue = {};
+    queue.update_queue = {};
     var status = [];
     async.parallel(jobs, function(_, results) {
         results.forEach((res) => {
@@ -503,38 +526,38 @@ function _syncPullContainer(workspace_id, callback) {
 }
 
 // DEPRECATED
-async function _syncPushContainer(workspace_id, callback) {
-    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
-    const workspaceName= `workspace-${workspace_id}`;
-    if (!await fsPromises.lstat(workspaceName)) {
-        // we didn't a local copy of the code, DO NOT sync
-        callback(null, workspace_id);
-        return;
-    }
-    var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
-    var jobs = [];
-    jobs_params.forEach(([filePath, S3filePath]) => {
-        jobs.push((callback) => {
-            _uploadToS3(filePath, S3filePath, callback);
-        });
-    });
+// async function _syncPushContainer(workspace_id, callback) {
+//     const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+//     const workspaceName= `workspace-${workspace_id}`;
+//     if (!await fsPromises.lstat(workspaceName)) {
+//         // we didn't a local copy of the code, DO NOT sync
+//         callback(null, workspace_id);
+//         return;
+//     }
+//     var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
+//     var jobs = [];
+//     jobs_params.forEach(([filePath, S3filePath]) => {
+//         jobs.push((callback) => {
+//             _uploadToS3(filePath, S3filePath, callback);
+//         });
+//     });
 
-    var status = [];
-    async.parallel(jobs, function(_, results) {
-        results.forEach((res) => {
-            if (res != 'OK') {
-                res[2].fileLocalPath = res[0];
-                res[2].fileS3Path = res[0];
-                status.push(res[2]);
-            }
-        });
-        if (status.length != 0) {
-            callback(status);
-        } else {
-            callback(null, workspace_id);
-        }
-    });
-}
+//     var status = [];
+//     async.parallel(jobs, function(_, results) {
+//         results.forEach((res) => {
+//             if (res != 'OK') {
+//                 res[2].fileLocalPath = res[0];
+//                 res[2].fileS3Path = res[0];
+//                 status.push(res[2]);
+//             }
+//         });
+//         if (status.length != 0) {
+//             callback(status);
+//         } else {
+//             callback(null, workspace_id);
+//         }
+//     });
+// }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
     const hostname = `${config.workspaceDevContainerHostname}:${port}`;
@@ -707,8 +730,7 @@ function resetSequence(workspace_id, res) {
 // Maybe should also remove the local copy of the code as well?
 function destroySequence(workspace_id, res) {
     async.waterfall([
-        (callback) => {_syncPushContainer(workspace_id, callback);},
-        _getContainer,
+        (callback) => {_getContainer(workspace_id, callback);},
         _stopContainer,
         _delContainer,
     ], function(err) {
