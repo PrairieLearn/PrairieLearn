@@ -38,7 +38,11 @@
         displayedName += ' (' + authz_data.mode + ')';
       }
     } else if (locals.authn_user) {
-      displayedName = authn_user.name;
+      if (authn_user.name) {
+        displayedName = authn_user.name;
+      } else {
+        displayedName = authn_user.uid;
+      }
     } else {
       displayedName = '(no user)';
     }
