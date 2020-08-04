@@ -58,7 +58,7 @@ def render(element_html, data):
         html_string += '</ul></div></div>'
 
         answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-        html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
+        html_string += f'<input id="{str(answerName) + str("-input") }" type="text" name="{str(answerName) + str("-input") }" value=""/>'
         # html_string += f'{data}'
         return html_string
 
@@ -66,6 +66,11 @@ def render(element_html, data):
         # render the submission panel
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
+
+        if answerName in data['format_errors']:
+            error = data['format_errors'][answerName]
+            return f'<span style="color: #ff0000"><strong>Error: </strong> {str(error)} </span> <br><br>'
+
         html_string = str(data['submitted_answers'][answerName]['student_raw_submission'])
         question_notes = str(data['partial_scores'][answerName]['feedback'])
         return f'<strong>Your answer: </strong> {str(html_string)}<br> {str(question_notes)}<br>'
@@ -96,14 +101,24 @@ def prepare(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
+
     temp = answerName
     true_answer = data['correct_answers'][temp]
     temp += '-input'  # this is how the backend is written
+
     student_answer_temp = data['raw_submitted_answers'][temp]
+
+    if student_answer_temp is None:
+        data['format_errors'][answerName] = 'NULL was submitted as an answer!'
+    elif student_answer_temp is '':
+        data['format_errors'][answerName] = 'No answer was submitted.'
+
     student_answer_temp = list(student_answer_temp.split(','))
+
     student_answer = []
     student_answer_indent = []
     permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+
     student_answer_ranking = ['Question permutationMode is not "ranking"']
     for answer in student_answer_temp:
         # student answers are formatted as: {answerString}:::{indent}
@@ -112,6 +127,9 @@ def parse(element_html, data):
         if len(answer) == 1:
             # probably an empty submission
             continue
+        if answer[1] not in list(range(0, 5)): # indent is a number in [0, 4]
+            data['format_errors'][answerName] = 'Indent level is invalid!'
+
         student_answer.append(answer[0])
         student_answer_indent.append(answer[1])
     del student_answer_temp
@@ -167,18 +185,19 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
-    answerName += '-input'
-
-    print(data['gradable'])
+    answerNameField = answerName + '-input'
+    # print(data['gradable'])
 
     # incorrect and correct answer test cases
-    if data['test_type'] == 'correct':
-        data['raw_submitted_answers'][answerName] = data['correct_answers'][answerName]
-        data['partial_scores'][answerName] = {'score': 1.0, 'feedback': ''}
-    elif data['test_type'] == 'incorrect':
-        data['partial_scores'][answerName] = {'score': 0.0, 'feedback': ''}
-    elif data['test_type'] == 'invalid':
+    # this creates the EXPECTED SUBMISSION field for test cases
+    # data['broken'] = True
+    # if data['test_type'] == 'correct':
+        # data['partial_scores'][answerName[0:-6]] = {'score': 1.0, 'feedback': ''}
+    # elif data['test_type'] == 'incorrect':
+    #     data['partial_scores'][answerName[0:-6]] = {'score': 0.0, 'feedback': ''}
+    if data['test_type'] == 'invalid':
+        # data['broken'] = True
         data['raw_submitted_answers'][answerName] = 'bad input'
         data['format_errors'][answerName] = 'format error message'
-    else:
-        raise Exception('invalid result: %s' % data['test_type'])
+    # else:
+    #     raise Exception('invalid result: %s' % data['test_type'])
