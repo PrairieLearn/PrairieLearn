@@ -19,7 +19,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 * `home`: home directory inside the Docker image
 * `gradedFiles`: list of files or directories that will be copied out of the workspace container for grading
 * `args` (optional): command line arguments to pass to the Docker image
-* `syncIgnore` (optional): list of files or directories that will be excluded from sync
+* `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
 * `urlRewrite` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 A full `info.json` file should look something like:
