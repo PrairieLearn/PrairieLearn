@@ -14,7 +14,7 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 The question's `info.json` should contain a `workspaceOptions` dictionary:
 
-* `image`: Dockerhub image serving the IDE and containing the desired compilers, debuggers, etc.
+* `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
 * `port`: port number used in the Docker image
 * `home`: home directory in the Docker image
 * `gradedFiles`: list of files or directories that will be copied for grading
