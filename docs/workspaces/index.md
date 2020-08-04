@@ -101,10 +101,11 @@ docker run -it --rm -p 3000:3000 `
 
 **Note** the following about `HOST_JOBS_DIR` in PowerShell:
 
-    * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
-    * Use the full path rather than $HOME (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
+    - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
+    - Use the full path rather than $HOME (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
 
 **Note** that `C:` must have shared access between Windows and Docker:
-    * Right-click the Docker "whale" icon in the taskbar
-    * Click "Settings"
-    * Ensure `C:` is checked
+
+    - Right-click the Docker "whale" icon in the taskbar
+    - Click "Settings"
+    - Ensure `C:` is checked
