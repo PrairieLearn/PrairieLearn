@@ -16,7 +16,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 
 * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
 * `port`: port number used in the Docker image
-* `home`: home directory in the Docker image
+* `home`: home directory inside the Docker image
 * `gradedFiles`: list of files or directories that will be copied out of the workspace container for grading
 * `args` (optional): command line arguments to pass to the Docker image
 * `syncIgnore` (optional): list of files or directories that will be excluded from sync
