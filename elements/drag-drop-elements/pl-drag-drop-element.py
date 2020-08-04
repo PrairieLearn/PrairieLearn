@@ -72,19 +72,23 @@ def render(element_html, data):
             return f'<span style="color: #ff0000"><strong>Error: </strong> {str(error)} </span> <br><br>'
 
         html_string = str(data['submitted_answers'][answerName]['student_raw_submission'])
-        question_notes = str(data['partial_scores'][answerName]['feedback'])
+        question_notes = ''
+        if answerName in data['partial_scores']:
+            if 'feedback' in data['partial_scores'][answerName]:
+                question_notes = str(data['partial_scores'][answerName]['feedback'])
         return f'<strong>Your answer: </strong> {str(html_string)}<br> {str(question_notes)}<br>'
+
     elif data['panel'] == 'answer':
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
         permutationMode = pl.get_string_attrib(element, 'permutation-mode')
         permutationMode = ' in <strong> any </strong> order' if permutationMode == 'any' else 'in <strong> the specified </strong> order'
-        return f"<strong>Correct answer: </strong> {data['correct_answers'][answerName]} {permutationMode} <br><br>"
-
+        if answerName in data['correct_answers']:
+            return f"<strong>Correct answer: </strong> {data['correct_answers'][answerName]} {permutationMode} <br><br>"
+        else:
+            return ''
 
 def prepare(element_html, data):
-    # prepare runs after the render() func above has ran
-    # and is responsible for reading the rendered HTML
     pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
     correct_answers = []
     for html_tags in pl_drag_drop_element:
@@ -106,12 +110,16 @@ def parse(element_html, data):
     true_answer = data['correct_answers'][temp]
     temp += '-input'  # this is how the backend is written
 
-    student_answer_temp = data['raw_submitted_answers'][temp]
+    student_answer_temp = ''
+    if temp in data['raw_submitted_answers']:
+        student_answer_temp = data['raw_submitted_answers'][temp]
 
     if student_answer_temp is None:
         data['format_errors'][answerName] = 'NULL was submitted as an answer!'
-    elif student_answer_temp is '':
+        return
+    elif student_answer_temp == '':
         data['format_errors'][answerName] = 'No answer was submitted.'
+        return
 
     student_answer_temp = list(student_answer_temp.split(','))
 
@@ -125,11 +133,15 @@ def parse(element_html, data):
         # we split the text
         answer = answer.split(':::')
         if len(answer) == 1:
-            # probably an empty submission
-            continue
-        if answer[1] not in list(range(0, 5)): # indent is a number in [0, 4]
-            data['format_errors'][answerName] = 'Indent level is invalid!'
+            # because we already caught empty string submission above
+            # failing to split the answer implies an error
+            data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This shouldn\'t happen, contact instructor for help.'
+            return
 
+        if not str.isdigit(answer[1]) or int(answer[1]) not in list(range(0, 5)): # indent is a number in [0, 4]
+            data['format_errors'][answerName] = f'Indent level {answer[1]} is invalid! Indention level must be a number between 0 or 4 inclusive.'
+            return
+        
         student_answer.append(answer[0])
         student_answer_indent.append(answer[1])
     del student_answer_temp
@@ -186,18 +198,21 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
     answerNameField = answerName + '-input'
-    # print(data['gradable'])
 
-    # incorrect and correct answer test cases
-    # this creates the EXPECTED SUBMISSION field for test cases
-    # data['broken'] = True
-    # if data['test_type'] == 'correct':
-        # data['partial_scores'][answerName[0:-6]] = {'score': 1.0, 'feedback': ''}
+    # # incorrect and correct answer test cases
+    # # this creates the EXPECTED SUBMISSION field for test cases
+    # # data['broken'] = True
+    if data['test_type'] == 'correct':
+        temp = data['correct_answers'][answerName]
+        temp = list(map(lambda x: x + ':::0', temp))
+        data['raw_submitted_answers'][answerNameField] = ', '.join(temp)
+        data['partial_scores'][answerNameField] = {'score': 1}
     # elif data['test_type'] == 'incorrect':
-    #     data['partial_scores'][answerName[0:-6]] = {'score': 0.0, 'feedback': ''}
-    if data['test_type'] == 'invalid':
-        # data['broken'] = True
-        data['raw_submitted_answers'][answerName] = 'bad input'
-        data['format_errors'][answerName] = 'format error message'
+    #     # data['broken'] = True
+    #     data['partial_scores'][answerNameField] = {'score': 0}
+    #     # data['raw_submitted_answers'][answerNameField] = ['Test:::0']
+    # if data['test_type'] == 'invalid':
+    #     data['raw_submitted_answers'][answerName] = 'bad input'
+    #     data['format_errors'][answerName] = 'format error message'
     # else:
     #     raise Exception('invalid result: %s' % data['test_type'])
