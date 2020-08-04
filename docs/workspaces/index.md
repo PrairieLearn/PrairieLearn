@@ -20,7 +20,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 * `gradedFiles`: list of files or directories that will be copied out of the workspace container for grading
 * `args` (optional, default none): command line arguments to pass to the Docker image
 * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
-* `urlRewrite` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+* `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 A full `info.json` file for a workspace question should look something like:
 
