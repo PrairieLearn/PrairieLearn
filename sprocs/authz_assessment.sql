@@ -9,7 +9,6 @@ CREATE OR REPLACE FUNCTION
         IN req_date timestamptz,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
-        OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
@@ -69,18 +68,20 @@ BEGIN
     --       When we say that the effective user "is a student" or "is an instructor"
     --       in this context, we mean without other overrides.
     --
-    --  In short, don't worry about authn permissions.
+    -- In short, don't worry about authn permissions.
     --
-    --  Note that the situation is different for assessment instance access, because
-    --  an assessment instance - unlike an assessment - is associated with a particular
-    --  user (see authz_assessment_instance).
+    -- Note that the situation is different for assessment instance access, because
+    -- an assessment instance - unlike an assessment - is associated with a particular
+    -- user (see authz_assessment_instance).
     --
-    --  You might also wonder why we bother to distinguish between view (authorized) and edit
-    --  (authorized_edit) permissions, when clearly they will always be the same (in fact, we
-    --  rely on these two things being the same - see sprocs/authz_assessment_instance). This
-    --  is for legacy reasons and is something that should be cleaned up.
+    -- You might also wonder why we do not need to distinguish between view and edit
+    -- permissions to the assessment. Indeed, it used to be that this function returned
+    -- two flags, "authorized" and "authorized_edit". However, these were determined
+    -- based on what was formerly called "has_instructor_view" and "has_instructor_edit",
+    -- both of which are now subsumed by "has_course_instance_permission_view" and
+    -- "has_course_instance_permission_edit" - permissions that, as we've said, the
+    -- authn user is already known to have.
     authorized := user_result.authorized;
-    authorized_edit := user_result.authorized;
 
     -- all other variables are from the effective user authorization
     credit := user_result.credit;

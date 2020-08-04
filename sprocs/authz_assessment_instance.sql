@@ -51,7 +51,7 @@ BEGIN
 
     -- We start with the same access to the assessment instance as to the assessment.
     authorized := assessment_result.authorized;
-    authorized_edit := assessment_result.authorized_edit;
+    authorized_edit := assessment_result.authorized;
 
     -- The only difference between the assessment instance and the assessment is that
     -- the assessment instance has a user_id (i.e., the assessment instance is "owned"
