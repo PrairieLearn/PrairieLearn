@@ -389,22 +389,6 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     });
 }
 
-// DEPRECATED
-// async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
-//     var ret = [];
-//     await fsPromises.readdir(curDirPath).forEach(async function (name) {
-//         var filePath = path.join(curDirPath, name);
-//         var S3filePath = path.join(S3curDirPath, name);
-//         var stat = await fsPromises.lstat(filePath);
-//         if (stat.isFile()) {
-//             ret.push([filePath, S3filePath]);
-//         } else if (stat.isDirectory()) {
-//             ret = ret.concat(_recursiveUploadJobManager(filePath, S3filePath));
-//         }
-//     });
-//     return ret;
-// }
-
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
 function _getWorkspaceByPath(path) {
     let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
@@ -470,7 +454,7 @@ function _autoUpdateJobManager() {
             });
         }
     }
-    queue.resetUpdateQueue;
+    queue.resetUpdateQueue();
     var status = [];
     async.parallel(jobs, function(_, results) {
         results.forEach((res) => {
@@ -540,40 +524,6 @@ function _syncPullContainer(workspace_id, callback) {
         });
     });
 }
-
-// DEPRECATED
-// async function _syncPushContainer(workspace_id, callback) {
-//     const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
-//     const workspaceName= `workspace-${workspace_id}`;
-//     if (!await fsPromises.lstat(workspaceName)) {
-//         // we didn't a local copy of the code, DO NOT sync
-//         callback(null, workspace_id);
-//         return;
-//     }
-//     var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
-//     var jobs = [];
-//     jobs_params.forEach(([filePath, S3filePath]) => {
-//         jobs.push((callback) => {
-//             _uploadToS3(filePath, S3filePath, callback);
-//         });
-//     });
-
-//     var status = [];
-//     async.parallel(jobs, function(_, results) {
-//         results.forEach((res) => {
-//             if (res != 'OK') {
-//                 res[2].fileLocalPath = res[0];
-//                 res[2].fileS3Path = res[0];
-//                 status.push(res[2]);
-//             }
-//         });
-//         if (status.length != 0) {
-//             callback(status);
-//         } else {
-//             callback(null, workspace_id);
-//         }
-//     });
-// }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
     const hostname = `${config.workspaceDevContainerHostname}:${port}`;
