@@ -18,7 +18,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 * `port`: port number used by the workspace app inside the Docker image
 * `home`: home directory inside the Docker image
 * `gradedFiles`: list of files or directories that will be copied out of the workspace container for grading
-* `args` (optional): command line arguments to pass to the Docker image
+* `args` (optional, default none): command line arguments to pass to the Docker image
 * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
 * `urlRewrite` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
