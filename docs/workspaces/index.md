@@ -53,7 +53,7 @@ A full `info.json` file for a workspace question should look something like:
 
 * First, create an empty directory to use to share job data between containers.
 
-    * This can live anywhere, but needs to be created first and referenced in the docker launch command.
+    * This can live anywhere, but needs to be created first and referenced in the `docker run` command.
     * This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
 
 ```sh
