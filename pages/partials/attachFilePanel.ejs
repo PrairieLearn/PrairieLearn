@@ -44,9 +44,11 @@
       Attachments can't be added or deleted because the assessment is closed.
     </p>
     <% } else if (!authz_result.authorized_edit) { /* assessment_instance is open */ %>
-    <p class="small mb-0">
-      Attachments can't be added or deleted because you have insufficient permissions.
-    </p>
+    <div class="alert alert-warning mt-2" role="alert">
+      You are viewing the
+      <% if (locals.question) { %>question instance<% } else { %>assessment instance<% } %>
+      of a different user and so are not authorized to add or delete files.
+    </div>
     <% } else { /* assessment_instance is open and authorized_edit is true */ %>
     <!-- UPLOAD FILE -->
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachFileCollapse" aria-expanded="false" aria-controls="attachFileCollapse">

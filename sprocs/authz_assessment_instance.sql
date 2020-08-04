@@ -59,7 +59,7 @@ BEGIN
     --
     -- If the assessment instance and the effective user have the same user_id, then
     -- no further action is necessary - access remains the same as for the assessment.
-    -- (See authz_assessment for why we need not check authn user permissions.)
+    -- (See sprocs/authz_assessment for why we need not check authn user permissions.)
     --
     -- If the assessment instance and the effective user do not have the same user_id,
     -- then we remove edit access entirely (an assessment instance can be edited only
@@ -94,6 +94,12 @@ BEGIN
     --
     -- Again, we only need to consider cases (3) and (4), both of which can be
     -- handled in exactly the same way with respect to access.
+    --
+    -- To emphasize, the only time authorized and authorized_edit will ever be
+    -- different is when the effective user does not own the assessment instance.
+    -- This is important. We rely on it, for example, when deciding what to tell
+    -- the user about grading on an exam assessment instance. Be careful if you
+    -- change this behavior!
     IF (authz_data->'user'->>'user_id')::bigint != assessment_instance.user_id THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;

@@ -75,9 +75,10 @@ BEGIN
     --  an assessment instance - unlike an assessment - is associated with a particular
     --  user (see authz_assessment_instance).
     --
-    --  You might also wonder why we bother to distinguish between view (authorized)
-    --  and edit (authorized_edit) permissions, when clearly they will always be the
-    --  same. This is for legacy reasons and is something that should be cleaned up.
+    --  You might also wonder why we bother to distinguish between view (authorized) and edit
+    --  (authorized_edit) permissions, when clearly they will always be the same (in fact, we
+    --  rely on these two things being the same - see sprocs/authz_assessment_instance). This
+    --  is for legacy reasons and is something that should be cleaned up.
     authorized := user_result.authorized;
     authorized_edit := user_result.authorized;
 

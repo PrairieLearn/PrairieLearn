@@ -16,6 +16,7 @@
       });
     </script>
 
+    <% if (authz_result.authorized_edit) { %>
     <div id="confirmFinishModal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -41,6 +42,7 @@
         </div>
       </div>
     </div>
+    <% } %>
 
     <% if (showTimeLimitExpiredModal) { %>
       <div id="timeLimitExpiredModal" class="modal fade">
@@ -229,9 +231,9 @@
               <input type="hidden" name="__action" value="grade">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <% if (savedAnswers > 0) { %>
-                <button type="submit" class="btn btn-info my-2">Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
+                <button type="submit" class="btn btn-info my-2"<% if (!authz_result.authorized_edit) { %> disabled<% } %>>Grade <%= savedAnswers %> saved answer<% if (savedAnswers != 1) { %>s<% } %></button>
               <% } else { %>
-                <button type="submit" class="btn btn-info my-2 disabled" disabled>No saved answers to grade</button>
+                <button type="submit" class="btn btn-info my-2" disabled>No saved answers to grade</button>
               <% } %>
             </form>
             <ul class="my-1">
@@ -240,7 +242,7 @@
               <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
                 <li>
                   After you have answered all the questions completely, click here:
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal"<% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
                 </li>
               <% } else { %>
                 <li>When you are done, please logout and close your browser; there is no need to do anything else. If you have any saved answers when you leave, they will be automatically graded before your final score is computed.</li>
@@ -252,12 +254,17 @@
               <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
                 <li>
                   After you have answered all the questions completely, click here:
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal" <% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
                 </li>
               <% } else { %>
                 <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
               <% } %>
             </ul>
+          <% } %>
+          <% if (!authz_result.authorized_edit) { %>
+            <div class="alert alert-warning mt-4" role="alert">
+              You are viewing the assessment of a different user and so are not authorized to submit questions for grading or to mark the assessment as complete.
+            </div>
           <% } %>
         </div>
       </div>
