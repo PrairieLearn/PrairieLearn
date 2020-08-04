@@ -267,9 +267,9 @@ def parse(element_html, data):
             file_data = gettarilAnswer(submitted, pieces, trailnewx_code)
         if leading_code is not None and trailing_code is None:
             file_data = getleadAnswer(submitted, pieces, leadingnew_code)
-            data['submitted_answers']['_files'] = [{
-                'name': file_name,
-                'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
+        data['submitted_answers']['_files'] = [{
+            'name': file_name,
+            'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
             }]
     if num_pieces == 0:
         raise Exception('number of pieces is zero')
