@@ -103,6 +103,36 @@ By default all assessments are *single instance*, meaning that each student has 
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
+## Forcing students to complete questions in-order
+
+Certain assessments might designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but instructors can configure assessments to not allow students to view future questions.
+
+To enable these features, set `minAdvancePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
+
+```js
+{
+    "minAdvancePerc": 100,
+    "zones": [
+        {
+            "minAdvancePerc": 80,
+            "questions": [
+                {"id": "page1", "minAdvancePerc": 50},
+                {"id": "page2"},
+                {"id": "page3"}
+            ]
+        }
+    ]
+}
+```
+
+In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `minAdvancePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80 in order to unlock `page3`. Because `minAdvancePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+
+If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+
+### Note about exam-type assessments
+
+This feature is intended to be used in [groupwork](#enabling-group-work-for-collaborative-assessments) and custom assessment types which are indirectly supported, such as worksheets or practice exams (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage instructors from using this feature in actual exams.
+
 ## Auto-closing Exam assessments
 
 By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
