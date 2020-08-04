@@ -12,6 +12,7 @@ if [[ -f /efs/container/config.json ]] ; then
     node server --config /efs/container/config.json
 else
     # we are running in local development mode
+    docker/start_s3rver.sh
     docker/start_postgres.sh
     docker/gen_ssl.sh
 
