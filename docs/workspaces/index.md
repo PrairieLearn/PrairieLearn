@@ -22,7 +22,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
 * `urlRewrite` (optional): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
-A full `info.json` file should look something like:
+A full `info.json` file for a workspace question should look something like:
 
 ```json
 {
