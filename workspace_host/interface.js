@@ -551,6 +551,28 @@ function _getContainer(workspace_id, callback) {
     callback(null, workspace_id, container);
 }
 
+function _pullImage(workspace_id, port, settings, callback) {
+    const workspace_image = settings.workspace_image;
+    if (config.workspacePullImagesFromDockerHub) {
+        docker.pull(workspace_image, (err, stream) => {
+            if (err) {
+                logger.warn(`Error pulling "${workspace_image}" image; attempting to fall back to cached version.`, err);
+                return callback(null);
+            }
+
+            docker.modem.followProgress(stream, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, workspace_id, port, settings);
+            }, (output) => {
+                logger.info('docker pull output: ', output);
+            });
+        });
+    } else {
+        console.log('_pullImage: skip');
+        return callback(null, workspace_id, port, settings);
+    }
+}
+
 function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
 
@@ -676,6 +698,7 @@ function initSequence(workspace_id, res) {
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
         _getSettingsWrapper,
+        _pullImage,
         _createContainerWrapper,
         _startContainer,
         _checkServer,
