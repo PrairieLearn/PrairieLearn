@@ -6,7 +6,7 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 * [x] Chrome is supported
 * [x] Firefox is supported
-* [ ] Safari is NOT supported
+* [ ] Safari is NOT yet supported
 
 ## Setting up
 
