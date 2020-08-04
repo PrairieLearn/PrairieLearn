@@ -130,9 +130,11 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
+
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
     true_answer = data['correct_answers'][answerName]
     permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+
     if permutationMode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
         data['partial_scores'][answerName] = {'score': float(len(intersection) / len(true_answer)), 'feedback': ''}
@@ -161,3 +163,22 @@ def grade(element_html, data):
             correctness = 0
         correctness = max(correctness, partial_credit)
         data['partial_scores'][answerName] = {'score': float(correctness / len(true_answer)), 'feedback': '<strong>Note that ordering matters in your answer, and that correct ordering is necessary for credit to be given. </strong>'}
+
+def test(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    answerName = pl.get_string_attrib(element, 'answers-name')
+    answerName += '-input'
+
+    print(data['gradable'])
+
+    # incorrect and correct answer test cases
+    if data['test_type'] == 'correct':
+        data['raw_submitted_answers'][answerName] = data['correct_answers'][answerName]
+        data['partial_scores'][answerName] = {'score': 1.0, 'feedback': ''}
+    elif data['test_type'] == 'incorrect':
+        data['partial_scores'][answerName] = {'score': 0.0, 'feedback': ''}
+    elif data['test_type'] == 'invalid':
+        data['raw_submitted_answers'][answerName] = 'bad input'
+        data['format_errors'][answerName] = 'format error message'
+    else:
+        raise Exception('invalid result: %s' % data['test_type'])
