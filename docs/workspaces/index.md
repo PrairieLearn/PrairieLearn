@@ -55,6 +55,7 @@ A full `info.json` file for a workspace question should look something like:
 
     * This can live anywhere, but needs to be created first and referenced in the `docker run` command.
     * This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
+    * **If you already created an external grader jobs directory, you can reuse the same one.**
 
 ```sh
 mkdir "$HOME/pl_ag_jobs"
