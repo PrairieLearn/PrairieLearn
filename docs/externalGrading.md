@@ -312,7 +312,7 @@ error: handleGraderErrorUnable to launch Docker container for grading: (HTTP cod
     - Use Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
     - Spell out the full path without using `$HOME` (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=$HOME/pl_ag_jobs`).
 3. Verify your Windows/Docker shared access:
-    _ Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
+    - Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
     - If still not working, restart Docker.
     - If still not working, restart Windows.
 
