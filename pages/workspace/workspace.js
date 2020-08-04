@@ -22,6 +22,9 @@ router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {
         const state = 'stopped';
         await workspace.updateState(workspace_id, state);
         res.redirect(`/workspace/${workspace_id}`);
+    } else if (action === 'grade') {
+        await workspace.controlContainer(workspace_id, 'grade');
+        res.redirect(`/workspace/${workspace_id}`);     // refresh anyway
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
     }

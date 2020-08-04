@@ -13,6 +13,8 @@ const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const tar = require('tar');
+
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
@@ -106,12 +108,16 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
         destroySequence(workspace_id, res);
+    } else if (action == 'grade') {
+        gradeSequence(workspace_id, res);
     } else if (action == 'status') {
         res.status(200).send('Running');
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
 });
+
+
 
 app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${config.workspaceDevHostPort}`));
 
@@ -716,6 +722,54 @@ function destroySequence(workspace_id, res) {
             res.status(500).send(err);
         } else {
             res.status(200).send(`Container for workspace ${workspace_id} destroyed.`);
+        }
+    });
+}
+
+function gradeSequence(workspace_id, res) {
+    var workspace_dir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}/project`;
+    var graded_file_list = id_workspace_mapper[workspace_id].settings.workspace_graded_files.map((file) => {return path.join(workspace_dir, file);});
+    graded_file_list = ['starter_code.c', 'starter_code.h'].map((file) => {return path.join(workspace_dir, file);});    // since in the DB the workspace_graded_file col is empty, hardcode file list
+    console.log(graded_file_list);
+    var timestamp = new Date().toISOString().replace(/T/, '*').replace(/\..+/, '');
+    var zip_file_name = `workspace-${workspace_id}-${timestamp}.tgz`;
+
+    async.series([
+        async () => {
+            for (var file_path in graded_file_list) {
+                try {
+                    await fsPromises.lstat(file_path);
+                } catch(err) {
+                    return(`Required graded file ${path.basename(file_path)} does not exist.`);
+                }
+            }
+            return null;
+        },
+        (callback) => {
+            tar.create(
+                {
+                  gzip: true,
+                  file: zip_file_name,
+                  sync: false,
+                },
+                graded_file_list,
+                (err) => {
+                    if (err) {
+                        res.status(500).send(err);
+                        return;
+                    }
+                    callback(null);
+                },
+            );
+        },
+    ], (err) => {
+        if (err) {
+            res.status(500).send(err);
+        } else {
+            res.status(200).sendFile(zip_file_name, {root: './'}, (_) => {
+                // delete zip file no matter what
+                fsPromises.unlink(zip_file_name);
+            });
         }
     });
 }
