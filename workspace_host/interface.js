@@ -16,6 +16,7 @@ const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
