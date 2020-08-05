@@ -202,8 +202,10 @@ const workspaceProxyOptions = {
         }
     },
 };
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/([0-9])+/container/', workspaceProxy);
+const workspaceProxy = createProxyMiddleware((pathname) => {
+    return pathname.match('/workspace/([0-9])+/container/');
+}, workspaceProxyOptions);
+app.use(workspaceProxy);
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
