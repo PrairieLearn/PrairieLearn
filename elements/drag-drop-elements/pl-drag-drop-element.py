@@ -212,7 +212,7 @@ def test(element_html, data):
         temp = data['correct_answers'][answerName]
         temp = list(map(lambda x: x + ':::0', temp))
         data['raw_submitted_answers'][answerNameField] = ','.join(temp)
-        data['partial_scores'][answerNameField] = {'score': 1, 'feedback': ''}
+        data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
     # elif data['test_type'] == 'incorrect':
     #     # data['broken'] = True
     #     data['partial_scores'][answerNameField] = {'score': 0}
