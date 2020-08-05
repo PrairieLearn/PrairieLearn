@@ -295,6 +295,7 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.overrides = overrides;
 
                         res.locals.user = res.locals.authz_data.user;
+                        res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
                         res.locals.authz_data.mode = params.req_mode;
                         res.locals.req_date = req_date;
@@ -455,6 +456,7 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.overrides = overrides;
 
                     res.locals.user = res.locals.authz_data.user;
+                    res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
                     res.locals.authz_data.mode = result.rows[0].mode;
                     res.locals.req_date = req_date;
