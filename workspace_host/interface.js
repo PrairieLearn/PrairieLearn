@@ -596,7 +596,7 @@ function _createContainer(workspace_id, port, settings, callback) {
     }
 
     logger.info(`Creating docker container for image=${settings.workspace_image}`);
-    logger.info(`Exposed port: ${settings.workspace_image}`);
+    logger.info(`Exposed port: ${settings.workspace_port}`);
     logger.info(`Env vars: WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`);
     logger.info(`Port binding: ${settings.workspace_port}:${port}`);
     logger.info(`Volume mount: ${workspacePath}:${containerPath}`);
