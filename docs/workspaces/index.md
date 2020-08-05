@@ -8,7 +8,7 @@ Workspaces allow students to work in persistent remote containers via in-browser
 * [x] Firefox is supported
 * [x] Edge Chromium (version >= 79) is supported
 * [ ] Edge Legacy (version < 79) is untested
-* [ ] Safari is NOT yet supported
+* [x] Safari is supported
 
 ## Setting up
 
