@@ -143,7 +143,6 @@ watcher.on('add', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('File created ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
@@ -153,7 +152,6 @@ watcher.on('addDir', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('Directory created ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
@@ -163,19 +161,16 @@ watcher.on('change', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('File changed ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
 watcher.on('unlink', filename => {
     // Handle removed files
-    console.log ('File removed ' + filename);
     var key = [filename, false];
     update_queue[key] = {action: 'delete'};
 });
 watcher.on('unlinkDir', filename => {
     // Handle removed directory
-    console.log ('Directory removed ' + filename);
     var key = [filename, true];
     update_queue[key] = {action: 'delete'};
 });
@@ -269,7 +264,7 @@ function _getSettingsWrapper(workspace_id, callback) {
     });
 }
 
-async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
+async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     let body;
@@ -294,12 +289,12 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        logger.info(`Uploaded ${filePath}`);
+        logger.info(`Uploaded ${localPath}`);
         callback(null, 'OK');
     });
 }
 
-function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
+function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     if (isDirectory) {
@@ -314,7 +309,7 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        logger.info(`Deleted ${filePath}`);
+        logger.info(`Deleted ${localPath}`);
         callback(null, 'OK');
     });
 }
@@ -432,11 +427,11 @@ function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                _uploadToS3(path, isDirectory, s3Path, callback);
+                _uploadToS3(path, isDirectory, s3Path, localPath, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                _deleteFromS3(path, isDirectory, s3Path, callback);
+                _deleteFromS3(path, isDirectory, s3Path, localPath, callback);
             });
         }
     }
