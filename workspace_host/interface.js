@@ -1,12 +1,15 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
+const http = require('http');
 const request = require('request');
 const path = require('path');
 const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
+const socketServer = require('../lib/socket-server'); // must load socket server before workspace
+const workspace = require('../lib/workspace');
 const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
@@ -113,7 +116,26 @@ app.post('/', function(req, res) {
     }
 });
 
-app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${config.workspaceDevHostPort}`));
+var server;
+async.series([
+    (callback) => {
+        server = http.createServer(app);
+        server.listen(config.workspaceDevHostPort);
+        logger.info(`Listening on port ${config.workspaceDevHostPort}`);
+        callback(null);
+    },
+    // must init socket server before workspace
+    (callback) => {
+        socketServer.init(server, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        workspace.init();
+        callback(null);
+    },
+]);
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
@@ -695,6 +717,10 @@ function initSequence(workspace_id, res) {
     id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
     logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
     
+    // send 200 immediately to prevent socket hang up from _pullImage()
+    logger.info(`Container initialized for workspace_id=${workspace_id}`);
+    res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
         _getSettingsWrapper,
@@ -710,7 +736,8 @@ function initSequence(workspace_id, res) {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
                 logger.info(`Container initialized for workspace_id=${workspace_id}`);
-                res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+                const state = 'running';
+                workspace.updateState(workspace_id, state);
             });
         }
     });
