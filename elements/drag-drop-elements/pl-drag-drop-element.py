@@ -150,9 +150,15 @@ def parse(element_html, data):
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
             e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            ranking = e[0].attrib['ranking']
+            try:
+                ranking = e[0].attrib['ranking']
+            except IndexError:
+                ranking = 0
             student_answer_ranking.append(ranking)
-    data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking, 'student_raw_submission': student_answer, 'true_answer': true_answer, 'student_answer_indent': student_answer_indent}
+    data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking, 
+                                             'student_raw_submission': student_answer, 
+                                             'true_answer': true_answer, 
+                                             'student_answer_indent': student_answer_indent}
     if temp in data['submitted_answers']:
         del data['submitted_answers'][temp]
 
@@ -170,9 +176,9 @@ def grade(element_html, data):
         data['partial_scores'][answerName] = {'score': float(len(intersection) / len(true_answer)), 'feedback': ''}
     elif permutationMode == 'html-order':
         if student_answer == true_answer:
-            data['partial_scores'][answerName] = {'score': float(1.0), 'feedback': '<strong> Note that you have to correctly select all of the answers, as well as place the answers in the correct order, for any credit to be granted. There is no partial credit for this question. </strong> <br>'}
+            data['partial_scores'][answerName] = {'score': float(1.0), 'feedback': ''}
         else:
-            data['partial_scores'][answerName] = {'score': float(0.0), 'feedback': '<strong> Note that you have to correctly select all of the answers, as well as place the answers in the correct order, for any credit to be granted. There is no partial credit for this question. </strong> <br>'}
+            data['partial_scores'][answerName] = {'score': float(0.0), 'feedback': ''}
     elif permutationMode == 'ranking':
         ranking = data['submitted_answers'][answerName]['student_submission_ordering']
         correctness = 1
@@ -192,7 +198,7 @@ def grade(element_html, data):
         else:
             correctness = 0
         correctness = max(correctness, partial_credit)
-        data['partial_scores'][answerName] = {'score': float(correctness / len(true_answer)), 'feedback': '<strong>Note that ordering matters in your answer, and that correct ordering is necessary for credit to be given. </strong>'}
+        data['partial_scores'][answerName] = {'score': float(correctness / len(true_answer)), 'feedback': ''}
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -205,8 +211,8 @@ def test(element_html, data):
     if data['test_type'] == 'correct':
         temp = data['correct_answers'][answerName]
         temp = list(map(lambda x: x + ':::0', temp))
-        data['raw_submitted_answers'][answerNameField] = ', '.join(temp)
-        data['partial_scores'][answerNameField] = {'score': 1}
+        data['raw_submitted_answers'][answerNameField] = ','.join(temp)
+        data['partial_scores'][answerNameField] = {'score': 1, 'feedback': ''}
     # elif data['test_type'] == 'incorrect':
     #     # data['broken'] = True
     #     data['partial_scores'][answerNameField] = {'score': 0}
