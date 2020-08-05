@@ -17,6 +17,10 @@ var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
 const aws = require('../lib/aws.js');
 aws.init((err) => {
     if (err) logger.debug(err);
@@ -41,51 +45,6 @@ if (workspaceBucketName == '') {
 } else {
     logger.info('Workspace bucket is configed to: ' + workspaceBucketName);
 }
-
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
-async.series([
-    // FIXME: this sqldb init function is duped from server.js
-    function(callback) {
-        const pgConfig = {
-            user: config.postgresqlUser,
-            database: config.postgresqlDatabase,
-            host: config.postgresqlHost,
-            password: config.postgresqlPassword,
-            max: 100,
-            idleTimeoutMillis: 30000,
-        };
-        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
-        const idleErrorHandler = function(err) {
-            logger.error('idle client error', err);
-            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-            process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function(err) {
-            if (ERR(err, callback)) return;
-            logger.verbose('Successfully connected to database');
-            callback(null);
-        });
-    },
-    function(callback) {
-        const params = {
-            instance_id: config.workspaceDevHostInstanceId,
-            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
-        };
-        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-], function(err, data) {
-    if (err) {
-        logger.error('Error initializing PrairieLearn database:', err, data);
-    } else {
-        logger.info('Initialized PrairieLearn database');
-    }
-});
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
@@ -116,15 +75,46 @@ app.post('/', function(req, res) {
     }
 });
 
-var server;
+let server;
+
 async.series([
+    (callback) => {
+        const pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            password: config.postgresqlPassword,
+            max: 100,
+            idleTimeoutMillis: 30000,
+        };
+        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+        const idleErrorHandler = function(err) {
+            logger.error('idle client error', err);
+            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
+            process.exit(1);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+    (callback) => {
+        const params = {
+            instance_id: config.workspaceDevHostInstanceId,
+            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
     (callback) => {
         server = http.createServer(app);
         server.listen(config.workspaceDevHostPort);
         logger.info(`Listening on port ${config.workspaceDevHostPort}`);
         callback(null);
     },
-    // must init socket server before workspace
     (callback) => {
         socketServer.init(server, function(err) {
             if (ERR(err, callback)) return;
@@ -135,7 +125,13 @@ async.series([
         workspace.init();
         callback(null);
     },
-]);
+], function(err, data) {
+    if (err) {
+        logger.error('Error initializing host:', err, data);
+    } else {
+        logger.info('Successfully initialized host');
+    }
+});
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
