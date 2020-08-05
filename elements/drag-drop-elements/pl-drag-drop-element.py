@@ -154,6 +154,8 @@ def parse(element_html, data):
                 ranking = e[0].attrib['ranking']
             except IndexError:
                 ranking = 0
+            except KeyError:
+                ranking = -1 # wrong answers have no ranking
             student_answer_ranking.append(ranking)
     data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking, 
                                              'student_raw_submission': student_answer, 
@@ -215,20 +217,18 @@ def test(element_html, data):
     elif data['test_type'] == 'incorrect':
         temp = data['correct_answers'][answerName] # temp array to hold the correct answers
         incorrect_answers = []
-        for html_tags in pl_drag_drop_element:
+        for html_tags in element:
             if html_tags.tag == 'pl-answer':
                 incorrect_answers.append(str.strip(html_tags.text))
-        incorrect_answers = list(filter(lambda x: x not in temp), incorrect_answers)
-        if len(incorrect_answers) == 0:
-            raise Exception('All MCQ options are answers! I hope you know what you are doing.')
+        incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
+        incorrect_answers = list(map(lambda x: x + ':::0', incorrect_answers))
 
-        incorrect_answers = list(map(lambda x: x + ':::0'), incorrect_answers)
+        # if len(incorrect_answers) == 0:
+            # raise Exception('All MCQ options are answers! I hope you know what you are doing.')
 
         data['raw_submitted_answers'][answerNameField] = ','.join(incorrect_answers)
         data['partial_scores'][answerName] = {'score': 0, 'feedback': ''}
 
-    #     data['partial_scores'][answerNameField] = {'score': 0}
-    #     # data['raw_submitted_answers'][answerNameField] = ['Test:::0']
     elif data['test_type'] == 'invalid':
         data['raw_submitted_answers'][answerName] = 'bad input'
         data['format_errors'][answerName] = 'format error message'
