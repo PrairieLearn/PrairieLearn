@@ -151,8 +151,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @typedef {Object} QuestionWorkspaceOptions
  * @property {string} image
  * @property {number} port
+ * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
+ * @property {string[]} syncIgnore
+ * @property {string} urlRewrite
  */
 
  /**
@@ -324,6 +327,9 @@ const questions = {
       gradedFiles: [
         'animal.h',
         'animal.c',
+      ],
+      syncIgnore: [
+        '.local/share/code-server/',
       ],
     },
   },

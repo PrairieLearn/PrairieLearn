@@ -15,6 +15,9 @@
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c"
+        ],
+        "syncIgnore": [
+            ".local/share/code-server/"
         ]
     }
 }
