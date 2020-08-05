@@ -207,18 +207,30 @@ def test(element_html, data):
 
     # # incorrect and correct answer test cases
     # # this creates the EXPECTED SUBMISSION field for test cases
-    # # data['broken'] = True
     if data['test_type'] == 'correct':
-        temp = data['correct_answers'][answerName]
+        temp = data['correct_answers'][answerName] # temp array to hold the correct answers
         temp = list(map(lambda x: x + ':::0', temp))
         data['raw_submitted_answers'][answerNameField] = ','.join(temp)
         data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
-    # elif data['test_type'] == 'incorrect':
-    #     # data['broken'] = True
+    elif data['test_type'] == 'incorrect':
+        temp = data['correct_answers'][answerName] # temp array to hold the correct answers
+        incorrect_answers = []
+        for html_tags in pl_drag_drop_element:
+            if html_tags.tag == 'pl-answer':
+                incorrect_answers.append(str.strip(html_tags.text))
+        incorrect_answers = list(filter(lambda x: x not in temp), incorrect_answers)
+        if len(incorrect_answers) == 0:
+            raise Exception('All MCQ options are answers! I hope you know what you are doing.')
+
+        incorrect_answers = list(map(lambda x: x + ':::0'), incorrect_answers)
+
+        data['raw_submitted_answers'][answerNameField] = ','.join(incorrect_answers)
+        data['partial_scores'][answerName] = {'score': 0, 'feedback': ''}
+
     #     data['partial_scores'][answerNameField] = {'score': 0}
     #     # data['raw_submitted_answers'][answerNameField] = ['Test:::0']
-    # if data['test_type'] == 'invalid':
-    #     data['raw_submitted_answers'][answerName] = 'bad input'
-    #     data['format_errors'][answerName] = 'format error message'
-    # else:
-    #     raise Exception('invalid result: %s' % data['test_type'])
+    elif data['test_type'] == 'invalid':
+        data['raw_submitted_answers'][answerName] = 'bad input'
+        data['format_errors'][answerName] = 'format error message'
+    else:
+        raise Exception('invalid result: %s' % data['test_type'])
