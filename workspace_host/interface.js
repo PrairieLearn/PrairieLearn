@@ -684,8 +684,11 @@ function initSequence(workspace_id, res) {
             logger.error(`Error for workspace_id=${workspace_id}: ${err}`);
             res.status(500).send(err);
         } else {
-            logger.info(`Container initialized for workspace_id=${workspace_id}`);
-            res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+            sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
+                if (ERR(err)) return;
+                logger.info(`Container initialized for workspace_id=${workspace_id}`);
+                res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+            });
         }
     });
 }
