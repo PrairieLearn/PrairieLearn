@@ -17,7 +17,7 @@ else
     docker/gen_ssl.sh
 
     # Uncomment to start redis to test message passing
-    docker/start_redis.sh
+    # docker/start_redis.sh
 
     if [[ $NODEMON == "true" ]]; then
         npm run start-nodemon
