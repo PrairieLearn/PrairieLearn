@@ -13,6 +13,6 @@ fi
 
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \
-  send-keys "redis-server --daemonize yes ; docker/init.sh" C-m \; \
+  send-keys "docker/start_redis.sh ; docker/init.sh" C-m \; \
   split-window -h -p 50 \; \
   send-keys "sleep 5 ; node workspace_host/interface" C-m \; \
