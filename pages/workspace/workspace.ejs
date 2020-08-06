@@ -93,62 +93,7 @@
             document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
         };
 
-        /*
-        iframe.addEventListener('load', function () {
-            var elems = iframe.contentWindow.document.getElementsByTagName('pre');
-            if (elems.length == 1) {
-                var elem = elems[0];
-                elem.innerText = '';
-                if (elem.innerText.includes('Error occurred')) {
-                    console.log('Found error');
-                    document.getElementById('state').innerHTML = 'loading error';
-                    setTimeout(function () {
-                        iframe.contentWindow.location.reload();
-                    }, 1000);
-                }
-            } else {
-                console.log('Loading the page');
-                // document.getElementById('state').innerHTML = 'loading';
-                showWorkspaceFrame();
-            }
-        });
-        */
-
-        /*
-        socket.on('connect', () => {
-            // document.getElementById('state').innerHTML = 'connected';
-
-            // onclick for reloading only iframe
-            document.getElementById('reload').onclick = () => {
-                console.log('Reloading iframe');
-                document.getElementById('state').innerHTML = 'reloading';
-                showLoadingFrame();
-                document.getElementById('workspace_container').contentWindow.location.reload();
-            };
-
-            // onclick for closing tab
-            document.getElementById('close').onclick = () => {
-                // TODO: also kill container
-                window.open('', '_self').close();
-            };
-        });
-        */
-
-        function setState(state) {
-            if (state == 'running') {
-                showWorkspaceFrame();
-                iframe.src = `${window.location.href}/container/`;
-            }
-            if (state == 'stopped') {
-                iframe.src = 'about:blank';
-            }
-            document.getElementById('state').innerHTML = state;
-        }
-        
-        socket.on('change:state', (msg) => {
-            console.log(`change:state, msg = ${JSON.stringify(msg)}`);
-            setState(msg.state);
-        });
+      function setState(state) {
 
         socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, function(msg) {
             console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
