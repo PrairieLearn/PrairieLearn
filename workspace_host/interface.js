@@ -13,6 +13,7 @@ const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const admZip = require('adm-zip');
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
@@ -106,6 +107,8 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
         destroySequence(workspace_id, res);
+    } else if (action == 'grade') {
+        gradeSequence(workspace_id, res);
     } else if (action == 'status') {
         res.status(200).send('Running');
     } else {
@@ -716,6 +719,60 @@ function destroySequence(workspace_id, res) {
             res.status(500).send(err);
         } else {
             res.status(200).send(`Container for workspace ${workspace_id} destroyed.`);
+        }
+    });
+}
+
+function gradeSequence(workspace_id, res) {
+    const workspace_dir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
+    logger.info (`... workspace_dir=${workspace_dir}`)
+
+    const graded_file_list = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
+    logger.info (`... graded_file_list=${graded_file_list}`)
+
+    const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
+    const zip_file_name = `w-${workspace_id}-${timestamp}.zip`;
+    let exist_graded_file_list = [];
+
+    async.series([
+        async () => {
+            for (const file of graded_file_list) {
+                try {
+                    const file_path = path.join(workspace_dir, file);
+                    await fsPromises.lstat(file_path);
+                    exist_graded_file_list.push(file);
+                    logger.info(`... pushed ${file}`)
+                } catch(err) {
+                    logger.warn(`Required graded file ${path.basename(file_path)} does not exist.`);
+                    continue;
+                }
+            }
+            return null;
+        },
+        (callback) => {
+            let zip = new admZip();
+            exist_graded_file_list.forEach((localFile) => {
+                const localPath = `${workspace_dir}/${localFile}`;
+                const zipPath = localFile.split('/').slice(0, -1).join('/');
+                zip.addLocalFile(localPath, zipPath);
+                logger.info(`... zipped ${localPath} -> ${zipPath}`)
+            });
+            zip.writeZip(zip_file_name, (err) => {
+                if (err) {
+                    res.status(500).send(err);
+                    return;
+                }
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (err) {
+            res.status(500).send(err);
+        } else {
+            res.status(200).sendFile(zip_file_name, {root: './'}, (_) => {
+                // delete zip file no matter what
+//                fsPromises.unlink(zip_file_name);
+            });
         }
     });
 }
