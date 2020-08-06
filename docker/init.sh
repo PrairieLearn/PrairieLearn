@@ -15,9 +15,7 @@ else
     docker/start_s3rver.sh
     docker/start_postgres.sh
     docker/gen_ssl.sh
-
-    # Uncomment to start redis to test message passing
-    # redis-server --daemonize yes
+    docker/start_redis.sh
 
     if [[ $NODEMON == "true" ]]; then
         npm run start-nodemon
