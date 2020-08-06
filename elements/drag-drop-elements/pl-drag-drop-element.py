@@ -136,7 +136,7 @@ def parse(element_html, data):
         if len(answer) == 1:
             # because we already caught empty string submission above
             # failing to split the answer implies an error
-            data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This shouldn\'t happen, contact instructor for help.'
+            data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This should not happen, contact instructor for help.'
             return
 
         if not str.isdigit(answer[1]) or int(answer[1]) not in list(range(0, 5)):  # indent is a number in [0, 4]
