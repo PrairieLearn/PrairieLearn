@@ -23,9 +23,6 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const aws = require('../lib/aws.js');
-aws.init((err) => {
-    if (err) logger.error(err);
-});
 const config = require('../lib/config');
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -94,24 +91,29 @@ async.series([
         });
     },
     (callback) => {
-        /* Load AWS and host settings */
-        fs.readFile('./aws-config.json', (err, awsConfig) => {
-            if (err) {
-                /* If we don't have an AWS config file, assume we're inside EC2 (or on local dev)
-                   and we can get config info from the metadata service. */
-                logger.info('Missing aws-config.json; trying EC2 Metadata Service');
+        aws.init((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        socketServer.init(server, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        workspace.init((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        aws.isOnEC2((ec2) => {
+            if (ec2) {
+                workspace_server_settings.running_in_ec2 = true;
                 const MetadataService = new AWS.MetadataService();
                 async.series([
-                    (callback) => {
-                        /* Try to connect to the Metadata Service host before doing any requests.
-                           On local dev trying to create requests on the MetadataService will
-                           block forever regardless of timeouts or number of retries, so this
-                           check is needed so we exit early. */
-                        request(`http://${AWS.MetadataService.host}`, (err, _response, _body) => {
-                            if (ERR(err, callback));
-                            logger.debug('Connected to AWS Metadata Service host');
-                        });
-                    },
                     (callback) => {
                         MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
                             if (ERR(err, callback)) return;
@@ -133,29 +135,11 @@ async.series([
                         });
                     },
                 ], (err) => {
-                    if (err) {
-                        /* If we've errored out, it's because we're not actually running in EC2.
-                           We should assume we're in dev mode without an AWS config and use the
-                           local S3RVER instance */
-                        logger.info('Using local S3RVER instance for AWS.');
-                        AWS.config = new AWS.Config({
-                            s3ForcePathStyle: true,
-                            accessKeyId: 'S3RVER',
-                            secretAccessKey: 'S3RVER',
-                            endpoint: new AWS.Endpoint('http://localhost:5000'),
-                        });
-                        callback(null);
-                    } else {
-                        logger.info('Successfully loaded metadata from EC2 Metadata Service.');
-                        logger.verbose('Loaded settings:\n' + workspace_server_settings);
-                        workspace_server_settings.running_in_ec2 = true;
-                        callback(null);
-                    }
+                    if (ERR(err, callback)) return;
+                    callback(null);
                 });
             } else {
-                /* If we do have a config file, use it to provide all our info */
-                logger.info('Loading AWS config from aws-config.json');
-                AWS.config.update(JSON.parse(awsConfig));
+                /* Not running in ec2 */
                 callback(null);
             }
         });
@@ -171,16 +155,6 @@ async.series([
         server = http.createServer(app);
         server.listen(config.workspaceDevHostPort);
         logger.info(`Listening on port ${config.workspaceDevHostPort}`);
-        callback(null);
-    },
-    (callback) => {
-        socketServer.init(server, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    (callback) => {
-        workspace.init();
         callback(null);
     },
 ], function(err, data) {

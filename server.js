@@ -1084,8 +1084,10 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            workspace.init();
-            callback(null);
+            workspace.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             serverJobs.init(function(err) {
