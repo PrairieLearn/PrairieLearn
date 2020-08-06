@@ -183,11 +183,10 @@ def render(element_html, data):
             else:
                 insert_text = ' at least one option.'
                 helptext = 'Select all possible options that apply.'
-                
+
             if allow_none_correct:
                 helptext += ' If none of the options apply, click <code>Save & Grade</code> to submit.'
             helptext_html = f'<small class="form-text text-muted">{helptext}</small>'
-            
 
             if partial_credit:
                 if partial_credit_method == 'PC':
