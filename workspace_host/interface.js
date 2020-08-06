@@ -745,10 +745,10 @@ function destroySequence(workspace_id, res) {
 
 function gradeSequence(workspace_id, res) {
     const workspace_dir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
-    logger.info (`... workspace_dir=${workspace_dir}`)
+    logger.info (`... workspace_dir=${workspace_dir}`);
 
     const graded_file_list = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
-    logger.info (`... graded_file_list=${graded_file_list}`)
+    logger.info (`... graded_file_list=${graded_file_list}`);
 
     const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
     const zip_file_name = `w-${workspace_id}-${timestamp}.zip`;
@@ -761,9 +761,9 @@ function gradeSequence(workspace_id, res) {
                     const file_path = path.join(workspace_dir, file);
                     await fsPromises.lstat(file_path);
                     exist_graded_file_list.push(file);
-                    logger.info(`... pushed ${file}`)
+                    logger.info(`... pushed ${file}`);
                 } catch(err) {
-                    logger.warn(`Required graded file ${path.basename(file_path)} does not exist.`);
+                    logger.warn(`Required graded file ${file} does not exist.`);
                     continue;
                 }
             }
@@ -775,7 +775,7 @@ function gradeSequence(workspace_id, res) {
                 const localPath = `${workspace_dir}/${localFile}`;
                 const zipPath = localFile.split('/').slice(0, -1).join('/');
                 zip.addLocalFile(localPath, zipPath);
-                logger.info(`... zipped ${localPath} -> ${zipPath}`)
+                logger.info(`... zipped ${localPath} -> ${zipPath}`);
             });
             zip.writeZip(zip_file_name, (err) => {
                 if (err) {
