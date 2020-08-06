@@ -88,6 +88,7 @@ def render(element_html, data):
         else:
             return ''
 
+
 def prepare(element_html, data):
     pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
     correct_answers = []
@@ -138,10 +139,10 @@ def parse(element_html, data):
             data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This shouldn\'t happen, contact instructor for help.'
             return
 
-        if not str.isdigit(answer[1]) or int(answer[1]) not in list(range(0, 5)): # indent is a number in [0, 4]
+        if not str.isdigit(answer[1]) or int(answer[1]) not in list(range(0, 5)):  # indent is a number in [0, 4]
             data['format_errors'][answerName] = f'Indent level {answer[1]} is invalid! Indention level must be a number between 0 or 4 inclusive.'
             return
-        
+
         student_answer.append(answer[0])
         student_answer_indent.append(answer[1])
     del student_answer_temp
@@ -155,11 +156,11 @@ def parse(element_html, data):
             except IndexError:
                 ranking = 0
             except KeyError:
-                ranking = -1 # wrong answers have no ranking
+                ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
-    data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking, 
-                                             'student_raw_submission': student_answer, 
-                                             'true_answer': true_answer, 
+    data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
+                                             'student_raw_submission': student_answer,
+                                             'true_answer': true_answer,
                                              'student_answer_indent': student_answer_indent}
     if temp in data['submitted_answers']:
         del data['submitted_answers'][temp]
@@ -202,6 +203,7 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         data['partial_scores'][answerName] = {'score': float(correctness / len(true_answer)), 'feedback': ''}
 
+
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
@@ -210,21 +212,18 @@ def test(element_html, data):
     # # incorrect and correct answer test cases
     # # this creates the EXPECTED SUBMISSION field for test cases
     if data['test_type'] == 'correct':
-        temp = data['correct_answers'][answerName] # temp array to hold the correct answers
+        temp = data['correct_answers'][answerName]  # temp array to hold the correct answers
         temp = list(map(lambda x: x + ':::0', temp))
         data['raw_submitted_answers'][answerNameField] = ','.join(temp)
         data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
     elif data['test_type'] == 'incorrect':
-        temp = data['correct_answers'][answerName] # temp array to hold the correct answers
+        temp = data['correct_answers'][answerName]  # temp array to hold the correct answers
         incorrect_answers = []
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
                 incorrect_answers.append(str.strip(html_tags.text))
         incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
         incorrect_answers = list(map(lambda x: x + ':::0', incorrect_answers))
-
-        # if len(incorrect_answers) == 0:
-            # raise Exception('All MCQ options are answers! I hope you know what you are doing.')
 
         data['raw_submitted_answers'][answerNameField] = ','.join(incorrect_answers)
         data['partial_scores'][answerName] = {'score': 0, 'feedback': ''}
