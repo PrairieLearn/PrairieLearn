@@ -13,7 +13,7 @@
         "args": "--auth none",
         "home": "/home/coder",
         "gradedFiles": [
-            "project/initial_code.py"
+            "initial_code.py"
         ],
         "syncIgnore": [
             ".local/share/code-server/"
