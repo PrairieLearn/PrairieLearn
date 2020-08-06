@@ -14,13 +14,17 @@ HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
+ALLOW_NONE_CORRECT_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct',
+                        'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text',
+                        'detailed-help-text', 'partial-credit', 'partial-credit-method',
+                        'hide-letter-keys', 'allow-none-correct']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -49,7 +53,9 @@ def prepare(element_html, data):
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
-    if len_correct == 0:
+    allow_none_correct = pl.get_boolean_attrib(element, 'allow-none-correct', ALLOW_NONE_CORRECT_DEFAULT)
+
+    if len_correct == 0 and not allow_none_correct:
         raise ValueError('At least one option must be true.')
 
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
@@ -63,6 +69,15 @@ def prepare(element_html, data):
     max_answers = 26  # will not display more than 26 checkbox answers
 
     number_answers = max(0, min(len_total, min(max_answers, number_answers)))
+    none_correct = False
+    if allow_none_correct:
+        # To maintain consistent number of options displayed,
+        # when allowing None, number of answers is limited by number of incorrect
+        number_answers = min(len_incorrect, number_answers)
+        # None will be correct with probability 1/(len_correct + 1)
+        # and will always be correct when no correct answer is provided
+        none_correct = random.randint(1, len_correct + 1) <= 1
+
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
@@ -72,7 +87,10 @@ def prepare(element_html, data):
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
-    number_correct = random.randint(min_correct, max_correct)
+    if none_correct:
+        number_correct = 0
+    else:
+        number_correct = random.randint(min_correct, max_correct)
     number_incorrect = number_answers - number_correct
 
     sampled_correct = random.sample(correct_answers, number_correct)
@@ -108,6 +126,7 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
+    allow_none_correct = pl.get_boolean_attrib(element, 'allow-none-correct', ALLOW_NONE_CORRECT_DEFAULT)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
@@ -157,14 +176,18 @@ def render(element_html, data):
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             if detailed_help_text:
                 if min_correct != max_correct:
-                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
-                    helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
+                    insert_text = f' between <b>{min_correct}</b> and <b>{max_correct}</b> options.'
                 else:
-                    insert_text = ' exactly <b>%d</b> options.' % (max_correct)
-                    helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
+                    insert_text = f' exactly <b>{max_correct}</b> options.'
+                helptext = 'Select' + insert_text
             else:
                 insert_text = ' at least one option.'
-                helptext = '<small class="form-text text-muted">Select all possible options that apply.</small>'
+                helptext = 'Select all possible options that apply.'
+                
+            if allow_none_correct:
+                helptext += ' If none of the option(s) apply, click <code>Save & Grade</code> to submit.'
+            helptext_html = f'<small class="form-text text-muted">{helptext}</small>'
+            
 
             if partial_credit:
                 if partial_credit_method == 'PC':
@@ -198,7 +221,7 @@ def render(element_html, data):
         }
 
         if not hide_help_text:
-            html_params['helptext'] = helptext
+            html_params['helptext'] = helptext_html
 
         if score is not None:
             try:
@@ -270,7 +293,7 @@ def render(element_html, data):
 
         if not pl.get_boolean_attrib(element, 'hide-answer-panel', HIDE_ANSWER_PANEL_DEFAULT):
             correct_answer_list = data['correct_answers'].get(name, [])
-            if len(correct_answer_list) == 0:
+            if len(correct_answer_list) == 0 and not allow_none_correct:
                 raise ValueError('At least one option must be true.')
             else:
                 html_params = {
@@ -295,12 +318,14 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    submitted_key = data['submitted_answers'].get(name, None)
+    submitted_key = data['submitted_answers'].get(name, [])
     all_keys = [a['key'] for a in data['params'][name]]
     correct_answer_list = data['correct_answers'].get(name, [])
 
-    # Check that at least one option was selected
-    if submitted_key is None:
+    allow_none_correct = pl.get_boolean_attrib(element, 'allow-none-correct', ALLOW_NONE_CORRECT_DEFAULT)
+
+    # Check that at least one option was selected when not allowing None
+    if not submitted_key and not allow_none_correct:
         data['format_errors'][name] = 'You must select at least one option.'
         return
 
@@ -319,7 +344,7 @@ def parse(element_html, data):
         min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
         max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
         n_submitted = len(submitted_key)
-        if n_submitted > max_correct or n_submitted < min_correct:
+        if n_submitted > max_correct or (n_submitted < min_correct and not allow_none_correct):
             data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
             return
 
