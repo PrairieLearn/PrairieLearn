@@ -163,7 +163,7 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
-`number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying all answers.
+`number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying all answers, but at most 26.
 `min-correct` | integer | special | The minimum number of correct answers to display. Default is 1.
 `max-correct` | integer | special | The maximum number of correct answers to display. Default is number of correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
