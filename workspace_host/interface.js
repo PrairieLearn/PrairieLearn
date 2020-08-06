@@ -65,7 +65,6 @@ let server;
 let workspace_server_settings = {
     instance_id: config.workspaceDevHostInstanceId,
     hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
-    running_in_ec2: false,
 };
 
 async.series([
@@ -109,40 +108,37 @@ async.series([
         });
     },
     (callback) => {
-        aws.isOnEC2((ec2) => {
-            if (ec2) {
-                workspace_server_settings.running_in_ec2 = true;
-                const MetadataService = new AWS.MetadataService();
-                async.series([
-                    (callback) => {
-                        MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
-                            if (ERR(err, callback)) return;
-                            try {
-                                const data = JSON.parse(document);
-                                logger.info('instance-identity', data);
-                                AWS.config.update({'region': data.region});
-                                workspace_server_settings.instance_id = data.instanceId;
-                            } catch (err) {
-                                return callback(err);
-                            }
-                        });
-                    },
-                    (callback) => {
-                        MetadataService.request('/latest/metadata/local-hostname', (err, hostname) => {
-                            if (ERR(err, callback)) return;
-                            workspace_server_settings.hostname = hostname;
-                            callback(null);
-                        });
-                    },
-                ], (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            } else {
-                /* Not running in ec2 */
+        if (config.runningInEc2) {
+            const MetadataService = new AWS.MetadataService();
+            async.series([
+                (callback) => {
+                    MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
+                        if (ERR(err, callback)) return;
+                        try {
+                            const data = JSON.parse(document);
+                            logger.info('instance-identity', data);
+                            AWS.config.update({'region': data.region});
+                            workspace_server_settings.instance_id = data.instanceId;
+                        } catch (err) {
+                            return callback(err);
+                        }
+                    });
+                },
+                (callback) => {
+                    MetadataService.request('/latest/metadata/local-hostname', (err, hostname) => {
+                        if (ERR(err, callback)) return;
+                        workspace_server_settings.hostname = hostname;
+                        callback(null);
+                    });
+                },
+            ], (err) => {
+                if (ERR(err, callback)) return;
                 callback(null);
-            }
-        });
+            });
+        } else {
+            /* Not running in ec2 */
+            callback(null);
+        }
     },
     (callback) => {
         /* Add ourselves to the workspace hosts directory */
