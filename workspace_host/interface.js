@@ -107,7 +107,7 @@ async.series([
                            On local dev trying to create requests on the MetadataService will
                            block forever regardless of timeouts or number of retries, so this
                            check is needed so we exit early. */
-                        request(`http://${AWS.MetadataService.host}`, (err, response, body) => {
+                        request(`http://${AWS.MetadataService.host}`, (err, _response, _body) => {
                             if (ERR(err, callback));
                             logger.debug('Connected to AWS Metadata Service host');
                         });
@@ -131,7 +131,7 @@ async.series([
                             workspace_server_settings.hostname = hostname;
                             callback(null);
                         });
-                    }
+                    },
                 ], (err) => {
                     if (err) {
                         /* If we've errored out, it's because we're not actually running in EC2.
