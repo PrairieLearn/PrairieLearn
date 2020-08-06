@@ -26,13 +26,6 @@ const aws = require('../lib/aws.js');
 aws.init((err) => {
     if (err) logger.error(err);
 });
-const awsConfig = {
-    s3ForcePathStyle: true,
-    accessKeyId: 'S3RVER',
-    secretAccessKey: 'S3RVER',
-    endpoint: new AWS.Endpoint('http://localhost:5000'),
-};
-
 const config = require('../lib/config');
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -72,6 +65,11 @@ app.post('/', function(req, res) {
 });
 
 let server;
+let workspace_server_settings = {
+    instance_id: config.workspaceDevHostInstanceId,
+    hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
+    running_in_ec2: false,
+};
 
 async.series([
     (callback) => {
@@ -96,11 +94,75 @@ async.series([
         });
     },
     (callback) => {
-        const params = {
-            instance_id: config.workspaceDevHostInstanceId,
-            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
-        };
-        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+        /* Load AWS and host settings */
+        fs.readFile('./aws-config.json', (err, awsConfig) => {
+            if (err) {
+                /* If we don't have an AWS config file, assume we're inside EC2 (or on local dev)
+                   and we can get config info from the metadata service. */
+                logger.info('Missing aws-config.json; trying EC2 Metadata Service');
+                const MetadataService = new AWS.MetadataService();
+                async.series([
+                    (callback) => {
+                        /* Try to connect to the Metadata Service host before doing any requests.
+                           On local dev trying to create requests on the MetadataService will
+                           block forever regardless of timeouts or number of retries, so this
+                           check is needed so we exit early. */
+                        request(`http://${AWS.MetadataService.host}`, (err, response, body) => {
+                            if (ERR(err, callback));
+                            logger.debug('Connected to AWS Metadata Service host');
+                        });
+                    },
+                    (callback) => {
+                        MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
+                            if (ERR(err, callback)) return;
+                            try {
+                                const data = JSON.parse(document);
+                                logger.info('instance-identity', data);
+                                AWS.config.update({'region': data.region});
+                                workspace_server_settings.instance_id = data.instanceId;
+                            } catch (err) {
+                                return callback(err);
+                            }
+                        });
+                    },
+                    (callback) => {
+                        MetadataService.request('/latest/metadata/local-hostname', (err, hostname) => {
+                            if (ERR(err, callback)) return;
+                            workspace_server_settings.hostname = hostname;
+                            callback(null);
+                        });
+                    }
+                ], (err) => {
+                    if (err) {
+                        /* If we've errored out, it's because we're not actually running in EC2.
+                           We should assume we're in dev mode without an AWS config and use the
+                           local S3RVER instance */
+                        logger.info('Using local S3RVER instance for AWS.');
+                        AWS.config = new AWS.Config({
+                            s3ForcePathStyle: true,
+                            accessKeyId: 'S3RVER',
+                            secretAccessKey: 'S3RVER',
+                            endpoint: new AWS.Endpoint('http://localhost:5000'),
+                        });
+                        callback(null);
+                    } else {
+                        logger.info('Successfully loaded metadata from EC2 Metadata Service.');
+                        logger.verbose('Loaded settings:\n' + workspace_server_settings);
+                        workspace_server_settings.running_in_ec2 = true;
+                        callback(null);
+                    }
+                });
+            } else {
+                /* If we do have a config file, use it to provide all our info */
+                logger.info('Loading AWS config from aws-config.json');
+                AWS.config.update(JSON.parse(awsConfig));
+                callback(null);
+            }
+        });
+    },
+    (callback) => {
+        /* Add ourselves to the workspace hosts directory */
+        sqldb.query(sql.insert_workspace_hosts, workspace_server_settings, function(err, _result) {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -206,7 +268,7 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
                 port_id_mapper[i] = workspace_id;
                 callback(null, i);
                 return;
-            } 
+            }
         }
     }
     callback('No available port at this time.');
@@ -265,7 +327,7 @@ function _getSettingsWrapper(workspace_id, callback) {
 }
 
 async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callback) {
-    const s3 = new AWS.S3(awsConfig);
+    const s3 = new AWS.S3();
 
     let body;
     if (isDirectory) {
@@ -295,7 +357,7 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callbac
 }
 
 function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
-    const s3 = new AWS.S3(awsConfig);
+    const s3 = new AWS.S3();
 
     if (isDirectory) {
         S3FilePath += '/';
@@ -335,7 +397,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
         }
     }
 
-    const s3 = new AWS.S3(awsConfig);
+    const s3 = new AWS.S3();
 
     var downloadParams = {
         Bucket: config.workspaceS3Bucket,
@@ -411,7 +473,7 @@ function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${localPath}`);
         debug(`watch: syncIgnore=${syncIgnore}`);
-        
+
         let s3Path;
         if (!workspace_id) {
             logger.error(`watch return: workspace_id not mapped yet`);
@@ -452,7 +514,7 @@ function _autoUpdateJobManager() {
 }
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
-    const s3 = new AWS.S3(awsConfig);
+    const s3 = new AWS.S3();
 
     var listingParams = {
         Bucket: config.workspaceS3Bucket,
@@ -684,7 +746,7 @@ function initSequence(workspace_id, res) {
     id_workspace_mapper[workspace_id] = {};
     id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
     id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
-    
+
     // send 200 immediately to prevent socket hang up from _pullImage()
     res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
 
