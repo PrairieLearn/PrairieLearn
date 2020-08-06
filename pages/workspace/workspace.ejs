@@ -80,25 +80,39 @@
   </script>
   <script>
     $(function () {
-        const iframe = document.getElementById('workspace_container');
-        var socket = io('/workspace');
+      const iframe = document.getElementById('workspace_container');
+      var socket = io('/workspace');
 
-        const showLoadingFrame = () => {
-            document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
-            document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
-        };
+      const showLoadingFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
+      };
 
-        const showWorkspaceFrame = () => {
-            document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
-            document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
-        };
+      const showWorkspaceFrame = () => {
+        document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
+        document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
+      };
 
       function setState(state) {
+        if (state == 'running') {
+          showWorkspaceFrame();
+          iframe.src = `${window.location.href}/container/`;
+        }
+        if (state == 'stopped') {
+          iframe.src = 'about:blank';
+        }
+        document.getElementById('state').innerHTML = state;
+      }
+      
+      socket.on('change:state', (msg) => {
+        console.log(`change:state, msg = ${JSON.stringify(msg)}`);
+        setState(msg.state);
+      });
 
-        socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, function(msg) {
-            console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
-            setState(msg.state);
-        });
+      socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, function(msg) {
+        console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
+        setState(msg.state);
+      });
     });
   </script>
 </body>
