@@ -1,23 +1,31 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const app = express();
+const http = require('http');
 const request = require('request');
 const path = require('path');
 const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
+const socketServer = require('../lib/socket-server'); // must load socket server before workspace
+const workspace = require('../lib/workspace');
 const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const admZip = require('adm-zip');
+
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
-    if (err) logger.debug(err);
+    if (err) logger.error(err);
 });
 const awsConfig = {
     s3ForcePathStyle: true,
@@ -33,57 +41,7 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
-const workspaceBucketName = config.workspaceS3Bucket;
-if (workspaceBucketName == '') {
-    logger.warn('Workspace bucket is not configed correctly. Check config.json.');
-} else {
-    logger.info('Workspace bucket is configed to: ' + workspaceBucketName);
-}
-
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
-async.series([
-    // FIXME: this sqldb init function is duped from server.js
-    function(callback) {
-        const pgConfig = {
-            user: config.postgresqlUser,
-            database: config.postgresqlDatabase,
-            host: config.postgresqlHost,
-            password: config.postgresqlPassword,
-            max: 100,
-            idleTimeoutMillis: 30000,
-        };
-        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
-        const idleErrorHandler = function(err) {
-            logger.error('idle client error', err);
-            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-            process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function(err) {
-            if (ERR(err, callback)) return;
-            logger.verbose('Successfully connected to database');
-            callback(null);
-        });
-    },
-    function(callback) {
-        const params = {
-            instance_id: config.workspaceDevHostInstanceId,
-            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
-        };
-        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-], function(err, data) {
-    if (err) {
-        logger.error('Error initializing PrairieLearn database:', err, data);
-    } else {
-        logger.info('Initialized PrairieLearn database');
-    }
-});
+logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
@@ -116,7 +74,63 @@ app.post('/', function(req, res) {
     }
 });
 
-app.listen(config.workspaceDevHostPort, () => console.log(`Listening on port ${config.workspaceDevHostPort}`));
+let server;
+
+async.series([
+    (callback) => {
+        const pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            password: config.postgresqlPassword,
+            max: 100,
+            idleTimeoutMillis: 30000,
+        };
+        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+        const idleErrorHandler = function(err) {
+            logger.error('idle client error', err);
+            // https://github.com/PrairieLearn/PrairieLearn/issues/2396
+            process.exit(1);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            logger.verbose('Successfully connected to database');
+            callback(null);
+        });
+    },
+    (callback) => {
+        const params = {
+            instance_id: config.workspaceDevHostInstanceId,
+            hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        server = http.createServer(app);
+        server.listen(config.workspaceDevHostPort);
+        logger.info(`Listening on port ${config.workspaceDevHostPort}`);
+        callback(null);
+    },
+    (callback) => {
+        socketServer.init(server, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        workspace.init();
+        callback(null);
+    },
+], function(err, data) {
+    if (err) {
+        logger.error('Error initializing host:', err, data);
+    } else {
+        logger.info('Successfully initialized host');
+    }
+});
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
@@ -132,7 +146,6 @@ watcher.on('add', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('File created ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
@@ -142,7 +155,6 @@ watcher.on('addDir', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('Directory created ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
@@ -152,19 +164,16 @@ watcher.on('change', filename => {
     if (key in update_queue && update_queue[key].action == 'skip') {
         delete update_queue[key];
     } else {
-        console.log ('File changed ' + filename);
         update_queue[key] = {action: 'update'};
     }
 });
 watcher.on('unlink', filename => {
     // Handle removed files
-    console.log ('File removed ' + filename);
     var key = [filename, false];
     update_queue[key] = {action: 'delete'};
 });
 watcher.on('unlinkDir', filename => {
     // Handle removed directory
-    console.log ('Directory removed ' + filename);
     var key = [filename, true];
     update_queue[key] = {action: 'delete'};
 });
@@ -234,7 +243,6 @@ function _checkServer(workspace_id, container, callback) {
 function _querySelectContainerSettings(workspace_id, callback) {
     sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
         if (ERR(err, callback)) return;
-        logger.info(`Query results: ${JSON.stringify(result.rows[0])}`);
 
         const syncIgnore = result.rows[0].workspace_sync_ignore || [];
         id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
@@ -259,7 +267,7 @@ function _getSettingsWrapper(workspace_id, callback) {
     });
 }
 
-async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
+async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     let body;
@@ -270,13 +278,12 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
         try {
             body = await fsPromises.readFile(filePath);
         } catch(err) {
-            console.log(err);
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
     }
     var uploadParams = {
-        Bucket: workspaceBucketName,
+        Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
         Body: body,
     };
@@ -285,19 +292,19 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(`watch: ${filePath} uploaded!`);
+        logger.info(`Uploaded ${localPath}`);
         callback(null, 'OK');
     });
 }
 
-function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
+function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     if (isDirectory) {
         S3FilePath += '/';
     }
     var deleteParams = {
-        Bucket: workspaceBucketName,
+        Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
     s3.deleteObject(deleteParams, function(err, _data) {
@@ -305,7 +312,7 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, callback) {
             callback(null, [filePath, S3FilePath, err]);
             return;
         }
-        console.log(`watch: ${filePath} deleted!`);
+        logger.info(`Deleted ${localPath}`);
         callback(null, 'OK');
     });
 }
@@ -334,7 +341,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     var downloadParams = {
-        Bucket: workspaceBucketName,
+        Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
     var fileStream = fs.createWriteStream(filePath);
@@ -396,41 +403,38 @@ function _getWorkspaceByPath(path) {
 
 function _autoUpdateJobManager() {
     var jobs = [];
-    console.log(`watch update_queue: ${JSON.stringify(update_queue)}`);
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, localPath} = _getWorkspaceByPath(path);
         if (workspace_id == null) continue;
-        logger.info(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
+        debug(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
         const s3Name = id_workspace_mapper[workspace_id].s3Name;
         const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
-        logger.info(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-        logger.info(`watch: localPath=${localPath}`);
-        logger.info(`watch: syncIgnore=${syncIgnore}`);
+        debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        debug(`watch: localPath=${localPath}`);
+        debug(`watch: syncIgnore=${syncIgnore}`);
         
         let s3Path;
         if (!workspace_id) {
-            logger.info(`watch return: workspace_id not mapped yet`);
+            logger.error(`watch return: workspace_id not mapped yet`);
             return;
         } else if (localPath === '') {
-            logger.info(`watch continue: empty (root) path`);
+            logger.error(`watch continue: empty (root) path`);
             continue;
         } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
-            logger.info(`watch continue: syncIgnored`);
             continue;
         } else {
             s3Path = `${s3Name}/${localPath}`;
-            logger.info(`watch s3Path: ${s3Path}`);
         }
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                _uploadToS3(path, isDirectory, s3Path, callback);
+                _uploadToS3(path, isDirectory, s3Path, localPath, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                _deleteFromS3(path, isDirectory, s3Path, callback);
+                _deleteFromS3(path, isDirectory, s3Path, localPath, callback);
             });
         }
     }
@@ -445,7 +449,7 @@ function _autoUpdateJobManager() {
             }
         });
         if (status.length != 0) {
-            logger.error(status);
+            logger.error(`Error during file sync: ${status}`);
         }
     });
 }
@@ -454,7 +458,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     const s3 = new AWS.S3(awsConfig);
 
     var listingParams = {
-        Bucket: workspaceBucketName,
+        Bucket: config.workspaceS3Bucket,
         Prefix: S3curDirPath,
     };
 
@@ -554,17 +558,34 @@ function _getContainer(workspace_id, callback) {
     callback(null, workspace_id, container);
 }
 
+function _pullImage(workspace_id, port, settings, callback) {
+    const workspace_image = settings.workspace_image;
+    if (config.workspacePullImagesFromDockerHub) {
+        logger.info(`Pulling docker image: ${workspace_image}`);
+        docker.pull(workspace_image, (err, stream) => {
+            if (err) {
+                logger.error(`Error pulling "${workspace_image}" image; attempting to fall back to cached version.`, err);
+                return callback(null);
+            }
+
+            docker.modem.followProgress(stream, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, workspace_id, port, settings);
+            }, (output) => {
+                logger.info('Docker pull output: ', output);
+            });
+        });
+    } else {
+        logger.info('Not pulling docker image');
+        return callback(null, workspace_id, port, settings);
+    }
+}
+
 function _createContainer(workspace_id, port, settings, callback) {
-    logger.info(`_createContainer(workspace_id=${workspace_id}, port=${port})`);
-
     const localName = id_workspace_mapper[workspace_id].localName;
-    logger.info(`_createContainer localName=${localName}`);
-
     const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
     const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
-    logger.info(`Workspace path is configed to: ${workspacePath}`);
-    logger.info(`Workspace container is configed to: ${JSON.stringify(settings)}`);
     let args = settings.workspace_args.trim();
     if (args.length == 0) {
         args = null;
@@ -572,6 +593,12 @@ function _createContainer(workspace_id, port, settings, callback) {
         args = args.split(' ');
     }
 
+    logger.info(`Creating docker container for image=${settings.workspace_image}`);
+    logger.info(`Exposed port: ${settings.workspace_port}`);
+    logger.info(`Env vars: WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`);
+    logger.info(`Port binding: ${settings.workspace_port}:${port}`);
+    logger.info(`Volume mount: ${workspacePath}:${containerPath}`);
+    logger.info(`Container name: ${localName}`);
     docker.createContainer({
         Image: settings.workspace_image,
         ExposedPorts: {
@@ -601,24 +628,15 @@ function _createContainer(workspace_id, port, settings, callback) {
             [containerPath]: {},
           },
     }, (err, container) => {
-        if (err) {
-            if (err.toString().includes('is already in use')) {
-                logger.info(`_createContainer: received error: ${err}`);
-                _getContainer(workspace_id, callback);
-            } else {
-                callback(err);
-            }
-        } else {
-            id_workspace_mapper[workspace_id].port = port;
-            id_workspace_mapper[workspace_id].settings = settings;
-            port_id_mapper[port] = workspace_id;
-            logger.info(`Set id_workspace_mapper[${workspace_id}].port = ${port}`);
-            logger.info(`Set port_id_mapper[${port}] = ${workspace_id}`);
-            sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
-                if (ERR(err, callback)) return;
-                callback(null, container);
-            });
-        }
+        if (ERR(err, callback)) return;
+
+        id_workspace_mapper[workspace_id].port = port;
+        id_workspace_mapper[workspace_id].settings = settings;
+        port_id_mapper[port] = workspace_id;
+        sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null, container);
+        });
     });
 }
 
@@ -650,15 +668,8 @@ function _delContainer(workspace_id, container, callback) {
 
 function _startContainer(workspace_id, container, callback) {
     container.start((err) => {
-        if (err) {
-            if (err.toString().includes('already started')) {
-                callback(null, workspace_id, container);
-            } else {
-                callback(err);
-            }
-        } else {
-            callback(null, workspace_id, container);
-        }
+        if (ERR(err, callback)) return;
+        callback(null, workspace_id, container);
     });
 }
 
@@ -671,14 +682,19 @@ function _stopContainer(workspace_id, container, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, res) {
+    logger.info(`Launching workspace_id=${workspace_id}`);
+
     id_workspace_mapper[workspace_id] = {};
     id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
     id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
-    logger.info(`id_workspace_mapper: ${JSON.stringify(id_workspace_mapper)}`);
     
+    // send 200 immediately to prevent socket hang up from _pullImage()
+    res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+
     async.waterfall([
         (callback) => {_syncPullContainer(workspace_id, callback);},
         _getSettingsWrapper,
+        _pullImage,
         _createContainerWrapper,
         _startContainer,
         _checkServer,
@@ -687,8 +703,12 @@ function initSequence(workspace_id, res) {
             logger.error(`Error for workspace_id=${workspace_id}: ${err}`);
             res.status(500).send(err);
         } else {
-            logger.info(`Container initialized for workspace_id=${workspace_id}`);
-            res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+            sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
+                if (ERR(err)) return;
+                logger.info(`Container initialized for workspace_id=${workspace_id}`);
+                const state = 'running';
+                workspace.updateState(workspace_id, state);
+            });
         }
     });
 }
