@@ -185,6 +185,7 @@ def render(element_html, data):
                 helptext = 'Select all possible options that apply.'
 
             if allow_none_correct:
+                insert_text = ' 0 or' + insert_text
                 helptext += ' If none of the options apply, click <code>Save & Grade</code> to submit.'
             helptext_html = f'<small class="form-text text-muted">{helptext}</small>'
 
