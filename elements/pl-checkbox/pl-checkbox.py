@@ -58,7 +58,11 @@ def prepare(element_html, data):
     if len_correct == 0 and not allow_none_correct:
         raise ValueError('At least one option must be true.')
 
-    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
+    number_answers = pl.get_integer_attrib(element, 'number-answers', None)
+    set_num_answers = False
+    if number_answers is None:
+        number_answers = len_total
+        set_num_answers = True
     min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
@@ -71,9 +75,12 @@ def prepare(element_html, data):
     number_answers = max(0, min(len_total, min(max_answers, number_answers)))
     none_correct = False
     if allow_none_correct:
+        expected_num_answers = number_answers
         # To maintain consistent number of options displayed,
         # when allowing None, number of answers is limited by number of incorrect
         number_answers = min(len_incorrect, number_answers)
+        if set_num_answers and number_answers < expected_num_answers:
+            raise Exception(f'Not enough incorrect choices for None. Need {expected_num_answers - number_answers} more')
         # None will be correct with probability 1/(len_correct + 1)
         # and will always be correct when no correct answer is provided
         none_correct = random.randint(1, len_correct + 1) <= 1
