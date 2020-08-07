@@ -145,7 +145,7 @@ async.series([
     (callback) => {
         /* Add ourselves to the workspace hosts directory */
         const params = {
-            hostname: workspace_server_settings.hostname + ':' + workspace_server_settins.port,
+            hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
             instance_id: workspace_server_settings.instance_id,
         };
         sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
