@@ -744,25 +744,25 @@ function destroySequence(workspace_id, res) {
 }
 
 function gradeSequence(workspace_id, res) {
-    const workspace_dir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
-    const graded_file_list = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
+    const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
+    const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
     const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
-    const zip_file_name = `workspace-${workspace_id}-${timestamp}.zip`;
+    const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
 
-    debug(`grade: workspace_dir=${workspace_dir}`);
-    debug(`grade: graded_file_list=${graded_file_list}`);
-    debug(`grade: zip_file_name=${zip_file_name}`);
+    debug(`grade: workspaceDir=${workspaceDir}`);
+    debug(`grade: gradedFilesList=${gradedFilesList}`);
+    debug(`grade: zipName=${zipName}`);
 
-    let exist_graded_file_list = [];
+    let zipList = [];
     async.series([
         async () => {
-            for (const file of graded_file_list) {
+            for (const file of gradedFilesList) {
                 try {
-                    const file_path = path.join(workspace_dir, file);
+                    const file_path = path.join(workspaceDir, file);
                     await fsPromises.lstat(file_path);
-                    exist_graded_file_list.push(file);
+                    zipList.push(file);
                     debug(`grade: appended ${file} to zip list`);
-                } catch(err) {
+                } catch (err) {
                     logger.warn(`Required graded file ${file} does not exist.`);
                     continue;
                 }
@@ -771,13 +771,13 @@ function gradeSequence(workspace_id, res) {
         },
         (callback) => {
             let zip = new admZip();
-            exist_graded_file_list.forEach((localFile) => {
-                const localPath = `${workspace_dir}/${localFile}`;
+            zipList.forEach((localFile) => {
+                const localPath = `${workspaceDir}/${localFile}`;
                 const zipPath = localFile.split('/').slice(0, -1).join('/');
                 zip.addLocalFile(localPath, zipPath);
                 debug(`grade: zipped ${localPath} -> ${zipPath}`);
             });
-            zip.writeZip(zip_file_name, (err) => {
+            zip.writeZip(zipName, (err) => {
                 if (err) {
                     res.status(500).send(err);
                     return;
@@ -789,8 +789,8 @@ function gradeSequence(workspace_id, res) {
         if (err) {
             res.status(500).send(err);
         } else {
-            res.status(200).sendFile(zip_file_name, {root: './'}, (_err) => {
-                // fsPromises.unlink(zip_file_name); // delete zip file no matter what
+            res.status(200).sendFile(zipName, { root: './' }, (_err) => {
+                // fsPromises.unlink(zipName); // delete zip file no matter what
             });
         }
     });
