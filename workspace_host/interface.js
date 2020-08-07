@@ -134,7 +134,7 @@ async.series([
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : process.cwd();
 var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
@@ -385,7 +385,7 @@ function _getWorkspaceByPath(path) {
     localPath = localPath.join('/');
 
     if (typeof id_workspace_mapper === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined for localName=${localName}, path=${path}`);
         return {workspace_id: null, localPath: null};
     }
 
@@ -394,7 +394,7 @@ function _getWorkspaceByPath(path) {
     );
 
     if (typeof workspace_id === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined for localName=${localName}, path=${path}`);
         return {workspace_id: null, localPath: null};
     }
 
@@ -511,7 +511,7 @@ function _syncPullContainer(workspace_id, callback) {
 
 // DEPRECATED
 async function _syncPushContainer(workspace_id, callback) {
-    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
     if (!await fsPromises.lstat(workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
@@ -583,7 +583,7 @@ function _pullImage(workspace_id, port, settings, callback) {
 
 function _createContainer(workspace_id, port, settings, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
-    const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
+    const workspaceDir = path.join(process.env.HOST_JOBS_DIR, 'workspaces') || process.cwd();
     const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     let args = settings.workspace_args.trim();
