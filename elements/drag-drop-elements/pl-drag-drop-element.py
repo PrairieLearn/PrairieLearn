@@ -58,7 +58,7 @@ def render(element_html, data):
         html_string += '</ul></div></div>'
 
         answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-        html_string += f'<input id="{str(answerName) + str("-input") }" type="text" name="{str(answerName) + str("-input") }" value=""/>'
+        html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
         # html_string += f'{data}'
         return html_string
 

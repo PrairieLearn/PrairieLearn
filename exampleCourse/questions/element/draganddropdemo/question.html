@@ -1,42 +1,6 @@
 <pl-question-panel>
 <p>
-    This is a demo problem on how to use the new <code>drag-drop-elements</code>. 
-</p>
-<p>    
-  <code>drag-drop-elements</code> works like <code>pl-multiple-choice</code>, in which the options are nested within the <code>drag-drop-elements</code>, and the correctness of the options are specified with an <code>correct</code> attribute. 
-</p>
-<p>
-  Instructors can specify the options to be shuffled by specifying the <code>shuffle-options</code> attribute to be <code>true</code> within the <code>drag-drop-elements</code> tag. Much like <code>pl-multiple-choice</code>, you also need to specify an <code>answers-name</code>. 
-</p>
-<p>
-  As shown in this demo, it is possible to use multiple <code>drag-drop-elements</code> in a single question. Be sure all of the elements have different <code>answers-name</code> attribute if you do so.
-</p> 
-<p>
-  One of the most powerful features of this custom element is the <code>permutation-mode</code> the element offers. <code>permutation-mode</code> allows 3 modes, <code>any</code>, <code>html-order</code>, and <code>ranked</code>: 
-  <ul>
-    <li><code>any</code> awards full credits to student submissions that contains <strong>all</strong> MCQ options with the <code>correct="true"</code> attribute, and partial credit for each correct MCQ options that are present. For illustration, a submission that has 4 correct answers when there are 5 true answers will receive 80%.</li>
-    <li><code>html-order</code> awards full credits <strong>only if the following both holds: </strong> the student submission contains <strong>all</strong> MCQ options with the <code>correct="true"</code> attribute, and the student submission ordering <strong>matches the ordering of the <code>pl-answers</code></strong> in the question HTML page. <strong>Consequently, <code>html-order</code> does not award partial credits.</li> </strong>
-    <li><code>ranked</code> requires the use of an additional attribute called <code>ranking</code> in the <code>pl-answer</code> tags for MCQ options that are correct. The <code>ranking</code> attribute allows you to specify the correct ordering of MCQ options using positive numbers (excluding 0). Notably, <strong>multiple answers can have identical ranking</strong>. For answers with identical ranking, the grader will consider any permutations for those answers to be correct. This is useful for coding questions. The grader will award credit for each correctly ordered MCQ option, until there are no more options to grade, or an incorrectly ordered MCQ answer/incorrect answer is encountered.</li>
-  </ul>
-</p>
-<p>
-  For illustration, the answer panel below is generated with the following code:
-</p>
-<!-- This is the code block and not the actual elements -->
-<pl-code language="html">
-<drag-drop-elements answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</drag-drop-elements>
-</pl-code>
-</pl-question-panel>
-<p>
-  <strong>Demo Q1: </strong> Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
+Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
 </p>
 <drag-drop-elements answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any">
   <pl-answer correct="false">1</pl-answer>
