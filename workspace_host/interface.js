@@ -64,7 +64,8 @@ app.post('/', function(req, res) {
 let server;
 let workspace_server_settings = {
     instance_id: config.workspaceDevHostInstanceId,
-    hostname: config.workspaceDevHostHostname + ':' + config.workspaceDevHostPort,
+    hostname: config.workspaceDevHostHostname,
+    port: config.workspaceHostPort,
 };
 
 async.series([
@@ -143,15 +144,19 @@ async.series([
     },
     (callback) => {
         /* Add ourselves to the workspace hosts directory */
-        sqldb.query(sql.insert_workspace_hosts, workspace_server_settings, function(err, _result) {
+        const params = {
+            hostname: workspace_server_settings.hostname + ':' + workspace_server_settins.port,
+            instance_id: workspace_server_settings.instance_id,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
             if (ERR(err, callback)) return;
             callback(null);
         });
     },
     (callback) => {
         server = http.createServer(app);
-        server.listen(config.workspaceDevHostPort);
-        logger.info(`Listening on port ${config.workspaceDevHostPort}`);
+        server.listen(workspace_server_settings.port);
+        logger.info(`Listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
 ], function(err, data) {
@@ -252,7 +257,8 @@ function _checkServer(workspace_id, container, callback) {
 
     const startTime = (new Date()).getTime();
     function checkWorkspace() {
-        request(`http://${config.workspaceDevContainerHostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
+        const hostname = (config.runningInEc2 ? 'localhost' : config.workspaceDevContainerHostname);
+        request(`http://${hostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode) {
                 /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
@@ -574,8 +580,7 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
-    const hostname = `${config.workspaceDevContainerHostname}:${port}`;
-    //const hostname = `${config.workspaceDevHostHostname}:${config.workspaceDevHostPort}`;
+    const hostname = `${workspace_server_settings.hostname}:${port}`;
     sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
@@ -613,7 +618,7 @@ function _pullImage(workspace_id, port, settings, callback) {
 
 function _createContainer(workspace_id, port, settings, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
-    const workspaceDir = process.env.HOST_JOBS_DIR || process.cwd();
+    const workspaceDir = process.env.HOST_JOBS_DIR || config.workspaceJobsDirectory;
     const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     let args = settings.workspace_args.trim();

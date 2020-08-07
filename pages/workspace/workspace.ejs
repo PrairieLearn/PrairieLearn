@@ -41,7 +41,7 @@
           You can refresh this tab at any time, or close and re-open it.
         </li>
         <li class="nav-item ml-2">
-          <a id="reboot" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
+          <a id="reboot" class="nav-item btn btn-light" href="/pl/workspace/<%= workspace_id %>/reboot">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
           </a>
@@ -132,7 +132,7 @@
             }
             document.getElementById('state').innerHTML = state;
         }
-        
+
         socket.on('change:state', (msg) => {
             console.log(`change:state, msg = ${JSON.stringify(msg)}`);
             setState(msg.state);

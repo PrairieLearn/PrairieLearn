@@ -165,7 +165,7 @@ const workspaceProxyOptions = {
     ws: true,
     pathRewrite: async (path) => {
         try {
-            const match = path.match('/workspace/([0-9]+)/container/(.*)');
+            const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
             if (!match) throw new Error(`Could not match path: ${path}`);
             const workspace_id = parseInt(match[1]);
             const sql
@@ -190,7 +190,7 @@ const workspaceProxyOptions = {
     logProvider: _provider => logger,
     router: async (req) => {
         try {
-            const match = req.url.match(/^\/workspace\/([0-9]+)\/container\//);
+            const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
             if (!match) throw new Error(`Could not match URL: ${req.url}`);
             const workspace_id = match[1];
             const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
@@ -203,7 +203,7 @@ const workspaceProxyOptions = {
     },
 };
 const workspaceProxy = createProxyMiddleware((pathname) => {
-    return pathname.match('/workspace/([0-9])+/container/');
+    return pathname.match('/pl/workspace/([0-9])+/container/');
 }, workspaceProxyOptions);
 app.use(workspaceProxy);
 
@@ -313,7 +313,7 @@ app.use('/pl/news_item', [
   require('./pages/news_item/news_item.js'),
 ]);
 
-app.use('/workspace/', require('./pages/workspace/workspace'));
+app.use('/pl/workspace/', require('./pages/workspace/workspace'));
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
     app.use('/pl/loadFromDisk', [
