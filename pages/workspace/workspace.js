@@ -22,7 +22,7 @@ router.get('/:workspace_id', (req, res, next) => {
         res.locals.question_id = question_id;
         res.locals.question_title = question_title;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    })
+    });
 });
 
 router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {
