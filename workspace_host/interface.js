@@ -751,7 +751,7 @@ function gradeSequence(workspace_id, res) {
     logger.info (`... graded_file_list=${graded_file_list}`);
 
     const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
-    const zip_file_name = `w-${workspace_id}-${timestamp}.zip`;
+    const zip_file_name = `workspace-${workspace_id}-${timestamp}.zip`;
     let exist_graded_file_list = [];
 
     async.series([
