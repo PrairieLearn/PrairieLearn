@@ -778,10 +778,7 @@ function gradeSequence(workspace_id, res) {
                 debug(`grade: zipped ${localPath} -> ${zipPath}`);
             });
             zip.writeZip(zipName, (err) => {
-                if (err) {
-                    res.status(500).send(err);
-                    return;
-                }
+                if (ERR(err, callback)) return;
                 callback(null);
             });
         },
