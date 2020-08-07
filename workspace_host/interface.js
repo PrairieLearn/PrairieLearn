@@ -64,7 +64,10 @@ app.post('/', function(req, res) {
 let server;
 let workspace_server_settings = {
     instance_id: config.workspaceDevHostInstanceId,
+    /* The workspace server's hostname */
     hostname: config.workspaceDevHostHostname,
+    /* How the main server connects to the container.  In docker, this is the host operating system. */
+    server_to_container_hostname: config.workspaceDevContainerHostname,
     port: config.workspaceHostPort,
 };
 
@@ -130,6 +133,7 @@ async.series([
                     MetadataService.request('/latest/meta-data/local-hostname', (err, hostname) => {
                         if (ERR(err, callback)) return;
                         workspace_server_settings.hostname = hostname;
+                        workspace_server_settings.server_to_container_hostname = hostname;
                         callback(null);
                     });
                 },
@@ -257,8 +261,7 @@ function _checkServer(workspace_id, container, callback) {
 
     const startTime = (new Date()).getTime();
     function checkWorkspace() {
-        const hostname = (config.runningInEc2 ? 'localhost' : config.workspaceDevContainerHostname);
-        request(`http://${hostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
+        request(`http://${workspace_server_settings.server_to_container_hostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode) {
                 /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
@@ -580,7 +583,7 @@ async function _syncPushContainer(workspace_id, callback) {
 }
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
-    const hostname = `${workspace_server_settings.hostname}:${port}`;
+    const hostname = `${workspace_server_settings.server_to_container_hostname}:${port}`;
     sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
         if (ERR(err, callback)) return;
         callback(null);
