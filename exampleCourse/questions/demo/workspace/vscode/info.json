@@ -13,7 +13,7 @@
         "args": "--auth none",
         "home": "/home/coder",
         "gradedFiles": [
-            "initial_code.py"
+            "fibonacci.py"
         ],
         "syncIgnore": [
             ".local/share/code-server/"

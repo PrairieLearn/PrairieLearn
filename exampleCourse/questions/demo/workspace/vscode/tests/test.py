@@ -7,7 +7,7 @@ import numpy.random
 
 
 class Test(PLTestCase):
-    student_code_file = 'initial_code.py'
+    student_code_file = 'fibonacci.py'
 
     @points(1)
     @name('Check fib(0)')
