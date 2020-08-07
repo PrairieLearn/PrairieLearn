@@ -119,13 +119,14 @@ async.series([
                             logger.info('instance-identity', data);
                             AWS.config.update({'region': data.region});
                             workspace_server_settings.instance_id = data.instanceId;
+                            callback(null);
                         } catch (err) {
                             return callback(err);
                         }
                     });
                 },
                 (callback) => {
-                    MetadataService.request('/latest/metadata/local-hostname', (err, hostname) => {
+                    MetadataService.request('/latest/meta-data/local-hostname', (err, hostname) => {
                         if (ERR(err, callback)) return;
                         workspace_server_settings.hostname = hostname;
                         callback(null);
