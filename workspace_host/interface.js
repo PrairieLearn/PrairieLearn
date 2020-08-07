@@ -420,7 +420,7 @@ function _autoUpdateJobManager() {
             logger.error(`watch return: workspace_id not mapped yet`);
             return;
         } else if (localPath === '') {
-            logger.error(`watch continue: empty (root) path`);
+            // skip root localPath as it produces new S3 dir with empty name
             continue;
         } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
             continue;
