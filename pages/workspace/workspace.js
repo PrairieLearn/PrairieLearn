@@ -1,3 +1,4 @@
+const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -6,11 +7,22 @@ const logger = require('../../lib/logger');
 const workspace = require('../../lib/workspace');
 
 const error = require('@prairielearn/prairielib/error');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-router.get('/:workspace_id', (req, res, _next) => {
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+router.get('/:workspace_id', (req, res, next) => {
     const workspace_id = req.params.workspace_id;
-    res.locals.workspace_id = workspace_id;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    sqldb.queryOneRowAsync(sql.select_question, {workspace_id}, (err, result) => {
+        if (ERR(err, next)) return;
+        const question_id = result.rows[0].question_id;
+        const question_title = result.rows[0].question_title;
+        res.locals.workspace_id = workspace_id;
+        res.locals.question_id = question_id;
+        res.locals.question_title = question_title;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    })
 });
 
 router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {

@@ -28,39 +28,29 @@
 
     <div class="collapse navbar-collapse" id="workspace-nav">
       <ul class="navbar-nav ml-auto">
-        <!--
-        <li class="nav-item ml-2">
-          <a id="reload" class="nav-item btn btn-light" href="#">
-            <i class="fas fa-redo text-primary" aria-hidden="true"></i>
-            Reload
-          </a>
-        </li>
-        -->
-        <li class="nav-item ml-2">
-          <button type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="left" data-html="true"
-              data-content='<ul class="list-group list-group-flush">
-                              <li class="list-group-item p-2"><span class="badge badge-secondary mr-1"><i class="fas fa-redo"></i> Refresh</span>You can refresh this tab at any time, or close and re-open it.</li>
-                              <li class="list-group-item p-2"><span class="badge badge-secondary mr-1"><i class="fas fa-save"></i> Save</span>Your code is automatically saved.</li>
-                              <li class="list-group-item p-2"><span class="badge badge-secondary mr-1"><i class="fas fa-check"></i> Grade</span>Submit your code for grading using the <code>Save &amp; Grade</code> button on the question page.</li>
-                            </ul>'>
-            <i class="fas fa-question text-secondary" aria-hidden="true"></i>
-            Help
-          </button>
-        </li>
-        <li class="nav-item ml-2">
+        <li class="nav-item ml-2 my-1">
           <a id="reboot" class="nav-item btn btn-light" href="/workspace/<%= workspace_id %>/reboot">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
           </a>
         </li>
-        <!--
-        <li class="nav-item ml-2">
-          <a id="close" class="nav-item btn btn-light" href="#">
-            <i class="fas fa-power-off text-danger" aria-hidden="true"></i>
-            Close
-          </a>
+        <li class="nav-item ml-2 my-1">
+          <button type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="left" data-html="true"
+              data-content='<p class="p-1 m-0"><span class="badge badge-secondary mr-1">Question <%= question_id %></span><%= question_title %></p>'>
+            <i class="fas fa-info-circle text-secondary" aria-hidden="true"></i>
+          </button>
         </li>
-        -->
+        <li class="nav-item ml-2 my-1">
+          <button type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="left" data-html="true"
+              data-content='<ul class="list-group list-group-flush">
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-redo"></i> Refresh</span>Reload this tab at any time, or close and re-open it.</li>
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-sync"></i> Reboot</span>Reboot the virtual machine.</li>
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-save"></i> Save</span>Your code is automatically saved.</li>
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-check"></i> Grade</span>Submit your code for grading by using the <code>Save &amp; Grade</code> button on the question page.</li>
+                            </ul>'>
+            <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
+          </button>
+        </li>
       </ul>
     </div>
   </nav>
