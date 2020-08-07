@@ -745,15 +745,15 @@ function destroySequence(workspace_id, res) {
 
 function gradeSequence(workspace_id, res) {
     const workspace_dir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
-    logger.info (`... workspace_dir=${workspace_dir}`);
-
     const graded_file_list = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
-    logger.info (`... graded_file_list=${graded_file_list}`);
-
     const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
     const zip_file_name = `workspace-${workspace_id}-${timestamp}.zip`;
-    let exist_graded_file_list = [];
 
+    debug(`grade: workspace_dir=${workspace_dir}`);
+    debug(`grade: graded_file_list=${graded_file_list}`);
+    debug(`grade: zip_file_name=${zip_file_name}`);
+
+    let exist_graded_file_list = [];
     async.series([
         async () => {
             for (const file of graded_file_list) {
@@ -761,7 +761,7 @@ function gradeSequence(workspace_id, res) {
                     const file_path = path.join(workspace_dir, file);
                     await fsPromises.lstat(file_path);
                     exist_graded_file_list.push(file);
-                    logger.info(`... pushed ${file}`);
+                    debug(`grade: appended ${file} to zip list`);
                 } catch(err) {
                     logger.warn(`Required graded file ${file} does not exist.`);
                     continue;
@@ -775,7 +775,7 @@ function gradeSequence(workspace_id, res) {
                 const localPath = `${workspace_dir}/${localFile}`;
                 const zipPath = localFile.split('/').slice(0, -1).join('/');
                 zip.addLocalFile(localPath, zipPath);
-                logger.info(`... zipped ${localPath} -> ${zipPath}`);
+                debug(`grade: zipped ${localPath} -> ${zipPath}`);
             });
             zip.writeZip(zip_file_name, (err) => {
                 if (err) {
@@ -789,9 +789,8 @@ function gradeSequence(workspace_id, res) {
         if (err) {
             res.status(500).send(err);
         } else {
-            res.status(200).sendFile(zip_file_name, {root: './'}, (_) => {
-                // delete zip file no matter what
-//                fsPromises.unlink(zip_file_name);
+            res.status(200).sendFile(zip_file_name, {root: './'}, (_err) => {
+                // fsPromises.unlink(zip_file_name); // delete zip file no matter what
             });
         }
     });
