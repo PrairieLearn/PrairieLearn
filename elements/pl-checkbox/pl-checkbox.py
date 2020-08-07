@@ -181,18 +181,23 @@ def render(element_html, data):
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
             min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+
+            if allow_none_correct:
+                insert_text = ' 0 or'
+            else:
+                insert_text = ''
+
             if detailed_help_text:
                 if min_correct != max_correct:
-                    insert_text = f' between <b>{min_correct}</b> and <b>{max_correct}</b> options.'
+                    insert_text += f' between <b>{min_correct}</b> and <b>{max_correct}</b> options.'
                 else:
-                    insert_text = f' exactly <b>{max_correct}</b> options.'
+                    insert_text += f' exactly <b>{max_correct}</b> options.'
                 helptext = 'Select' + insert_text
             else:
-                insert_text = ' at least one option.'
+                insert_text += ' at least one option.'
                 helptext = 'Select all possible options that apply.'
 
             if allow_none_correct:
-                insert_text = ' 0 or' + insert_text
                 helptext += ' If none of the options apply, click <code>Save & Grade</code> to submit.'
             helptext_html = f'<small class="form-text text-muted">{helptext}</small>'
 
