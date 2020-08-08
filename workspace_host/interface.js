@@ -17,6 +17,7 @@ var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const util = require('util');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -356,6 +357,20 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     });
 }
 
+function _workspaceFileChangeOwner(filepath, callback) {
+    if (config.workspaceJobsDirectoryOwnerUid == 0 ||
+        config.workspaceJobsDirectoryOwnerGid == 0) {
+        /* No-op if there's nothing to do */
+        return callback(null);
+    }
+
+    fs.chown(filepath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid, (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+const _workspaceFileChangeOwnerAsync = util.promisify(_workspaceFileChangeOwner);
+
 async function _downloadFromS3(filePath, S3FilePath, callback) {
     if (filePath.slice(-1) == '/') {
         // this is a directory
@@ -364,6 +379,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.lstat(filePath);
         } catch(err) {
             await fsPromises.mkdir(filePath, { recursive: true });
+            await _workspaceFileChangeOwnerAsync(filePath);
         }
         callback(null, 'OK');
         update_queue[[filePath, true]] = {action: 'skip'};
@@ -386,18 +402,27 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     var fileStream = fs.createWriteStream(filePath);
     var s3Stream = s3.getObject(downloadParams).createReadStream();
 
+    /* Always update the file permissions before we return */
+    const onExit = (err, val) => {
+        if (ERR(err, callback)) return;
+
+        _workspaceFileChangeOwner(filePath, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null, val);
+        });
+    };
+
     s3Stream.on('error', function(err) {
         // This is for errors like no such file on S3, etc
-        callback(null, [filePath, S3FilePath, err]);
+        onExit(null, [filePath, S3FilePath, err]);
         return;
     });
-
     s3Stream.pipe(fileStream).on('error', function(err) {
         // This is for errors like the connection is lost, etc
-        callback(null, [filePath, S3FilePath, err]);
+        onExit(null, [filePath, S3FilePath, err]);
     }).on('close', function() {
         update_queue[[filePath, false]] = {action: 'skip'};
-        callback(null, 'OK');
+        onExit(null, 'OK');
     });
 }
 
@@ -630,52 +655,78 @@ function _createContainer(workspace_id, port, settings, callback) {
     } else {
         args = args.split(' ');
     }
+    let container;
 
     logger.info(`Creating docker container for image=${settings.workspace_image}`);
     logger.info(`Exposed port: ${settings.workspace_port}`);
-    logger.info(`Env vars: WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`);
+    logger.info(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`);
+    logger.info(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
     logger.info(`Port binding: ${settings.workspace_port}:${port}`);
     logger.info(`Volume mount: ${workspacePath}:${containerPath}`);
     logger.info(`Container name: ${localName}`);
-    docker.createContainer({
-        Image: settings.workspace_image,
-        ExposedPorts: {
-            [`${settings.workspace_port}/tcp`]: {},
+    async.series([
+        (callback) => {
+            logger.info(`Creating directory ${workspacePath}`);
+            fs.mkdir(workspacePath, (err) => {
+                if (err & err.code !== 'EEXIST') {
+                    /* Ignore the directory if it already exists */
+                    ERR(err, callback); return;
+                }
+                callback(null);
+            });
         },
-        Env: [
-            `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
-        ],
-        HostConfig: {
-            PortBindings: {
-                [`${settings.workspace_port}/tcp`]: [{'HostPort': `${port}`}],
-            },
-            Binds: [`${workspacePath}:${containerPath}`],
-            // Copied directly from externalGraderLocal.js
-            Memory: 1 << 30, // 1 GiB
-            MemorySwap: 1 << 30, // same as Memory, so no access to swap
-            KernelMemory: 1 << 29, // 512 MiB
-            DiskQuota: 1 << 30, // 1 GiB
-            IpcMode: 'private',
-            CpuPeriod: 100000, // microseconds
-            CpuQuota: 90000, // portion of the CpuPeriod for this container
-            PidsLimit: 1024,
+        (callback) => {
+            _workspaceFileChangeOwner(workspacePath, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
-        Cmd: args, // FIXME: proper arg parsing
-        name: localName,
-        Volumes: {
-            [containerPath]: {},
-          },
-    }, (err, container) => {
-        if (ERR(err, callback)) return;
+        (callback) => {
+            docker.createContainer({
+                Image: settings.workspace_image,
+                ExposedPorts: {
+                    [`${settings.workspace_port}/tcp`]: {},
+                },
+                Env: [
+                    `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
+                ],
+                User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+                HostConfig: {
+                    PortBindings: {
+                        [`${settings.workspace_port}/tcp`]: [{'HostPort': `${port}`}],
+                    },
+                    Binds: [`${workspacePath}:${containerPath}`],
+                    // Copied directly from externalGraderLocal.js
+                    Memory: 1 << 30, // 1 GiB
+                    MemorySwap: 1 << 30, // same as Memory, so no access to swap
+                    KernelMemory: 1 << 29, // 512 MiB
+                    DiskQuota: 1 << 30, // 1 GiB
+                    IpcMode: 'private',
+                    CpuPeriod: 100000, // microseconds
+                    CpuQuota: 90000, // portion of the CpuPeriod for this container
+                    PidsLimit: 1024,
+                },
+                Cmd: args, // FIXME: proper arg parsing
+                name: localName,
+                Volumes: {
+                    [containerPath]: {},
+                },
+            }, (err, newContainer) => {
+                if (ERR(err, callback)) return;
+                container = newContainer;
 
-        id_workspace_mapper[workspace_id].port = port;
-        id_workspace_mapper[workspace_id].settings = settings;
-        port_id_mapper[port] = workspace_id;
-        sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                id_workspace_mapper[workspace_id].port = port;
+                id_workspace_mapper[workspace_id].settings = settings;
+                port_id_mapper[port] = workspace_id;
+                sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                    if (ERR(err, callback)) return;
+                    callback(null, container);
+                });
+            });
+        }], (err) => {
             if (ERR(err, callback)) return;
             callback(null, container);
         });
-    });
 }
 
 function _createContainerWrapper(workspace_id, port, settings, callback) {
@@ -738,7 +789,7 @@ function initSequence(workspace_id, res) {
         _checkServer,
     ], function(err) {
         if (err) {
-            logger.error(`Error for workspace_id=${workspace_id}: ${err}`);
+            logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
             res.status(500).send(err);
         } else {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
