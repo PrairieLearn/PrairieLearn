@@ -355,6 +355,48 @@ Drag and drop to order answer tiles to form a (potentially ordered) list of answ
 
 ![](elements/pl-drag-drop-blocks.png)
 
+**question.html**
+```html
+<p>
+Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
+</p>
+<drag-drop-elements answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any">
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="true">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="false">6</pl-answer>
+  <pl-answer correct="true">7</pl-answer>
+</drag-drop-elements>
+```
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`shuffle-options` | boolean | — | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
+`permutation-mode` | string | - | One of the following: `any`, `html-order`, `ranking`. See details below for description.
+
+Within the `pl-drag-drop-blocks` element, each answer tile must be specified with
+a `pl-answer` that has the following attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | - | Specifies whether the answer tile is a correct answer to the question
+`ranking` | positive integer | - | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
+
+#### Details
+
+Three different `permutation-mode` are available:
+
+* `any`: in this mode, if `n` is the total number of answers, each answer dragged and submitted by the student is given `1/n` points, and the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted. 
+* `html-order`: in this mode, the ordering of the answer tiles submitted by the student must match the ordering of the `pl-answer` options within the HTML file. There is no partial credit for this option.
+* `ranking`: in this mode, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer tile *X* should have a `ranking` integer that is less than or equal to the answer tile immediately below *X*. That is, the sequence of `ranking` integers of all the answer tiles should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
+
+#### Example implementations
+
+- [element/dragDropBlocks]
 
 -----
 
