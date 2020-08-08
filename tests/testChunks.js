@@ -1,3 +1,4 @@
+// @ts-check
 const assert = require('chai').assert;
 
 const chunksLib = require('../lib/chunks');
