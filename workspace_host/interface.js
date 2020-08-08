@@ -688,7 +688,7 @@ function _createContainer(workspace_id, port, settings, callback) {
                     [`${settings.workspace_port}/tcp`]: {},
                 },
                 Env: [
-                    `WORKSPACE_BASE_URL=/workspace/${workspace_id}/container/`,
+                    `WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`,
                 ],
                 User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
                 HostConfig: {
