@@ -7,7 +7,7 @@ const workspace = require('../../lib/workspace');
 
 const error = require('@prairielearn/prairielib/error');
 
-router.get('/:workspace_id', (req, res, next) => {
+router.get('/:workspace_id', (req, res, _next) => {
     const workspace_id = req.params.workspace_id;
     res.locals.workspace_id = workspace_id;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
