@@ -746,7 +746,7 @@ function destroySequence(workspace_id, res) {
 function gradeSequence(workspace_id, res) {
     const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
     const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
-    const timestamp = new Date().toISOString().replace(/\..+/, '').replace(/[-T:]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
     const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
 
     debug(`grade: workspaceDir=${workspaceDir}`);
