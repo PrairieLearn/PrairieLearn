@@ -52,6 +52,7 @@ var port_id_mapper = {};
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+// TODO: refactor into RESTful endpoints
 app.post('/', function(req, res) {
     var workspace_id = req.body.workspace_id;
     var action = req.body.action;
