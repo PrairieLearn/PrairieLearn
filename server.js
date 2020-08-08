@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -1084,8 +1085,10 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            workspace.init();
-            callback(null);
+            util.callbackify(workspace.init)(err => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             serverJobs.init(function(err) {

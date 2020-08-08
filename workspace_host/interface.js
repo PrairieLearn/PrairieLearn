@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const util = require('util');
 const express = require('express');
 const app = express();
 const http = require('http');
@@ -22,6 +23,8 @@ const admZip = require('adm-zip');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
 
 const aws = require('../lib/aws.js');
 aws.init((err) => {
@@ -122,8 +125,16 @@ async.series([
         });
     },
     (callback) => {
-        workspace.init();
-        callback(null);
+        fs.mkdir(zipPrefix, { recursive: true, mode: 0o700 }, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        util.callbackify(workspace.init)(err => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
 ], function(err, data) {
     if (err) {
@@ -748,19 +759,13 @@ function gradeSequence(workspace_id, res) {
     const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
     const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
     const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-
-    // FIXME: broken if using config prefix
-    // const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
-    // // logger.info(`... mkdir ${zipPrefix}`);
-    // // fsPromises.mkdir(zipPrefix, { recursive: true, mode: 0o700 });
-    // // logger.info(`... made dir ${zipPrefix}`);
-    // const zipName = `${zipPrefix}/workspace-${workspace_id}-${timestamp}.zip`;
     const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
+    const zipPath = path.join(zipPrefix, zipName);
 
     debug(`gradeSequence: workspaceDir=${workspaceDir}`);
     debug(`gradeSequence: gradedFilesList=${gradedFilesList}`);
-    debug(`gradeSequence: zipName=${zipName}`);
-    logger.info(`Preparing requested files for grading as ${zipName}`);
+    debug(`gradeSequence: zipPath=${zipPath}`);
+    logger.info(`Sending files for grading as ${zipPath}`);
 
     let zipList = [];
     async.series([
@@ -770,9 +775,9 @@ function gradeSequence(workspace_id, res) {
                     const file_path = path.join(workspaceDir, file);
                     await fsPromises.lstat(file_path);
                     zipList.push(file);
-                    logger.info(`... adding ${file} to zip list`);
+                    logger.info(`Sending ${file}`);
                 } catch (err) {
-                    logger.warn(`Required graded file ${file} does not exist.`);
+                    logger.warn(`Graded file ${file} does not exist.`);
                     continue;
                 }
             }
@@ -784,31 +789,29 @@ function gradeSequence(workspace_id, res) {
                 const localPath = `${workspaceDir}/${localFile}`;
                 const zipPath = localFile.split('/').slice(0, -1).join('/');
                 zip.addLocalFile(localPath, zipPath);
-                debug(`gradeSequence: zipped ${localPath} -> ${zipPath}`);
+                debug(`gradeSequence: zipped ${localPath} in ${zipPath}`);
             });
-            zip.writeZip(zipName, (err) => {
+            zip.writeZip(zipPath, (err) => {
                 if (ERR(err, callback)) return;
-                logger.info(`... created ${zipName}`);
                 callback(null);
             });
         },
     ], (err) => {
         if (err) {
             logger.error(`Error in gradeSequence: ${err}`);
+            res.status(500).send(err);
             try {
-                fsPromises.unlink(zipName);
-                res.status(500).send(err);
+                fsPromises.unlink(zipPath);
             } catch (err) {
-                logger.error(`Error deleting ${zipName}`);
+                logger.error(`Error deleting ${zipPath}`);
             }
         } else {
-            logger.info(`... sending ${zipName}`);
-            res.status(200).sendFile(zipName, { root: './' }, (_err) => {
+            res.attachment(zipPath);
+            res.status(200).sendFile(zipPath, { root: '/' }, (_err) => {
                 try {
-                    logger.info(`... deleting ${zipName}`);
-                    fsPromises.unlink(zipName);
+                    fsPromises.unlink(zipPath);
                 } catch (err) {
-                    logger.error(`Error deleting ${zipName}`);
+                    logger.error(`Error deleting ${zipPath}`);
                 }
             });
         }
