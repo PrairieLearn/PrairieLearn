@@ -17,7 +17,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
-- [`pl-drag-drop-blocks`](#pl-drag-drop-blocks): Drag and drop to order answer tiles into a list from a pool of choices
+- [`pl-drag-drop-blocks`](#pl-drag-drop-blocks-element): Drag and drop to order answer tiles into a list from a pool of choices
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
