@@ -12,27 +12,9 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
   <pl-answer correct="true">7</pl-answer>
 </drag-drop-elements>
 
-<pl-question-panel>
-<p>
-  For illustration, the answer panel below is generated with the following code:
-</p>
 <br>
-<!-- This is the code block and not the actual elements -->
-<pl-code language="html">
-<drag-drop-elements answers-name="prime-numbers-ordered" shuffle-options="true" permutation-mode="html-order">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</drag-drop-elements>
-</pl-code>
-</pl-question-panel>
-
 <p>
-  <strong>Demo Q2: </strong> Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>. Note that the ordering of the answer matters in this case: this is done by specifying <code>html-order</code> in the <code>permutation-mode</code> attribute.
+  Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>. Note that the ordering of the answer matters in this question.
 </p>
 
 <drag-drop-elements answers-name="prime-numbers-ordered" shuffle-options="true" permutation-mode="html-order">
@@ -44,22 +26,10 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
   <pl-answer correct="false">6</pl-answer>
   <pl-answer correct="true">7</pl-answer>
 </drag-drop-elements>  
-<pl-question-panel>
+
+<br>
 <p>
-  For illustration, the answer panel below is generated with the following code:
-</p>
-<pl-code language="html">
-<drag-drop-elements answers-name="python-ordered" shuffle-options="false" permutation-mode="ranking">
-  <pl-info>def sum(first, second):</pl-info>
-  <pl-answer correct="true" ranking="1">sum = 0</pl-answer>
-  <pl-answer correct="true" ranking="2">sum += first</pl-answer>
-  <pl-answer correct="true" ranking="2">sum += second</pl-answer>
-  <pl-answer correct="true" ranking="3">return sum</pl-answer>
-</drag-drop-elements> 
-</pl-code>
-</pl-question-panel>
-<p>
-  <strong>Demo Q3: </strong> Implement the following Python function, which takes 2 numbers, <code>first</code> and <code>second</code>, and return their sum. Notice that the ordering of <code>sum += first</code> or <code>sum += second</code> does not matter, but the ordering of instantiation, computation, and returning of the value must be correct.
+  Implement the following Python function, which takes 2 numbers, <code>first</code> and <code>second</code>, and return their sum. Note the ordering of instantiation, computation, and returning of the value must be correct.
 </p>
 <drag-drop-elements answers-name="python-ordered" shuffle-options="false" permutation-mode="ranking">
   <pl-info>def sum(first, second):</pl-info>
@@ -70,3 +40,4 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
   <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
 
 </drag-drop-elements> 
+</pl-question-panel>
