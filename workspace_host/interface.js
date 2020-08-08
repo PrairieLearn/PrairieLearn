@@ -761,7 +761,7 @@ function gradeSequence(workspace_id, res) {
                     const file_path = path.join(workspaceDir, file);
                     await fsPromises.lstat(file_path);
                     zipList.push(file);
-                    debug(`grade: appended ${file} to zip list`);
+                    logger.info(`grade: appended ${file} to zip list`);
                 } catch (err) {
                     logger.warn(`Required graded file ${file} does not exist.`);
                     continue;
