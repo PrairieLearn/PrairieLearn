@@ -750,7 +750,7 @@ function gradeSequence(workspace_id, res) {
     const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
 
     // FIXME: broken if using config prefix
-    // const zipPrefix = config.workspaceGradedFilesHostDirectory;
+    // const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
     // // logger.info(`... mkdir ${zipPrefix}`);
     // // fsPromises.mkdir(zipPrefix, { recursive: true, mode: 0o700 });
     // // logger.info(`... made dir ${zipPrefix}`);
