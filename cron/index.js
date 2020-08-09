@@ -85,6 +85,11 @@ module.exports = {
                 module: require('./calculateAssessmentMode'),
                 intervalSec: 'daily',
             },
+            {
+                name: 'stopStaleWorkspaces',
+                module: require('./stopStaleWorkspaces'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalStopStaleWorkspacesSec,
+            },
         ];
         logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
 
