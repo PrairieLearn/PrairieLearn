@@ -24,8 +24,6 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
-
 const aws = require('../lib/aws.js');
 const config = require('../lib/config');
 let configFilename = 'config.json';
@@ -33,6 +31,7 @@ if ('config' in argv) {
     configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
+const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
 
 logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
@@ -682,7 +681,7 @@ function _createContainer(workspace_id, port, settings, callback) {
         (callback) => {
             logger.info(`Creating directory ${workspacePath}`);
             fs.mkdir(workspacePath, (err) => {
-                if (err & err.code !== 'EEXIST') {
+                if (err && err.code !== 'EEXIST') {
                     /* Ignore the directory if it already exists */
                     ERR(err, callback); return;
                 }
