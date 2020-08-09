@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const util = require('util');
 const express = require('express');
 const app = express();
 const http = require('http');
@@ -17,11 +18,13 @@ var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const util = require('util');
+const admZip = require('adm-zip');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
 
 const aws = require('../lib/aws.js');
 const config = require('../lib/config');
@@ -42,6 +45,7 @@ var port_id_mapper = {};
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+// TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
     var workspace_id = req.body.workspace_id;
     var action = req.body.action;
@@ -55,6 +59,8 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
         destroySequence(workspace_id, res);
+    } else if (action == 'getGradedFiles') {
+        gradeSequence(workspace_id, res);
     } else if (action == 'status') {
         res.status(200).send('Running');
     } else {
@@ -159,6 +165,18 @@ async.series([
         });
     },
     (callback) => {
+        fs.mkdir(zipPrefix, { recursive: true, mode: 0o700 }, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        util.callbackify(workspace.init)(err => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
         logger.info(`Listening on port ${workspace_server_settings.port}`);
@@ -166,15 +184,15 @@ async.series([
     },
 ], function(err, data) {
     if (err) {
-        logger.error('Error initializing host:', err, data);
+        logger.error('Error initializing workspace host:', err, data);
     } else {
-        logger.info('Successfully initialized host');
+        logger.info('Successfully initialized workspace host');
     }
 });
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : config.workspaceJobsDirectory;
+const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : config.workspaceJobsDirectory;
 var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
@@ -449,7 +467,7 @@ function _getWorkspaceByPath(path) {
     localPath = localPath.join('/');
 
     if (typeof id_workspace_mapper === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined`);
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined for localName=${localName}, path=${path}`);
         return {workspace_id: null, localPath: null};
     }
 
@@ -458,7 +476,7 @@ function _getWorkspaceByPath(path) {
     );
 
     if (typeof workspace_id === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined`);
+        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined for localName=${localName}, path=${path}`);
         return {workspace_id: null, localPath: null};
     }
 
@@ -484,7 +502,7 @@ function _autoUpdateJobManager() {
             logger.error(`watch return: workspace_id not mapped yet`);
             return;
         } else if (localPath === '') {
-            logger.error(`watch continue: empty (root) path`);
+            // skip root localPath as it produces new S3 dir with empty name
             continue;
         } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
             continue;
@@ -575,7 +593,7 @@ function _syncPullContainer(workspace_id, callback) {
 
 // DEPRECATED
 async function _syncPushContainer(workspace_id, callback) {
-    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs' : process.cwd();
+    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : process.cwd();
     const workspaceName= `workspace-${workspace_id}`;
     if (!await fsPromises.lstat(workspaceName)) {
         // we didn't a local copy of the code, DO NOT sync
@@ -646,7 +664,7 @@ function _pullImage(workspace_id, port, settings, callback) {
 
 function _createContainer(workspace_id, port, settings, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
-    const workspaceDir = process.env.HOST_JOBS_DIR || config.workspaceJobsDirectory;
+    const workspaceDir = path.join(process.env.HOST_JOBS_DIR, 'workspaces') || config.workspaceJobsDirectory;
     const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     let args = settings.workspace_args.trim();
@@ -828,6 +846,69 @@ function destroySequence(workspace_id, res) {
             res.status(500).send(err);
         } else {
             res.status(200).send(`Container for workspace ${workspace_id} destroyed.`);
+        }
+    });
+}
+
+function gradeSequence(workspace_id, res) {
+    const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
+    const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
+    const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+    const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
+    const zipPath = path.join(zipPrefix, zipName);
+
+    debug(`gradeSequence: workspaceDir=${workspaceDir}`);
+    debug(`gradeSequence: gradedFilesList=${gradedFilesList}`);
+    debug(`gradeSequence: zipPath=${zipPath}`);
+    logger.info(`Sending files for grading as ${zipPath}`);
+
+    let zipList = [];
+    async.series([
+        async () => {
+            for (const file of gradedFilesList) {
+                try {
+                    const file_path = path.join(workspaceDir, file);
+                    await fsPromises.lstat(file_path);
+                    zipList.push(file);
+                    logger.info(`Sending ${file}`);
+                } catch (err) {
+                    logger.warn(`Graded file ${file} does not exist.`);
+                    continue;
+                }
+            }
+            return null;
+        },
+        (callback) => {
+            let zip = new admZip();
+            zipList.forEach((localFile) => {
+                const localPath = `${workspaceDir}/${localFile}`;
+                const zipPath = localFile.split('/').slice(0, -1).join('/');
+                zip.addLocalFile(localPath, zipPath);
+                debug(`gradeSequence: zipped ${localPath} in ${zipPath}`);
+            });
+            zip.writeZip(zipPath, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (err) {
+            logger.error(`Error in gradeSequence: ${err}`);
+            res.status(500).send(err);
+            try {
+                fsPromises.unlink(zipPath);
+            } catch (err) {
+                logger.error(`Error deleting ${zipPath}`);
+            }
+        } else {
+            res.attachment(zipPath);
+            res.status(200).sendFile(zipPath, { root: '/' }, (_err) => {
+                try {
+                    fsPromises.unlink(zipPath);
+                } catch (err) {
+                    logger.error(`Error deleting ${zipPath}`);
+                }
+            });
         }
     });
 }

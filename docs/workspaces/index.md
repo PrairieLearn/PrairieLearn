@@ -71,8 +71,7 @@ docker run -it --rm -p 3000:3000 \
   -v "$HOME/pl_ag_jobs:/jobs" \
   -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  prairielearn/prairielearn \
-  /PrairieLearn/docker/start_workspace.sh
+  prairielearn/prairielearn
 ```
 
 In Linux, `cd` to your course directory and copy-paste the following command (same as the MacOS command but add the `--add-host` option):
@@ -84,8 +83,7 @@ docker run -it --rm -p 3000:3000 \
   -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   --add-host=host.docker.internal:172.17.0.1 \ # this line is new vs MacOS
-  prairielearn/prairielearn \
-  /PrairieLearn/docker/start_workspace.sh
+  prairielearn/prairielearn
 ```
 
 In Windows 10 (PowerShell), `cd` to your course directory and copy the following command **but with your own username in `HOST_JOBS_DIR`**:
@@ -95,8 +93,7 @@ docker run -it --rm -p 3000:3000 `
   -v $HOME\pl_ag_jobs:/jobs `
   -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
   -v /var/run/docker.sock:/var/run/docker.sock `
-  prairielearn/prairielearn `
-  /PrairieLearn/docker/start_workspace.sh
+  prairielearn/prairielearn
 ```
 
 **Note** the following about `HOST_JOBS_DIR` in PowerShell:
@@ -109,3 +106,9 @@ docker run -it --rm -p 3000:3000 `
     - Right-click the Docker "whale" icon in the taskbar
     - Click "Settings"
     - Ensure `C:` is checked
+
+
+#### Developing with workspaces
+
+For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
+
