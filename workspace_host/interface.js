@@ -123,9 +123,9 @@ async.series([
     },
 ], function(err, data) {
     if (err) {
-        logger.error('Error initializing host:', err, data);
+        logger.error('Error initializing workspace host:', err, data);
     } else {
-        logger.info('Successfully initialized host');
+        logger.info('Successfully initialized workspace host');
     }
 });
 
