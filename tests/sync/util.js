@@ -156,7 +156,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} args
  * @property {string[]} gradedFiles
  * @property {string[]} syncIgnore
- * @property {string} urlRewrite
+ * @property {string} rewriteUrl
  */
 
  /**
