@@ -659,7 +659,7 @@ function _pullImage(workspace_id, port, settings, callback) {
 
 function _createContainer(workspace_id, port, settings, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
-    const workspaceDir = path.join(process.env.HOST_JOBS_DIR, 'workspaces') || config.workspaceJobsDirectory;
+    const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
     const workspacePath = path.join(workspaceDir, localName);
     const containerPath = settings.workspace_home;
     let args = settings.workspace_args.trim();
