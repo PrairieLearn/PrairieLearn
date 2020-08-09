@@ -237,8 +237,11 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @typedef {Object} QuestionWorkspaceOptions
  * @property {string} image
  * @property {number} port
+ * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
+ * @property {string[]} syncIgnore
+ * @property {string} urlRewrite
  */
 
  /**
