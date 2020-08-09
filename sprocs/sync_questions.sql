@@ -126,7 +126,10 @@ BEGIN
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
         workspace_args = src.data->>'workspace_args',
+        workspace_home = src.data->>'workspace_home',
         workspace_graded_files = jsonb_array_to_text_array(src.data->'workspace_graded_files'),
+        workspace_sync_ignore = jsonb_array_to_text_array(src.data->'workspace_sync_ignore'),
+        workspace_url_rewrite = (src.data->>'workspace_url_rewrite')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

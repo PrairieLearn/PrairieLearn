@@ -42,4 +42,5 @@ require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
+require('./testChunks');
 require('./sync');

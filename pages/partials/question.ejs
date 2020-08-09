@@ -29,10 +29,10 @@
 
     <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
-      <% if (is_administrator && issue.system_data.courseErrData ) { %>
-      <p><strong>Console log:</strong>
+      <% if (issue.system_data.courseErrData) { %>
+        <p><strong>Console log:</strong>
         <pre class="bg-dark text-white rounded p-3"><%= issue.system_data.courseErrData.outputBoth %></pre>
-        <% } %>
+      <% } %>
       <p><strong>Associated data:</strong>
         <button type="button" class="btn btn-xs btn-secondary" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
           Show/hide

@@ -159,6 +159,7 @@ module.exports = {
             'sync_assessments.sql',
             'sync_assessment_sets_delete_unused.sql',
             'lock_timeout_set.sql',
+            'workspaces_state_update.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

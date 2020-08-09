@@ -152,8 +152,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @typedef {Object} QuestionWorkspaceOptions
  * @property {string} image
  * @property {number} port
+ * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
+ * @property {string[]} syncIgnore
+ * @property {string} urlRewrite
  */
 
  /**
@@ -313,6 +316,27 @@ const questions = {
     secondaryTopics: [],
     tags: ['test'],
     type: 'Calculation',
+  },
+  [module.exports.WORKSPACE_QUESTION_ID]: {
+    uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
+    title: 'Workspace test question',
+    topic: 'Workspace',
+    secondaryTopics: [],
+    tags: ['workspace'],
+    type: 'v3',
+    workspaceOptions: {
+      image: 'prairielearn/workspace-vscode',
+      port: 8080,
+      home: '/home/coder',
+      args: '--auth none',
+      gradedFiles: [
+        'animal.h',
+        'animal.c',
+      ],
+      syncIgnore: [
+        '.local/share/code-server/',
+      ],
+    },
   },
 };
 
