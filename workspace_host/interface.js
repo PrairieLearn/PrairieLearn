@@ -113,7 +113,7 @@ async.series([
         });
     },
     (callback) => {
-        workspace.init((err) => {
+        util.callbackify(workspace.init)(err => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -154,24 +154,7 @@ async.series([
         }
     },
     (callback) => {
-        /* Add ourselves to the workspace hosts directory */
-        const params = {
-            hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
-            instance_id: workspace_server_settings.instance_id,
-        };
-        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    (callback) => {
         fs.mkdir(zipPrefix, { recursive: true, mode: 0o700 }, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    (callback) => {
-        util.callbackify(workspace.init)(err => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -181,6 +164,19 @@ async.series([
         server.listen(workspace_server_settings.port);
         logger.info(`Listening on port ${workspace_server_settings.port}`);
         callback(null);
+    },
+    (callback) => {
+        // Add ourselves to the workspace hosts directory. After we
+        // do this we will start receiving requests so everything else
+        // must be initialized before this.
+        const params = {
+            hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
+            instance_id: workspace_server_settings.instance_id,
+        };
+        sqldb.query(sql.insert_workspace_hosts, params, function(err, _result) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
 ], function(err, data) {
     if (err) {
