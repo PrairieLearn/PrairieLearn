@@ -660,7 +660,8 @@ function _pullImage(workspace_id, port, settings, callback) {
 function _createContainer(workspace_id, port, settings, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
     const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
-    const workspacePath = path.join(workspaceDir, localName);
+    const workspacePath = path.join(workspaceDir, localName); /* Where docker will see the jobs (host path inside docker container) */
+    const workspaceJobPath = path.join(workspacePrefix, localName); /* Where we are putting the job files relative to the server (/jobs inside docker container) */
     const containerPath = settings.workspace_home;
     let args = settings.workspace_args.trim();
     if (args.length == 0) {
@@ -680,7 +681,7 @@ function _createContainer(workspace_id, port, settings, callback) {
     async.series([
         (callback) => {
             logger.info(`Creating directory ${workspacePath}`);
-            fs.mkdir(workspacePath, (err) => {
+            fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
                 if (err && err.code !== 'EEXIST') {
                     /* Ignore the directory if it already exists */
                     ERR(err, callback); return;
@@ -689,7 +690,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             });
         },
         (callback) => {
-            _workspaceFileChangeOwner(workspacePath, (err) => {
+            _workspaceFileChangeOwner(workspaceJobPath, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
