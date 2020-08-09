@@ -15,7 +15,7 @@ module.exports.run = function(callback) {
         const params = {
             launched_timeout_sec: config.workspaceLaunchedTimeoutSec,
             heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec,
-        }
+        };
         const result = await sqldb.queryAsync(sql.select_stale_workspaces, params);
         const staleWorkspaces = result.rows;
         for (const staleWorkspace of staleWorkspaces) {
