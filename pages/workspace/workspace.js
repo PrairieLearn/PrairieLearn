@@ -22,7 +22,7 @@ router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {
         logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
         const state = 'stopped';
         await workspace.updateState(workspace_id, state);
-        res.redirect(`/workspace/${workspace_id}`);
+        res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
     }

@@ -25,7 +25,8 @@
          term.open(document.getElementById('terminal'));
          fit.fit();
 
-         let socket = new WebSocket('ws://' + window.location.host + window.location.pathname);
+         const protocol = (location.protocol == 'https:' ? 'wss:' : 'ws:');
+         let socket = new WebSocket(`${protocol}//${window.location.host}${window.location.pathname}`);
          socket.onopen = () => {
              term.onData((ev) => {
                  socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
