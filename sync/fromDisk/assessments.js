@@ -247,5 +247,6 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
     perf.end('sproc:sync_assessments');
 
     /** @type {[string, any][]} */
-    const _nameToIdMap = result.rows[0].name_to_id_map;
+    const nameToIdMap = result.rows[0].name_to_id_map; // eslint-disable-line no-unused-vars
+    // we don't use this here, but see questions.js for the format of this return value
 };
