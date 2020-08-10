@@ -15,8 +15,11 @@
 
     <table class="table table-sm table-hover two-column-description">
       <tbody>
-        <% if (devMode || authz_data.has_instructor_view) { %>
+        <% if (devMode || authz_data.has_course_instance_permission_view) { %>
         <tr><th>Student:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=Hello%20<%= issue.user_name %>,%0A%0ARegarding%20the%20issue%20of:%0A%0A%22<%= issue.student_message || '-' %>%22%0A%0AWe've..."><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
+        <% } else if (authz_data.has_course_permission_preview) { %>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else { %>
@@ -27,7 +30,7 @@
       </tbody>
     </table>
 
-    <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
+    <% if (devMode || authz_data.has_course_permission_view) { %>
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
       <% if (issue.system_data.courseErrData) { %>
         <p><strong>Console log:</strong>
@@ -98,7 +101,7 @@
   <div class="card mb-4">
     <div class="card-header bg-primary text-white">
       <% if (question_context == 'student_homework') { %>
-        <%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <%= instance_question_info.question_number %>. <%= question.title %>
       <% } else if (question_context == 'student_exam') { %>
             <!-- FIXME: insert question number properly -->
             Question <%= instance_question_info.question_number %>: <%= question.title %>
