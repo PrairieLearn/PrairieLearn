@@ -9,6 +9,7 @@ import chevron
 
 def render(element_html, data):
     if data['panel'] == 'question':
+        # I PROMISE I WILL FIX THIS WHEN I FIGURE OUT HOW TO USE MUSTACHE 
         mcq_options = []   # stores MCQ options
         question_instruction_blocks = []   # stores question instructions within the table
         html_string = ''   # html_string is the HTML we return to PL
@@ -70,27 +71,43 @@ def render(element_html, data):
 
         if answerName in data['format_errors']:
             error = data['format_errors'][answerName]
-            # I am sorry
-            return f'''<strong>Your answer: </strong> <span class="badge text-danger badge-invalid"> 
-                                                        <svg class="svg-inline--fa fa-exclamation-triangle fa-w-18" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="exclamation-triangle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" data-fa-i2svg="">
-                                                            <path fill="currentColor" d="M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path>
-                                                        </svg> Invalid</span> <br><br>
-                                                        '''
+            html_params = {
+                'submission_error': True
+            }
+        else: 
+            student_submission = str(data['submitted_answers'][answerName]['student_raw_submission'])
+            question_notes = ''
+            if answerName in data['partial_scores']:
+                if 'feedback' in data['partial_scores'][answerName]:
+                    question_notes = str(data['partial_scores'][answerName]['feedback'])
+            
+            html_params = {
+                'submission_ok': True,
+                'student_submission': student_submission,
+                'question_notes': question_notes
+            }
 
-        html_string = str(data['submitted_answers'][answerName]['student_raw_submission'])
-        question_notes = ''
-        if answerName in data['partial_scores']:
-            if 'feedback' in data['partial_scores'][answerName]:
-                question_notes = str(data['partial_scores'][answerName]['feedback'])
-        return f'<strong>Your answer: </strong> <code class="user-output">{str(html_string)} </code><br> {str(question_notes)}<br>'
+        # Finally, render the HTML
+        with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
+        return html
 
     elif data['panel'] == 'answer':
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
+
         permutationMode = pl.get_string_attrib(element, 'permutation-mode')
-        permutationMode = ' in <strong> any </strong> order' if permutationMode == 'any' else 'in <strong> the specified </strong> order'
+        permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
+        
         if answerName in data['correct_answers']:
-            return f"<strong>Correct answer: </strong> <code class='user-output'> {data['correct_answers'][answerName]} </code> {permutationMode} <br><br>"
+            html_params = {
+                'true_answer': True,
+                'question_solution': str(data['correct_answers'][answerName]),
+                'permutationMode': permutationMode
+            }
+            with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
+            return html
         else:
             return ''
 
