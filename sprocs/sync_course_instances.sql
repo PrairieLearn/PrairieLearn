@@ -33,9 +33,17 @@ BEGIN
     ) ON COMMIT DROP;
 
     INSERT INTO disk_course_instances (
-                   short_name,              uuid,                    errors,             warnings,            data
+        short_name,
+        uuid,
+        errors,
+        warnings,
+        data
     ) SELECT
-        entries->>'short_name', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
+        entries->>0,
+        (entries->>1)::uuid,
+        entries->>2,
+        entries->>3,
+        (entries->4)::JSONB
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src

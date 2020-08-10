@@ -43,13 +43,13 @@ module.exports.sync = async function(courseId, courseData) {
     const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
     const courseInstanceParams = Object.entries(courseData.courseInstances).map(([shortName, courseIntanceData]) => {
         const { courseInstance } = courseIntanceData;
-        return JSON.stringify({
-            short_name: shortName,
-            uuid: courseInstance.uuid,
-            errors: infofile.stringifyErrors(courseInstance),
-            warnings: infofile.stringifyWarnings(courseInstance),
-            data: getParamsForCourseInstance(courseInstance.data, courseTimezone),
-        });
+        return JSON.stringify([
+            shortName,
+            courseInstance.uuid,
+            infofile.stringifyErrors(courseInstance),
+            infofile.stringifyWarnings(courseInstance),
+            getParamsForCourseInstance(courseInstance.data, courseTimezone),
+        ]);
     });
 
     const params = [
