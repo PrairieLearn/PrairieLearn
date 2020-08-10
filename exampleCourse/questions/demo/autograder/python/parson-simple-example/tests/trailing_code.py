@@ -1,1 +1,1 @@
-print (make_array_b(a))
+    print (make_array_b(a))

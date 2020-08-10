@@ -14,7 +14,8 @@ def getallAnswer(submitted, pieces, leading_code, trailing_code):
         piece_no, indent = piece.split(':')
         indent = int(indent)
         piece_no = int(piece_no)
-        answer = leading_code + '\n' + answer + ('    ' * indent) + pieces[piece_no] + '\n' + trailing_code + '\n'
+        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n'
+    answer = leading_code + '\n' + answer + trailing_code + '\n'
     return answer
 
 
@@ -26,7 +27,8 @@ def gettarilAnswer(submitted, pieces, trailing_code):
         piece_no, indent = piece.split(':')
         indent = int(indent)
         piece_no = int(piece_no)
-        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n' + trailing_code + '\n'
+        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n'
+    answer = answer + trailing_code + '\n'
     return answer
 
 
@@ -38,7 +40,8 @@ def getleadAnswer(submitted, pieces, leading_code):
         piece_no, indent = piece.split(':')
         indent = int(indent)
         piece_no = int(piece_no)
-        answer = leading_code + '\n' + answer + ('    ' * indent) + pieces[piece_no] + '\n'
+        answer = answer + ('    ' * indent) + pieces[piece_no] + '\n'
+    answer = leading_code + '\n' + answer
     return answer
 # answers are submitted using the following form:    a:b-c:d-e:f
 # where a, c, and e are indices into the list of pieces given by the problem, and
@@ -267,10 +270,7 @@ def parse(element_html, data):
             file_data = gettarilAnswer(submitted, pieces, trailnewx_code)
         if leading_code is not None and trailing_code is None:
             file_data = getleadAnswer(submitted, pieces, leadingnew_code)
-        data['submitted_answers']['_files'] = [{
-            'name': file_name,
-            'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')
-            }]
+        data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
     if num_pieces == 0:
         raise Exception('number of pieces is zero')
     if len(submitted) == 0:
