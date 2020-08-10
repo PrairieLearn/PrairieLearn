@@ -26,6 +26,7 @@ DECLARE
     new_alternative_group_id bigint;
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
+    bad_assessments text;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -398,5 +399,20 @@ BEGIN
         z.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
         AND a.course_instance_id = syncing_course_instance_id;
+
+    -- Internal consistency check. All assessments should have an
+    -- assessment set and a number.
+    SELECT string_agg(a.id::text, ', ')
+    INTO bad_assessments
+    FROM assessments AS a
+    WHERE
+        a.deleted_at IS NULL
+        AND (
+            a.assessment_set_id IS NULL
+            OR a.number IS NULL
+        );
+    IF (bad_assessments IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

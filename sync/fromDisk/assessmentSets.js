@@ -41,25 +41,14 @@ module.exports.sync = async function(courseId, courseData) {
     const assessmentSetNames = [...knownAssessmentSetNames];
 
     const params = [
-        !infofile.hasErrors(courseData.course),
+        isInfoCourseValid,
+        deleteUnused,
         courseAssessmentSets,
         assessmentSetNames,
         courseId,
     ];
 
     perf.start('sproc:sync_assessment_sets');
-    const res = await sqldb.callOneRowAsync('sync_assessment_sets', params);
+    await sqldb.callOneRowAsync('sync_assessment_sets', params);
     perf.end('sproc:sync_assessment_sets');
-    const usedAssessmentSetIds = res.rows[0].used_assessment_set_ids;
-
-    return { deleteUnused, usedAssessmentSetIds };
-};
-
-/**
- * @param {any} courseId
- * @param {any[]} usedAssessmentSetIds
- */
-module.exports.deleteUnusedNew = async function(courseId, usedAssessmentSetIds) {
-    const params = [ usedAssessmentSetIds, courseId];
-    await sqldb.callAsync('sync_assessment_sets_delete_unused', params);
 };

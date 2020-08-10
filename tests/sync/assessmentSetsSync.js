@@ -20,6 +20,11 @@ function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
   assert.equal(syncedAssessmentSet.color, assessmentSet.color);
 }
 
+/**
+ * Makes a new assessment.
+ * 
+ * @returns {import('./util').AssessmentSet}
+ */
 function makeAssessmentSet() {
   return {
     name: 'new assessment set',

@@ -38,16 +38,13 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
     const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.sync(courseId, courseData));
     await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
-    const assessmentSets = await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+    await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
     perf.start('syncAssessments');
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
         await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
-    if (assessmentSets.deleteUnused) {
-        await perf.timedAsync('deleteUnusedAssessmentSets', () => syncAssessmentSets.deleteUnusedNew(courseId, assessmentSets.usedAssessmentSetIds));
-    }
     await freeformServer.reloadElementsForCourse(courseDir, courseId);
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
     if (courseDataHasErrors) {

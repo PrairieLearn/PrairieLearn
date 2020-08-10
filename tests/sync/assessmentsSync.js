@@ -32,6 +32,20 @@ function makeAssessment(courseData, type = 'Exam') {
   };
 }
 
+/**
+ * Makes a new assessment.
+ * 
+ * @returns {import('./util').AssessmentSet}
+ */
+function makeAssessmentSet() {
+  return {
+    name: 'new assessment set',
+    abbreviation: 'new',
+    heading: 'a new assessment set to sync',
+    color: 'red1',
+  };
+}
+
 async function getSyncedAssessmentData(tid) {
   const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {tid});
   return res.rows[0];
@@ -507,9 +521,9 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
     await util.writeAndSyncCourseData(courseData);
-      const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-      const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
-      const syncedAssessment = await findSyncedAssessment('fail');
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const unknownAssessmentSet = syncedAssessmentSets.find(as => as.name === 'Unknown');
+    const syncedAssessment = await findSyncedAssessment('fail');
     assert.isOk(syncedAssessment);
     assert.equal(syncedAssessment.assessment_set_id, unknownAssessmentSet.id);
     assert.equal(syncedAssessment.number, '0');
@@ -565,6 +579,28 @@ describe('Assessment syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessment = await findSyncedAssessment('unused');
     assert.isNotNull(syncedAssessment.deleted_at);
+  });
+
+  it('preserves assessment despite deletion of the assessment set', async () => {
+    const courseData = util.getCourseData();
+    const assessmentSet = makeAssessmentSet();
+    courseData.course.assessmentSets.push(assessmentSet);
+    const assessment = makeAssessment(courseData);
+    assessment.set = assessmentSet.name;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const originalSyncedAssessment = await findSyncedAssessment('testAssessment');
+
+    // now delete the assessment set, but leave the assessment in place
+    courseData.course.assessmentSets.pop();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedAssessment = await findSyncedAssessment('testAssessment');
+    assert.equal(newSyncedAssessment.id, originalSyncedAssessment.id);
+
+    // check we have a valid auto-created assessment set
+    const syncedAssessmentSets = await util.dumpTable('assessment_sets');
+    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === assessmentSet.name);
+    assert.equal(newSyncedAssessment.assessment_set_id, syncedAssessmentSet.id);
   });
 
   it('records an error if a nested assessment directory does not eventually contain an infoAssessment.json file', async() => {

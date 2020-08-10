@@ -157,7 +157,6 @@ module.exports = {
             'sync_question_tags.sql',
             'sync_assessment_sets.sql',
             'sync_assessments.sql',
-            'sync_assessment_sets_delete_unused.sql',
             'lock_timeout_set.sql',
             'workspaces_state_update.sql',
         ], function(filename, callback) {
