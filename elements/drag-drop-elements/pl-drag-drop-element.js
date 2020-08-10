@@ -69,6 +69,7 @@ function update_indent(leftDiff, id, ui) {
 $( document ).ready(function() {
     //Add drag and drop functionality for options elements
     //that has the connectedSortable class
+    // code for the HTML popover
     $('.connectedSortable').sortable({
         items: 'li:not(.info-fixed)',
         cancel: '.info',
@@ -88,4 +89,5 @@ $( document ).ready(function() {
     $('.dropzone').sortable({
         grid: [50, 1],
     });
+    $('[data-toggle="popover"]').popover();
 });

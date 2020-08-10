@@ -60,19 +60,21 @@ def render(element_html, data):
         html_string += '</ul></div></div>'
 
         answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-        html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
+        html_string += f'<input id="{str(answerName) + str("-input") }" type="text" name="{str(answerName) + str("-input") }" value=""/>'
         # html_string += f'{data}'
         return html_string
 
     elif data['panel'] == 'submission':
+        uuid = pl.get_uuid()
         # render the submission panel
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
 
         if answerName in data['format_errors']:
-            error = data['format_errors'][answerName]
             html_params = {
-                'submission_error': True
+                'submission_error': True,
+                'uuid': uuid,
+                'parse-error': data['format_errors'][answerName]
             }
         else: 
             student_submission = str(data['submitted_answers'][answerName]['student_raw_submission'])
