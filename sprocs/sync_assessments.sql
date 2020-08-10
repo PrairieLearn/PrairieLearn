@@ -42,9 +42,17 @@ BEGIN
     ) ON COMMIT DROP;
 
     INSERT INTO disk_assessments (
-                   tid,              uuid,                    errors,             warnings,            data
+        tid,
+        uuid,
+        errors,
+        warnings,
+        data
     ) SELECT
-        entries->>'tid', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
+        entries->>0,
+        (entries->>1)::uuid,
+        entries->>2,
+        entries->>3,
+        (entries->4)::JSONB
     FROM UNNEST(disk_assessments_data) AS entries;
 
     -- Synchronize the dest (assessments) with the src

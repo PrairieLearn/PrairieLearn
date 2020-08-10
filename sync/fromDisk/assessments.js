@@ -228,13 +228,13 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
         });
     }
     const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-        return JSON.stringify({
-            tid: tid,
-            uuid: assessment.uuid,
-            errors: infofile.stringifyErrors(assessment),
-            warnings: infofile.stringifyWarnings(assessment),
-            data: getParamsForAssessment(assessment, questionIds),
-        });
+        return JSON.stringify([
+            tid,
+            assessment.uuid,
+            infofile.stringifyErrors(assessment),
+            infofile.stringifyWarnings(assessment),
+            getParamsForAssessment(assessment, questionIds),
+        ]);
     });
 
     const params = [
