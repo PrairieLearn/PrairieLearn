@@ -453,6 +453,12 @@ module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir
   await this.syncCourseData(courseDir);
 };
 
+/**
+ * Returns an array of all records in a particular database table.
+ *
+ * @param {string} tableName - The name of the table to query
+ * @return {Promise<Record<string, any>[]>} - The rows of the given table
+ */
 module.exports.dumpTable = async function(tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;

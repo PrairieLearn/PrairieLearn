@@ -1,4 +1,4 @@
-
+// @ts-check
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
@@ -27,8 +27,8 @@ function makeEntity() {
  * Checks that the entity present in the database matches the data
  * from the original entity in `infoCourse.json`.
  * 
- * @param {any} syncedTag - The tag from the database
- * @param {import('./util').Tag | import('./util').Topic} entity - The entity from `infoCourse.json`.
+ * @param {any} syncedEntity - The entity from the database.
+ * @param {any} entity - The entity from `infoCourse.json`.
  */
 function checkEntity(syncedEntity, entity) {
   assert.isOk(syncedEntity);
@@ -78,7 +78,7 @@ async function testRename(entityName) {
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
   assert.isUndefined(syncedEntities.find(e => e.name === oldName));
-  const syncedEntity = syncedEntities.find(as => as.name = newName);
+  const syncedEntity = syncedEntities.find(as => as.name === newName);
   checkEntity(syncedEntity, oldEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
