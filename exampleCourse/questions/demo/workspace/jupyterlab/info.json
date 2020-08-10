@@ -13,8 +13,7 @@
         "home": "/home/jovyan",
         "rewriteUrl": false,
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "Workbook.ipynb"
         ]
     }
 }
