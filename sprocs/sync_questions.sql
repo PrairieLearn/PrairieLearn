@@ -27,10 +27,19 @@ BEGIN
         data JSONB
     ) ON COMMIT DROP;
 
+
     INSERT INTO disk_questions (
-                   qid,              uuid,                    errors,             warnings,            data
+        qid,
+        uuid,
+        errors,
+        warnings,
+        data
     ) SELECT
-        entries->>'qid', (entries->>'uuid')::uuid, entries->>'errors', entries->>'warnings', entries->'data'
+        entries->>0,
+        (entries->>1)::uuid,
+        entries->>2,
+        entries->>3,
+        (entries->4)::JSONB
     FROM UNNEST(disk_questions_data) AS entries;
 
     -- Synchronize the dest (questions) with the src

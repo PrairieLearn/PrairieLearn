@@ -54,13 +54,13 @@ function getParamsForQuestion(q) {
  */
 module.exports.sync = async function(courseId, courseData) {
     const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
-        return JSON.stringify({
+        return JSON.stringify([
             qid,
-            uuid: question.uuid,
-            errors: infofile.stringifyErrors(question),
-            warnings: infofile.stringifyWarnings(question),
-            data: getParamsForQuestion(question.data),
-        });
+            question.uuid,
+            infofile.stringifyErrors(question),
+            infofile.stringifyWarnings(question),
+            getParamsForQuestion(question.data),
+        ]);
     });
 
     const params = [
