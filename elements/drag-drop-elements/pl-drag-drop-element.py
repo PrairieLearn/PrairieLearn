@@ -69,25 +69,17 @@ def render(element_html, data):
         # render the submission panel
         element = lxml.html.fragment_fromstring(element_html)
         answerName = pl.get_string_attrib(element, 'answers-name')
+        student_submission = None
 
-        if answerName in data['format_errors']:
-            html_params = {
-                'submission_error': True,
-                'uuid': uuid,
-                'parse-error': data['format_errors'][answerName]
-            }
-        else: 
-            student_submission = str(data['submitted_answers'][answerName]['student_raw_submission'])
-            question_notes = ''
-            if answerName in data['partial_scores']:
-                if 'feedback' in data['partial_scores'][answerName]:
-                    question_notes = str(data['partial_scores'][answerName]['feedback'])
-            
-            html_params = {
-                'submission_ok': True,
-                'student_submission': student_submission,
-                'question_notes': question_notes
-            }
+        if answerName not in data['format_errors']:
+            student_submission = data['submitted_answers'][answerName]['student_raw_submission']
+
+        html_params = {
+            'submission': True,
+            'uuid': uuid,
+            'parse-error': data['format_errors'].get(answerName, None),
+            'student_submission': student_submission,
+        }
 
         # Finally, render the HTML
         with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
