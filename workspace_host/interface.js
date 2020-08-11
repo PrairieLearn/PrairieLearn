@@ -57,7 +57,8 @@ app.post('/', function(req, res) {
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
-        destroySequence(workspace_id, res);
+        /* TODO: Add an actual destroy sequence? */
+        res.status(500).send('Action "destroy" unimplemented');
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
     } else if (action == 'status') {
@@ -335,19 +336,17 @@ async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
         Body: body,
     };
 
-    return await util.promisify((callback) => {
-        s3.upload(uploadParams, function(err, _data) {
-            if (err) {
-                return callback(null, [filePath, S3FilePath, err]);
-            }
-            logger.info(`Uploaded ${localPath}`);
-            callback(null, 'OK');
-        });
-    })();
+    try {
+        await s3.upload(uploadParams).promise();
+        logger.info(`Uploaded ${localPath}`);
+        return 'OK';
+    } catch (err) {
+        return [filePath, S3FilePath, err];
+    }
 }
 const _uploadToS3 = util.callbackify(_uploadToS3Async);
 
-function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
+async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) {
     const s3 = new AWS.S3();
 
     if (isDirectory) {
@@ -357,15 +356,15 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
-    s3.deleteObject(deleteParams, function(err, _data) {
-        if (err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
+    try {
+        await s3.deleteObject(deleteParams).promise();
         logger.info(`Deleted ${localPath}`);
-        callback(null, 'OK');
-    });
+        return 'OK';
+    } catch (err) {
+        return [filePath, S3FilePath, err];
+    }
 }
+const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
 
 function _workspaceFileChangeOwner(filepath, callback) {
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
@@ -411,25 +410,19 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
     const s3Stream = s3.getObject(downloadParams).createReadStream();
 
     return new Promise((resolve, reject) => {
-        /* Always update the file permissions before we return */
-        const onExit = (err, val) => {
-            if (err) return reject(err);
-            _workspaceFileChangeOwner(filePath, (err) => {
-                if (err) return reject(err);
-                resolve(val);
-            });
-        };
-
         s3Stream.on('error', function(err) {
             // This is for errors like no such file on S3, etc
-            onExit(null, [filePath, S3FilePath, err]);
+            resolve([filePath, S3FilePath, err]);
         });
         s3Stream.pipe(fileStream).on('error', function(err) {
             // This is for errors like the connection is lost, etc
-            onExit(null, [filePath, S3FilePath, err]);
+            resolve([filePath, S3FilePath, err]);
         }).on('close', function() {
             update_queue[[filePath, false]] = {action: 'skip'};
-            onExit(null, 'OK');
+            _workspaceFileChangeOwner(filePath, (err) => {
+                if (err) return reject(err);
+                resolve('OK');
+            });
         });
     });
 }
@@ -574,12 +567,6 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
     });
 }
 
-function _getContainer(workspace_id, callback) {
-    const localName = id_workspace_mapper[workspace_id].localName;
-    const container = docker.getContainer(localName);
-    callback(null, workspace_id, container);
-}
-
 function _pullImage(workspace_id, port, settings, callback) {
     const workspace_image = settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
@@ -626,7 +613,7 @@ function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`Container name: ${localName}`);
     async.series([
         (callback) => {
-            logger.info(`Creating directory ${workspacePath}`);
+            logger.info(`Creating directory ${workspaceJobPath}`);
             fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
                 if (err && err.code !== 'EEXIST') {
                     /* Ignore the directory if it already exists */
@@ -699,31 +686,8 @@ function _createContainerWrapper(workspace_id, port, settings, callback) {
     });
 }
 
-function _delContainer(workspace_id, container, callback) {
-    // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    // Commented out because we don't want to delete on S3 in fs.watch's callback
-    // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
-
-    container.remove((err) => {
-        if (ERR(err, callback)) return;
-        delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
-        delete(id_workspace_mapper[workspace_id]);
-        sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null, workspace_id, container);
-        });
-    });
-}
-
 function _startContainer(workspace_id, container, callback) {
     container.start((err) => {
-        if (ERR(err, callback)) return;
-        callback(null, workspace_id, container);
-    });
-}
-
-function _stopContainer(workspace_id, container, callback) {
-    container.stop((err) => {
         if (ERR(err, callback)) return;
         callback(null, workspace_id, container);
     });
@@ -771,23 +735,6 @@ function resetSequence(workspace_id, res) {
             res.status(500).send(err);
         } else {
             res.status(200).send(`Code of workspace ${workspace_id} reset.`);
-        }
-    });
-}
-
-// Usage unclear, maybe should be called automatically by the workspace host?
-// Maybe should also remove the local copy of the code as well?
-function destroySequence(workspace_id, res) {
-    async.waterfall([
-        (callback) => {_syncPushContainer(workspace_id, callback);},
-        _getContainer,
-        _stopContainer,
-        _delContainer,
-    ], function(err) {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            res.status(200).send(`Container for workspace ${workspace_id} destroyed.`);
         }
     });
 }
