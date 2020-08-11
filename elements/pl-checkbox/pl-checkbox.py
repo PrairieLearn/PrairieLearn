@@ -99,7 +99,8 @@ def prepare(element_html, data):
         raise Exception('duplicate params variable name: %s' % name)
     if name in data['correct_answers']:
         raise Exception('duplicate correct_answers variable name: %s' % name)
-    data['params'][name] = display_answers
+     # Need to store min_correct and max_correct for helptext in render()
+    data['params'][name] = [display_answers, min_correct, max_correct]
     data['correct_answers'][name] = correct_answer_list
 
 
@@ -117,6 +118,8 @@ def render(element_html, data):
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
+    if len(display_answers) > 0:
+        display_answers = display_answers[0]
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     submitted_keys = data['submitted_answers'].get(name, [])
 
@@ -153,8 +156,7 @@ def render(element_html, data):
         if not hide_help_text:
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
-            min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-            max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+            min_correct, max_correct = data['params'][name][1:]
             if detailed_help_text:
                 if min_correct != max_correct:
                     insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
@@ -296,8 +298,7 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     submitted_key = data['submitted_answers'].get(name, None)
-    all_keys = [a['key'] for a in data['params'][name]]
-    correct_answer_list = data['correct_answers'].get(name, [])
+    all_keys = [a['key'] for a in data['params'][name][0]]
 
     # Check that at least one option was selected
     if submitted_key is None:
@@ -316,8 +317,7 @@ def parse(element_html, data):
 
     # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
     if pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
-        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+        min_correct, max_correct = data['params'][name][1:]
         n_submitted = len(submitted_key)
         if n_submitted > max_correct or n_submitted < min_correct:
             data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
@@ -329,7 +329,7 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
-    number_answers = len(data['params'][name])
+    number_answers = len(data['params'][name][0])
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     submitted_keys = data['submitted_answers'].get(name, [])
@@ -366,7 +366,7 @@ def test(element_html, data):
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
-    number_answers = len(data['params'][name])
+    number_answers = len(data['params'][name][0])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
     result = data['test_type']
@@ -389,8 +389,7 @@ def test(element_html, data):
                     if not pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
                         break
                     else:
-                        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-                        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+                        min_correct, max_correct = data['params'][name][1:]
                         if len(ans) <= max_correct and len(ans) >= min_correct:
                             break
         if partial_credit:
