@@ -187,7 +187,7 @@ async.series([
 
 // For detecting file changes
 var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : config.workspaceJobsDirectory;
+const workspacePrefix = config.workspaceJobsDirectory;
 var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,

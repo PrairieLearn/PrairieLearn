@@ -112,3 +112,6 @@ docker run -it --rm -p 3000:3000 `
 
 For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
 
+## Running locally (natively, not on Docker)
+
+Set `workspaceJobsDir` in your `config.json`.

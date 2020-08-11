@@ -12,7 +12,7 @@ COPY . /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
 RUN chmod +x /PrairieLearn/docker/init.sh \
-    && mkdir /course{,{2..9}} \
+    && mkdir -p /course{,{2..9}} /jobs/workspaces \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && node server.js --migrate-and-exit \
