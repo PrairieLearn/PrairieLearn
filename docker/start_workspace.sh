@@ -11,8 +11,10 @@ if [[ ! -z "$CONTAINERS" ]] ; then
    docker rm $CONTAINERS
 fi
 
+export DONT_START_WORKSPACE_HOST_IN_INIT=true
+
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \
   send-keys "docker/init.sh" C-m \; \
   split-window -h -p 50 \; \
-  send-keys "sleep 5 ; node workspace_host/interface" C-m \; \
+  send-keys "node workspace_host/interface" C-m \; \
