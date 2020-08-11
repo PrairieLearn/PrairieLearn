@@ -6,9 +6,9 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 * [x] Chrome is supported
 * [x] Firefox is supported
+* [x] Safari is supported
 * [x] Edge Chromium (version >= 79) is supported
 * [ ] Edge Legacy (version < 79) is untested
-* [x] Safari is supported
 
 ## Setting up
 
@@ -96,17 +96,16 @@ docker run -it --rm -p 3000:3000 `
   prairielearn/prairielearn
 ```
 
-**Note** the following about `HOST_JOBS_DIR` in PowerShell:
+* **Note** the following about `HOST_JOBS_DIR` in PowerShell:
 
-    - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
-    - Use the full path rather than $HOME (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
+    * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
+    * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
 
-**Note** that `C:` must have shared access between Windows and Docker:
+* **Note** that `C:` must have shared access between Windows and Docker:
 
-    - Right-click the Docker "whale" icon in the taskbar
-    - Click "Settings"
-    - Ensure `C:` is checked
-
+    * Right-click the Docker "whale" icon in the taskbar
+    * Click "Settings"
+    * Ensure `C:` is checked
 
 #### Developing with workspaces
 
