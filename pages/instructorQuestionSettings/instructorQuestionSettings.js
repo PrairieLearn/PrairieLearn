@@ -19,6 +19,7 @@ const { encodePath } = require('../../lib/uri-util');
 
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
+        if (!res.locals.authz_data.has_course_permission_view) return next(new Error('Access denied (must be a course Viewer)'));
         const count = 1;
         const showDetails = true;
         question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
@@ -26,6 +27,7 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
+        if (!res.locals.authz_data.has_course_permission_view) return next(new Error('Access denied (must be a course Viewer)'));
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
             const showDetails = false;
@@ -89,6 +91,7 @@ router.post('/', function(req, res, next) {
         } else {
             // In this case, we are sending a copy of this question to a different course
             debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
+            if (!res.locals.authz_data.has_course_permission_view) return callback(new Error('Access denied (must be a course Viewer)'));
             let params = {
                 from_course_id: res.locals.course.id,
                 to_course_id: req.body.to_course_id,
