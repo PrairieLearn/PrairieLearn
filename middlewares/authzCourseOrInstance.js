@@ -66,6 +66,7 @@ module.exports = function(req, res, next) {
                     has_course_permission_own: permissions_course.has_course_permission_own,
                     courses: authn_courses,
                     course_instances: authn_course_instances,
+                    editable_courses: authn_courses.filter(course => course.permissions_course.has_course_permission_edit),
                 };
                 res.locals.user = res.locals.authz_data.user;
                 if (isCourseInstance) {
@@ -82,13 +83,6 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.has_student_access_with_enrollment = permissions_course_instance.has_student_access_with_enrollment;
                     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
                 }
-
-                // FIXME
-                //
-                //  Added these to complete merge. Should eliminate them completely.
-                //
-                res.locals.editable_courses = res.locals.authz_data.courses;
-                res.locals.viewable_courses = res.locals.authz_data.courses;
 
                 debug('authn user is authorized');
 
@@ -279,6 +273,7 @@ module.exports = function(req, res, next) {
 
                         res.locals.authz_data.courses = [];
                         res.locals.authz_data.course_instances = [];
+                        res.locals.authz_data.editable_courses = [];
 
                         if (isCourseInstance) {
                             res.locals.authz_data.course_instance_role = 'None';
@@ -428,8 +423,20 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.has_course_permission_edit = result.rows[0].permissions_course.has_course_permission_edit;
                     res.locals.authz_data.has_course_permission_own = result.rows[0].permissions_course.has_course_permission_own;
 
-                    // Empty courses (effective users are confined to one course)
-                    res.locals.authz_data.courses = [];
+                    // Effective users are confined to one course, so we discard all other
+                    // courses from the list of those to which the effective user has staff
+                    // access.
+                    //
+                    // Note that courses[0].permissions_course and course.permissions_course
+                    // will not, in general, be the same. Requested course and course instance
+                    // roles are ignored when generating the former but not when generating
+                    // the latter. So, we also replace permissions_course for the course that
+                    // remains in the list (the current course) with what it should be.
+                    //
+                    // We then update editable_courses as usual.
+                    res.locals.authz_data.courses = (result.rows[0].courses || []).filter(course => course.id == result.rows[0].course.id);
+                    res.locals.authz_data.courses.forEach(course => course.permissions_course = _.cloneDeep(result.rows[0].permissions_course));
+                    res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(course => course.permissions_course.has_course_permission_edit);
 
                     // Update course_instances, adding a flag to disable any course
                     // instance that is not also in authn_course_instances (i.e., to
