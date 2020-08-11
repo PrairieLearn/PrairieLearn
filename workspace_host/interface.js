@@ -479,11 +479,8 @@ function _autoUpdateJobManager() {
         }
     }
     update_queue = {};
-    var status = [];
-    async.parallel(jobs, function(err, results) {
-        if (err) {
-            logger.error(`Error during file sync: ${status}`);
-        }
+    async.parallel(jobs, function(err) {
+        if (err) logger.err(err);
     });
 }
 
@@ -518,15 +515,16 @@ function _syncPullContainer(workspace_id, callback) {
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((callback) => {
-                _downloadFromS3(filePath, S3filePath, (_, status) => {
-                    callback(null, status);
+                _downloadFromS3(filePath, S3filePath, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
                 });
             }));
         });
 
-        var status = [];
-        async.parallel(jobs, function(err, results) {
+        async.parallel(jobs, function(err) {
             if (ERR(err, callback)) return;
+            callback(null, workspace_id);
         });
     });
 }
