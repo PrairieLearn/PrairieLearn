@@ -14,6 +14,10 @@ def render_html_colour(score):
         return 'badge-success'
     else:
         return 'badge-warning'
+def is_perfect_score(score):
+    if score == 100:
+        return True
+    return None
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -71,7 +75,7 @@ def render(element_html, data):
         html_string += '</ul></div></div>'
 
         answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-        html_string += f'<input id="{str(answerName) + str("-input") }" type="text" name="{str(answerName) + str("-input") }" value=""/>'
+        html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
         # html_string += f'{data}'
         return html_string
 
@@ -94,7 +98,7 @@ def render(element_html, data):
             'student_submission': student_submission,
             'colour': colour,
             'score': score,
-            'correct': 
+            'perfect_score': is_perfect_score(score)
         }
 
         # Finally, render the HTML
