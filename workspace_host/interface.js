@@ -432,11 +432,12 @@ function _getWorkspaceByPath(path) {
 function _autoUpdateJobManager() {
     var jobs = [];
     for (const key in update_queue) {
-        const [path, isDirectory_str] = key.split(',');
+        const [filePath, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
-        const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        const {workspace_id, localPath} = _getWorkspaceByPath(filePath);
         if (workspace_id == null) continue;
         debug(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
+        const s3Bucket = config.workspaceS3Bucket;
         const s3Name = id_workspace_mapper[workspace_id].s3Name;
         const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
@@ -458,18 +459,27 @@ function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                awsHelper.uploadToS3(path, isDirectory, config.workspaceS3Bucket, s3Path, localPath, callback);
+                util.callbackify(awsHelper.uploadToS3)(filePath, isDirectory, s3Bucket, s3Path, localPath, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, result);
+                });
             });
+
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                awsHelper.deleteFromS3(path, isDirectory, config.workspaceS3Bucket, s3Path, localPath, callback);
+                util.callbackify(awsHelper.deleteFromS3)(filePath, isDirectory, s3Bucket, s3Path, localPath, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, result);
+                });
             });
         }
     }
     update_queue = {};
     var status = [];
-    async.parallel(jobs, function(_, results) {
+    async.parallel(jobs, function(_err, results) {
+        console.log(`+++ results=${JSON.stringify(results)}`);
         results.forEach((res) => {
+            console.log(`+++ res=${res}`);
             if (res != 'OK') {
                 res[2].fileLocalPath = res[0];
                 res[2].fileS3Path = res[1];
