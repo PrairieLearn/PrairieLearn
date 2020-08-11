@@ -31,7 +31,7 @@ if ('config' in argv) {
     configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
-const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
+const zipPrefix = config.workspaceGradedFilesSendDirectory;
 
 logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
