@@ -113,4 +113,8 @@ For development, run the docker command with a final extra argument of `/Prairie
 
 ## Running locally (natively, not on Docker)
 
-Set `workspaceJobsDir` in your `config.json`.
+Set these variables in your `config.json`:
+
+* `workspaceJobsDir` 
+* `workspaceGradedFilesReceiveDirectory` 
+* `workspaceGradedFilesSendDirectory` 
