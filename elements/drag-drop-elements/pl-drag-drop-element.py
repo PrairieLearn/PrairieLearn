@@ -214,6 +214,7 @@ def grade(element_html, data):
     true_answer = data['correct_answers'][answerName]['correct_answers']
     true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
 
+    indent_score = 0
     final_score = 0
     feedback = ''
 
@@ -243,9 +244,13 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    # apply penalty if student got indent wrong AND indent matters
-    if student_answer_indent != true_answer_indent and true_answer_indent.count('-1') != len(true_answer_indent):
-        final_score = final_score * 0.5
+    # check indents, and apply penalty if applicable
+    if true_answer_indent.count('-1') != len(true_answer_indent):
+        for i, indent in enumerate(student_answer_indent):
+            if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
+                indent_score += 1
+        final_score = final_score * (indent_score / len(true_answer_indent))
+
     data['partial_scores'][answerName] = {'score': final_score, 'feedback': feedback}
 
 
