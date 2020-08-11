@@ -336,13 +336,8 @@ async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
         Body: body,
     };
 
-    try {
-        await s3.upload(uploadParams).promise();
-        logger.info(`Uploaded ${localPath}`);
-        return 'OK';
-    } catch (err) {
-        return [filePath, S3FilePath, err];
-    }
+    await s3.upload(uploadParams).promise();
+    logger.info(`Uploaded ${localPath}`);
 }
 const _uploadToS3 = util.callbackify(_uploadToS3Async);
 
@@ -356,13 +351,8 @@ async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) 
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
-    try {
-        await s3.deleteObject(deleteParams).promise();
-        logger.info(`Deleted ${localPath}`);
-        return 'OK';
-    } catch (err) {
-        return [filePath, S3FilePath, err];
-    }
+    await s3.deleteObject(deleteParams).promise();
+    logger.info(`Deleted ${localPath}`);
 }
 const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
 
@@ -391,7 +381,7 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
             await _workspaceFileChangeOwnerAsync(filePath);
         }
         update_queue[[filePath, true]] = {action: 'skip'};
-        return 'OK';
+        return;
     } else {
         // this is a file
         try {
@@ -412,16 +402,16 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
     return new Promise((resolve, reject) => {
         s3Stream.on('error', function(err) {
             // This is for errors like no such file on S3, etc
-            resolve([filePath, S3FilePath, err]);
+            reject(err);
         });
         s3Stream.pipe(fileStream).on('error', function(err) {
             // This is for errors like the connection is lost, etc
-            resolve([filePath, S3FilePath, err]);
+            reject(err);
         }).on('close', function() {
             update_queue[[filePath, false]] = {action: 'skip'};
             _workspaceFileChangeOwner(filePath, (err) => {
                 if (err) return reject(err);
-                resolve('OK');
+                resolve();
             });
         });
     });
@@ -490,15 +480,8 @@ function _autoUpdateJobManager() {
     }
     update_queue = {};
     var status = [];
-    async.parallel(jobs, function(_, results) {
-        results.forEach((res) => {
-            if (res != 'OK') {
-                res[2].fileLocalPath = res[0];
-                res[2].fileS3Path = res[1];
-                status.push(res[2]);
-            }
-        });
-        if (status.length != 0) {
+    async.parallel(jobs, function(err, results) {
+        if (err) {
             logger.error(`Error during file sync: ${status}`);
         }
     });
@@ -542,19 +525,8 @@ function _syncPullContainer(workspace_id, callback) {
         });
 
         var status = [];
-        async.parallel(jobs, function(_, results) {
-            results.forEach((res) => {
-                if (res != 'OK') {
-                    res[2].fileLocalPath = res[0];
-                    res[2].fileS3Path = res[0];
-                    status.push(res[2]);
-                }
-            });
-            if (status.length != 0) {
-                callback(status);
-            } else {
-                callback(null, workspace_id);
-            }
+        async.parallel(jobs, function(err, results) {
+            if (ERR(err, callback)) return;
         });
     });
 }
