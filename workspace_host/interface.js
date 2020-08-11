@@ -9,6 +9,7 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
+const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspace = require('../lib/workspace');
 const logger = require('../lib/logger');
@@ -320,56 +321,6 @@ function _getSettingsWrapper(workspace_id, callback) {
     });
 }
 
-async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callback) {
-    const s3 = new AWS.S3();
-
-    let body;
-    if (isDirectory) {
-        body = '';
-        S3FilePath += '/';
-    } else {
-        try {
-            body = await fsPromises.readFile(filePath);
-        } catch(err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
-    }
-    var uploadParams = {
-        Bucket: config.workspaceS3Bucket,
-        Key: S3FilePath,
-        Body: body,
-    };
-    s3.upload(uploadParams, function(err, _data) {
-        if (err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
-        logger.info(`Uploaded ${localPath}`);
-        callback(null, 'OK');
-    });
-}
-
-function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
-    const s3 = new AWS.S3();
-
-    if (isDirectory) {
-        S3FilePath += '/';
-    }
-    var deleteParams = {
-        Bucket: config.workspaceS3Bucket,
-        Key: S3FilePath,
-    };
-    s3.deleteObject(deleteParams, function(err, _data) {
-        if (err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
-        logger.info(`Deleted ${localPath}`);
-        callback(null, 'OK');
-    });
-}
-
 function _workspaceFileChangeOwner(filepath, callback) {
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
         config.workspaceJobsDirectoryOwnerGid == 0) {
@@ -507,11 +458,11 @@ function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                _uploadToS3(path, isDirectory, s3Path, localPath, callback);
+                awsHelper.uploadToS3(path, isDirectory, config.workspaceS3Bucket, s3Path, localPath, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                _deleteFromS3(path, isDirectory, s3Path, localPath, callback);
+                awsHelper.deleteFromS3(path, isDirectory, config.workspaceS3Bucket, s3Path, localPath, callback);
             });
         }
     }
@@ -599,7 +550,7 @@ async function _syncPushContainer(workspace_id, callback) {
     var jobs = [];
     jobs_params.forEach(([filePath, S3filePath]) => {
         jobs.push((callback) => {
-            _uploadToS3(filePath, S3filePath, callback);
+            awsHelper.uploadToS3(filePath, config.workspaceS3Bucket, S3filePath, callback);
         });
     });
 
