@@ -27,13 +27,12 @@ def render(element_html, data):
         # I PROMISE I WILL FIX THIS WHEN I FIGURE OUT HOW TO USE MUSTACHE 
         mcq_options = []   # stores MCQ options
         question_instruction_blocks = []   # stores question instructions within the table
-        html_string = ''   # html_string is the HTML we return to PL
+        html_string = ''
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
 
         for html_tags in pl_drag_drop_element:
             if html_tags.tag == 'pl-answer':
-                # check if <pl-answer correct=""> attribute exists
-                pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking'])
+                pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
             if html_tags.tag == 'pl-info':
                 question_instruction_blocks.append(str.strip(html_tags.text))
@@ -43,8 +42,8 @@ def render(element_html, data):
         html_string = '<div class="row"><div class="column"><ul ' + f'id="{str(answerName) + str("-options")}" name="{str(answerName)}"' + 'class="connectedSortable" >'
 
         # check whether we need to shuffle the MCQ options
-        pl.check_attribs(pl_drag_drop_element, required_attribs=['shuffle-options', 'permutation-mode', 'answers-name'], optional_attribs=[])
-        isShuffle = pl.get_string_attrib(pl_drag_drop_element, 'shuffle-options')
+        pl.check_attribs(pl_drag_drop_element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode'])
+        isShuffle = pl.get_string_attrib(pl_drag_drop_element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
         if isShuffle == 'true':
             # concat the two arrays so we can shuffle all the options
             random.shuffle(mcq_options)
@@ -85,11 +84,13 @@ def render(element_html, data):
         student_submission = None
         colour = None
         score = 0
+        feedback = None
 
-        if answerName not in data['format_errors']:
+        if answerName not in data['format_errors'] and answerName in data['partial_scores']:
             student_submission = data['submitted_answers'][answerName]['student_raw_submission']
             colour = render_html_colour(data['partial_scores'][answerName]['score'])
             score = data['partial_scores'][answerName]['score'] * 100
+            feedback = data['partial_scores'][answerName]['feedback']
 
         html_params = {
             'submission': True,
@@ -98,7 +99,8 @@ def render(element_html, data):
             'student_submission': student_submission,
             'colour': colour,
             'score': score,
-            'perfect_score': is_perfect_score(score)
+            'perfect_score': True if score == 1.0 else None,
+            'feedback': feedback
         }
 
         # Finally, render the HTML
@@ -113,7 +115,7 @@ def render(element_html, data):
         if answerName in data['correct_answers']:
             html_params = {
                 'true_answer': True,
-                'question_solution': str(data['correct_answers'][answerName]),
+                'question_solution': str(data['correct_answers'][answerName]['correct_answers']),
                 'permutationMode': permutationMode
             }
             with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
@@ -125,16 +127,22 @@ def render(element_html, data):
 
 def prepare(element_html, data):
     pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
+    answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
+
     correct_answers = []
+    correct_answers_indent = []
+    
     for html_tags in pl_drag_drop_element:
         if html_tags.tag == 'pl-answer':
             isCorrect = pl.get_string_attrib(html_tags, 'correct')
+            answerIndent = pl.get_string_attrib(html_tags, 'indent', '0') # get answer indent, and default to 0
             if isCorrect.lower() == 'true':
-                # add option to the correct answer array
-                # answer_ordering.append(str.strip(answer_ranking))
+                # add option to the correct answer array, along with the correct required indent
                 correct_answers.append(str.strip(html_tags.text))
-    answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-    data['correct_answers'][answerName] = correct_answers
+                correct_answers_indent.append(str.strip(answerIndent))
+    
+    data['correct_answers'][answerName] = {'correct_answers': correct_answers,
+                                           'correct_answers_indent': correct_answers_indent}
 
 
 def parse(element_html, data):
@@ -164,8 +172,7 @@ def parse(element_html, data):
 
     student_answer_ranking = ['Question permutationMode is not "ranking"']
     for answer in student_answer_temp:
-        # student answers are formatted as: {answerString}:::{indent}
-        # we split the text
+        # student answers are formatted as: {answerString}:::{indent}, we split the answer
         answer = answer.split(':::')
         if len(answer) == 1:
             # because we already caught empty string submission above
@@ -205,8 +212,9 @@ def grade(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
-    true_answer = data['correct_answers'][answerName]
     permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+    true_answer = data['correct_answers'][answerName]['correct_answers']
+    true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
 
     if permutationMode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
