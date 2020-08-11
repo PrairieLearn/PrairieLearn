@@ -44,7 +44,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+        assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
         helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
     });
