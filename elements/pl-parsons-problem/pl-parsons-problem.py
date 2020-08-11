@@ -112,7 +112,7 @@ def grade_submitted(pieces, correct, unpacked_submitted, check_indentation):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['max-distractors', 'max-feedback-count', 'check-indentation', 'header-left-column', 'header-right-column', 'file-name', 'leading-code', 'trailing-code']
+    optional_attribs = ['max-distractors', 'check-indentation', 'header-left-column', 'header-right-column', 'file-name', 'leading-code', 'trailing-code']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 

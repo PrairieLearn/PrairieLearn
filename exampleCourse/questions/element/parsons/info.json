@@ -1,13 +1,8 @@
 {
     "uuid": "bae311b3-5ed5-4487-b2b0-73c94676b066",
-    "title": "Element pl-parsons-problem: write a python function",
+    "title": "Element pl-parsons-problem: drag and drop tiles example",
     "topic": "Element",
     "tags": ["v3",  "mfsilva"],
-    "dependencies": {
-        "nodeModulesScripts": [
-            "jquery-ui-dist/jquery-ui.min.js"
-        ]
-    },
     "singleVariant": true,
     "type": "v3"
 }

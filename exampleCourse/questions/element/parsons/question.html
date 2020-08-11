@@ -1,47 +1,58 @@
-<pl-question-panel>
 
-<p>Write the function <code>make_array_b</code> that takes an array <code>a</code> and returns another array <code>b</code>
-with the same shape such that:<p>
+<pl-question-panel>
+    <p>
+        Questions below were designed to showcase the
+		<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-parsons-element"><code>pl-parsons-problem</code></a> element.
+    </p>
+</pl-question-panel>
+
+
+<div class="card my-2">
+<div class="card-header">
+    Example 1: creating a python code snippet
+</div>
+
+<div class="card-body">
+
+  <pl-question-panel>
+
+  <p>Write the function <code>make_array_b</code> that takes an array <code>a</code> and returns another array <code>b</code>
+  with the same shape such that:<p>
 
 <pl-code>
 b[0] = a[0]
 b[i] = a[i] + a[i-1], i > 0
 </pl-code>
 
-<p> Use the code blocks below to construct your solution. </p>
-</pl-question-panel>
+  <p> Use the code blocks below to construct your solution. </p>
+  </pl-question-panel>
 
-<pl-parsons-problem answers-name="result" max-distractors=2 max-feedback-count=2 check-indentation=true>
-  <pl-answer indent=0 >
-    def make_array_b(a):
-  </pl-answer>
+  <pl-parsons-problem answers-name="result">
+    <pl-answer indent=0 >
+      def make_array_b(a):
+    </pl-answer>
+    <pl-answer indent=1>
+      b = np.copy(a)
+    </pl-answer>
+    <pl-answer indent=1>
+      for i in range(1,len(a)):
+    </pl-answer>
+    <pl-answer indent=2>
+      b[i] += a[i-1]
+    </pl-answer>
+    <pl-answer indent=1>
+      return b
+    </pl-answer>
+    <pl-distractor>
+      b[i+1] = a[i] + a[i-1]
+    </pl-distractor>
+    <pl-distractor>
+      b[i+1] += a[i]
+    </pl-distractor>
+    <pl-distractor>
+      for i in range(len(a)):
+    </pl-distractor>
+  </pl-parsons-problem>
 
-  <pl-answer indent=1>
-    b = np.copy(a)
-  </pl-answer>
-
-  <pl-answer indent=1>
-    for i in range(1,len(a)):
-  </pl-answer>
-
-  <pl-answer indent=2>
-    b[i] += a[i-1]
-  </pl-answer>
-
-  <pl-answer indent=1>
-    return b
-  </pl-answer>
-
-  <pl-distractor>
-    b[i+1] = a[i] + a[i-1]
-  </pl-distractor>
-
-  <pl-distractor>
-    b[i+1] += a[i]
-  </pl-distractor>
-
-  <pl-distractor>
-    for i in range(len(a)):
-  </pl-distractor>
-
-</pl-parsons-problem>
+</div>
+</div>
