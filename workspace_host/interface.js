@@ -352,7 +352,7 @@ async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) 
         Key: S3FilePath,
     };
     await s3.deleteObject(deleteParams).promise();
-    logger.info(`Deleted ${localPath}`);
+    logger.info(`Deleted s3://${config.workspaceS3Bucket}/${S3FilePath}`);
 }
 const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
 
