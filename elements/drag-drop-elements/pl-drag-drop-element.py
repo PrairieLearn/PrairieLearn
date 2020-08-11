@@ -14,10 +14,7 @@ def render_html_colour(score):
         return 'badge-success'
     else:
         return 'badge-warning'
-def is_perfect_score(score):
-    if score == 100:
-        return True
-    return None
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -81,13 +78,14 @@ def render(element_html, data):
     elif data['panel'] == 'submission':
         # render the submission panel
         uuid = pl.get_uuid()
-        student_submission = None
-        colour = None
+        student_submission = ''
+        colour = 'badge-danger'
         score = 0
         feedback = None
 
-        if answerName not in data['format_errors'] and answerName in data['partial_scores']:
+        if answerName in data['submitted_answers']:
             student_submission = data['submitted_answers'][answerName]['student_raw_submission']
+        if answerName in data['partial_scores']:
             colour = render_html_colour(data['partial_scores'][answerName]['score'])
             score = data['partial_scores'][answerName]['score'] * 100
             feedback = data['partial_scores'][answerName]['feedback']
@@ -99,8 +97,9 @@ def render(element_html, data):
             'student_submission': student_submission,
             'colour': colour,
             'score': score,
-            'perfect_score': True if score == 1.0 else None,
+            'perfect_score': True if score == 100 else None,
             'feedback': feedback
+            # 'data': data
         }
 
         # Finally, render the HTML
@@ -135,11 +134,11 @@ def prepare(element_html, data):
     for html_tags in pl_drag_drop_element:
         if html_tags.tag == 'pl-answer':
             isCorrect = pl.get_string_attrib(html_tags, 'correct')
-            answerIndent = pl.get_string_attrib(html_tags, 'indent', '0') # get answer indent, and default to 0
+            answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1') # get answer indent, and default to -1 (indent level ignored)
             if isCorrect.lower() == 'true':
                 # add option to the correct answer array, along with the correct required indent
                 correct_answers.append(str.strip(html_tags.text))
-                correct_answers_indent.append(str.strip(answerIndent))
+                correct_answers_indent.append(answerIndent)
     
     data['correct_answers'][answerName] = {'correct_answers': correct_answers,
                                            'correct_answers_indent': correct_answers_indent}
@@ -150,7 +149,6 @@ def parse(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     temp = answerName
-    true_answer = data['correct_answers'][temp]
     temp += '-input'  # this is how the backend is written
 
     student_answer_temp = ''
@@ -201,7 +199,6 @@ def parse(element_html, data):
             student_answer_ranking.append(ranking)
     data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
                                              'student_raw_submission': student_answer,
-                                             'true_answer': true_answer,
                                              'student_answer_indent': student_answer_indent}
     if temp in data['submitted_answers']:
         del data['submitted_answers'][temp]
@@ -212,18 +209,19 @@ def grade(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
+    student_answer_indent = data['submitted_answers'][answerName]['student_answer_indent']
     permutationMode = pl.get_string_attrib(element, 'permutation-mode')
     true_answer = data['correct_answers'][answerName]['correct_answers']
     true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
 
+    final_score = 0
+    feedback = ''
+
     if permutationMode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
-        data['partial_scores'][answerName] = {'score': float(len(intersection) / len(true_answer)), 'feedback': ''}
+        final_score = float(len(intersection) / len(true_answer))
     elif permutationMode == 'html-order':
-        if student_answer == true_answer:
-            data['partial_scores'][answerName] = {'score': float(1.0), 'feedback': ''}
-        else:
-            data['partial_scores'][answerName] = {'score': float(0.0), 'feedback': ''}
+        final_score = 1.0 if student_answer == true_answer else 0.0
     elif permutationMode == 'ranking':
         ranking = data['submitted_answers'][answerName]['student_submission_ordering']
         correctness = 1
@@ -243,7 +241,12 @@ def grade(element_html, data):
         else:
             correctness = 0
         correctness = max(correctness, partial_credit)
-        data['partial_scores'][answerName] = {'score': float(correctness / len(true_answer)), 'feedback': ''}
+        final_score = float(correctness / len(true_answer))
+
+    # apply penalty if student got indent wrong AND indent matters
+    if student_answer_indent != true_answer_indent and true_answer_indent.count('-1') != len(true_answer_indent):
+        final_score = final_score * 0.5
+    data['partial_scores'][answerName] = {'score': final_score, 'feedback': feedback}
 
 
 def test(element_html, data):
