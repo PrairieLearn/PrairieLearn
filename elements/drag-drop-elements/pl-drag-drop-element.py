@@ -6,8 +6,19 @@ import chevron
 # Read https://prairielearn.readthedocs.io/en/latest/devElements/
 # Official documentation on making custom PL
 
+def render_html_colour(score):
+    # used to render the correct colour depending on student score
+    if score == 0:
+        return 'badge-danger'
+    elif score == 1.0:
+        return 'badge-success'
+    else:
+        return 'badge-warning'
 
 def render(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    answerName = pl.get_string_attrib(element, 'answers-name')
+
     if data['panel'] == 'question':
         # I PROMISE I WILL FIX THIS WHEN I FIGURE OUT HOW TO USE MUSTACHE 
         mcq_options = []   # stores MCQ options
@@ -65,20 +76,25 @@ def render(element_html, data):
         return html_string
 
     elif data['panel'] == 'submission':
-        uuid = pl.get_uuid()
         # render the submission panel
-        element = lxml.html.fragment_fromstring(element_html)
-        answerName = pl.get_string_attrib(element, 'answers-name')
+        uuid = pl.get_uuid()
         student_submission = None
+        colour = None
+        score = 0
 
         if answerName not in data['format_errors']:
             student_submission = data['submitted_answers'][answerName]['student_raw_submission']
+            colour = render_html_colour(data['partial_scores'][answerName]['score'])
+            score = data['partial_scores'][answerName]['score'] * 100
 
         html_params = {
             'submission': True,
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answerName, None),
             'student_submission': student_submission,
+            'colour': colour,
+            'score': score,
+            'correct': 
         }
 
         # Finally, render the HTML
@@ -87,9 +103,6 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        element = lxml.html.fragment_fromstring(element_html)
-        answerName = pl.get_string_attrib(element, 'answers-name')
-
         permutationMode = pl.get_string_attrib(element, 'permutation-mode')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
         
@@ -250,3 +263,4 @@ def test(element_html, data):
         data['format_errors'][answerName] = 'format error message'
     else:
         raise Exception('invalid result: %s' % data['test_type'])
+

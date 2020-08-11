@@ -3,6 +3,13 @@
     {{^parse-error}}
         <strong>Your answer: </strong> 
         <code class="user-output">{{student_submission}}</code>
+        {{#correct}}
+            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{^correct}}
+                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            {{/correct}}
+        {{score}}%</span>
     {{/parse-error}}
 
     {{#parse-error}}
