@@ -9,14 +9,20 @@
 </script>
 
 {{#question}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group">
+    <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group form-inline">
         <select name="{{answers-name}}" class="form-control">
-
-    {{#options}}
-        <option value="{{.}}">{{.}}</option>
-    {{/options}}
-
+            {{#options}}
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{value}}</option>
+            {{/options}}
         </select>
+        {{#has_submission}}
+            {{#correct}}
+                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            {{/correct}}
+            {{^correct}}
+                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            {{/correct}}
+        {{/has_submission}}
     </div>
 {{/question}}
 

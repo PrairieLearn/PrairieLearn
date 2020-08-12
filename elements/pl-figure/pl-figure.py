@@ -7,11 +7,12 @@ import os
 WIDTH_DEFAULT = None
 TYPE_DEFAULT = 'static'
 DIRECTORY_DEFAULT = 'clientFilesQuestion'
+INLINE_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory', 'inline'])
 
 
 def render(element_html, data):
@@ -25,6 +26,9 @@ def render(element_html, data):
 
     # Get directory (default is clientFilesQuestion)
     file_directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
+
+    # Get inline (default is false)
+    inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':
@@ -49,7 +53,7 @@ def render(element_html, data):
     width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
 
     # Create and return html
-    html_params = {'src': file_url, 'width': width}
+    html_params = {'src': file_url, 'width': width, 'inline': inline}
     with open('pl-figure.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 

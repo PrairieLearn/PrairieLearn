@@ -1,7 +1,8 @@
 columns
+    heartbeat_at: timestamp with time zone
+    hostname: text
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
-    s3_bucket: text
-    s3_root_key: text
+    launched_at: timestamp with time zone
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
     workspace_host_id: bigint
 

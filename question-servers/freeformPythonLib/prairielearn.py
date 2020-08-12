@@ -138,7 +138,7 @@ def inner_html(element):
         inner = ''
     inner = html.escape(str(inner))
     for child in element:
-        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+        inner += lxml.html.tostring(child, method='html').decode('utf-8')
     return inner
 
 

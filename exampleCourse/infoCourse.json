@@ -11,6 +11,7 @@
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
         {"name": "Element", "color": "orange3", "description": "Overviews for each feature available within an element."},
         {"name": "Demo", "color": "purple1", "description": "Demonstration questions showcasing PrairieLearn Features."},
+        {"name": "Workshop Demo", "color": "pink2", "description": "Demonstration questions from the PrairieLearn workshop."},
         {"name": "Drawing", "color": "purple2", "description": "Create interactive drawings."},
         {"name": "Custom", "color": "gray1", "description": "Generate custom elements or styles within PrairieLearn."},
         {"name": "Manual", "color": "gray2", "description": "Submission that must be graded manually."},
