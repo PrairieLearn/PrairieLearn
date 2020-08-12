@@ -1,0 +1,47 @@
+{
+    "uuid": "d7bcc376-4f23-41d6-9f71-87dd1d23991b",
+    "allowAccess": [{"mode": "Public", "credit": 100}],
+
+    "title": "Force Student to Complete Questions In-Order",
+    "type": "Exam",
+    "set": "Exam",
+    "number": "9",
+
+    "minAdvancePerc": 100,
+    "zones": [
+        {
+            "minAdvancePerc": 10,
+            "questions": [
+                {"id": "partialCredit1", "points": [1], "minAdvancePerc": 25}
+            ]
+        },
+        {
+          "questions": [
+            {"id": "partialCredit4_v2", "points": [2], "minAdvancePerc": 0}
+          ]
+        },
+        {
+            "minAdvancePerc": 50,
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": [3,3,3,3,3],
+                    "minAdvancePerc": 60,
+                    "alternatives": [
+                        {"id": "partialCredit3"}
+                    ]
+                }
+            ]
+        },
+        {
+            "questions": [
+                {"id": "partialCredit2", "points": 4}
+            ]
+        },
+        {
+            "questions": [
+              {"id": "addVectors", "points": 5}
+            ]
+        }
+    ]
+}
