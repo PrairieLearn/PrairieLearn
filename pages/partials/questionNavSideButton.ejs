@@ -1,9 +1,9 @@
-<a
+<a id="<%= button.id %>"
   <% if (button.question.id && !button.question.sequence_blocked) { %>
     class="btn btn-primary mb-4"
     href="<%= urlPrefix %>/instance_question/<%= button.question.id %>/"
   <% } else { %>
-    class="btn btn-secondary text-white mb-4 <% if (!button.question.sequence_blocked) { %> disabled <% } %>"
+    class="btn btn-secondary text-white mb-4 <% if (button.question.sequence_blocked) { %> pl-sequence-locked <% } else { %> disabled <% } %>"
     <% if (button.question.sequence_blocked) { %>
       tabindex="0" role="button"
       data-toggle="popover" data-trigger="focus" data-container="body"

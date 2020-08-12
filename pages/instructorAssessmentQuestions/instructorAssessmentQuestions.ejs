@@ -123,7 +123,7 @@
                   <% }); %>
                   <% } %>
                 </td>
-                <td <% if (!question.assessment_question_unlock_score_perc) { %>class="text-muted"<% } %> >
+                <td class="pl-sequence-prev-unlock-score <% if (question.assessment_question_unlock_score_perc == 0) { %>text-muted<% } %>">
                   <%= question.assessment_question_unlock_score_perc %>%
                 </td>
               </tr>

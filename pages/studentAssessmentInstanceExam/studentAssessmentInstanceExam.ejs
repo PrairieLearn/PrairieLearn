@@ -150,7 +150,7 @@
           <% } %>
         </div>
 
-        <table class="table table-sm table-hover">
+        <table id="assessment-questions" class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Question</th>
@@ -196,7 +196,7 @@
               </th>
             </tr>
             <% } %>
-            <tr class="<% if (instance_question.sequence_blocked) { %>bg-light<% } %>">
+            <tr class="<% if (instance_question.sequence_blocked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
                 <a
                   <% if (instance_question.sequence_blocked) { %>

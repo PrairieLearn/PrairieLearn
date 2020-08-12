@@ -1,6 +1,7 @@
 <div class="text-center">
   <%- include("../partials/questionNavSideButton", {
     button: {
+      "id": "question-nav-prev",
       "label": "Previous question",
       "sequenceBlockedPopoverContent": "Earlier problems must be completed to go back.",
       "question": instance_question_info.prev
@@ -8,6 +9,7 @@
   }); %>
   <%- include("../partials/questionNavSideButton", {
     button: {
+      "id": "question-nav-next",
       "label": "Next question",
       "sequenceBlockedPopoverContent": `You must score at least ${instance_question_info.min_advance_perc}% on this question to unlock the next.`,
       "question": instance_question_info.next
