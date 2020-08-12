@@ -337,7 +337,7 @@ async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
     };
 
     await s3.upload(uploadParams).promise();
-    logger.info(`Uploaded ${localPath}`);
+    logger.info(`Uploaded s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
 }
 const _uploadToS3 = util.callbackify(_uploadToS3Async);
 
@@ -352,7 +352,7 @@ async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) 
         Key: S3FilePath,
     };
     await s3.deleteObject(deleteParams).promise();
-    logger.info(`Deleted s3://${config.workspaceS3Bucket}/${S3FilePath}`);
+    logger.info(`Deleted s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
 }
 const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
 
