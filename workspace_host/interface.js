@@ -482,7 +482,7 @@ async function _syncInitialZipAsync(workspace_id) {
     await _downloadFromS3Async(zipPath, s3Path);
 
     logger.info(`Unzipping ${zipPath} to ${localPath}`);
-    await fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
+    fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
 
     return workspace_id;
 }
