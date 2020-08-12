@@ -9,6 +9,7 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
+const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspace = require('../lib/workspace');
 const logger = require('../lib/logger');
@@ -19,6 +20,7 @@ const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
+const unzipper = require('unzipper');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -31,7 +33,7 @@ if ('config' in argv) {
     configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
-const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
+const zipPrefix = config.workspaceHostZipsDirectory;
 
 logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
@@ -46,14 +48,16 @@ app.use(bodyParser.json());
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
-    var workspace_id = req.body.workspace_id;
-    var action = req.body.action;
+    const workspace_id = req.body.workspace_id;
+    const state = req.body.state;
+    const action = req.body.action;
     if (workspace_id == undefined) {
         res.status(500).send('Missing workspace_id');
     } else if (action == undefined) {
         res.status(500).send('Missing action');
     } else if (action == 'init') {
-        initSequence(workspace_id, res);
+        const useInitialZip = (state == 'uninitialized');
+        initSequence(workspace_id, useInitialZip, res);
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
@@ -188,7 +192,7 @@ async.series([
 
 // For detecting file changes
 let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : config.workspaceJobsDirectory;
+const workspacePrefix = config.workspaceJobsDirectory;
 const interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
@@ -316,46 +320,6 @@ function _getSettingsWrapper(workspace_id, callback) {
     });
 }
 
-async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
-    const s3 = new AWS.S3();
-
-    let body;
-    if (isDirectory) {
-        body = '';
-        S3FilePath += '/';
-    } else {
-        try {
-            body = await fsPromises.readFile(filePath);
-        } catch(err) {
-            return [filePath, S3FilePath, err];
-        }
-    }
-    const uploadParams = {
-        Bucket: config.workspaceS3Bucket,
-        Key: S3FilePath,
-        Body: body,
-    };
-
-    await s3.upload(uploadParams).promise();
-    logger.info(`Uploaded s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
-}
-const _uploadToS3 = util.callbackify(_uploadToS3Async);
-
-async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) {
-    const s3 = new AWS.S3();
-
-    if (isDirectory) {
-        S3FilePath += '/';
-    }
-    const deleteParams = {
-        Bucket: config.workspaceS3Bucket,
-        Key: S3FilePath,
-    };
-    await s3.deleteObject(deleteParams).promise();
-    logger.info(`Deleted s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
-}
-const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
-
 function _workspaceFileChangeOwner(filepath, callback) {
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
         config.workspaceJobsDirectoryOwnerGid == 0) {
@@ -470,11 +434,11 @@ function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                _uploadToS3(path, isDirectory, s3Path, localPath, callback);
+                awsHelper.uploadToS3(path, isDirectory, s3Path, localPath, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                _deleteFromS3(path, isDirectory, s3Path, localPath, callback);
+                awsHelper.deleteFromS3(path, isDirectory, s3Path, localPath, callback);
             });
         }
     }
@@ -506,6 +470,23 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
       callback(null, ret);
     });
 }
+
+async function _syncInitialZipAsync(workspace_id) {
+    const localName = id_workspace_mapper[workspace_id].localName;
+    const s3Name = id_workspace_mapper[workspace_id].s3Name;
+    const localPath = `${workspacePrefix}/${localName}`;
+    const zipPath = `${zipPrefix}/${localName}-initial.zip`;
+    const s3Path = s3Name.replace('current', 'initial.zip');
+
+    logger.info(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
+    await _downloadFromS3Async(zipPath, s3Path);
+
+    logger.info(`Unzipping ${zipPath} to ${localPath}`);
+    await fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
+
+    return workspace_id;
+}
+const _syncInitialZip = util.callbackify(_syncInitialZipAsync);
 
 function _syncPullContainer(workspace_id, callback) {
     const localName = id_workspace_mapper[workspace_id].localName;
@@ -664,18 +645,26 @@ function _startContainer(workspace_id, container, callback) {
 }
 
 // Called by the main server the first time a workspace is used by a user
-function initSequence(workspace_id, res) {
-    logger.info(`Launching workspace_id=${workspace_id}`);
+function initSequence(workspace_id, useInitialZip, res) {
+    logger.info(`Launching workspace_id=${workspace_id}, useInitialZip=${useInitialZip}`);
 
     id_workspace_mapper[workspace_id] = {};
     id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
-    id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+    id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}/current`;
 
     // send 200 immediately to prevent socket hang up from _pullImage()
     res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
 
     async.waterfall([
-        (callback) => {_syncPullContainer(workspace_id, callback);},
+        (callback) => {
+            if (useInitialZip) {
+                logger.info(`Bootstrapping workspace with initial.zip`);
+                _syncInitialZip(workspace_id, callback);
+            } else {
+                logger.info(`Syncing workspace from S3`);
+                _syncPullContainer(workspace_id, callback);
+            }
+        },
         _getSettingsWrapper,
         _pullImage,
         _createContainerWrapper,
