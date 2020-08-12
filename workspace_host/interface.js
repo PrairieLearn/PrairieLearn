@@ -665,7 +665,10 @@ function initSequence(workspace_id, useInitialZip, res) {
                 });
             } else {
                 logger.info(`Syncing workspace from S3`);
-                _syncPullContainer(workspace_id, callback);
+                _syncPullContainer(workspace_id, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             }
         },
         _getSettingsWrapper,
