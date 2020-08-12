@@ -370,19 +370,13 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
     });
 }
 
-function _workspaceFileChangeOwner(filepath, callback) {
-    if (config.workspaceJobsDirectoryOwnerUid == 0 ||
-        config.workspaceJobsDirectoryOwnerGid == 0) {
-        /* No-op if there's nothing to do */
-        return callback(null);
-    }
-
-    fs.chown(filepath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid, (err) => {
+function _workspaceFileChangePermissions(filepath, callback) {
+    fs.chmod(filepath, 0o666, (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
 }
-const _workspaceFileChangeOwnerAsync = util.promisify(_workspaceFileChangeOwner);
+const _workspaceFileChangePermissionsAsync = util.promisify(_workspaceFileChangePermissions);
 
 async function _downloadFromS3(filePath, S3FilePath, callback) {
     if (filePath.slice(-1) == '/') {
@@ -392,7 +386,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.lstat(filePath);
         } catch(err) {
             await fsPromises.mkdir(filePath, { recursive: true });
-            await _workspaceFileChangeOwnerAsync(filePath);
+            await _workspaceFileChangePermissionsAsync(filePath);
         }
         callback(null, 'OK');
         update_queue[[filePath, true]] = {action: 'skip'};
@@ -419,7 +413,7 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     const onExit = (err, val) => {
         if (ERR(err, callback)) return;
 
-        _workspaceFileChangeOwner(filePath, (err) => {
+        _workspaceFileChangePermissions(filePath, (err) => {
             if (ERR(err, callback)) return;
             callback(null, val);
         });
@@ -690,7 +684,7 @@ function _createContainer(workspace_id, port, settings, callback) {
             });
         },
         (callback) => {
-            _workspaceFileChangeOwner(workspaceJobPath, (err) => {
+            _workspaceFileChangePermissions(workspaceJobPath, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -704,7 +698,6 @@ function _createContainer(workspace_id, port, settings, callback) {
                 Env: [
                     `WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`,
                 ],
-                User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
                 HostConfig: {
                     PortBindings: {
                         [`${settings.workspace_port}/tcp`]: [{'HostPort': `${port}`}],
