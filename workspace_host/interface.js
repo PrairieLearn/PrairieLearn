@@ -10,11 +10,11 @@ const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const workspace = require('../lib/workspace');
+const workspaceHelper = require('../lib/workspace');
+const namedLocks = require('../lib/named-locks');
 const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
-var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -37,9 +37,6 @@ logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
-
-var id_workspace_mapper = {};
-var port_id_mapper = {};
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -113,7 +110,7 @@ async.series([
         });
     },
     (callback) => {
-        util.callbackify(workspace.init)(err => {
+        util.callbackify(workspaceHelper.init)(err => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -233,55 +230,58 @@ watcher.on('unlinkDir', filename => {
 });
 setInterval(_autoUpdateJobManager, interval * 1000);
 
-
-async function _getAvailablePort(workspace_id, lowest_usable_port) {
-    function _checkPortAvailability(port) {
-        return new Promise((res) => {
-            var server = net.createServer();
-            server.listen(port, function (_) {
-                server.once('close', function () {
-                    res(true);
-                });
-                server.close();
-            });
-            server.on('error', function (_) {
-                res(false);
-            });
-        });
-    }
-
-    for (let i = lowest_usable_port; i < 65535; i++) {
-        if (i in port_id_mapper) {
-            continue;
-        } else {
-            if (await _checkPortAvailability(i)) {
-                if (!(workspace_id in id_workspace_mapper)) {
-                    id_workspace_mapper[workspace_id] = {};     // To prevent race condition
-                }
-                id_workspace_mapper[workspace_id].port = i;
-                port_id_mapper[i] = workspace_id;
-                return i;
-            }
-        }
-    }
-    throw new Error('No available port at this time.');
+async function _getWorkspaceAsync(workspace_id) {
+    const result = await sqldb.queryOneRowAsync(sql.get_workspace, {workspace_id});
+    const workspace = result.rows[0];
+    workspace.local_name = `workspace-${workspace.launch_uuid}`;
+    workspace.s3_name = `workspace-${workspace.id}`;
+    return workspace;
 }
 
-function _checkServer(workspace_id, container, callback) {
+async function _getAvailablePort(workspace) {
+    const lockName = `workspaces_port_host_${workspace_server_settings.instance_id}`;
+    const lock = await namedLocks.waitLockAsync(lockName, {});
+    try {
+        /* TODO: optimize this, this can probably all be done inside of the SQL query? */
+        const portResults = await sqldb.queryAsync(sql.get_workspace_host_used_ports, { instance_id: workspace_server_settings.instance_id });
+        const ports = portResults.rows.map(x => parseInt(x.launch_port));
+
+        let workspacePort = 1024;
+        if (ports.length > 0) {
+            /* Get the next unused port */
+            for (let i = 0; i < ports.length; i++) {
+                if (i == ports.length - 1) {
+                    workspacePort = ports[ports.length - 1] + 1;
+                } else {
+                    /* If we have a space between this used port and the next, allocate a port here */
+                    if (ports[i] + 1 != ports[i + 1]) {
+                        workspacePort = ports[i] + 1;
+                    }
+                }
+            }
+        }
+        await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, port: workspacePort });
+        return workspacePort;
+    } finally {
+        await namedLocks.releaseLockAsync(lock);
+    }
+}
+
+function _checkServer(workspace, callback) {
     const checkMilliseconds = 500;
     const maxMilliseconds = 30000;
 
     const startTime = (new Date()).getTime();
     function checkWorkspace() {
-        request(`http://${workspace_server_settings.server_to_container_hostname}:${id_workspace_mapper[workspace_id].port}/`, function(err, res, _body) {
+        request(`http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`, function(err, res, _body) {
             if (err) { /* do nothing, because errors are expected while the container is launching */ }
             if (res && res.statusCode) {
                 /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
-                callback(null, workspace_id, container);
+                callback(null, workspace);
             } else {
                 const endTime = (new Date()).getTime();
                 if (endTime - startTime > maxMilliseconds) {
-                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace_id}`));
+                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id}`));
                 } else {
                     setTimeout(checkWorkspace, checkMilliseconds);
                 }
@@ -291,28 +291,28 @@ function _checkServer(workspace_id, container, callback) {
     setTimeout(checkWorkspace, checkMilliseconds);
 }
 
-async function _querySelectContainerSettings(workspace_id) {
+async function _getWorkspaceSettingsAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {workspace_id});
-    const syncIgnore = result.rows[0].workspace_sync_ignore || [];
-    id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
-    const settings = {
+    return {
         workspace_image: result.rows[0].workspace_image,
         workspace_port: result.rows[0].workspace_port,
         workspace_home: result.rows[0].workspace_home,
         workspace_graded_files: result.rows[0].workspace_graded_files,
         workspace_args: result.rows[0].workspace_args || '',
+        workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     };
-
-    return settings;
 }
+const _getWorkspaceSettings = util.callbackify(_getWorkspaceSettingsAsync);
 
-function _getSettingsWrapper(workspace_id, callback) {
+function _getSettingsWrapper(workspace, callback) {
     async.parallel({
-        port: async () => { return await _getAvailablePort(workspace_id, 1024); },
-        settings: async () => { return await _querySelectContainerSettings(workspace_id); },
+        port: async () => { return await _getAvailablePort(workspace); },
+        settings: (callback) => {_getWorkspaceSettings(workspace.id, callback);},
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
-        callback(null, workspace_id, results.port, results.settings);
+        workspace.launch_port = results.port;
+        workspace.settings = results.settings;
+        callback(null, workspace);
     });
 }
 
@@ -419,67 +419,64 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
 const _downloadFromS3 = util.callbackify(_downloadFromS3Async);
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
-function _getWorkspaceByPath(path) {
+async function _getWorkspaceByPath(path) {
     let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
     const localName = localPath.shift();
+    const launch_uuid = localName.replace('workspace-', '');
     localPath = localPath.join('/');
 
-    if (typeof id_workspace_mapper === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper undefined for localName=${localName}, path=${path}`);
-        return {workspace_id: null, localPath: null};
+    try {
+        const result = await sqldb.queryOneRowAsync(sql.get_workspace_id_by_uuid, { launch_uuid });
+        return {
+            workspace_id: result.rows[0].workspace_id,
+            local_path: localPath,
+        };
+    } catch (_err) {
+        return {
+            workspace_id: null,
+            local_path: null,
+        };
     }
-
-    const workspace_id = Object.keys(id_workspace_mapper).find(
-        key => id_workspace_mapper[key].localName === localName,
-    );
-
-    if (typeof workspace_id === 'undefined') {
-        logger.error(`_getWorkspaceByLocalPath() error: id_workspace_mapper[workspace_id] undefined for localName=${localName}, path=${path}`);
-        return {workspace_id: null, localPath: null};
-    }
-
-    return {workspace_id, localPath};
 }
 
-function _autoUpdateJobManager() {
+async function _autoUpdateJobManager() {
     var jobs = [];
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
-        const {workspace_id, localPath} = _getWorkspaceByPath(path);
+        const {workspace_id, local_path} = await _getWorkspaceByPath(path);
         if (workspace_id == null) continue;
-        debug(`watch: workspace_id=${workspace_id}, localPath=${localPath}`);
-        const s3Name = id_workspace_mapper[workspace_id].s3Name;
-        const syncIgnore = id_workspace_mapper[workspace_id].syncIgnore || [];
-        debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-        debug(`watch: localPath=${localPath}`);
-        debug(`watch: syncIgnore=${syncIgnore}`);
 
-        let s3Path;
-        if (!workspace_id) {
-            logger.error(`watch return: workspace_id not mapped yet`);
-            return;
-        } else if (localPath === '') {
+        debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
+        const workspace = await _getWorkspaceAsync(workspace_id);
+        const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+        const s3_name = workspace.s3_name;
+        const sync_ignore = workspaceSettings.workspace_sync_ignore;
+        debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        debug(`watch: localPath=${local_path}`);
+        debug(`watch: syncIgnore=${sync_ignore}`);
+
+        if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
             continue;
-        } else if (syncIgnore.filter(ignored => localPath.startsWith(ignored)).length > 0) {
+        } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
             continue;
         } else {
-            s3Path = `${s3Name}/${localPath}`;
+            var s3_path = `${s3_name}/${local_path}`;
         }
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                _uploadToS3(path, isDirectory, s3Path, localPath, callback);
+                _uploadToS3(path, isDirectory, s3_path, local_path, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                _deleteFromS3(path, isDirectory, s3Path, localPath, callback);
+                _deleteFromS3(path, isDirectory, s3_path, local_path, callback);
             });
         }
     }
     update_queue = {};
-    async.parallel(jobs, function(err) {
+    await async.parallel(jobs, function(err) {
         if (err) logger.err(err);
     });
 }
@@ -507,10 +504,8 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     });
 }
 
-function _syncPullContainer(workspace_id, callback) {
-    const localName = id_workspace_mapper[workspace_id].localName;
-    const s3Name = id_workspace_mapper[workspace_id].s3Name;
-    _recursiveDownloadJobManager(`${workspacePrefix}/${localName}`, s3Name, (err, jobs_params) => {
+function _syncPullContainer(workspace, callback) {
+    _recursiveDownloadJobManager(`${workspacePrefix}/${workspace.local_name}`, workspace.s3_name, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
@@ -537,8 +532,8 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
     });
 }
 
-function _pullImage(workspace_id, port, settings, callback) {
-    const workspace_image = settings.workspace_image;
+function _pullImage(workspace, callback) {
+    const workspace_image = workspace.settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
         logger.info(`Pulling docker image: ${workspace_image}`);
         docker.pull(workspace_image, (err, stream) => {
@@ -549,24 +544,24 @@ function _pullImage(workspace_id, port, settings, callback) {
 
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
-                callback(null, workspace_id, port, settings);
+                callback(null, workspace);
             }, (output) => {
                 logger.info('Docker pull output: ', output);
             });
         });
     } else {
         logger.info('Not pulling docker image');
-        return callback(null, workspace_id, port, settings);
+        callback(null, workspace);
     }
 }
 
-function _createContainer(workspace_id, port, settings, callback) {
-    const localName = id_workspace_mapper[workspace_id].localName;
+function _createContainer(workspace, callback) {
+    const localName = workspace.local_name;
     const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
     const workspacePath = path.join(workspaceDir, localName); /* Where docker will see the jobs (host path inside docker container) */
     const workspaceJobPath = path.join(workspacePrefix, localName); /* Where we are putting the job files relative to the server (/jobs inside docker container) */
-    const containerPath = settings.workspace_home;
-    let args = settings.workspace_args.trim();
+    const containerPath = workspace.settings.workspace_home;
+    let args = workspace.settings.workspace_args.trim();
     if (args.length == 0) {
         args = null;
     } else {
@@ -574,11 +569,11 @@ function _createContainer(workspace_id, port, settings, callback) {
     }
     let container;
 
-    logger.info(`Creating docker container for image=${settings.workspace_image}`);
-    logger.info(`Exposed port: ${settings.workspace_port}`);
-    logger.info(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`);
+    logger.info(`Creating docker container for image=${workspace.settings.workspace_image}`);
+    logger.info(`Exposed port: ${workspace.settings.workspace_port}`);
+    logger.info(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`);
     logger.info(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
-    logger.info(`Port binding: ${settings.workspace_port}:${port}`);
+    logger.info(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
     logger.info(`Volume mount: ${workspacePath}:${containerPath}`);
     logger.info(`Container name: ${localName}`);
     async.series([
@@ -600,17 +595,17 @@ function _createContainer(workspace_id, port, settings, callback) {
         },
         (callback) => {
             docker.createContainer({
-                Image: settings.workspace_image,
+                Image: workspace.settings.workspace_image,
                 ExposedPorts: {
-                    [`${settings.workspace_port}/tcp`]: {},
+                    [`${workspace.settings.workspace_port}/tcp`]: {},
                 },
                 Env: [
-                    `WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`,
+                    `WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`,
                 ],
                 User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
                 HostConfig: {
                     PortBindings: {
-                        [`${settings.workspace_port}/tcp`]: [{'HostPort': `${port}`}],
+                        [`${workspace.settings.workspace_port}/tcp`]: [{'HostPort': `${workspace.launch_port}`}],
                     },
                     Binds: [`${workspacePath}:${containerPath}`],
                     // Copied directly from externalGraderLocal.js
@@ -632,10 +627,7 @@ function _createContainer(workspace_id, port, settings, callback) {
                 if (ERR(err, callback)) return;
                 container = newContainer;
 
-                id_workspace_mapper[workspace_id].port = port;
-                id_workspace_mapper[workspace_id].settings = settings;
-                port_id_mapper[port] = workspace_id;
-                sqldb.query(sql.update_load_count, {workspace_id, count: +1}, function(err, _result) {
+                sqldb.query(sql.update_load_count, {workspace_id: workspace.id, count: +1}, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null, container);
                 });
@@ -646,20 +638,21 @@ function _createContainer(workspace_id, port, settings, callback) {
         });
 }
 
-function _createContainerWrapper(workspace_id, port, settings, callback) {
+function _createContainerWrapper(workspace, callback) {
     async.parallel({
-        query: (callback) => {_queryUpdateWorkspaceHostname(workspace_id, port, callback);},
-        container: (callback) => {_createContainer(workspace_id, port, settings, callback);},
+        query: (callback) => {_queryUpdateWorkspaceHostname(workspace.id, workspace.launch_port, callback);},
+        container: (callback) => {_createContainer(workspace, callback);},
     }, (err, results) => {
         if (ERR(err, callback)) return;
-        callback(null, workspace_id, results.container);
+        workspace.container = results.container;
+        callback(null, workspace);
     });
 }
 
-function _startContainer(workspace_id, container, callback) {
-    container.start((err) => {
+function _startContainer(workspace, callback) {
+    workspace.container.start((err) => {
         if (ERR(err, callback)) return;
-        callback(null, workspace_id, container);
+        callback(null, workspace);
     });
 }
 
@@ -667,15 +660,23 @@ function _startContainer(workspace_id, container, callback) {
 function initSequence(workspace_id, res) {
     logger.info(`Launching workspace_id=${workspace_id}`);
 
-    id_workspace_mapper[workspace_id] = {};
-    id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
-    id_workspace_mapper[workspace_id].s3Name = `workspace-${workspace_id}`;
+    const uuid = uuidv4();
+    const workspace = {
+        'id': workspace_id,
+        'launch_uuid': uuid,
+        'local_name': `workspace-${uuid}`,
+        's3_name': `workspace-${workspace_id}`,
+    };
 
     // send 200 immediately to prevent socket hang up from _pullImage()
     res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
 
     async.waterfall([
-        (callback) => {_syncPullContainer(workspace_id, callback);},
+        async () => {
+            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, uuid });
+            return workspace;
+        },
+        _syncPullContainer,
         _getSettingsWrapper,
         _pullImage,
         _createContainerWrapper,
@@ -690,7 +691,7 @@ function initSequence(workspace_id, res) {
                 if (ERR(err)) return;
                 logger.info(`Container initialized for workspace_id=${workspace_id}`);
                 const state = 'running';
-                workspace.updateState(workspace_id, state);
+                workspaceHelper.updateState(workspace_id, state);
             });
         }
     });
@@ -699,7 +700,7 @@ function initSequence(workspace_id, res) {
 // Called by the main server when the user want to reset the file to default
 function resetSequence(workspace_id, res) {
     async.waterfall([
-        (callback) => {_syncPullContainer(workspace_id, callback);},
+        (callback) => {_syncPullContainer(workspace, callback);},
     ], function(err) {
         if (err) {
             res.status(500).send(err);
@@ -710,24 +711,25 @@ function resetSequence(workspace_id, res) {
 }
 
 function gradeSequence(workspace_id, res) {
-    const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
-    const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
-    const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-    const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
-    const zipPath = path.join(zipPrefix, zipName);
-
-    debug(`gradeSequence: workspaceDir=${workspaceDir}`);
-    debug(`gradeSequence: gradedFilesList=${gradedFilesList}`);
-    debug(`gradeSequence: zipPath=${zipPath}`);
-    logger.info(`Sending files for grading as ${zipPath}`);
-
-    let archive = archiver('zip');
-    async.series([
+    async.waterfall([
         async () => {
-            /* Start loading the graded files into the archive */
-            for (const file of gradedFilesList) {
+            const workspace = await _getWorkspaceAsync(workspace_id);
+            const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+            const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+            const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
+            const zipPath = path.join(zipPrefix, zipName);
+
+            return {
+                workspace,
+                workspaceSettings,
+                workspaceDir: `${workspacePrefix}/${workspace.local_name}`,
+                zipPath,
+            };
+        },
+        async (locals) => {
+            for (const file of workspaceSettings.workspace_graded_files) {
                 try {
-                    const file_path = path.join(workspaceDir, file);
+                    const file_path = path.join(locals.workspaceDir, file);
                     await fsPromises.lstat(file_path);
                     archive.file(file_path, { name: file });
                     logger.info(`Sending ${file}`);
@@ -736,13 +738,13 @@ function gradeSequence(workspace_id, res) {
                     continue;
                 }
             }
-            return null;
+            return locals;
         },
-        (callback) => {
+        (locals, callback) => {
             /* Write the zip archive to disk */
             let output = fs.createWriteStream(zipPath);
             output.on('close', () => {
-                callback(null);
+                callback(null, locals);
             });
             archive.on('warning', (warn) => {
                 logger.warn(warn);
@@ -753,22 +755,22 @@ function gradeSequence(workspace_id, res) {
             archive.pipe(output);
             archive.finalize();
         },
-    ], (err) => {
+    ], (err, locals) => {
         if (err) {
             logger.error(`Error in gradeSequence: ${err}`);
             res.status(500).send(err);
             try {
-                fsPromises.unlink(zipPath);
+                fsPromises.unlink(locals.zipPath);
             } catch (err) {
-                logger.error(`Error deleting ${zipPath}`);
+                logger.error(`Error deleting ${locals.zipPath}`);
             }
         } else {
-            res.attachment(zipPath);
-            res.status(200).sendFile(zipPath, { root: '/' }, (_err) => {
+            res.attachment(locals.zipPath);
+            res.status(200).sendFile(locals.zipPath, { root: '/' }, (_err) => {
                 try {
-                    fsPromises.unlink(zipPath);
+                    fsPromises.unlink(locals.zipPath);
                 } catch (err) {
-                    logger.error(`Error deleting ${zipPath}`);
+                    logger.error(`Error deleting ${locals.zipPath}`);
                 }
             });
         }
