@@ -49,14 +49,13 @@ app.use(bodyParser.json());
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
     const workspace_id = req.body.workspace_id;
-    const state = req.body.state;
     const action = req.body.action;
+    const useInitialZip = req.body.useInitialZip;
     if (workspace_id == undefined) {
         res.status(500).send('Missing workspace_id');
     } else if (action == undefined) {
         res.status(500).send('Missing action');
     } else if (action == 'init') {
-        const useInitialZip = (state == 'uninitialized');
         initSequence(workspace_id, useInitialZip, res);
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
