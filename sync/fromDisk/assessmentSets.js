@@ -7,7 +7,6 @@ const perf = require('../performance')('assessmentSets');
 /**
  * @param {any} courseId
  * @param {import('../course-db').CourseData} courseData
- * @returns {Promise<{ deleteUnused: boolean, usedAssessmentSetIds: any[] }>}
  */
 module.exports.sync = async function(courseId, courseData) {
     // We can only safely remove unused assessment sets if both `infoCourse.json`
