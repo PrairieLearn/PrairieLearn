@@ -11,7 +11,6 @@ const fs = require('fs');
 const async = require('async');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
-const namedLocks = require('../lib/named-locks');
 const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
@@ -241,7 +240,7 @@ async function _getWorkspaceAsync(workspace_id) {
 async function _getAvailablePort(workspace) {
     const sql_params = [
         workspace_server_settings.instance_id,
-        workspace.id
+        workspace.id,
     ];
     const result = await sqldb.callAsync('workspace_host_allocate_port', sql_params);
     const port = result.rows[0].port;
@@ -503,7 +502,7 @@ function _syncPullContainer(workspace, callback) {
 
         async.parallel(jobs, function(err) {
             if (ERR(err, callback)) return;
-            callback(null, workspace_id);
+            callback(null, workspace.id);
         });
     });
 }
@@ -684,7 +683,8 @@ function initSequence(workspace_id, res) {
 // Called by the main server when the user want to reset the file to default
 function resetSequence(workspace_id, res) {
     async.waterfall([
-        (callback) => {_syncPullContainer(workspace, callback);},
+        async () => { return await _getWorkspaceAsync(workspace_id); },
+        _syncPullContainer,
     ], function(err) {
         if (err) {
             res.status(500).send(err);
@@ -711,7 +711,9 @@ function gradeSequence(workspace_id, res) {
             };
         },
         async (locals) => {
-            for (const file of workspaceSettings.workspace_graded_files) {
+            const archive = archiver('zip');
+            locals.archive = archive;
+            for (const file of locals.workspaceSettings.workspace_graded_files) {
                 try {
                     const file_path = path.join(locals.workspaceDir, file);
                     await fsPromises.lstat(file_path);
@@ -726,7 +728,8 @@ function gradeSequence(workspace_id, res) {
         },
         (locals, callback) => {
             /* Write the zip archive to disk */
-            let output = fs.createWriteStream(zipPath);
+            const archive = locals.archive;
+            let output = fs.createWriteStream(locals.zipPath);
             output.on('close', () => {
                 callback(null, locals);
             });
