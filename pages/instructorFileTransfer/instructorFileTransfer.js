@@ -46,9 +46,13 @@ router.get('/:file_transfer_id', function(req, res, next) {
     if (config.filesRoot == null) return next(new Error('config.filesRoot is null'));
     getFileTransfer(req.params.file_transfer_id, res.locals.user.user_id, (err, file_transfer) => {
         if (ERR(err, next)) return;
+        /* Split the full path and grab everything after questions/ to get the QID */
+        const question_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
+        const questions_dir_idx = question_exploded.findIndex(x => x == 'questions');
+        const qid = question_exploded.slice(questions_dir_idx + 1).join(path.sep);
         const editor = new QuestionTransferEditor({
             locals: res.locals,
-            from_qid: path.basename(file_transfer.from_filename),
+            from_qid: qid,
             from_course_short_name: file_transfer.from_course_short_name,
             from_path: path.join(config.filesRoot, file_transfer.storage_filename),
         });

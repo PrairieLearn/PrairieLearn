@@ -1,6 +1,6 @@
 # Python Autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page. 
+This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
@@ -47,7 +47,7 @@ Each variable dictionary has entries `name` (the Python variable name in the cod
 
 ### `question.html`
 
-At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively, and thus the question markup should be structured as:
+At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grading-results` to show the status of grading jobs.  These are placed in the question panel and submission panel, respectively.  It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -56,6 +56,7 @@ At a minimum, the question markup should contain a `pl-file-editor` element (or 
 
 <pl-submission-panel>
   <pl-external-grading-results></pl-external-grading-results>
+  <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
 
@@ -90,6 +91,8 @@ Note that the `<pl-external-grader-variables>` element is for purely decorative 
 ### `tests/setup_code.py`
 
 This file is executed before any reference or student code is run.  Any variables defined in `names_for_user` can be accessed from here in student code, while the reference answer may freely access variables without restriction.  The code in this file is run only _once_ total for both student and reference code.  If you need to run some code before each of student and reference code (for example, to set a random seed), you may define the function `def repeated_setup()`, which will be executed before each of them.  `repeated_setup()` will always be run after the setup code itself is run.
+
+The server parameters in `data` can be accessed with `data` in this file.
 
 ### `tests/test.py`
 
@@ -136,6 +139,8 @@ def test_0(self):
 
 Note that `Feedback.set_score()` is used to set the correctness of the test case between `0` and `1`, this is then multiplied by the number of points awarded by the test case.  For example, if a test case is worth 10 points and `Feedback.set_score(0.5)` is run, the student will be awarded 5 points.
 
+The server parameters in `data` can be accessed from within the test cases using `self.data`.
+
 #### Multiple Iterations
 
 By setting the `total_iters` class variable, the test suite can be run for multiple iterations.  To prevent a specific test case from being run multiple times, you can add the `@not_repeated` decorator to it.
@@ -169,7 +174,7 @@ Be careful not to switch the ordering of the student and reference arguments.  T
 
 ## Banning/Disallowing library functions
 
-One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the `demoAutograderNumpy` question.
+One can hook into library functions in the setup code to disallow students from accessing certain functions.  This example is taken from the [demo/autograder/python/numpy] question.
 
 By setting the library functions equal to `Feedback.not_allowed`:
 
@@ -193,3 +198,7 @@ The grading Python scripts will load any sensitive files into memory (setup code
 After grading, results will be written to the secret filename generated above.  If this file does not exist or the filename does not match then the grading job will fail and students will not receive points.  This is mostly a failsafe in case the grader code were to crash, but in theory could also prevent crafty students from writing their own results file.
 
 The grading job will now drop back to `root` in the `run.sh` script and will copy any output to the correct location, as expected by the external grading framework.
+
+
+
+[demo/autograder/python/numpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/numpy

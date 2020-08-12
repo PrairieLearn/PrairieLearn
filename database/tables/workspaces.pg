@@ -1,0 +1,17 @@
+columns
+    heartbeat_at: timestamp with time zone
+    hostname: text
+    id: bigint not null default nextval('workspaces_id_seq'::regclass)
+    launched_at: timestamp with time zone
+    state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
+    workspace_host_id: bigint
+
+indexes
+    workspaces_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    workspaces_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    variants: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
+    workspace_logs: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE

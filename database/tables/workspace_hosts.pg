@@ -1,0 +1,12 @@
+columns
+    hostname: text
+    id: bigint not null default nextval('workspace_hosts_id_seq'::regclass)
+    instance_id: text
+    load_count: integer default 0
+
+indexes
+    workspace_hosts_pkey: PRIMARY KEY (id) USING btree (id)
+    workspace_hosts_instance_id_key: UNIQUE (instance_id) USING btree (instance_id)
+
+referenced by
+    workspaces: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE

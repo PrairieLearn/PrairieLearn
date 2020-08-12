@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: question.qid}); %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -36,7 +36,7 @@
               <th>QID</th>
               <td>
                   <span class="mr-2"><%= question.qid %></span>
-                  <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                  <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                   <button type="button" class="btn btn-xs btn-secondary mr-2" id="changeQidButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change QID" data-content="<%= include('../partials/changeIdForm', {id_label: 'QID', buttonID: 'changeQidButton', id_old: question.qid, ids: qids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                       <i class="fa fa-i-cursor"></i>
                       <span>Change QID</span>
@@ -45,7 +45,7 @@
                   <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
               </td>
             </tr>
-            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
             <tr>
               <th>Configuration</th>
               <td>
@@ -102,11 +102,11 @@
           We only want to show the card footer if it will have something inside. Since it is easy
           to make a mistake when merging logical conditions, we will simply "or" them all.
         -->
-        <% if ((authz_data.has_course_permission_edit && ((! course.options.isExampleCourse) || (courses && (courses.length > 1)))) ||
-               ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse))) { %>
+        <% if ((editable_courses && editable_courses.length > 0) ||
+               ((authz_data.has_course_permission_edit) && (! course.example_course))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (authz_data.has_course_permission_edit && ((! course.options.isExampleCourse) || (courses && (courses.length > 1)))) { %>
+            <% if (editable_courses && editable_courses.length > 0) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>
@@ -114,7 +114,7 @@
               </button>
             </div>
             <% } %>
-            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
             <div class="col-auto">
               <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteQuestionModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this question</button>
             </div>

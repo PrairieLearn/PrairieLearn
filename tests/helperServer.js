@@ -162,9 +162,16 @@ module.exports = {
                 });
             },
             function(callback) {
-                debug('after(): reset cache');
-                cache.reset(function(err) {
-                  if (ERR(err, callback)) return;
+                debug('after(): close socket server');
+                socketServer.close(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                debug('after(): close cache');
+                cache.close(function(err) {
+                    if (ERR(err, callback)) return;
                   callback(null);
                 });
             },

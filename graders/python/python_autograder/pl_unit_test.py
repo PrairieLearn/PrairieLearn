@@ -1,11 +1,13 @@
 import unittest
 import os
+import json
 from os.path import join
 from types import FunctionType
 from collections import namedtuple
 from pl_helpers import (points, name, save_plot, print_student_code, not_repeated)
 from pl_execute import execute_code
 from code_feedback import Feedback
+
 
 # Needed to ensure matplotlib runs on Docker
 import matplotlib
@@ -21,69 +23,75 @@ class PLTestCase(unittest.TestCase):
     """
 
     include_plt = False
-    student_code_string = 'test_zzz_print_student_code'
     student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(self):
         """
         On start, run the user code and generate answer tuples.
         """
-        Feedback.set_test(cls)
-        filenames_dir = os.environ.get("FILENAMES_DIR")
+        Feedback.set_test(self)
         base_dir = os.environ.get("MERGE_DIR")
-        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
+        job_dir = os.environ.get("JOB_DIR")
+        filenames_dir = os.environ.get("FILENAMES_DIR")
+        self.student_code_abs_path = join(base_dir, self.student_code_file)
+
+        # Load data so that we can use it in the test cases
+        filenames_dir = os.environ.get("FILENAMES_DIR")
+        with open(join(filenames_dir, 'data.json')) as f:
+            self.data = json.load(f)
+
         ref_result, student_result, plot_value = execute_code(join(filenames_dir, 'ans.py'),
-                                                              join(base_dir, cls.student_code_file),
-                                                              cls.include_plt,
+                                                              join(base_dir, self.student_code_file),
+                                                              self.include_plt,
                                                               join(base_dir, 'output.txt'),
-                                                              cls.iter_num)
+                                                              self.iter_num)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
-        cls.ref = answerTuple(**ref_result)
+        self.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())
-        cls.st = studentTuple(**student_result)
-        cls.plt = plot_value
-        if cls.include_plt:
-            cls.display_plot()
+        self.st = studentTuple(**student_result)
+        self.plt = plot_value
+        if self.include_plt:
+            self.display_plot()
 
 
     @classmethod
-    def tearDownClass(cls):
-        """ 
+    def tearDownClass(self):
+        """
         Close all plots and increment the iteration number on test finish
         """
 
-        if cls.include_plt:
-            cls.plt.close('all')
-        cls.iter_num += 1
+        if self.include_plt:
+            self.plt.close('all')
+        self.iter_num += 1
 
 
     @classmethod
-    def display_plot(cls):
-        axes = cls.plt.gca()
+    def display_plot(self):
+        axes = self.plt.gca()
         if axes.get_lines() or axes.collections or axes.patches or axes.images:
-            save_plot(cls.plt, cls.iter_num)
+            save_plot(self.plt, self.iter_num)
 
 
     @classmethod
-    def get_total_points(cls):
+    def get_total_points(self):
         """
         Get the total number of points awarded by this test suite, including
         cases where the test suite is run multiple times.
         """
 
-        methods = [y for x, y in cls.__dict__.items()
+        methods = [y for x, y in self.__dict__.items()
                    if callable(y) and hasattr(y, '__dict__') and x.startswith('test_') and 'points' in y.__dict__]
-        if cls.total_iters == 1:
+        if self.total_iters == 1:
             total = sum([m.__dict__['points'] for m in methods])
         else:
             once = sum([m.__dict__['points'] for m in methods
                        if not m.__dict__.get('__repeated__', True)])
             several = sum([m.__dict__['points'] for m in methods
                           if m.__dict__.get('__repeated__', True)])
-            total = cls.total_iters*several + once
+            total = self.total_iters*several + once
         return total
 
 
@@ -92,7 +100,6 @@ class PLTestCase(unittest.TestCase):
         On test start, initialise the points and set up the code feedback library
         to provide feedback for this test.
         """
-
         self.points = 0
         Feedback.set_test(self)
 
@@ -103,18 +110,8 @@ class PLTestCase(unittest.TestCase):
         """
 
         test_id = self.id().split('.')[-1]
-        if not result.done_grading or test_id == self.student_code_string:
+        if not result.done_grading:
             super(PLTestCase, self).run(result)
-
-
-    @not_repeated
-    @points(0)
-    @name('Student Code')
-    def test_zzz_print_student_code(self):
-        """
-        Test cases are alphabetically ordered, so add a buncha z's in the name to display student code last
-        """
-        print_student_code(self.student_code_abs_path)
 
 
 class PLTestCaseWithPlot(PLTestCase):
@@ -150,4 +147,4 @@ class PLTestCaseWithPlot(PLTestCase):
         else:
             Feedback.add_feedback('Plot is missing ylabel')
 
-        Feedback.set_percent(points / 3.0)
+        Feedback.set_score(points / 3.0)

@@ -91,6 +91,8 @@
 
   * Add example course question templates (James Balamuta).
 
+  * Add support for pages to set their own titles in browser tabs via `res.locals.pageTitle` (David Mitchell)
+
   * Add extra `/course*` mount points (Tim Yang).
 
   * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
@@ -98,6 +100,10 @@
   * Add Python library regex to plbase (Nathan Bowman).
 
   * Add `minAdvancePerc` attribute to assessment configs to force students to complete questions in-order (David Mitchell).
+
+  * Add `all-of-the-above` and `none-of-the-above` attributes to `<pl-multiple-choice>` (Bojin Yao)
+
+  * Add `external-json` attribute to `<pl-multiple-choice>` (Bojin Yao)
 
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 

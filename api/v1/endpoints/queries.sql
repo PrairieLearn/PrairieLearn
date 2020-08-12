@@ -173,6 +173,7 @@ WITH object_data AS (
         v.options,
         format_date_iso8601(s.date, ci.display_timezone) AS date,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,

@@ -2,13 +2,13 @@
 <html>
 
 <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
     <script src="/javascripts/lodash.min.js"></script>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/node_modules/ace-builds/src-min-noconflict/ace.js"></script>
     <script src="/node_modules/crypto-js/crypto-js.js"></script>
     <script src="./file_edit?serve=client"></script>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
 </head>
 
 <body>

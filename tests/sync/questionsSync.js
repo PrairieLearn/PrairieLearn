@@ -3,9 +3,13 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
 const util = require('./util');
 const helperDb = require('../helperDb');
 
+const sql = sqlLoader.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 describe('Question syncing', () => {
@@ -98,6 +102,38 @@ describe('Question syncing', () => {
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await assert.isRejected(util.syncCourseData(courseDir));
+  });
+
+  it('fails if workspaceOptions are not synced correctly', async () => {
+    const courseData = util.getCourseData();
+    const question = courseData.questions[util.WORKSPACE_QUESTION_ID];
+    const workspaceImage = question.workspaceOptions.image;
+    const workspacePort = question.workspaceOptions.port;
+    const workspaceHome = question.workspaceOptions.home;
+    const workspaceArgs = question.workspaceOptions.args;
+    const workspaceUrlRewrite = question.workspaceOptions.urlRewrite;
+    const workspaceGradedFiles = question.workspaceOptions.gradedFiles;
+    const workspaceSyncIgnore = question.workspaceOptions.syncIgnore;
+    const quuid = question.uuid;
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const result = await sqldb.queryOneRowAsync(sql.get_workspace_options, {quuid});
+    const workspace_image = result.rows[0].workspace_image;
+    const workspace_port = result.rows[0].workspace_port;
+    const workspace_home = result.rows[0].workspace_home;
+    const workspace_args = result.rows[0].workspace_args;
+    const workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+    const workspace_graded_files = result.rows[0].workspace_graded_files;
+    const workspace_sync_ignore = result.rows[0].workspace_sync_ignore;
+
+    await assert.equal(workspaceImage, workspace_image);
+    await assert.equal(workspacePort, workspace_port);
+    await assert.equal(workspaceHome, workspace_home);
+    await assert.equal(workspaceArgs, workspace_args);
+    await assert.equal(workspaceUrlRewrite, workspace_url_rewrite);
+    await assert.lengthOf(workspaceGradedFiles, workspace_graded_files.length);
+    await assert.lengthOf(workspaceSyncIgnore, workspace_sync_ignore.length);
   });
 
   it('fails if a question directory is missing an info.json file', async () => {

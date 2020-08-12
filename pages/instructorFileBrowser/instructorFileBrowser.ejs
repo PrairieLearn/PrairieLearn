@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageTitle: 'Files'}); %>
     <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
     <style>
       .popover{
@@ -69,7 +69,7 @@
               <!-- DIRECTORY HEAD -->
               <!-------------------->
 
-              <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+              <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
               <% if (file_browser.paths.specialDirs) { %>
                 <% file_browser.paths.specialDirs.forEach((d) => { %>
                   <button id="instructorFileUploadForm-New<%= d.label %>" tabindex="0" class="btn btn-sm btn-light" role="button" href="#" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Upload file" data-content="<%= include('instructorFileUploadForm', {file: {id: 'New' + d.label, info: d.info, working_path: d.path}}) %>" data-trigger="manual" onclick="$(this).popover('show')">

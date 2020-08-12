@@ -110,7 +110,7 @@ router.post('/', function(req, res, next) {
                 authn_provider_name: 'LTI',
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-            res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
+            res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
 
             var role = 'Student'; // default
             if (parameters.roles.includes('TeachingAssistant')) { role = 'TA'; }

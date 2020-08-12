@@ -84,6 +84,7 @@ module.exports = {
             'courses_update_column.sql',
             'courses_delete.sql',
             'courses_user_can_edit.sql',
+            'courses_user_can_view.sql',
             'course_instances_instructor_can_view.sql',
             'select_or_insert_course_by_path.sql',
             'assessment_instances_delete.sql',
@@ -160,6 +161,7 @@ module.exports = {
             'assessment_questions_find_unlock_score_perc.sql',
             'instance_questions_check_sequence_locked.sql',
             'lock_timeout_set.sql',
+            'workspaces_state_update.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
