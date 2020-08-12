@@ -93,6 +93,7 @@
         "unified": "^9.1.0",
         "unified-stream": "^1.0.6",
         "unist-util-visit": "^2.0.3",
+        "unzipper": "^0.10.11",
         "uuid": "^8.3.0",
         "viz.js": "^2.1.2",
         "winston": "^3.3.3",
