@@ -162,11 +162,10 @@ module.exports = {
         }
 
         /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
-        let elementArrays = await Promise.all(elementFolders.map(async element => {
+        const elementArrays = (await async.map(elementFolders, async (element) => {
             const extensions = await readdir(path.join(sourceDir, element));
             return extensions.map(ext => [element, ext]);
-        }));
-        elementArrays = elementArrays.flat();
+        })).flat();
 
         /* Populate element map */
         const elements = {};
@@ -177,7 +176,7 @@ module.exports = {
         });
 
         /* Load extensions */
-        await Promise.all(elementArrays.map(async extension => {
+        await async.each(elementArrays, async (extension) => {
             const [element, extensionDir] = extension;
             const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
 
@@ -198,7 +197,7 @@ module.exports = {
             info.name = extensionDir;
             info.directory = path.join(sourceDir, element, extensionDir);
             elements[element][extensionDir] = info;
-        }));
+        });
 
         return elements;
     },
