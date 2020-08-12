@@ -354,8 +354,8 @@ const _getWorkspaceSettings = util.callbackify(_getWorkspaceSettingsAsync);
 
 function _getSettingsWrapper(workspace, callback) {
     async.parallel({
-        port: async () => { return await _getAvailablePort(workspace); },
-        settings: (callback) => {_getWorkspaceSettings(workspace.id, callback);},
+        port: async () => { return await _getAvailablePort(workspace_id, 1024); },
+        settings: async () => { return await _getWorkspaceSettingsAsync(workspace_id); },
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         workspace.launch_port = results.port;
