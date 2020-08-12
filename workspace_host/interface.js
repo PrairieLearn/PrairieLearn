@@ -371,7 +371,7 @@ function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
 }
 
 function _workspaceFileChangePermissions(filepath, callback) {
-    fs.chmod(filepath, 0o666, (err) => {
+    fs.chmod(filepath, 0o777, (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
