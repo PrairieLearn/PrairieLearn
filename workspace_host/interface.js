@@ -18,7 +18,7 @@ var net = require('net');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const admZip = require('adm-zip');
+const archiver = require('archiver');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -57,7 +57,8 @@ app.post('/', function(req, res) {
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
     } else if (action == 'destroy') {
-        destroySequence(workspace_id, res);
+        /* TODO: Add an actual destroy sequence? */
+        res.status(500).send('Action "destroy" unimplemented');
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
     } else if (action == 'status') {
@@ -186,9 +187,9 @@ async.series([
 });
 
 // For detecting file changes
-var update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = config.workspaceJobsDirectory;
-var interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
+const interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
     depth: 10,
@@ -233,8 +234,7 @@ watcher.on('unlinkDir', filename => {
 setInterval(_autoUpdateJobManager, interval * 1000);
 
 
-async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
-
+async function _getAvailablePort(workspace_id, lowest_usable_port) {
     function _checkPortAvailability(port) {
         return new Promise((res) => {
             var server = net.createServer();
@@ -250,7 +250,7 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
         });
     }
 
-    for (var i = lowest_usable_port; i < 65535; i++) {
+    for (let i = lowest_usable_port; i < 65535; i++) {
         if (i in port_id_mapper) {
             continue;
         } else {
@@ -260,13 +260,11 @@ async function _getAvailablePort(workspace_id, lowest_usable_port, callback) {
                 }
                 id_workspace_mapper[workspace_id].port = i;
                 port_id_mapper[i] = workspace_id;
-                callback(null, i);
-                return;
+                return i;
             }
         }
     }
-    callback('No available port at this time.');
-    return;
+    throw new Error('No available port at this time.');
 }
 
 function _checkServer(workspace_id, container, callback) {
@@ -293,34 +291,32 @@ function _checkServer(workspace_id, container, callback) {
     setTimeout(checkWorkspace, checkMilliseconds);
 }
 
-function _querySelectContainerSettings(workspace_id, callback) {
-    sqldb.queryOneRow(sql.select_workspace_settings, {workspace_id}, function(err, result) {
-        if (ERR(err, callback)) return;
+async function _querySelectContainerSettings(workspace_id) {
+    const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {workspace_id});
+    const syncIgnore = result.rows[0].workspace_sync_ignore || [];
+    id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
+    const settings = {
+        workspace_image: result.rows[0].workspace_image,
+        workspace_port: result.rows[0].workspace_port,
+        workspace_home: result.rows[0].workspace_home,
+        workspace_graded_files: result.rows[0].workspace_graded_files,
+        workspace_args: result.rows[0].workspace_args || '',
+    };
 
-        const syncIgnore = result.rows[0].workspace_sync_ignore || [];
-        id_workspace_mapper[workspace_id].syncIgnore = syncIgnore;
-        const settings = {
-            workspace_image: result.rows[0].workspace_image,
-            workspace_port: result.rows[0].workspace_port,
-            workspace_home: result.rows[0].workspace_home,
-            workspace_graded_files: result.rows[0].workspace_graded_files,
-            workspace_args: result.rows[0].workspace_args || '',
-        };
-        callback(null, settings);
-    });
+    return settings;
 }
 
 function _getSettingsWrapper(workspace_id, callback) {
     async.parallel({
-        port: (callback) => {_getAvailablePort(workspace_id, 1024, callback);},
-        settings: (callback) => {_querySelectContainerSettings(workspace_id, callback);},
+        port: async () => { return await _getAvailablePort(workspace_id, 1024); },
+        settings: async () => { return await _querySelectContainerSettings(workspace_id); },
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         callback(null, workspace_id, results.port, results.settings);
     });
 }
 
-async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callback) {
+async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
     const s3 = new AWS.S3();
 
     let body;
@@ -331,44 +327,34 @@ async function _uploadToS3(filePath, isDirectory, S3FilePath, localPath, callbac
         try {
             body = await fsPromises.readFile(filePath);
         } catch(err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
+            return [filePath, S3FilePath, err];
         }
     }
-    var uploadParams = {
+    const uploadParams = {
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
         Body: body,
     };
-    s3.upload(uploadParams, function(err, _data) {
-        if (err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
-        logger.info(`Uploaded ${localPath}`);
-        callback(null, 'OK');
-    });
-}
 
-function _deleteFromS3(filePath, isDirectory, S3FilePath, localPath, callback) {
+    await s3.upload(uploadParams).promise();
+    logger.info(`Uploaded s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
+}
+const _uploadToS3 = util.callbackify(_uploadToS3Async);
+
+async function _deleteFromS3Async(filePath, isDirectory, S3FilePath, localPath) {
     const s3 = new AWS.S3();
 
     if (isDirectory) {
         S3FilePath += '/';
     }
-    var deleteParams = {
+    const deleteParams = {
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
-    s3.deleteObject(deleteParams, function(err, _data) {
-        if (err) {
-            callback(null, [filePath, S3FilePath, err]);
-            return;
-        }
-        logger.info(`Deleted ${localPath}`);
-        callback(null, 'OK');
-    });
+    await s3.deleteObject(deleteParams).promise();
+    logger.info(`Deleted s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
 }
+const _deleteFromS3 = util.callbackify(_deleteFromS3Async);
 
 function _workspaceFileChangeOwner(filepath, callback) {
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
@@ -384,7 +370,7 @@ function _workspaceFileChangeOwner(filepath, callback) {
 }
 const _workspaceFileChangeOwnerAsync = util.promisify(_workspaceFileChangeOwner);
 
-async function _downloadFromS3(filePath, S3FilePath, callback) {
+async function _downloadFromS3Async(filePath, S3FilePath) {
     if (filePath.slice(-1) == '/') {
         // this is a directory
         filePath = filePath.slice(0, -1);
@@ -394,7 +380,6 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
             await fsPromises.mkdir(filePath, { recursive: true });
             await _workspaceFileChangeOwnerAsync(filePath);
         }
-        callback(null, 'OK');
         update_queue[[filePath, true]] = {action: 'skip'};
         return;
     } else {
@@ -407,53 +392,31 @@ async function _downloadFromS3(filePath, S3FilePath, callback) {
     }
 
     const s3 = new AWS.S3();
-
-    var downloadParams = {
+    const downloadParams = {
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
     };
-    var fileStream = fs.createWriteStream(filePath);
-    var s3Stream = s3.getObject(downloadParams).createReadStream();
+    const fileStream = fs.createWriteStream(filePath);
+    const s3Stream = s3.getObject(downloadParams).createReadStream();
 
-    /* Always update the file permissions before we return */
-    const onExit = (err, val) => {
-        if (ERR(err, callback)) return;
-
-        _workspaceFileChangeOwner(filePath, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, val);
+    return new Promise((resolve, reject) => {
+        s3Stream.on('error', function(err) {
+            // This is for errors like no such file on S3, etc
+            reject(err);
         });
-    };
-
-    s3Stream.on('error', function(err) {
-        // This is for errors like no such file on S3, etc
-        onExit(null, [filePath, S3FilePath, err]);
-        return;
-    });
-    s3Stream.pipe(fileStream).on('error', function(err) {
-        // This is for errors like the connection is lost, etc
-        onExit(null, [filePath, S3FilePath, err]);
-    }).on('close', function() {
-        update_queue[[filePath, false]] = {action: 'skip'};
-        onExit(null, 'OK');
+        s3Stream.pipe(fileStream).on('error', function(err) {
+            // This is for errors like the connection is lost, etc
+            reject(err);
+        }).on('close', function() {
+            update_queue[[filePath, false]] = {action: 'skip'};
+            _workspaceFileChangeOwner(filePath, (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
     });
 }
-
-// DEPRECATED
-async function _recursiveUploadJobManager(curDirPath, S3curDirPath) {
-    var ret = [];
-    await fsPromises.readdir(curDirPath).forEach(async function (name) {
-        var filePath = path.join(curDirPath, name);
-        var S3filePath = path.join(S3curDirPath, name);
-        var stat = await fsPromises.lstat(filePath);
-        if (stat.isFile()) {
-            ret.push([filePath, S3filePath]);
-        } else if (stat.isDirectory()) {
-            ret = ret.concat(_recursiveUploadJobManager(filePath, S3filePath));
-        }
-    });
-    return ret;
-}
+const _downloadFromS3 = util.callbackify(_downloadFromS3Async);
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
 function _getWorkspaceByPath(path) {
@@ -516,18 +479,8 @@ function _autoUpdateJobManager() {
         }
     }
     update_queue = {};
-    var status = [];
-    async.parallel(jobs, function(_, results) {
-        results.forEach((res) => {
-            if (res != 'OK') {
-                res[2].fileLocalPath = res[0];
-                res[2].fileS3Path = res[1];
-                status.push(res[2]);
-            }
-        });
-        if (status.length != 0) {
-            logger.error(`Error during file sync: ${status}`);
-        }
+    async.parallel(jobs, function(err) {
+        if (err) logger.err(err);
     });
 }
 
@@ -562,61 +515,17 @@ function _syncPullContainer(workspace_id, callback) {
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((callback) => {
-                _downloadFromS3(filePath, S3filePath, (_, status) => {
-                    callback(null, status);
+                _downloadFromS3(filePath, S3filePath, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
                 });
             }));
         });
 
-        var status = [];
-        async.parallel(jobs, function(_, results) {
-            results.forEach((res) => {
-                if (res != 'OK') {
-                    res[2].fileLocalPath = res[0];
-                    res[2].fileS3Path = res[0];
-                    status.push(res[2]);
-                }
-            });
-            if (status.length != 0) {
-                callback(status);
-            } else {
-                callback(null, workspace_id);
-            }
-        });
-    });
-}
-
-// DEPRECATED
-async function _syncPushContainer(workspace_id, callback) {
-    const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : process.cwd();
-    const workspaceName= `workspace-${workspace_id}`;
-    if (!await fsPromises.lstat(workspaceName)) {
-        // we didn't a local copy of the code, DO NOT sync
-        callback(null, workspace_id);
-        return;
-    }
-    var jobs_params = _recursiveUploadJobManager(`${workspacePrefix}/${workspaceName}`, workspaceName);
-    var jobs = [];
-    jobs_params.forEach(([filePath, S3filePath]) => {
-        jobs.push((callback) => {
-            _uploadToS3(filePath, S3filePath, callback);
-        });
-    });
-
-    var status = [];
-    async.parallel(jobs, function(_, results) {
-        results.forEach((res) => {
-            if (res != 'OK') {
-                res[2].fileLocalPath = res[0];
-                res[2].fileS3Path = res[0];
-                status.push(res[2]);
-            }
-        });
-        if (status.length != 0) {
-            callback(status);
-        } else {
+        async.parallel(jobs, function(err) {
+            if (ERR(err, callback)) return;
             callback(null, workspace_id);
-        }
+        });
     });
 }
 
@@ -626,12 +535,6 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
         if (ERR(err, callback)) return;
         callback(null);
     });
-}
-
-function _getContainer(workspace_id, callback) {
-    const localName = id_workspace_mapper[workspace_id].localName;
-    const container = docker.getContainer(localName);
-    callback(null, workspace_id, container);
 }
 
 function _pullImage(workspace_id, port, settings, callback) {
@@ -680,7 +583,7 @@ function _createContainer(workspace_id, port, settings, callback) {
     logger.info(`Container name: ${localName}`);
     async.series([
         (callback) => {
-            logger.info(`Creating directory ${workspacePath}`);
+            logger.info(`Creating directory ${workspaceJobPath}`);
             fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
                 if (err && err.code !== 'EEXIST') {
                     /* Ignore the directory if it already exists */
@@ -753,31 +656,8 @@ function _createContainerWrapper(workspace_id, port, settings, callback) {
     });
 }
 
-function _delContainer(workspace_id, container, callback) {
-    // Require Node.js 12.10.0 or later otherwise it will complain that the folder isn't empty
-    // Commented out because we don't want to delete on S3 in fs.watch's callback
-    // fs.rmdirSync(`${workspacePrefix}/${workspaceName}`, { recursive: true });
-
-    container.remove((err) => {
-        if (ERR(err, callback)) return;
-        delete(port_id_mapper[id_workspace_mapper[workspace_id].port]);
-        delete(id_workspace_mapper[workspace_id]);
-        sqldb.query(sql.update_load_count, {workspace_id, count: -1}, function(err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null, workspace_id, container);
-        });
-    });
-}
-
 function _startContainer(workspace_id, container, callback) {
     container.start((err) => {
-        if (ERR(err, callback)) return;
-        callback(null, workspace_id, container);
-    });
-}
-
-function _stopContainer(workspace_id, container, callback) {
-    container.stop((err) => {
         if (ERR(err, callback)) return;
         callback(null, workspace_id, container);
     });
@@ -829,23 +709,6 @@ function resetSequence(workspace_id, res) {
     });
 }
 
-// Usage unclear, maybe should be called automatically by the workspace host?
-// Maybe should also remove the local copy of the code as well?
-function destroySequence(workspace_id, res) {
-    async.waterfall([
-        (callback) => {_syncPushContainer(workspace_id, callback);},
-        _getContainer,
-        _stopContainer,
-        _delContainer,
-    ], function(err) {
-        if (err) {
-            res.status(500).send(err);
-        } else {
-            res.status(200).send(`Container for workspace ${workspace_id} destroyed.`);
-        }
-    });
-}
-
 function gradeSequence(workspace_id, res) {
     const workspaceDir = `${workspacePrefix}/${id_workspace_mapper[workspace_id].localName}`;
     const gradedFilesList = id_workspace_mapper[workspace_id].settings.workspace_graded_files;
@@ -858,14 +721,15 @@ function gradeSequence(workspace_id, res) {
     debug(`gradeSequence: zipPath=${zipPath}`);
     logger.info(`Sending files for grading as ${zipPath}`);
 
-    let zipList = [];
+    let archive = archiver('zip');
     async.series([
         async () => {
+            /* Start loading the graded files into the archive */
             for (const file of gradedFilesList) {
                 try {
                     const file_path = path.join(workspaceDir, file);
                     await fsPromises.lstat(file_path);
-                    zipList.push(file);
+                    archive.file(file_path, { name: file });
                     logger.info(`Sending ${file}`);
                 } catch (err) {
                     logger.warn(`Graded file ${file} does not exist.`);
@@ -875,17 +739,19 @@ function gradeSequence(workspace_id, res) {
             return null;
         },
         (callback) => {
-            let zip = new admZip();
-            zipList.forEach((localFile) => {
-                const localPath = `${workspaceDir}/${localFile}`;
-                const zipPath = localFile.split('/').slice(0, -1).join('/');
-                zip.addLocalFile(localPath, zipPath);
-                debug(`gradeSequence: zipped ${localPath} in ${zipPath}`);
-            });
-            zip.writeZip(zipPath, (err) => {
-                if (ERR(err, callback)) return;
+            /* Write the zip archive to disk */
+            let output = fs.createWriteStream(zipPath);
+            output.on('close', () => {
                 callback(null);
             });
+            archive.on('warning', (warn) => {
+                logger.warn(warn);
+            });
+            archive.on('error', (err) => {
+                ERR(err, callback);
+            });
+            archive.pipe(output);
+            archive.finalize();
         },
     ], (err) => {
         if (err) {
