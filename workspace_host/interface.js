@@ -156,7 +156,7 @@ async.series([
         /* If we have any running workspaces we're probably recovering from a crash
            and we should sync files to S3 */
         const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
-        await async.each(result.rows, async (ws) => {
+        await async.eachSeries(result.rows, async (ws) => {
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
@@ -259,9 +259,13 @@ async function pushContainerContentsToS3(workspace) {
     await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
 }
 
+/**
+ * Push the contents of all running workspaces to S3.  Workspace home directories are uploaded
+ * serially instead of in parallel.
+ */
 async function pushAllRunningContainersToS3() {
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
-    await async.each(result.rows, async (ws) => {
+    await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
             await pushContainerContentsToS3(ws);
         }
@@ -302,7 +306,12 @@ async function _getWorkspaceAsync(workspace_id) {
     return workspace;
 }
 
-async function _getAvailablePort(workspace) {
+/**
+ * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
+ * @param {object} workspace Workspace object, should at least contain an id.
+ * @return {integer} Port that was allocated to the workspace.
+ */
+async function _allocateContainerPort(workspace) {
     const sql_params = [
         workspace_server_settings.instance_id,
         workspace.id,
@@ -350,12 +359,11 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     };
 }
-const _getWorkspaceSettings = util.callbackify(_getWorkspaceSettingsAsync);
 
 function _getSettingsWrapper(workspace, callback) {
     async.parallel({
-        port: async () => { return await _getAvailablePort(workspace_id, 1024); },
-        settings: async () => { return await _getWorkspaceSettingsAsync(workspace_id); },
+        port: async () => { return await _allocateContainerPort(workspace); },
+        settings: async () => { return await _getWorkspaceSettingsAsync(workspace); },
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         workspace.launch_port = results.port;
