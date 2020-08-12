@@ -8,9 +8,7 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
-const helperQuestion = require('./helperQuestion');
 const helperClient = require('./helperClient');
-const helperExam = require('./helperExam');
 
 describe('Assessment that forces students to complete questions in-order', function() {
   this.timeout(60000);
@@ -97,8 +95,8 @@ describe('Assessment that forces students to complete questions in-order', funct
       '__action': 'grade',
       '__variant_id': context.__variant_id,
       's': String(score),
-      '__csrf_token': context.__csrf_token
-    }
+      '__csrf_token': context.__csrf_token,
+    };
 
     const response = await helperClient.fetchCheerio(questionUrl, { method: 'POST', form });
     assert.isTrue(response.ok);
@@ -135,4 +133,3 @@ describe('Assessment that forces students to complete questions in-order', funct
     assert.isFalse(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
   });
 });
-
