@@ -242,7 +242,7 @@
             <tbody>
               <% courses.forEach(function(course, i) { %>
               <tr>
-                <td><%= course.institution.short_name %></td>
+                <%- include('courseUpdateInstitutionColumn', {course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'title',            label: 'title',      course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>

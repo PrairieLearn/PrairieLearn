@@ -31,10 +31,10 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     - fname_student: Filename for the submitted student answer code.
     - include_plt: If true, plots will be included in grading results.
     - console_output_fname: Filename to redirect console output to.
-    - test_iter_num: The iteration number of this test, when test cases are run multiple times. 
+    - test_iter_num: The iteration number of this test, when test cases are run multiple times.
 
     Returns:
-    - ref_result: A named tuple with reference variables 
+    - ref_result: A named tuple with reference variables
     - student_result: A named tuple with submitted student variables
     - plot_value: Any plots made by the student
     """
@@ -43,7 +43,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
 
-    with open(join(job_dir, 'data', 'data.json')) as f:
+    with open(join(filenames_dir, 'data.json')) as f:
         data = json.load(f)
     with open(join(filenames_dir, 'setup_code.py'), 'r') as f:
         str_setup = f.read()
@@ -53,6 +53,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_student = f.read()
     with open(join(filenames_dir, 'test.py')) as f:
         str_test = f.read()
+
+    os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
     os.remove(join(filenames_dir, 'test.py'))
@@ -121,6 +123,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
+    with open(join(filenames_dir, 'data.json'), 'w') as f:
+        json.dump(data, f)
     with open(fname_ref, 'w') as f:
         f.write(str_ref)
     with open(join(filenames_dir, 'setup_code.py'), 'w') as f:

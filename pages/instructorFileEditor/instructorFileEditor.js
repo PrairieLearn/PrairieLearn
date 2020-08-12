@@ -87,7 +87,7 @@ router.get('/*', (req, res, next) => {
     }
 
     // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
+    if (res.locals.course.example_course) {
         return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
@@ -216,7 +216,7 @@ router.post('/*', (req, res, next) => {
     };
 
     // Do not allow users to edit the exampleCourse
-    if (res.locals.course.options.isExampleCourse) {
+    if (res.locals.course.example_course) {
         return next(error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
             locals: res.locals,
             body: req.body,
