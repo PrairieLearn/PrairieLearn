@@ -31,7 +31,7 @@ if ('config' in argv) {
     configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
-const zipPrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspace_send_zips' : config.workspaceGradedFilesSendDirectory;
+const zipPrefix = config.workspaceGradedFilesSendDirectory;
 
 logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
 
@@ -188,7 +188,7 @@ async.series([
 
 // For detecting file changes
 let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = process.env.HOST_JOBS_DIR ? '/jobs/workspaces' : config.workspaceJobsDirectory;
+const workspacePrefix = config.workspaceJobsDirectory;
 const interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
