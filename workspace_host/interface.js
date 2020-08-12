@@ -239,32 +239,16 @@ async function _getWorkspaceAsync(workspace_id) {
 }
 
 async function _getAvailablePort(workspace) {
-    const lockName = `workspaces_port_host_${workspace_server_settings.instance_id}`;
-    const lock = await namedLocks.waitLockAsync(lockName, {});
-    try {
-        /* TODO: optimize this, this can probably all be done inside of the SQL query? */
-        const portResults = await sqldb.queryAsync(sql.get_workspace_host_used_ports, { instance_id: workspace_server_settings.instance_id });
-        const ports = portResults.rows.map(x => parseInt(x.launch_port));
-
-        let workspacePort = 1024;
-        if (ports.length > 0) {
-            /* Get the next unused port */
-            for (let i = 0; i < ports.length; i++) {
-                if (i == ports.length - 1) {
-                    workspacePort = ports[ports.length - 1] + 1;
-                } else {
-                    /* If we have a space between this used port and the next, allocate a port here */
-                    if (ports[i] + 1 != ports[i + 1]) {
-                        workspacePort = ports[i] + 1;
-                    }
-                }
-            }
-        }
-        await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, port: workspacePort });
-        return workspacePort;
-    } finally {
-        await namedLocks.releaseLockAsync(lock);
+    const sql_params = [
+        workspace_server_settings.instance_id,
+        workspace.id
+    ];
+    const result = await sqldb.callAsync('workspace_host_allocate_port', sql_params);
+    const port = result.rows[0].port;
+    if (!port) {
+        throw new Error("Couldn't allocate a new port!");
     }
+    return port;
 }
 
 function _checkServer(workspace, callback) {
