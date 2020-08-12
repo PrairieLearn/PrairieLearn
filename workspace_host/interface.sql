@@ -39,16 +39,36 @@ WHERE
     AND w.workspace_host_id = wh.id;
 
 -- BLOCK get_workspace
-SELECT w.*
-FROM workspaces AS w
-WHERE w.id = $workspace_id;
+SELECT
+    w.*
+FROM
+    workspaces AS w
+WHERE
+    w.id = $workspace_id;
 
 -- BLOCK get_workspace_id_by_uuid
-SELECT w.id
-FROM workspaces AS w
-WHERE w.launch_uuid = $launch_uuid;
+SELECT
+    w.id
+FROM
+    workspaces AS w
+WHERE
+    w.launch_uuid = $launch_uuid;
 
 -- BLOCK set_workspace_launch_uuid
-UPDATE workspaces AS w
-SET launch_uuid = $uuid
-WHERE w.id = $workspace_id;
+UPDATE
+    workspaces AS w
+SET
+    launch_uuid = $uuid
+WHERE
+    w.id = $workspace_id;
+
+-- BLOCK get_running_workspaces
+SELECT
+    w.*
+FROM
+    workspaces AS w
+JOIN
+    workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
+WHERE
+    (w.state = 'launching' OR w.state = 'running')
+    AND wh.instance_id = $instance_id;

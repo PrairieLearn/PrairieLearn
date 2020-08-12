@@ -52,9 +52,6 @@ app.post('/', function(req, res) {
         initSequence(workspace_id, res);
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
-    } else if (action == 'destroy') {
-        /* TODO: Add an actual destroy sequence? */
-        res.status(500).send('Action "destroy" unimplemented');
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
     } else if (action == 'status') {
@@ -155,6 +152,27 @@ async.series([
             callback(null);
         });
     },
+    async () => {
+        /* If we have any running workspaces we're probably recovering from a crash
+           and we should sync files to S3 */
+        const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
+        await async.each(result.rows, async (ws) => {
+            if (ws.state == 'launching') {
+                /* We don't know what state the container is in, kill it and let the user
+                   retry initializing it */
+                const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+                try {
+                    await container.kill();
+                } catch (err) {
+                    logger.info(`Couldn't kill container ${ws.launch_uuid}: ${err}`);
+                }
+                await container.remove();
+                await workspaceHelper.updateState(ws.id, 'stopped');
+            } else if (ws.state == 'running') {
+                await pushContainerContentsToS3(ws);
+            }
+        });
+    },
     (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
@@ -185,7 +203,6 @@ async.series([
 // For detecting file changes
 let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = config.workspaceJobsDirectory;
-const interval = 5; // the base interval of pushing file to S3 and scanning for file change in second
 const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
     awaitWriteFinish: true,
     depth: 10,
@@ -227,8 +244,56 @@ watcher.on('unlinkDir', filename => {
     var key = [filename, true];
     update_queue[key] = {action: 'delete'};
 });
-setInterval(_autoUpdateJobManager, interval * 1000);
+setInterval(_autoUpdateJobManager, config.workspaceHostFileWatchIntervalSec * 1000);
 
+/* Periodic hard-push of files to S3 */
+
+/**
+ * Push all of the contents of a container's home directory to S3.
+ * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
+ */
+async function pushContainerContentsToS3(workspace) {
+    const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
+    const workspacePath = path.join(workspaceDir, `workspace-${workspace.launch_uuid}`);
+    const settings = await _getWorkspaceSettingsAsync(workspace.id);
+    await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
+}
+
+async function pushAllRunningContainersToS3() {
+    const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
+    await async.each(result.rows, async (ws) => {
+        if (ws.state == 'running') {
+            await pushContainerContentsToS3(ws);
+        }
+    });
+}
+setInterval(pushAllRunningContainersToS3, config.workspaceHostForceUploadIntervalSec * 1000);
+
+/**
+ * Looks up a docker container by the UUID used to launch it.
+ * Throws an exception if the container was not found or if there
+ * are multiple containers with the same UUID (this shouldn't happen?)
+ * @param {string} launch_uuid UUID to search by
+ * @return Dockerode container object
+ */
+async function _getDockerContainerByLaunchUuid(launch_uuid) {
+    const containers = await docker.listContainers({
+        filters: `name=workspace-${launch_uuid}`,
+    });
+    if (containers.length !== 1) {
+        throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
+    }
+    return docker.getContainer(containers[0].Id);
+}
+
+/**
+ * Looks up a workspace object by the workspace id.
+ * This object contains all columns in the 'workspaces' table as well as:
+ * - local_name (container name)
+ * - s3_name (subdirectory name on s3)
+ * @param {integer} workspace_id Workspace ID to search by.
+ * @return {object} Workspace object, as described above.
+ */
 async function _getWorkspaceAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.get_workspace, {workspace_id});
     const workspace = result.rows[0];

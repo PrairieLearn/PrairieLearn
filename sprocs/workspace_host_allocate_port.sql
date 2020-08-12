@@ -9,7 +9,11 @@ DECLARE
     ports bigint[];
     num_ports bigint;
 BEGIN
-    -- TODO do we need to add locks to this function to prevent concurrency issues?
+    -- grab a lock on this workspace host to prevent concurrency issues
+    PERFORM wh.id
+    FROM workspace_hosts AS wh
+    WHERE wh.instance_id = workspace_host_allocate_port.instance_id
+    FOR UPDATE OF wh;
 
     -- get used ports for this host
     ports := ARRAY(
@@ -25,7 +29,7 @@ BEGIN
     num_ports := cardinality(ports);
 
     IF num_ports = 0 OR num_ports IS NULL OR (num_ports > 0 AND ports[1] > 1024) THEN
-        -- No used ports, then default to 1024
+        -- No used ports (or we have an opening at 1024), so use 1024
         port := 1024;
     ELSE
         -- Scan through the used ports to find an opening
