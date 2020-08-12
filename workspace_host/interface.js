@@ -661,13 +661,13 @@ function initSequence(workspace_id, useInitialZip, res) {
                 logger.info(`Bootstrapping workspace with initial.zip`);
                 _syncInitialZip(workspace_id, (err) => {
                     if (ERR(err, callback)) return;
-                    callback(null);
+                    callback(null, workspace_id);
                 });
             } else {
                 logger.info(`Syncing workspace from S3`);
                 _syncPullContainer(workspace_id, (err) => {
                     if (ERR(err, callback)) return;
-                    callback(null);
+                    callback(null, workspace_id);
                 });
             }
         },
