@@ -182,20 +182,22 @@ async.series([
            and we should sync files to S3 */
         const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
         await async.eachSeries(result.rows, async (ws) => {
+            debug(`Found container ${ws.launch_uuid}`);
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-                    await container.kill();
-                    await container.remove();
-                } catch (err) {
-                    logger.error(`Couldn't kill container ${ws.launch_uuid}: ${err}`);
+                    await dockerAttemptKillAndRemove(container);
+                    debug(`Killed and removed container ${ws.launch_uuid}`);
+                } finally {
+                    /* It doesn't actually matter if the container isn't running or it doesn't exist */
+                    await workspaceHelper.updateState(ws.id, 'stopped');
+                    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 }
-                await workspaceHelper.updateState(ws.id, 'stopped');
-                await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             } else if (ws.state == 'running') {
                 await pushContainerContentsToS3(ws);
+                debug(`Pushed ${ws.launch_uuid} to S3`);
             }
         });
     },
@@ -295,26 +297,16 @@ async function pruneStoppedContainers() {
     const instance_id = workspace_server_settings.instance_id;
     const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, { instance_id });
     await async.each(recently_stopped.rows, async (ws) => {
-        /* Use these awful try catch blocks because we actually do want to try each */
         let container;
         try {
-            /* Try to kill, but don't care if it's already dead */
+            /* Try to grab the container, but don't care if it doesn't exist */
             container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
         } catch (_err) {
             /* No container */
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             return;
         }
-        try {
-            await container.kill();
-        } catch (err) {
-            debug(`Couldn't kill stopped container: ${err}`);
-        }
-        try {
-            await container.remove();
-        } catch (err) {
-            debug(`Couldn't remove stopped container: ${err}`);
-        }
+        await dockerAttemptKillAndRemove(container);
         await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
     });
 }
@@ -338,26 +330,7 @@ async function pruneRunawayContainers() {
         if (container_info.Names.length != 1) return;
         const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
         if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
-
-        /* Use these awful try catch blocks because we actually do want to try each */
-        let container;
-        try {
-            container = await docker.getContainer(container_info.Id);
-        } catch (_err) {
-            /* Docker failed to get the container, oh well */
-            return;
-        }
-        try {
-            /* Try to kill, but don't care if it's already dead */
-            await container.kill();
-        } catch (err) {
-            debug(`Couldn't kill stopped container: ${err}`);
-        }
-        try {
-            await container.remove();
-        } catch (err) {
-            debug(`Couldn't remove stopped container: ${err}`);
-        }
+        await dockerAttemptKillAndRemove(container_info.Id);
     });
 }
 
@@ -381,6 +354,39 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
         return docker.getContainer(containers[0].Id);
     } catch (err) {
         throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
+    }
+}
+
+/**
+ * Attempts to kill and remove a container.  Will fail silently if the container is already stopped
+ * or does not exist.
+ * @param {string | Dockerode container} input.  Either the ID of the docker container, or an actual Dockerode
+ * container object.
+ */
+async function dockerAttemptKillAndRemove(input) {
+    /* Use these awful try-catch blocks because we actually do want to try each */
+    let container;
+    if (typeof input === 'string') {
+        try {
+            container = await docker.getContainer(input);
+        } catch (_err) {
+            /* Docker failed to get the container, oh well. */
+            return;
+        }
+    } else {
+        container = input;
+    }
+
+    try {
+        await container.kill();
+    } catch (err) {
+        debug(`Couldn't kill container: ${err}`);
+    }
+
+    try {
+        await container.remove();
+    } catch (err) {
+        debug(`Couldn't remove stopped container: ${err}`);
     }
 }
 
