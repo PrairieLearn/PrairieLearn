@@ -203,7 +203,8 @@ async.series([
 // For detecting file changes
 let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
 const workspacePrefix = config.workspaceJobsDirectory;
-const watcher = chokidar.watch(workspacePrefix, {ignoreInitial: true,
+const watcher = chokidar.watch(workspacePrefix, {
+    ignoreInitial: true,
     awaitWriteFinish: true,
     depth: 10,
 });
@@ -253,10 +254,14 @@ setInterval(_autoUpdateJobManager, config.workspaceHostFileWatchIntervalSec * 10
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
-    const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
-    const workspacePath = path.join(workspaceDir, `workspace-${workspace.launch_uuid}`);
-    const settings = await _getWorkspaceSettingsAsync(workspace.id);
-    await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
+    const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
+    const settings = _getWorkspaceSettingsAsync(workspace.id);
+    try {
+        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
+    } catch (err) {
+        /* Ignore any errors that may occur when the directory doesn't exist */
+        logger.error(`Error uploading directory: ${err}`);
+    }
 }
 
 /**
@@ -348,8 +353,13 @@ function _checkServer(workspace, callback) {
     setTimeout(checkWorkspace, checkMilliseconds);
 }
 
+/**
+ * Looks up all the question-specific workspace launch settings associated with a workspace id.
+ * @param {integer} workspace_id Workspace ID to search by.
+ * @return {object} Workspace launch settings.
+ */
 async function _getWorkspaceSettingsAsync(workspace_id) {
-    const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {workspace_id});
+    const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, { workspace_id });
     return {
         workspace_image: result.rows[0].workspace_image,
         workspace_port: result.rows[0].workspace_port,
@@ -363,7 +373,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
 function _getSettingsWrapper(workspace, callback) {
     async.parallel({
         port: async () => { return await _allocateContainerPort(workspace); },
-        settings: async () => { return await _getWorkspaceSettingsAsync(workspace); },
+        settings: async () => { return await _getWorkspaceSettingsAsync(workspace.id); },
     }, (err, results) => {
         if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
         workspace.launch_port = results.port;
@@ -380,18 +390,13 @@ async function _uploadToS3Async(filePath, isDirectory, S3FilePath, localPath) {
         body = '';
         S3FilePath += '/';
     } else {
-        try {
-            body = await fsPromises.readFile(filePath);
-        } catch(err) {
-            return [filePath, S3FilePath, err];
-        }
+        body = await fsPromises.readFile(filePath);
     }
     const uploadParams = {
         Bucket: config.workspaceS3Bucket,
         Key: S3FilePath,
         Body: body,
     };
-
     await s3.upload(uploadParams).promise();
     logger.info(`Uploaded s3://${config.workspaceS3Bucket}/${S3FilePath} (${localPath})`);
 }
@@ -484,7 +489,7 @@ async function _getWorkspaceByPath(path) {
     try {
         const result = await sqldb.queryOneRowAsync(sql.get_workspace_id_by_uuid, { launch_uuid });
         return {
-            workspace_id: result.rows[0].workspace_id,
+            workspace_id: result.rows[0].id,
             local_path: localPath,
         };
     } catch (_err) {
@@ -532,9 +537,11 @@ async function _autoUpdateJobManager() {
         }
     }
     update_queue = {};
-    await async.parallel(jobs, function(err) {
-        if (err) logger.err(err);
-    });
+    try {
+        await async.parallel(jobs);
+    } catch (err) {
+        logger.err(`Error uploading files to S3:\n${err}`);
+    }
 }
 
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
@@ -550,13 +557,13 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
         var contents = data['Contents'];
         var ret = [];
         contents.forEach(dict => {
-          if ('Key' in dict) {
-              var filePath = path.join(curDirPath, dict['Key'].slice(S3curDirPath.length));
-              var S3filePath = dict['Key'];
-              ret.push([filePath, S3filePath]);
-          }
-      });
-      callback(null, ret);
+            if ('Key' in dict) {
+                var filePath = path.join(curDirPath, dict['Key'].slice(S3curDirPath.length));
+                var S3filePath = dict['Key'];
+                ret.push([filePath, S3filePath]);
+            }
+        });
+        callback(null, ret);
     });
 }
 
@@ -575,7 +582,7 @@ function _syncPullContainer(workspace, callback) {
 
         async.parallel(jobs, function(err) {
             if (ERR(err, callback)) return;
-            callback(null, workspace.id);
+            callback(null, workspace);
         });
     });
 }
@@ -768,13 +775,15 @@ function resetSequence(workspace_id, res) {
 }
 
 function gradeSequence(workspace_id, res) {
+    /* Define this outside so we can still use it in case of errors */
+    let zipPath;
     async.waterfall([
         async () => {
             const workspace = await _getWorkspaceAsync(workspace_id);
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
             const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
-            const zipPath = path.join(zipPrefix, zipName);
+            zipPath = path.join(zipPrefix, zipName);
 
             return {
                 workspace,
@@ -820,9 +829,9 @@ function gradeSequence(workspace_id, res) {
             logger.error(`Error in gradeSequence: ${err}`);
             res.status(500).send(err);
             try {
-                fsPromises.unlink(locals.zipPath);
+                fsPromises.unlink(zipPath);
             } catch (err) {
-                logger.error(`Error deleting ${locals.zipPath}`);
+                logger.error(`Error deleting ${zipPath}`);
             }
         } else {
             res.attachment(locals.zipPath);
