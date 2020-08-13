@@ -5,7 +5,7 @@ columns
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
     launched_at: timestamp with time zone
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
-    state_updated_at: timestamp with time zone
+    state_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     workspace_host_id: bigint
 
 indexes
