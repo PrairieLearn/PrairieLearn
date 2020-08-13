@@ -35,7 +35,7 @@ if ('config' in argv) {
 config.loadConfig(configFilename);
 const zipPrefix = config.workspaceHostZipsDirectory;
 
-logger.info('Workspace S3 bucket: ' + config.workspaceS3Bucket);
+logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
@@ -130,7 +130,7 @@ async.series([
                         if (ERR(err, callback)) return;
                         try {
                             const data = JSON.parse(document);
-                            logger.info('instance-identity', data);
+                            debug('instance-identity', data);
                             AWS.config.update({'region': data.region});
                             workspace_server_settings.instance_id = data.instanceId;
                             callback(null);
@@ -477,10 +477,10 @@ async function _syncInitialZipAsync(workspace_id) {
     const zipPath = `${zipPrefix}/${localName}-initial.zip`;
     const s3Path = s3Name.replace('current', 'initial.zip');
 
-    logger.info(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
+    debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
 
-    logger.info(`Unzipping ${zipPath} to ${localPath}`);
+    debug(`Unzipping ${zipPath} to ${localPath}`);
     fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
 
     return workspace_id;
@@ -531,7 +531,7 @@ function _pullImage(workspace_id, port, settings, callback) {
                 if (ERR(err, callback)) return;
                 callback(null, workspace_id, port, settings);
             }, (output) => {
-                logger.info('Docker pull output: ', output);
+                debug('Docker pull output: ', output);
             });
         });
     } else {
@@ -555,15 +555,15 @@ function _createContainer(workspace_id, port, settings, callback) {
     let container;
 
     logger.info(`Creating docker container for image=${settings.workspace_image}`);
-    logger.info(`Exposed port: ${settings.workspace_port}`);
-    logger.info(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`);
-    logger.info(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
-    logger.info(`Port binding: ${settings.workspace_port}:${port}`);
-    logger.info(`Volume mount: ${workspacePath}:${containerPath}`);
-    logger.info(`Container name: ${localName}`);
+    debug(`Exposed port: ${settings.workspace_port}`);
+    debug(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`);
+    debug(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
+    debug(`Port binding: ${settings.workspace_port}:${port}`);
+    debug(`Volume mount: ${workspacePath}:${containerPath}`);
+    debug(`Container name: ${localName}`);
     async.series([
         (callback) => {
-            logger.info(`Creating directory ${workspaceJobPath}`);
+            debug(`Creating directory ${workspaceJobPath}`);
             fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
                 if (err && err.code !== 'EEXIST') {
                     /* Ignore the directory if it already exists */
@@ -645,7 +645,7 @@ function _startContainer(workspace_id, container, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, useInitialZip, res) {
-    logger.info(`Launching workspace_id=${workspace_id}, useInitialZip=${useInitialZip}`);
+    debug(`Launching workspace_id=${workspace_id}, useInitialZip=${useInitialZip}`);
 
     id_workspace_mapper[workspace_id] = {};
     id_workspace_mapper[workspace_id].localName = `workspace-${uuidv4()}`;
@@ -657,13 +657,13 @@ function initSequence(workspace_id, useInitialZip, res) {
     async.waterfall([
         (callback) => {
             if (useInitialZip) {
-                logger.info(`Bootstrapping workspace with initial.zip`);
+                debug(`Bootstrapping workspace with initial.zip`);
                 _syncInitialZip(workspace_id, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null, workspace_id);
                 });
             } else {
-                logger.info(`Syncing workspace from S3`);
+                debug(`Syncing workspace from S3`);
                 _syncPullContainer(workspace_id, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null, workspace_id);
@@ -682,7 +682,7 @@ function initSequence(workspace_id, useInitialZip, res) {
         } else {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
-                logger.info(`Container initialized for workspace_id=${workspace_id}`);
+                debug(`Container initialized for workspace_id=${workspace_id}`);
                 const state = 'running';
                 workspace.updateState(workspace_id, state);
             });
@@ -724,7 +724,7 @@ function gradeSequence(workspace_id, res) {
                     const file_path = path.join(workspaceDir, file);
                     await fsPromises.lstat(file_path);
                     archive.file(file_path, { name: file });
-                    logger.info(`Sending ${file}`);
+                    debug(`Sending ${file}`);
                 } catch (err) {
                     logger.warn(`Graded file ${file} does not exist.`);
                     continue;
