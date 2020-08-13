@@ -114,8 +114,8 @@ WHERE
 UPDATE
     workspaces AS w
 SET
-    launch_uuid = NULL
-    launch_port = NULL
+    launch_uuid = NULL,
+    launch_port = NULL,
     workspace_host_id = NULL
 FROM
     workspace_hosts AS wh
