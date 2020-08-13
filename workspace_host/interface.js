@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const _ = require('lodash');
 const util = require('util');
 const express = require('express');
 const app = express();
@@ -50,7 +51,7 @@ app.use(bodyParser.json());
 app.post('/', function(req, res) {
     const workspace_id = req.body.workspace_id;
     const action = req.body.action;
-    const useInitialZip = req.body.useInitialZip;
+    const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
     if (workspace_id == undefined) {
         res.status(500).send('Missing workspace_id');
     } else if (action == undefined) {
