@@ -188,6 +188,8 @@ async.series([
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                     await dockerAttemptKillAndRemove(container);
+                } catch (err) {
+                    debug(`Couldn't find container: ${err}`);
                 } finally {
                     /* It doesn't actually matter if the container isn't running or it doesn't exist */
                     await workspaceHelper.updateState(ws.id, 'stopped');
