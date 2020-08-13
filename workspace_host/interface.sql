@@ -63,16 +63,20 @@ UPDATE
     workspaces AS w
 SET
     launch_uuid = $launch_uuid
+FROM
+    workspace_hosts AS wh
 WHERE
-    w.id = $workspace_id;
+    w.id = $workspace_id AND wh.instance_id = $instance_id;
 
 -- BLOCK set_workspace_launch_port
 UPDATE
     workspaces AS w
 SET
     launch_port = $launch_port
+FROM
+    workspace_hosts AS wh
 WHERE
-    w.id = $workspace_id;
+    w.id = $workspace_id AND wh.instance_id = $instance_id;
 
 -- BLOCK get_is_port_occupied
 SELECT
@@ -113,5 +117,7 @@ SET
     launch_uuid = NULL
     launch_port = NULL
     workspace_host_id = NULL
+FROM
+    workspace_hosts AS wh
 WHERE
-    w.id = $workspace_id;
+    w.id = $workspace_id AND wh.instance_id = $instance_id;

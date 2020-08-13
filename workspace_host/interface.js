@@ -193,7 +193,7 @@ async.series([
                     logger.error(`Couldn't kill container ${ws.launch_uuid}: ${err}`);
                 }
                 await workspaceHelper.updateState(ws.id, 'stopped');
-                await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id });
+                await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             } else if (ws.state == 'running') {
                 await pushContainerContentsToS3(ws);
             }
@@ -303,7 +303,7 @@ async function pruneStoppedContainers() {
         } catch (err) {
             logger.error(err);
         }
-        await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id });
+        await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
     });
 }
 
@@ -412,14 +412,19 @@ async function _allocateContainerPort(workspace) {
     await _allocateContainerPortLock.lockAsync();
     let port;
     let done = false;
-    while (!done) {
-        /* Generate a random port from 1024 to 65535*/
-        port = 1024 + Math.floor(Math.random() * (65535 - 1024));
+    /* Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts */
+    const max_attempts = (config.workspaceHostMaxPortAllocationAttempts > 0 ? config.workspaceHostMaxPortAllocationAttempts : Infinity);
+    for (let i = 0; !done && i < max_attempts; i++) {
+        /* Generate a random port from the ranges specified in config */
+        port = config.workspaceHostMinPortRange + Math.floor(Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange));
         if (!(await check_port_db(port))) continue;
         if (!(await check_port_server(port))) continue;
         done = true;
     }
-    await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, launch_port: port });
+    if (!done) {
+        throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
+    }
+    await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, launch_port: port, instance_id: workspace_server_settings.instance_id });
     _allocateContainerPortLock.unlock();
     return port;
 }
@@ -814,7 +819,7 @@ function initSequence(workspace_id, useInitialZip, res) {
 
     async.waterfall([
         async () => {
-            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, 'launch_uuid': uuid });
+            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, 'launch_uuid': uuid, instance_id: workspace_server_settings.instance_id });
             return workspace;
         },
         (workspace, callback) => {
