@@ -841,7 +841,7 @@ function initSequence(workspace_id, useInitialZip, res) {
             await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, 'launch_uuid': uuid });
             return workspace;
         },
-        (callback) => {
+        (workspace, callback) => {
             if (useInitialZip) {
                 logger.info(`Bootstrapping workspace with initial.zip`);
                 _syncInitialZip(workspace, (err) => {
