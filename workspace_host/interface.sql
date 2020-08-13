@@ -17,7 +17,8 @@ WHERE
 -- BLOCK update_workspace_launched_at_now
 UPDATE workspaces AS w
 SET
-    launched_at = now()
+    launched_at = now(),
+    heartbeat_at = now()
 WHERE
     w.id = $workspace_id;
 

@@ -258,7 +258,11 @@ watcher.on('unlinkDir', filename => {
     var key = [filename, true];
     update_queue[key] = {action: 'delete'};
 });
-setInterval(_autoUpdateJobManager, config.workspaceHostFileWatchIntervalSec * 1000);
+async function autoUpdateJobManagerTimeout() {
+    await _autoUpdateJobManager();
+    setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+}
+setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
 
 /* Periodic hard-push of files to S3 */
 
@@ -289,7 +293,12 @@ async function pushAllRunningContainersToS3() {
         }
     });
 }
-setInterval(pushAllRunningContainersToS3, config.workspaceHostForceUploadIntervalSec * 1000);
+
+async function pushAllContainersTimeout() {
+    await pushAllRunningContainersToS3();
+    setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+}
+setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
 
 /* Prune stopped and runaway containers */
 
@@ -339,10 +348,12 @@ async function pruneRunawayContainers() {
     });
 }
 
-setInterval(async () => {
+async function pruneContainersTimeout() {
     await pruneStoppedContainers();
     await pruneRunawayContainers();
-}, config.workspaceHostPruneContainersSec * 1000);
+    setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
+}
+setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
 
 /**
  * Looks up a docker container by the UUID used to launch it.
