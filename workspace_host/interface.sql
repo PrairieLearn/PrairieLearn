@@ -49,7 +49,7 @@ JOIN
 WHERE
     w.id = $workspace_id AND wh.instance_id = $instance_id;
 
--- BLOCK get_workspace_id_by_uuid
+-- BLOCK get_running_workspace_id_by_uuid
 SELECT
     w.id
 FROM
@@ -57,7 +57,9 @@ FROM
 JOIN
     workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
 WHERE
-    w.launch_uuid = $launch_uuid AND wh.instance_id = $instance_id;
+    w.launch_uuid = $launch_uuid
+    AND w.state = 'running'::enum_workspace_state
+    AND wh.instance_id = $instance_id;
 
 -- BLOCK set_workspace_launch_uuid
 UPDATE

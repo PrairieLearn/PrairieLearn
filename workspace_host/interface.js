@@ -185,15 +185,13 @@ async.series([
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
+                await workspaceHelper.updateState(ws.id, 'stopped');
+                await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                     await dockerAttemptKillAndRemove(container);
                 } catch (err) {
                     debug(`Couldn't find container: ${err}`);
-                } finally {
-                    /* It doesn't actually matter if the container isn't running or it doesn't exist */
-                    await workspaceHelper.updateState(ws.id, 'stopped');
-                    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 }
             } else if (ws.state == 'running') {
                 if (ws.launch_uuid) {
@@ -320,8 +318,8 @@ async function pruneStoppedContainers() {
             return;
         }
         await pushContainerContentsToS3(ws);
-        await dockerAttemptKillAndRemove(container);
         await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
+        await dockerAttemptKillAndRemove(container);
     });
 }
 
@@ -606,14 +604,14 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
 const _downloadFromS3 = util.callbackify(_downloadFromS3Async);
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
-async function _getWorkspaceByPath(path) {
+async function _getRunningWorkspaceByPath(path) {
     let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
     const localName = localPath.shift();
     const launch_uuid = localName.replace('workspace-', '');
     localPath = localPath.join('/');
 
     try {
-        const result = await sqldb.queryOneRowAsync(sql.get_workspace_id_by_uuid, { launch_uuid, instance_id: workspace_server_settings.instance_id });
+        const result = await sqldb.queryOneRowAsync(sql.get_running_workspace_id_by_uuid, { launch_uuid, instance_id: workspace_server_settings.instance_id });
         return {
             workspace_id: result.rows[0].id,
             local_path: localPath,
@@ -631,7 +629,7 @@ async function _autoUpdateJobManager() {
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
-        const {workspace_id, local_path} = await _getWorkspaceByPath(path);
+        const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
         if (workspace_id == null) continue;
 
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
