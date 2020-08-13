@@ -43,16 +43,20 @@ SELECT
     w.*
 FROM
     workspaces AS w
+JOIN
+    workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
 WHERE
-    w.id = $workspace_id;
+    w.id = $workspace_id AND wh.instance_id = $instance_id;
 
 -- BLOCK get_workspace_id_by_uuid
 SELECT
     w.id
 FROM
     workspaces AS w
+JOIN
+    workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
 WHERE
-    w.launch_uuid = $launch_uuid;
+    w.launch_uuid = $launch_uuid AND wh.instance_id = $instance_id;
 
 -- BLOCK set_workspace_launch_uuid
 UPDATE
@@ -91,7 +95,7 @@ WHERE
     AND w.launch_uuid IS NOT NULL
     AND wh.instance_id = $instance_id;
 
--- BLOCK get_recently_stopped_workspaces
+-- BLOCK get_stopped_workspaces
 SELECT
     w.*
 FROM
@@ -100,5 +104,14 @@ JOIN
     workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
     w.state = 'stopped'
-    AND w.launch_uuid IS NOT NULL
     AND wh.instance_id = $instance_id;
+
+-- BLOCK clear_workspace_on_shutdown
+UPDATE
+    workspaces AS w
+SET
+    launch_uuid = NULL
+    launch_port = NULL
+    workspace_host_id = NULL
+WHERE
+    w.id = $workspace_id;
