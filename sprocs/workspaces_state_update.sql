@@ -8,7 +8,8 @@ BEGIN
     UPDATE
         workspaces as w
     SET
-        state = workspace_state::enum_workspace_state
+        state = workspace_state::enum_workspace_state,
+        state_updated_at = now()
     WHERE
         w.id = workspace_id;
 
