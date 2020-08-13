@@ -310,6 +310,7 @@ async function pruneStoppedContainers() {
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             return;
         }
+        await pushContainerContentsToS3(ws);
         await dockerAttemptKillAndRemove(container);
         await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
     });
@@ -363,7 +364,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 
 /**
  * Attempts to kill and remove a container.  Will fail silently if the container is already stopped
- * or does not exist.
+ * or does not exist.  Also removes the container's home directory.
  * @param {string | Dockerode container} input.  Either the ID of the docker container, or an actual Dockerode
  * container object.
  */
@@ -381,6 +382,13 @@ async function dockerAttemptKillAndRemove(input) {
         container = input;
     }
 
+    let name = null;
+    try {
+        name = (await container.inspect()).Name.substring(1);
+    } catch (err) {
+        debug(`Couldn't obtain container name: ${err}`);
+    }
+
     try {
         await container.kill();
     } catch (err) {
@@ -391,6 +399,15 @@ async function dockerAttemptKillAndRemove(input) {
         await container.remove();
     } catch (err) {
         debug(`Couldn't remove stopped container: ${err}`);
+    }
+
+    if (name) {
+        const workspaceJobPath = path.join(workspacePrefix, name);
+        try {
+            await fsPromises.rmdir(workspaceJobPath, { recursive: true });
+        } catch (err) {
+            debug(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
+        }
     }
 }
 
