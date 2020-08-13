@@ -22,7 +22,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
-const localLocks = require('../lib/local-locks');
+const LocalLock = require('../lib/local-lock');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -432,7 +432,7 @@ async function _getWorkspaceAsync(workspace_id) {
  * @param {object} workspace Workspace object, should at least contain an id.
  * @return {integer} Port that was allocated to the workspace.
  */
-const _allocateContainerPortLock = new localLocks.LocalLock();
+const _allocateContainerPortLock = new LocalLock();
 async function _allocateContainerPort(workspace) {
     /* Check if a port is considered free in the database */
     async function check_port_db(port) {
