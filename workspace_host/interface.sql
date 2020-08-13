@@ -95,7 +95,7 @@ FROM
 JOIN
     workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
-    (w.state = 'launching' OR w.state = 'running')
+    (w.state = 'launching'::enum_workspace_state OR w.state = 'running'::enum_workspace_state)
     AND w.launch_uuid IS NOT NULL
     AND wh.instance_id = $instance_id;
 
@@ -107,7 +107,7 @@ FROM
 JOIN
     workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
-    w.state = 'stopped'
+    w.state = 'stopped'::enum_workspace_state
     AND wh.instance_id = $instance_id;
 
 -- BLOCK clear_workspace_on_shutdown
