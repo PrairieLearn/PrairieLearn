@@ -71,4 +71,5 @@ JOIN
     workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
     (w.state = 'launching' OR w.state = 'running')
+    AND w.launch_uuid IS NOT NULL
     AND wh.instance_id = $instance_id;
