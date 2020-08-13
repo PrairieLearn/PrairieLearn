@@ -18,6 +18,7 @@ const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
+const net = require('net');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -160,14 +161,16 @@ async.series([
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
-                const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                 try {
+                    const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                     await container.kill();
+                    await container.remove();
                 } catch (err) {
                     logger.info(`Couldn't kill container ${ws.launch_uuid}: ${err}`);
                 }
-                await container.remove();
                 await workspaceHelper.updateState(ws.id, 'stopped');
+                await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id: ws.id, launch_uuid: null });
+                await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: ws.id, launch_port: null });
             } else if (ws.state == 'running') {
                 await pushContainerContentsToS3(ws);
             }
@@ -278,6 +281,65 @@ async function pushAllRunningContainersToS3() {
 }
 setInterval(pushAllRunningContainersToS3, config.workspaceHostForceUploadIntervalSec * 1000);
 
+/* Prune stopped and runaway containers */
+
+/**
+ * Remove any recently stopped containers.  These are identified by having a non-null launch_uuid
+ * and launch_port, but are marked as stopped by the main PrairieLearn instance.
+ */
+async function pruneStoppedContainers() {
+    const instance_id = workspace_server_settings.instance_id;
+    const recently_stopped = await sqldb.queryAsync(sql.get_recently_stopped_workspaces, { instance_id });
+    await async.each(recently_stopped.rows, async (ws) => {
+        try {
+            /* Try to kill, but don't care if it's already dead */
+            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+            await container.kill();
+            await container.remove();
+        } catch (err) {
+            logger.error(err);
+        }
+        await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id: ws.id, launch_uuid: null });
+        await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: ws.id, launch_port: null });
+    });
+}
+
+/**
+ * Remove any containers that are running but do not have a corresponding launch_uuid in the database.
+ */
+async function pruneRunawayContainers() {
+    const instance_id = workspace_server_settings.instance_id;
+    const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id });
+    const db_workspaces_uuid_set = new Set(db_workspaces.rows.map(ws => `workspace-${ws.launch_uuid}`));
+    let running_workspaces;
+    try {
+        running_workspaces = await docker.listContainers();
+    } catch (err) {
+        /* Nothing to do */
+        return;
+    }
+
+    await async.each(running_workspaces, async (container_info) => {
+        if (container_info.Names.length != 1) return;
+        const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
+        if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
+
+        try {
+            /* Try to kill, but don't care if it's already dead */
+            const container = await docker.getContainer(container_info.Id);
+            await container.kill();
+            await container.remove();
+        } catch (err) {
+            logger.error(err);
+        }
+    });
+}
+
+setInterval(async () => {
+    await pruneStoppedContainers();
+    await pruneRunawayContainers();
+}, config.workspaceHostPruneContainersSec * 1000);
+
 /**
  * Looks up a docker container by the UUID used to launch it.
  * Throws an exception if the container was not found or if there
@@ -286,13 +348,14 @@ setInterval(pushAllRunningContainersToS3, config.workspaceHostForceUploadInterva
  * @return Dockerode container object
  */
 async function _getDockerContainerByLaunchUuid(launch_uuid) {
-    const containers = await docker.listContainers({
-        filters: `name=workspace-${launch_uuid}`,
-    });
-    if (containers.length !== 1) {
+    try {
+        const containers = await docker.listContainers({
+            filters: `name=workspace-${launch_uuid}`,
+        });
+        return docker.getContainer(containers[0].Id);
+    } catch (err) {
         throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
     }
-    return docker.getContainer(containers[0].Id);
 }
 
 /**
@@ -316,16 +379,68 @@ async function _getWorkspaceAsync(workspace_id) {
  * @param {object} workspace Workspace object, should at least contain an id.
  * @return {integer} Port that was allocated to the workspace.
  */
+let _allocateContainerPortLock = false;
+let _allocateContainerPortLockWaiting = [];
 async function _allocateContainerPort(workspace) {
-    const sql_params = [
-        workspace_server_settings.instance_id,
-        workspace.id,
-    ];
-    const result = await sqldb.callAsync('workspace_host_allocate_port', sql_params);
-    const port = result.rows[0].port;
-    if (!port) {
-        throw new Error("Couldn't allocate a new port!");
+    /* Lock and unlock functions.  If the lock is free then this will return immediately.
+       If someone already has the lock then this will wait until someone calls unlock() */
+    async function lock() {
+        if (!_allocateContainerPortLock) {
+            _allocateContainerPortLock = true;
+        } else {
+            const promise = new Promise((resolve, _reject) => {
+                _allocateContainerPortLockWaiting.append(resolve);
+            });
+            await promise;
+        }
     }
+    /* Free the lock and call the next waiting promise, if it exists */
+    async function unlock() {
+        if (_allocateContainerPortLockWaiting.length > 0) {
+            const next = _allocateContainerPortLockWaiting.shift();
+            next();
+        } else {
+            /* Only unlock if we're the last person in the queue to use this */
+            _allocateContainerPortLock = false;
+        }
+    }
+    /* Check if a port is considered free in the database */
+    async function check_port_db(port) {
+        const params = {
+            instance_id: workspace_server_settings.instance_id,
+            port,
+        };
+        const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
+        return !result.rows[0].port_used;
+    }
+    /* Spin up a server to check if a port is free */
+    async function check_port_server(port) {
+        return new Promise((res) => {
+            var server = net.createServer();
+            server.listen(port, function (_) {
+                server.once('close', function () {
+                    res(true);
+                });
+                server.close();
+            });
+            server.on('error', function (_) {
+                res(false);
+            });
+        });
+    }
+
+    await lock();
+    let port;
+    let done = false;
+    while (!done) {
+        /* Generate a random port from 1024 to 65535*/
+        port = 1024 + Math.floor(Math.random() * (65535 - 1024));
+        if (!(await check_port_db(port))) continue;
+        if (!(await check_port_server(port))) continue;
+        done = true;
+    }
+    await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, launch_port: port });
+    await unlock();
     return port;
 }
 
@@ -517,13 +632,17 @@ async function _autoUpdateJobManager() {
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
 
+        let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
             continue;
         } else {
-            var s3_path = `${s3_name}/${local_path}`;
+            s3_path = `${s3_name}/${local_path}`;
+        }
+        if (s3_path === null) {
+            throw new Error('S3 path is null!');
         }
 
         if (update_queue[key].action == 'update') {
@@ -736,7 +855,7 @@ function initSequence(workspace_id, res) {
 
     async.waterfall([
         async () => {
-            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, uuid });
+            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, 'launch_uuid': uuid });
             return workspace;
         },
         _syncPullContainer,

@@ -58,9 +58,26 @@ WHERE
 UPDATE
     workspaces AS w
 SET
-    launch_uuid = $uuid
+    launch_uuid = $launch_uuid
 WHERE
     w.id = $workspace_id;
+
+-- BLOCK set_workspace_launch_port
+UPDATE
+    workspaces AS w
+SET
+    launch_port = $launch_port
+WHERE
+    w.id = $workspace_id;
+
+-- BLOCK get_is_port_occupied
+SELECT
+    EXISTS(
+        SELECT 1 AS dummy
+        FROM workspaces AS w
+        JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
+        WHERE wh.instance_id = $instance_id AND w.launch_port = $port
+    ) AS port_used;
 
 -- BLOCK get_running_workspaces
 SELECT
@@ -71,5 +88,17 @@ JOIN
     workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
     (w.state = 'launching' OR w.state = 'running')
+    AND w.launch_uuid IS NOT NULL
+    AND wh.instance_id = $instance_id;
+
+-- BLOCK get_recently_stopped_workspaces
+SELECT
+    w.*
+FROM
+    workspaces AS w
+JOIN
+    workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
+WHERE
+    w.state = 'stopped'
     AND w.launch_uuid IS NOT NULL
     AND wh.instance_id = $instance_id;
