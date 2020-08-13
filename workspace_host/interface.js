@@ -295,13 +295,25 @@ async function pruneStoppedContainers() {
     const instance_id = workspace_server_settings.instance_id;
     const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, { instance_id });
     await async.each(recently_stopped.rows, async (ws) => {
+        /* Use these awful try catch blocks because we actually do want to try each */
+        let container;
         try {
             /* Try to kill, but don't care if it's already dead */
-            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+            container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+        } catch (err) {
+            /* No container */
+            await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
+            return;
+        }
+        try {
             await container.kill();
+        } catch (err) {
+            debug(`Couldn't kill stopped container: ${err}`);
+        }
+        try {
             await container.remove();
         } catch (err) {
-            logger.error(err);
+            debug(`Couldn't remove stopped container: ${err}`);
         }
         await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
     });
@@ -327,13 +339,23 @@ async function pruneRunawayContainers() {
         const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
         if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
 
+        /* Use these awful try catch blocks because we actually do want to try each */
+        let container;
         try {
             /* Try to kill, but don't care if it's already dead */
-            const container = await docker.getContainer(container_info.Id);
+            container = await docker.getContainer(container_info.Id);
+        } catch (
+            return;
+        }
+        try {
             await container.kill();
+        } catch (err) {
+            debug(`Couldn't kill stopped container: ${err}`);
+        }
+        try {
             await container.remove();
         } catch (err) {
-            logger.error(err);
+            debug(`Couldn't remove stopped container: ${err}`);
         }
     });
 }
