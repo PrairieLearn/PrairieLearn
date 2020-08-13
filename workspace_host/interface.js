@@ -180,24 +180,26 @@ async.series([
     async () => {
         /* If we have any running workspaces we're probably recovering from a crash
            and we should sync files to S3 */
-        const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
+        const result = await sqldb.queryAsync(sql.recover_crash_workspaces, { instance_id: workspace_server_settings.instance_id });
         await async.eachSeries(result.rows, async (ws) => {
-            debug(`Found container ${ws.launch_uuid}`);
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                     await dockerAttemptKillAndRemove(container);
-                    debug(`Killed and removed container ${ws.launch_uuid}`);
                 } finally {
                     /* It doesn't actually matter if the container isn't running or it doesn't exist */
                     await workspaceHelper.updateState(ws.id, 'stopped');
                     await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 }
             } else if (ws.state == 'running') {
-                await pushContainerContentsToS3(ws);
-                debug(`Pushed ${ws.launch_uuid} to S3`);
+                if (ws.launch_uuid) {
+                    await pushContainerContentsToS3(ws);
+                } else {
+                    await workspaceHelper.updateState(ws.id, 'stopped');
+                    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
+                }
             }
         });
     },

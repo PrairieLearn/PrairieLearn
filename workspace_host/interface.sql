@@ -87,6 +87,18 @@ SELECT
         WHERE wh.instance_id = $instance_id AND w.launch_port = $port
     ) AS port_used;
 
+-- BLOCK recover_crash_workspaces
+-- Similar to the query below, but we don't care if the launch_uuid options are null
+SELECT
+    w.*
+FROM
+    workspaces AS w
+JOIN
+    workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
+WHERE
+    (w.state = 'launching'::enum_workspace_state OR w.state = 'running'::enum_workspace_state)
+    AND wh.instance_id = $instance_id;
+
 -- BLOCK get_running_workspaces
 SELECT
     w.*
