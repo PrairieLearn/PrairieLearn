@@ -300,7 +300,7 @@ async function pruneStoppedContainers() {
         try {
             /* Try to kill, but don't care if it's already dead */
             container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-        } catch (err) {
+        } catch (_err) {
             /* No container */
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             return;
@@ -342,12 +342,13 @@ async function pruneRunawayContainers() {
         /* Use these awful try catch blocks because we actually do want to try each */
         let container;
         try {
-            /* Try to kill, but don't care if it's already dead */
             container = await docker.getContainer(container_info.Id);
-        } catch (
+        } catch (_err) {
+            /* Docker failed to get the container, oh well */
             return;
         }
         try {
+            /* Try to kill, but don't care if it's already dead */
             await container.kill();
         } catch (err) {
             debug(`Couldn't kill stopped container: ${err}`);
