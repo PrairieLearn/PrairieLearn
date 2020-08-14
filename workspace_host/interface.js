@@ -895,7 +895,7 @@ function initSequence(workspace_id, useInitialZip, res) {
                 });
             } else {
                 debug(`Syncing workspace from S3`);
-                _syncPullContainer(workspace, (err) => {
+                _getInitialFiles(workspace, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null, workspace);
                 });
@@ -924,7 +924,7 @@ function initSequence(workspace_id, useInitialZip, res) {
 function resetSequence(workspace_id, res) {
     async.waterfall([
         async () => { return await _getWorkspaceAsync(workspace_id); },
-        _syncPullContainer,
+        _getInitialFiles,
     ], function(err) {
         if (err) {
             res.status(500).send(err);
