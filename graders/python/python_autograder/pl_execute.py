@@ -17,18 +17,12 @@ from IPython.core.interactiveshell import InteractiveShell
 def extract_cell_content(f, ipynb_key):
     nb = read(f, 4)
     shell = InteractiveShell.instance()
-    content = ""
+    content = ''
     for cell in nb.cells:
-        if cell["cell_type"] == "code":
+        if cell['cell_type'] == 'code':
             code = shell.input_transformer_manager.transform_cell(cell.source)
-            lines = code.splitlines(keepends=True)
-            first_line = lines[0] if len(lines) > 0 else ''
-            if ipynb_key in first_line:
+            if code.strip().startswith(ipynb_key):
                 content += code
-                continue
-            for line in lines:
-                if "import" in line:
-                    content += line
     return content
 
 class UserCodeFailed(Exception):
@@ -71,10 +65,15 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_setup = f.read()
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
+    try:
+        with open(join(filenames_dir, 'leading_code.py'), 'r', encoding='utf-8') as f:
+            str_leading = f.read()
+    except:
+        str_leading = ''
     with open(fname_student, 'r', encoding='utf-8') as f:
         filename, extension = splitext(fname_student)
         if extension == '.ipynb':
-            str_student = extract_cell_content(f, ipynb_key)
+            str_student = str_leading + extract_cell_content(f, ipynb_key)
         else:
             str_student = f.read()
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
