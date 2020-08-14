@@ -18,7 +18,10 @@
     <div class="d-flex flex-row ml-auto align-items-center">
       <ul class="navbar-nav flex-row">
         <li class="mr-2">
-          <span id="state" class="badge badge-dark text-uppercase"></span>
+          <div class="badge badge-dark">
+            <span id="state" class="text-uppercase"><i class="fas fa-spinner fa-pulse"></i></span>
+            <span id="message" class="font-weight-normal"></span>
+          </div>
         </li>
       </ul>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
@@ -92,6 +95,11 @@
       socket.on('change:state', (msg) => {
         console.log(`change:state, msg = ${JSON.stringify(msg)}`);
         setState(msg.state);
+      });
+
+      socket.on('change:message', (msg) => {
+        console.log(`change:message, msg = ${JSON.stringify(msg)}`);
+        document.getElementById('message').innerHTML = msg.message;
       });
 
       socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {

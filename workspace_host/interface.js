@@ -693,6 +693,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 }
 
 async function _syncInitialZipAsync(workspace) {
+    workspaceHelper.updateMessage(workspace.id, 'Preparing initial files');
     const localName = workspace.local_name;
     const s3Name = workspace.s3_name;
     const localPath = `${workspacePrefix}/${localName}`;
@@ -710,6 +711,7 @@ async function _syncInitialZipAsync(workspace) {
 const _syncInitialZip = util.callbackify(_syncInitialZipAsync);
 
 function _syncPullContainer(workspace, callback) {
+    workspaceHelper.updateMessage(workspace.id, 'Loading files');
     _recursiveDownloadJobManager(`${workspacePrefix}/${workspace.local_name}`, workspace.s3_name, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
@@ -738,6 +740,7 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
 }
 
 function _pullImage(workspace, callback) {
+    workspaceHelper.updateMessage(workspace.id, 'Pulling image');
     const workspace_image = workspace.settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
         logger.info(`Pulling docker image: ${workspace_image}`);
@@ -844,6 +847,7 @@ function _createContainer(workspace, callback) {
 }
 
 function _createContainerWrapper(workspace, callback) {
+    workspaceHelper.updateMessage(workspace.id, 'Creating container');
     async.parallel({
         query: (callback) => {_queryUpdateWorkspaceHostname(workspace.id, workspace.launch_port, callback);},
         container: (callback) => {_createContainer(workspace, callback);},
@@ -855,6 +859,7 @@ function _createContainerWrapper(workspace, callback) {
 }
 
 function _startContainer(workspace, callback) {
+    workspaceHelper.updateMessage(workspace.id, 'Starting container');
     workspace.container.start((err) => {
         if (ERR(err, callback)) return;
         callback(null, workspace);
@@ -874,7 +879,7 @@ function initSequence(workspace_id, useInitialZip, res) {
     };
 
     // send 200 immediately to prevent socket hang up from _pullImage()
-    res.status(200).send(`Container for workspace ${workspace_id} initialized.`);
+    res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
     async.waterfall([
         async () => {
@@ -909,8 +914,7 @@ function initSequence(workspace_id, useInitialZip, res) {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
                 debug(`Container initialized for workspace_id=${workspace_id}`);
-                const state = 'running';
-                workspaceHelper.updateState(workspace_id, state);
+                workspaceHelper.updateState(workspace_id, 'running');
             });
         }
     });
