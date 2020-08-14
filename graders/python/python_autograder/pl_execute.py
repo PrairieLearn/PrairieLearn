@@ -21,8 +21,14 @@ def extract_cell_content(f, ipynb_key):
     for cell in nb.cells:
         if cell["cell_type"] == "code":
             code = shell.input_transformer_manager.transform_cell(cell.source)
-            if ipynb_key in code:
+            lines = code.splitlines(keepends=True)
+            first_line = lines[0] if len(lines) > 0 else ''
+            if ipynb_key in first_line:
                 content += code
+                continue
+            for line in lines:
+                if "import" in line:
+                    content += line
     return content
 
 class UserCodeFailed(Exception):
