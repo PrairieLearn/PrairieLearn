@@ -26,7 +26,7 @@ class PLTestCase(unittest.TestCase):
     student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
-    ipynb_key = '#keep'
+    ipynb_key = '#grade'
 
     @classmethod
     def setUpClass(self):

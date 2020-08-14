@@ -5,6 +5,7 @@ import numpy as np
 import numpy.random
 import random
 from os.path import join
+from os.path import splitext
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
@@ -36,7 +37,7 @@ def set_random_seed(seed=None):
 
 
 def execute_code(fname_ref, fname_student, include_plt=False,
-                 console_output_fname=None, test_iter_num=0, ipynb_key="keep"):
+                 console_output_fname=None, test_iter_num=0, ipynb_key="#grade"):
     """
     execute_code(fname_ref, fname_student)
 
@@ -65,7 +66,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
     with open(fname_student, 'r', encoding='utf-8') as f:
-        if fname_student[-6:] == '.ipynb':
+        filename, extension = splitext(fname_student)
+        if extension == '.ipynb':
             str_student = extract_cell_content(f, ipynb_key)
         else:
             str_student = f.read()
