@@ -693,7 +693,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 }
 
 async function _syncInitialZipAsync(workspace) {
-    workspaceHelper.updateMessage(workspace.id, 'Preparing initial files');
+    workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
     const localName = workspace.local_name;
     const s3Name = workspace.s3_name;
     const localPath = `${workspacePrefix}/${localName}`;
