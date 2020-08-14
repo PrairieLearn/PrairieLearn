@@ -710,7 +710,7 @@ async function _getInitialZipAsync(workspace) {
 }
 const _getInitialZip = util.callbackify(_getInitialZipAsync);
 
-function _syncPullContainer(workspace, callback) {
+function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
     _recursiveDownloadJobManager(`${workspacePrefix}/${workspace.local_name}`, workspace.s3_name, (err, jobs_params) => {
         if (ERR(err, callback)) return;
