@@ -11,6 +11,7 @@ const error = require('@prairielearn/prairielib/error');
 router.get('/:workspace_id', (req, res, _next) => {
     res.locals.workspace_id = req.params.workspace_id;
     res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
+    res.locals.workspaceHostFileWatchIntervalSec = config.workspaceHostFileWatchIntervalSec;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
