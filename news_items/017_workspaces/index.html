@@ -1,0 +1,63 @@
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+ p.content {
+     margin-top: 2rem;
+     margin-bottom: 2rem;
+ }
+ .code-block {
+     width: 50%;
+     margin-left: auto;
+     margin-right: auto;
+     overflow: hidden;
+     margin-bottom: 1rem;
+     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+     background: #f0f0f0;
+     padding: 1em;
+     padding-bottom: 0em;
+ }
+ .code-block div {
+     padding: 0.5rem;
+     display: block;
+     margin-bottom: -1em;
+     line-height: 125%;
+ }
+</style>
+
+<p class="content">
+    Thanks to the amazing work by <a href="https://github.com/tdy">Tim Yang</a>, <a href="https://github.com/nicknytko">Nicolas Nytko</a>, and <a href="https://github.com/polohan">Yipeng Han</a>, PrairieLearn now supports <i>container workspaces</i> allowing students to run browser based applications such as Visual Studio Code and JupyterLab from inside PrairieLearn questions!  These workspaces are tightly integrated with the existing external grading system, meaning your existing graders can be used to autograde workspace files.  Workspaces are also synced and backed up, so a student's environment will be restored the next time they open the same workspace.
+</p>
+
+<img class="border rounded shadow my-4" src="workspace.png" width="750px">
+
+<p class="content">
+    Adding workspace support to a question can be done by adding a <code class="user-output">workspaceOptions</code> key to the <code class="user-output">info.json</code> file.  This will contain, among other things, the image used for the workspace, the port that the application runs on, and any files that should be sent to the external grader.  The options for the Jupyter example are given below:
+</p>
+
+<div class="code-block rounded">
+    <pre>
+"workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": [
+        "Workbook.ipynb"
+    ]
+}</pre>
+</div>
+
+<p class="content">
+    Students can then launch workspaces if you include a <code class="user-output">&lt;pl-workspace&gt;</code> element in your <code class="user-output">question.html</code> file.
+    You can read more about the new workspaces functionality at the <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">PrairieLearn documentation</a>, or check out the <code class="user-output">demo/workspace/*</code> questions in the example course &mdash; XC 101.
+</p>
+
+<hr class="mt-5">
+<p class="text-right small">
+    Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+</p>
