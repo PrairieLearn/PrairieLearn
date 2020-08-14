@@ -692,7 +692,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     });
 }
 
-async function _syncInitialZipAsync(workspace) {
+async function _getInitialZipAsync(workspace) {
     workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
     const localName = workspace.local_name;
     const s3Name = workspace.s3_name;
