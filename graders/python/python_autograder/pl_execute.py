@@ -8,6 +8,21 @@ from os.path import join
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
+import io
+from IPython import get_ipython
+from nbformat import read
+from IPython.core.interactiveshell import InteractiveShell
+
+def extract_cell_content(f, ipynb_key):
+    nb = read(f, 4)
+    shell = InteractiveShell.instance()
+    content = ""
+    for cell in nb.cells:
+        if cell["cell_type"] == "code":
+            code = shell.input_transformer_manager.transform_cell(cell.source)
+            if ipynb_key in code:
+                content += code
+    return content
 
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
@@ -21,7 +36,7 @@ def set_random_seed(seed=None):
 
 
 def execute_code(fname_ref, fname_student, include_plt=False,
-                 console_output_fname=None, test_iter_num=0):
+                 console_output_fname=None, test_iter_num=0, ipynb_key="keep"):
     """
     execute_code(fname_ref, fname_student)
 
@@ -50,7 +65,10 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
     with open(fname_student, 'r', encoding='utf-8') as f:
-        str_student = f.read()
+        if fname_student[-6:] == '.ipynb':
+            str_student = extract_cell_content(f, ipynb_key)
+        else:
+            str_student = f.read()
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 
