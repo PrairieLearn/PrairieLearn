@@ -10,6 +10,12 @@
      margin-top: 2rem;
      margin-bottom: 2rem;
  }
+ p.content-last {
+     margin-top: 2rem;
+ }
+ p.content-first {
+     margin-bottom: 2rem;
+ }
  .code-block {
      width: 50%;
      margin-left: auto;
@@ -27,13 +33,46 @@
      margin-bottom: -1em;
      line-height: 125%;
  }
+ img.modal-image {
+     cursor: pointer;
+ }
 </style>
 
-<p class="content">
+<p class="content-first">
     Thanks to the amazing work by <a href="https://github.com/tdy">Tim Yang</a>, <a href="https://github.com/nicknytko">Nicolas Nytko</a>, <a href="https://github.com/polohan">Yipeng Han</a>, and <a href="https://github.com/nwalters512">Nathan Walters</a>, PrairieLearn now supports <i>container workspaces</i> that allow students to run browser based applications such as Visual Studio Code and JupyterLab from inside PrairieLearn questions!  These workspaces are tightly integrated with the existing external grading system, meaning your existing graders can be used to autograde workspace files.  Workspaces are also synced and backed up, so a student's environment will be restored the next time they open the same workspace.
 </p>
 
-<img class="border rounded shadow my-4" src="workspace.png" width="750px">
+<div class="container mt-4">
+    <div class="row align-items-center">
+        <div class="col">
+            <img class="border rounded shadow modal-image" src="jupyter.png" width=100%" header="Jupyter Lab">
+        </div>
+        <div class="col">
+            <img class="border rounded shadow modal-image" src="vscode.png" width="100%" header="Visual Studio Code">
+        </div>
+    </div>
+    <div class="row">
+        <img class="border rounded shadow modal-image" src="xterm.png" width="50%" header="Xterm.js">
+    </div>
+</div>
+<p><small><center>(Click for full size images)</center></small></p>
+
+<!-- Modal -->
+<div class="modal fade" id="image-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title" id="image-modal-title"></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <img class="border rounded" id="image-modal-preview" width="100%">
+      </div>
+    </div>
+  </div>
+</div>
 
 <p class="content">
     Adding workspace support to a question can be done by adding a <code class="user-output">workspaceOptions</code> key to the <code class="user-output">info.json</code> file.  This will contain, among other things, the image used for the workspace, the port that the application runs on, and any files that should be sent to the external grader.  The options for the Jupyter example are given below:
@@ -52,12 +91,27 @@
 }</pre>
 </div>
 
-<p class="content">
+<p class="content-last">
     Students can then launch workspaces if you include a <code class="user-output">&lt;pl-workspace&gt;</code> element in your <code class="user-output">question.html</code> file.
-    You can read more about the new workspaces functionality at the <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">PrairieLearn documentation</a>, or check out the <code class="user-output">demo/workspace/*</code> questions in the example course &mdash; XC 101.
+    You can read more about the new workspaces functionality at the <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">PrairieLearn documentation</a>, or check out the demo questions in the example course:
 </p>
+<ul>
+    <li><a href="https://prairielearn.engr.illinois.edu/pl/course/108/question/8677503/">JupyterLab</a></li>
+    <li><a href="https://prairielearn.engr.illinois.edu/pl/course/108/question/7972699/">VS Code</a></li>
+    <li><a href="https://prairielearn.engr.illinois.edu/pl/course/108/question/8677505/">Xterm.js</a></li>
+</ul>
 
 <hr class="mt-5">
 <p class="text-right small">
     Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
 </p>
+
+<script>
+ $('.modal-image').click((ev) => {
+     const src = ev.target.src;
+     const header = $(ev.target).attr('header');
+     $('#image-modal-preview').attr('src', src);
+     $('#image-modal-title').text(header);
+     $('#image-modal').modal('show');
+ });
+</script>
