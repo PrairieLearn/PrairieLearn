@@ -18,7 +18,7 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 
 * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
 * `port`: port number used by the workspace app inside the Docker image
-* `home`: home directory inside the Docker image
+* `home`: Home directory inside the Docker image.  This should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory.
 * `gradedFiles`: list of files or directories that will be copied out of the workspace container for grading
 * `args` (optional, default none): command line arguments to pass to the Docker image
 * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
@@ -115,6 +115,6 @@ For development, run the docker command with a final extra argument of `/Prairie
 
 Set these variables in your `config.json`:
 
-* `workspaceJobsDir` 
-* `workspaceGradedFilesReceiveDirectory` 
-* `workspaceGradedFilesSendDirectory` 
+* `workspaceJobsDir`
+* `workspaceGradedFilesReceiveDirectory`
+* `workspaceGradedFilesSendDirectory`
