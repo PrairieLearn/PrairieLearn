@@ -708,7 +708,7 @@ async function _getInitialZipAsync(workspace) {
 
     return workspace;
 }
-const _syncInitialZip = util.callbackify(_syncInitialZipAsync);
+const _getInitialZip = util.callbackify(_getInitialZipAsync);
 
 function _syncPullContainer(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
@@ -889,7 +889,7 @@ function initSequence(workspace_id, useInitialZip, res) {
         (workspace, callback) => {
             if (useInitialZip) {
                 debug(`Bootstrapping workspace with initial.zip`);
-                _syncInitialZip(workspace, (err) => {
+                _getInitialZip(workspace, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null, workspace);
                 });
