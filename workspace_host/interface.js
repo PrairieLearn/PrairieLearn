@@ -185,7 +185,7 @@ async.series([
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
-                await workspaceHelper.updateState(ws.id, 'stopped');
+                await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
                 await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
@@ -197,7 +197,7 @@ async.series([
                 if (ws.launch_uuid) {
                     await pushContainerContentsToS3(ws);
                 } else {
-                    await workspaceHelper.updateState(ws.id, 'stopped');
+                    await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
                     await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 }
             }
@@ -914,7 +914,7 @@ function initSequence(workspace_id, useInitialZip, res) {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
                 debug(`Container initialized for workspace_id=${workspace_id}`);
-                workspaceHelper.updateState(workspace_id, 'running');
+                workspaceHelper.updateState(workspace_id, 'running', null);
             });
         }
     });

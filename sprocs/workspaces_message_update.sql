@@ -16,6 +16,6 @@ BEGIN
     INSERT INTO workspace_logs
         (date, level, message, workspace_id)
     VALUES
-        (now(), 'info'::enum_log_level, workspace_message, workspace_id);
+        (now(), 'info'::enum_log_level, 'message:' || workspace_message, workspace_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;

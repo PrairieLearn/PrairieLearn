@@ -81,6 +81,12 @@
         document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
       };
 
+      function setMessage(message) {
+        if (typeof message !== 'undefined') {
+          document.getElementById('message').innerHTML = message;
+        }
+      }
+
       function setState(state) {
         if (state == 'running') {
           showWorkspaceFrame();
@@ -95,11 +101,12 @@
       socket.on('change:state', (msg) => {
         console.log(`change:state, msg = ${JSON.stringify(msg)}`);
         setState(msg.state);
+        setMessage(msg.message);
       });
 
       socket.on('change:message', (msg) => {
         console.log(`change:message, msg = ${JSON.stringify(msg)}`);
-        document.getElementById('message').innerHTML = msg.message;
+        setMessage(msg.message);
       });
 
       socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {
