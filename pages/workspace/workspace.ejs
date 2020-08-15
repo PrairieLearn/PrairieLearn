@@ -3,6 +3,7 @@
 
 <head>
   <%- include('../partials/head'); %>
+  <link rel="stylesheet" href="/stylesheets/workspace.css">
   <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
 </head>
 
@@ -18,10 +19,7 @@
     <div class="d-flex flex-row ml-auto align-items-center">
       <ul class="navbar-nav flex-row">
         <li class="mr-2">
-          <div class="badge badge-dark">
-            <span id="state" class="text-uppercase"><i class="fas fa-spinner fa-pulse"></i></span>
-            <span id="message" class="font-weight-normal"></span>
-          </div>
+          <span id="state" class="badge badge-dark text-uppercase"><i class="fas fa-spinner fa-pulse"></i></span><span id="message" class="badge badge-dark badge-append font-weight-normal"></span>
         </li>
       </ul>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
@@ -54,11 +52,11 @@
   </nav>
 
   <main class="d-flex flex-column flex-grow h-100">
-    <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
+    <div id="loading" class="d-flex flex-grow h-100 justify-content-center align-items-center">
       <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
       <span class="sr-only">Loading workspace &hellip;</span>
     </div>
-    <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
+    <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
   </main>
 
   <script>
@@ -68,34 +66,41 @@
   </script>
   <script>
     $(function () {
-      const iframe = document.getElementById('workspace_container');
-      var socket = io('/workspace');
+      const socket = io('/workspace');
+      const loadingFrame = document.getElementById('loading');
+      const workspaceFrame = document.getElementById('workspace');
+      const stateBadge = document.getElementById('state');
+      const messageBadge = document.getElementById('message');
 
       const showLoadingFrame = () => {
-        document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
-        document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
+        loadingFrame.style.setProperty('display', 'flex', 'important');
+        workspaceFrame.style.setProperty('display', 'none', 'important');
       };
 
       const showWorkspaceFrame = () => {
-        document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
-        document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
+        loadingFrame.style.setProperty('display', 'none', 'important');
+        workspaceFrame.style.setProperty('display', 'flex', 'important');
       };
 
       function setMessage(message) {
-        if (typeof message !== 'undefined') {
-          document.getElementById('message').innerHTML = message;
+        console.log(`message=${message}`);
+        messageBadge.innerHTML = message;
+        if (message) {
+          stateBadge.classList.add('badge-prepend');
+        } else {
+          stateBadge.classList.remove('badge-prepend');
         }
       }
 
       function setState(state) {
         if (state == 'running') {
           showWorkspaceFrame();
-          iframe.src = `${window.location.href}/container/`;
+          workspaceFrame.src = `${window.location.href}/container/`;
         }
         if (state == 'stopped') {
-          iframe.src = 'about:blank';
+          workspaceFrame.src = 'about:blank';
         }
-        document.getElementById('state').innerHTML = state;
+        stateBadge.innerHTML = state;
       }
 
       socket.on('change:state', (msg) => {
