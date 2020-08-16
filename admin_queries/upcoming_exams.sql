@@ -6,7 +6,7 @@ WITH access_rules_with_near_date AS (
         aar.time_limit_min,
         coalesce(
             array_length(aar.uids, 1),
-            (SELECT count(*) FROM enrollments AS e WHERE e.course_instance_id = a.course_instance_id AND e.role = 'Student')
+            (SELECT count(*) FROM enrollments AS e WHERE e.course_instance_id = a.course_instance_id AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id))
         ) AS student_count
     FROM
         assessment_access_rules AS aar

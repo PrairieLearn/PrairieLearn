@@ -125,6 +125,7 @@ module.exports = {
             'users_is_instructor_in_any_course.sql',
             'users_is_instructor_in_course.sql',
             'users_is_instructor_in_course_instance.sql',
+            'users_get_displayed_role.sql',
             'users_randomly_generate.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',

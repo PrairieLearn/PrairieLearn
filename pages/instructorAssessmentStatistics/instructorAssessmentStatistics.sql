@@ -30,7 +30,7 @@ WITH assessment_instances_by_user_and_date AS (
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE
         ai.assessment_id = $assessment_id
-        AND e.role = 'Student'
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
     GROUP BY
         ai.user_id, date_trunc('day', date AT TIME ZONE ci.display_timezone)
 )

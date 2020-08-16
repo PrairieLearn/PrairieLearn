@@ -1,7 +1,7 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.uin, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.uin, u.name, users_get_displayed_role(u.user_id, ci.course_instance_id) AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -22,11 +22,10 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.uin, u.user_id, ai.number, ai.id;
+    u.uid, u.uin, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_instance_questions
@@ -34,7 +33,7 @@ SELECT
     u.uid,
     u.uin,
     u.name,
-    e.role,
+    users_get_displayed_role(u.user_id, ci.course_instance_id) AS role,
     (aset.name || ' ' || a.number) AS assessment_label,
     ai.number AS assessment_instance_number,
     q.qid,
@@ -56,7 +55,6 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN users AS u ON (u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE
     a.id = $assessment_id
 ORDER BY
@@ -101,7 +99,7 @@ WITH all_submissions AS (
         u.uid,
         u.uin,
         u.name,
-        e.role,
+        users_get_displayed_role(u.user_id, ci.course_instance_id) AS role,
         (aset.name || ' ' || a.number) AS assessment_label,
         ai.number AS assessment_instance_number,
         q.qid,
@@ -135,7 +133,6 @@ WITH all_submissions AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)

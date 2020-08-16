@@ -64,7 +64,7 @@ BEGIN
                 enrollments AS e
             WHERE
                 e.course_instance_id = ci.id
-                AND e.role = 'Student'
+                AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
         ) AS e
     WHERE
         c.id = course_instances_with_staff_access.course_id
