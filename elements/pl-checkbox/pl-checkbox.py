@@ -99,7 +99,7 @@ def prepare(element_html, data):
         raise Exception('duplicate params variable name: %s' % name)
     if name in data['correct_answers']:
         raise Exception('duplicate correct_answers variable name: %s' % name)
-    # Need to store min_correct and max_correct for helptext in render()
+    # Need to store min_correct and max_correct for other functions
     data['params'][name] = [display_answers, min_correct, max_correct]
     data['correct_answers'][name] = correct_answer_list
 
