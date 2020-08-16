@@ -8,6 +8,9 @@ def add_format_error(data, error_string):
 
 
 def render(element_html, data):
+    if data['panel'] != 'question':
+        return ''
+
     # Get workspace url
     # TODO: Improve UX if key undefined (https://github.com/PrairieLearn/PrairieLearn/pull/2665#discussion_r449319839)
     workspace_url = data['options']['workspace_url']
