@@ -38,11 +38,13 @@
     urlSuffix:      '/assessment/'+assessment.id+'/assessment_statistics',
     iconClasses:    'fas fa-chart-bar',
     tabLabel:       'Statistics'}) %>
+<% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'instances',
     urlSuffix:      '/assessment/'+assessment.id+'/instances',
     iconClasses:    'fas fa-users',
     tabLabel:       'Students'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'uploads',
     urlSuffix:      '/assessment/'+assessment.id+'/uploads',

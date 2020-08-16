@@ -15,6 +15,7 @@
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
 
+      <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -87,16 +88,19 @@
           </div>
         </div>
       </div>
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
+          <% if (authz_data.has_course_instance_permission_edit) { %>
           <div class="ml-auto">
             <button type="button" class="btn btn-sm btn-light" tabindex="0"
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
             </button>
           </div>
+          <% } %>
         </div>
 
         <div class="table-responsive">
@@ -111,7 +115,7 @@
                 <th class="text-center">Date started</th>
                 <th class="text-center">Duration</th>
                 <th class="text-center">Remaining</th>
-                <th class="text-center"></th>
+                <% if (authz_data.has_course_instance_permission_edit) { %><th class="text-center"></th><% } %>
                 <th class="text-center"></th>
               </tr>
             </thead>
@@ -126,6 +130,7 @@
                 <td class="text-center"><%= row.date_formatted %></td>
                 <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center"><%= row.time_remaining %></td>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <td class="text-center">
                   <div class="dropdown">
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -185,7 +190,7 @@
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_instructor_edit) { %>
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item"
                          href="#"
                          data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
@@ -201,7 +206,7 @@
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_instructor_edit) { %>
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
                         <i class="fa fa-sync" aria-hidden="true"></i> Regrade
                       </a>
@@ -209,7 +214,7 @@
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_instructor_edit) { %>
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
                         <i class="far fa-circle" aria-hidden="true"></i> Re-open
                       </a>
@@ -217,7 +222,7 @@
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_instructor_edit) { %>
+                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
                         <i class="fa fa-ban" aria-hidden="true"></i> Close
                       </a>
@@ -228,21 +233,16 @@
                     </div>
                   </div>
                 </td>
+                <% } %>
                 <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
               <% }); %>
             </tbody>
           </table>
-          
+
           <div class="card-footer">
             <small>
-              <strong>Roles:</strong>
-              <ul>
-                 <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
-                 <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
-                 <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
-                 <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
-              </ul>
+              Any user with the role of <strong>None</strong> is either a former student who chose to unenroll or a former staff member whose access to course content or student data was removed.
             </small>
           </div>
         </div>
@@ -254,8 +254,8 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
-                      7: {sorter: false},
                       8: {sorter: false},
+                      9: {sorter: false},
                   },
               });
           });

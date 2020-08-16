@@ -1,7 +1,12 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.name,
+    CASE
+        WHEN users_is_instructor_in_course_instance(u.user_id, ci.id) THEN 'Staff'
+        WHEN e.id IS NULL THEN 'None'
+        ELSE 'Student'
+    END AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -26,7 +31,7 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.user_id, ai.number, ai.id;
+    u.uid, u.user_id, ai.number, ai.id;
 
 -- BLOCK open
 WITH results AS (
