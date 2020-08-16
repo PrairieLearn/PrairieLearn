@@ -120,12 +120,3 @@ FROM
     variants AS v
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
-
--- BLOCK select_workspace_graded_files
-SELECT
-    q.workspace_graded_files
-FROM
-    questions AS q
-    JOIN variants AS v ON (v.question_id = q.id)
-WHERE
-    v.workspace_id = $workspace_id;
