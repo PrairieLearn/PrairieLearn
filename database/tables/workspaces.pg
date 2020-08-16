@@ -1,10 +1,15 @@
 columns
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    heartbeat_at: timestamp with time zone
     hostname: text
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
+    launch_port: bigint
+    launch_uuid: text
     launched_at: timestamp with time zone
-    s3_bucket: text
-    s3_root_key: text
+    message: text
+    message_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
+    state_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     workspace_host_id: bigint
 
 indexes

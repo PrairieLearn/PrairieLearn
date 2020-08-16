@@ -36,3 +36,12 @@ WHERE
 SELECT w.state
 FROM workspaces as w
 WHERE w.id = $workspace_id;
+
+-- BLOCK update_workspace_heartbeat_at_now
+UPDATE workspaces AS w
+SET
+    heartbeat_at = now()
+WHERE
+    w.id = $workspace_id
+RETURNING
+    heartbeat_at;
