@@ -3,7 +3,7 @@ SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name,
     CASE
-        WHEN users_is_instructor_in_course_instance(u.user_id, ci.id) THEN 'Staff'
+        WHEN users_is_instructor_in_course(u.user_id, ci.id) THEN 'Staff'
         WHEN e.id IS NULL THEN 'None'
         ELSE 'Student'
     END AS role,
