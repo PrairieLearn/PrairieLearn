@@ -40,7 +40,7 @@ class PLTestCase(unittest.TestCase):
 
         # Load data so that we can use it in the test cases
         filenames_dir = os.environ.get("FILENAMES_DIR")
-        with open(join(filenames_dir, 'data.json')) as f:
+        with open(join(filenames_dir, 'data.json'), encoding='utf-8') as f:
             self.data = json.load(f)
 
         ref_result, student_result, plot_value = execute_code(join(filenames_dir, 'ans.py'),

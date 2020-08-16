@@ -11,6 +11,8 @@ if [[ ! -z "$CONTAINERS" ]] ; then
    docker rm $CONTAINERS
 fi
 
+export DONT_START_WORKSPACE_HOST_IN_INIT=true
+
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \
   send-keys "docker/init.sh" C-m \; \
