@@ -35,7 +35,6 @@ if ('config' in argv) {
     configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
-const zipPrefix = config.workspaceHostZipsDirectory;
 
 logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
 
@@ -153,7 +152,7 @@ async.series([
         }
     },
     (callback) => {
-        fs.mkdir(zipPrefix, { recursive: true, mode: 0o700 }, (err) => {
+        fs.mkdir(config.workspaceHostZipsDirectory, { recursive: true, mode: 0o700 }, (err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -697,7 +696,7 @@ async function _getInitialZipAsync(workspace) {
     const localName = workspace.local_name;
     const s3Name = workspace.s3_name;
     const localPath = `${workspacePrefix}/${localName}`;
-    const zipPath = `${zipPrefix}/${localName}-initial.zip`;
+    const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
     const s3Path = s3Name.replace('current', 'initial.zip');
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
@@ -943,7 +942,7 @@ function gradeSequence(workspace_id, res) {
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
             const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
-            zipPath = path.join(zipPrefix, zipName);
+            zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
             return {
                 workspace,
