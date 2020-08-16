@@ -45,8 +45,10 @@
     iconClasses:    'fas fa-users',
     tabLabel:       'Students'}) %>
 <% } %>
+<% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'uploads',
     urlSuffix:      '/assessment/'+assessment.id+'/uploads',
     iconClasses:    'fas fa-upload',
     tabLabel:       'Uploads'}) %>
+<% } %>

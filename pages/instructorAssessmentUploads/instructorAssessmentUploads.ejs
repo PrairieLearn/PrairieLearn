@@ -18,6 +18,7 @@
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
 
+      <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="modal fade" id="uploadInstanceQuestionScoresModal" tabindex="-1" role="dialog" aria-labelledby="uploadInstanceQuestionScores">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -75,12 +76,14 @@
           </div>
         </div>
       </div>
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Uploads
         </div>
 
+        <% if (authz_data.has_course_instance_permission_edit) { %>
         <div class="table-responsive pb-0">
           <table class="table">
             <tr>
@@ -117,6 +120,7 @@
             </tr>
           </table>
         </div>
+        <% } %>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover">
