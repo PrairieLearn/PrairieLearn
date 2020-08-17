@@ -21,47 +21,44 @@ def render(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     if data['panel'] == 'question':
-        # I PROMISE I WILL FIX THIS WHEN I FIGURE OUT HOW TO USE MUSTACHE 
         mcq_options = []   # stores MCQ options
         question_instruction_blocks = []   # stores question instructions within the table
+        student_previous_submission = []
         html_string = ''
-        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
 
-        for html_tags in pl_drag_drop_element:
+        for html_tags in element:
             if html_tags.tag == 'pl-answer':
                 pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
             if html_tags.tag == 'pl-info':
                 question_instruction_blocks.append(str.strip(html_tags.text))
 
-        answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-
-        html_string = '<div class="row"><div class="column"><ul ' + f'id="{str(answerName) + str("-options")}" name="{str(answerName)}"' + 'class="connectedSortable" >'
+        answerName = pl.get_string_attrib(element, 'answers-name')
+        header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
+        header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
 
         # check whether we need to shuffle the MCQ options
-        pl.check_attribs(pl_drag_drop_element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode'])
-        isShuffle = pl.get_string_attrib(pl_drag_drop_element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
+        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode'])
+        isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
+        
         if isShuffle == 'true':
             # concat the two arrays so we can shuffle all the options
             random.shuffle(mcq_options)
-        html_string += "<li class='ui-sortable-handle info info-fixed'>Choose from these option:</li>"
-        student_previous_submission = []
+
         if answerName in data['submitted_answers']:
             student_previous_submission = data['submitted_answers'][answerName]['student_raw_submission']
-            # the student has previously submitted something
-            # we render the MCQ options the student DID NOT drag in the
-            # MCQ options column
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
 
-        for mcq_options_text in mcq_options:
-            # render options column
-            html_string += f'<li>{mcq_options_text}</li>'
 
-        html_string += f'</ul></div><div class="column"><ul id="{str(answerName) + str("-dropzone")}" name="{str(answerName)}" class="connectedSortable dropzone"><li class="ui-sortable-handle info info-fixed">Drag your answers below:</li>'
+        html_params = {
+            'question': True,
+            'answerName': answerName,
+            'options': mcq_options,
+            'header-left-column': header_left_column,
+            'header-right-column': header_right_column
+            # 'data': data
+        }
 
-        for instruction_text in question_instruction_blocks:
-            # render the question instruction bullet points
-            html_string += f"<li class='ui-sortable-handle info info-fixed code'>{instruction_text}</li>"
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
@@ -70,10 +67,10 @@ def render(element_html, data):
             html_string += f"<li style='margin-left: {submission_indent}px;'>{mcq_options_text}</li>"
         html_string += '</ul></div></div>'
 
-        answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
-        html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
-        # html_string += f'{data}'
-        return html_string
+        # html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
+        with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
+        return html
 
     elif data['panel'] == 'submission':
         # render the submission panel
@@ -98,8 +95,8 @@ def render(element_html, data):
             'colour': colour,
             'score': score,
             'perfect_score': True if score == 100 else None,
-            'feedback': feedback
-            # 'data': data
+            'feedback': feedback,
+            'data': data
         }
 
         # Finally, render the HTML
