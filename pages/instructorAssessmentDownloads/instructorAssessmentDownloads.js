@@ -37,8 +37,9 @@ const setFilenames = function(locals) {
     locals.allFilesZipFilename = prefix + 'all_files.zip';
 };
 
-router.get('/', function(req, res, _next) {
+router.get('/', function(req, res, next) {
     debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
     setFilenames(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
@@ -62,6 +63,13 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
 };
 
 router.get('/:filename', function(req, res, next) {
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    //
+    // NOTE: you could argue that some downloads should be restricted further to users with
+    // permission to view code (Course role: Viewer). For example, '*_all_submissions.csv'
+    // contains seed, params, true_answer, and so forth. We will ignore this for now.
+    //
+
     setFilenames(res.locals);
 
     var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
