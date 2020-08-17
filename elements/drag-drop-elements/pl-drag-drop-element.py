@@ -22,52 +22,50 @@ def render(element_html, data):
 
     if data['panel'] == 'question':
         mcq_options = []   # stores MCQ options
-        question_instruction_blocks = []   # stores question instructions within the table
         student_previous_submission = []
-        html_string = ''
+        submission_indent = []
 
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
                 pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
-            if html_tags.tag == 'pl-info':
-                question_instruction_blocks.append(str.strip(html_tags.text))
 
         answerName = pl.get_string_attrib(element, 'answers-name')
         header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
         header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
 
         # check whether we need to shuffle the MCQ options
-        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode'])
+        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode', 'check-indentation', 'header-left-column', 'header-right-column'])
         isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
         
         if isShuffle == 'true':
             # concat the two arrays so we can shuffle all the options
             random.shuffle(mcq_options)
 
+        student_submission_dict_list = []
+
         if answerName in data['submitted_answers']:
             student_previous_submission = data['submitted_answers'][answerName]['student_raw_submission']
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
-
-
-        html_params = {
-            'question': True,
-            'answerName': answerName,
-            'options': mcq_options,
-            'header-left-column': header_left_column,
-            'header-right-column': header_right_column
-            # 'data': data
-        }
 
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
             submission_indent = data['submitted_answers'][answerName]['student_answer_indent'][index]
             submission_indent = (int(submission_indent) * 50) + 5
-            html_string += f"<li style='margin-left: {submission_indent}px;'>{mcq_options_text}</li>"
-        html_string += '</ul></div></div>'
+            temp = {'text': mcq_options_text, 'indent': submission_indent}
+            student_submission_dict_list.append(dict(temp))
 
-        # html_string += f'<input id="{str(answerName) + str("-input") }" type="hidden" name="{str(answerName) + str("-input") }" value=""/>'
+        html_params = {
+            'question': True,
+            'answerName': answerName,
+            'options': mcq_options,
+            'header-left-column': header_left_column,
+            'header-right-column': header_right_column,
+            'submission_dict': student_submission_dict_list
+            # 'data': data
+        }
+
         with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
         return html
@@ -95,8 +93,8 @@ def render(element_html, data):
             'colour': colour,
             'score': score,
             'perfect_score': True if score == 100 else None,
-            'feedback': feedback,
-            'data': data
+            'feedback': feedback
+            # 'data': data
         }
 
         # Finally, render the HTML
@@ -241,8 +239,9 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
+    check_indentation =  pl.get_string_attrib(element, 'check-indentation', 'true')
     # check indents, and apply penalty if applicable
-    if true_answer_indent.count('-1') != len(true_answer_indent):
+    if true_answer_indent.count('-1') != len(true_answer_indent) or check_indentation == 'true':
         for i, indent in enumerate(student_answer_indent):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
