@@ -4,6 +4,7 @@ columns
     level: enum_log_level
     message: text
     workspace_id: bigint not null
+    workspace_version: bigint not null
 
 indexes
     workspace_logs_pkey: PRIMARY KEY (id) USING btree (id)
