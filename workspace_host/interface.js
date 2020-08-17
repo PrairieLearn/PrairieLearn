@@ -152,12 +152,6 @@ async.series([
         }
     },
     (callback) => {
-        fs.mkdir(config.workspaceHostZipsDirectory, { recursive: true, mode: 0o700 }, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
         logger.info(`Listening on port ${workspace_server_settings.port}`);
