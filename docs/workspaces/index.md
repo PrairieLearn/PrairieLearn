@@ -51,11 +51,19 @@ A full `info.json` file for a workspace question should look something like:
 
 ### `question.html`
 
-The workspace submission panel `<pl-submission-panel>` should include the file preview element `<pl-file-preview>`. This will enable your students not only to preview the graded files but also to receive file submission error messages.
+The `Open workspace` button should be included using the workspace element `<pl-workspace>`.
 
-The submission panel should look something like:
+The workspace submission panel `<pl-submission-panel>` should include the file preview element `<pl-file-preview>`. This will enable students not only to preview submitted files but also to receive file submission error messages.
+
+A minimal `question.html` for an externally graded workspace should look something like:
 
 ```html
+<pl-question-panel>
+  This is a minimal workspace question with external grading.
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+  <pl-workspace>
+</pl-question-panel>
+
 <pl-submission-panel>
   <pl-external-grader-results></pl-external-grader-results>
   <pl-file-preview></pl-file-preview>
