@@ -23,11 +23,13 @@
     urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
     iconClasses:    'fas fa-table',
     tabLabel:       'Question stats'}) %>
+<% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'regrading',
     urlSuffix:      '/assessment/'+assessment.id+'/regrading',
     iconClasses:    'fa fa-sync',
     tabLabel:       'Regrading'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'settings',
     urlSuffix:      '/assessment/'+assessment.id+'/settings',
