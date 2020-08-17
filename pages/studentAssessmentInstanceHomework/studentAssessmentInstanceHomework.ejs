@@ -56,7 +56,7 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-              <th>Question</th>
+              <th colspan="2">Question</th>
               <th class="text-center">Value</th>
               <th class="text-center">History</th>
               <th class="text-center">Awarded points</th>
@@ -66,7 +66,8 @@
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
-              <th colspan="4">
+              <th width="50" style="visibility:hidden;">Thumbnail</th>
+              <th colspan="5">
                 <%= question.zone_title %>
                 <% if (question.zone_has_max_points) { %>
                     &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
@@ -84,6 +85,9 @@
             </tr>
             <% } %>
             <tr>
+              <td>
+                <%- include('../partials/questionThumbnail', {location: question.filename_location, filename: question.thumbnail_filename, id: question.question_id}); %>
+              </td>
               <td>
                 <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>

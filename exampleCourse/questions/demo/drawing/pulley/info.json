@@ -5,5 +5,9 @@
     "type": "v3",
     "tags": [
 	       "mfsilva"
-    ]
+    ],
+    "thumbnail": {
+        "filename": "pully.png",
+        "location": "question"
+    }
 }

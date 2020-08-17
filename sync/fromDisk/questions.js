@@ -52,6 +52,8 @@ module.exports.sync = function(courseInfo, questionDB, jobLogger, callback) {
                 external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                 external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
                 external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
+                thumbnail_filename: (q.thumbnail && q.thumbnail.filename),
+                filename_location: (q.thumbnail && q.thumbnail.location),
                 dependencies: q.dependencies || {},
                 workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
                 workspace_port: (q.workspaceOptions && q.workspaceOptions.port),

@@ -11,5 +11,9 @@
         "image": "prairielearn/grader-python",
         "entrypoint": "/python_autograder/run.sh",
         "timeout": 20
+    },
+    "thumbnail": {
+        "filename": "code.jpeg",
+        "location": "clientFilesCourse"
     }
 }

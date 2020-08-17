@@ -113,6 +113,19 @@ pre {
     overflow-wrap: normal;
 }
 
+.thumbnail {
+    height: 32px;
+    width: 32px;
+    transition: transform .2s, box-shadow .4s;
+    transform-origin: 0% 50%;
+    box-shadow: 0 0 0 rgba(0,0,0,.15) !important;
+}
+
+.thumbnail:hover {
+    transform: scale(3.0);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+}
+
 /**************
  * Submissions
  **************/

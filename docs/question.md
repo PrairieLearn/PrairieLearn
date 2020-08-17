@@ -69,6 +69,7 @@ Property | Type | Description
 `singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
 `partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
 `externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
+`thumbnail` | object | Contains a filename and directory location of a thumbnail associated with this question. (Optional; default: none)
 `dependencies` | object | External JavaScript or CSS dependencies to load.  See below.  (Optional; default: `{}`)
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
@@ -113,7 +114,8 @@ Property | Description
 `clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
-`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`. 
+`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`.
+
 
 ## Question `question.html`
 
@@ -133,7 +135,7 @@ The `question.html` is regular HTML, with four special features:
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
-   
+
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
@@ -264,6 +266,26 @@ By default, all questions award partial credit. For example, if there are two nu
 To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](elements.md) also provide more fine-grained control over partial credit.
 
 In general, it is strongly recommended to leave partial credit enabled for all questions.
+
+## The `thumbnail` image
+
+To add a thumbnail to your question, include a thumbnail object in `info.json`, which must include a filename and a location. The location can be `question`, `clientFilesCourse`, `clientFilesQuestion`, or `public`. Thumbnails located in `question` will be stored in the question folder. Thumbnails located in the `clientFilesCourse` folder should be stored in `cilentFilesCourse/thumbnails`. Thumbnails located in the `clientFilesQuestion` folder should be stored in the `clientFilesQuestion` folder for that question. Thumbnails located in `public` should be stored in `public/thumbnails`.
+
+Example:
+
+```json
+{
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "title": "Newton's third law",
+    "topic": "Forces",
+    "tags": ["secret", "Fa18"],
+    "type": "v3",
+    "thumbnail": {
+        "filename": "physics.jpeg",
+        "location": "clientFilesCourse"
+    }
+}
+```
 
 ## Using Markdown in questions
 

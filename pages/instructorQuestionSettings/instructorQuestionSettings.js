@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
-const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = require('../../lib/editors');
+const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor, QuestionEditThumbnailEditor, ThumbnailUploadEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
@@ -65,6 +65,70 @@ router.post('/', function(req, res, next) {
                 });
             });
         }
+    } else if (req.body.__action == 'select_thumbnail') {
+        debug('Selecting thumbnail');
+        if (!req.body.thumbnail_info) return next(new Error(`Invalid input (was falsey): ${req.body.thumbnail_info}`));
+        let info = JSON.parse(req.body.thumbnail_info);
+        let thumbnail_filename_new = info.filename;
+        let filename_location_new = info.location;
+        if (res.locals.question.filename_location == filename_location_new && res.locals.question.thumbnail_filename == thumbnail_filename_new) {
+            debug('The thumbnail information is the same as the old information - do nothing');
+            res.redirect(req.originalUrl);
+        } else {
+            const editor = new QuestionEditThumbnailEditor({
+                locals: res.locals,
+                thumbnail_filename_new: thumbnail_filename_new,
+                filename_location_new: filename_location_new,
+            });
+            editor.canEdit((err) => {
+              if (ERR(err, next)) return;
+              editor.doEdit((err, job_sequence_id) => {
+                  if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
+                      res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                  } else {
+                      res.redirect(req.originalUrl);
+                  }
+              });
+            });
+        }
+    } else if (req.body.__action == 'upload_thumbnail') {
+        debug('Upload thumbnail');
+        let container = {
+            rootPath: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+            invalidRootPaths: [],
+        };
+        let location;
+        if (req.body.location == 'question') {
+            location = path.join(res.locals.course.path, 'questions', res.locals.question.qid, req.file.originalname);
+        } else if (req.body.location == 'clientFilesCourse') {
+            container.rootPath = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails');
+            location = path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails', req.file.originalname);
+        } else if (req.body.location == 'clientFilesQuestion') {
+            container.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion');
+            location = path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion', req.file.originalname);
+        }
+        const editor = new ThumbnailUploadEditor({
+            locals: res.locals,
+            container: container,
+            filePath: location,
+            fileContents: req.file.buffer,
+            thumbnail_filename_new: req.file.originalname,
+            filename_location_new: req.body.location,
+        });
+        editor.shouldEdit((err, yes) => {
+            if (ERR(err, next)) return;
+            if (!yes) return res.redirect(req.originalUrl);
+            editor.canEdit((err) => {
+                if (ERR(err, next)) return;
+                editor.doEdit((err, job_sequence_id) => {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
+                        res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
+                    } else {
+                        res.redirect(req.originalUrl);
+                    }
+                });
+            });
+        });
     } else if (req.body.__action == 'copy_question') {
         debug('Copy question');
         if (req.body.to_course_id == res.locals.course.id) {
@@ -166,6 +230,99 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.select_assessments_with_question_for_display, {question_id: res.locals.question.id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
+                callback(null);
+            });
+        },
+        (callback) => {
+            const clientFilesCoursePath = encodePath(path.join(res.locals.course.path, 'clientFilesCourse', 'thumbnails'));
+            const clientFilesQuestionPath = encodePath(path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'clientFilesQuestion'));
+            const questionPath = encodePath(path.join(res.locals.course.path, 'questions', res.locals.question.qid));
+            const publicPath = encodePath('public/images/thumbnails');
+            res.locals.available_thumbnails = [];
+            async.series([
+                (callback) => {
+                    fs.readdir(clientFilesCoursePath, function (err, files) {
+                        // Probably no clientFilesCourse directory
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'clientFilesCourse'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(clientFilesQuestionPath, function (err, files) {
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'clientFilesQuestion'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(questionPath, function (err, files) {
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'question'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                },
+                (callback) => {
+                    fs.readdir(publicPath, function (err, files) {
+                        if (err && err.code == 'ENOENT') {
+                            callback(null, {});
+                            return;
+                        } else if (ERR(err, callback)) {
+                            return;
+                        }
+
+                        let images = [];
+                        files.forEach(function (file) {
+                            let ext = file.split('.').pop();
+                            if (ext == 'jpg' || ext == 'png' || ext == 'jpeg' || ext == 'svg' || ext == 'gif') {
+                                images.push({filename: file, location:'public'});
+                            }
+                        });
+                        callback(null, images);
+                    });
+                  },
+            ], (err, images) => {
+                if (ERR(err, next)) return;
+                images.forEach(function (image) {
+                    res.locals.available_thumbnails = res.locals.available_thumbnails.concat(image);
+                });
+                res.locals.available_thumbnails = res.locals.available_thumbnails.filter(function(value) { return value.filename; });
                 callback(null);
             });
         },
