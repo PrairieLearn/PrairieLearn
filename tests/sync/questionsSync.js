@@ -25,6 +25,11 @@ function makeQuestion(courseData) {
   };
 }
 
+async function findSyncedQuestion(qid) {
+  const syncedQuestions = await util.dumpTable('questions');
+  return syncedQuestions.find(q => q.qid === qid);
+}
+
 describe('Question syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
@@ -148,6 +153,61 @@ describe('Question syncing', () => {
     const syncedQuestions = await util.dumpTable('questions');
     const questions = syncedQuestions.filter(q => q.qid === util.QUESTION_ID);
     assert.equal(questions.length, 2);
+  });
+
+  it('preserves question topic even if question topic is deleted', async () => {
+    const courseData = util.getCourseData();
+    const newTopic = {
+      name: 'test topic',
+      color: 'green1',
+      description: 'test topic description',
+    };
+    courseData.course.topics.push(newTopic);
+    courseData.questions[util.QUESTION_ID].topic = newTopic.name;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+
+    // Now delete the topic, but leave the question in place.
+    courseData.course.topics.pop();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+    assert.equal(newSyncedQuestion.id, originalSyncedQuestion.id);
+
+    // Check that we have a valid auto-created topic
+    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopic = syncedTopics.find(t => t.name === newTopic.name);
+    assert.equal(newSyncedQuestion.topic_id, syncedTopic.id);
+  });
+
+  it('preserves question tag even if question tag is deleted', async () => {
+    const courseData = util.getCourseData();
+    const newTag = {
+      name: 'test tag',
+      color: 'green1',
+      description: 'test tag description',
+    };
+    courseData.course.tags.push(newTag);
+    courseData.questions[util.QUESTION_ID].tags.push(newTag.name);
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+
+    // Now delete the tag, but leave the question in place.
+    courseData.course.tags.pop();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+    assert.equal(newSyncedQuestion.id, originalSyncedQuestion.id);
+
+    // Check that we have a valid auto-created tag
+    const syncedTags = await util.dumpTable('tags');
+    const syncedTag = syncedTags.find(t => t.name === newTag.name);
+    const syncedQuestionTags = await util.dumpTable('question_tags');
+    const syncedQuestionTag = syncedQuestionTags.find(qt =>
+      qt.question_id === newSyncedQuestion.id &&
+      qt.tag_id === syncedTag.id,
+    );
+    assert.ok(syncedQuestionTag);
   });
 
   it('records an error if "options" object is invalid', async () => {
