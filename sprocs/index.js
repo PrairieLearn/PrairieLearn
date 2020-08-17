@@ -158,6 +158,7 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_assessments.sql',
             'lock_timeout_set.sql',
+            'workspaces_message_update.sql',
             'workspaces_state_update.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

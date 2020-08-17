@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 
 const config = require('../../lib/config');
 const logger = require('../../lib/logger');
-const workspace = require('../../lib/workspace');
+const workspaceHelper = require('../../lib/workspace');
 
 const error = require('@prairielearn/prairielib/error');
 
@@ -19,9 +19,8 @@ router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {
     const action = req.params.action;
 
     if (action === 'reboot') {
-        logger.info(`[workspace.js] Rebooting workspace ${workspace_id}.`);
-        const state = 'stopped';
-        await workspace.updateState(workspace_id, state);
+        logger.info(`Rebooting workspace ${workspace_id}.`);
+        await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
         res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
         return next(error.make(400, 'unknown action', {locals: res.locals, body: req.body}));
