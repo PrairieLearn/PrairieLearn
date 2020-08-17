@@ -61,7 +61,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 <pl-question-panel>
   This is a minimal workspace question with external grading.
   <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
-  <pl-workspace>
+  <pl-workspace></pl-workspace>
 </pl-question-panel>
 
 <pl-submission-panel>
