@@ -49,6 +49,19 @@ A full `info.json` file for a workspace question should look something like:
 }
 ```
 
+### `question.html`
+
+The workspace submission panel `<pl-submission-panel>` should include the file preview element `<pl-file-preview>`. This will enable your students not only to preview the graded files but also to receive file submission error messages.
+
+The submission panel should look something like:
+
+```html
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
+```
+
 ## Running locally (on Docker)
 
 * First, create an empty directory to use to share job data between containers.
