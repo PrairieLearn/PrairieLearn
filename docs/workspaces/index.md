@@ -117,6 +117,6 @@ For development, run the docker command with a final extra argument of `/Prairie
 
 Set these variables in your `config.json`:
 
-* `workspaceJobsDir`
-* `workspaceGradedFilesReceiveDirectory`
-* `workspaceGradedFilesSendDirectory`
+* `workspaceJobsDirectory`
+* `workspaceMainZipsDirectory`
+* `workspaceHostZipsDirectory`
