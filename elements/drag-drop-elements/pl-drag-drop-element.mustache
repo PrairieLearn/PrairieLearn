@@ -1,3 +1,26 @@
+{{#question}}
+    <div class="row">
+        <div class="column">
+            <ul id="{{answerName}}-options" name="{{answerName}}" class="connectedSortable">
+                <li class='ui-sortable-handle info info-fixed'>Choose from these option:</li>
+                    {{#options}}
+                        <li>{{.}}</li>
+                    {{/options}}
+                </ul>
+        </div>
+            <div class="column">
+                <ul id="{{answerName}}-dropzone" name="{{answerName}}" class="connectedSortable dropzone">
+                    <li class="ui-sortable-handle info info-fixed">Drag your answers below:</li>
+                    <li class='ui-sortable-handle info info-fixed code'>{{instruction_text}}</li>
+                    {{#previous_submission}}
+                        <li style='margin-left: {{submission_indent}}px;'>{{mcq_options_text}}</li>
+                    {{/previous_submission}}
+                </ul>
+            </div>
+        </div>
+    <input id="{{answerName}}-input" type="hidden" name="{{answerName}}-input" value=""/>
+
+{{/question}}
 
 {{#submission}}
     {{^parse-error}}
