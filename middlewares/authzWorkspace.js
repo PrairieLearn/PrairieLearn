@@ -1,13 +1,9 @@
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const async = require('async');
 const asyncHandler = require('express-async-handler');
 const { promisify } = require('util');
 
-const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const authzCourse = promisify(require('./authzCourse'));
@@ -29,14 +25,14 @@ module.exports = asyncHandler(async (req, res, next) => {
         req.params.question_id = res.locals.question_id;
         await authzCourseInstance(req, res);
 
-        if (res.locals.instance_question_id !== null) {
+        if (res.locals.instance_question_id) {
             await selectAndAuthzInstanceQuestion(req, res);
-        } else if (res.locals.assessment_instance_id !== null) {
+        } else if (res.locals.assessment_instance_id) {
             await selectAndAuthzAssessmentInstance(req, res);
         } else {
-            res.locals.course_instance = {
-                id: res.locals.course_instance_id
-            };
+            /* If we have neither assessment instance nor question instance ids, we are probably viewing in
+               instructor view and should authorize for that. */
+            res.locals.course_instance = { id: res.locals.course_instance_id };
             await authzCourseInstanceHasInstructorView(req, res);
             await selectAndAuthzInstructorQuestion(req, res);
         }
