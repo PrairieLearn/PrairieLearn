@@ -130,7 +130,12 @@ router.get('/:filename', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    // Yes, we mean to restrict post access to course editors, not to student data editors,
+    // because "Recalculate statistics" does not change student data. One could argue that
+    // all users should be able to "Recalculate statistics," not just course editors - may
+    // want to revisit this question in future (or recalculate automatically, every time
+    // this page is reloaded).
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied (must be a course editor)'));
     if (req.body.__action == 'refresh_stats') {
         var params = [
             res.locals.assessment.id,
