@@ -41,6 +41,7 @@ function processSubmission(req, res, callback) {
         // have to go inside the save and grade submission logic to let it in but not save it.
         // inspect point
         // saveFileUploads(submission.submitted_answer);
+        // MAJOR NOTE: I have to resolve the `null` value passed in lieu of the assessment in saveSubmission()
         console.log(submission);
         if (req.body.__action == 'grade') {
             question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, res.locals.instance_question, (err) => {
@@ -48,7 +49,7 @@ function processSubmission(req, res, callback) {
                 callback(null, submission.variant_id);
             });
         } else if (req.body.__action == 'save') {
-            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, res.locals.instance_question, (err) => {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, null, res.locals.instance_question, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
