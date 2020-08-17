@@ -8,7 +8,7 @@
     </p>
     <pre class="bg-dark text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>"><code><%= course.sync_errors %></code></pre>
     <% if (!locals.course.example_course) { %>
-    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/edit?file=infoCourse.json">
+    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
       <i class="fa fa-edit"></i>
       <span class="d-none d-sm-inline">Edit infoCourse.json</span>
     </a>
@@ -24,7 +24,7 @@
     </p>
     <pre class="bg-dark text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>"><code><%= course.sync_warnings %></code></pre>
     <% if (!locals.course.example_course) { %>
-    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/edit?file=infoCourse.json">
+    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
       <i class="fa fa-edit"></i>
       <span class="d-none d-sm-inline">Edit infoCourse.json</span>
     </a>

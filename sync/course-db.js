@@ -373,7 +373,7 @@ function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile,
     if (!infofile.hasErrorsOrWarnings(infoFile)) return;
     // TODO: if https://github.com/drudru/ansi_up/issues/58 is ever resolved,
     // add a direct link to a file editor with `terminal-link` package
-    // const editorLink = `/pl/course/${courseId}/edit?file=${filePath}`;
+    // const editorLink = `/pl/course/${courseId}/file_edit/${filePath}`;
     writeLine(chalk.bold(`• ${filePath}`));
     if (infofile.hasErrors(infoFile)) {
         infoFile.errors.forEach(error => {
