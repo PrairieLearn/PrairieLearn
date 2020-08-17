@@ -3,19 +3,21 @@ var path = require('path');
 var _ = require('lodash');
 
 var error = require('@prairielearn/prairielib/error');
+var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
 
 module.exports = {
     loadServer: function(question, course, callback) {
-        filePaths.questionFilePath('server.js', question.directory, course.path, question, function(err, questionServerPath) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
             if (ERR(err, callback)) return;
             var configRequire = requireFrontend.config({
                 paths: {
-                    clientFilesCourse: path.join(course.path, 'clientFilesCourse'),
-                    serverFilesCourse: path.join(course.path, 'serverFilesCourse'),
-                    clientCode: path.join(course.path, 'clientFilesCourse'),
-                    serverCode: path.join(course.path, 'serverFilesCourse'),
+                    clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
+                    serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
+                    clientCode: path.join(coursePath, 'clientFilesCourse'),
+                    serverCode: path.join(coursePath, 'serverFilesCourse'),
                 },
             });
             configRequire([questionServerPath], function(server) {
@@ -45,7 +47,8 @@ module.exports = {
     },
 
     generate: function(question, course, variant_seed, callback) {
-        var questionDir = path.join(course.path, 'questions', question.directory);
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        var questionDir = path.join(coursePath, 'questions', question.directory);
         module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var options = question.options || {};
@@ -80,6 +83,7 @@ module.exports = {
     },
 
     getFile: function(filename, variant, question, course, callback) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var fileData;
@@ -88,7 +92,7 @@ module.exports = {
                 var params = variant.params;
                 var trueAnswer = variant.true_answer;
                 var options = variant.options;
-                var questionDir = path.join(course.path, 'questions', question.directory);
+                var questionDir = path.join(coursePath, 'questions', question.directory);
                 fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
             } catch (err) {
                 var data = {
@@ -116,6 +120,7 @@ module.exports = {
     },
 
     grade: function(submission, variant, question, course, callback) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var grading;
@@ -125,7 +130,7 @@ module.exports = {
                 var trueAnswer = variant.true_answer;
                 var submittedAnswer = submission.submitted_answer;
                 var options = variant.options;
-                var questionDir = path.join(course.path, 'questions', question.directory);
+                var questionDir = path.join(coursePath, 'questions', question.directory);
                 grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options, questionDir);
             } catch (err) {
                 const data = {

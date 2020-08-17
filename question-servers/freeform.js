@@ -18,6 +18,7 @@ const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
+const chunks = require('../lib/chunks');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -133,7 +134,8 @@ module.exports = {
         if (courseElementsCache[course.id] !== undefined) {
             return callback(null, courseElementsCache[course.id]);
         }
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
             courseElementsCache[course.id] = elements;
             callback(null, courseElementsCache[course.id]);
@@ -142,7 +144,8 @@ module.exports = {
 
     // Skips the cache; used when syncing course from GitHub/disk
     reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
             courseElementsCache[course.courseId] = elements;
             callback(null, courseElementsCache[course.courseId]);
@@ -1264,12 +1267,13 @@ module.exports = {
     },
 
     getContext: function(question, course, callback) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         const context = {
             question,
             course,
-            course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
-            course_elements_dir: path.join(course.path, 'elements'),
+            course_dir: coursePath,
+            question_dir: path.join(coursePath, 'questions', question.directory),
+            course_elements_dir: path.join(coursePath, 'elements'),
         };
         module.exports.loadElementsForCourse(course, (err, elements) => {
             if (ERR(err, callback)) return;

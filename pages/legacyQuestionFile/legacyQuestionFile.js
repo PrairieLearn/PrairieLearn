@@ -3,9 +3,11 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('@prairielearn/prairielib/error');
-var filePaths = require('../../lib/file-paths');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
+const chunks = require('../../lib/chunks');
+var filePaths = require('../../lib/file-paths');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -22,7 +24,8 @@ router.get('/:filename', function(req, res, next) {
         if (ERR(err, next)) return;
         if (!result.rows[0].access_allowed) return next(error.make(403, 'Access denied', {locals: res.locals, filename: filename}));
 
-        filePaths.questionFilePath(filename, question.directory, course.path, question, function(err, fullPath, effectiveFilename, rootPath) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
             if (ERR(err, next)) return;
             res.sendFile(effectiveFilename, {root: rootPath});
         });

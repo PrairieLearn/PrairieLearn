@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 
+const chunks = require('../../lib/chunks');
+
 /**
  * Serves scripts and styles for v3 elements. Only serves .js and .css files, or any
  * static files from an element's "clientFilesElement" directory. 
@@ -26,7 +28,8 @@ router.get('/*', function(req, res, next) {
     let elementFilesDir;
     if (res.locals.course) {
         // Files should be served from the course directory
-        elementFilesDir = path.join(res.locals.course.path, 'elements');
+        const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
+        elementFilesDir = path.join(coursePath, 'elements');
     } else {
         elementFilesDir = path.join(__dirname, '..', '..', 'elements');
     }
