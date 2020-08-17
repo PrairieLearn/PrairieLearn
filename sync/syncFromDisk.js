@@ -70,7 +70,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
             perf.end('sync');
             if (ERR(err, callback)) return;
             logger.info('Completed sync of git repository to database');
-            callback(null);
+            callback(null, course);
         });
     });
 };
@@ -85,12 +85,12 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
             callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
         } else {
             logger.verbose(`Acquired lock ${lockName}`);
-            this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+            this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, course) => {
                 namedLocks.releaseLock(lock, (lockErr) => {
                     if (ERR(lockErr, callback)) return;
                     if (ERR(err, callback)) return;
                     logger.verbose(`Released lock ${lockName}`);
-                    callback(null);
+                    callback(null, course);
                 });
             });
         }
@@ -101,9 +101,12 @@ module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
         if (ERR(err, callback)) return;
         const course_id = result.rows[0].course_id;
-        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err) {
+        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err, course) {
             if (ERR(err, callback)) return;
-            callback(null);
+            callback(null, {
+                courseId: course_id,
+                course,
+            });
         });
     });
 };

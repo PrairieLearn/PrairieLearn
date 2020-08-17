@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
 var express = require('express');
 var router = express.Router();
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -9,6 +10,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
+var chunks = require('../../lib/chunks');
 
 var update = function(locals, callback) {
     debug('update()');
@@ -44,10 +46,13 @@ var update = function(locals, callback) {
                         callback(null);
                     } else {
                         job.info('Found file ' + infoCourseFile + ', loading...');
-                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
+                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err, { course, courseId }) {
                             if (ERR(err, callback)) return;
                             debug('successfully loaded course', {courseDir});
-                            callback(null);
+                            util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId, course }, (err) => {
+                                if (ERR(err, callback)) return;
+                                callback(null);
+                            });
                         });
                     }
                 });
