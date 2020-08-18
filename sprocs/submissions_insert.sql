@@ -64,7 +64,9 @@ BEGIN
     SELECT la.last_access
     INTO last_access
     FROM last_accesses AS la
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     delta := coalesce(now() - last_access, interval '0 seconds');
     IF delta > interval '1 hour' THEN
@@ -73,7 +75,9 @@ BEGIN
 
     UPDATE last_accesses AS la
     SET last_access = now()
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     -- ######################################################################
     -- actually insert the submission

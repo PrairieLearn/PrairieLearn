@@ -43,7 +43,8 @@ BEGIN
             constant_question_value,
             allow_issue_reporting,
             allow_real_time_grading,
-            require_honor_code)
+            require_honor_code,
+            group_work)
         (
             SELECT
                 (assessment->>'uuid')::uuid,
@@ -64,7 +65,8 @@ BEGIN
                 (assessment->>'constant_question_value')::boolean,
                 (assessment->>'allow_issue_reporting')::boolean,
                 (assessment->>'allow_real_time_grading')::boolean,
-                (assessment->>'require_honor_code')::boolean
+                (assessment->>'require_honor_code')::boolean,
+                (assessment->>'group_work')::boolean
         )
         ON CONFLICT (course_instance_id, uuid) DO UPDATE
         SET
@@ -84,12 +86,24 @@ BEGIN
             constant_question_value = EXCLUDED.constant_question_value,
             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
             allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-            require_honor_code = EXCLUDED.require_honor_code
+            require_honor_code = EXCLUDED.require_honor_code,
+            group_work = EXCLUDED.group_work    
         WHERE
             assessments.course_instance_id = sync_assessments.new_course_instance_id
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
+        -- if it is a group work try to insert a group_config
+        IF (assessment->>'group_work')::boolean THEN
+            INSERT INTO group_configs
+                (course_instance_id,
+                assessment_id
+            ) VALUES (
+                new_course_instance_id,
+                new_assessment_id
+            ) ON CONFLICT DO NOTHING;
+        END IF;
+        
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP
             -- If exam_uuid is specified, ensure that a corresponding PS exam exists
