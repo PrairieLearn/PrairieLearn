@@ -136,6 +136,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} autoClose
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
+ * @property {boolean} groupWork
  */
 
 /**
