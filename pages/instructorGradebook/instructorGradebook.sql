@@ -35,7 +35,7 @@ user_ids AS (
     (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
 ),
 course_users AS (
-    SELECT u.user_id,u.uid,u.uin,u.name AS user_name,users_get_displayed_role(u.user_id, $course_instance_id) AS role,
+    SELECT u.user_id,u.uid,u.uin,u.name AS user_name,users_get_displayed_role(u.user_id, $course_instance_id) AS role
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
