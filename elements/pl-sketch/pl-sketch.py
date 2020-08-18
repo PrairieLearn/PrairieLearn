@@ -29,3 +29,8 @@ def render(element_html, data):
             return chevron.render(f, html_params).strip()
     else:
         return ''
+
+
+def grade(element_html, data):
+    data['partial_scores']['pl-sketch-unique-name'] = {'score': 1, 'weight': 1}
+    return data

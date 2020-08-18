@@ -50,4 +50,32 @@ $(function() {
     $('.pl-sketch-circle').on('click', (ev) => {
         updateColor(ev.currentTarget.style.backgroundColor, sketchpad);
     });
+
+    $('#attachSketchButton').on('click', () => { $('#pl-sketch-card').toggle(); });
+
+    $('.attach-sketch-form').on('submit', () => { $('#sketches-panel').val(JSON.stringify(sketchpad.toObject())) });
+
+    $('#download_sketch').on('click', () => {
+        let canvas = document.getElementById('pl-sketch-canvas-panel');
+        let image = canvas.toDataURL('image/png');
+        $('#download_sketch').attr('href', image);
+    });
+
+    $('.saved-sketch').on('click', (ev) => {
+        let file = ev.target.href;
+        $.get(file, function(data) {
+            let sketches = JSON.parse(data);
+            let loaded_sketch = {
+                element: '#pl-sketch-canvas-panel',
+                width: 500,
+                height: 600,
+                strokes: sketches.strokes,
+                undoHistory: sketches.undoHistory
+            }
+            sketchpad = new Sketchpad(loaded_sketch);
+            $('#pl-sketch-card').show();
+            $('#pl-sketch-panel').collapse('show');
+        }, 'text');
+        return false;
+    });
 });

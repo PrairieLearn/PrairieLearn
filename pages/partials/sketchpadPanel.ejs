@@ -1,15 +1,15 @@
 <link rel="stylesheet" href="/stylesheets/sketchpadPanel.css">
-<div class="card pl-sketch-card">
-    <div class="card-header" data-toggle="collapse" data-target="#pl-sketch-panel">
+<div class="card pl-sketch-card" id="pl-sketch-card" style="display:none;">
+    <div class="card-header" data-toggle="collapse" data-target="#pl-sketch-panel" aria-expanded="false" aria-controls="#pl-sketch-panel">
         Sketchpad Panel
     </div>
-    <div class="pl-sketch-panel card-body" id="pl-sketch-panel">
+    <div class="pl-sketch-panel card-body collapse" id="pl-sketch-panel">
         <div class="pl-sketch-controls" style="width: 500px">
             <div class="pl-sketch-control-group">
-                <div class="pl-sketch-control fa fa-undo fa-2x" id="undo-panel"></div>
-                <div class="pl-sketch-control fa fa-redo fa-2x" id="redo-panel"></div>
-                <div class="pl-sketch-control fa fa-pen fa-2x" id="pen-panel"></div>
-                <div class="pl-sketch-control fa fa-eraser fa-2x" id="eraser-panel"></div>
+                <div class="pl-sketch-control" id="undo-panel"><div class="fa fa-undo fa-2x"></div></div>
+                <div class="pl-sketch-control" id="redo-panel"><div class="fa fa-redo fa-2x"></div></div>
+                <div class="pl-sketch-control" id="pen-panel"><div class="fa fa-pen fa-2x"></div></div>
+                <div class="pl-sketch-control" id="eraser-panel"><div class="fa fa-eraser fa-2x"></div></div>
             </div>
             <div class="pl-sketch-control-group">
                 <div class="pl-sketch-setting" id="color-picker-panel">
@@ -32,8 +32,14 @@
             </div>
         </div>
         <canvas class="pl-sketch-canvas" id="pl-sketch-canvas-panel" data-width="80%" data-height="80%"></canvas>
+        <% if (typeof variant != 'undefined') { %>
+        <input type="hidden" name="__variant_id" value="<%= variant.id %>"></input>
+        <% } %>
+        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"></input>
+        <input type="hidden" name="contents" id="sketches-panel" value=""></input>
         <div class="pl-sketch-controls" style="width: 500px">
-            <button class="btn btn-info">Save</button>
+            <button class="btn btn-info mr-2" name="__action" value="attach_sketch">Save</button>
+            <a class="btn btn-info mr-2" download="sketch.png" href="" id="download_sketch">Download</a>
         </div>
     </div>
 </div>

@@ -5,12 +5,19 @@
     padding: 5px 5px 5px 5px;
 }
 
+.pl-sketch-panel.collapsing {
+    -webkit-transition: none;
+    transition: none;
+    display: none;
+}
+
 .pl-sketch-card {
     position:fixed;
     bottom: 0;
     right: 0;
     width: 500px;
     overflow:auto;
+    z-index: 100;
 }
 
 .pl-sketch-controls {

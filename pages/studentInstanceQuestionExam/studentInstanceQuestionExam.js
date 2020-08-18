@@ -88,6 +88,12 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                 + '/?variant_id=' + variant_id);
         });
+    } else if (req.body.__action == 'attach_sketch') {
+        util.callbackify(studentInstanceQuestion.processSketchUpload)(req, res, function (err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
+                + '/?variant_id=' + variant_id);
+        });
     } else if (req.body.__action == 'delete_file') {
         util.callbackify(studentInstanceQuestion.processDeleteFile)(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
