@@ -8,11 +8,13 @@
     urlSuffix:      '/instance_admin/assessments',
     iconClasses:    'fa fa-list',
     tabLabel:       'Assessments'}) %>
+<% if (authz_data.has_course_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'file_view',
     urlSuffix:      '/instance_admin/file_view',
     iconClasses:    'fa fa-edit',
     tabLabel:       'Files'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'gradebook',
     urlSuffix:      '/instance_admin/gradebook',
