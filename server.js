@@ -189,6 +189,7 @@ const workspaceProxyOptions = {
             return path;
         }
     },
+    logLevel: 'silent',
     logProvider: _provider => logger,
     router: async (req) => {
         try {

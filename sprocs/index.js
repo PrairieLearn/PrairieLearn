@@ -167,6 +167,7 @@ module.exports = {
             'assessment_groups_delete_member.sql',
             'assessment_groups_delete_group.sql',
             'group_info.sql',
+            'workspaces_message_update.sql',
             'workspaces_state_update.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
