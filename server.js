@@ -204,7 +204,9 @@ const workspaceProxyOptions = {
         }
     },
 };
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
+const workspaceProxy = createProxyMiddleware((pathname, req) => {
+    return pathname.match('/pl/workspace/([0-9])+/container/');
+}, workspaceProxyOptions);
 app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     require('./middlewares/date'),
