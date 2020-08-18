@@ -19,15 +19,15 @@ course_assessments AS (
     AND a.course_instance_id = $course_instance_id
 ),
 course_scores AS (
-    SELECT DISTINCT ON (ai.user_id, a.id)
-        ai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id
+    SELECT DISTINCT ON (ai.user_id, ai.group_id, a.id)
+        ai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id, ai.group_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE
         a.course_instance_id = $course_instance_id
     ORDER BY
-        ai.user_id, a.id, ai.score_perc DESC, ai.id
+        ai.user_id, ai.group_id, a.id, ai.score_perc DESC, ai.id
 ),
 user_ids AS (
     (SELECT DISTINCT user_id FROM course_scores)
@@ -48,7 +48,8 @@ scores AS (
     FROM
         course_users AS u
         CROSS JOIN course_assessments AS a
-        LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
+        LEFT JOIN group_users AS gu ON (u.user_id = gu.user_id)
+        LEFT JOIN course_scores AS s ON (((s.user_id = u.user_id)OR(s.group_id = gu.group_id)) AND s.assessment_id = a.id)
 )
 SELECT user_id,uid,uin,user_name,role,
     ARRAY_AGG(

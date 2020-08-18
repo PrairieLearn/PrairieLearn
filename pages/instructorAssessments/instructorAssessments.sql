@@ -19,6 +19,7 @@ SELECT
     a.type,
     a.number as assessment_number,
     a.title,
+    a.group_work AS group_work,
     a.assessment_set_id,
     tstats.number,
     tstats.mean,

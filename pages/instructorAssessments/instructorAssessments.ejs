@@ -49,10 +49,14 @@
               <% } %>
               <tr>
                 <td class="align-middle" style="width: 1%">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="badge color-<%= row.color %> color-hover" role="button"><%= row.label %></a>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="badge color-<%= row.color %> color-hover" role="button">
+                    <%= row.label %></a>
                 </td>
                 <td class="align-middle">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %> 
+                  <% if (row.group_work) { %>
+                    <i class="fas fa-users"></i>
+                  <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
                 <td class="align-middle"><%= row.tid %></td>
