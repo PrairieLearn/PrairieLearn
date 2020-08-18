@@ -190,7 +190,6 @@
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item"
                          href="#"
                          data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
@@ -202,32 +201,25 @@
                          >
                         <i class="fa fa-times" aria-hidden="true"></i> Delete
                       </a>
-                      <% } %>
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
                         <i class="fa fa-sync" aria-hidden="true"></i> Regrade
                       </a>
-                      <% } %>
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
                         <i class="far fa-circle" aria-hidden="true"></i> Re-open
                       </a>
-                      <% } %>
 
                       <!-- ################################################## -->
 
-                      <% if (authz_data.has_course_instance_permission_edit) { %>
                       <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
                         <i class="fa fa-ban" aria-hidden="true"></i> Close
                       </a>
-                      <% } %>
-
+                      
                       <!-- ################################################## -->
 
                     </div>
