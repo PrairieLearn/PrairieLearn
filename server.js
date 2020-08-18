@@ -159,6 +159,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
 // proxy workspaces to remote machines
 const workspaceProxyOptions = {
@@ -407,6 +408,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
+    function(req, res, next) {res.locals.navSubPage = 'groups'; next();},
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},

@@ -7,6 +7,7 @@ columns
     constant_question_value: boolean default false
     course_instance_id: bigint not null
     deleted_at: timestamp with time zone
+    group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_points: double precision
     mode: enum_mode
@@ -45,6 +46,7 @@ referenced by
     chunks: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     files: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_configs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL
     job_sequences: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

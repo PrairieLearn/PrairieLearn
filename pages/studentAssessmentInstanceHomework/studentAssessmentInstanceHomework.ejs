@@ -26,8 +26,10 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+          <% if (assessment.group_work) { %>
+            <i class="fas fa-users"></i>
+          <% } %>
         </div>
-
         <div class="card-body">
           <div class="row align-items-center mb-4">
             <div class="col-md-3 col-sm-6 col-xs-12">
@@ -45,6 +47,34 @@
                 }) %>
             </div>
           </div>
+          <% if (assessment.group_work) { %>
+          <div class="container-fluid">
+            <div class="row">
+              <% if (groupinfo[0].student_authz_join) { %>
+              <div class="col-sm bg-light py-4 px-4 border">
+                <p>This is a group homework. Use your join code to invite others to join the group.</p>
+                <span class="badge badge-secondary">Group Name</span>
+                <%= groupinfo[0].name %><br>
+                <span class="badge badge-secondary">Join Code</span>
+                <%= joincode %><br>
+              </div>
+              <% } %>
+              <div class="col-sm bg-light py-4 px-4 border">
+                <% if (groupinfo[0].student_authz_leave) { %>
+                <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
+                  <input type="hidden" name="__action" value="leaveGroup">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
+                </form>
+                <% } %>
+                <span class="badge badge-secondary">Group Members</span>
+                <% groupinfo.forEach(function(row) {%>
+                <li><%= row.uid %></li>
+                <% }); %>
+              </div>
+            </div>
+          </div>
+          <% } %>
 
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">

@@ -45,3 +45,6 @@ require('./testIssues');
 require('./testChunks');
 require('./testLocalLock');
 require('./sync');
+require('./testGroupGenerateAndDelete');
+require('./testGroupStudent');
+require('./testGroupScoreAndSync');
