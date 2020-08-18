@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="/stylesheets/sketchpadPanel.css">
+<div class="card pl-sketch-card" id="pl-sketch-card" style="display:none;">
+    <div class="card-header" data-toggle="collapse" data-target="#pl-sketch-panel" aria-expanded="false" aria-controls="#pl-sketch-panel">
+        Sketchpad Panel
+    </div>
+    <div class="pl-sketch-panel card-body collapse" id="pl-sketch-panel">
+        <div class="pl-sketch-controls" style="width: 500px">
+            <div class="pl-sketch-control-group">
+                <div class="pl-sketch-control" id="undo-panel"><div class="fa fa-undo fa-2x"></div></div>
+                <div class="pl-sketch-control" id="redo-panel"><div class="fa fa-redo fa-2x"></div></div>
+                <div class="pl-sketch-control" id="pen-panel"><div class="fa fa-pen fa-2x"></div></div>
+                <div class="pl-sketch-control" id="eraser-panel"><div class="fa fa-eraser fa-2x"></div></div>
+            </div>
+            <div class="pl-sketch-control-group">
+                <div class="pl-sketch-setting" id="color-picker-panel">
+                    <div class="pl-sketch-control pl-sketch-color-icon" id="color-panel" style="background-color: #000000"></div>
+                    <div class="pl-sketch-popup pl-sketch-hidden" id="color-popup-panel">
+                        <div class="pl-sketch-circle" style="background-color: #FFEB3B"></div>
+                        <div class="pl-sketch-circle" style="background-color: #FF9800"></div>
+                        <div class="pl-sketch-circle" style="background-color: #F44336"></div>
+                        <div class="pl-sketch-circle" style="background-color: #E91E63"></div>
+                        <div class="pl-sketch-circle" style="background-color: #9C27B0"></div>
+                        <div class="pl-sketch-circle" style="background-color: #3F51B5"></div><br>
+                        <div class="pl-sketch-circle" style="background-color: #00BCD4"></div>
+                        <div class="pl-sketch-circle" style="background-color: #4CAF50"></div>
+                        <div class="pl-sketch-circle" style="background-color: #795548"></div>
+                        <div class="pl-sketch-circle" style="background-color: #E0E0E0"></div>
+                        <div class="pl-sketch-circle" style="background-color: #616161"></div>
+                        <div class="pl-sketch-circle" style="background-color: #000000"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <canvas class="pl-sketch-canvas" id="pl-sketch-canvas-panel" data-width="80%" data-height="80%"></canvas>
+        <% if (typeof variant != 'undefined') { %>
+        <input type="hidden" name="__variant_id" value="<%= variant.id %>"></input>
+        <% } %>
+        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"></input>
+        <input type="hidden" name="contents" id="sketches-panel" value=""></input>
+        <div class="pl-sketch-controls" style="width: 500px">
+            <button class="btn btn-info mr-2" name="__action" value="attach_sketch">Save</button>
+            <a class="btn btn-info mr-2" download="sketch.png" href="" id="download_sketch">Download</a>
+        </div>
+    </div>
+</div>
+<script src="/localscripts/sketchpadPanel.js"></script>

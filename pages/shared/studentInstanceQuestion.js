@@ -40,6 +40,13 @@ module.exports.processTextUpload = async (req, res) => {
     return variant_id;
 };
 
+module.exports.processSketchUpload = async (req, res) => {
+    if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+    await fileStore.upload('sketch', Buffer.from(req.body.contents), 'student_upload_sketch', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
+    const variant_id = await module.exports.getValidVariantId(req, res);
+    return variant_id;
+};
+
 module.exports.processDeleteFile = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
 
@@ -48,7 +55,7 @@ module.exports.processDeleteFile = async (req, res) => {
     if (validFiles.length == 0) throw new Error(`No such file_id: ${req.body.file_id}`);
     const file = validFiles[0];
 
-    if (file.type != 'student_upload') throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
+    if (file.type != 'student_upload' && file.type != 'student_upload_sketch') throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
 
     await fileStore.delete(file.id, res.locals.authn_user.user_id);
 

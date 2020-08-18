@@ -26,6 +26,11 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.__action == 'attach_sketch') {
+        util.callbackify(studentAssessmentInstance.processSketchUpload)(req, res, function (err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else if (req.body.__action == 'delete_file') {
         util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function(err) {
             if (ERR(err, next)) return;

@@ -21,6 +21,7 @@ PrairieLearn presently provides the following templated **input field** elements
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
+- [`pl-sketch`](#pl-sketch-element): Freely draw anything using a sketchpad.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
@@ -395,6 +396,36 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
 
+-----
+
+## `pl-sketch` element
+
+Freely draw a sketch of whatever you want.
+
+#### Sample Element
+
+<img src="elements/pl-sketch.png" width="300" />
+<br />
+
+**question.html**
+```html
+<pl-sketch width="500" height="600"></pl-sketch>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`width` | integer | 500 | Width of sketchpad element.
+`height` | integer | 600 | Height of sketchpad element.
+
+#### Details
+
+Any submission will be marked correct, as there is no way to automatically grade a sketch.
+
+#### Example Implementations
+
+- [element/sketch]
 -----
 
 ## `pl-symbolic-input` element
@@ -1706,6 +1737,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
 [element/pythonVariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
+[element/sketch]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/sketch
 [element/stringInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS

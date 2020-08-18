@@ -20,7 +20,7 @@ const ensureUpToDate = (locals, callback) => {
 
         debug('updated:', updated);
         if (!updated) return callback(null);
-        
+
         // we updated the assessment_instance, so reload it
 
         debug('selecting assessment instance');
@@ -72,6 +72,11 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'attach_text') {
         util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'attach_sketch') {
+        util.callbackify(studentAssessmentInstance.processSketchUpload)(req, res, function (err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

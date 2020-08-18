@@ -31,7 +31,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets). 
+You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
 ## Assessment types
 
@@ -131,7 +131,7 @@ See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details
 
 ## Student-attached files
 
-Students can attach files to assessments, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
+Students can attach files to assessments, either by uploading them, pasting the file contents as text, or by attaching a sketch. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
 
 The purpose of this is to allow students to take extra notes during exams, for later review. For example, if a student has a Matlab script that they used to solve a question, they could attach it to that question so they can review it later.
 

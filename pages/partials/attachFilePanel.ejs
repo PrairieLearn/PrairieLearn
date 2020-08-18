@@ -9,15 +9,24 @@
     <tr><td><i>No attached files</i></td></tr>
     <% } else { %>
       <% file_list.forEach(function(file, iFile) { %>
+      <% if (file.type == 'student_upload_sketch') { %>
+      <tr>
+        <td style="word-break:break-all;">
+          <a class="attached-file saved-sketch" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>" id="saved_sketch">
+            <%= file.display_filename %>
+          </a>
+        </td>
+      <% } else { %>
       <tr>
         <td style="word-break:break-all;">
           <a class="attached-file" target="_blank" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/file/<%= file.id %>/<%= file.display_filename %>">
             <%= file.display_filename %>
           </a>
         </td>
+      <% } %>
         <% if (assessment_instance.open) { %>
         <td style="width:1%; text-align:right;">
-          <% if (file.type == 'student_upload') { %>
+          <% if (file.type == 'student_upload' || file.type == 'student_upload_sketch') { %>
           <a id="attachFileDeleteButton<%= iFile %>"
              tabindex="0" class="btn btn-xs btn-secondary attachFileDeleteButton" role="button"
              data-toggle="popover" data-container="body"
@@ -43,6 +52,7 @@
     <p class="small mb-0">
       Attachments can't be added or deleted because the assessment is closed.
     </p>
+    <%- include('sketchpadPanel'); %>
     <% } else { /* assessment_instance is open */ %>
     <!-- UPLOAD FILE -->
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#attachFileCollapse" aria-expanded="false" aria-controls="attachFileCollapse">
@@ -92,6 +102,15 @@
         <button class="btn btn-small btn-primary" name="__action" value="attach_text">Attach text</button>
       </form>
     </div>
+
+    <!-- UPLOAD SKETCH -->
+    <br>
+    <button class="btn btn-xs btn-secondary" type="button" id="attachSketchButton">
+        Attach sketch <i class="far fa-caret-square-down"></i>
+    </button>
+    <form method="POST" class="attach-sketch-form">
+        <%- include('sketchpadPanel'); %>
+    </form>
     <!-- END OF FILES -->
     <% } %>
   </div>
