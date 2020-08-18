@@ -16,12 +16,12 @@
             ]
         },
         {
+          "minAdvancePerc": 0,
           "questions": [
-            {"id": "partialCredit4_v2", "points": [2], "minAdvancePerc": 0}
+            {"id": "partialCredit4_v2", "points": [2]}
           ]
         },
         {
-            "minAdvancePerc": 50,
             "questions": [
                 {
                     "numberChoose": 1,
