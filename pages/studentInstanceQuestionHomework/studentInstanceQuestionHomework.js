@@ -33,7 +33,6 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-
     sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
@@ -44,12 +43,12 @@ function processSubmission(req, res, callback) {
         // MAJOR NOTE: I have to resolve the `null` value passed in lieu of the assessment in saveSubmission()
         console.log(submission);
         if (req.body.__action == 'grade') {
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, res.locals.instance_question, (err) => {
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
         } else if (req.body.__action == 'save') {
-            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, null, res.locals.instance_question, (err) => {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
