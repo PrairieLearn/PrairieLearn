@@ -37,6 +37,7 @@ module.exports = asyncHandler(async (req, res, next) => {
             await selectAndAuthzInstructorQuestion(req, res);
         }
     } else if (res.locals.course_id) {
+        req.params.course_id = res.locals.course_id;
         await authzCourse(req, res);
     } else {
         throw new Error('Workspace has no course and no course instance!');
