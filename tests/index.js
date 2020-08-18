@@ -44,4 +44,6 @@ require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
+require('./testChunks');
+require('./testLocalLock');
 require('./sync');

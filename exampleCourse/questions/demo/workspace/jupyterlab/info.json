@@ -10,11 +10,10 @@
     "workspaceOptions": {
         "image": "prairielearn/workspace-jupyterlab",
         "port": 8080,
-        "home": "/home/prairie",
+        "home": "/home/jovyan",
         "rewriteUrl": false,
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "Workbook.ipynb"
         ]
     }
 }
