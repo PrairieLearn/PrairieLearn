@@ -110,6 +110,8 @@
   * Change blocked-event-loop detection to be more lightweight in production (Matt West).
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
+  
+  * Change syncing to be more resilient and to record errors/warnings encountered during sync (Nathan Walters).
 
   * Change element default setup to be top-down instead of inline (James Balamuta).
 
