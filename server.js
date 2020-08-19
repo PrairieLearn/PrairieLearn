@@ -204,7 +204,7 @@ const workspaceProxyOptions = {
         }
     },
 };
-const workspaceProxy = createProxyMiddleware((pathname, req) => {
+const workspaceProxy = createProxyMiddleware((pathname) => {
     return pathname.match('/pl/workspace/([0-9])+/container/');
 }, workspaceProxyOptions);
 app.use('/pl/workspace/:workspace_id/container', [
