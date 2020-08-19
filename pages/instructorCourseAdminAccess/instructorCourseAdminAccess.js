@@ -1,7 +1,9 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const async = require('async');
 
+const logger = require('../../lib/logger');
 const error = require('@prairielearn/prairielib/error');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -13,7 +15,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Access denied (must be course owner)'));
-    
+
     sqldb.query(sql.select_course_users, {course_id: res.locals.course.id}, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.course_users = result.rows;
@@ -24,10 +26,129 @@ router.get('/', (req, res, next) => {
 router.post('/', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Access denied (must be course owner)'));
 
-    if (req.body.__action == 'course_permissions_insert_by_user_uid') {
+    if (req.body.__action == 'course_permissions_insert_by_multi_user_uid') {
+        // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
+        let uids = new Set(req.body.uid.split(',').map((uid) => uid.trim()));
+
+        // Verify there is at least one UID
+        if (uids.length == 0) return next(new Error('Empty list of UIDs'));
+
+        // Verify the requested course role is valid - we choose to disallow Owner
+        // because we want to discourage the assignment of this role to many users
+        if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
+            return next(new Error(`Invalid requested course role: ${req.body.course_role}`));
+        }
+
+        // Verify the course instance id associated with the requested course instance
+        // role is valid (should such a role have been requested)
+        let course_instance = null;
+        if (req.body.course_instance_id) {
+            course_instance = res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id);
+            if (!course_instance) return next(new Error(`Invalid requested course instance role`));
+        }
+
+        // Iterate through UIDs in parallel
+        async.reduce(uids, {given_cp: [], not_given_cp: [], not_given_cip: [], errors: []}, (memo, uid, callback) => {
+            const c_params = [
+                res.locals.course.id,
+                uid,
+                req.body.course_role,
+                res.locals.authz_data.authn_user.user_id,
+            ];
+            sqldb.call('course_permissions_insert_by_user_uid', c_params, (err, result) => {
+                if (ERR(err, (e) => logger.warn(`Failed to insert course permission for uid: ${uid}`, e))) {
+                    memo.not_given_cp.push(uid);
+                    memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
+                    return callback(null, memo);
+                }
+
+                memo.given_cp.push(uid);
+
+                if (!course_instance) return callback(null, memo);
+
+                const ci_params = [
+                    res.locals.course.id,
+                    result.rows[0].user_id,
+                    course_instance.id,
+                    'Student Data Viewer',
+                    res.locals.authz_data.authn_user.user_id,
+                ];
+                sqldb.call('course_instance_permissions_insert', ci_params, (err, _result) => {
+                    if (ERR(err, (e) => logger.warn(`Failed to insert course instance permission for uid: ${uid}`, e))) {
+                        memo.not_given_cip.push(uid);
+                        memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
+                        return callback(null, memo);
+                    }
+
+                    callback(null, memo);
+                });
+            });
+        }, (err, result) => {
+            if (ERR(err, next)) return;
+            if (result.errors.length > 0) {
+                err = error.make(500, 'Failed to grant access to some users');
+                err.info = '';
+                const given_cp_and_cip = result.given_cp.filter((uid) => !result.not_given_cip.includes(uid));
+                debug(`given_cp: ${result.given_cp}`);
+                debug(`not_given_cip: ${result.not_given_cip}`);
+                debug(`given_cp_and_cip: ${given_cp_and_cip}`);
+                if (given_cp_and_cip.length > 0) {
+                    if (course_instance) {
+                        err.info += '<hr>'
+                                  + '<p>The following users were added to the course staff, '
+                                  + `were given course content access <strong>${req.body.course_role}</strong>, `
+                                  + `and were given student data access <strong>${course_instance.short_name} (Viewer)</strong>:</p>`
+                                  + '<div class="container"><pre class="bg-dark text-white rounded p-2">'
+                                  + given_cp_and_cip.join(',\n')
+                                  + '</pre></div>';
+                    } else {
+                        err.info += '<hr>'
+                                  + '<p>The following users were added to the course staff '
+                                  + `and were given course content access <strong>${req.body.course_role}</strong>:</p>`
+                                  + '<div class="container"><pre class="bg-dark text-white rounded p-2">'
+                                  + given_cp_and_cip.join(',\n')
+                                  + '</pre></div>';
+                    }
+                }
+                if (course_instance && (result.not_given_cip.length > 0)) {
+                    err.info += '<hr>'
+                              + '<p>The following users were added to the course staff and were given course '
+                              + `content access <strong>${req.body.course_role}</strong>, but were <strong>not</strong> `
+                              + `given student data access <strong>${course_instance.short_name} (Viewer)</strong>:</p>`
+                              + '<div class="container"><pre class="bg-dark text-white rounded p-2">'
+                              + result.not_given_cip.join(',\n')
+                              + '</pre></div>'
+                              + `<p>If you return to the <a href="${req.originalUrl}">access page</a>, you will find these `
+                              + `users in the list of course staff and can add student data access to each of them.</p>`;
+                }
+                if (result.not_given_cp.length > 0) {
+                    err.info += '<hr>'
+                              + '<p>The following users were <strong>not</strong> added to the course staff:</p>'
+                              + '<div class="container"><pre class="bg-dark text-white rounded p-2">'
+                              + result.not_given_cp.join(',\n')
+                              + '</pre></div>'
+                              + `<p>If you return to the <a href="${req.originalUrl}">access page</a>, you can try `
+                              + `to add them again. However, you should first check the reason for each failure to `
+                              + `grant access (see below). For example, it may be that a user you tried to add `
+                              + `was already a member of the course staff, in which case you will find them in the `
+                              + `list and can update their course content acccess as appropriate.</p>`;
+                }
+                err.info += '<hr>'
+                          + '<p>Here is the reason for each failure to grant access:</p>'
+                          + '<div class="container"><pre class="bg-dark text-white rounded p-2">'
+                          + result.errors.join('\n\n')
+                          + '</pre></div>';
+                return next(err);
+            }
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'course_permissions_insert_by_user_uid') {
+        let uid = req.body.uid.trim();
+        if (!uid) return next(new Error(`Empty UID`));
+
         const params = [
             res.locals.course.id,
-            req.body.uid,
+            uid,
             'None',
             res.locals.authz_data.authn_user.user_id,
         ];
@@ -36,11 +157,12 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'course_permissions_update_role') {
-        // FIXME: check authz
-        // - remove all course instance access roles if user changed to owner?
+        if ((req.body.user_id == res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
+            return next(new Error('Owners cannot change their own course content access'));
+        }
 
-        if (req.body.user_id == res.locals.user.user_id) {
-            return next(new Error('Owners cannot change their own permissions'));
+        if (req.body.user_id == res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
+            return next(new Error('Owners cannot change their own course content access even if they are emulating another user'));
         }
 
         // Before proceeding, we *could* make some effort to verify that the user
@@ -65,6 +187,14 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'course_permissions_delete') {
+        if ((req.body.user_id == res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
+            return next(new Error('Owners cannot remove themselves from the course staff'));
+        }
+
+        if (req.body.user_id == res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
+            return next(new Error('Owners cannot remove themselves from the course staff even if they are emulating another user'));
+        }
+
         const params = [
             res.locals.course.id,
             req.body.user_id,
@@ -75,13 +205,14 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'course_instance_permissions_update_role_or_delete') {
-        // FIXME: check authz
-        // - check if user_id is owner (owners have full access to all)
-
         // Again, we could make some effort to verify that the user is still a
         // member of the course staff and that they still have student data access
         // in the given course instance. We choose not to do this for the same
-        // reason as above (see handler for change_course_content_access).
+        // reason as above (see handler for course_permissions_update_role).
+
+        if (!res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id)) {
+            return next(new Error(`Invalid requested course instance role`));
+        }
 
         if (req.body.course_instance_role) {
             // In this case, we update the role associated with the course instance permission
@@ -110,12 +241,13 @@ router.post('/', (req, res, next) => {
             });
         }
     } else if (req.body.__action == 'course_instance_permissions_insert') {
-        // FIXME: check authz
-        // - check if user_id is owner (owners have full access to all)
-
         // Again, we could make some effort to verify that the user is still a
         // member of the course staff. We choose not to do this for the same
-        // reason as above (see handler for change_course_content_access).
+        // reason as above (see handler for course_permissions_update_role).
+
+        if (!res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id)) {
+            return next(new Error(`Invalid requested course instance role`));
+        }
 
         const params = [
             res.locals.course.id,

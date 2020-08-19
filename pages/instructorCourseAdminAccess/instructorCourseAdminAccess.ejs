@@ -1,185 +1,208 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <%- include('../partials/head'); %>
-        <script src="/javascripts/lodash.min.js"></script>
-        <script src="/javascripts/d3.min.js"></script>
-        <script src="/localscripts/histmini.js"></script>
-    </head>
-    <body>
-        <script>
-            $(function () {
-                $('[data-toggle="popover"]').popover({sanitize: false})
-            });
-        </script>
-        <%- include('../partials/navbar'); %>
-        <div id="content" class="container-fluid">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                    Course staff
-                    <button type="button" class="btn btn-light btn-sm ml-auto" id="coursePermissionsInsertButton" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add user" data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
-                        <i class="fa fa-user-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add user</span>
-                    </button>
-                </div>
-                <table class="table table-sm table-hover table-striped">
-                    <thead>
-                        <th>UID</th>
-                        <th>Name</th>
-                        <th>Course content access</th>
-                        <th>Student data access</th>
-                        <th></th>
-                    </thead>
-                    <tbody>
-                        <% course_users.forEach(function(course_user, i) { %>
-                            <tr>
-                                <td class="align-middle"><%= course_user.uid %></td>
-                                <td class="align-middle"><%= (course_user.name || '—') %></td>
-                                <td class="align-middle">
-                                    <form name="course-content-access-form-<%= course_user.user_id %>" method="POST">
-                                        <input type="hidden" name="__action" value="course_permissions_update_role">
-                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                <%= course_user.course_role %>
-                                            </button>
-                                            <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 35em;">
-                                                <div class="dropdown-header text-wrap">
-                                                    <p>
-                                                        Users with course content access can see aggregate student data (e.g., mean scores), but cannot see the names or scores of individual students without having also been granted student data access to a particular course instance.
-                                                    </p>
-                                                </div>
-                                                <div class="dropdown-divider"></div>
-                                                <button class="dropdown-item mt-2" type="submit" name="course_role" value="None">
-                                                    <div class="text-wrap">
-                                                        <h6>None</h6>
-                                                        <p class="small">
-                                                            Can see no course content.
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                                <div class="dropdown-divider"></div>
-                                                <button class="dropdown-item" type="submit" name="course_role" value="Previewer">
-                                                    <div class="text-wrap">
-                                                        <h6>Previewer</h6>
-                                                        <p class="small">
-                                                            Can see all questions, course instances, and assessments. Can see but not close issues. Cannot see any code or configuration files.
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                                <div class="dropdown-divider"></div>
-                                                <button class="dropdown-item" type="submit" name="course_role" value="Viewer">
-                                                    <div class="text-wrap">
-                                                        <h6>Viewer</h6>
-                                                        <p class="small">
-                                                            Can see all questions, course instances, and assessments. Can see but not close issues. Can see and download but not edit all code and configuration files.
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                                <div class="dropdown-divider"></div>
-                                                <button class="dropdown-item" type="submit" name="course_role" value="Editor">
-                                                    <div class="text-wrap">
-                                                        <h6>Editor</h6>
-                                                        <p class="small">
-                                                            Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository.
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                                <div class="dropdown-divider"></div>
-                                                <button class="dropdown-item" type="submit" name="course_role" value="Owner">
-                                                    <div class="text-wrap">
-                                                        <h6>Owner</h6>
-                                                        <p class="small">
-                                                            Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository. Can add and remove course staff and can change access roles.
-                                                        </p>
-                                                    </div>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </td>
-                                <td class="align-middle">
-                                    <% if (course_user.course_instance_roles) { %>
-                                        <% course_user.course_instance_roles.forEach(function(cir, i) { %>
-                                            <form name="student-data-access-change-<%= course_user.user_id %>-<%= i %>" method="POST" class="d-inline">
-                                                <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
-                                                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                                <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
-                                                <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
-                                                <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
-                                                    <div class="btn-group btn-group-sm" role="group">
-                                                        <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                            <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
-                                                        </button>
-                                                        <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 35em;">
-                                                            <div class="dropdown-header text-wrap">
-                                                                <p>
-                                                                    Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files, and cannot see any other course instances or assessments, without having also been granted course content access.
-                                                                </p>
-                                                            </div>
-                                                            <div class="dropdown-divider"></div>
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">
-                                                                <div class="text-wrap">
-                                                                    <h6>Viewer</h6>
-                                                                    <p class="small">
-                                                                        Can see but not edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
-                                                                    </p>
-                                                                </div>
-                                                            </button>
-                                                            <div class="dropdown-divider"></div>
-                                                            <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Editor">
-                                                                <div class="text-wrap">
-                                                                    <h6>Editor</h6>
-                                                                    <p class="small">
-                                                                        Can see and edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
-                                                                    </p>
-                                                                </div>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fa fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        <% }); %>
-                                    <% } %>
-                                    <% if (course_user.other_course_instances && course_user.other_course_instances.length > 0) { %>
-                                    <form name="student-data-access-add-<%= course_user.user_id %>" method="POST" class="d-inline">
-                                        <input type="hidden" name="__action" value="course_instance_permissions_insert">
-                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button id="addCIPDrop-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                Add...
-                                            </button>
-                                            <div class="dropdown-menu" aria-labelledby="addCIPDrop-<%= course_user.user_id %>">
-                                                <% course_user.other_course_instances.forEach(function(ci) { %>
-                                                    <button class="dropdown-item" type="submit" name="course_instance_id" value="<%= ci.id %>">
-                                                        <%= ci.short_name %>
-                                                    </button>
-                                                <% }); %>
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <% } %>
-                                </td>
-                                <td class="align-middle">
-                                    <form name="student-data-access-remove-<%= course_user.user_id %>" method="POST">
-                                        <input type="hidden" name="__action" value="course_permissions_delete">
-                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
-                                        <button type="submit" class="btn btn-sm btn-outline-dark">
-                                            <i class="fa fa-times"></i> Delete user
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histmini.js"></script>
+    <style>
+      .popover{
+        max-width: 35%;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <div class="card mb-4">
+        <div class="card-header bg-primary">
+          <div class="row align-items-center justify-content-between">
+            <div class="col-auto">
+              <span class="text-white">Course staff</span>
             </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-light btn-sm ml-auto" id="coursePermissionsMultiInsertButton" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add many users" data-content="<%= include('coursePermissionsMultiInsertForm', {id: 'coursePermissionsMultiInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                <i class="fa fa-user-plus" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Add many users</span>
+              </button>
+              <button type="button" class="btn btn-light btn-sm ml-auto" id="coursePermissionsInsertButton" tabindex="0" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add user" data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                <i class="fa fa-user-plus" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Add user</span>
+              </button>
+            </div>
+          </div>
         </div>
-    </body>
+        <table class="table table-sm table-hover table-striped">
+          <thead>
+            <th>UID</th>
+            <th>Name</th>
+            <th>Course content access</th>
+            <th>Student data access</th>
+            <th></th>
+          </thead>
+          <tbody>
+            <% course_users.forEach(function(course_user, i) { %>
+              <tr>
+                <td class="align-middle"><%= course_user.uid %></td>
+                <td class="align-middle"><%= (course_user.name || '—') %></td>
+                <td class="align-middle">
+                  <% if (course_user.course_role == 'Owner' && (!is_administrator)) { %>
+                    <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary disabled" disabled>
+                      <%= course_user.course_role %>
+                    </button>
+                  <% } else { %>
+                    <form name="course-content-access-form-<%= course_user.user_id %>" method="POST">
+                      <input type="hidden" name="__action" value="course_permissions_update_role">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <%= course_user.course_role %>
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 35em;">
+                          <div class="dropdown-header text-wrap">
+                            <p>
+                              Users with course content access can see aggregate student data (e.g., mean scores), but cannot see the names or scores of individual students without having also been granted student data access to a particular course instance.
+                            </p>
+                          </div>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item mt-2" type="submit" name="course_role" value="None">
+                            <div class="text-wrap">
+                              <h6>None</h6>
+                              <p class="small">
+                                Can see no course content.
+                              </p>
+                            </div>
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" type="submit" name="course_role" value="Previewer">
+                            <div class="text-wrap">
+                              <h6>Previewer</h6>
+                              <p class="small">
+                                Can see all questions, course instances, and assessments. Can see but not close issues. Cannot see any code or configuration files.
+                              </p>
+                            </div>
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" type="submit" name="course_role" value="Viewer">
+                            <div class="text-wrap">
+                              <h6>Viewer</h6>
+                              <p class="small">
+                                Can see all questions, course instances, and assessments. Can see but not close issues. Can see and download but not edit all code and configuration files.
+                              </p>
+                            </div>
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" type="submit" name="course_role" value="Editor">
+                            <div class="text-wrap">
+                              <h6>Editor</h6>
+                              <p class="small">
+                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository.
+                              </p>
+                            </div>
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button class="dropdown-item" type="submit" name="course_role" value="Owner">
+                            <div class="text-wrap">
+                              <h6>Owner</h6>
+                              <p class="small">
+                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository. Can add and remove course staff and can change access roles.
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  <% } %>
+                </td>
+                <td class="align-middle">
+                  <% if (course_user.course_instance_roles) { %>
+                    <% course_user.course_instance_roles.forEach(function(cir, i) { %>
+                      <form name="student-data-access-change-<%= course_user.user_id %>-<%= i %>" method="POST" class="d-inline">
+                        <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
+                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                        <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                        <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                              <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 35em;">
+                              <div class="dropdown-header text-wrap">
+                                <p>
+                                  Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files, and cannot see any other course instances or assessments, without having also been granted course content access.
+                                </p>
+                              </div>
+                              <div class="dropdown-divider"></div>
+                              <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Viewer">
+                                <div class="text-wrap">
+                                  <h6>Viewer</h6>
+                                  <p class="small">
+                                    Can see but not edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
+                                  </p>
+                                </div>
+                              </button>
+                              <div class="dropdown-divider"></div>
+                              <button class="dropdown-item" type="submit" name="course_instance_role" value="Student Data Editor">
+                                <div class="text-wrap">
+                                  <h6>Editor</h6>
+                                  <p class="small">
+                                    Can see and edit scores of individual students for the course instance <code><%= cir.short_name %></code>.
+                                  </p>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                          <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                      </form>
+                    <% }); %>
+                  <% } %>
+                  <% if (course_user.other_course_instances && course_user.other_course_instances.length > 0) { %>
+                    <form name="student-data-access-add-<%= course_user.user_id %>" method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="course_instance_permissions_insert">
+                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                      <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button id="addCIPDrop-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Add...
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="addCIPDrop-<%= course_user.user_id %>">
+                          <% course_user.other_course_instances.forEach(function(ci) { %>
+                            <button class="dropdown-item" type="submit" name="course_instance_id" value="<%= ci.id %>">
+                              <%= ci.short_name %>
+                            </button>
+                          <% }); %>
+                        </div>
+                      </div>
+                    </form>
+                  <% } %>
+                </td>
+                <td class="align-middle">
+                  <% if ((course_user.course_role != 'Owner') || is_administrator) { %>
+                  <form name="student-data-access-remove-<%= course_user.user_id %>" method="POST">
+                    <input type="hidden" name="__action" value="course_permissions_delete">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                    <button type="submit" class="btn btn-sm btn-outline-dark">
+                      <i class="fa fa-times"></i> Delete user
+                    </button>
+                  </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
 </html>

@@ -1,13 +1,15 @@
+DROP FUNCTION IF EXISTS course_permissions_insert_by_user_uid(bigint, text, enum_course_role, bigint);
+
 CREATE OR REPLACE FUNCTION
     course_permissions_insert_by_user_uid(
-        course_id bigint,
-        uid text,
-        course_role enum_course_role,
-        authn_user_id bigint
-    ) returns void
+        IN course_id bigint,
+        IN uid text,
+        IN course_role enum_course_role,
+        IN authn_user_id bigint,
+        OUT user_id bigint
+    )
 AS $$
 DECLARE
-    user_id bigint;
     new_row course_permissions;
 BEGIN
     SELECT u.user_id INTO user_id
