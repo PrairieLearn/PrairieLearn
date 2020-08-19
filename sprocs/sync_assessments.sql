@@ -147,7 +147,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
-            group_work = (assessment->>'group_work')::boolean,
+            group_work = (valid_assessment.data->>'group_work')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -165,16 +165,16 @@ BEGIN
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
         -- if it is a group work try to insert a group_config
-        IF (assessment->>'group_work')::boolean THEN
+        IF (valid_assessment.data->>'group_work')::boolean THEN
             INSERT INTO group_configs
                 (course_instance_id,
                 assessment_id
             ) VALUES (
-                new_course_instance_id,
+                syncing_course_instance_id,
                 new_assessment_id
             ) ON CONFLICT DO NOTHING;
         END IF;
-        
+
         -- Now process all access rules for this assessment
         FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'allowAccess') LOOP
             INSERT INTO assessment_access_rules (
