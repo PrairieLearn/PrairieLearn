@@ -813,9 +813,12 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
  */
 function checkAllowAccessRoles(rule) {
     const warnings = [];
-    let startDate, endDate;
     if ('role' in rule) {
-        warnings.push(`The allowAccess rule with role ${rule.role} will be ignored`);
+        if (rule.role == 'Student') {
+            warnings.push(`It is no longer necessary to specify a role (${rule.role}) in an "allowAccess" rule, since these rules are only used to grant student access.`);
+        } else {
+            warnings.push(`The "allowAccess" rule with role ${rule.role} will be ignored. Course owners should manage staff access on the course admin access page.`);
+        }
     }
     return warnings;
 }
@@ -1001,7 +1004,7 @@ async function validateCourseInstance(courseInstance) {
     });
 
     if (_(courseInstance).has('userRoles')) {
-        warnings.push('"userRoles" will be ignored - should set course and course instance permissions on course admin access page');
+        warnings.push('The property "userRoles" will be ignored. Course owners should manage staff access on the course admin access page.');
     };
 
     return { warnings, errors };
