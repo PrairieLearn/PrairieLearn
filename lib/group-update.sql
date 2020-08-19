@@ -12,34 +12,34 @@ WHERE
     a.id = $assessment_id;
 
 -- BLOCK select_enrollments
-SELECT 
-    uid AS user_list
-FROM 
+SELECT
+    u.uid AS user_list
+FROM
     assessments AS a
     JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
     JOIN users u ON u.user_id = e.user_id
-WHERE 
-    a.id = $assessment_id AND e.role = 'Student';
+WHERE
+    a.id = $assessment_id AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
 
 -- BLOCK select_not_assigned
-SELECT 
+SELECT
     uid AS user_list
-FROM 
-    ((SELECT 
-        user_id
-    FROM 
+FROM
+    ((SELECT
+        e.user_id
+    FROM
         assessments AS a
         JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
-    WHERE 
-        a.id = $assessment_id AND e.role = 'Student')
+    WHERE
+        a.id = $assessment_id AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id))
     EXCEPT
-    (SELECT 
+    (SELECT
         user_id
     FROM
         group_configs AS gc
         JOIN groups as gr ON (gc.id = gr.group_config_id)
         JOIN group_users as gu ON (gu.group_id = gr.id)
-    WHERE 
+    WHERE
         gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND gr.deleted_at IS NULL)) temp
 JOIN
     users u ON u.user_id = temp.user_id;
