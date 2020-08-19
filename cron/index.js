@@ -90,6 +90,16 @@ module.exports = {
                 module: require('./stopStaleWorkspaces'),
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalStopStaleWorkspacesSec,
             },
+            {
+                name: 'workspacesLoad',
+                module: require('./workspacesLoad'),
+                intervalSec: config.cronOverrideallIntervalsSec || config.cronIntervalWorkspacesLoadSec,
+            },
+            {
+                name: 'workspacesStateTransition',
+                module: require('./workspacesLoad'),
+                intervalSec: config.cronOverrideallIntervalsSec || config.cronIntervalWorkspacesStateTransitionSec,
+            },
         ];
         logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
 

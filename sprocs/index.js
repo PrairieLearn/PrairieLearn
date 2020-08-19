@@ -168,6 +168,9 @@ module.exports = {
             'group_info.sql',
             'workspaces_message_update.sql',
             'workspaces_state_update.sql',
+            'workspaces_loads_current.sql',
+            'workspace_hosts_recapture_draining.sql',
+            'workspace_hosts_drain_extra.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
