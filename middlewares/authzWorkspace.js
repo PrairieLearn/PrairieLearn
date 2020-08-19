@@ -34,7 +34,6 @@ module.exports = asyncHandler(async (req, res, next) => {
                instructor view and should authorize for that. */
             res.locals.course_instance = { id: res.locals.course_instance_id };
             await authzCourseInstanceHasInstructorView(req, res);
-            await selectAndAuthzInstructorQuestion(req, res);
         }
     } else if (res.locals.course_id) {
         req.params.course_id = res.locals.course_id;
