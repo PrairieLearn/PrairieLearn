@@ -425,7 +425,7 @@ async function _getWorkspaceAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.get_workspace, { workspace_id, instance_id: workspace_server_settings.instance_id });
     const workspace = result.rows[0];
     workspace.local_name = `workspace-${workspace.launch_uuid}`;
-    workspace.s3_name = `workspace-${workspace.id}-${workspace.version}/current`;
+    workspace.s3_name = `workspace-${workspace.id}-${workspace.version}`;
     return workspace;
 }
 
@@ -641,7 +641,7 @@ async function _autoUpdateJobManager() {
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
             continue;
         } else {
-            s3_path = `${s3_name}/${local_path}`;
+            s3_path = `${s3_name}/current/${local_path}`;
         }
 
         if (update_queue[key].action == 'update') {
@@ -691,7 +691,7 @@ async function _getInitialZipAsync(workspace) {
     const s3Name = workspace.s3_name;
     const localPath = `${workspacePrefix}/${localName}`;
     const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
-    const s3Path = s3Name.replace('current', 'initial.zip');
+    const s3Path = `${s3Name}/initial.zip`;
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
@@ -705,7 +705,9 @@ const _getInitialZip = util.callbackify(_getInitialZipAsync);
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
-    _recursiveDownloadJobManager(`${workspacePrefix}/${workspace.local_name}`, workspace.s3_name, (err, jobs_params) => {
+    const localPath = `${workspacePrefix}/${workspace.local_name}`;
+    const s3Path = `${workspace.s3_name}/current`;
+    _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
@@ -882,7 +884,7 @@ function initSequence(workspace_id, useInitialZip, res) {
                 'id': workspace_id,
                 'launch_uuid': uuid,
                 'local_name': `workspace-${uuid}`,
-                's3_name': `workspace-${workspace_id}-${workspace_version}/current`,
+                's3_name': `workspace-${workspace_id}-${workspace_version}`,
             };
             return workspace;
         },
