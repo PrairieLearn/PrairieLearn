@@ -260,6 +260,36 @@ router.post('/', (req, res, next) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.__action == 'delete_non_owners') {
+        debug('Delete non-owners');
+        const params = [
+            res.locals.course.id,
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_permissions_delete_non_owners', params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'delete_no_access') {
+        debug('Delete users with no access');
+        const params = [
+            res.locals.course.id,
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_permissions_delete_users_without_access', params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'remove_all_student_data_access') {
+        debug('Remove all student data access');
+        const params = [
+            res.locals.course.id,
+            res.locals.authz_data.authn_user.user_id,
+        ];
+        sqldb.call('course_instance_permissions_delete_all', params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
