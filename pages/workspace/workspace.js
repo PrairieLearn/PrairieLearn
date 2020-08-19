@@ -8,14 +8,13 @@ const workspaceHelper = require('../../lib/workspace');
 
 const error = require('@prairielearn/prairielib/error');
 
-router.get('/:workspace_id', (req, res, _next) => {
-    res.locals.workspace_id = req.params.workspace_id;
+router.get('/', (req, res, _next) => {
     res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router.get('/:workspace_id/:action', asyncHandler(async (req, res, next) => {
-    const workspace_id = req.params.workspace_id;
+router.get('/:action', asyncHandler(async (req, res, next) => {
+    const workspace_id = res.locals.workspace_id;
     const action = req.params.action;
 
     if (action === 'reboot') {
