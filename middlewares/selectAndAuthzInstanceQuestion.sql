@@ -42,15 +42,7 @@ file_list AS (
     WHERE
         f.instance_question_id = $instance_question_id
         AND f.deleted_at IS NULL
-),
-zone AS (
-  SELECT z.* FROM
-      instance_questions iq
-      JOIN assessment_questions aq ON (aq.id = iq.assessment_question_id)
-      JOIN alternative_groups ag ON (ag.id = aq.alternative_group_id)
-      JOIN zones z ON (z.id = ag.zone_id)
-  WHERE iq.id = $instance_question_id
-),
+)
 SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
         to_jsonb(format_date_full_compact(ai.date, COALESCE(ci.display_timezone, c.display_timezone)))) AS assessment_instance,
