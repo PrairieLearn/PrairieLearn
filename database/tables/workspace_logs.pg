@@ -3,8 +3,8 @@ columns
     id: bigint not null default nextval('workspace_logs_id_seq'::regclass)
     level: enum_log_level
     message: text
+    version: bigint not null default 1
     workspace_id: bigint not null
-    workspace_version: bigint not null default 1
 
 indexes
     workspace_logs_pkey: PRIMARY KEY (id) USING btree (id)
