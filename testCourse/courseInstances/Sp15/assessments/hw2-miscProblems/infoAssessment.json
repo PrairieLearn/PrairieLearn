@@ -38,7 +38,8 @@
                 {"id": "positionTimeGraph",          "points": 2, "maxPoints": 10},
                 {"id": "downloadFile",               "points": 2, "maxPoints": 10},
                 {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10},
-                {"id": "subfolder/nestedQuestion",   "points": 2, "maxPoints": 10}
+                {"id": "subfolder/nestedQuestion",   "points": 2, "maxPoints": 10},
+                {"id": "workspace",                  "points": 2, "maxPoints": 10}
             ]
         }
     ]

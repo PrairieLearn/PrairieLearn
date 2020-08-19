@@ -1,7 +1,7 @@
 columns
     allow_issue_reporting: boolean default true
     allow_real_time_grading: boolean default true
-    assessment_set_id: bigint not null
+    assessment_set_id: bigint
     auto_close: boolean default true
     config: jsonb
     constant_question_value: boolean default false
@@ -13,17 +13,20 @@ columns
     min_advance_perc: double precision
     mode: enum_mode
     multiple_instance: boolean
-    number: text
+    number: text not null default '0'::text
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
     shuffle_questions: boolean default false
     stats_last_updated: timestamp with time zone
+    sync_errors: text
+    sync_job_sequence_id: bigint
+    sync_warnings: text
     text: text
     tid: text
     title: text
     type: enum_assessment_type
-    uuid: uuid not null
+    uuid: uuid
 
 indexes
     assessments_pkey: PRIMARY KEY (id) USING btree (id)
@@ -32,8 +35,9 @@ indexes
     assessments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
-    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     alternative_groups: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

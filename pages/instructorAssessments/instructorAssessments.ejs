@@ -9,6 +9,7 @@
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary">
             <div class="row align-items-center justify-content-between">
@@ -53,7 +54,12 @@
                     <%= row.label %></a>
                 </td>
                 <td class="align-middle">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %> 
+                  <% if (row.sync_errors) { %>
+                    <i class="fa fa-times text-danger mr-1" aria-hidden="true"></i>
+                  <% } else if (row.sync_warnings) { %>
+                    <i class="fa fa-exclamation-triangle text-warning mr-1" aria-hidden="true"></i>
+                  <% } %>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %>
                   <% if (row.group_work) { %>
                     <i class="fas fa-users"></i>
                   <% } %></a>

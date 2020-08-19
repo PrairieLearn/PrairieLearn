@@ -40,6 +40,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} name
  * @property {string} title
  * @property {string} timezone
+ * @property {boolean} exampleCourse
  * @property {CourseOptions} options
  * @property {Tag[]} tags
  * @property {Topic[]} topics
@@ -50,21 +51,21 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRule} role
- * @property {string[]} uids
- * @property {string} startDate
- * @property {string} endDate
- * @property {string} institution
+ * @property {UserRule=} role
+ * @property {string[]=} uids
+ * @property {string=} startDate
+ * @property {string=} endDate
+ * @property {string=} institution
  */
 
 /**
  * @typedef {Object} CourseInstance
  * @property {string} uuid
  * @property {string} longName
- * @property {number} number
- * @property {string} timezone
- * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
- * @property {CourseInstanceAllowAccess[]} allowAccess
+ * @property {number} [number]
+ * @property {string} [timezone]
+ * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
+ * @property {CourseInstanceAllowAccess[]} [allowAccess]
  */
 
 /**
@@ -135,16 +136,17 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} autoClose
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
+ * @property {boolean} groupWork
  */
 
 /**
  * @typedef {Object} QuestionExternalGradingOptions
- * @property {boolean} enabled
+ * @property {boolean=} enabled
  * @property {string} image
  * @property {string} entrypoint
- * @property {string[]} serverFilesCourse
- * @property {number} timeout
- * @property {boolean} enableNetworking
+ * @property {string[]=} serverFilesCourse
+ * @property {number=} timeout
+ * @property {boolean=} enableNetworking
  */
 
 /**
@@ -155,7 +157,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} args
  * @property {string[]} gradedFiles
  * @property {string[]} syncIgnore
- * @property {string} urlRewrite
+ * @property {string} rewriteUrl
  */
 
  /**
@@ -164,17 +166,16 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
   * @property {string} title
   * @property {string} topic
-  * @property {string[]} secondaryTopics
-  * @property {string[]} tags
-  * @property {string[]} clientFiles
-  * @property {string[]} clientTemplates
-  * @property {string} template
-  * @property {"Internal" | "External" | "Manual"} gradingMethod
-  * @property {boolean} singleVariant
-  * @property {boolean} partialCredit
-  * @property {Object} options
-  * @property {QuestionExternalGradingOptions} externalGradingOptions
-  * @property {QuestionWorkspaceOptions} workspaceOptions
+  * @property {string[]} [tags]
+  * @property {string[]} [clientFiles]
+  * @property {string[]} [clientTemplates]
+  * @property {string} [template]
+  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
+  * @property {boolean} [singleVariant]
+  * @property {boolean} [partialCredit]
+  * @property {Object} [options]
+  * @property {QuestionExternalGradingOptions} [externalGradingOptions]
+  * @property {QuestionWorkspaceOptions} [workspaceOptions]
   */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
@@ -185,7 +186,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * structure from it. Returns the path to the newly-created directory.
  * 
  * @param {CourseData} courseData - The course data to write to disk
- * @returns string - The path to the directory containing the course data
+ * @returns {Promise<string>} - The path to the directory containing the course data
  */
 module.exports.writeCourseToTempDirectory = async function(courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
@@ -212,7 +213,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
   const questionsPath = path.join(coursePath, 'questions');
   await fs.ensureDir(questionsPath);
   for (const qid of Object.keys(courseData.questions)) {
-    const questionPath = path.join(questionsPath, qid);
+    // Handle nested questions - split on '/' and use components to construct
+    // the nested directory structure.
+    const questionPath = path.join(questionsPath, ...qid.split('/'));
     await fs.ensureDir(questionPath);
     const questionInfoPath = path.join(questionPath, 'info.json');
     await fs.writeJSON(questionInfoPath, courseData.questions[qid]);
@@ -223,7 +226,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
   await fs.ensureDir(courseInstancesPath);
   for (const shortName of Object.keys(courseData.courseInstances)) {
     const courseInstance = courseData.courseInstances[shortName];
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    // Handle nested course instances - split on '/' and use components to construct
+    // the nested directory structure.
+    const courseInstancePath = path.join(courseInstancesPath, ...shortName.split('/'));
     await fs.ensureDir(courseInstancePath);
     const courseInstanceInfoPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     await fs.writeJSON(courseInstanceInfoPath, courseInstance.courseInstance);
@@ -232,7 +237,9 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
     const assessmentsPath = path.join(courseInstancePath, 'assessments');
     await fs.ensureDir(assessmentsPath);
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
-      const assessmentPath = path.join(assessmentsPath, assessmentName);
+      // Handle nested assessments - split on '/' and use components to construct
+      // the nested directory structure.
+      const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
       await fs.ensureDir(assessmentPath);
       const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
       await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
@@ -242,7 +249,6 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
-module.exports.WORKSPACE_QUESTION_ID = 'test3';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -361,6 +367,10 @@ const courseInstances = {
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
+      allowAccess: [{
+        startDate: '2019-01-14T00:00:00',
+        endDate: '2019-05-15T00:00:00',
+      }],
       userRoles: {
         'user1@illinois.edu': 'Instructor',
         'user2@illinois.edu': 'TA',
@@ -383,17 +393,21 @@ module.exports.getCourseData = function() {
   return JSON.parse(JSON.stringify(courseData));
 };
 
-/**
- * Async wrapper for syncing course data from a directory. Also stubs out the
- * logger interface.
- */
-module.exports.syncCourseData = function(courseDir) {
-  const logger = {
+module.exports.getFakeLogger = function() {
+  return {
     verbose: () => {},
     debug: () => {},
     info: () => {},
     warn: () => {},
   };
+};
+
+/**
+ * Async wrapper for syncing course data from a directory. Also stubs out the
+ * logger interface.
+ */
+module.exports.syncCourseData = function(courseDir) {
+  const logger = this.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
@@ -421,7 +435,7 @@ module.exports.createAndSyncCourseData = async function() {
  * path to the directory.
  * 
  * @param {CourseData} courseData - The course data to write and sync
- * @returns {string} the path to the new temp directory
+ * @returns {Promise<string>} the path to the new temp directory
  */
 module.exports.writeAndSyncCourseData = async function(courseData) {
   const courseDir = await this.writeCourseToTempDirectory(courseData);
@@ -440,6 +454,12 @@ module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir
   await this.syncCourseData(courseDir);
 };
 
+/**
+ * Returns an array of all records in a particular database table.
+ *
+ * @param {string} tableName - The name of the table to query
+ * @return {Promise<Record<string, any>[]>} - The rows of the given table
+ */
 module.exports.dumpTable = async function(tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;

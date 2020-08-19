@@ -13,8 +13,6 @@ before('drop the template database, just in case', helperDb.dropTemplate);
 after('drop the template database', helperDb.dropTemplate);
 
 require('./testDatabase');
-require('./testLoadCourse');
-require('./testSyncCourseInfo');
 require('./testAdministrator');
 require('./testAdministratorQueries');
 require('./testFileEditor');
@@ -47,6 +45,7 @@ require('./testIssues');
 require('./testSequentialQuestions');
 require('./testChunks');
 require('./testLocalLock');
+require('./testWorkspaceAccess');
 require('./sync');
 require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');

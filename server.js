@@ -208,7 +208,13 @@ const workspaceProxyOptions = {
 const workspaceProxy = createProxyMiddleware((pathname) => {
     return pathname.match('/pl/workspace/([0-9])+/container/');
 }, workspaceProxyOptions);
-app.use(workspaceProxy);
+app.use('/pl/workspace/:workspace_id/container', [
+    cookieParser(),
+    require('./middlewares/date'),
+    require('./middlewares/authn'),
+    require('./middlewares/authzWorkspace'),
+    workspaceProxy,
+]);
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -316,7 +322,10 @@ app.use('/pl/news_item', [
   require('./pages/news_item/news_item.js'),
 ]);
 
-app.use('/pl/workspace/', require('./pages/workspace/workspace'));
+app.use('/pl/workspace/:workspace_id', [
+    require('./middlewares/authzWorkspace'),
+    require('./pages/workspace/workspace'),
+]);
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
     app.use('/pl/loadFromDisk', [

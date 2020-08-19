@@ -1,7 +1,6 @@
 -- BLOCK get_group_work
 SELECT *
 FROM
-
     assessment_instances AS ai
     LEFT JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
     JOIN group_users AS gu ON (ai.group_id = gu.group_id)
