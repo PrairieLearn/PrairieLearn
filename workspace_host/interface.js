@@ -49,9 +49,9 @@ app.post('/', function(req, res) {
     const workspace_id = req.body.workspace_id;
     const action = req.body.action;
     const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
-    if (typeof workspace_id === 'undefined') {
+    if (workspace_id == null) {
         res.status(500).send('Missing workspace_id');
-    } else if (typeof action === 'undefined') {
+    } else if (action == null) {
         res.status(500).send('Missing action');
     } else if (action == 'init') {
         initSequence(workspace_id, useInitialZip, res);
