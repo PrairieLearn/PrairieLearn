@@ -8,6 +8,7 @@ const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv');
+const betterAjvErrors = require('better-ajv-errors');
 const { parseISO, isValid, isAfter } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
@@ -19,7 +20,7 @@ const perf = require('./performance')('course-db');
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ schemaId: 'auto' });
+const ajv = new Ajv({ schemaId: 'auto', allErrors: true, jsonPointers: true });
 // @ts-ignore
 ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
 
@@ -501,7 +502,8 @@ module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tol
             const valid = validate(json);
             if (!valid) {
                 const result = { uuid: json.uuid };
-                infofile.addError(result, `Error: ${ajv.errorsText(validate.errors)}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`);
+                const errorText = betterAjvErrors(schema, json, validate.errors, {indent: 2});
+                infofile.addError(result, errorText);
                 return result;
             }
             return {

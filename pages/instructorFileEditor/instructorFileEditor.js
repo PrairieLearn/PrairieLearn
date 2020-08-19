@@ -18,6 +18,7 @@ const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
 const editorUtil = require('../../lib/editorUtil');
+const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
@@ -154,8 +155,11 @@ router.get('/*', (req, res, next) => {
         (callback) => {
             callbackify(editorUtil.getErrorsAndWarningsForFilePath)(res.locals.course.id, relPath, (err, data) => {
                 if (ERR(err, callback)) return;
+                const ansiUp = new AnsiUp();
                 fileEdit.sync_errors = data.errors;
+                fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
                 fileEdit.sync_warnings = data.warnings;
+                fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
                 callback(null);
             });
         },
