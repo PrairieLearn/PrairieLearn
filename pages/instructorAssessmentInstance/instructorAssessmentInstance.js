@@ -40,8 +40,16 @@ router.get('/', (req, res, next) => {
                 sqlDb.query(sql.select_log, params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
-
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    if (res.locals.assessment.group_work) {
+                        const params = {assessment_instance_id: res.locals.assessment_instance.id};
+                        sqlDb.query(sql.select_group_info, params, (err, result) => {
+                            if (ERR(err, next)) return;
+                            res.locals.group_info = result.rows[0];
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        });
+                    } else {
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
                 });
             });
         });

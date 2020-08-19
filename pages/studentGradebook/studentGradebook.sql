@@ -27,9 +27,13 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+
 WHERE
     ci.id = $course_instance_id
-    AND ai.user_id = $user_id
+    AND (ai.user_id = $user_id OR ai.group_id IN (SELECT gr.id
+                                                  FROM groups gr
+                                                  JOIN group_users gu ON gr.id = gu.group_id 
+                                                  WHERE gr.deleted_at IS NULL AND gu.user_id = $user_id))
     AND a.deleted_at IS NULL
 ORDER BY
     aset.number, a.order_by, a.id, ai.number;

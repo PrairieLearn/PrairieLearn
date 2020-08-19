@@ -93,6 +93,11 @@
             "type": "boolean",
             "default": true
         },
+        "groupWork": {
+            "description": "Whether the assessment will support group work.",
+            "type": "boolean",
+            "default": false
+        },
         "minAdvancePerc": {
             "$ref": "#/definitions/minAdvancePerc"
         }

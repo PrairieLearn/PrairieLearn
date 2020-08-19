@@ -68,6 +68,7 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
             set_name: assessment.set,
             text: assessment.text,
             constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
+            group_work: assessment.groupWork || false,
             min_advance_perc: assessment.minAdvancePerc,
         };
 

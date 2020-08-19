@@ -46,4 +46,8 @@ require('./testRedirects');
 require('./testIssues');
 require('./testSequentialQuestions');
 require('./testChunks');
+require('./testLocalLock');
 require('./sync');
+require('./testGroupGenerateAndDelete');
+require('./testGroupStudent');
+require('./testGroupScoreAndSync');

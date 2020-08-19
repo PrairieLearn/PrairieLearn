@@ -3,10 +3,37 @@
 
 <head>
   <%- include('../partials/head'); %>
+  <link rel="stylesheet" href="/stylesheets/workspace.css">
   <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
 </head>
 
 <body class="d-flex flex-column h-100">
+  <div class="modal fade" id="rebootModal" tabindex="-1" aria-labelledby="rebootModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="h5 modal-title" id="rebootModalLabel">Reboot the workspace</h1>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to reboot the virtual machine?<p>
+          <ul class="fa-ul">
+            <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reboot into this same tab.</li>
+            <li><span class="fa-li"><i class="fas fa-save" aria-hidden="true"></i></span>Your files will remain intact through the reboot.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <a class="btn btn-info" href="/pl/workspace/<%= workspace_id %>/reboot">
+            <i class="fas fa-sync text-white" aria-hidden="true"></i>
+            Reboot
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
     <a class="navbar-brand" href="<%= homeUrl %>">
@@ -18,7 +45,7 @@
     <div class="d-flex flex-row ml-auto align-items-center">
       <ul class="navbar-nav flex-row">
         <li class="mr-2">
-          <span id="state" class="badge badge-dark text-uppercase"></span>
+          <span id="state" class="badge badge-dark badge-workspace text-uppercase"><i class="fas fa-spinner fa-pulse"></i></span><span id="message" class="badge badge-dark badge-workspace badge-append font-weight-normal"></span>
         </li>
       </ul>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#workspace-nav">
@@ -29,7 +56,7 @@
     <div class="collapse navbar-collapse" id="workspace-nav">
       <ul class="navbar-nav ml-auto">
         <li class="nav-item ml-2 my-1">
-          <a id="reboot" class="nav-item btn btn-light" href="/pl/workspace/<%= workspace_id %>/reboot">
+          <a id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
           </a>
@@ -43,7 +70,6 @@
                               <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-check"></i> Grade</span>Submit your files for grading by using the <code>Save &amp; Grade</code> button on the question page.</li>
                             </ul>'>
             <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
-            Help
           </button>
         </li>
       </ul>
@@ -51,11 +77,11 @@
   </nav>
 
   <main class="d-flex flex-column flex-grow h-100">
-    <div id="loading_icon" class="d-flex flex-grow h-100 justify-content-center align-items-center">
+    <div id="loading" class="d-flex flex-grow h-100 justify-content-center align-items-center">
       <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
       <span class="sr-only">Loading workspace &hellip;</span>
     </div>
-    <iframe id="workspace_container" class="d-none flex-grow h-100 border-0"></iframe>
+    <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
   </main>
 
   <script>
@@ -65,33 +91,52 @@
   </script>
   <script>
     $(function () {
-      const iframe = document.getElementById('workspace_container');
-      var socket = io('/workspace');
+      const socket = io('/workspace');
+      const loadingFrame = document.getElementById('loading');
+      const workspaceFrame = document.getElementById('workspace');
+      const stateBadge = document.getElementById('state');
+      const messageBadge = document.getElementById('message');
 
       const showLoadingFrame = () => {
-        document.getElementById('loading_icon').style.setProperty('display', 'flex', 'important');
-        document.getElementById('workspace_container').style.setProperty('display', 'none', 'important');
+        loadingFrame.style.setProperty('display', 'flex', 'important');
+        workspaceFrame.style.setProperty('display', 'none', 'important');
       };
 
       const showWorkspaceFrame = () => {
-        document.getElementById('loading_icon').style.setProperty('display', 'none', 'important');
-        document.getElementById('workspace_container').style.setProperty('display', 'flex', 'important');
+        loadingFrame.style.setProperty('display', 'none', 'important');
+        workspaceFrame.style.setProperty('display', 'flex', 'important');
       };
+
+      function setMessage(message) {
+        console.log(`message=${message}`);
+        messageBadge.innerHTML = message;
+        if (message) {
+          stateBadge.classList.add('badge-prepend');
+        } else {
+          stateBadge.classList.remove('badge-prepend');
+        }
+      }
 
       function setState(state) {
         if (state == 'running') {
           showWorkspaceFrame();
-          iframe.src = `${window.location.href}/container/`;
+          workspaceFrame.src = `${window.location.href}/container/`;
         }
         if (state == 'stopped') {
-          iframe.src = 'about:blank';
+          workspaceFrame.src = 'about:blank';
         }
-        document.getElementById('state').innerHTML = state;
+        stateBadge.innerHTML = state;
       }
 
       socket.on('change:state', (msg) => {
         console.log(`change:state, msg = ${JSON.stringify(msg)}`);
         setState(msg.state);
+        setMessage(msg.message);
+      });
+
+      socket.on('change:message', (msg) => {
+        console.log(`change:message, msg = ${JSON.stringify(msg)}`);
+        setMessage(msg.message);
       });
 
       socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {

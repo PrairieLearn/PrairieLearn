@@ -43,15 +43,15 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
 
-    with open(join(filenames_dir, 'data.json')) as f:
+    with open(join(filenames_dir, 'data.json'), encoding='utf-8') as f:
         data = json.load(f)
-    with open(join(filenames_dir, 'setup_code.py'), 'r') as f:
+    with open(join(filenames_dir, 'setup_code.py'), 'r', encoding='utf-8') as f:
         str_setup = f.read()
-    with open(fname_ref, 'r') as f:
+    with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
     with open(fname_student, 'r', encoding='utf-8') as f:
         str_student = f.read()
-    with open(join(filenames_dir, 'test.py')) as f:
+    with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 
     os.remove(join(filenames_dir, 'data.json'))
@@ -123,13 +123,13 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
-    with open(join(filenames_dir, 'data.json'), 'w') as f:
+    with open(join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f)
-    with open(fname_ref, 'w') as f:
+    with open(fname_ref, 'w', encoding='utf-8') as f:
         f.write(str_ref)
-    with open(join(filenames_dir, 'setup_code.py'), 'w') as f:
+    with open(join(filenames_dir, 'setup_code.py'), 'w', encoding='utf-8') as f:
         f.write(str_setup)
-    with open(join(filenames_dir, 'test.py'), 'w') as f:
+    with open(join(filenames_dir, 'test.py'), 'w', encoding='utf-8') as f:
         f.write(str_test)
     if err is not None:
         raise UserCodeFailed(err)
