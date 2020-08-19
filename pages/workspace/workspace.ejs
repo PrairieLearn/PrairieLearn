@@ -16,24 +16,51 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
-        </div>
+        </div><!-- .modal-header -->
         <div class="modal-body">
           <p>Are you sure you want to reboot the virtual machine?<p>
           <ul class="fa-ul">
-            <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reboot into this same tab.</li>
             <li><span class="fa-li"><i class="fas fa-save" aria-hidden="true"></i></span>Your files will remain intact through the reboot.</li>
+            <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reboot into this same tab.</li>
           </ul>
-        </div>
+        </div><!-- .modal-body -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
           <a class="btn btn-info" href="/pl/workspace/<%= workspace_id %>/reboot">
             <i class="fas fa-sync text-white" aria-hidden="true"></i>
             Reboot
           </a>
-        </div>
+        </div><!-- .modal-footer -->
       </div>
     </div>
-  </div>
+  </div><!-- #rebootModal -->
+
+  <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="h5 modal-title" id="resetModalLabel">Reset the workspace</h1>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div><!-- .modal-header -->
+        <div class="modal-body">
+          <p>Are you sure you want to reset the virtual machine?<p>
+          <ul class="fa-ul">
+            <li><span class="fa-li"><i class="fas fa-exclamation-triangle text-danger" aria-hidden="true"></i></span><strong class="text-danger">Your file changes will be lost!</strong> The workspace will return to its original state upon reset.</li>
+            <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reset into this same tab.</li>
+          </ul>
+        </div><!-- .modal-body -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <a class="btn btn-danger" href="/pl/workspace/<%= workspace_id %>/reset">
+            <i class="fas fa-trash text-white" aria-hidden="true"></i>
+            Reset
+          </a>
+        </div><!-- .modal-footer -->
+      </div>
+    </div>
+  </div><!-- #resetModal -->
 
   <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
     <a class="navbar-brand" href="<%= homeUrl %>">
@@ -62,10 +89,17 @@
           </a>
         </li>
         <li class="nav-item ml-2 my-1">
+          <a id="reset" class="nav-item btn btn-light" data-toggle="modal" data-target="#resetModal">
+            <i class="fas fa-trash text-danger" aria-hidden="true"></i>
+            Reset
+          </a>
+        </li>
+        <li class="nav-item ml-2 ml-md-3 my-1">
           <button type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="left" data-html="true"
               data-content='<ul class="list-group list-group-flush">
                               <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-redo"></i> Refresh</span>Reload this tab at any time, or close and re-open it.</li>
-                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-sync"></i> Reboot</span>Reboot the virtual machine.</li>
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-sync"></i> Reboot</span>Reboot the virtual machine. Files will remain intact.</li>
+                              <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-trash"></i> Reset</span>Reset the virtual machine to its original state. File changes will be lost.</li>
                               <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-save"></i> Save</span>Your files are automatically saved.</li>
                               <li class="list-group-item p-1"><span class="badge badge-secondary mr-1"><i class="fas fa-fw fa-check"></i> Grade</span>Submit your files for grading by using the <code>Save &amp; Grade</code> button on the question page.</li>
                             </ul>'>
