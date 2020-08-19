@@ -49,9 +49,9 @@ app.post('/', function(req, res) {
     const workspace_id = req.body.workspace_id;
     const action = req.body.action;
     const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
-    if (workspace_id == undefined) {
+    if (workspace_id == null) {
         res.status(500).send('Missing workspace_id');
-    } else if (action == undefined) {
+    } else if (action == null) {
         res.status(500).send('Missing action');
     } else if (action == 'init') {
         initSequence(workspace_id, useInitialZip, res);
@@ -425,7 +425,7 @@ async function _getWorkspaceAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.get_workspace, { workspace_id, instance_id: workspace_server_settings.instance_id });
     const workspace = result.rows[0];
     workspace.local_name = `workspace-${workspace.launch_uuid}`;
-    workspace.s3_name = `workspace-${workspace.id}/current`;
+    workspace.s3_name = `workspace-${workspace.id}-${workspace.version}`;
     return workspace;
 }
 
@@ -641,7 +641,7 @@ async function _autoUpdateJobManager() {
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
             continue;
         } else {
-            s3_path = `${s3_name}/${local_path}`;
+            s3_path = `${s3_name}/current/${local_path}`;
         }
 
         if (update_queue[key].action == 'update') {
@@ -691,7 +691,7 @@ async function _getInitialZipAsync(workspace) {
     const s3Name = workspace.s3_name;
     const localPath = `${workspacePrefix}/${localName}`;
     const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
-    const s3Path = s3Name.replace('current', 'initial.zip');
+    const s3Path = `${s3Name}/initial.zip`;
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
@@ -705,7 +705,9 @@ const _getInitialZip = util.callbackify(_getInitialZipAsync);
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
-    _recursiveDownloadJobManager(`${workspacePrefix}/${workspace.local_name}`, workspace.s3_name, (err, jobs_params) => {
+    const localPath = `${workspacePrefix}/${workspace.local_name}`;
+    const s3Path = `${workspace.s3_name}/current`;
+    _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
@@ -861,22 +863,29 @@ function _startContainer(workspace, callback) {
 
 // Called by the main server the first time a workspace is used by a user
 function initSequence(workspace_id, useInitialZip, res) {
-    debug(`Launching workspace_id=${workspace_id}, useInitialZip=${useInitialZip}`);
-
-    const uuid = uuidv4();
-    const workspace = {
-        'id': workspace_id,
-        'launch_uuid': uuid,
-        'local_name': `workspace-${uuid}`,
-        's3_name': `workspace-${workspace_id}/current`,
-    };
-
     // send 200 immediately to prevent socket hang up from _pullImage()
     res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
     async.waterfall([
         async () => {
-            await sqldb.queryAsync(sql.set_workspace_launch_uuid, { workspace_id, 'launch_uuid': uuid, instance_id: workspace_server_settings.instance_id });
+            const uuid = uuidv4();
+            const params = {
+                workspace_id,
+                launch_uuid: uuid,
+                instance_id: workspace_server_settings.instance_id,
+            };
+            await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
+
+            const result = await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id});
+            const { workspace_version } = result.rows[0];
+
+            logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
+            const workspace = {
+                'id': workspace_id,
+                'launch_uuid': uuid,
+                'local_name': `workspace-${uuid}`,
+                's3_name': `workspace-${workspace_id}-${workspace_version}`,
+            };
             return workspace;
         },
         (workspace, callback) => {

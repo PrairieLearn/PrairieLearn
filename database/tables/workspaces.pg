@@ -10,6 +10,7 @@ columns
     message_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
     state_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    version: bigint not null default 1
     workspace_host_id: bigint
 
 indexes
