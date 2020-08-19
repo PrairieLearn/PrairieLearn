@@ -501,7 +501,7 @@ module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tol
             const valid = validate(json);
             if (!valid) {
                 const result = { uuid: json.uuid };
-                infofile.addError(result, ajv.errorsText(validate.errors));
+                infofile.addError(result, `Error: ${ajv.errorsText(validate.errors)}\nError details:\n${JSON.stringify(validate.errors, null, 2)}`);
                 return result;
             }
             return {
