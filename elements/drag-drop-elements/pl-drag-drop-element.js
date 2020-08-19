@@ -9,7 +9,8 @@ function set_answer(event) {
     var indents = [];
     for (var i = 0; i < dom_objs.length; i++) {
         if (!$(dom_objs[i]).hasClass('info')){
-            var answer_text = dom_objs[i].innerHTML;
+            var answer_text = dom_objs[i].innerText;
+            // console.log(answer_text);
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
             indents.push(answer_indent);
             answer_indent = Math.round((answer_indent - 5) / 50); //get how many times the answer is indented

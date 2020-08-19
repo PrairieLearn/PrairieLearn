@@ -25,21 +25,30 @@ def render(element_html, data):
         student_previous_submission = []
         submission_indent = []
 
+        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 
+                                                                                      'permutation-mode', 
+                                                                                      'check-indentation', 
+                                                                                      'header-left-column', 
+                                                                                      'header-right-column',
+                                                                                      'max-distractors',  # Legacy attribute
+                                                                                      'max-feedback-count']) # Legacy attribute
+
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
+                # CORRECT is optional for backward compatibility
+                # pl.check_attribs(html_tags, required_attribs=[''], optional_attribs=['correct', 'ranking', 'indent'])
+                mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
+            # BACKWARD COMPATIBILITY CODE
+            if html_tags.tag == 'pl-distractor':
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
         answerName = pl.get_string_attrib(element, 'answers-name')
         header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
         header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
 
-        # check whether we need to shuffle the MCQ options
-        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 'permutation-mode', 'check-indentation', 'header-left-column', 'header-right-column'])
         isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
         
         if isShuffle == 'true':
-            # concat the two arrays so we can shuffle all the options
             random.shuffle(mcq_options)
 
         student_submission_dict_list = []
@@ -103,7 +112,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+        permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
         
         if answerName in data['correct_answers']:
@@ -128,7 +137,7 @@ def prepare(element_html, data):
     
     for html_tags in pl_drag_drop_element:
         if html_tags.tag == 'pl-answer':
-            isCorrect = pl.get_string_attrib(html_tags, 'correct')
+            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'true') # default to true, for backward compatibility
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1') # get answer indent, and default to -1 (indent level ignored)
             if isCorrect.lower() == 'true':
                 # add option to the correct answer array, along with the correct required indent
@@ -161,7 +170,7 @@ def parse(element_html, data):
 
     student_answer = []
     student_answer_indent = []
-    permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+    permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
 
     student_answer_ranking = ['Question permutationMode is not "ranking"']
     for answer in student_answer_temp:
@@ -205,7 +214,7 @@ def grade(element_html, data):
 
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answerName]['student_answer_indent']
-    permutationMode = pl.get_string_attrib(element, 'permutation-mode')
+    permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
     true_answer = data['correct_answers'][answerName]['correct_answers']
     true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
 
