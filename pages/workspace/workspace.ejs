@@ -26,7 +26,7 @@
         </div><!-- .modal-body -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-primary" href="/pl/workspace/<%= workspace_id %>/reboot">
+          <a class="btn btn-info" href="/pl/workspace/<%= workspace_id %>/reboot">
             <i class="fas fa-sync text-white" aria-hidden="true"></i>
             Reboot
           </a>
@@ -47,7 +47,7 @@
         <div class="modal-body">
           <p>Are you sure you want to reset the virtual machine?<p>
           <ul class="fa-ul">
-            <li><span class="fa-li"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></span>Your file changes <em>will be lost</em>. The workspace will return to its original state upon reset.</li>
+            <li><span class="fa-li"><i class="fas fa-exclamation-triangle text-danger" aria-hidden="true"></i></span><strong class="text-danger">Your file changes will be lost!</strong> The workspace will return to its original state upon reset.</li>
             <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reset into this same tab.</li>
           </ul>
         </div><!-- .modal-body -->
@@ -84,7 +84,7 @@
       <ul class="navbar-nav ml-auto">
         <li class="nav-item ml-2 my-1">
           <a id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
-            <i class="fas fa-sync text-primary" aria-hidden="true"></i>
+            <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
           </a>
         </li>
