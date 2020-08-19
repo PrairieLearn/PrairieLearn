@@ -4,12 +4,12 @@ const fileStore = require('../../lib/file-store');
 
 module.exports.processFileUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
-    await fileStore.upload(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, null, res.locals.user.user_id, res.locals.authn_user.user_id, fileStore.modes.FileSystem);
+    await fileStore.upload(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, null, res.locals.user.user_id, res.locals.authn_user.user_id, fileStore.storage.FileSystem);
 };
 
 module.exports.processTextUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
-    await fileStore.upload(req.body.filename, Buffer.from(req.body.contents), 'student_upload', res.locals.assessment_instance.id, null, res.locals.user.user_id, res.locals.authn_user.user_id, fileStore.modes.FileSystem);
+    await fileStore.upload(req.body.filename, Buffer.from(req.body.contents), 'student_upload', res.locals.assessment_instance.id, null, res.locals.user.user_id, res.locals.authn_user.user_id, fileStore.storage.FileSystem);
 };
 
 module.exports.processDeleteFile = async (req, res) => {
