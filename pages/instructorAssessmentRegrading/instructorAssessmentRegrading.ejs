@@ -11,6 +11,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">

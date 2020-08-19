@@ -42,7 +42,7 @@ router.post('/', function(req, res, next) {
     // permission required to create an assessment for the effective user.
 
     if (req.body.__action == 'newInstance') {
-        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, (err, assessment_instance_id) => {
+        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });

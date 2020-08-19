@@ -14,6 +14,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
@@ -107,9 +108,14 @@
           <table id="usersTable" class="table table-sm table-hover tablesorter">
             <thead>
               <tr>
-                <th>UID</th>
-                <th>Name</th>
-                <th class="text-center">Role</th>
+                <% if (assessment.group_work) { %>
+                  <th>Name</th>
+                  <th>Group Members</th>
+                <% } else { %>
+                  <th>UID</th>
+                  <th>Name</th>
+                  <th class="text-center">Role</th>
+                <% } %>
                 <th class="text-center">Instance</th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Date started</th>
@@ -121,10 +127,19 @@
             </thead>
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
+                <!-- Not showing already deleted group -->
+                <% if (assessment.group_work && !row.group_name) { %>
+                  <% return; %>
+                <% } %>
               <tr>
+                <% if (assessment.group_work) { %>
+                  <td><%= row.group_name %></td>
+                  <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
+                <% } else { %>
                 <td><%= row.uid %></td>
                 <td><%= row.name %></td>
                 <td class="text-center"><%= row.role %></td>
+                <% } %>
                 <td class="text-center"><%= row.number %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
                 <td class="text-center"><%= row.date_formatted %></td>
@@ -219,7 +234,7 @@
                       <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
                         <i class="fa fa-ban" aria-hidden="true"></i> Close
                       </a>
-                      
+
                       <!-- ################################################## -->
 
                     </div>
@@ -246,8 +261,13 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
+                    <% if (assessment.group_work) { %>
+                      7: {sorter: false},
+                      8: {sorter: false},
+                    <% } else { %>
                       8: {sorter: false},
                       9: {sorter: false},
+                    <% } %>
                   },
               });
           });

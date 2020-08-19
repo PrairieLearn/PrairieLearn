@@ -17,11 +17,14 @@ columns
     partial_credit: boolean default true
     qid: text
     single_variant: boolean default false
+    sync_errors: text
+    sync_job_sequence_id: bigint
+    sync_warnings: text
     template_directory: text
     title: text
     topic_id: bigint
     type: enum_question_type
-    uuid: uuid not null
+    uuid: uuid
     workspace_args: text
     workspace_graded_files: text[] default ARRAY[]::text[]
     workspace_home: text
@@ -32,12 +35,13 @@ columns
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
-    questions_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
-    questions_course_id_uuid_key: UNIQUE (course_id, uuid) USING btree (course_id, uuid)
+    questions_course_id_number_nondeleted_key: USING btree (course_id, uuid) WHERE deleted_at IS NULL
+    questions_course_id_uuid_nondeleted_key: USING btree (course_id, uuid) WHERE deleted_at IS NULL
     questions_topic_id_idx: USING btree (topic_id)
 
 foreign-key constraints
     questions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    questions_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
     questions_topic_id_fkey: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by

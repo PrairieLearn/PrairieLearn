@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION
         IN authz_data JSONB,
         IN req_date timestamptz,
         IN display_timezone text,
+        IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
@@ -100,7 +101,14 @@ BEGIN
     -- This is important. We rely on it, for example, when deciding what to tell
     -- the user about grading on an exam assessment instance. Be careful if you
     -- change this behavior!
-    IF (authz_data->'user'->>'user_id')::bigint != assessment_instance.user_id THEN
+    --
+    -- What about groups? No problem. Everything is the same, except for group work
+    -- we need to check instead that "there exists a group_users with the same group_id
+    -- as the assessment instance and the same user_id as the effective user."
+    IF
+        (((group_work) AND (NOT EXISTS (SELECT * FROM group_users AS gu WHERE gu.group_id = assessment_instance.group_id AND gu.user_id = (authz_data->'user'->>'user_id')::bigint)))
+        OR ((NOT group_work) AND ((authz_data->'user'->>'user_id')::bigint != assessment_instance.user_id)))
+    THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;
     END IF;

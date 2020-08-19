@@ -5,9 +5,25 @@ import numpy as np
 import numpy.random
 import random
 from os.path import join
+from os.path import splitext
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
+import io
+from IPython import get_ipython
+from nbformat import read
+from IPython.core.interactiveshell import InteractiveShell
+
+def extract_cell_content(f, ipynb_key):
+    nb = read(f, 4)
+    shell = InteractiveShell.instance()
+    content = ''
+    for cell in nb.cells:
+        if cell['cell_type'] == 'code':
+            code = shell.input_transformer_manager.transform_cell(cell.source)
+            if code.strip().startswith(ipynb_key):
+                content += code
+    return content
 
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
@@ -21,7 +37,7 @@ def set_random_seed(seed=None):
 
 
 def execute_code(fname_ref, fname_student, include_plt=False,
-                 console_output_fname=None, test_iter_num=0):
+                 console_output_fname=None, test_iter_num=0, ipynb_key="#grade"):
     """
     execute_code(fname_ref, fname_student)
 
@@ -49,8 +65,17 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_setup = f.read()
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
+    try:
+        with open(join(filenames_dir, 'leading_code.py'), 'r', encoding='utf-8') as f:
+            str_leading = f.read()
+    except:
+        str_leading = ''
     with open(fname_student, 'r', encoding='utf-8') as f:
-        str_student = f.read()
+        filename, extension = splitext(fname_student)
+        if extension == '.ipynb':
+            str_student = str_leading + extract_cell_content(f, ipynb_key)
+        else:
+            str_student = f.read()
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 

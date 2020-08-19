@@ -18,6 +18,11 @@
     tabLabel:       'Files'}) %>
 <% } %>
 <%- include('navTab', {
+    activeSubPage:  'groups',
+    urlSuffix:      '/assessment/'+assessment.id+'/groups',
+    iconClasses:    'fas fa-users',
+    tabLabel:       'Groups'}) %>
+<%- include('navTab', {
     activeSubPage:  'questions',
     urlSuffix:      '/assessment/'+assessment.id+'/questions',
     iconClasses:    'far fa-file-alt',
@@ -48,7 +53,7 @@
 <%- include('navTab', {
     activeSubPage:  'instances',
     urlSuffix:      '/assessment/'+assessment.id+'/instances',
-    iconClasses:    'fas fa-users',
+    iconClasses:    'fas fa-user-graduate',
     tabLabel:       'Students'}) %>
 <% } %>
 <% if (authz_data.has_course_instance_permission_view) { %>

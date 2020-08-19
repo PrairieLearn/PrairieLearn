@@ -31,7 +31,9 @@ BEGIN
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info(assessments_duration_stats.assessment_id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
@@ -55,7 +57,9 @@ BEGIN
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info(assessments_duration_stats.assessment_id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
