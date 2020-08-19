@@ -503,6 +503,7 @@ function writeEdit(fileEdit, callback) {
             null,
             fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
             fileEdit.userID,    //       although I don't think there's any need to do so
+            fileStore.storageTypes.FileSystem,
         );
         debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
         return fileID;
