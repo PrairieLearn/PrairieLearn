@@ -2,7 +2,7 @@ const util = require('util');
 
 const config = require('../lib/config');
 const logger = require('../lib/logger');
-const workspace = require('../lib/workspace');
+const workspaceHelper = require('../lib/workspace');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -19,9 +19,8 @@ module.exports.run = function(callback) {
         const result = await sqldb.queryAsync(sql.select_stale_workspaces, params);
         const staleWorkspaces = result.rows;
         for (const staleWorkspace of staleWorkspaces) {
-            logger.verbose(`stopStaleWorkspaces: stopping workspace_id = ${workspace.id}`);
-            const state = 'stopped';
-            await workspace.updateState(staleWorkspace.id, state);
+            logger.verbose(`stopStaleWorkspaces: stopping workspace_id = ${staleWorkspace.id}`);
+            await workspaceHelper.updateState(staleWorkspace.id, 'stopped', 'Cron job');
         }
     })(callback);
 };

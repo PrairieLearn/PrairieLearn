@@ -9,6 +9,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
+const { callbackify } = require('util');
 const logger = require('../../lib/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
@@ -16,12 +17,13 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
 const config = require('../../lib/config');
+const editorUtil = require('../../lib/editorUtil');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const { callbackify } = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { decodePath } = require('../../lib/uri-util');
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
@@ -142,12 +144,20 @@ router.get('/*', (req, res, next) => {
                 callback(null);
             } else {
                 debug('Read job sequence');
-                serverJobs.getJobSequence(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
+                serverJobs.getJobSequenceWithFormattedOutput(fileEdit.jobSequenceId, res.locals.course.id, (err, job_sequence) => {
                     if (ERR(err, callback)) return;
                     fileEdit.jobSequence = job_sequence;
                     callback(null);
                 });
             }
+        },
+        (callback) => {
+            callbackify(editorUtil.getErrorsAndWarningsForFilePath)(res.locals.course.id, relPath, (err, data) => {
+                if (ERR(err, callback)) return;
+                fileEdit.sync_errors = data.errors;
+                fileEdit.sync_warnings = data.warnings;
+                callback(null);
+            });
         },
     ], (err) => {
         if (ERR(err, next)) return;
@@ -912,9 +922,11 @@ function saveAndSync(fileEdit, locals, callback) {
                     _finishWithFailure();
                     return;
                 }
-                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err) => {
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err, result) => {
                     if (err) {
                         job.fail(err);
+                    } else if (result.hadJsonErrors) {
+                        job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
                         job.succeed();
                     }

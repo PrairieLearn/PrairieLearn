@@ -26,6 +26,7 @@ class PLTestCase(unittest.TestCase):
     student_code_file = 'user_code.py'
     iter_num = 0
     total_iters = 1
+    ipynb_key = '#grade'
 
     @classmethod
     def setUpClass(self):
@@ -40,14 +41,15 @@ class PLTestCase(unittest.TestCase):
 
         # Load data so that we can use it in the test cases
         filenames_dir = os.environ.get("FILENAMES_DIR")
-        with open(join(filenames_dir, 'data.json')) as f:
+        with open(join(filenames_dir, 'data.json'), encoding='utf-8') as f:
             self.data = json.load(f)
 
         ref_result, student_result, plot_value = execute_code(join(filenames_dir, 'ans.py'),
                                                               join(base_dir, self.student_code_file),
                                                               self.include_plt,
                                                               join(base_dir, 'output.txt'),
-                                                              self.iter_num)
+                                                              self.iter_num,
+                                                              self.ipynb_key)
         answerTuple = namedtuple('answerTuple', ref_result.keys())
         self.ref = answerTuple(**ref_result)
         studentTuple = namedtuple('studentTuple', student_result.keys())

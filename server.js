@@ -159,6 +159,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
 // proxy workspaces to remote machines
 const workspaceProxyOptions = {
@@ -188,6 +189,7 @@ const workspaceProxyOptions = {
             return path;
         }
     },
+    logLevel: 'silent',
     logProvider: _provider => logger,
     router: async (req) => {
         try {
@@ -206,7 +208,13 @@ const workspaceProxyOptions = {
 const workspaceProxy = createProxyMiddleware((pathname) => {
     return pathname.match('/pl/workspace/([0-9])+/container/');
 }, workspaceProxyOptions);
-app.use(workspaceProxy);
+app.use('/pl/workspace/:workspace_id/container', [
+    cookieParser(),
+    require('./middlewares/date'),
+    require('./middlewares/authn'),
+    require('./middlewares/authzWorkspace'),
+    workspaceProxy,
+]);
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -314,7 +322,10 @@ app.use('/pl/news_item', [
   require('./pages/news_item/news_item.js'),
 ]);
 
-app.use('/pl/workspace/', require('./pages/workspace/workspace'));
+app.use('/pl/workspace/:workspace_id', [
+    require('./middlewares/authzWorkspace'),
+    require('./pages/workspace/workspace'),
+]);
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -406,6 +417,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
+    function(req, res, next) {res.locals.navSubPage = 'groups'; next();},
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},

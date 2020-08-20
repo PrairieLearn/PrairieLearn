@@ -37,6 +37,11 @@ SELECT w.state
 FROM workspaces as w
 WHERE w.id = $workspace_id;
 
+-- BLOCK select_workspace_version
+SELECT w.version AS workspace_version
+FROM workspaces AS w
+WHERE w.id = $workspace_id;
+
 -- BLOCK update_workspace_heartbeat_at_now
 UPDATE workspaces AS w
 SET

@@ -3,6 +3,7 @@ const async = require('async');
 const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
+const util = require('util');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
@@ -142,14 +143,16 @@ module.exports = {
         });
     },
 
-    // Skips the cache; used when syncing course from GitHub/disk
-    reloadElementsForCourse(course, callback) {
+    /**
+     * Reloads all element files from a course.
+     * @param {string} courseDir
+     * @param {any} courseId
+     */
+    reloadElementsForCourse: async function(courseDir, courseId) {
+        // TODO: FIX THIS
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.courseId] = elements;
-            callback(null, courseElementsCache[course.courseId]);
-        });
+        const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
+        courseElementsCache[courseId] = elements;
     },
 
     resolveElement: function(elementName, context) {

@@ -10,7 +10,11 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
+<<<<<<< HEAD
 var chunks = require('../../lib/chunks');
+=======
+const { chalk, chalkDim } = require('../../lib/chalk');
+>>>>>>> master
 
 var update = function(locals, callback) {
     debug('update()');
@@ -34,20 +38,25 @@ var update = function(locals, callback) {
             debug('successfully created job', {job_sequence_id});
             callback(null, job_sequence_id);
 
+            let anyCourseHadJsonErrors = false;
+
             // continue executing here to launch the actual job
             debug('loading', {courseDirs: config.courseDirs});
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
+            async.eachOfSeries(config.courseDirs || [], function(courseDir, index, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
                 debug('loading course', {courseDir});
+                job.info(chalk.bold(courseDir));
                 var infoCourseFile = path.join(courseDir, 'infoCourse.json');
                 fs.access(infoCourseFile, function(err) {
                     if (err) {
-                        job.info('File not found: ' + infoCourseFile + ', skipping...');
+                        job.info(chalkDim(`infoCourse.json not found, skipping`));
+                        if (index !== config.courseDirs.length - 1) job.info('');
                         callback(null);
                     } else {
-                        job.info('Found file ' + infoCourseFile + ', loading...');
-                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err, { course, courseId }) {
+                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err, result) {
+                            if (index !== config.courseDirs.length - 1) job.info('');
                             if (ERR(err, callback)) return;
+                            if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             debug('successfully loaded course', {courseDir});
                             util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId, course }, (err) => {
                                 if (ERR(err, callback)) return;
@@ -59,6 +68,8 @@ var update = function(locals, callback) {
             }, function(err) {
                 if (err) {
                     job.fail(err);
+                } else if (anyCourseHadJsonErrors) {
+                    job.fail('One or more courses had JSON files that contained errors and were unable to be synced');
                 } else {
                     job.succeed();
                 }
