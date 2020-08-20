@@ -503,7 +503,8 @@ module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tol
             if (!valid) {
                 const result = { uuid: json.uuid };
                 const errorText = betterAjvErrors(schema, json, validate.errors, {indent: 2});
-                infofile.addError(result, errorText);
+                const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
+                infofile.addError(result, errorTextString);
                 return result;
             }
             return {
