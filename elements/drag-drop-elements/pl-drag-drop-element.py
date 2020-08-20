@@ -182,7 +182,7 @@ def parse(element_html, data):
             data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This should not happen, contact instructor for help.'
             return
 
-        if not str.isdigit(answer[1]) or int(answer[1]) not in list(range(0, 5)):  # indent is a number in [0, 4]
+        if not str.isdigit(answer[1].lstrip('-')) or int(answer[1]) not in list(range(-1, 5)):  # indent is a number in [-1, 4]
             data['format_errors'][answerName] = f'Indent level {answer[1]} is invalid! Indention level must be a number between 0 or 4 inclusive.'
             return
 
@@ -264,15 +264,18 @@ def test(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
     answerNameField = answerName + '-input'
 
-    # # incorrect and correct answer test cases
-    # # this creates the EXPECTED SUBMISSION field for test cases
+    # incorrect and correct answer test cases
+    # this creates the EXPECTED SUBMISSION field for test cases
     if data['test_type'] == 'correct':
-        temp = data['correct_answers'][answerName]  # temp array to hold the correct answers
-        temp = list(map(lambda x: x + ':::0', temp))
+        temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
+        true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
+        answer_string = ''
+        for index, answer in enumerate(temp):
+            temp[index] = answer + ':::' + true_answer_indent[index] 
         data['raw_submitted_answers'][answerNameField] = ','.join(temp)
         data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
     elif data['test_type'] == 'incorrect':
-        temp = data['correct_answers'][answerName]  # temp array to hold the correct answers
+        temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
         incorrect_answers = []
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
