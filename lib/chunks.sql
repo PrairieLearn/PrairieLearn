@@ -15,7 +15,7 @@ FROM
 WHERE
     chunks.course_id = $course_id;
 
--- BLOCK select_uuid_for_chunks
+-- BLOCK select_metadata_for_chunks
 SELECT
     chunks.*,
     q.qid AS question_name,
