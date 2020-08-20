@@ -102,7 +102,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     let assessmentQuestionNumber = 0;
     assessmentParams.alternativeGroups = zones.map((zone) => {
         return zone.questions.map((question) => {
-            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number }[]} */
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, minAdvancePerc: number }[]} */
             let alternatives;
             if (_(question).has('alternatives')) {
                 alternatives = _.map(question.alternatives, function(alternative) {
