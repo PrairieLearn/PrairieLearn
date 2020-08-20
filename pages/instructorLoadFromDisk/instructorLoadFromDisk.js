@@ -10,11 +10,8 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
-<<<<<<< HEAD
 var chunks = require('../../lib/chunks');
-=======
 const { chalk, chalkDim } = require('../../lib/chalk');
->>>>>>> master
 
 var update = function(locals, callback) {
     debug('update()');
