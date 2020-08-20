@@ -149,8 +149,6 @@ module.exports = {
      * @param {any} courseId
      */
     reloadElementsForCourse: async function(courseDir, courseId) {
-        // TODO: FIX THIS
-        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
         const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
         courseElementsCache[courseId] = elements;
     },

@@ -20,11 +20,18 @@ const { chalk, chalkDim } = require('../lib/chalk');
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 /**
+ * @typedef {Object} SyncResults
+ * @property {boolean} hadJsonErrors
+ * @property {string} courseId
+ * @property {import('./course-db').CourseData} courseData
+ */
+
+/**
  * 
  * @param {string} courseDir 
  * @param {any} courseId 
  * @param {any} logger 
- * @returns Promise<{{ hadJsonErrors: boolean }}>
+ * @returns Promise<SyncResults>
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json files from course repository');
@@ -55,6 +62,8 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     perf.end('sync');
     return {
         hadJsonErrors: courseDataHasErrors,
+        courseId,
+        courseData,
     };
 }
 
@@ -62,7 +71,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
  * @param {string} courseDir
  * @param {any} course_id
  * @param {any} logger
- * @param {(err: Error | null, result: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result: SyncResults) => void} callback
  */
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     util.callbackify(async () => {
@@ -74,7 +83,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
  * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
- * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
@@ -101,7 +110,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
 /**
  * @param {string} courseDir
  * @param {any} logger
- * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
