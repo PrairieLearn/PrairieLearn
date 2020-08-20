@@ -209,8 +209,7 @@
             "required": [
                 "image",
                 "port",
-                "home",
-                "gradedFiles"
+                "home"
             ],
             "properties": {
                 "image": {
