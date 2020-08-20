@@ -13,8 +13,19 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/', (req, res, _next) => {
+router.get('/', (_req, res, _next) => {
     res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
+    if (res.locals.assessment == null) {
+        // instructor preview
+        res.locals.pageNote = 'Preview';
+        res.locals.pageTitle = res.locals.question_qid;
+        res.locals.assessmentBadge = res.locals.pageNote;
+        res.locals.questionBadge = res.locals.pageTitle;
+    } else {
+        // student assessment
+        res.locals.assessmentBadge = res.locals.assessment_set.abbreviation + res.locals.assessment.number;
+        res.locals.questionBadge = res.locals.instance_question_info.question_number.replace(`${res.locals.assessmentBadge}.`, '');
+    }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
