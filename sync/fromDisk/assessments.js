@@ -157,6 +157,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             const alternativeGroupParams = {
                 number: alternativeGroupNumber,
                 number_choose: question.numberChoose,
+                min_advance_perc: question.minAdvancePerc,
             };
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
@@ -171,6 +172,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     tries_per_variant: alternative.triesPerVariant,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
+                    min_advance_perc: alternative.minAdvancePerc,
                 };
 
             });
