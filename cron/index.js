@@ -97,7 +97,7 @@ module.exports = {
             },
             {
                 name: 'workspacesStateTransition',
-                module: require('./workspacesLoad'),
+                module: require('./workspacesTransition'),
                 intervalSec: config.cronOverrideallIntervalsSec || config.cronIntervalWorkspacesStateTransitionSec,
             },
         ];

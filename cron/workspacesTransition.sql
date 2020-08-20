@@ -1,10 +1,30 @@
 -- select_nonstopped_workspace_hosts
 SELECT
-    wh.*,
-    COUNT(
-        SELECT 1
-        FROM workspaces AS w
-        WHERE (workspace_host_id = wh.id) AND (w.state = 'launching' OR w.state = 'running')
-    ) AS job_count
-FROM workspace_hosts AS wh
-WHERE wh.state != 'stopped';
+    wh.id,
+    wh.instance_id,
+    wh.load_count,
+    wh.hostname
+FROM
+    workspace_hosts AS wh
+LEFT JOIN
+    workspaces AS W ON (w.workspace_host_id = w.id) AND (w.state = 'launching' OR w.state = 'running')
+WHERE
+    wh.state != 'stopped';
+
+-- set_host_unhealthy
+UPDATE workspace_hosts
+SET
+    state = 'unhealthy'
+    became_unhealthy_at = now()
+WHERE
+    instance_id = $instance_id;
+
+-- add_terminating_hosts
+INSERT INTO workspace_hosts
+    (state, instance_id)
+    (SELECT 'terminating', UNNEST($instances));
+
+-- set_terminated_hosts
+UPDATE workspace_hosts
+SET state='terminated'
+WHERE id IN (SELECT UNNEST($instances));

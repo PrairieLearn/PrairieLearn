@@ -3,6 +3,8 @@ const { callbackify } = require('util');
 
 const config = require('../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
@@ -70,6 +72,14 @@ const cloudwatch_definitions = {
         'name': 'WorkspacesRunning',
         'unit': 'Count',
     },
+    'workspaces_longest_launching_sec': {
+        'name': 'MaxLaunchingWorkspaceAge',
+        'unit': 'Seconds',
+    },
+    'workspaces_longest_running_sec': {
+        'name': 'MaxRunningWorkspaceAge',
+        'unit': 'Seconds',
+    },
 };
 async function sendStatsToCloudwatch(stats) {
     const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
@@ -114,20 +124,23 @@ async function handleWorkspaceAutoscaling(stats) {
         let needed = desired_hosts - running_hosts;
         /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
            need to call out to AWS */
-        const recaptured_hosts = (await sqldb.call('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts;
+        const recaptured_hosts = (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts;
         needed -= recaptured_hosts;
         if (needed > 0) {
+            /* We couldn't get enough hosts, so lets spin up some more and insert them into the db */
             const ec2 = new AWS.EC2();
-            await ec2.runInstances({
+            const data = await ec2.runInstances({
                 MaxCount: needed,
                 MinCount: 1,
                 LaunchTemplate: {
                     LaunchTemplateId: launch_template_id,
                 },
             }).promise();
+            const instance_ids = data.Instances.map(instance => instance.InstanceId);
+            await sqldb.queryAsync(sql.insert_new_instances, {instance_ids});
         }
     } else if (desired_hosts < running_hosts) {
         const surplus = running_hosts - desired_hosts;
-        await sqldb.call('workspace_hosts_drain_extra', [surplus]);
+        await sqldb.callAsync('workspace_hosts_drain_extra', [surplus]);
     }
 }

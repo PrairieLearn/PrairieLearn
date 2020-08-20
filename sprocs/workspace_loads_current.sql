@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION
     workspace_loads_current(
-        IN workspace_capacity_factor double precision
+        IN workspace_capacity_factor double precision,
         IN workspace_host_capacity integer,
         OUT workspace_jobs_capacity_desired integer,
         OUT workspace_hosts_desired integer,
@@ -15,7 +15,10 @@ CREATE OR REPLACE FUNCTION
         OUT workspaces_uninitialized_count integer,
         OUT workspaces_stopped_count integer,
         OUT workspaces_launching_count integer,
-        OUT workspaces_running_count integer
+        OUT workspaces_running_count integer,
+        -- max time in each state
+        OUT workspaces_longest_launching_sec double precision,
+        OUT workspaces_longest_running_sec double precision,
         --
         OUT timestamp_formatted text
     )
@@ -23,10 +26,10 @@ AS $$
 BEGIN
     -- Current number of running workspaces
     SELECT
-        count(*) FILTER (w.state = 'uninitialized'),
-        count(*) FILTER (w.state = 'stopped'),
-        count(*) FILTER (w.state = 'launching'),
-        count(*) FILTER (w.state = 'running'),
+        count(*) FILTER (WHERE w.state = 'uninitialized'),
+        count(*) FILTER (WHERE w.state = 'stopped'),
+        count(*) FILTER (WHERE w.state = 'launching'),
+        count(*) FILTER (WHERE w.state = 'running')
     INTO
         workspaces_uninitialized_count,
         workspaces_stopped_count,
@@ -35,14 +38,24 @@ BEGIN
     FROM
         workspaces AS w;
 
+    -- Longest running workspace in launching and running state
+    SELECT
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'launching'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'running'), 0)
+    INTO
+        workspaces_longest_launching_sec,
+        workspaces_longest_running_sec
+    FROM
+        workspaces AS w;
+
     -- Current number of workspace hosts
     SELECT
-        count(*) FILTER (wh.state = 'launching'),
-        count(*) FILTER (wh.state = 'ready'),
-        count(*) FILTER (wh.state = 'draining'),
-        count(*) FILTER (wh.state = 'unhealthy'),
-        count(*) FILTER (wh.state = 'terminating'),
-        count(*) FILTER (wh.state = 'stopped')
+        count(*) FILTER (WHERE wh.state = 'launching'),
+        count(*) FILTER (WHERE wh.state = 'ready'),
+        count(*) FILTER (WHERE wh.state = 'draining'),
+        count(*) FILTER (WHERE wh.state = 'unhealthy'),
+        count(*) FILTER (WHERE wh.state = 'terminating'),
+        count(*) FILTER (WHERE wh.state = 'stopped')
     INTO
         workspace_hosts_launching_count,
         workspace_hosts_ready_count,
@@ -58,7 +71,7 @@ BEGIN
     workspace_hosts_desired := CEIL(workspace_capacity_desired / workspace_jobs_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
-    END
+    END IF;
 
     -- Write data to the time_series table
     INSERT INTO time_series (name, value)
@@ -74,7 +87,9 @@ BEGIN
         ('workspace_uninitialized_count', workspace_uninitialized_count),
         ('workspace_stopped_count', workspace_stopped_count),
         ('workspace_launching_count', workspace_launching_count),
-        ('workspace_running_count', workspace_running_count);
+        ('workspace_running_count', workspace_running_count),
+        ('workspace_longest_launching_sec', workspace_longest_launching_sec),
+        ('workspace_longest_running_sec', workspace_longest_running_sec);
 
     -- CloudWatch timestamp
     SET LOCAL timezone TO 'UTC';

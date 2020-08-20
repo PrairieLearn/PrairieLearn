@@ -29,20 +29,21 @@ WHERE
 
 -- BLOCK insert_workspace_hosts
 INSERT INTO workspace_hosts
-        (instance_id,  hostname)
-VALUES ($instance_id, $hostname)
+        (instance_id,  hostname, state)
+VALUES ($instance_id, $hostname, 'ready')
 ON CONFLICT (instance_id) DO UPDATE
 SET hostname = EXCLUDED.hostname;
 
 -- BLOCK update_load_count
 UPDATE workspace_hosts as wh
 SET
-    load_count = load_count + $count
-FROM
-    workspaces as w
+    load_count = (
+        SELECT count(*)
+        FROM workspaces AS w
+        WHERE w.workspace_host_id = wh.id AND (w.state = 'running' OR w.state = 'launching')
+    );
 WHERE
-    w.id = $workspace_id
-    AND w.workspace_host_id = wh.id;
+    wh.instance_id = $instance_id;
 
 -- BLOCK get_workspace
 SELECT
@@ -141,3 +142,18 @@ FROM
     workspace_hosts AS wh
 WHERE
     w.id = $workspace_id AND wh.instance_id = $instance_id;
+
+-- BLOCK mark_host_unhealthy
+UPDATE
+    workspace_hosts AS wh
+SET
+    wh.state = 'unhealthy',
+    wh.became_unhealthy_at = NOW()
+WHERE
+    wh.instance_id = $instance_id
+    AND wh.became_unhealthy_at IS NULL;
+
+-- BLOCK db_status_check
+SELECT *
+FROM pg_stat_activity
+WHERE query != '<IDLE>' AND query NOT ILIKE '%pg_stat_activity%';

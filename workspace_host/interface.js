@@ -23,6 +23,7 @@ const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
 const LocalLock = require('../lib/local-lock');
+const asyncHandler = require('express-async-handler');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -44,6 +45,33 @@ const docker = new Docker();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+app.get('/status', asyncHandler(async (req, res) => {
+    let containers;
+    try {
+        containers = await docker.listContainers({ all: true });
+    } catch (_err) {
+        containers = null;
+    }
+
+    let db_status;
+    try {
+        db_status = (await sqldb.query(sql.db_status_check, [])).rows;
+    } catch (_err) {
+        db_status = null;
+    }
+
+    if (!containers || !db_status) {
+        /* We should have both docker and postgres access in order to consider ourselves healthy */
+        res.status(500);
+    } else {
+        res.status(200);
+    }
+    res.jsonp({
+        docker: containers,
+        postgres: db_status,
+    });
+}));
+
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
     const workspace_id = req.body.workspace_id;
@@ -59,8 +87,6 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
-    } else if (action == 'status') {
-        res.status(200).send('Running');
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
@@ -199,6 +225,7 @@ async.series([
 ], function(err, data) {
     if (err) {
         logger.error('Error initializing workspace host:', err, data);
+        markSelfUnhealthyAsync();
     } else {
         logger.info('Successfully initialized workspace host');
     }
@@ -325,7 +352,7 @@ async function pruneRunawayContainers() {
     const db_workspaces_uuid_set = new Set(db_workspaces.rows.map(ws => `workspace-${ws.launch_uuid}`));
     let running_workspaces;
     try {
-        running_workspaces = await docker.listContainers();
+        running_workspaces = await docker.listContainers({ all: true });
     } catch (err) {
         /* Nothing to do */
         return;
@@ -342,6 +369,8 @@ async function pruneRunawayContainers() {
 async function pruneContainersTimeout() {
     await pruneStoppedContainers();
     await pruneRunawayContainers();
+    await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+
     setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
 }
 setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
@@ -412,6 +441,15 @@ async function dockerAttemptKillAndRemove(input) {
         }
     }
 }
+
+/**
+ * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
+ * This will also set the "became_unhealthy_at" field if applicable.
+ */
+async function markSelfUnhealthyAsync() {
+    await sqldb.query(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+}
+const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
@@ -658,7 +696,12 @@ async function _autoUpdateJobManager() {
     try {
         await async.parallel(jobs);
     } catch (err) {
-        logger.err(`Error uploading files to S3:\n${err}`);
+        markSelfUnhealthy((err2) => {
+            if (err2) {
+                logger.err(`Error while handling error: ${err2}`);
+            }
+            logger.err(`Error uploading files to S3:\n${err}`);
+        });
     }
 }
 
@@ -830,7 +873,7 @@ function _createContainer(workspace, callback) {
                 if (ERR(err, callback)) return;
                 container = newContainer;
 
-                sqldb.query(sql.update_load_count, {workspace_id: workspace.id, count: +1}, function(err, _result) {
+                sqldb.query(sql.update_load_count, { instance_id: workspace_server_settings.instance_id }, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null, container);
                 });
@@ -910,8 +953,12 @@ function initSequence(workspace_id, useInitialZip, res) {
         _checkServer,
     ], function(err) {
         if (err) {
-            logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
-            res.status(500).send(err);
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while capturing error: ${err2}`);
+                }
+                logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
+            });
         } else {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
