@@ -231,6 +231,19 @@ def parse(element_html, data):
         student_answer_indent.append(answer[1])
     del student_answer_temp
 
+    if permutationMode.lower() == 'ranking':
+        student_answer_ranking = []
+        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
+        for answer in student_answer:
+            e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
+            try:
+                ranking = e[0].attrib['ranking']
+            except IndexError:
+                ranking = 0
+            except KeyError:
+                ranking = -1   # wrong answers have no ranking
+            student_answer_ranking.append(ranking)
+
     if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
         file_name = pl.get_string_attrib(element, 'file-name', None)
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
@@ -256,20 +269,8 @@ def parse(element_html, data):
             if leading_code is not None and trailing_code is None:
                 file_data = getleadAnswer(student_answer, student_answer_indent, leadingnew_code)
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
-        return
+        # return
 
-    if permutationMode.lower() == 'ranking':
-        student_answer_ranking = []
-        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
-        for answer in student_answer:
-            e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            try:
-                ranking = e[0].attrib['ranking']
-            except IndexError:
-                ranking = 0
-            except KeyError:
-                ranking = -1   # wrong answers have no ranking
-            student_answer_ranking.append(ranking)
     data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
                                              'student_raw_submission': student_answer,
                                              'student_answer_indent': student_answer_indent}
