@@ -62,7 +62,10 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    var params = {assessment_instance_id: res.locals.assessment_instance.id};
+    var params = {
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+    };
     sqldb.query(sql.select_instance_questions, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.instance_questions = result.rows;
@@ -76,8 +79,17 @@ router.get('/', function(req, res, next) {
                 if (question.status == 'saved') return sum+1;
                 return sum;
             }, 0);
-
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            if (res.locals.assessment.group_work) {
+                sqldb.query(sql.get_group_info, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.locals.groupinfo = result.rows;
+                    if (res.locals.groupinfo[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
+                    res.locals.joincode = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                });
+            } else {
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            }
         });
     });
 });

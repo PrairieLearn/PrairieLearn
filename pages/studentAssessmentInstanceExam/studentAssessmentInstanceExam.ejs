@@ -140,6 +140,18 @@
             }) %>
           </div>
           <% } %>
+          <% if (assessment.group_work) { %>
+            <div class="container-fluid">
+              <div class="row">
+                <div class="col-sm bg-light py-4 px-4 border">
+                  <span class="badge badge-secondary">Group Members</span>
+                  <% groupinfo.forEach(function(row) {%>
+                  <li><%= row.uid %></li>
+                  <% }); %>
+                </div>
+              </div>
+            </div>
+            <% } %>
 
           <% if (assessment_text_templated) { %>
           <div class="card bg-light mb-0 mt-4">
