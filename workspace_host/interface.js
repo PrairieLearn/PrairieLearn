@@ -93,16 +93,58 @@ app.post('/', function(req, res) {
 });
 
 let server;
-let workspace_server_settings = {
-    instance_id: config.workspaceDevHostInstanceId,
-    /* The workspace server's hostname */
-    hostname: config.workspaceDevHostHostname,
-    /* How the main server connects to the container.  In docker, this is the host operating system. */
-    server_to_container_hostname: config.workspaceDevContainerHostname,
-    port: config.workspaceHostPort,
-};
+let workspace_server_settings = {};
 
 async.series([
+    async () => {
+        if (config.runningInEc2) {
+            /* If we're in EC2, find the host's instance_id and hostname */
+            const MetadataService = new AWS.MetadataService();
+            const document = await MetadataService.request('/latest/dynamic/instance-identity/document').promise();
+            const data = JSON.parse(document);
+            debug('instance-identity', data);
+            AWS.config.update({'region': data.region});
+            workspace_server_settings.instance_id = data.instanceId;
+
+            const hostname = await MetadataService.request('/latest/meta-data/local-hostname').promise();
+            workspace_server_settings.hostname = hostname;
+            workspace_server_settings.server_to_container_hostname = hostname;
+        } else {
+            /* Otherwise, just use the defaults in the config file */
+            workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
+            workspace_server_settings.hostname = config.workspaceDevHostHostname;
+            workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
+        }
+    },
+    async () => {
+        if (!config.runningInEc2) return;
+        /* If we're inside EC2, look up a special tag and use its value to
+           find a secret containing the configuration data.  This is JSON
+           with a single object in the same format as the "config" object. */
+        const ec2 = new AWS.EC2();
+        const tags = (await ec2.describeTags({ Filters: { Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] } }).promise()).Tags;
+        logger.info('Instance tags', tags);
+
+        const secret_tag = _.find(tags, { Key: 'ConfSecret' });
+        if (!secret_tag) return;
+
+        const secret_id = secret_tag.Value;
+        logger.info(`Secret ID: ${secret_id}`);
+
+        const secretsManager = new AWS.SecretsManager();
+        const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
+        logger.info(`Secret value: ${secret_value}`);
+
+        if (!secret_value.SecretString) return;
+        const secret_config = JSON.parse(secret_value.SecretString);
+        logger.info('Parsed secret config', secret_config);
+
+        _.assign(config, secret_config);
+    },
+    async () => {
+        /* Always grab the port from the config */
+        workspace_server_settings.port = config.workspaceHostPort;
+    },
     (callback) => {
         const pgConfig = {
             user: config.postgresqlUser,
@@ -141,41 +183,6 @@ async.series([
             if (ERR(err, callback)) return;
             callback(null);
         });
-    },
-    (callback) => {
-        if (config.runningInEc2) {
-            const MetadataService = new AWS.MetadataService();
-            async.series([
-                (callback) => {
-                    MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
-                        if (ERR(err, callback)) return;
-                        try {
-                            const data = JSON.parse(document);
-                            debug('instance-identity', data);
-                            AWS.config.update({'region': data.region});
-                            workspace_server_settings.instance_id = data.instanceId;
-                            callback(null);
-                        } catch (err) {
-                            return callback(err);
-                        }
-                    });
-                },
-                (callback) => {
-                    MetadataService.request('/latest/meta-data/local-hostname', (err, hostname) => {
-                        if (ERR(err, callback)) return;
-                        workspace_server_settings.hostname = hostname;
-                        workspace_server_settings.server_to_container_hostname = hostname;
-                        callback(null);
-                    });
-                },
-            ], (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        } else {
-            /* Not running in ec2 */
-            callback(null);
-        }
     },
     (callback) => {
         server = http.createServer(app);

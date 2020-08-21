@@ -10,14 +10,15 @@ BEGIN
         SELECT *
         FROM workspace_hosts AS wh
         WHERE wh.state = 'draining'
-        ORDER BY random()
+        ORDER BY launched_at DESC
         LIMIT needed_hosts
     );
     SELECT count(*) INTO recaptured_hosts FROM found_draining_hosts;
 
     -- Update the hosts to be ready
     UPDATE workspace_hosts AS wh
-    SET state = 'ready'
+    SET state = 'ready',
+        state_changed_at = NOW()
     WHERE EXISTS (
         SELECT 1
         FROM found_draining_hosts AS f

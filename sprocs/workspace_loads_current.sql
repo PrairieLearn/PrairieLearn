@@ -11,12 +11,18 @@ CREATE OR REPLACE FUNCTION
         OUT workspace_hosts_unhealthy_count integer,
         OUT workspace_hosts_terminating_count integer,
         OUT workspace_hosts_stopped_count integer,
+        -- max time in each host state
+        OUT workspace_hosts_longest_launching_sec double precision,
+        OUT workspace_hosts_longest_ready_sec double precision,
+        OUT workspace_hosts_longest_draining_sec double precision,
+        OUT workspace_hosts_longest_unhealthy_sec double precision,
+        OUT workspace_hosts_longest_terminating_sec double precision,
         -- workspaces in each state
         OUT workspaces_uninitialized_count integer,
         OUT workspaces_stopped_count integer,
         OUT workspaces_launching_count integer,
         OUT workspaces_running_count integer,
-        -- max time in each state
+        -- max time in each workspace state
         OUT workspaces_longest_launching_sec double precision,
         OUT workspaces_longest_running_sec double precision,
         --
@@ -65,6 +71,22 @@ BEGIN
         workspace_hosts_stopped_count
     FROM
         workspace_hosts AS wh;
+
+    -- Longest running workspace host in various states
+    SELECT
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'launching'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'running'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'draining'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'terminating'), 0)
+    INTO
+        workspace_hosts_longest_launching_sec,
+        workspace_hosts_longest_ready_sec,
+        workspace_hosts_longest_draining_sec,
+        workspace_hosts_longest_unhealthy_sec,
+        workspace_hosts_longest_terminating_sec
+    FROM
+        workspaces AS w;
 
     -- Compute desired number of workspace hosts
     workspace_jobs_capacity_desired := (workspace_running_count * workspace_capacity_factor) + 2 * SQRT(workspace_running_count * workspace_capacity_factor);

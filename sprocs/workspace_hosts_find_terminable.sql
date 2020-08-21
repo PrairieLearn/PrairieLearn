@@ -27,7 +27,8 @@ BEGIN
 
     -- Update hosts to be 'terminating'
     UPDATE workspace_hosts AS wh
-    SET state = 'terminating'
+    SET state = 'terminating',
+        state_changed_at = NOW()
     WHERE EXISTS (
         SELECT 1
         FROM terminable_hosts AS th

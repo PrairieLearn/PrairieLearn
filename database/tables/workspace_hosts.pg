@@ -1,11 +1,14 @@
 columns
-    became_unhealthy_at: timestamp with time zone
     hostname: text
     id: bigint not null default nextval('workspace_hosts_id_seq'::regclass)
     instance_id: text
     launched_at: timestamp with time zone
     load_count: integer default 0
+    ready_at: timestamp with time zone
     state: enum_workspace_host_state
+    state_changed_at: timestamp with time zone
+    terminated_at: timestamp with time zone
+    unhealthy_at: timestamp with time zone
 
 indexes
     workspace_hosts_pkey: PRIMARY KEY (id) USING btree (id)

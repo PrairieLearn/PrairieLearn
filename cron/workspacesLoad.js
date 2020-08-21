@@ -56,6 +56,26 @@ const cloudwatch_definitions = {
         'name': 'HostsStopped',
         'unit': 'Count',
     },
+    'workspace_hosts_longest_launching_sec': {
+        'name': 'MaxLaunchingHostAge',
+        'unit': 'Seconds',
+    },
+    'workspace_hosts_longest_ready_sec': {
+        'name': 'MaxRunningHostAge',
+        'unit': 'Seconds',
+    },
+    'workspace_hosts_longest_draining_sec': {
+        'name': 'MaxDrainingHostAge',
+        'unit': 'Seconds',
+    },
+    'workspace_hosts_longest_unhealthy_sec': {
+        'name': 'MaxUnhealthyHostAge',
+        'unit': 'Seconds',
+    },
+    'workspace_hosts_longest_terminating_sec': {
+        'name': 'MaxTerminatingHostAge',
+        'unit': 'Seconds',
+    },
     'workspaces_uninitialized_count': {
         'name': 'WorkspacesUninitialized',
         'unit': 'Count',
@@ -103,28 +123,29 @@ async function sendStatsToCloudwatch(stats) {
                 Value: value,
             };
         });
-        await cloudwatch.putMetricData({ Metricdata: data, Namespace: 'Workspaces' }).promise();
+        await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' }).promise();
     }
 }
 
 async function handleWorkspaceAutoscaling(stats) {
     if (!(await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', true))) return;
 
-    let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount');
+    let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
     if (!desired_hosts) {
         desired_hosts = stats.workspace_hosts_desired;
     }
-    let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId');
+    let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
     if (!launch_template_id) {
         launch_template_id = config.workspaceLoadLaunchTemplateId;
     }
 
     const running_hosts = stats.workspace_hosts_ready_count;
-    if (desired_hosts > running_hosts) {
+    const launching_hosts = stats.workspace_hosts_launching_count;
+    if (desired_hosts > running_hosts + launching_hosts) {
         let needed = desired_hosts - running_hosts;
         /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
            need to call out to AWS */
-        const recaptured_hosts = (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts;
+        const recaptured_hosts = (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts || 0;
         needed -= recaptured_hosts;
         if (needed > 0) {
             /* We couldn't get enough hosts, so lets spin up some more and insert them into the db */

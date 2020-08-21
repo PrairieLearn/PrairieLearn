@@ -2,18 +2,19 @@ CREATE OR REPLACE FUNCTION
     workspace_hosts_drain_extra(surplus integer) RETURNS void
 AS $$
 BEGIN
-    -- Grab a random assortment of extra hosts
+    -- Grab the oldest hosts first
     CREATE TEMPORARY TABLE extra ON COMMIT DROP AS (
         SELECT *
         FROM workspace_hosts AS wh
         WHERE wh.state = 'ready'
-        ORDER BY random()
+        ORDER BY wh.launched_at
         LIMIT surplus
     );
 
     -- Drain them (this sounds ominous :-))
     UPDATE workspace_hosts AS wh
-    SET state = 'draining'
+    SET state = 'draining',
+        state_changed_at = NOW()
     WHERE EXISTS(
         SELECT 1
         FROM extra AS e

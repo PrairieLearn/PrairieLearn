@@ -15,7 +15,7 @@ WHERE
 UPDATE workspace_hosts
 SET
     state = 'unhealthy'
-    became_unhealthy_at = now()
+    unhealthy_at = NOW()
 WHERE
     instance_id = $instance_id;
 
@@ -26,5 +26,6 @@ INSERT INTO workspace_hosts
 
 -- set_terminated_hosts
 UPDATE workspace_hosts
-SET state='terminated'
+SET state='terminated',
+    terminated_at = NOW()
 WHERE id IN (SELECT UNNEST($instances));

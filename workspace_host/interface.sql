@@ -29,10 +29,13 @@ WHERE
 
 -- BLOCK insert_workspace_hosts
 INSERT INTO workspace_hosts
-        (instance_id,  hostname, state)
-VALUES ($instance_id, $hostname, 'ready')
+        (instance_id,  hostname, state, state_changed_at, ready_at)
+VALUES ($instance_id, $hostname, 'ready', NOW(), NOW())
 ON CONFLICT (instance_id) DO UPDATE
-SET hostname = EXCLUDED.hostname;
+SET hostname = EXCLUDED.hostname,
+    state = EXCLUDED.state,
+    state_changed_at = EXCLUDED.state_changed_at,
+    ready_at = EXCLUDED.ready_at;
 
 -- BLOCK update_load_count
 UPDATE workspace_hosts as wh
@@ -41,7 +44,7 @@ SET
         SELECT count(*)
         FROM workspaces AS w
         WHERE w.workspace_host_id = wh.id AND (w.state = 'running' OR w.state = 'launching')
-    );
+    )
 WHERE
     wh.instance_id = $instance_id;
 
@@ -147,11 +150,12 @@ WHERE
 UPDATE
     workspace_hosts AS wh
 SET
-    wh.state = 'unhealthy',
-    wh.became_unhealthy_at = NOW()
+    state = 'unhealthy',
+    state_changed_at = NOW(),
+    unhealthy_at = NOW()
 WHERE
     wh.instance_id = $instance_id
-    AND wh.became_unhealthy_at IS NULL;
+    AND wh.unhealthy_at IS NULL;
 
 -- BLOCK db_status_check
 SELECT *
