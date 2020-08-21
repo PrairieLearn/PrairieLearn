@@ -120,3 +120,11 @@ FROM
     variants AS v
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
+
+-- BLOCK select_files
+SELECT f.storage_filename, f.storage_type, f.display_filename
+FROM
+    files AS f
+WHERE
+    f.id = ANY($file_ids::BIGINT[])
+    AND f.deleted_at IS NULL;
