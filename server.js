@@ -343,6 +343,7 @@ app.use('/pl/course_instance/:course_instance_id', [
   function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
   function(req, res, next) {res.locals.navbarType = 'student'; next();},
   require('./middlewares/authzCourseInstance'),
+  require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 
 // Redirect plain course page to Instructor or Student assessments page.
@@ -374,6 +375,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 
 // all pages under /pl/course require authorization
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', require('./middlewares/ansifySyncErrorsAndWarnings.js'));
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
@@ -404,6 +406,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     require('./middlewares/selectAssessments'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -473,6 +476,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
 
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -757,6 +761,7 @@ app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res
 
 app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.

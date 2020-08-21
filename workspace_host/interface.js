@@ -691,11 +691,11 @@ async function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
-                awsHelper.uploadToS3(path, isDirectory, s3_path, local_path, callback);
+                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
-                awsHelper.deleteFromS3(path, isDirectory, s3_path, local_path, callback);
+                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, callback);
             });
         }
     }
