@@ -3,7 +3,7 @@ DROP FUNCTION IF EXISTS workspaces_state_update(bigint, text, text);
 CREATE OR REPLACE FUNCTION
     workspaces_state_update(
         workspace_id bigint,
-        workspace_level text,
+        workspace_level enum_log_level,
         workspace_state text,
         workspace_message text
     ) returns void
@@ -26,6 +26,6 @@ BEGIN
     INSERT INTO workspace_logs
         (date, level, message, workspace_id, version)
     VALUES
-        (now(), workspace_level::enum_log_level, workspace_message, workspace_id, workspace_version);
+        (now(), workspace_level, workspace_message, workspace_id, workspace_version);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
