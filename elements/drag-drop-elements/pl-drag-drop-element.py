@@ -30,6 +30,7 @@ def render(element_html, data):
                                                                                       'check-indentation', 
                                                                                       'header-left-column', 
                                                                                       'header-right-column',
+                                                                                      'external-grader',
                                                                                       'max-distractors',  # Legacy attribute
                                                                                       'max-feedback-count']) # Legacy attribute
 
@@ -80,7 +81,9 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        # render the submission panel
+        if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+            return ''
+        # render the submission panel        
         uuid = pl.get_uuid()
         student_submission = ''
         colour = 'badge-danger'
@@ -112,6 +115,9 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
+        if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+            return ''
+
         permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
         
@@ -211,6 +217,9 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
+
+    if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+        
 
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answerName]['student_answer_indent']
