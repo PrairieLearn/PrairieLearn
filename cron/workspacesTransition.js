@@ -36,9 +36,9 @@ async function checkDBConsistency() {
         MaxResults: 500,
     }).promise()).Reservations;
     for (const reservation of reservations) {
-	for (const instance of Object.values(reservation.Instances)) {
-	    running_host_set.add(instance.InstanceId);
-	}
+        for (const instance of Object.values(reservation.Instances)) {
+            running_host_set.add(instance.InstanceId);
+        }
     }
 
     const db_hosts = (await sqldb.queryAsync(sql.select_nonstopped_workspace_hosts, [])).rows.map(instance => instance.instance_id);
@@ -51,20 +51,20 @@ async function checkDBConsistency() {
                 diff.add(val);
             }
         }
-	return diff;
+        return diff;
     };
 
     /* Kill off any host that is running but not in the db */
     const not_in_db = set_difference(running_host_set, db_hosts_set);
     if (not_in_db.size > 0) {
-	await sqldb.queryAsync(sql.add_terminating_hosts, { instances: Array.from(not_in_db) });
-	await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) }).promise();
+        await sqldb.queryAsync(sql.add_terminating_hosts, { instances: Array.from(not_in_db) });
+        await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) }).promise();
     }
 
     /* Any host that is in the db but not running we will mark as "terminated" */
     const not_in_ec2 = set_difference(db_hosts_set, running_host_set);
     if (not_in_ec2.size > 0) {
-	await sqldb.queryAsync(sql.set_terminated_hosts, { instances: Array.from(not_in_ec2) });
+        await sqldb.queryAsync(sql.set_terminated_hosts, { instances: Array.from(not_in_ec2) });
     }
 }
 
@@ -76,7 +76,7 @@ async function terminateHosts() {
     ];
     const hosts = (await sqldb.callAsync('workspace_hosts_find_terminable', params)).rows[0].terminated_hosts || [];
     if (hosts.length > 0) {
-	await ec2.terminateInstances({ InstanceIds: hosts }).promise();
+        await ec2.terminateInstances({ InstanceIds: hosts }).promise();
     }
 }
 
