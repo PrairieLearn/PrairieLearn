@@ -18,33 +18,33 @@ def render_html_colour(score):
         return 'badge-warning'
 
 def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
-    if submitted == '':
+    if len(submitted_blocks) == 0:
         return ''
     answer = ''
     for index, answer in enumerate(submitted_blocks):
-        indent = block_indents[index]
-        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+        indent = int(block_indents[index])
+        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
     answer = leading_code + '\n' + answer + trailing_code + '\n'
     return answer
 
 def gettarilAnswer(submitted_blocks, block_indents, trailing_code):
-    if submitted == '':
+    if len(submitted_blocks) == 0:
         return ''
     answer = ''
     for index, answer in enumerate(submitted_blocks):
-        indent = block_indents[index]
-        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+        indent = int(block_indents[index])
+        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
     answer = answer + trailing_code + '\n'
     return answer
 
 
 def getleadAnswer(submitted_blocks, block_indents, leading_code):
-    if submitted == '':
+    if len(submitted_blocks) == 0:
         return ''
     answer = ''
-    for index, answer in enumerate(submitted_blocks):
-        indent = block_indents[index]
-        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+    for index, answer_indent in enumerate(block_indents):
+        indent = int(answer_indent)
+        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
     answer = leading_code + '\n' + answer
     return answer
 
@@ -151,7 +151,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'answer':
         if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
-            return ''
+            return str(data)
 
         permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
@@ -170,13 +170,13 @@ def render(element_html, data):
 
 
 def prepare(element_html, data):
-    pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(pl_drag_drop_element, 'answers-name')
+    element = lxml.html.fragment_fromstring(element_html)
+    answerName = pl.get_string_attrib(element, 'answers-name')
 
     correct_answers = []
     correct_answers_indent = []
     
-    for html_tags in pl_drag_drop_element:
+    for html_tags in element:
         if html_tags.tag == 'pl-answer':
             isCorrect = pl.get_string_attrib(html_tags, 'correct', 'true') # default to true, for backward compatibility
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1') # get answer indent, and default to -1 (indent level ignored)
@@ -248,11 +248,13 @@ def parse(element_html, data):
 
         if file_name is not None:
             if leading_code is not None and trailing_code is not None:
-                file_data = getallAnswer(student_answer_temp, pieces, leadingnew_code, trailnewx_code)
+                print('getallanswer')
+                file_data = getallAnswer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
             if leading_code is None and trailing_code is not None:
-                file_data = gettarilAnswer(student_answer_temp, pieces, trailnewx_code)
+                print('get trail')
+                file_data = gettarilAnswer(student_answer, student_answer_indent, trailnewx_code)
             if leading_code is not None and trailing_code is None:
-                file_data = getleadAnswer(student_answer_temp, pieces, leadingnew_code)
+                file_data = getleadAnswer(student_answer, student_answer_indent, leadingnew_code)
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
         return
 
