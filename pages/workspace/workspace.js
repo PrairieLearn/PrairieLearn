@@ -19,7 +19,7 @@ router.get('/', (_req, res, _next) => {
         // instructor preview
         res.locals.pageNote = 'Preview';
         res.locals.pageTitle = res.locals.question_qid;
-        res.locals.navTitle = `${res.locals.pageTitle} (${res.locals.pageNote})`;
+        res.locals.navTitle = res.locals.pageTitle;
     } else {
         // student assessment
         res.locals.navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
