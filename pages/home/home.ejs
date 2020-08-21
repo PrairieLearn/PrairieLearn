@@ -9,13 +9,6 @@
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>
-      <% } else { %> <!-- isAuthenticated -->
-      <nav class="navbar navbar-light bg-white">
-        <a class="navbar-brand" href="<%= homeUrl %>">
-          <span class="navbar-brand-label">PrairieLearn</span>
-          <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
-        </a>
-      </nav>
       <% } %> <!-- isAuthenticated -->
     </header>
 
