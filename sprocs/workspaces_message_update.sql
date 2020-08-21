@@ -18,8 +18,8 @@ BEGIN
         w.version INTO workspace_version;
 
     INSERT INTO workspace_logs
-        (date, level, message, workspace_id, workspace_version)
+        (date, workspace_id, version, message)
     VALUES
-        (now(), 'info'::enum_log_level, 'message:' || workspace_message, workspace_id, workspace_version);
+        (now(), workspace_id, workspace_version, workspace_message);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
