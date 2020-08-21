@@ -26,7 +26,7 @@ async function checkDBConsistency() {
 
     const ec2 = new AWS.EC2();
     const running_hosts = (await ec2.describeInstances({
-        Filter: [
+        Filters: [
             {
                 Name: 'tag-key',
                 Values: [config.workspaceLoadLaunchTag],

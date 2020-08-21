@@ -9,7 +9,7 @@ FROM
 LEFT JOIN
     workspaces AS W ON (w.workspace_host_id = w.id) AND (w.state = 'launching' OR w.state = 'running')
 WHERE
-    wh.state != 'stopped';
+    wh.state != 'terminated';
 
 -- set_host_unhealthy
 UPDATE workspace_hosts
