@@ -2,6 +2,8 @@ import prairielearn as pl
 import lxml.html
 import random
 import chevron
+import base64
+import os
 
 # Read https://prairielearn.readthedocs.io/en/latest/devElements/
 # Official documentation on making custom PL
@@ -15,6 +17,36 @@ def render_html_colour(score):
     else:
         return 'badge-warning'
 
+def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
+    if submitted == '':
+        return ''
+    answer = ''
+    for index, answer in enumerate(submitted_blocks):
+        indent = block_indents[index]
+        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+    answer = leading_code + '\n' + answer + trailing_code + '\n'
+    return answer
+
+def gettarilAnswer(submitted_blocks, block_indents, trailing_code):
+    if submitted == '':
+        return ''
+    answer = ''
+    for index, answer in enumerate(submitted_blocks):
+        indent = block_indents[index]
+        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+    answer = answer + trailing_code + '\n'
+    return answer
+
+
+def getleadAnswer(submitted_blocks, block_indents, leading_code):
+    if submitted == '':
+        return ''
+    answer = ''
+    for index, answer in enumerate(submitted_blocks):
+        indent = block_indents[index]
+        answer = answer + ('    ' * indent) + submitted_blocks[index] + '\n'
+    answer = leading_code + '\n' + answer
+    return answer
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -31,6 +63,9 @@ def render(element_html, data):
                                                                                       'header-left-column', 
                                                                                       'header-right-column',
                                                                                       'external-grader',
+                                                                                      'file-name',
+                                                                                      'leading-code',
+                                                                                      'trailing-code',
                                                                                       'max-distractors',  # Legacy attribute
                                                                                       'max-feedback-count']) # Legacy attribute
 
@@ -195,6 +230,32 @@ def parse(element_html, data):
         student_answer.append(answer[0])
         student_answer_indent.append(answer[1])
     del student_answer_temp
+
+    if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+        file_name = pl.get_string_attrib(element, 'file-name', None)
+        leading_code = pl.get_string_attrib(element, 'leading-code', None)
+        trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
+        base_path = data['options']['question_path']
+
+        if leading_code is not None:
+            file_lead_path = os.path.join(base_path, leading_code)
+            with open(file_lead_path, 'r') as file:
+                leadingnew_code = file.read()
+        if trailing_code is not None:
+            file_trail_path = os.path.join(base_path, trailing_code)
+            with open(file_trail_path, 'r') as file:
+                trailnewx_code = file.read()
+
+        if file_name is not None:
+            if leading_code is not None and trailing_code is not None:
+                file_data = getallAnswer(student_answer_temp, pieces, leadingnew_code, trailnewx_code)
+            if leading_code is None and trailing_code is not None:
+                file_data = gettarilAnswer(student_answer_temp, pieces, trailnewx_code)
+            if leading_code is not None and trailing_code is None:
+                file_data = getleadAnswer(student_answer_temp, pieces, leadingnew_code)
+            data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
+        return
+
     if permutationMode.lower() == 'ranking':
         student_answer_ranking = []
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
@@ -217,9 +278,6 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
-
-    if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
-        
 
     student_answer = data['submitted_answers'][answerName]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answerName]['student_answer_indent']
