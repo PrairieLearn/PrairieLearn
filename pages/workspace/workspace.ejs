@@ -64,7 +64,7 @@
 
   <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
     <a class="navbar-brand" href="<%= homeUrl %>">
-      <div class="navbar-brand-label">PL Workspace: <span class="small"><%= navTitle %><span></div>
+      <div class="navbar-brand-label">PL Workspace<span class="d-none d-sm-inline-block small">: <%= navTitle %><span></div>
       <span class="navbar-brand-hover-label text-light">Go home <i class="fa fa-angle-right"
           aria-hidden="true"></i></span>
     </a>
@@ -82,6 +82,9 @@
 
     <div class="collapse navbar-collapse" id="workspace-nav">
       <ul class="navbar-nav ml-auto">
+        <li class="d-sm-none nav-item ml-2 my-1">
+          <span class="nav-item badge badge-light"><%= navTitle %></span>
+        </li>
         <li class="nav-item ml-2 my-1">
           <a id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
