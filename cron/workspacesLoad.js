@@ -128,10 +128,12 @@ async function sendStatsToCloudwatch(stats) {
 }
 
 async function handleWorkspaceAutoscaling(stats) {
-    if (!(await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', true))) return;
+    if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true') return;
 
     let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
-    if (!desired_hosts) {
+    if (desired_hosts !== null) {
+        desired_hosts = parseInt(desired_hosts);
+    } else {
         desired_hosts = stats.workspace_hosts_desired;
     }
     let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
