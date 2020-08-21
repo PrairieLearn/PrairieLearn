@@ -37,8 +37,6 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
-logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
-
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
@@ -100,13 +98,15 @@ async.series([
         if (config.runningInEc2) {
             /* If we're in EC2, find the host's instance_id and hostname */
             const MetadataService = new AWS.MetadataService();
-            const document = await MetadataService.request('/latest/dynamic/instance-identity/document').promise();
+            /* Every other AWS call supports promise() except MetadataService, annoyingly enough */
+            const request_promise = util.promisify((path, callback) => MetadataService.request(path, callback));
+            const document = await request_promise('/latest/dynamic/instance-identity/document');
             const data = JSON.parse(document);
             debug('instance-identity', data);
             AWS.config.update({'region': data.region});
             workspace_server_settings.instance_id = data.instanceId;
 
-            const hostname = await MetadataService.request('/latest/meta-data/local-hostname').promise();
+            const hostname = await request_promise('/latest/meta-data/local-hostname');
             workspace_server_settings.hostname = hostname;
             workspace_server_settings.server_to_container_hostname = hostname;
         } else {
@@ -122,7 +122,7 @@ async.series([
            find a secret containing the configuration data.  This is JSON
            with a single object in the same format as the "config" object. */
         const ec2 = new AWS.EC2();
-        const tags = (await ec2.describeTags({ Filters: { Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] } }).promise()).Tags;
+        const tags = (await ec2.describeTags({ Filters: [{ Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] }] }).promise()).Tags;
         logger.info('Instance tags', tags);
 
         const secret_tag = _.find(tags, { Key: 'ConfSecret' });
@@ -133,9 +133,9 @@ async.series([
 
         const secretsManager = new AWS.SecretsManager();
         const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
-        logger.info(`Secret value: ${secret_value}`);
 
         if (!secret_value.SecretString) return;
+        logger.info(`Secret value: ${secret_value.SecretString}`);
         const secret_config = JSON.parse(secret_value.SecretString);
         logger.info('Parsed secret config', secret_config);
 
@@ -144,6 +144,7 @@ async.series([
     async () => {
         /* Always grab the port from the config */
         workspace_server_settings.port = config.workspaceHostPort;
+        logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
         const pgConfig = {
@@ -454,7 +455,13 @@ async function dockerAttemptKillAndRemove(input) {
  * This will also set the "became_unhealthy_at" field if applicable.
  */
 async function markSelfUnhealthyAsync() {
-    await sqldb.query(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+    try {
+        await sqldb.queryAsync(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+    } catch (err) {
+        /* This could error if we don't even have a DB connection, in that case we should let the main server
+           mark us as unhealthy. */
+        logger.error(`Could not mark self as unhealthy: ${err}`);
+    }
 }
 const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
