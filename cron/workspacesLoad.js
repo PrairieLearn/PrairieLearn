@@ -76,27 +76,27 @@ const cloudwatch_definitions = {
         'name': 'MaxTerminatingHostAge',
         'unit': 'Seconds',
     },
-    'workspaces_uninitialized_count': {
+    'workspace_uninitialized_count': {
         'name': 'WorkspacesUninitialized',
         'unit': 'Count',
     },
-    'workspaces_stopped_count': {
+    'workspace_stopped_count': {
         'name': 'WorkspacesStopped',
         'unit': 'Count',
     },
-    'workspaces_launching_count': {
+    'workspace_launching_count': {
         'name': 'WorkspacesLaunching',
         'unit': 'Count',
     },
-    'workspaces_running_count': {
+    'workspace_running_count': {
         'name': 'WorkspacesRunning',
         'unit': 'Count',
     },
-    'workspaces_longest_launching_sec': {
+    'workspace_longest_launching_sec': {
         'name': 'MaxLaunchingWorkspaceAge',
         'unit': 'Seconds',
     },
-    'workspaces_longest_running_sec': {
+    'workspace_longest_running_sec': {
         'name': 'MaxRunningWorkspaceAge',
         'unit': 'Seconds',
     },
@@ -109,7 +109,7 @@ async function sendStatsToCloudwatch(stats) {
         return (key !== 'timestamp_formatted');
     });
 
-    for (let i = 0; i < stats.length; i+= cloudwatch_metricdata_limit) {
+    for (let i = 0; i < entries.length; i+= cloudwatch_metricdata_limit) {
         const data = entries.slice(i, i + cloudwatch_metricdata_limit).map(([key, value]) => {
             if (!(key in cloudwatch_definitions)) {
                 throw new Error(`Unknown datapoint ${key}!`);

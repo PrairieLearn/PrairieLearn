@@ -18,13 +18,13 @@ CREATE OR REPLACE FUNCTION
         OUT workspace_hosts_longest_unhealthy_sec double precision,
         OUT workspace_hosts_longest_terminating_sec double precision,
         -- workspaces in each state
-        OUT workspaces_uninitialized_count integer,
-        OUT workspaces_stopped_count integer,
-        OUT workspaces_launching_count integer,
-        OUT workspaces_running_count integer,
+        OUT workspace_uninitialized_count integer,
+        OUT workspace_stopped_count integer,
+        OUT workspace_launching_count integer,
+        OUT workspace_running_count integer,
         -- max time in each workspace state
-        OUT workspaces_longest_launching_sec double precision,
-        OUT workspaces_longest_running_sec double precision,
+        OUT workspace_longest_launching_sec double precision,
+        OUT workspace_longest_running_sec double precision,
         --
         OUT timestamp_formatted text
     )
@@ -37,10 +37,10 @@ BEGIN
         count(*) FILTER (WHERE w.state = 'launching'),
         count(*) FILTER (WHERE w.state = 'running')
     INTO
-        workspaces_uninitialized_count,
-        workspaces_stopped_count,
-        workspaces_launching_count,
-        workspaces_running_count
+        workspace_uninitialized_count,
+        workspace_stopped_count,
+        workspace_launching_count,
+        workspace_running_count
     FROM
         workspaces AS w;
 
@@ -49,8 +49,8 @@ BEGIN
         COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'launching'), 0),
         COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'running'), 0)
     INTO
-        workspaces_longest_launching_sec,
-        workspaces_longest_running_sec
+        workspace_longest_launching_sec,
+        workspace_longest_running_sec
     FROM
         workspaces AS w;
 
@@ -61,7 +61,7 @@ BEGIN
         count(*) FILTER (WHERE wh.state = 'draining'),
         count(*) FILTER (WHERE wh.state = 'unhealthy'),
         count(*) FILTER (WHERE wh.state = 'terminating'),
-        count(*) FILTER (WHERE wh.state = 'stopped')
+        count(*) FILTER (WHERE wh.state = 'terminated')
     INTO
         workspace_hosts_launching_count,
         workspace_hosts_ready_count,
@@ -74,11 +74,11 @@ BEGIN
 
     -- Longest running workspace host in various states
     SELECT
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'launching'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'running'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'draining'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE wh.state = 'terminating'), 0)
+        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'launching'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'ready'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'draining'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
+        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'terminating'), 0)
     INTO
         workspace_hosts_longest_launching_sec,
         workspace_hosts_longest_ready_sec,
@@ -86,11 +86,11 @@ BEGIN
         workspace_hosts_longest_unhealthy_sec,
         workspace_hosts_longest_terminating_sec
     FROM
-        workspaces AS w;
+        workspace_hosts AS wh;
 
     -- Compute desired number of workspace hosts
     workspace_jobs_capacity_desired := (workspace_running_count * workspace_capacity_factor) + 2 * SQRT(workspace_running_count * workspace_capacity_factor);
-    workspace_hosts_desired := CEIL(workspace_capacity_desired / workspace_jobs_host_capacity);
+    workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
     END IF;

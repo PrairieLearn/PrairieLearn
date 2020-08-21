@@ -1,4 +1,4 @@
--- select_nonstopped_workspace_hosts
+-- BLOCK select_nonstopped_workspace_hosts
 SELECT
     wh.id,
     wh.instance_id,
@@ -11,21 +11,22 @@ LEFT JOIN
 WHERE
     wh.state != 'terminated';
 
--- set_host_unhealthy
+-- BLOCK set_host_unhealthy
 UPDATE workspace_hosts
 SET
-    state = 'unhealthy'
+    state = 'unhealthy',
     unhealthy_at = NOW()
 WHERE
-    instance_id = $instance_id;
+    instance_id = $instance_id
+    AND unhealthy_at IS NULL;
 
--- add_terminating_hosts
+-- BLOCK add_terminating_hosts
 INSERT INTO workspace_hosts
     (state, instance_id)
     (SELECT 'terminating', UNNEST($instances));
 
--- set_terminated_hosts
+-- BLOCK set_terminated_hosts
 UPDATE workspace_hosts
 SET state='terminated',
     terminated_at = NOW()
-WHERE id IN (SELECT UNNEST($instances));
+WHERE instance_id IN (SELECT UNNEST($instances));
