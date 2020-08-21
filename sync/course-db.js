@@ -668,7 +668,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
+async function loadAndValidateJson({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
     // perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile({
         coursePath,
@@ -725,7 +725,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
         // hooray, we're done.
         await async.each(files, async (/** @type {string} */ dir) => {
             const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-            const info = await loadAndValidateJsonNew({
+            const info = await loadAndValidateJson({
                 coursePath,
                 filePath: infoFilePath,
                 defaults: defaultInfo,
