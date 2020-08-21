@@ -191,8 +191,7 @@
           </div><!-- card -->
         </div><!-- container -->
       </div><!-- bg-flourish -->
-      <% } %> <!-- isAuthenticated -->
-
+      <% } else { %> <!-- isAuthenticated -->
       <div class="position-relative bg-students text-white text-center pt-5">
         <div class="container">
           <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Empower students to master content</h2>
@@ -472,9 +471,10 @@
           </a>
         </div> <!-- container -->
       </div> <!-- jumbotron -->
+      <% } %> <!-- isAuthenticated -->
     </main>
 
-    <footer class="bg-dark text-light text-right small py-3">
+    <footer class="text-right text-light small <% if (isAuthenticated) { %>bg-secondary py-2<% } else { %>bg-dark py-3<% } %>">
       <div class="container">
         &copy; 2020 <a class="text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
         &middot;
