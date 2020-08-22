@@ -216,14 +216,14 @@ def parse(element_html, data):
     student_answer_ranking = ['Question permutationMode is not "ranking"']
     for answer in student_answer_temp:
         # student answers are formatted as: {answerString}:::{indent}, we split the answer
-        answer = answer.split(':::')
+        answer = answer.rsplit(':::')
         if len(answer) == 1:
             # because we already caught empty string submission above
             # failing to split the answer implies an error
             data['format_errors'][answerName] = 'Failed to parse submission: formatting is invalid! This should not happen, contact instructor for help.'
             return
 
-        if not str.isdigit(answer[1].lstrip('-')) or int(answer[1]) not in list(range(-1, 5)):  # indent is a number in [-1, 4]
+        if (not str.isdigit(answer[1]) and answer[1] != '-1') or int(answer[1]) not in list(range(-1, 5)):  # indent is a number in [-1, 4]
             data['format_errors'][answerName] = f'Indent level {answer[1]} is invalid! Indention level must be a number between 0 or 4 inclusive.'
             return
 

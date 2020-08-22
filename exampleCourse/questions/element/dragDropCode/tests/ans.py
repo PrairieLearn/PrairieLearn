@@ -1,5 +1,3 @@
-def fib(n):
-    if n <= 1:
-        return n
-    else:
-        return fib(n - 1) + fib(n - 2)
+import numpy as np
+def return_even():
+    return 2
