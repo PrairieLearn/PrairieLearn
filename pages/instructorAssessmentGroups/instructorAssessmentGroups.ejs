@@ -22,6 +22,7 @@
   </script>
   <%- include('../partials/navbar'); %>
   <div id="content" class="container-fluid">
+    <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
     <% if (typeof errormsg !== 'undefined' && errormsg.length > 0) { %>
       <div class="alert alert-danger" role="alert">

@@ -8,7 +8,7 @@
       may be inconsistent with this course's <code>infoCourse.json</code> file.
       Please correct the error and sync again.
     </p>
-    <pre class="bg-dark text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>"><code><%= course.sync_errors %></code></pre>
+    <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course.sync_errors_ansified %></code></pre>
     <% if (!locals.course.example_course) { %>
     <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
       <i class="fa fa-edit"></i>
@@ -24,7 +24,7 @@
       These warnings do not impact the ability to sync this course's info, but they
       should still be reviewed and corrected.
     </p>
-    <pre class="bg-dark text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>"><code><%= course.sync_warnings %></code></pre>
+    <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course.sync_warnings_ansified %></code></pre>
     <% if (!locals.course.example_course) { %>
     <a class="btn btn-light" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
       <i class="fa fa-edit"></i>

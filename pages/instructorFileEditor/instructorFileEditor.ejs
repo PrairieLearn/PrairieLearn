@@ -24,7 +24,7 @@
                 This file will not be able to be synced until the errors are corrected.
                 The errors are listed below.
             </p>
-            <pre class="bg-dark text-white rounded p-3 mb-0"><code><%= fileEdit.sync_errors %></code></pre>
+            <pre class="text-white rounded p-3 mb-0" style="background-color: black;"><code><%- fileEdit.sync_errors_ansified %></code></pre>
         </div>
         <% } %>
         <% if (fileEdit.sync_warnings) { %>
@@ -35,7 +35,7 @@
                 These warnings do not prevent this file from being synced, but they should still be fixed.
                 The warnings are listed below.
             </p>
-            <pre class="bg-dark text-white rounded p-3 mb-0"><code><%= fileEdit.sync_warnings %></code></pre>
+            <pre class="text-white rounded p-3 mb-0" style="background-color: black;"><code><%- fileEdit.sync_warnings_ansified %></code></pre>
         </div>
         <% } %>
 
