@@ -1,7 +1,7 @@
 -- BLOCK get_group_work
 SELECT *
 FROM
-    
+
     assessment_instances AS ai
     LEFT JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
     JOIN group_users AS gu ON (ai.group_id = gu.group_id)
@@ -81,7 +81,7 @@ FROM
     LEFT JOIN groups AS gr ON (gr.id = gu.group_id AND gr.deleted_at IS NULL)
     JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, TRUE) AS aai ON TRUE
+    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id
