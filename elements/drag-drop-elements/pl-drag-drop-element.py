@@ -151,7 +151,14 @@ def render(element_html, data):
 
     elif data['panel'] == 'answer':
         if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
-            return str(data)
+            try:
+                base_path = data['options']['question_path']
+                file_lead_path = os.path.join(base_path, 'tests/ans.py')
+                with open(file_lead_path, 'r') as file:
+                    solution_file = file.read()
+                return f'<pl-code language="python">{solution_file}</pl-code>'
+            except FileNotFoundError:
+                return 'The instructor did not include a reference solution. Try contacting them for the solution implementation?'
 
         permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
