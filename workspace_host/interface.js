@@ -53,7 +53,7 @@ app.get('/status', asyncHandler(async (req, res) => {
 
     let db_status;
     try {
-        db_status = (await sqldb.query(sql.db_status_check, [])).rows;
+        db_status = (await sqldb.queryAsync(sql.db_status_check, [])).rows;
     } catch (_err) {
         db_status = null;
     }
