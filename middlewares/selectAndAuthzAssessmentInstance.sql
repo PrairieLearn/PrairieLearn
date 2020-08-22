@@ -1,17 +1,3 @@
--- BLOCK get_group_work
-SELECT *
-FROM
-    assessment_instances AS ai
-    JOIN assessments AS a ON (a.id = ai.assessment_id)
-    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN pl_courses AS c ON (c.id = ci.course_id)
-    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN group_users AS gu ON (ai.group_id = gu.group_id)
-    JOIN groups AS gr ON (gr.id = gu.group_id)
-WHERE
-     ai.id = $assessment_instance_id
-     AND gr.deleted_at IS NULL;
-
 -- BLOCK select_and_auth
 WITH file_list AS (
     SELECT coalesce(jsonb_agg(f ORDER BY f.created_at), '[]'::jsonb) AS list
