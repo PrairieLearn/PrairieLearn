@@ -261,6 +261,8 @@
 
   * Fix default institution in course instance access rules (Tim Bretl).
 
+  * Fix `group_work` flag when calling `authz_assessment_instance` (Tim Bretl).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
   * Remove introduction alert at the top of `homework` assessments (Tim Yang).
