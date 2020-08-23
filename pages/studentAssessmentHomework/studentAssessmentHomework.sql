@@ -1,4 +1,4 @@
--- BLOCK find_single_assessment_instance
+-- BLOCK select_single_assessment_instance
 SELECT
     ai.*
 FROM
