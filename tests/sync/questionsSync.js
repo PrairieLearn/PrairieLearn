@@ -30,6 +30,11 @@ async function findSyncedQuestion(qid) {
   return syncedQuestions.find(q => q.qid === qid);
 }
 
+async function findSyncedUndeletedQuestion(qid) {
+  const syncedQuestions = await util.dumpTable('questions');
+  return syncedQuestions.find(q => q.qid === qid && q.deleted_at == null);
+}
+
 describe('Question syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
@@ -271,5 +276,18 @@ describe('Question syncing', () => {
       const syncedQuestion = syncedQuestions.find(q => q.qid === partialQuestionId);
       assert.isUndefined(syncedQuestion);
     }
+  });
+
+  it('correctly handles a new assessment with the same QID as a deleted question', async () => {
+    const courseData = util.getCourseData();
+    const question = makeQuestion(courseData);
+    courseData.questions['repeatedQuestion'] = question;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the question and re-sync
+    question.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedQuestion = await findSyncedUndeletedQuestion('repeatedQuestion');
+    assert.equal(syncedQuestion.uuid, question.uuid);
   });
 });
