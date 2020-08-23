@@ -3,14 +3,12 @@ SELECT
     ai.*
 FROM
     assessment_instances AS ai
-    LEFT JOIN (SELECT *
-     FROM group_users AS gi
-     JOIN groups AS gr ON gi.group_id = gr.id
-     WHERE $user_id = gi.user_id AND gr.deleted_at IS NULL) AS gid ON TRUE
+    LEFT JOIN groups AS g ON (g.deleted_at IS NULL)
+    LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id AND gu.group_id = g.id)
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = 1
-    AND ((ai.group_id = gid.group_id) OR (ai.user_id = $user_id));
+    AND ((gu.user_id = $user_id) OR (ai.user_id = $user_id));
 
 -- BLOCK get_config_info
 SELECT
