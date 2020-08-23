@@ -5,6 +5,9 @@ const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
 
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
 const error = require('@prairielearn/prairielib/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -123,9 +126,56 @@ router.get('/', function(req, res, next) {
         sqldb.query(sql.select_issues, params, function(err, result) {
             if (ERR(err, next)) return;
 
-            // Add human-readable relative dates to each row
+            // Set of IDs of course instances to which the effective user has access
+            const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce((acc, ci) => {acc.add(ci.id); return acc;}, new Set());
+
             result.rows.forEach((row) => {
+                // Add human-readable relative dates to each row
                 row.relative_date = moment(row.formatted_date).from(row.now_date);
+
+                if (row.assessment) {
+                    if (!row.course_instance_id) return next(new Error(`Issue id ${row.issue_id} is associated with an assessment but not a course instance`));
+
+                    // Each issue is associated with a question variant. If an issue is also
+                    // associated with a course instance, then this question variant is from
+                    // some assessment in that course instance. We can provide a link to this
+                    // assessment, but we only want to do so if the effective user has access
+                    // to the corresponding course instance.
+                    //
+                    // Add a flag to each row saying if the effective user has this access.
+                    row.assessment.hide_link = !linkable_course_instance_ids.has(parseInt(row.course_instance_id));
+
+                    // If necessary, construct the URL prefix to the appropriate course instance
+                    // (either if we are accessing the issue through the course page route, or if
+                    // we are accessing the issue through a different course instance page route).
+                    if ((!res.locals.course_instance) || (res.locals.course_instance.id != row.course_instance_id)) {
+                        row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
+                    }
+                }
+
+                // There are three situations in which the issue need not be anonymized:
+                //
+                //  1) We are in devMode.
+                //
+                //  2) The issue is not associated with a course instance. The only way
+                //     for a user to generate an issue that is not associated with a course
+                //     instance is if they are an instructor, so there are no student data
+                //     to be protected in this case.
+                //
+                //  3) We are accessing this page through a course instance, the issue is
+                //     associated with the same course instance, and the user has student
+                //     data view access.
+                //
+                // Otherwise, all issues must be anonymized.
+                row.show_user = (
+                    res.locals.devMode ||
+                    (!row.course_instance_id) ||
+                    (
+                        res.locals.course_instance &&
+                        (res.locals.course_instance.id == row.course_instance_id) &&
+                        res.locals.authz_data.has_course_instance_permission_view
+                    )
+                );
             });
 
             res.locals.rows = result.rows;
@@ -143,7 +193,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!(res.locals.authz_data.has_course_permission_edit || res.locals.authz_data.has_instructor_edit)) return next();
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be a course editor)'));
     if (req.body.__action == 'open') {
         let params = [
             req.body.issue_id,
