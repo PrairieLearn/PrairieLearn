@@ -229,6 +229,7 @@ BEGIN
     FROM disk_course_instances AS src
     WHERE
         dest.short_name = src.short_name
+        AND dest.deleted_at IS NULL
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NOT NULL AND src.errors != '');
 END;
