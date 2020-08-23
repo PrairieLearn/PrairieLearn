@@ -56,6 +56,11 @@ async function findSyncedAssessment(tid) {
   return syncedAssessments.find(a => a.tid === tid);
 }
 
+async function findSyncedUndeletedAssessment(tid) {
+  const syncedAssessments = await util.dumpTable('assessments');
+  return syncedAssessments.find(a => a.tid === tid && a.deleted_at == null);
+}
+
 describe('Assessment syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
@@ -601,6 +606,19 @@ describe('Assessment syncing', () => {
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
     const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === assessmentSet.name);
     assert.equal(newSyncedAssessment.assessment_set_id, syncedAssessmentSet.id);
+  });
+
+  it('correctly handles a new assessment with the same TID as a deleted assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the assessment and re-sync
+    assessment.uuid = '98c427af-1216-47ad-b982-6e88974080e1';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessment = await findSyncedUndeletedAssessment('testAssessment');
+    assert.equal(syncedAssessment.uuid, assessment.uuid);
   });
 
   it('records an error if a nested assessment directory does not eventually contain an infoAssessment.json file', async() => {
