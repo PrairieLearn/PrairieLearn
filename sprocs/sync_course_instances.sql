@@ -138,7 +138,7 @@ BEGIN
         FROM disk_course_instances AS src
         WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
-        SELECT ci.id INTO syncing_course_instance_id
+        SELECT ci.id INTO STRICT syncing_course_instance_id
         FROM course_instances AS ci
         WHERE
             ci.short_name = valid_course_instance.short_name
