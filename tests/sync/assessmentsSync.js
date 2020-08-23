@@ -56,6 +56,11 @@ async function findSyncedAssessment(tid) {
   return syncedAssessments.find(a => a.tid === tid);
 }
 
+async function findSyncedUndeletedAssessment(tid) {
+  const syncedAssessments = await util.dumpTable('assessments');
+  return syncedAssessments.find(a => a.tid === tid && a.deleted_at == null);
+}
+
 describe('Assessment syncing', () => {
   // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
@@ -602,6 +607,44 @@ describe('Assessment syncing', () => {
     const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === assessmentSet.name);
     assert.equal(newSyncedAssessment.assessment_set_id, syncedAssessmentSet.id);
   });
+
+  it('correctly handles a new assessment with the same TID as a deleted assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the assessment and re-sync
+    assessment.uuid = '98c427af-1216-47ad-b982-6e88974080e1';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessment = await findSyncedUndeletedAssessment('testAssessment');
+    assert.equal(syncedAssessment.uuid, assessment.uuid);
+  });
+
+  it('does not add errors to deleted assessments', async () => {
+    const courseData = util.getCourseData();
+    const originalAssessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] = originalAssessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the assessment, add an error and re-sync
+    const newAssessment = {...originalAssessment};
+    newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    delete newAssessment.title; // will make the assessment broken
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] = newAssessment;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // check that the newly-synced assessment has an error
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find(a => a.tid === 'repeatedAssessment' && a.deleted_at == null);
+    assert.equal(syncedAssessment.uuid, newAssessment.uuid);
+    assert.match(syncedAssessment.sync_errors, /should have required property 'title'/);
+
+    // check that the old deleted assessment does not have any errors
+    const deletedAssessment = syncedAssessments.find(a => a.tid === 'repeatedAssessment' && a.deleted_at != null);
+    assert.equal(deletedAssessment.uuid, originalAssessment.uuid);
+    assert.equal(deletedAssessment.sync_errors, null);
+   });
 
   it('records an error if a nested assessment directory does not eventually contain an infoAssessment.json file', async() => {
     const courseData = util.getCourseData();
