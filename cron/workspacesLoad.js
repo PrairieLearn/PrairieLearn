@@ -144,7 +144,7 @@ async function handleWorkspaceAutoscaling(stats) {
     const ready_hosts = stats.workspace_hosts_ready_count;
     const launching_hosts = stats.workspace_hosts_launching_count;
     if (desired_hosts > ready_hosts + launching_hosts) {
-        let needed = desired_hosts - ready_hosts;
+        let needed = desired_hosts - (ready_hosts + launching_hosts);
         /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
            need to call out to AWS */
         const recaptured_hosts = (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts || 0;

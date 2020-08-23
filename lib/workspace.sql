@@ -1,5 +1,7 @@
--- BLOCK select_workspace_hosts
-SELECT * FROM workspace_hosts;
+-- BLOCK select_ready_workspace_hosts
+SELECT *
+FROM workspace_hosts AS wh
+WHERE wh.state = 'ready';
 
 -- BLOCK update_workspaces_workspace_host_id
 UPDATE
@@ -29,7 +31,7 @@ FROM
     pl_courses AS c
     JOIN questions AS q ON (q.course_id = c.id)
     JOIN variants AS v ON (v.question_id = q.id)
-WHERE 
+WHERE
     v.workspace_id = $workspace_id;
 
 -- BLOCK select_workspace_state
