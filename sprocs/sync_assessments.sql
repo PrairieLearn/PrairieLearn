@@ -380,6 +380,7 @@ BEGIN
     FROM disk_assessments AS da
     WHERE
         a.tid = da.tid
+        AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
 
