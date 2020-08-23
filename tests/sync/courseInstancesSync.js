@@ -182,7 +182,7 @@ describe('Course instance syncing', () => {
 
   it('correctly handles a new course instance with the same short name as a deleted course instance', async () => {
     const courseData = util.getCourseData();
-    const courseInstance = makeCourseInstance(courseData);
+    const courseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = courseInstance;
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
@@ -198,7 +198,7 @@ describe('Course instance syncing', () => {
 
   it('does not modify deleted course instance long names', async () => {
     const courseData = util.getCourseData();
-    const originalCourseInstance = makeCourseInstance(courseData);
+    const originalCourseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
@@ -216,7 +216,7 @@ describe('Course instance syncing', () => {
 
   it('does not add errors to deleted course instances', async () => {
     const courseData = util.getCourseData();
-    const originalCourseInstance = makeCourseInstance(courseData);
+    const originalCourseInstance = makeCourseInstance();
     courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
