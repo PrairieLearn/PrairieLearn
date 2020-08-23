@@ -156,8 +156,3 @@ SET
 WHERE
     wh.instance_id = $instance_id
     AND wh.unhealthy_at IS NULL;
-
--- BLOCK db_status_check
-SELECT *
-FROM pg_stat_activity
-WHERE query != '<IDLE>' AND query NOT ILIKE '%pg_stat_activity%';

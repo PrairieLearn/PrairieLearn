@@ -53,7 +53,7 @@ app.get('/status', asyncHandler(async (req, res) => {
 
     let db_status;
     try {
-        db_status = (await sqldb.queryAsync(sql.db_status_check, [])).rows;
+        db_status = (await sqldb.queryAsync(sql.update_load_count, [])).rows;
     } catch (_err) {
         db_status = null;
     }
@@ -92,6 +92,11 @@ app.post('/', function(req, res) {
 
 let server;
 let workspace_server_settings = {};
+
+/* Globals for detecting file changes */
+let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+let workspacePrefix; /* Jobs directory */
+let watcher;
 
 async.series([
     async () => {
@@ -191,6 +196,76 @@ async.series([
         logger.info(`Listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
+    async () => {
+        /* Set up file watching with chokidar */
+        workspacePrefix = config.workspaceJobsDirectory;
+        watcher = chokidar.watch(workspacePrefix, {
+            ignoreInitial: true,
+            awaitWriteFinish: true,
+            depth: 10,
+        });
+        watcher.on('add', filename => {
+            // Handle new files
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('addDir', filename => {
+            // Handle new directory
+            var key = [filename, true];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('change', filename => {
+            // Handle file changes
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('unlink', filename => {
+            // Handle removed files
+            var key = [filename, false];
+            update_queue[key] = {action: 'delete'};
+        });
+        watcher.on('unlinkDir', filename => {
+            // Handle removed directory
+            var key = [filename, true];
+            update_queue[key] = {action: 'delete'};
+        });
+        async function autoUpdateJobManagerTimeout() {
+            await _autoUpdateJobManager();
+            setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+        }
+        setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic hard push of all containers to S3 */
+        async function pushAllContainersTimeout() {
+            await pushAllRunningContainersToS3();
+            setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+        }
+        setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic pruning of running containers */
+        async function pruneContainersTimeout() {
+            await pruneStoppedContainers();
+            await pruneRunawayContainers();
+            await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+
+            setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
+        }
+        setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
+    },
     (callback) => {
         // Add ourselves to the workspace hosts directory. After we
         // do this we will start receiving requests so everything else
@@ -239,57 +314,6 @@ async.series([
     }
 });
 
-// For detecting file changes
-let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = config.workspaceJobsDirectory;
-const watcher = chokidar.watch(workspacePrefix, {
-    ignoreInitial: true,
-    awaitWriteFinish: true,
-    depth: 10,
-});
-watcher.on('add', filename => {
-    // Handle new files
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('addDir', filename => {
-    // Handle new directory
-    var key = [filename, true];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('change', filename => {
-    // Handle file changes
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('unlink', filename => {
-    // Handle removed files
-    var key = [filename, false];
-    update_queue[key] = {action: 'delete'};
-});
-watcher.on('unlinkDir', filename => {
-    // Handle removed directory
-    var key = [filename, true];
-    update_queue[key] = {action: 'delete'};
-});
-async function autoUpdateJobManagerTimeout() {
-    await _autoUpdateJobManager();
-    setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-}
-setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-
 /* Periodic hard-push of files to S3 */
 
 /**
@@ -319,12 +343,6 @@ async function pushAllRunningContainersToS3() {
         }
     });
 }
-
-async function pushAllContainersTimeout() {
-    await pushAllRunningContainersToS3();
-    setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
-}
-setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
 
 /* Prune stopped and runaway containers */
 
@@ -373,15 +391,6 @@ async function pruneRunawayContainers() {
         await dockerAttemptKillAndRemove(container_info.Id);
     });
 }
-
-async function pruneContainersTimeout() {
-    await pruneStoppedContainers();
-    await pruneRunawayContainers();
-    await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
-
-    setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
-}
-setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
 
 /**
  * Looks up a docker container by the UUID used to launch it.
