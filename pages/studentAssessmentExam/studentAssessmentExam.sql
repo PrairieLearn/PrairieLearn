@@ -2,10 +2,10 @@
 SELECT
     ai.*
 FROM
-    assessment_instances AS ai,
-    (SELECT *
-     FROM group_users AS gi 
-     WHERE $user_id = gi.user_id) AS gid
+    assessment_instances AS ai
+    LEFT JOIN (SELECT *
+     FROM group_users AS gi
+     WHERE $user_id = gi.user_id) AS gid ON TRUE
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = 1
