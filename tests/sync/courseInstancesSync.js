@@ -179,4 +179,20 @@ describe('Course instance syncing', () => {
       assert.isUndefined(syncedCourseInstance);
     }
   });
+
+  it('correctly handles a new course instance with the same short name as a deleted course instance', async () => {
+    const courseData = util.getCourseData();
+    const courseInstance = makeCourseInstance(courseData);
+    courseData.courseInstances['repeatedCourseInstance'] = courseInstance;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the course instance and re-sync
+    courseInstance.courseInstance.uuid = '276eeddb-74e1-44e5-bfc5-3c39d79afa85';
+    courseInstance.courseInstance.longName = 'test new long name';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null);
+    assert.equal(syncedCourseInstance.uuid, courseInstance.courseInstance.uuid);
+    assert.equal(syncedCourseInstance.long_name, courseInstance.courseInstance.longName);
+  });
 });
