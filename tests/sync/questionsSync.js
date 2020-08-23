@@ -278,7 +278,7 @@ describe('Question syncing', () => {
     }
   });
 
-  it('correctly handles a new assessment with the same QID as a deleted question', async () => {
+  it('correctly handles a new question with the same QID as a deleted question', async () => {
     const courseData = util.getCourseData();
     const question = makeQuestion(courseData);
     courseData.questions['repeatedQuestion'] = question;
