@@ -142,6 +142,7 @@ BEGIN
         FROM course_instances AS ci
         WHERE
             ci.short_name = valid_course_instance.short_name
+            AND ci.deleted_at IS NULL
             AND ci.course_id = syncing_course_id;
 
         INSERT INTO course_instance_access_rules (
