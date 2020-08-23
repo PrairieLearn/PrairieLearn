@@ -128,6 +128,7 @@ BEGIN
     FROM disk_course_instances AS src
     WHERE
         dest.short_name = src.short_name
+        AND dest.deleted_at IS NULL
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NULL OR src.errors = '');
 
@@ -137,10 +138,11 @@ BEGIN
         FROM disk_course_instances AS src
         WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
-        SELECT ci.id INTO syncing_course_instance_id
+        SELECT ci.id INTO STRICT syncing_course_instance_id
         FROM course_instances AS ci
         WHERE
             ci.short_name = valid_course_instance.short_name
+            AND ci.deleted_at IS NULL
             AND ci.course_id = syncing_course_id;
 
         INSERT INTO course_instance_access_rules (
@@ -227,6 +229,7 @@ BEGIN
     FROM disk_course_instances AS src
     WHERE
         dest.short_name = src.short_name
+        AND dest.deleted_at IS NULL
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NOT NULL AND src.errors != '');
 END;

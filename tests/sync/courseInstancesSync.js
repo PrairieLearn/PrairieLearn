@@ -179,4 +179,63 @@ describe('Course instance syncing', () => {
       assert.isUndefined(syncedCourseInstance);
     }
   });
+
+  it('correctly handles a new course instance with the same short name as a deleted course instance', async () => {
+    const courseData = util.getCourseData();
+    const courseInstance = makeCourseInstance();
+    courseData.courseInstances['repeatedCourseInstance'] = courseInstance;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the course instance and re-sync
+    courseInstance.courseInstance.uuid = '276eeddb-74e1-44e5-bfc5-3c39d79afa85';
+    courseInstance.courseInstance.longName = 'test new long name';
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null);
+    assert.equal(syncedCourseInstance.uuid, courseInstance.courseInstance.uuid);
+    assert.equal(syncedCourseInstance.long_name, courseInstance.courseInstance.longName);
+  });
+
+  it('does not modify deleted course instance long names', async () => {
+    const courseData = util.getCourseData();
+    const originalCourseInstance = makeCourseInstance();
+    courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID and long name of the course instance and re-sync
+    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    newCourseInstance.courseInstance.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    newCourseInstance.courseInstance.longName = 'changed long name';
+    courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const deletedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null);
+    assert.equal(deletedCourseInstance.uuid, originalCourseInstance.courseInstance.uuid);
+    assert.equal(deletedCourseInstance.long_name, originalCourseInstance.courseInstance.longName);
+  });
+
+  it('does not add errors to deleted course instances', async () => {
+    const courseData = util.getCourseData();
+    const originalCourseInstance = makeCourseInstance();
+    courseData.courseInstances['repeatedCourseInstance'] = originalCourseInstance;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the course instance, add an error and re-sync
+    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    newCourseInstance.courseInstance.uuid = '7902a94b-b025-4a33-9987-3b8196581bd2';
+    delete newCourseInstance.courseInstance.longName; // will make the course instance broken
+    courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // check that the newly-synced course instance has an error
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null);
+    assert.equal(syncedCourseInstance.uuid, newCourseInstance.courseInstance.uuid);
+    assert.match(syncedCourseInstance.sync_errors, /should have required property 'longName'/);
+
+    // check that the old deleted course instance does not have any errors
+    const deletedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null);
+    assert.equal(deletedCourseInstance.uuid, originalCourseInstance.courseInstance.uuid);
+    assert.equal(deletedCourseInstance.sync_errors, null);
+   });
 });
