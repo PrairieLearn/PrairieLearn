@@ -159,6 +159,7 @@ BEGIN
             ) AS aggregates
         WHERE
             a.tid = valid_assessment.tid
+            AND a.deleted_at IS NULL
             AND a.tid = aggregates.tid
             AND a.course_instance_id = syncing_course_instance_id
         RETURNING id INTO new_assessment_id;
