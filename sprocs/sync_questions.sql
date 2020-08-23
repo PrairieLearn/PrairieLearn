@@ -153,6 +153,7 @@ BEGIN
         ) AS aggregates
     WHERE
         dest.qid = src.qid
+        AND dest.deleted_at IS NULL
         AND dest.qid = aggregates.qid
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NULL OR src.errors = '');
