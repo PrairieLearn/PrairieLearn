@@ -261,6 +261,8 @@
 
   * Fix default institution in course instance access rules (Tim Bretl).
 
+  * Fix bad comma joins in select_single_assessment_instance block queries (Tim Bretl).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 
   * Remove introduction alert at the top of `homework` assessments (Tim Yang).
