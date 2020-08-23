@@ -308,4 +308,29 @@ describe('Question syncing', () => {
     assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion.title, originalQuestion.title);
   });
+
+  it('does not add errors to deleted questions', async () => {
+    const courseData = util.getCourseData();
+    const originalQuestion = makeQuestion(courseData);
+    courseData.questions['repeatedQuestion'] = originalQuestion;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID of the question, add an error and re-sync
+    const newQuestion = {...originalQuestion};
+    newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    delete newQuestion.title; // will make the question broken
+    courseData.questions['repeatedQuestion'] = newQuestion;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // check that the newly-synced question has an error
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at == null);
+    assert.equal(syncedQuestion.uuid, newQuestion.uuid);
+    assert.match(syncedQuestion.sync_errors, /should have required property 'title'/);
+
+    // check that the old deleted question does not have any errors
+    const deletedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at != null);
+    assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
+    assert.equal(deletedQuestion.sync_errors, null);
+  });
 });
