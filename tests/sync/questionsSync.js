@@ -290,4 +290,22 @@ describe('Question syncing', () => {
     const syncedQuestion = await findSyncedUndeletedQuestion('repeatedQuestion');
     assert.equal(syncedQuestion.uuid, question.uuid);
   });
+
+  it('does not modify deleted questions', async () => {
+    const courseData = util.getCourseData();
+    const originalQuestion = makeQuestion(courseData);
+    courseData.questions['repeatedQuestion'] = originalQuestion;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // now change the UUID and title of the question and re-sync
+    const newQuestion = {...originalQuestion};
+    newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
+    newQuestion.title = 'Changed title';
+    courseData.questions['repeatedQuestion'] = newQuestion;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedQuestions = await util.dumpTable('questions');
+    const deletedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at != null);
+    assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
+    assert.equal(deletedQuestion.title, originalQuestion.title);
+  });
 });
