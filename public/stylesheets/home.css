@@ -4,6 +4,10 @@
   --flare-width-after: calc(3*var(--flare-width-before));
 }
 
+.tiny {
+  font-size: 70%;
+}
+
 .bg-flourish {
   background-image: url('/images/grassy_landscape.svg');
   background-size: auto 8rem;
@@ -14,6 +18,10 @@
 .p-flourish {
   padding-top: 8rem;
   padding-bottom: 8rem;
+}
+
+.h-flourish {
+  height: 6rem;
 }
 
 .bg-students {
@@ -82,6 +90,10 @@
   width: var(--flare-width-after);
   height: var(--flare-width-after);
   background-color: rgba(23, 162, 184, 0.03);
+}
+
+.bg-footer {
+  background-color: #d6d6d6;
 }
 
 @media (min-width:576px) {
