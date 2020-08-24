@@ -121,6 +121,7 @@ async function sendStatsToCloudwatch(stats) {
                 Timestamp: stats.timestamp_formatted,
                 Unit: def.unit,
                 Value: value,
+                StorageResolution: 1,
             };
         });
         await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' }).promise();

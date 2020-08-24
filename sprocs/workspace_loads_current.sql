@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION
     workspace_loads_current(
         IN workspace_capacity_factor double precision,
-        IN workspace_host_capacity integer,
+        IN workspace_host_capacity double precision,
         OUT workspace_jobs_capacity_desired integer,
         OUT workspace_hosts_desired integer,
         -- workspace hosts in each state

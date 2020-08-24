@@ -37,6 +37,7 @@ SET hostname = EXCLUDED.hostname,
     state_changed_at = EXCLUDED.state_changed_at,
     ready_at = EXCLUDED.ready_at;
 
+
 -- BLOCK update_load_count
 UPDATE workspace_hosts as wh
 SET
@@ -155,4 +156,5 @@ SET
     unhealthy_at = NOW()
 WHERE
     wh.instance_id = $instance_id
-    AND wh.unhealthy_at IS NULL;
+    AND wh.unhealthy_at IS NULL
+    AND wh.state IN ('launching', 'ready', 'draining');

@@ -462,7 +462,7 @@ async function dockerAttemptKillAndRemove(input) {
 
 /**
  * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
- * This will also set the "became_unhealthy_at" field if applicable.
+ * This will also set the "unhealthy__at" field if applicable.
  */
 async function markSelfUnhealthyAsync() {
     try {
