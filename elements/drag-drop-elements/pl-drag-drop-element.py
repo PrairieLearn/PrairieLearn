@@ -8,6 +8,7 @@ import os
 # Read https://prairielearn.readthedocs.io/en/latest/devElements/
 # Official documentation on making custom PL
 
+
 def render_html_colour(score):
     # used to render the correct colour depending on student score
     if score == 0:
@@ -19,6 +20,7 @@ def render_html_colour(score):
 
 # courtesy of https://github.com/PrairieLearn/PrairieLearn/pull/2625
 
+
 def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
@@ -28,6 +30,7 @@ def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
         answer += ('    ' * indent) + submitted_blocks[index] + '\n'
     answer = leading_code + '\n' + answer + trailing_code + '\n'
     return answer
+
 
 def gettarilAnswer(submitted_blocks, block_indents, trailing_code):
     if len(submitted_blocks) == 0:
@@ -50,6 +53,7 @@ def getleadAnswer(submitted_blocks, block_indents, leading_code):
     answer = leading_code + '\n' + answer
     return answer
 
+
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
@@ -59,17 +63,19 @@ def render(element_html, data):
         student_previous_submission = []
         submission_indent = []
 
-        pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['shuffle-options', 
-                                                                                      'permutation-mode', 
-                                                                                      'check-indentation', 
-                                                                                      'header-left-column', 
-                                                                                      'header-right-column',
-                                                                                      'external-grader',
-                                                                                      'file-name',
-                                                                                      'leading-code',
-                                                                                      'trailing-code',
-                                                                                      'max-distractors',  # Legacy attribute
-                                                                                      'max-feedback-count']) # Legacy attribute
+        pl.check_attribs(element,
+                         required_attribs=['answers-name'],
+                         optional_attribs=['shuffle-options',
+                                           'permutation-mode',
+                                           'check-indentation',
+                                           'header-left-column',
+                                           'header-right-column',
+                                           'external-grader',
+                                           'file-name',
+                                           'leading-code',
+                                           'trailing-code',
+                                           'max-distractors',   # Legacy attribute
+                                           'max-feedback-count'])  # Legacy attribute
 
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
@@ -114,9 +120,9 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+        if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
             return ''
-        # render the submission panel        
+        # render the submission panel
         uuid = pl.get_uuid()
         student_submission = ''
         colour = 'badge-danger'
@@ -148,7 +154,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+        if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
             try:
                 base_path = data['options']['question_path']
                 file_lead_path = os.path.join(base_path, 'tests/ans.py')
@@ -160,7 +166,7 @@ def render(element_html, data):
 
         permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
-        
+
         if answerName in data['correct_answers']:
             html_params = {
                 'true_answer': True,
@@ -182,8 +188,8 @@ def prepare(element_html, data):
     correct_answers = []
     correct_answers_indent = []
 
-    isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
-        
+    isShuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
+
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
             # CORRECT is optional for backward compatibility
@@ -192,19 +198,19 @@ def prepare(element_html, data):
         # BACKWARD COMPATIBILITY CODE
         if html_tags.tag == 'pl-distractor':
             mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
-    
+
     if isShuffle == 'true':
         random.shuffle(mcq_options)
-    
+
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
-            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'true') # default to true, for backward compatibility
-            answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1') # get answer indent, and default to -1 (indent level ignored)
+            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'true')  # default to true, for backward compatibility
+            answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
             if isCorrect.lower() == 'true':
                 # add option to the correct answer array, along with the correct required indent
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
-    
+
     data['params'][answerName] = mcq_options
     data['correct_answers'][answerName] = {'correct_answers': correct_answers,
                                            'correct_answers_indent': correct_answers_indent}
@@ -265,7 +271,7 @@ def parse(element_html, data):
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
 
-    if pl.get_boolean_attrib(element, 'external-grader', False): # if not false
+    if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
         file_name = pl.get_string_attrib(element, 'file-name', None)
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
@@ -339,7 +345,7 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation =  pl.get_string_attrib(element, 'check-indentation', 'true')
+    check_indentation = pl.get_string_attrib(element, 'check-indentation', 'true')
     # check indents, and apply penalty if applicable
     if true_answer_indent.count('-1') != len(true_answer_indent) or check_indentation == 'true':
         for i, indent in enumerate(student_answer_indent):
@@ -360,9 +366,8 @@ def test(element_html, data):
     if data['test_type'] == 'correct':
         temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
         true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
-        answer_string = ''
         for index, answer in enumerate(temp):
-            temp[index] = answer + ':::' + true_answer_indent[index] 
+            temp[index] = answer + ':::' + true_answer_indent[index]
         data['raw_submitted_answers'][answerNameField] = ','.join(temp)
         data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
     elif data['test_type'] == 'incorrect':
@@ -382,4 +387,3 @@ def test(element_html, data):
         data['format_errors'][answerName] = 'format error message'
     else:
         raise Exception('invalid result: %s' % data['test_type'])
-
