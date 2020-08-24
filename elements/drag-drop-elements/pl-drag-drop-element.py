@@ -17,6 +17,8 @@ def render_html_colour(score):
     else:
         return 'badge-warning'
 
+# courtesy of https://github.com/PrairieLearn/PrairieLearn/pull/2625
+
 def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
@@ -82,17 +84,13 @@ def render(element_html, data):
         header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
         header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
 
-        isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
-        
-        if isShuffle == 'true':
-            random.shuffle(mcq_options)
-
         student_submission_dict_list = []
+
+        mcq_options = data['params'][answerName]
 
         if answerName in data['submitted_answers']:
             student_previous_submission = data['submitted_answers'][answerName]['student_raw_submission']
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
-
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
@@ -180,8 +178,23 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answerName = pl.get_string_attrib(element, 'answers-name')
 
+    mcq_options = []
     correct_answers = []
     correct_answers_indent = []
+
+    isShuffle = pl.get_string_attrib(element, 'shuffle-options', False) # default to FALSE, no shuffling unless otherwise specified
+        
+    for html_tags in element:
+        if html_tags.tag == 'pl-answer':
+            # CORRECT is optional for backward compatibility
+            # pl.check_attribs(html_tags, required_attribs=[''], optional_attribs=['correct', 'ranking', 'indent'])
+            mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
+        # BACKWARD COMPATIBILITY CODE
+        if html_tags.tag == 'pl-distractor':
+            mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
+    
+    if isShuffle == 'true':
+        random.shuffle(mcq_options)
     
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
@@ -192,6 +205,7 @@ def prepare(element_html, data):
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
     
+    data['params'][answerName] = mcq_options
     data['correct_answers'][answerName] = {'correct_answers': correct_answers,
                                            'correct_answers_indent': correct_answers_indent}
 
