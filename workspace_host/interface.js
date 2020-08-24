@@ -53,7 +53,7 @@ app.get('/status', asyncHandler(async (req, res) => {
 
     let db_status;
     try {
-        await sqldb.queryAsync(sql.update_load_count, []);
+        await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
         db_status = 'ok';
     } catch (_err) {
         db_status = null;
