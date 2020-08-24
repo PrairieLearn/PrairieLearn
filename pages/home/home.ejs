@@ -13,10 +13,10 @@
     </header>
 
     <main class="flex-grow-1">
-      <div class="jumbotron bg-white rounded-0 my-0 <% if (isAuthenticated) { %>pt-0 mb-n4 pb-0<% } else { %>bg-flourish p-flourish<% } %>">
+      <div class="jumbotron bg-white rounded-0 my-0 <%= isAuthenticated ? 'pt-0 mb-n4 pb-0' : 'bg-flourish p-flourish' %>">
         <div class="container">
           <div class="row align-items-center">
-            <div class="pb-4 <% if (isAuthenticated) { %>d-none<% } else { %>col-md-6 col-lg-7<% } %>">
+            <div class="pb-4 <%= isAuthenticated ? 'd-none' : 'col-md-6 col-lg-7' %>">
               <h1 class="display-4 font-weight-normal">PrairieLearn</h1>
               <p class="lead font-weight-normal">
                 <i class="fa fa-sync-alt fa-fw" aria-ignore="true"></i>
@@ -28,17 +28,17 @@
               </a>
             </div> <!-- col -->
 
-            <div class="<% if (isAuthenticated) { %>col-12<% } else { %>col-md-6 col-lg-5<% } %>">
+            <div class="<%= isAuthenticated ? 'col-12' : 'col-md-6 col-lg-5' %>">
               <div class="row">
-                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
+                <div class="<%= isAuthenticated ? 'col-md-6' : 'col-12' %>">
                   <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack <% if (isAuthenticated) { %>fa-1x mr-1<% } else { %>fa-2x mr-2<% } %>" aria-hidden="true">
+                      <span class="fa-stack <%= isAuthenticated ? 'fa-1x mr-1' : 'fa-2x mr-2' %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6 <% if (isAuthenticated) { %>d-inline-block my-0 ml-n1<% } %>">
+                        <p class="<%= isAuthenticated ? 'h6 d-inline-block my-0 ml-n1' : 'h6' %>">
                           <% if (isAuthenticated) { %>
                           <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
                             Students
@@ -47,22 +47,22 @@
                           Are you a student?
                           <% } %>
                         </p>
-                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
+                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           Enroll course
                         </a>
                       </span>
                     </div><!-- card-body -->
                   </div> <!-- card -->
                 </div><!-- col -->
-                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
+                <div class="<%= isAuthenticated ? 'col-md-6' : 'col-12' %>">
                   <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack <% if (isAuthenticated) { %>fa-1x mr-1<% } else { %>fa-2x mr-2<% } %>" aria-hidden="true">
+                      <span class="fa-stack <%= isAuthenticated ? 'fa-1x mr-1' : 'fa-2x mr-2' %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-tie fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6 <% if (isAuthenticated) { %>d-inline-block my-0 ml-n1<% } %>">
+                        <p class="<%= isAuthenticated ? 'h6 d-inline-block my-0 ml-n1' : 'h6' %>">
                           <% if (isAuthenticated) { %>
                           <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
                             Instructors
@@ -71,10 +71,10 @@
                           Are you an instructor?
                           <% } %>
                         </p>
-                        <a href="https://prairielearn.readthedocs.io/en/latest/requestCourse" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
+                        <a href="https://prairielearn.readthedocs.io/en/latest/requestCourse" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           Request course
                         </a>
-                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
+                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           View docs
                         </a>
                       </span>
