@@ -65,14 +65,25 @@ BEGIN
         
         -- ######################################################################
         -- do the actual insert
+        -- ON CONFLICT: make sure there is no new instance created by student's teammate simultaneously
+        -- ON CONFLICT will not update anything but for returning the id
 
     INSERT INTO assessment_instances
             ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
     VALUES  (authn_user_id, assessment_id, 
             CASE WHEN group_work THEN NULL      ELSE user_id END,
             CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
+    ON CONFLICT (assessment_id, group_id, number) DO UPDATE
+    SET assessment_id = excluded.assessment_id
     RETURNING id
     INTO assessment_instance_id;
+
+    -- ######################################################################
+    -- A null assessment_instance_id means we triggered ON CONFLICT and DO NOTHING
+    -- one of teammates already created an instance, no need to create again
+    IF assessment_instance_id IS NULL THEN
+        RETURN;
+    END IF;
 
     -- ######################################################################
     -- determine other properties
