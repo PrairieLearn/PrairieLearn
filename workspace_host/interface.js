@@ -23,6 +23,7 @@ const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
 const LocalLock = require('../lib/local-lock');
+const asyncHandler = require('express-async-handler');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -36,13 +37,39 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
-logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
-
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.get('/status', asyncHandler(async (req, res) => {
+    let containers;
+    try {
+        containers = await docker.listContainers({ all: true });
+    } catch (_err) {
+        containers = null;
+    }
+
+    let db_status;
+    try {
+        await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+        db_status = 'ok';
+    } catch (_err) {
+        db_status = null;
+    }
+
+    if (!containers || !db_status) {
+        /* We should have both docker and postgres access in order to consider ourselves healthy */
+        res.status(500);
+    } else {
+        res.status(200);
+    }
+    res.jsonp({
+        docker: containers,
+        postgres: db_status,
+    });
+}));
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
@@ -59,24 +86,72 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
-    } else if (action == 'status') {
-        res.status(200).send('Running');
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
 });
 
 let server;
-let workspace_server_settings = {
-    instance_id: config.workspaceDevHostInstanceId,
-    /* The workspace server's hostname */
-    hostname: config.workspaceDevHostHostname,
-    /* How the main server connects to the container.  In docker, this is the host operating system. */
-    server_to_container_hostname: config.workspaceDevContainerHostname,
-    port: config.workspaceHostPort,
-};
+let workspace_server_settings = {};
+
+/* Globals for detecting file changes */
+let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+let workspacePrefix; /* Jobs directory */
+let watcher;
 
 async.series([
+    async () => {
+        if (config.runningInEc2) {
+            /* If we're in EC2, find the host's instance_id and hostname */
+            const MetadataService = new AWS.MetadataService();
+            /* Every other AWS call supports promise() except MetadataService, annoyingly enough */
+            const request_promise = util.promisify((path, callback) => MetadataService.request(path, callback));
+            const document = await request_promise('/latest/dynamic/instance-identity/document');
+            const data = JSON.parse(document);
+            debug('instance-identity', data);
+            AWS.config.update({'region': data.region});
+            workspace_server_settings.instance_id = data.instanceId;
+
+            const hostname = await request_promise('/latest/meta-data/local-hostname');
+            workspace_server_settings.hostname = hostname;
+            workspace_server_settings.server_to_container_hostname = hostname;
+        } else {
+            /* Otherwise, just use the defaults in the config file */
+            workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
+            workspace_server_settings.hostname = config.workspaceDevHostHostname;
+            workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
+        }
+    },
+    async () => {
+        if (!config.runningInEc2) return;
+        /* If we're inside EC2, look up a special tag and use its value to
+           find a secret containing the configuration data.  This is JSON
+           with a single object in the same format as the "config" object. */
+        const ec2 = new AWS.EC2();
+        const tags = (await ec2.describeTags({ Filters: [{ Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] }] }).promise()).Tags;
+        logger.info('Instance tags', tags);
+
+        const secret_tag = _.find(tags, { Key: 'ConfSecret' });
+        if (!secret_tag) return;
+
+        const secret_id = secret_tag.Value;
+        logger.info(`Secret ID: ${secret_id}`);
+
+        const secretsManager = new AWS.SecretsManager();
+        const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
+
+        if (!secret_value.SecretString) return;
+        logger.info(`Secret value: ${secret_value.SecretString}`);
+        const secret_config = JSON.parse(secret_value.SecretString);
+        logger.info('Parsed secret config', secret_config);
+
+        _.assign(config, secret_config);
+    },
+    async () => {
+        /* Always grab the port from the config */
+        workspace_server_settings.port = config.workspaceHostPort;
+        logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
+    },
     (callback) => {
         const pgConfig = {
             user: config.postgresqlUser,
@@ -117,45 +192,80 @@ async.series([
         });
     },
     (callback) => {
-        if (config.runningInEc2) {
-            const MetadataService = new AWS.MetadataService();
-            async.series([
-                (callback) => {
-                    MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
-                        if (ERR(err, callback)) return;
-                        try {
-                            const data = JSON.parse(document);
-                            debug('instance-identity', data);
-                            AWS.config.update({'region': data.region});
-                            workspace_server_settings.instance_id = data.instanceId;
-                            callback(null);
-                        } catch (err) {
-                            return callback(err);
-                        }
-                    });
-                },
-                (callback) => {
-                    MetadataService.request('/latest/meta-data/local-hostname', (err, hostname) => {
-                        if (ERR(err, callback)) return;
-                        workspace_server_settings.hostname = hostname;
-                        workspace_server_settings.server_to_container_hostname = hostname;
-                        callback(null);
-                    });
-                },
-            ], (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        } else {
-            /* Not running in ec2 */
-            callback(null);
-        }
-    },
-    (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
         logger.info(`Listening on port ${workspace_server_settings.port}`);
         callback(null);
+    },
+    async () => {
+        /* Set up file watching with chokidar */
+        workspacePrefix = config.workspaceJobsDirectory;
+        watcher = chokidar.watch(workspacePrefix, {
+            ignoreInitial: true,
+            awaitWriteFinish: true,
+            depth: 10,
+        });
+        watcher.on('add', filename => {
+            // Handle new files
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('addDir', filename => {
+            // Handle new directory
+            var key = [filename, true];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('change', filename => {
+            // Handle file changes
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('unlink', filename => {
+            // Handle removed files
+            var key = [filename, false];
+            update_queue[key] = {action: 'delete'};
+        });
+        watcher.on('unlinkDir', filename => {
+            // Handle removed directory
+            var key = [filename, true];
+            update_queue[key] = {action: 'delete'};
+        });
+        async function autoUpdateJobManagerTimeout() {
+            await _autoUpdateJobManager();
+            setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+        }
+        setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic hard push of all containers to S3 */
+        async function pushAllContainersTimeout() {
+            await pushAllRunningContainersToS3();
+            setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+        }
+        setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic pruning of running containers */
+        async function pruneContainersTimeout() {
+            await pruneStoppedContainers();
+            await pruneRunawayContainers();
+            await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+
+            setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
+        }
+        setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
     (callback) => {
         // Add ourselves to the workspace hosts directory. After we
@@ -199,61 +309,11 @@ async.series([
 ], function(err, data) {
     if (err) {
         logger.error('Error initializing workspace host:', err, data);
+        markSelfUnhealthyAsync();
     } else {
         logger.info('Successfully initialized workspace host');
     }
 });
-
-// For detecting file changes
-let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = config.workspaceJobsDirectory;
-const watcher = chokidar.watch(workspacePrefix, {
-    ignoreInitial: true,
-    awaitWriteFinish: true,
-    depth: 10,
-});
-watcher.on('add', filename => {
-    // Handle new files
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('addDir', filename => {
-    // Handle new directory
-    var key = [filename, true];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('change', filename => {
-    // Handle file changes
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('unlink', filename => {
-    // Handle removed files
-    var key = [filename, false];
-    update_queue[key] = {action: 'delete'};
-});
-watcher.on('unlinkDir', filename => {
-    // Handle removed directory
-    var key = [filename, true];
-    update_queue[key] = {action: 'delete'};
-});
-async function autoUpdateJobManagerTimeout() {
-    await _autoUpdateJobManager();
-    setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-}
-setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
 
 /* Periodic hard-push of files to S3 */
 
@@ -284,12 +344,6 @@ async function pushAllRunningContainersToS3() {
         }
     });
 }
-
-async function pushAllContainersTimeout() {
-    await pushAllRunningContainersToS3();
-    setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
-}
-setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
 
 /* Prune stopped and runaway containers */
 
@@ -325,7 +379,7 @@ async function pruneRunawayContainers() {
     const db_workspaces_uuid_set = new Set(db_workspaces.rows.map(ws => `workspace-${ws.launch_uuid}`));
     let running_workspaces;
     try {
-        running_workspaces = await docker.listContainers();
+        running_workspaces = await docker.listContainers({ all: true });
     } catch (err) {
         /* Nothing to do */
         return;
@@ -338,13 +392,6 @@ async function pruneRunawayContainers() {
         await dockerAttemptKillAndRemove(container_info.Id);
     });
 }
-
-async function pruneContainersTimeout() {
-    await pruneStoppedContainers();
-    await pruneRunawayContainers();
-    setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
-}
-setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
 
 /**
  * Looks up a docker container by the UUID used to launch it.
@@ -412,6 +459,21 @@ async function dockerAttemptKillAndRemove(input) {
         }
     }
 }
+
+/**
+ * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
+ * This will also set the "unhealthy__at" field if applicable.
+ */
+async function markSelfUnhealthyAsync() {
+    try {
+        await sqldb.queryAsync(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+    } catch (err) {
+        /* This could error if we don't even have a DB connection, in that case we should let the main server
+           mark us as unhealthy. */
+        logger.error(`Could not mark self as unhealthy: ${err}`);
+    }
+}
+const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
@@ -658,7 +720,12 @@ async function _autoUpdateJobManager() {
     try {
         await async.parallel(jobs);
     } catch (err) {
-        logger.err(`Error uploading files to S3:\n${err}`);
+        markSelfUnhealthy((err2) => {
+            if (err2) {
+                logger.err(`Error while handling error: ${err2}`);
+            }
+            logger.err(`Error uploading files to S3:\n${err}`);
+        });
     }
 }
 
@@ -830,7 +897,7 @@ function _createContainer(workspace, callback) {
                 if (ERR(err, callback)) return;
                 container = newContainer;
 
-                sqldb.query(sql.update_load_count, {workspace_id: workspace.id, count: +1}, function(err, _result) {
+                sqldb.query(sql.update_load_count, { instance_id: workspace_server_settings.instance_id }, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null, container);
                 });
@@ -910,8 +977,12 @@ function initSequence(workspace_id, useInitialZip, res) {
         _checkServer,
     ], function(err) {
         if (err) {
-            logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
-            res.status(500).send(err);
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while capturing error: ${err2}`);
+                }
+                logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
+            });
         } else {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;
