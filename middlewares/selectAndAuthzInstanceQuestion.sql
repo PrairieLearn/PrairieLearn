@@ -35,7 +35,7 @@ SELECT
         ELSE floor(extract(epoch from (ai.date_limit - ai.date)) * 1000)
     END AS assessment_instance_time_limit_ms,
     to_jsonb(u) AS instance_user,
-    coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
+    users_get_displayed_role(u.user_id, ci.id) AS instance_role,
     to_jsonb(iq) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
@@ -68,7 +68,6 @@ FROM
     LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
     LEFT JOIN groups AS gr ON (gr.id = gu.group_id AND gr.deleted_at IS NULL)
     JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
