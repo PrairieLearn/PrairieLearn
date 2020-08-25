@@ -166,6 +166,7 @@ module.exports = {
             'assessment_groups_delete_member.sql',
             'assessment_groups_delete_group.sql',
             'group_info.sql',
+            'groups_uid_list.sql',
             'workspaces_message_update.sql',
             'workspaces_state_update.sql',
         ], function(filename, callback) {
