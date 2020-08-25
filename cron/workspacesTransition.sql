@@ -7,8 +7,7 @@ SELECT
 FROM
     workspace_hosts AS wh
 WHERE
-    wh.state != 'terminated' AND
-    wh.state != 'terminated';
+    wh.state NOT IN ('terminated', 'terminating');
 
 -- BLOCK select_running_or_terminating_workspace_hosts
 SELECT
