@@ -93,7 +93,7 @@
 }
 
 .bg-footer {
-  background-color: #d6d6d6;
+  background-image: linear-gradient(to bottom, #d6d6d6, #d6d6d6 45%, var(--secondary) 45%, var(--secondary));
 }
 
 @media (min-width:576px) {
