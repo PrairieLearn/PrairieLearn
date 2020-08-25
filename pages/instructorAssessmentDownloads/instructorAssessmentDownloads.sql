@@ -85,19 +85,19 @@ WHERE
 
 -- BLOCK submissions_for_manual_grading
 WITH final_assessment_instances AS (
-    SELECT DISTINCT ON (gr.id, u.user_id)
+    SELECT DISTINCT ON (g.id, u.user_id)
         u.user_id,
-        gr.id AS group_id,
+        g.id AS group_id,
         ai.id,
         assessment_id,
-        gr.name AS groupname,
-        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = gr.id) AS uid_list
+        g.name AS groupname,
+        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id) AS uid_list
     FROM
         assessment_instances AS ai
-        LEFT JOIN groups AS gr ON (gr.id = ai.group_id)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE ai.assessment_id = $assessment_id
-    ORDER BY gr.id, u.user_id, ai.number DESC
+    ORDER BY g.id, u.user_id, ai.number DESC
 )
 SELECT DISTINCT ON (ai.id, q.qid)
     u.uid,
@@ -195,17 +195,17 @@ ORDER BY
 -- BLOCK files_for_manual_grading
 WITH
 final_assessment_instances AS (
-    SELECT DISTINCT ON (gr.id, u.user_id)
+    SELECT DISTINCT ON (g.id, u.user_id)
         u.user_id,
-        gr.id AS group_id,
+        g.id AS group_id,
         ai.id,
-        gr.name AS groupname
+        g.name AS groupname
     FROM
         assessment_instances AS ai
-        LEFT JOIN groups AS gr ON (gr.id = ai.group_id)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE ai.assessment_id = $assessment_id
-    ORDER BY gr.id, u.user_id, ai.number DESC
+    ORDER BY g.id, u.user_id, ai.number DESC
 ),
 submissions_with_files AS (
     SELECT DISTINCT ON (ai.id, q.qid)
@@ -387,15 +387,15 @@ OFFSET
 
 -- BLOCK group_configs
 SELECT 
-    gr.name, u.uid
+    g.name, u.uid
 FROM 
     group_configs AS gc
-    JOIN groups AS gr ON gc.id = gr.group_config_id
-    JOIN group_users AS gu ON gr.id = gu.group_id
+    JOIN groups AS g ON gc.id = g.group_config_id
+    JOIN group_users AS gu ON g.id = gu.group_id
     JOIN users AS u ON gu.user_id = u.user_id
 WHERE
     gc.assessment_id = $assessment_id 
     AND gc.deleted_at IS NULL 
-    AND gr.deleted_at IS NULL
+    AND g.deleted_at IS NULL
 ORDER BY 
-    gr.name, u.uid;
+    g.name, u.uid;
