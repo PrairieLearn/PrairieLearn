@@ -345,7 +345,7 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation = pl.get_string_attrib(element, 'check-indentation', 'true')
+    check_indentation = pl.get_string_attrib(element, 'check-indentation', 'false')
     # check indents, and apply penalty if applicable
     if true_answer_indent.count('-1') != len(true_answer_indent) or check_indentation == 'true':
         for i, indent in enumerate(student_answer_indent):

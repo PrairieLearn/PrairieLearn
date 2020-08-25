@@ -9,7 +9,7 @@ function set_answer(event) {
     var indents = [];
     for (var i = 0; i < dom_objs.length; i++) {
         if (!$(dom_objs[i]).hasClass('info')){
-            var answer_text = dom_objs[i].innerText;
+            var answer_text = dom_objs[i].getAttribute('string');
             // console.log(answer_text);
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
             indents.push(answer_indent);

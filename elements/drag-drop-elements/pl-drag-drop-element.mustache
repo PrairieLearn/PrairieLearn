@@ -4,7 +4,7 @@
             <ul id="{{answerName}}-options" name="{{answerName}}" class="connectedSortable">
                 <li class='ui-sortable-handle info info-fixed'>{{header-left-column}}</li>
                     {{#options}}
-                        <li>{{.}}</li>
+                        <li string="{{.}}">{{.}}</li>
                     {{/options}}
                 </ul>
         </div>
@@ -12,7 +12,7 @@
                 <ul id="{{answerName}}-dropzone" name="{{answerName}}" class="connectedSortable dropzone">
                     <li class="ui-sortable-handle info info-fixed">{{header-right-column}}</li>
                     {{#submission_dict}}
-                        <li style='margin-left: {{indent}}px;'>{{text}}</li>
+                        <li string="{{text}}" style='margin-left: {{indent}}px;'>{{text}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
