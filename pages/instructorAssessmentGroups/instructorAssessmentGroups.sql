@@ -40,8 +40,8 @@ SELECT
     u.uid
 FROM
     groups AS gr
-    JOIN group_users AS gu ON gr.group_config_id = $group_config_id AND gu.group_id = gr.id AND gr.deleted_at IS NULL
-    RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id AND e.course_instance_id = $course_instance_id
+    JOIN group_users AS gu ON gu.group_id = gr.id AND gr.group_config_id = $group_config_id AND gr.deleted_at IS NULL
+    RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id
     JOIN users AS u ON u.user_id = e.user_id
 WHERE
     gr.id IS NULL
