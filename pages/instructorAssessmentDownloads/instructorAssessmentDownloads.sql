@@ -18,7 +18,7 @@ SELECT
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score,
     (row_number() OVER (PARTITION BY g.id)) = 1 AS unique_group,
     g.name AS groupname,
-    (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id) AS uid_list
+    (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id ORDER BY u.uid) AS uid_list
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -56,7 +56,7 @@ WITH instance_questions AS (
         extract(epoch FROM iq.duration) AS duration_seconds,
         (row_number() OVER (PARTITION BY g.id, q.id)) = 1 AS unique_group,
         g.name AS groupname,
-        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id) AS uid_list
+        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id ORDER BY u.uid) AS uid_list
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -158,7 +158,7 @@ WITH all_submissions AS (
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
         (row_number() OVER (PARTITION BY g.id, v.id, s.id)) = 1 AS unique_group,
         g.name AS groupname,
-        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id) AS uid_list,
+        (SELECT array_agg(u.uid) FROM users AS u JOIN group_users AS gu ON (u.user_id = gu.user_id) WHERE gu.group_id = g.id ORDER BY u.uid) AS uid_list,
         su.uid AS submission_user
     FROM
         assessments AS a
