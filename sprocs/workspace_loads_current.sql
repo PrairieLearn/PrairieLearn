@@ -89,7 +89,7 @@ BEGIN
         workspace_hosts AS wh;
 
     -- Compute desired number of workspace hosts
-    workspace_jobs_capacity_desired := (workspace_running_count * workspace_capacity_factor) + 2 * SQRT(workspace_running_count * workspace_capacity_factor);
+    workspace_jobs_capacity_desired := workspace_running_count * workspace_capacity_factor;
     workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
