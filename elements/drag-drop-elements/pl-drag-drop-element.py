@@ -234,7 +234,7 @@ def parse(element_html, data):
         data['format_errors'][answerName] = 'No answer was submitted.'
         return
 
-    student_answer_temp = list(student_answer_temp.split(','))
+    student_answer_temp = list(student_answer_temp.rsplit(',,,'))
 
     student_answer = []
     student_answer_indent = []

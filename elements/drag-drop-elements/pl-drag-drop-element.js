@@ -24,7 +24,7 @@ function set_answer(event) {
         return;
     }
     textfield_name = '#' + textfield_name + '-input';
-    $(textfield_name).val(temp);
+    $(textfield_name).val(temp.join(',,,')); // use 3 commas as delimiter
 }
 
 
