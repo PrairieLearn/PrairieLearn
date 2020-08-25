@@ -92,10 +92,6 @@
   background-color: rgba(23, 162, 184, 0.03);
 }
 
-.bg-footer {
-  background-image: linear-gradient(to bottom, #d6d6d6, #d6d6d6 45%, var(--secondary) 45%, var(--secondary));
-}
-
 @media (min-width:576px) {
   .card-columns {
     column-count: 2;
