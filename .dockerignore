@@ -4,6 +4,7 @@
 # whitelist things to copy
 !.eslintignore
 !.eslintrc.json
+!tsconfig.json
 !admin_queries/
 !api/
 !cron/

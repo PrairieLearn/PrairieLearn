@@ -9,18 +9,11 @@
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>
-      <% } else { %> <!-- isAuthenticated -->
-      <nav class="navbar navbar-light bg-white">
-        <a class="navbar-brand" href="<%= homeUrl %>">
-          <span class="navbar-brand-label">PrairieLearn</span>
-          <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
-        </a>
-      </nav>
       <% } %> <!-- isAuthenticated -->
     </header>
 
     <main>
-      <div class="jumbotron bg-white rounded-0 my-0 <% if (isAuthenticated) { %>pt-4 pb-0<% } else { %>bg-flourish p-flourish<% } %>">
+      <div class="jumbotron bg-white rounded-0 my-0 <% if (isAuthenticated) { %>pt-0 mb-n4 pb-0<% } else { %>bg-flourish p-flourish<% } %>">
         <div class="container">
           <div class="row align-items-center">
             <div class="pb-4 <% if (isAuthenticated) { %>d-none<% } else { %>col-md-6 col-lg-7<% } %>">
@@ -38,21 +31,23 @@
             <div class="<% if (isAuthenticated) { %>col-12<% } else { %>col-md-6 col-lg-5<% } %>">
               <div class="row">
                 <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
-                  <div class="card shadow-sm rounded-pill my-1">
+                  <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                      <span class="fa-stack <% if (isAuthenticated) { %>fa-1x mr-1<% } else { %>fa-2x mr-2<% } %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6">
+                        <p class="h6 <% if (isAuthenticated) { %>d-inline-block my-0 ml-n1<% } %>">
                           <% if (isAuthenticated) { %>
-                          Student quick links
+                          <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
+                            Students
+                          </span>
                           <% } else { %>
                           Are you a student?
                           <% } %>
                         </p>
-                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-sm btn-outline-primary mb-1">
+                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
                           Enroll course
                         </a>
                       </span>
@@ -60,24 +55,26 @@
                   </div> <!-- card -->
                 </div><!-- col -->
                 <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
-                  <div class="card shadow-sm rounded-pill my-1">
+                  <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                      <span class="fa-stack <% if (isAuthenticated) { %>fa-1x mr-1<% } else { %>fa-2x mr-2<% } %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-tie fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6">
+                        <p class="h6 <% if (isAuthenticated) { %>d-inline-block my-0 ml-n1<% } %>">
                           <% if (isAuthenticated) { %>
-                          Instructor quick links
+                          <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
+                            Instructors
+                          </span>
                           <% } else { %>
                           Are you an instructor?
                           <% } %>
                         </p>
-                        <a href="<%= plainUrlPrefix %>/request_course" class="btn btn-sm btn-outline-info mb-1">
+                        <a href="<%= plainUrlPrefix %>/request_course" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
                           Request course
                         </a>
-                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-sm btn-outline-info mb-1">
+                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-<% if (isAuthenticated) { %>xs my-0 align-text-bottom<% } else { %>sm mb-1<% } %> btn-outline-primary justify-content-center">
                           View docs
                         </a>
                       </span>
@@ -187,8 +184,7 @@
           </div><!-- card -->
         </div><!-- container -->
       </div><!-- bg-flourish -->
-      <% } %> <!-- isAuthenticated -->
-
+      <% } else { %> <!-- isAuthenticated -->
       <div class="position-relative bg-students text-white text-center pt-5">
         <div class="container">
           <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Empower students to master content</h2>
@@ -468,9 +464,10 @@
           </a>
         </div> <!-- container -->
       </div> <!-- jumbotron -->
+      <% } %> <!-- isAuthenticated -->
     </main>
 
-    <footer class="bg-dark text-light text-right small py-3">
+    <footer class="text-right text-light small <% if (isAuthenticated) { %>bg-secondary py-2<% } else { %>bg-dark py-3<% } %>">
       <div class="container">
         &copy; 2020 <a class="text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
         &middot;

@@ -268,8 +268,13 @@ docker run -it --rm -p 3000:3000 \
 ```
 
 On Windows PowerShell, `cd` to your course directory and copy the following command **except** with your own username in `HOST_JOBS_DIR`:
-```sh
-docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
+```powershell
+docker run -it --rm -p 3000:3000 `
+    -v $PWD\:/course `
+    -v $HOME\pl_ag_jobs:/jobs `
+    -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
+    -v /var/run/docker.sock:/var/run/docker.sock `
+    prairielearn/prairielearn
 ```
 
 **Note** the following about `HOST_JOBS_DIR` on PowerShell:
@@ -307,7 +312,7 @@ error: handleGraderErrorUnable to launch Docker container for grading: (HTTP cod
     - Use Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
     - Spell out the full path without using `$HOME` (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=$HOME/pl_ag_jobs`).
 3. Verify your Windows/Docker shared access:
-    _ Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
+    - Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
     - If still not working, restart Docker.
     - If still not working, restart Windows.
 

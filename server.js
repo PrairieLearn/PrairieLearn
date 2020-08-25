@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -26,7 +27,7 @@ const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
-const workspaceSocket = require('./lib/workspaceSocket');
+const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
 const { sqldb, migrations } = require('@prairielearn/prairielib');
 const sprocs = require('./sprocs');
@@ -158,19 +159,62 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
 // proxy workspaces to remote machines
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
+    pathRewrite: async (path) => {
+        try {
+            const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
+            if (!match) throw new Error(`Could not match path: ${path}`);
+            const workspace_id = parseInt(match[1]);
+            const sql
+                  = 'SELECT q.*'
+                  + ' FROM questions AS q'
+                  + ' JOIN variants AS v ON (v.question_id = q.id)'
+                  + ' WHERE v.workspace_id = $workspace_id;';
+            const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
+            let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+            if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+            if (!workspace_url_rewrite) {
+                return path;
+            }
+            var pathSuffix = match[2];
+            const newPath = '/' + pathSuffix;
+            return newPath;
+        } catch (err) {
+            logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+            return path;
+        }
+    },
+    logLevel: 'silent',
     logProvider: _provider => logger,
-    router: async () => {
-        let url = `http://${config.workspaceContainerLocalhost}:${config.workspaceContainerPort}/`;
-        return url;
+    router: async (req) => {
+        try {
+            const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+            if (!match) throw new Error(`Could not match URL: ${req.url}`);
+            const workspace_id = match[1];
+            const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
+            const url = `http://${result.rows[0].hostname}/`;
+            return url;
+        } catch (err) {
+            logger.error(`Error in router for url=${req.url}: ${err}`);
+            return 'not-matched';
+        }
     },
 };
-const workspaceProxy = createProxyMiddleware(workspaceProxyOptions);
-app.use('/workspace/([0-9])+/container/', workspaceProxy);
+const workspaceProxy = createProxyMiddleware((pathname) => {
+    return pathname.match('/pl/workspace/([0-9])+/container/');
+}, workspaceProxyOptions);
+app.use('/pl/workspace/:workspace_id/container', [
+    cookieParser(),
+    require('./middlewares/date'),
+    require('./middlewares/authn'),
+    require('./middlewares/authzWorkspace'),
+    workspaceProxy,
+]);
 
 // Limit to 1MB of JSON
 app.use(bodyParser.json({limit: 1024 * 1024}));
@@ -282,7 +326,10 @@ app.use('/pl/request_course', [
     require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
 ]);
 
-app.use('/workspace/', require('./pages/workspace/workspace'));
+app.use('/pl/workspace/:workspace_id', [
+    require('./middlewares/authzWorkspace'),
+    require('./pages/workspace/workspace'),
+]);
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -300,6 +347,7 @@ app.use('/pl/course_instance/:course_instance_id', [
   function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
   function(req, res, next) {res.locals.navbarType = 'student'; next();},
   require('./middlewares/authzCourseInstance'),
+  require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 
 // Redirect plain course page to Instructor or Student assessments page.
@@ -331,6 +379,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 
 // all pages under /pl/course require authorization
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', require('./middlewares/ansifySyncErrorsAndWarnings.js'));
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
@@ -361,6 +410,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     require('./middlewares/selectAssessments'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -374,6 +424,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
+    function(req, res, next) {res.locals.navSubPage = 'groups'; next();},
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},
@@ -426,6 +480,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
 
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -710,6 +765,7 @@ app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res
 
 app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -1055,7 +1111,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            workspaceSocket.init(function(err) {
+            util.callbackify(workspace.init)(err => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
