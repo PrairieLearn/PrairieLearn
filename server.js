@@ -204,6 +204,15 @@ const workspaceProxyOptions = {
             return 'not-matched';
         }
     },
+    onError: (err, req, res) => {
+        logger.err(`Error proxying workspace request: ${err}`);
+        try {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.send('There was an error proxying this workspace request');
+        } catch (err2) {
+            logger.err(`Error while handling workspace request error: ${err2}`);
+        }
+    },
 };
 const workspaceProxy = createProxyMiddleware((pathname) => {
     return pathname.match('/pl/workspace/([0-9])+/container/');
