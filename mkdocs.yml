@@ -49,6 +49,7 @@ pages:
 - Admin Guide:
   - 'Adding new courses': 'admin/makeCourse.md'
   - 'Getting deployment changelogs': 'admin/deployDiff.md'
+  - 'Autoscaling settings': 'admin/workspaceAutoscaling.md'
 - Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
   - 'Old PrairieDraw graphics': 'PrairieDraw.md'
