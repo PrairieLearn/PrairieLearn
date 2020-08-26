@@ -323,9 +323,10 @@ async.series([
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
+    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`);
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
-        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
+        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, s3Path, settings.workspace_sync_ignore);
     } catch (err) {
         /* Ignore any errors that may occur when the directory doesn't exist */
         logger.error(`Error uploading directory: ${err}`);
