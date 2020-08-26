@@ -28,6 +28,7 @@ const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
+const chatSocket = require('./lib/chatSocket');
 const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
 const { sqldb, migrations } = require('@prairielearn/prairielib');
@@ -1132,6 +1133,12 @@ if (config.startServer) {
         },
         function(callback) {
             util.callbackify(workspace.init)(err => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            chatSocket.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

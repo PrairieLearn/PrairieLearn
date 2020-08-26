@@ -55,6 +55,7 @@
                     </div>
                   </form>
                 </div>
+                <%- include('../partials/chatbox', {channel_id: 'public' + assessment.id}); %>
                 <% } %>
                 <% if (permissions.student_authz_join) { %>
                 <div class="col-sm bg-light py-4 px-4 border">
@@ -84,6 +85,7 @@
                     <span class="badge badge-secondary">join Code</span> 
                     <span id='join-code'><%= joincode %></span><br>
                   </div>
+                  <%- include('../partials/chatbox', {channel_id: 'public' + assessment.id}); %>
                   <% } %>
                   <div class="col-sm bg-light py-4 px-4 border">
                     <% if (permissions.student_authz_leave) { %>
