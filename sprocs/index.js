@@ -159,6 +159,7 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_assessments.sql',
             'lock_timeout_set.sql',
+            'course_requests_insert.sql',
             'assessment_groups_update.sql',
             'assessment_groups_delete_all.sql',
             'assessment_groups_copy.sql',

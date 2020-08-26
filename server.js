@@ -321,6 +321,10 @@ app.use('/pl/news_item', [
   function(req, res, next) {res.locals.navSubPage = 'news_item'; next();},
   require('./pages/news_item/news_item.js'),
 ]);
+app.use('/pl/request_course', [
+    function(req, res, next) {res.locals.navPage = 'request_course'; next();},
+    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
+]);
 
 app.use('/pl/workspace/:workspace_id', [
     require('./middlewares/authzWorkspace'),
@@ -899,6 +903,8 @@ app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
 app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+app.use('/pl/administrator/jobSequence/', require('./pages/administratorJobSequence/administratorJobSequence'));
+app.use('/pl/administrator/courseRequests/', require('./pages/administratorCourseRequests/administratorCourseRequests'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

@@ -71,7 +71,7 @@
                           Are you an instructor?
                           <% } %>
                         </p>
-                        <a href="https://prairielearn.readthedocs.io/en/latest/requestCourse" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
+                        <a href="<%= plainUrlPrefix %>/request_course" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           Request course
                         </a>
                         <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
@@ -427,7 +427,7 @@
             Start by requesting a course and creating some content. Join the Slack workspace for ad hoc
             assistance or some random banter!
           </p>
-          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="https://prairielearn.readthedocs.io/en/latest/requestCourse">
+          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="<%= plainUrlPrefix %>/request_course">
             <i class="fab fa-wpforms" aria-hidden="true"></i>
             Request your course
           </a>
