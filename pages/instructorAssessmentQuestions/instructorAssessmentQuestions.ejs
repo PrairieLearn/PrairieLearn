@@ -25,11 +25,11 @@
                 <th>Topic</th>
                 <th>Tags</th>
                 <th>Points</th>
+                <th>Min. Advancement Score Perc</th>
                 <th width="100">Mean score</th>
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th>Min. Advancement Score Perc</th>
               </tr>
             </thead>
             <tbody>
@@ -90,6 +90,9 @@
                   <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
+                <td class="pl-sequence-prev-unlock-score <% if (question.assessment_question_unlock_score_perc == 0) { %>text-muted<% } %>">
+                  <%= question.assessment_question_unlock_score_perc %>%
+                </td>
                 <td>
                   <% if (question.mean_question_score) { %>
                     <%= question.mean_question_score.toFixed(3) %>
@@ -123,9 +126,6 @@
                   <%- include('../partials/assessment', {assessment: assessment}); %>
                   <% }); %>
                   <% } %>
-                </td>
-                <td class="pl-sequence-prev-unlock-score <% if (question.assessment_question_unlock_score_perc == 0) { %>text-muted<% } %>">
-                  <%= question.assessment_question_unlock_score_perc %>%
                 </td>
               </tr>
               <% }); %>
