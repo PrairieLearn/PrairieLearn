@@ -1,0 +1,204 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+.float-container {
+  width: 50%;
+  height: 100%;
+  float: left;
+  padding: 0px;
+  margin: auto;
+  /* height: 56px; */
+}
+/* Button used to open the chat form - fixed at the bottom of the page */
+#expand-button {
+  background-color: #007bff;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  display: block;
+  cursor: pointer;
+  opacity: 0.8;
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 280px;
+  font-weight: 400;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  visibility: visible;
+}
+/* The popup chat - hidden by default */
+.chat-popup {
+  display: block;
+  bottom: 0;
+  right: 0px;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  z-index: 9;
+  border-radius: 0.25rem;
+  background-color: white;
+  visibility: hidden;
+}
+
+/* Add styles to the form container */
+.form-container {
+  max-width: 400px;
+  padding: 1.25rem;
+  padding-top: 0px;
+  background-color: white;
+}
+
+/* Full-width textarea */
+.form-container textarea {
+  width: 100%;
+  padding: 15px;
+  margin: 5px 0 22px 0;
+  border: none;
+  background: #f1f1f1;
+  resize: none;
+  min-height: 10px;
+}
+
+/* When the textarea gets focus, do something */
+.form-container textarea:focus {
+  background-color: #ddd;
+  outline: none;
+}
+
+/* Set a style for the submit/send button */
+.form-container .btn {
+  background-color: #4caf50;
+  color: white;
+  padding: 16px 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+/* Add a red background color to the cancel button */
+.form-container .cancel {
+  background-color: red;
+}
+
+.form-container b {
+  line-height: 2;
+}
+/* Add some hover effects to buttons */
+.form-container .btn:hover,
+#expand-button:hover {
+  opacity: 1;
+}
+#float-chatbox {
+  position: fixed;
+  visibility: hidden;
+  bottom: 0px;
+  right: 0px;
+  width: 350px;
+  height: 590px;
+  z-index: 9;
+}
+
+#chatbox-header {
+  cursor: move;
+  z-index: 10;
+  background-color: #007bff !important;
+  width: 348px;
+  display: flex;
+  margin-left: -1.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+#messages {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overflow-y: auto;
+  height: 100%;
+  height: 200px;
+}
+#messages {
+  border: 1px solid rgba(0, 0, 0, 0.125);
+}
+#messages li {
+  position: relative;
+  padding: 5px 10px;
+  word-wrap: break-word;
+  z-index: 9;
+  min-height: 34px;
+}
+.message:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+/* .message:nth-child(odd) {
+    background: #eee;
+  } */
+.reaction-display {
+  display: none;
+  font-weight: bold;
+  font-size: 80%;
+  list-style-type: none;
+  width: 100%;
+  overflow: auto;
+  padding: 0px 10px;
+}
+.reaction-display li {
+  float: left;
+  padding: 5px !important;
+}
+.reaction-display li span {
+  padding: 4px;
+  margin: -3px;
+  border-radius: 17px;
+  color: white;
+}
+#users {
+  color: black;
+  display: none;
+  list-style-type: none;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overflow-y: auto;
+  max-height: 100px;
+  z-index: 11;
+  background-color: white;
+  border: 3px solid #f1f1f1;
+  font-size: 100%;
+  top: 40px;
+  left: unset;
+  right: 0;
+  cursor: default;
+}
+.float-container:hover #users {
+  display: block;
+}
+.overflow-container {
+  position: relative;
+}
+#reaction-selector {
+  background-color: white;
+  display: none;
+  top: unset;
+  width: 100%;
+  padding: auto;
+  margin: auto;
+}
+#reaction-selector li {
+  padding: auto;
+  margin: auto;
+  float: left;
+  cursor: pointer;
+}
+#user-count {
+  /* right: 10px;
+    position: absolute; */
+  float: right;
+  /* margin-left: 10px; */
+  text-decoration: underline;
+}
