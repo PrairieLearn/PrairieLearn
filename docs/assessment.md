@@ -144,6 +144,8 @@ Students are able to see their groupmates' UIDs, which can become a point of con
 
 ## Forcing students to complete questions in-order
 
+**Warning**: We strongly advise against using this feature in exam situations. See below for details.
+
 Certain assessments might designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but instructors can configure assessments to not allow students to view future questions.
 
 To enable these features, set `minAdvancePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
