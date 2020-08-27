@@ -53,5 +53,5 @@ module.exports.run = function(callback) {
         await stopLaunchedTimeoutWorkspaces();
         await stopHeartbeatTimeoutWorkspaces();
         await stopInLaunchingTimeoutWorkspaces();
-})(callback);
+    })(callback);
 };
