@@ -11,3 +11,12 @@
   border-left: 1px solid var(--secondary);
   opacity: 0.95;
 }
+
+.badge-outline {
+  border: 1px solid var(--dark);
+  font-weight: 400;
+}
+
+.popover {
+  max-width: 30rem;
+}

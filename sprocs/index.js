@@ -159,6 +159,7 @@ module.exports = {
             'sync_assessment_sets.sql',
             'sync_assessments.sql',
             'lock_timeout_set.sql',
+            'course_requests_insert.sql',
             'assessment_groups_update.sql',
             'assessment_groups_delete_all.sql',
             'assessment_groups_copy.sql',
@@ -166,10 +167,15 @@ module.exports = {
             'assessment_groups_delete_member.sql',
             'assessment_groups_delete_group.sql',
             'group_info.sql',
+            'groups_uid_list.sql',
             'workspaces_message_update.sql',
             'workspaces_state_update.sql',
             'assessment_questions_find_unlock_score_perc.sql',
             'instance_questions_check_sequence_locked.sql',
+            'workspace_loads_current.sql',
+            'workspace_hosts_recapture_draining.sql',
+            'workspace_hosts_drain_extra.sql',
+            'workspace_hosts_find_terminable.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

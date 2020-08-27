@@ -160,6 +160,7 @@ BEGIN
             ) AS aggregates
         WHERE
             a.tid = valid_assessment.tid
+            AND a.deleted_at IS NULL
             AND a.tid = aggregates.tid
             AND a.course_instance_id = syncing_course_instance_id
         RETURNING id INTO new_assessment_id;
@@ -371,7 +372,10 @@ BEGIN
                     'SQL_ASCII'),'\x00')
                 FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
             ) ASC) AS order_by
-        FROM assessments WHERE course_instance_id = syncing_course_instance_id
+        FROM assessments
+        WHERE
+            course_instance_id = syncing_course_instance_id
+            AND deleted_at IS NULL
     ) AS assessments_with_ordinality
     WHERE
         a.tid = assessments_with_ordinality.tid
@@ -390,6 +394,7 @@ BEGIN
     FROM disk_assessments AS da
     WHERE
         a.tid = da.tid
+        AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
 
