@@ -11,11 +11,6 @@ window.PLFileUpload = function(uuid, options) {
     this.uuid = uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
-    this.acceptedFilesLowercase = [];
-    var i;
-    for (i = 0; i < this.acceptedFiles.length; i++) {
-        this.acceptedFilesLowercase.push(this.acceptedFiles[i].toLowercase);
-    }
 
     var elementId = '#file-upload-' + uuid;
     this.element = $(elementId);
@@ -42,26 +37,13 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
             if (_.includes(that.acceptedFiles, file.name)) {
                 return done();
             }
-            // fuzzy case:
-            if (_.includes(that.acceptedFilesLowercase, file.name.toLowercase())) {
-                return done();
-            }
             return done('invalid file');
         },
         addedfile: function(file) {
-            // edited for fuzzy case match
-            if (!_.includes(that.acceptedFilesLowercase, file.name.toLowercase())) {
+            if (!_.includes(that.acceptedFiles, file.name)) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
-            var matchIdx;
-            var fileNameLowercase = file.name.toLowercase();
-            for (matchIdx = 0; matchIdx < this.acceptedFilesLowercase.length; matchIdx++) {
-                if (this.acceptedFilesLowercase[matchIdx] === fileNameLowercase) {
-                    break;
-                }
-            }
-            var acceptedName = this.acceptedFiles[matchIdx];
             var reader = new FileReader();
             reader.onload = function(e) {
                 var dataUrl = e.target.result;
@@ -70,10 +52,10 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
 
                 // Store the file as base-64 encoded data
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-                that.saveSubmittedFile(acceptedName, base64FileData);
+                that.saveSubmittedFile(file.name, base64FileData);
                 that.renderFileList();
                 // Show the preview for the newly-uploaded file
-                that.element.find('li[data-file="' + acceptedName + '"] .file-preview').addClass('in');
+                that.element.find('li[data-file="' + file.name + '"] .file-preview').addClass('in');
             };
 
             reader.readAsDataURL(file);
@@ -97,10 +79,8 @@ window.PLFileUpload.prototype.syncFilesToHiddenInput = function() {
 * @param  {String} contents The file's base64-encoded contents
 */
 window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
-    // edited for fuzzy match
-    var nameLowercase = name.toLowercase();
     var idx = _.findIndex(this.files, function(file) {
-        if (file.name.toLowercase() === nameLowercase) {
+        if (file.name === name) {
             return true;
         }
     });

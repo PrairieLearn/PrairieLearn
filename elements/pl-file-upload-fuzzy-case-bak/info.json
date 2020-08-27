@@ -1,0 +1,15 @@
+{
+    "controller": "pl-file-upload.py",
+    "dependencies": {
+        "coreScripts": [
+            "lodash.min.js",
+            "dropzone.js"
+        ],
+        "elementScripts": [
+            "pl-file-upload.js"
+        ],
+        "elementStyles": [
+            "pl-file-upload.css"
+        ]
+    }
+}
