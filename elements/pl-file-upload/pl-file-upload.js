@@ -11,10 +11,10 @@ window.PLFileUpload = function(uuid, options) {
     this.uuid = uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
-    this.acceptedFilesLowercase = [];
+    this.acceptedFilesLowerCase = [];
     var i;
     for (i = 0; i < this.acceptedFiles.length; i++) {
-        this.acceptedFilesLowercase.push(this.acceptedFiles[i].toLowercase);
+        this.acceptedFilesLowerCase.push(this.acceptedFiles[i].toLowerCase());
     }
 
     var elementId = '#file-upload-' + uuid;
@@ -43,25 +43,25 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 return done();
             }
             // fuzzy case:
-            if (_.includes(that.acceptedFilesLowercase, file.name.toLowercase())) {
+            if (_.includes(that.acceptedFilesLowerCase, file.name.toLowerCase())) {
                 return done();
             }
             return done('invalid file');
         },
         addedfile: function(file) {
             // edited for fuzzy case match
-            if (!_.includes(that.acceptedFilesLowercase, file.name.toLowercase())) {
+            if (!_.includes(that.acceptedFilesLowerCase, file.name.toLowerCase())) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
             var matchIdx;
-            var fileNameLowercase = file.name.toLowercase();
-            for (matchIdx = 0; matchIdx < this.acceptedFilesLowercase.length; matchIdx++) {
-                if (this.acceptedFilesLowercase[matchIdx] === fileNameLowercase) {
+            var fileNameLowerCase = file.name.toLowerCase();
+            for (matchIdx = 0; matchIdx < that.acceptedFilesLowerCase.length; matchIdx++) {
+                if (that.acceptedFilesLowerCase[matchIdx] === fileNameLowerCase) {
                     break;
                 }
             }
-            var acceptedName = this.acceptedFiles[matchIdx];
+            var acceptedName = that.acceptedFiles[matchIdx];
             var reader = new FileReader();
             reader.onload = function(e) {
                 var dataUrl = e.target.result;
@@ -98,9 +98,9 @@ window.PLFileUpload.prototype.syncFilesToHiddenInput = function() {
 */
 window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
     // edited for fuzzy match
-    var nameLowercase = name.toLowercase();
+    var nameLowerCase = name.toLowerCase();
     var idx = _.findIndex(this.files, function(file) {
-        if (file.name.toLowercase() === nameLowercase) {
+        if (file.name.toLowerCase() === nameLowerCase) {
             return true;
         }
     });
