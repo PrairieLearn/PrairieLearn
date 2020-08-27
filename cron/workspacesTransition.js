@@ -45,8 +45,7 @@ async function checkDBConsistency() {
         }
     }
 
-    const db_hosts_nonterminated_or_nonterminating = new Set((await sqldb.queryAsync(sql.select_nonterminated_or_nonterminating_workspace_hosts, [])).rows.map(instance => instance.instance_id));
-    const db_hosts_running_or_terminating = new Set((await sqldb.queryAsync(sql.select_running_or_terminating_workspace_hosts, [])).rows.map(instance => instance.instance_id));
+    const db_hosts_nonterminated = new Set((await sqldb.queryAsync(sql.select_nonterminated_workspace_hosts, [])).rows.map(instance => instance.instance_id));
 
     const set_difference = (a, b) => {
         const diff = new Set();
@@ -59,7 +58,7 @@ async function checkDBConsistency() {
     };
 
     /* Kill off any host that is running but not in the db */
-    const not_in_db = set_difference(running_host_set, db_hosts_running_or_terminating);
+    const not_in_db = set_difference(running_host_set, db_hosts_nonterminated);
     if (not_in_db.size > 0) {
         logger.debug('Terminating hosts that are not in the database', Array.from(not_in_db));
         await sqldb.queryAsync(sql.add_terminating_hosts, { instances: Array.from(not_in_db) });
@@ -67,7 +66,7 @@ async function checkDBConsistency() {
     }
 
     /* Any host that is in the db but not running we will mark as "terminated" */
-    const not_in_ec2 = set_difference(db_hosts_nonterminated_or_nonterminating, running_host_set);
+    const not_in_ec2 = set_difference(db_hosts_nonterminated, running_host_set);
     if (not_in_ec2.size > 0) {
         logger.debug('Terminating hosts that are not running in EC2', Array.from(not_in_ec2));
         await sqldb.queryAsync(sql.set_terminated_hosts_if_not_launching, { instances: Array.from(not_in_ec2) });
