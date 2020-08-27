@@ -598,6 +598,7 @@ function _getSettingsWrapper(workspace, callback) {
 }
 
 function _workspaceFileChangeOwner(filepath, callback) {
+    debug(`Enforcing file ownership for ${filepath}`);
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
         config.workspaceJobsDirectoryOwnerGid == 0) {
         /* No-op if there's nothing to do */
@@ -764,12 +765,25 @@ async function _getInitialZipAsync(workspace) {
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
 
+    try {
+        await fsPromises.lstat(localPath);
+    } catch (err) {
+        debug(`Making directory ${localPath}`);
+        await fsPromises.mkdir(localPath, { recursive: true });
+        await _workspaceFileChangeOwnerAsync(localPath);
+    }
+
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    await fsPromises.mkdir(localPath, { recursive: true });
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
     for await (const entry of zip) {
         const entryPath = path.join(localPath, entry.path);
-        entry.pipe(fs.createWriteStream(entryPath));
+        if (entry.type == 'Directory') {
+            debug(`Making directory ${entryPath}`);
+            await fsPromises.mkdir(entryPath, { recursive: true });
+        } else {
+            debug(`Extracting file ${entryPath}`);
+            entry.pipe(fs.createWriteStream(entryPath));
+        }
         await _workspaceFileChangeOwnerAsync(entryPath);
     }
 
