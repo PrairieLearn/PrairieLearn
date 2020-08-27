@@ -1,24 +1,7 @@
--- BLOCK select_nonterminated_or_nonterminating_workspace_hosts
-SELECT
-    wh.id,
-    wh.instance_id,
-    wh.load_count,
-    wh.hostname
-FROM
-    workspace_hosts AS wh
-WHERE
-    wh.state NOT IN ('terminated', 'terminating');
-
--- BLOCK select_running_or_terminating_workspace_hosts
-SELECT
-    wh.id,
-    wh.instance_id,
-    wh.load_count,
-    wh.hostname
-FROM
-    workspace_hosts AS wh
-WHERE
-    wh.state != 'terminated';
+-- BLOCK select_nonterminated_workspace_hosts
+SELECT instance_id
+FROM workspace_hosts
+WHERE state != 'terminated';
 
 -- BLOCK select_healthy_hosts
 SELECT

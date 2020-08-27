@@ -258,6 +258,10 @@
             <div class="dropdown-divider"></div>
           <% } %>
 
+          <% if (typeof authz_data === 'undefined' ||
+                (typeof authz_data !== 'undefined' && authz_data.mode != 'Exam')) {%>
+            <a class="dropdown-item" href="<%= plainUrlPrefix %>/request_course"> Course Requests </a>
+          <% } %>
           <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
           <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
             News

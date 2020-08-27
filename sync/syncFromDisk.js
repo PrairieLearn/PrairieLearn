@@ -17,6 +17,8 @@ const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
 const { chalk, chalkDim } = require('../lib/chalk');
 
+const { promisify } = require('util');
+
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 /**
@@ -97,6 +99,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
         }
     });
 };
+module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
 
 /**
  * @param {string} courseDir
