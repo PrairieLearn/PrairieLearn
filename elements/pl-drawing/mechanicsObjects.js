@@ -769,6 +769,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     },
     gen_text: function(str, options) {
         let ref = this;
+        let num_tries = 0;
         var callback = function() {
             let svg = MathJax.tex2svg(str, {'display': false}).children[0];
 
@@ -792,11 +793,15 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
                     /* Replace the reference with the actual value */
                     use.parentNode.replaceChild(replacement, use);
                 });
-            } catch (_err) {
+            } catch (err) {
                 /* If we're erroring, it's because the MathJax glyph cache hasn't loaded yet.
                    We can retry again in a little bit to check if it's ready. */
-                setTimeout(callback, 100);
-                return;
+                if (++ num_tries < 10) {
+                    setTimeout(callback, 100);
+                    return;
+                } else {
+                    throw err;
+                }
             }
 
             let svgSource = svg.outerHTML;
