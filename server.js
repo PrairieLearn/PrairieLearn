@@ -226,8 +226,8 @@ app.use('/pl/workspace/:workspace_id/container', [
 ]);
 
 // Limit to 1MB of JSON
-app.use(bodyParser.json({limit: 1024 * 1024}));
-app.use(bodyParser.urlencoded({extended: false, limit: 1536 * 1024}));
+app.use(bodyParser.json({limit: 5 * 1024 * 1024}));
+app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
