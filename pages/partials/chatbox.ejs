@@ -1,357 +1,453 @@
 <div id="float-chatbox">
-    <head>
-    <link rel="stylesheet" href="/stylesheets/chatbox.css">
-    </head>
-    <body onresize="checkOutOfBound()">
-      <button id="expand-button" onclick="openChat()">
-        Chat
-      </button>
-      <div class="chat-popup" id="chat-window">
-        <form action="" class="form-container">
-          <div id="chatbox-header" class="card-header text-white">
-            <div class="float-container">
-              <div style="font-size: 150%;">PrairieChat</div>
-            </div>
-            <div class="float-container">
-              <div id="user-count">Holder</div>
-              <ul id="users" class="dropdown-menu"></ul>
-            </div>
-          </div>
-          <b style="text-align: left;">Chat History:</b>
-          <ul id="messages" class="overflow-container"></ul>
-          <b>Send New Message:</b>
-          <textarea maxlength="500" placeholder="Type message.." id="msg" required></textarea>
-  
-          <button type="submit" class="btn" id="submit-button">Send</button>
-          <button
-            type="button"
-            class="btn cancel"
-            id="close-button"
-            onclick="closeChat()"
-          >
-            Close
-          </button>
-        </form>
-        <ul id="reaction-selector" class="dropdown-menu"></ul>
-      </div>
-      <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
-      <script>
-        var user_count = 0;
-        var message_read = 0;
-        var local_message_count = 0;
-        var expand_button = document.getElementById("expand-button");
-        var submit_button = document.getElementById("submit-button");
-        var reaction_selector = document.getElementById("reaction-selector");
-        var offline = true;
-        var reactions_options = ["👌", "👍", "👎", "😟", "😂", "🔥", "🎉"];
-        
-        for (var i = 0; i < reactions_options.length; i++) {
-          $("#reaction-selector").append($("<li class='reaction'>").text(reactions_options[i]));
-        }
-  
-        // if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
-        if (document.body.clientWidth < 640) {
-          expand_button.style.left = "50%";
-          expand_button.style.transform = "translate(-50%, 0)";
-        }
-        var socket;
-        $(function () {
-          var channel_id = "<%= channel_id%>";
-          var name = document.getElementById("navbarDropdown").text;
-          var last_message_sender = "";
-          socket = io("/chat", {query: "name="+ name + "&id=" + channel_id.toString()});
-  
-          socket.on("connect", function () {
-            offline = false;
-            // socket.emit("id", {name: name, id: channel_id});
-            expand_button.style.backgroundColor = "#007bff";
-            if (message_read == $("#messages li").length) {
-              expand_button.style.backgroundColor = "#007bff";
-              expand_button.innerText = "Chat (" + user_count + " Online)";
-            }
-            submit_button.style.backgroundColor = "#4caf50";
-            submit_button.innerText = "Send";
-          });
-  
-          $(".form-container").submit(function (e) {
-            socket.emit("send", $("#msg").val());
-            $("#msg").val("");
-            return false;
-          });
-  
-          socket.on("boardcast", function (msg) {
-            if (last_message_sender == "" || last_message_sender != msg.username) {
-              var full_msg = msg.username + ": " + msg.message;
-              last_message_sender = msg.username;
-            } else {
-              var full_msg = msg.message;
-              local_message_count += 1;
-            }
-            
-            var div_id = msg.id.toString();
-            $("#messages").append($("<div id=" + div_id + ">"));
-            if (local_message_count % 2 == 0) {
-              $("#" + div_id).append($("<li class=\"message\" style='background: #eee;' onclick='reactionSelector()'>").text(full_msg));
-              $("#" + div_id).append($("<ul class=\"reaction-display\" style='background: #eee;'>").text(""));
-            } else {
-              $("#" + div_id).append($("<li class=\"message\" onclick='reactionSelector()'>").text(full_msg));
-              $("#" + div_id).append($("<ul class=\"reaction-display\">").text(""));
-            }
-            local_message_count += 1;
-            document.getElementById(div_id).scrollIntoView({behavior: "smooth"});
-            var mode = expand_button.style.display;
-            if (mode == "" || mode == "block") {
-              expand_button.innerText = "You have "+ ($("#messages li").length - message_read) +" unread messages";
-              expand_button.style.backgroundColor = "#E84A27";
-            }
-          });
-  
-          var message_reactions = {};
-          socket.on("boardcast reaction", function (msg) {
-            var id = msg.id;
-            var reaction = msg.reaction;
-            var target_message_div = document.getElementById(id.toString());
-            var reaction_display;
-            if (target_message_div != null) {
-              reaction_display = target_message_div.getElementsByClassName("reaction-display")[0];
-            } else {
-              return;
-            }
-            if (!(id in message_reactions)) {
-              message_reactions[id] = {};
-              for (var i = 0; i < reactions_options.length; i++) {
-                message_reactions[id][reactions_options[i]] = 0;
-              }
-            }
-            message_reactions[id][reaction] += 1;
-            var reaction_display_li = reaction_display.getElementsByClassName(reaction);
-            if (reaction_display_li.length == 0) {
-              var block = document.createElement("li");
-              block.appendChild(document.createElement("span"));
-              block.childNodes[0].innerText = reaction + " " + message_reactions[id][reaction];
-              block.onclick = function() {reactionShortcut()}
-              block.style.cursor = "pointer";
-              block.className = reaction;
-              reaction_display.appendChild(block);
-            } else {
-              reaction_display_li[0].childNodes[0].innerText = reaction + " " + message_reactions[id][reaction];
-            }
-            if (!(id in message_reactions_voted)) {
-              message_reactions_voted[id] = {};
-              for (var i = 0; i < reactions_options.length; i++) {
-                message_reactions_voted[id][reactions_options[i]] = false;
-              }
-            }
-            if (message_reactions_voted[id][reaction] == true) {
-              reaction_display_li[0].childNodes[0].style.backgroundColor = "#007bff";
-            } else {
-              reaction_display_li[0].childNodes[0].style.backgroundColor = "#6c757d";
-            }
-            reaction_display.style.display = "block";
-          });
-  
-          socket.on("boardcast reaction recall", function (msg) {
-            var id = msg.id;
-            var reaction = msg.reaction;
-            var target_message_div = document.getElementById(id.toString());
-            if (target_message_div != null) {
-              reaction_display = target_message_div.getElementsByClassName("reaction-display")[0];
-            } else {
-              return;
-            }
-            message_reactions[id][reaction] -= 1;
-            var reaction_display_li = reaction_display.getElementsByClassName(reaction);
-            if (message_reactions[id][reaction] <= 0) {
-              reaction_display_li[0].remove();
-            } else {
-              reaction_display_li[0].childNodes[0].innerText = reaction + " " + message_reactions[id][reaction];
-            }
-          });
-  
-          socket.on("update", function (update) {
-            user_count = update.count;
-            if (message_read == $("#messages li").length) {
-              expand_button.style.backgroundColor = "#007bff";
-              expand_button.innerText = "Chat (" + user_count + " Online)";
-            }
-            document.getElementById("user-count").innerText =
-              "Online User: " + user_count;
-            var array = update.name_list.split(",");
-            document.getElementById("users").innerHTML = "";
-            for (i = 0; i < array.length; i++) {
-              $("#users").append($("<li>").text(array[i]));
-            }
-          });
-          socket.on("disconnect", () => {
-            offline = true;
-            document.getElementById("user-count").innerText = "Offline";
-            document.getElementById("users").innerHTML = "";
-            expand_button.style.backgroundColor = "grey";
-            expand_button.innerText = "Chat Offline";
-            submit_button.style.backgroundColor = "grey";
-            submit_button.innerText = "Message will be sent once the network is back on"
-          });
-        });
-  
-        $(function () {
-          $("#msg").keypress(function (e) {
-            if (e.which == 13 && !e.shiftKey) {
-              $("#submit-button").click();
-              e.preventDefault();
-            }
-          });
-        });
-        function openChat() {
-          document.getElementById("float-chatbox").style.visibility = "visible";
-          document.getElementById("chat-window").style.visibility = "visible";
-          expand_button.style.visibility = "hidden";
-        }
-  
-        function closeChat() {
-          document.getElementById("float-chatbox").style.visibility = "hidden";
-          document.getElementById("chat-window").style.visibility = "hidden";
-          expand_button.style.visibility = "visible";
-          message_read = $("#messages li").length;
-          if (!offline) {
-            expand_button.style.backgroundColor = "#007bff";
-            expand_button.innerText = "Chat (" + user_count + " Online)";
-          }
-        }
-  
-        //Make the DIV element draggagle:
-        var elmnt = document.getElementById("float-chatbox");
-  
-        dragElement();
-        function dragElement() {
-          var pos1 = 0,
-            pos2 = 0,
-            pos3 = 0,
-            pos4 = 0;
-          if (document.getElementById("chatbox-header")) {
-            document.getElementById("chatbox-header").onmousedown = dragMouseDown;
-          }
-          // if (expand_button) {
-          //   expand_button.onmousedown = dragMouseDown;
-          // }
-  
-          function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            // get the mouse cursor position at startup:
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            // call a function whenever the cursor moves:
-            document.onmousemove = elementDrag;
-          }
-  
-  
-          function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            // calculate the new cursor position:
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            // set the element's new position:
-            var new_top = elmnt.offsetTop - pos2;
-            var new_left = elmnt.offsetLeft - pos1;
-  
-            elmnt.style.top = new_top + "px";
-            elmnt.style.left = new_left + "px";
-          }
-  
-          function closeDragElement() {
-            /* stop moving when mouse button is released:*/
-            document.onmouseup = null;
-            document.onmousemove = null;
-            checkOutOfBound();
-          }
-        }
-  
-        function checkOutOfBound() {
-            var top = parseInt(elmnt.style.top, 10);
-            var left = parseInt(elmnt.style.left, 10);
-            var w = document.body.clientWidth;
-            var h = window.innerHeight;
-  
-            if (document.body.clientWidth < 640) {
-              expand_button.style.left = "50%";
-              expand_button.style.transform = "translate(-50%, 0)";
-            } else {
-              expand_button.style.left = "unset";
-              expand_button.style.transform = "unset";
-            }
-            if (top < 0) {
-              elmnt.style.top = "0px";
-              elmnt.style.bottom = "unset"
-            }
-            else if (top + 590 > h) {
-              elmnt.style.top = "unset";
-              elmnt.style.bottom = "0px"
-            }
-  
-            if (left < 0) {
-              elmnt.style.left = "0px";
-              elmnt.style.right = "unset"
-            }
-            else if (left + 350 > w) {
-              elmnt.style.left = "unset";
-              elmnt.style.right = "0px"
-            }
-          }
-     
-        var message_reactions_voted = {};
-        function reactionSelector() {
-          var message_div = event.srcElement.parentNode
-          var id = parseInt(message_div.id, 10);
-          message_div.appendChild(reaction_selector);
-          reaction_selector.style.display = "block";
-          reaction_selector.scrollIntoView({behavior: "smooth", block: "nearest"});
-          message_div.onmouseleave = function() {
-            reaction_selector.style.display = "none";
-          }
-          $('.reaction').unbind("click");
-          $('.reaction').click(function () {
-            message_div.onmouseleave = "unset";
-            reaction_selector.style.display = "none";
-            var reaction = event.srcElement.innerText;
-            if (!(id in message_reactions_voted)) {
-              message_reactions_voted[id] = {};
-              for (var i = 0; i < reactions_options.length; i++) {
-                message_reactions_voted[id][reactions_options[i]] = false;
-              }
-              message_reactions_voted[id][reaction] = true;
-            } else {
-              if (message_reactions_voted[id][reaction] == true) {
-                return;
-              } else {
-                message_reactions_voted[id][reaction] = true;
-              }
-            }
-            socket.emit("send reaction", {id: id, reaction: reaction});
-          })
-  
-        }
-        function reactionShortcut() {
-          if (offline) {
-            return;
-          }
-          var elemt = event.srcElement;
-          var reaction = elemt.innerText.slice(0, 2);
-          var id = elemt.parentNode.parentNode.parentNode.id;
-          if (message_reactions_voted[id][reaction] == true) {
-            elemt.style.backgroundColor = "#6c757d";
-            message_reactions_voted[id][reaction] = false;
-            socket.emit("send reaction recall", {id: id, reaction: reaction});
-          } else {
-            elemt.style.backgroundColor = "#007bff";
-            message_reactions_voted[id][reaction] = true;
-            socket.emit("send reaction", {id: id, reaction: reaction});
-          }
-        }
-      </script>
-    </body>
-  </div>
-  
+  <head>
+	<link rel="stylesheet" href="/stylesheets/chatbox.css" />
+  </head>
+  <body onresize="checkOutOfBound()">
+	<button id="expand-button" onclick="openChat()">
+	  Chat
+	</button>
+	<div class="chat-popup" id="chat-window">
+	  <form action="" class="form-container">
+		<div id="chatbox-header" class="card-header text-white">
+		  <div class="float-container">
+			<div style="font-size: 150%;">PrairieChat</div>
+		  </div>
+		  <div class="float-container">
+			<div id="user-count">Holder</div>
+			<ul id="users" class="dropdown-menu"></ul>
+		  </div>
+		</div>
+		<b style="text-align: left;">Chat History:</b>
+		<ul id="messages" class="overflow-container"></ul>
+		<b>Send New Message:</b>
+		<textarea
+		  maxlength="500"
+		  placeholder="Type message.."
+		  id="msg"
+		  required
+		></textarea>
+
+		<button type="submit" class="btn" id="submit-button">Send</button>
+		<button
+		  type="button"
+		  class="btn cancel"
+		  id="close-button"
+		  onclick="closeChat()"
+		>
+		  Close
+		</button>
+	  </form>
+	  <ul id="reaction-selector" class="dropdown-menu"></ul>
+	</div>
+	<script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+	<script>
+			var channel_id = null;
+	  var user_count = 0;
+			var message_read = 0;
+			var chat_open = false;
+	  var local_message_count = 0;
+	  var expand_button = document.getElementById("expand-button");
+	  var submit_button = document.getElementById("submit-button");
+	  var reaction_selector = document.getElementById("reaction-selector");
+	  var offline = true;
+	  var reactions_options = ["👌", "👍", "👎", "😟", "😂", "🔥", "🎉"];
+	  var message_reactions = {};
+			var message_reactions_voted = {};
+			var cache = null;
+
+	  for (var i = 0; i < reactions_options.length; i++) {
+		$("#reaction-selector").append(
+		  $("<li class='reaction'>").text(reactions_options[i])
+		);
+	  }
+
+	  // if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
+	  if (document.body.clientWidth < 640) {
+		expand_button.style.left = "50%";
+		expand_button.style.transform = "translate(-50%, 0)";
+	  }
+	  var socket;
+	  $(function () {
+		channel_id = "<%= channel_id%>";
+		var name = document.getElementById("navbarDropdown").text;
+		var last_message_sender = "";
+		cache = localStorage.getItem(channel_id);
+		if (cache) {
+					cache = $.parseJSON(cache);
+		  message_reactions = cache.reactions;
+					message_reactions_voted = cache.reactions_voted;
+					message_read = cache.message_read;
+		  for (let id in cache.msgs) {
+						var msg = cache.msgs[id];
+						displayMessage(id, msg);
+						if (message_reactions[id]) {
+							displayReactionSet(id);
+						}
+		  }
+		} else {
+					cache = {};
+					cache.msgs = {};
+					cache.reactions = message_reactions = {};
+					cache.reactions_voted = message_reactions_voted = {};
+					cache.message_read = 0;
+		}
+
+		socket = io("/chat", {
+		  query: "name=" + name + "&id=" + channel_id.toString(),
+		});
+
+		socket.on("connect", function () {
+					offline = false;
+					expand_button.style.backgroundColor = "#007bff";
+		  if (message_read == $("#messages li").length) {
+			expand_button.style.backgroundColor = "#007bff";
+			expand_button.innerText = "Chat (" + user_count + " Online)";
+		  } else {
+						expand_button.innerText = "You have " + ($("#messages li").length - message_read) + " unread messages";
+			expand_button.style.backgroundColor = "#E84A27";
+					}
+		  submit_button.style.backgroundColor = "#4caf50";
+		  submit_button.innerText = "Send";
+		});
+
+		$(".form-container").submit(function (e) {
+		  socket.emit("send", $("#msg").val());
+		  $("#msg").val("");
+		  return false;
+		});
+
+		socket.on("boardcast", function (msg) {
+		  if (last_message_sender == "" || last_message_sender != msg.username) {
+			var full_msg = msg.username + ": " + msg.message;
+			last_message_sender = msg.username;
+		  } else {
+			var full_msg = msg.message;
+			local_message_count += 1;
+		  }
+
+		  var div_id = msg.id.toString();
+		  displayMessage(div_id, full_msg);
+		  if (!chat_open) {
+			expand_button.innerText =
+			  "You have " +
+			  ($("#messages li").length - message_read) +
+			  " unread messages";
+			expand_button.style.backgroundColor = "#E84A27";
+					} else {
+						cache.message_read = message_read = $("#messages li").length;
+						localStorage.setItem(channel_id, JSON.stringify(cache));
+					}
+
+		});
+
+		socket.on("boardcast reaction", function (msg) {
+		  var id = msg.id;
+		  var reaction = msg.reaction;
+		  displayReactionAdd(id, reaction);
+		});
+
+		socket.on("boardcast reaction recall", function (msg) {
+		  var id = msg.id;
+		  var reaction = msg.reaction;
+		  displayReactionDel(id, reaction);
+		});
+
+		socket.on("update", function (update) {
+		  user_count = update.count;
+		  if (message_read == $("#messages li").length) {
+			expand_button.style.backgroundColor = "#007bff";
+			expand_button.innerText = "Chat (" + user_count + " Online)";
+		  }
+		  document.getElementById("user-count").innerText = "Online User: " + user_count;
+		  var array = update.name_list.split(",");
+		  document.getElementById("users").innerHTML = "";
+		  for (i = 0; i < array.length; i++) {
+			$("#users").append($("<li>").text(array[i]));
+		  }
+		});
+		socket.on("disconnect", () => {
+		  offline = true;
+		  document.getElementById("user-count").innerText = "Offline";
+		  document.getElementById("users").innerHTML = "";
+		  expand_button.style.backgroundColor = "grey";
+		  expand_button.innerText = "Chat Offline";
+		  submit_button.style.backgroundColor = "grey";
+		  submit_button.innerText = "Message will be sent once the network is back on";
+		});
+
+		function displayMessage(msg_id, msg) {
+					$("#messages").append($("<div id=" + msg_id + ">"));
+					cache.msgs[msg_id] = msg;
+					localStorage.setItem(channel_id, JSON.stringify(cache));
+		  if (local_message_count % 2 == 0) {
+			$("#" + msg_id).append($("<li class=\"message\" style='background: #eee;' onclick='reactionSelector()'>").text(msg));
+			$("#" + msg_id).append($("<ul class=\"reaction-display\" style='background: #eee;'>").text(""));
+		  } else {
+			$("#" + msg_id).append($("<li class=\"message\" onclick='reactionSelector()'>").text(msg));
+			$("#" + msg_id).append($('<ul class="reaction-display">').text(""));
+		  }
+		  local_message_count += 1;
+		  document.getElementById(msg_id).scrollIntoView({ behavior: "smooth" });
+		}
+
+		function displayReactionSet(id) {
+		  var target_message_div = document.getElementById(id.toString());
+		  if (target_message_div != null) {
+			var reaction_display = target_message_div.getElementsByClassName("reaction-display")[0];
+		  } else {
+			return;
+		  }
+		  for (var i = 0; i < reactions_options.length; i++) {
+			const reaction = reactions_options[i];
+			var reaction_display_li = reaction_display.getElementsByClassName(reaction);
+			if (message_reactions[id][reaction] !== 0) {
+			  var block = document.createElement("li");
+			  block.appendChild(document.createElement("span"));
+			  block.childNodes[0].innerText = reaction + " " + message_reactions[id][reaction];
+			  block.onclick = function () {
+								reactionShortcut();
+			  };
+			  block.style.cursor = "pointer";
+			  block.className = reaction;
+							reaction_display.appendChild(block);
+
+							if (message_reactions_voted[id][reaction] == true) {
+			  reaction_display_li[0].childNodes[0].style.backgroundColor = "#007bff";
+							} else {
+								reaction_display_li[0].childNodes[0].style.backgroundColor = "#6c757d";
+							}
+			}
+						reaction_display.style.display = "block";
+		  }
+		}
+
+		function displayReactionAdd(id, reaction) {
+		  var target_message_div = document.getElementById(id.toString());
+		  if (target_message_div != null) {
+			var reaction_display = target_message_div.getElementsByClassName("reaction-display")[0];
+		  } else {
+			return;
+		  }
+		  if (!(id in message_reactions)) {
+			message_reactions[id] = {};
+			for (var i = 0; i < reactions_options.length; i++) {
+			  message_reactions[id][reactions_options[i]] = 0;
+			}
+		  }
+		  message_reactions[id][reaction] += 1;
+		  var reaction_display_li = reaction_display.getElementsByClassName(
+			reaction
+		  );
+		  if (reaction_display_li.length == 0) {
+			var block = document.createElement("li");
+			block.appendChild(document.createElement("span"));
+			block.childNodes[0].innerText =
+			  reaction + " " + message_reactions[id][reaction];
+			block.onclick = function () {
+			  reactionShortcut();
+			};
+			block.style.cursor = "pointer";
+			block.className = reaction;
+			reaction_display.appendChild(block);
+		  } else {
+			reaction_display_li[0].childNodes[0].innerText =
+			  reaction + " " + message_reactions[id][reaction];
+		  }
+		  if (!(id in message_reactions_voted)) {
+			message_reactions_voted[id] = {};
+			for (var i = 0; i < reactions_options.length; i++) {
+			  message_reactions_voted[id][reactions_options[i]] = false;
+			}
+		  }
+		  if (message_reactions_voted[id][reaction] == true) {
+			reaction_display_li[0].childNodes[0].style.backgroundColor = "#007bff";
+		  } else {
+			reaction_display_li[0].childNodes[0].style.backgroundColor = "#6c757d";
+		  }
+					reaction_display.style.display = "block";
+					localStorage.setItem(channel_id, JSON.stringify(cache));
+		}
+
+		function displayReactionDel(id, reaction) {
+		  var target_message_div = document.getElementById(id.toString());
+		  if (target_message_div != null) {
+			reaction_display = target_message_div.getElementsByClassName(
+			  "reaction-display"
+			)[0];
+		  } else {
+			return;
+		  }
+		  message_reactions[id][reaction] -= 1;
+		  var reaction_display_li = reaction_display.getElementsByClassName(
+			reaction
+		  );
+		  if (message_reactions[id][reaction] <= 0) {
+			reaction_display_li[0].remove();
+		  } else {
+			reaction_display_li[0].childNodes[0].innerText =
+			  reaction + " " + message_reactions[id][reaction];
+					}
+					localStorage.setItem(channel_id, JSON.stringify(cache));
+		}
+	  });
+
+	  $(function () {
+		$("#msg").keypress(function (e) {
+		  if (e.which == 13 && !e.shiftKey) {
+			$("#submit-button").click();
+			e.preventDefault();
+		  }
+		});
+	  });
+	  function openChat() {
+		document.getElementById("float-chatbox").style.visibility = "visible";
+		document.getElementById("chat-window").style.visibility = "visible";
+				expand_button.style.visibility = "hidden";
+				chat_open = true;
+
+				cache.message_read = message_read = $("#messages li").length;
+				localStorage.setItem(channel_id, JSON.stringify(cache));
+	  }
+
+	  function closeChat() {
+		document.getElementById("float-chatbox").style.visibility = "hidden";
+		document.getElementById("chat-window").style.visibility = "hidden";
+		expand_button.style.visibility = "visible";
+		if (!offline) {
+		  expand_button.style.backgroundColor = "#007bff";
+		  expand_button.innerText = "Chat (" + user_count + " Online)";
+				}
+				chat_open = false;
+	  }
+
+	  //Make the DIV element draggagle:
+	  var elmnt = document.getElementById("float-chatbox");
+
+	  dragElement();
+	  function dragElement() {
+		var pos1 = 0,
+		  pos2 = 0,
+		  pos3 = 0,
+		  pos4 = 0;
+		if (document.getElementById("chatbox-header")) {
+		  document.getElementById("chatbox-header").onmousedown = dragMouseDown;
+		}
+
+		function dragMouseDown(e) {
+		  e = e || window.event;
+		  e.preventDefault();
+		  // get the mouse cursor position at startup:
+		  pos3 = e.clientX;
+		  pos4 = e.clientY;
+		  document.onmouseup = closeDragElement;
+		  // call a function whenever the cursor moves:
+		  document.onmousemove = elementDrag;
+		}
+
+		function elementDrag(e) {
+		  e = e || window.event;
+		  e.preventDefault();
+		  // calculate the new cursor position:
+		  pos1 = pos3 - e.clientX;
+		  pos2 = pos4 - e.clientY;
+		  pos3 = e.clientX;
+		  pos4 = e.clientY;
+		  // set the element's new position:
+		  var new_top = elmnt.offsetTop - pos2;
+		  var new_left = elmnt.offsetLeft - pos1;
+
+		  elmnt.style.top = new_top + "px";
+		  elmnt.style.left = new_left + "px";
+		}
+
+		function closeDragElement() {
+		  /* stop moving when mouse button is released:*/
+		  document.onmouseup = null;
+		  document.onmousemove = null;
+		  checkOutOfBound();
+		}
+	  }
+
+	  function checkOutOfBound() {
+		var top = parseInt(elmnt.style.top, 10);
+		var left = parseInt(elmnt.style.left, 10);
+		var w = document.body.clientWidth;
+		var h = window.innerHeight;
+
+		if (document.body.clientWidth < 640) {
+		  expand_button.style.left = "50%";
+		  expand_button.style.transform = "translate(-50%, 0)";
+		} else {
+		  expand_button.style.left = "unset";
+		  expand_button.style.transform = "unset";
+		}
+		if (top < 0) {
+		  elmnt.style.top = "0px";
+		  elmnt.style.bottom = "unset";
+		} else if (top + 590 > h) {
+		  elmnt.style.top = "unset";
+		  elmnt.style.bottom = "0px";
+		}
+
+		if (left < 0) {
+		  elmnt.style.left = "0px";
+		  elmnt.style.right = "unset";
+		} else if (left + 350 > w) {
+		  elmnt.style.left = "unset";
+		  elmnt.style.right = "0px";
+		}
+	  }
+
+	  function reactionSelector() {
+		var message_div = event.srcElement.parentNode;
+		var id = parseInt(message_div.id, 10);
+		message_div.appendChild(reaction_selector);
+		reaction_selector.style.display = "block";
+		reaction_selector.scrollIntoView({
+		  behavior: "smooth",
+		  block: "nearest",
+		});
+		message_div.onmouseleave = function () {
+		  reaction_selector.style.display = "none";
+		};
+		$(".reaction").unbind("click");
+		$(".reaction").click(function () {
+		  message_div.onmouseleave = "unset";
+		  reaction_selector.style.display = "none";
+		  var reaction = event.srcElement.innerText;
+		  if (!(id in message_reactions_voted)) {
+			message_reactions_voted[id] = {};
+			for (var i = 0; i < reactions_options.length; i++) {
+			  message_reactions_voted[id][reactions_options[i]] = false;
+			}
+			message_reactions_voted[id][reaction] = true;
+		  } else {
+			if (message_reactions_voted[id][reaction] == true) {
+			  return;
+			} else {
+			  message_reactions_voted[id][reaction] = true;
+			}
+		  }
+		  socket.emit("send reaction", { id: id, reaction: reaction });
+		});
+	  }
+	  function reactionShortcut() {
+		if (offline) {
+		  return;
+		}
+		var elemt = event.srcElement;
+		var reaction = elemt.innerText.slice(0, 2);
+		var id = elemt.parentNode.parentNode.parentNode.id;
+		if (message_reactions_voted[id][reaction] == true) {
+		  elemt.style.backgroundColor = "#6c757d";
+		  message_reactions_voted[id][reaction] = false;
+		  socket.emit("send reaction recall", { id: id, reaction: reaction });
+		} else {
+		  elemt.style.backgroundColor = "#007bff";
+		  message_reactions_voted[id][reaction] = true;
+		  socket.emit("send reaction", { id: id, reaction: reaction });
+		}
+	  }
+	</script>
+  </body>
+</div>
