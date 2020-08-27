@@ -12,6 +12,44 @@ Workspaces allow students to work in persistent remote containers via in-browser
 * [x] Edge Chromium (version >= 79) is supported
 * [ ] Edge Legacy (version < 79) is untested
 
+## Directory structure
+
+Workspace questions must include an additional `workspace/` subdirectory but otherwise follow the regular [PrairieLearn question directory structure](../question.md#directory-structure). The contents of the `workspace/` subdirectory will be copied into the home directory of the student's workspace container.
+
+```text
+questions
+|
++-- my_ungraded_workspace     # for an ungraded workspace question
+|   +-- info.json             # metadata for my_ungraded_workspace
+|   +-- question.html         # HTML template for my_ungraded_workspace
+|   +-- server.py             # secret server-side code for my_ungraded_workspace (optional)
+|   |
+|   +-- clientFilesQuestion   # files accessible to the client web browser (optional)
+|   |   `-- fig1.png
+|   |
+|   `-- workspace             # copied into the student's workspace container home dir
+|       +-- .bashrc
+|       +-- starter_code.h
+|       `-- starter_code.c
+|
+`-- my_autograded_workspace   # for an externally graded workspace question
+    +-- info.json             # metadata for my_autograded_workspace
+    +-- question.html         # HTML template for my_autograded_workspace
+    +-- server.py             # secret server-side code for my_ungraded_workspace (optional)
+    |
+    +-- clientFilesQuestion   # files accessible to the client web browser (optional)
+    |   `-- fig1.png
+    |
+    +-- tests                 # external grading files (see other doc)
+    |   +-- correct_answer.c
+    |   `-- test_run.py
+    |
+    `-- workspace             # copied into the student's workspace container home dir
+        +-- .bashrc
+        +-- starter_code.h
+        `-- starter_code.c
+```
+
 ## Setting up
 
 ### `info.json`
@@ -20,13 +58,13 @@ The question's `info.json` should contain a `workspaceOptions` dictionary:
 
 * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
 * `port`: port number used by the workspace app inside the Docker image
-* `home`: home directory inside the Docker image.  This should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory.
+* `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
 * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
 * `args` (optional, default none): command line arguments to pass to the Docker image
 * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
 * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
-#### Ungraded workspace
+#### `info.json` for ungraded workspace
 
 For an ungraded workspace, a full `info.json` file should look something like:
 
@@ -49,7 +87,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
 }
 ```
 
-#### Externally graded workspace
+#### `info.json` for externally graded workspace
 
 For an externally graded workspace, a full `info.json` file should look something like:
 
@@ -88,7 +126,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
 
 The `Open workspace` button should be included in all workspace questions by using the workspace element `<pl-workspace>`.
 
-#### Ungraded workspace
+#### `question.html` for ungraded workspace
 
 For an ungraded workspace, a minimal `question.html` should look something like:
 
@@ -99,7 +137,7 @@ For an ungraded workspace, a minimal `question.html` should look something like:
 </pl-question-panel>
 ```
 
-#### Externally graded workspace
+#### `question.html` for externally graded workspace
 
 For an externally graded workspace, the workspace submission panel `<pl-submission-panel>` should include the file preview element `<pl-file-preview>`. This will enable students not only to preview submitted files but also to receive file submission error messages.
 
