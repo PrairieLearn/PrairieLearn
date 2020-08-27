@@ -765,7 +765,13 @@ async function _getInitialZipAsync(workspace) {
     await _downloadFromS3Async(zipPath, s3Path);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
+    await fsPromises.mkdir(localPath, { recursive: true });
+    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+    for await (const entry of zip) {
+        const entryPath = path.join(localPath, entry.path);
+        entry.pipe(fs.createWriteStream(entryPath));
+        await _workspaceFileChangeOwnerAsync(entryPath);
+    }
 
     return workspace;
 }
