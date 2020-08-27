@@ -225,7 +225,7 @@ app.use('/pl/workspace/:workspace_id/container', [
     workspaceProxy,
 ]);
 
-// Limit to 1MB of JSON
+// Limit to 5MB of JSON
 app.use(bodyParser.json({limit: 5 * 1024 * 1024}));
 app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
 app.use(cookieParser());
