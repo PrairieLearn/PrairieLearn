@@ -732,9 +732,9 @@ async function _autoUpdateJobManager() {
     } catch (err) {
         markSelfUnhealthy((err2) => {
             if (err2) {
-                logger.err(`Error while handling error: ${err2}`);
+                logger.error(`Error while handling error: ${err2}`);
             }
-            logger.err(`Error uploading files to S3:\n${err}`);
+            logger.error(`Error uploading files to S3:\n${err}`);
         });
     }
 }
