@@ -12,8 +12,7 @@ window.PLFileUpload = function(uuid, options) {
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
     this.acceptedFilesLowerCase = [];
-    var i;
-    for (i = 0; i < this.acceptedFiles.length; i++) {
+    for (let i = 0; i < this.acceptedFiles.length; i++) {
         this.acceptedFilesLowerCase.push(this.acceptedFiles[i].toLowerCase());
     }
 
