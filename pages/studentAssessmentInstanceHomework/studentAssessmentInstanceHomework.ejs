@@ -51,7 +51,7 @@
         <% if (assessment.group_work) { %>
           <div class="card-body border-top bg-light">
             <div>
-              <p class="font-weight-bold mb-0">Group assessment</p>
+              <p class="font-weight-bold mb-2">Group assessment</p>
               <span>
                 <% if (groupinfo[0].student_authz_join) { %>
                   You are in 
@@ -91,7 +91,7 @@
 
         <% if (assessment_text_templated) { %>
           <div class="card-body border-top">
-            <p class="font-weight-bold mb-0">Instructor's note</p>
+            <p class="font-weight-bold mb-2">Instructor's note</p>
             <%- assessment_text_templated %>
           </div>
         <% } %>
