@@ -715,10 +715,12 @@ async function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
+                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
+                logger.info(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, callback);
             });
         }
