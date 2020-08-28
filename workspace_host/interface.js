@@ -730,7 +730,6 @@ async function _getRunningWorkspaceByPath(path) {
 
 async function _autoUpdateJobManager() {
     lastAutoUpdateTime = Date.now();
-    logger.info(`_autoUpdateJobManager(): Pushing changed files to S3: ${JSON.stringify(update_queue)}`);
     var jobs = [];
     for (const key in update_queue) {
         logger.info(`_autoUpdateJobManager: key=${key}`);
