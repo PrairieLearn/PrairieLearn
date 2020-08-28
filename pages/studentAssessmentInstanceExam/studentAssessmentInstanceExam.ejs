@@ -196,10 +196,10 @@
               </th>
             </tr>
             <% } %>
-            <tr class="<% if (instance_question.sequence_blocked) { %>bg-light pl-sequence-locked<% } %>">
+            <tr class="<% if (instance_question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
                 <a
-                  <% if (instance_question.sequence_blocked) { %>
+                  <% if (instance_question.sequence_locked) { %>
                     class="text-muted"
                   <% } else { %>
                     href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/"
@@ -207,7 +207,7 @@
                 >
                   Question <%= instance_question.question_number %>
                 </a>
-                <% if (instance_question.sequence_blocked) { %>
+                <% if (instance_question.sequence_locked) { %>
                   <a tabindex="0" class="btn btn-xs border text-secondary" role="button"
                      data-toggle="popover" data-trigger="focus" data-container="body"
                      data-html="true"
