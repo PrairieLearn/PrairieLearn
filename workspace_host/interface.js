@@ -688,6 +688,7 @@ async function _getRunningWorkspaceByPath(path) {
 }
 
 async function _autoUpdateJobManager() {
+    logger.info('_autoUpdateJobManager(): Pushing changed files to S3');
     var jobs = [];
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
