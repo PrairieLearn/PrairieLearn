@@ -558,7 +558,13 @@ function _checkServer(workspace, callback) {
             } else {
                 const endTime = (new Date()).getTime();
                 if (endTime - startTime > maxMilliseconds) {
-                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id}`));
+                    workspace.container.logs({
+                        stdout: true,
+                        stderr: true,
+                    }, (err, logs) => {
+                        if (ERR(err, callback)) return;
+                        callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`));
+                    });
                 } else {
                     setTimeout(checkWorkspace, checkMilliseconds);
                 }
