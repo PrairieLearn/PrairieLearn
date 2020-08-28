@@ -39,23 +39,21 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         url: '/none',
         autoProcessQueue: false,
         accept: function(file, done) {
-            if (_.includes(that.acceptedFiles, file.name)) {
-                return done();
-            }
             // fuzzy case:
-            if (_.includes(that.acceptedFilesLowerCase, file.name.toLowerCase())) {
+            var fileNameLowerCase = file.name.toLowerCase();
+            if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 return done();
             }
             return done('invalid file');
         },
         addedfile: function(file) {
-            // edited for fuzzy case match
-            if (!_.includes(that.acceptedFilesLowerCase, file.name.toLowerCase())) {
+            // fuzzy case match
+            var fileNameLowerCase = file.name.toLowerCase();
+            if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
             var matchIdx;
-            var fileNameLowerCase = file.name.toLowerCase();
             for (matchIdx = 0; matchIdx < that.acceptedFilesLowerCase.length; matchIdx++) {
                 if (that.acceptedFilesLowerCase[matchIdx] === fileNameLowerCase) {
                     break;
@@ -97,10 +95,8 @@ window.PLFileUpload.prototype.syncFilesToHiddenInput = function() {
 * @param  {String} contents The file's base64-encoded contents
 */
 window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
-    // edited for fuzzy match
-    var nameLowerCase = name.toLowerCase();
     var idx = _.findIndex(this.files, function(file) {
-        if (file.name.toLowerCase() === nameLowerCase) {
+        if (file.name === name) {
             return true;
         }
     });
