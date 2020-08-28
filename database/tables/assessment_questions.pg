@@ -10,6 +10,7 @@ columns
     average_submission_score_variance: double precision
     deleted_at: timestamp with time zone
     discrimination: double precision
+    effective_min_advance_perc: double precision
     first_submission_score_hist: double precision[]
     first_submission_score_variance: double precision
     force_max_points: boolean default false
