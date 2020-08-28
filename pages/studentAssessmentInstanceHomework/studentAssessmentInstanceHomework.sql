@@ -56,7 +56,8 @@ WHERE
     ai.id = $assessment_instance_id 
     AND gu.user_id = $user_id 
     AND gr.deleted_at IS NULL 
-    AND gc.deleted_at IS NULL;
+    AND gc.deleted_at IS NULL
+ORDER BY us.uid;
 
 -- BLOCK leave_group
 WITH log AS (
