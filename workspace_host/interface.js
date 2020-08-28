@@ -242,6 +242,15 @@ async.series([
             var key = [filename, true];
             update_queue[key] = {action: 'delete'};
         });
+        watcher.on('error', err => {
+            // Handle errors
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while handling watcher error: ${err2}`);
+                }
+                logger.error(`Watcher error: ${err}`);
+            });
+        });
         async function autoUpdateJobManagerTimeout() {
             await _autoUpdateJobManager();
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -730,9 +739,9 @@ async function _autoUpdateJobManager() {
     } catch (err) {
         markSelfUnhealthy((err2) => {
             if (err2) {
-                logger.err(`Error while handling error: ${err2}`);
+                logger.error(`Error while handling error: ${err2}`);
             }
-            logger.err(`Error uploading files to S3:\n${err}`);
+            logger.error(`Error uploading files to S3:\n${err}`);
         });
     }
 }
