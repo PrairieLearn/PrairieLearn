@@ -5,14 +5,15 @@ WITH instance_questions_info AS (
         jsonb_build_object(
             'id', (lag(iq.id) OVER w),
             'score_perc', (lag(iq.score_perc) OVER w),
-            'sequence_blocked', instance_questions_check_sequence_locked((lag(iq.id) OVER w))
+            'sequence_locked', (lag(qo.sequence_locked) OVER w)
         ) AS prev_instance_question,
         jsonb_build_object(
             'id', (lead(iq.id) OVER w),
             'score_perc', (lead(iq.score_perc) OVER w),
-            'sequence_blocked', instance_questions_check_sequence_locked((lead(iq.id) OVER w))
+            'sequence_locked', (lead(qo.sequence_locked) OVER w)
         ) AS next_instance_question,
-        qo.question_number
+        qo.question_number AS question_number,
+        qo.sequence_locked AS sequence_locked
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -47,15 +48,16 @@ SELECT
     to_jsonb(iq) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
-        'prev', prev_instance_question,
-        'next', next_instance_question,
-        'question_number', question_number,
+        'prev', iqi.prev_instance_question,
+        'next', iqi.next_instance_question,
+        'question_number', iqi.question_number,
         'max_points', CASE
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
             ELSE aq.max_points
         END,
         'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-        'min_advance_perc', assessment_questions_find_unlock_score_perc(aq.id)
+        'min_advance_perc', aq.effective_min_advance_perc,
+        'sequence_locked', iqi.sequence_locked
     ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(q) AS question,
@@ -84,4 +86,4 @@ WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
     AND aai.authorized
-    AND NOT instance_questions_check_sequence_locked(iq.id);
+    AND NOT iqi.sequence_locked;
