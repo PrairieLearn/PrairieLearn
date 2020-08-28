@@ -170,8 +170,6 @@ module.exports = {
             'groups_uid_list.sql',
             'workspaces_message_update.sql',
             'workspaces_state_update.sql',
-            'assessment_questions_find_unlock_score_perc.sql',
-            'instance_questions_check_sequence_locked.sql',
             'workspace_loads_current.sql',
             'workspace_hosts_recapture_draining.sql',
             'workspace_hosts_drain_extra.sql',
