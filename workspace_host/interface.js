@@ -207,6 +207,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
+            logger.info(`Watching file add ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -216,6 +217,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
+            logger.info(`Watching directory add ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -225,6 +227,7 @@ async.series([
         });
         watcher.on('change', filename => {
             // Handle file changes
+            logger.info(`Watching file change ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -252,7 +255,11 @@ async.series([
             });
         });
         async function autoUpdateJobManagerTimeout() {
+            const timeout_id = setTimeout(() => {
+                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${update_queue}`);
+            }, config.workspaceHostFileWatchIntervalSec * 1000);
             await _autoUpdateJobManager();
+            clearTimeout(timeout_id);
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
         }
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -260,6 +267,7 @@ async.series([
     async () => {
         /* Set up a periodic hard push of all containers to S3 */
         async function pushAllContainersTimeout() {
+            logger.info('Pushing all containers to S3');
             await pushAllRunningContainersToS3();
             setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
         }
@@ -697,6 +705,7 @@ async function _getRunningWorkspaceByPath(path) {
 }
 
 async function _autoUpdateJobManager() {
+    logger.info('_autoUpdateJobManager(): Pushing changed files to S3');
     var jobs = [];
     for (const key in update_queue) {
         const [path, isDirectory_str] = key.split(',');
@@ -725,10 +734,12 @@ async function _autoUpdateJobManager() {
 
         if (update_queue[key].action == 'update') {
             jobs.push((callback) => {
+                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, callback);
             });
         } else if (update_queue[key].action == 'delete') {
             jobs.push((callback) => {
+                logger.info(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, callback);
             });
         }
