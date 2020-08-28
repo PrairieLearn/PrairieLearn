@@ -173,6 +173,15 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
                     min_advance_perc: alternative.minAdvancePerc,
+                    effective_min_advance_perc: [
+                            question.minAdvancePerc,
+                            alternativeGroupParams.min_advance_perc,
+                            zone.minAdvancePerc,
+                            assessment.minAdvancePerc,
+                            0
+                        ].find((e) => {
+                          return typeof e === 'number';
+                        })
                 };
 
             });

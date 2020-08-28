@@ -301,7 +301,8 @@ BEGIN
                         question_id,
                         alternative_group_id,
                         number_in_alternative_group,
-                        min_advance_perc
+                        min_advance_perc,
+                        effective_min_advance_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
@@ -314,7 +315,8 @@ BEGIN
                         (assessment_question->>'question_id')::bigint,
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
-                        (assessment_question->>'min_advance_perc')::double precision
+                        (assessment_question->>'min_advance_perc')::double precision,
+                        (assessment_question->>'effective_min_advance_perc')::double precision
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -327,7 +329,8 @@ BEGIN
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
                         question_id = EXCLUDED.question_id,
-                        min_advance_perc = EXCLUDED.min_advance_perc
+                        min_advance_perc = EXCLUDED.min_advance_perc,
+                        effective_min_advance_perc = EXCLUDED.effective_min_advance_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
                 END LOOP;
