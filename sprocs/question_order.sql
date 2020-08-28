@@ -1,4 +1,4 @@
-DROP FUNCTION question_order(BIGINT);
+DROP FUNCTION IF EXISTS question_order(BIGINT);
 CREATE OR REPLACE FUNCTION
     question_order (
         assessment_instance_id BIGINT
