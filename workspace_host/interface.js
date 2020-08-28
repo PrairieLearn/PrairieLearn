@@ -257,6 +257,7 @@ async.series([
     async () => {
         /* Set up a periodic hard push of all containers to S3 */
         async function pushAllContainersTimeout() {
+            logger.info('Pushing all containers to S3');
             await pushAllRunningContainersToS3();
             setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
         }
