@@ -15,7 +15,7 @@ BEGIN
             wh.*
         FROM
             workspace_hosts AS wh
-        LEFT JOIN
+        JOIN
             workspaces AS w ON ((w.workspace_host_id = wh.id) AND (w.state = 'launching' OR w.state = 'running'))
         GROUP BY
             wh.id
@@ -29,11 +29,8 @@ BEGIN
     UPDATE workspace_hosts AS wh
     SET state = 'terminating',
         state_changed_at = NOW()
-    WHERE EXISTS (
-        SELECT 1
-        FROM terminable_hosts AS th
-        WHERE wh.id = th.id
-    );
+    FROM terminable_hosts AS th
+    WHERE wh.id = th.id;
 
     -- Save our terminated hosts
     SELECT array_agg(th.instance_id)

@@ -91,14 +91,14 @@ module.exports = {
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalStopStaleWorkspacesSec,
             },
             {
-                name: 'workspacesLoad',
-                module: require('./workspacesLoad'),
-                intervalSec: config.cronOverrideallIntervalsSec || config.cronIntervalWorkspacesLoadSec,
+                name: 'workspaceHostLoads',
+                module: require('./workspaceHostLoads'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
             },
             {
-                name: 'workspacesStateTransition',
-                module: require('./workspacesTransition'),
-                intervalSec: config.cronOverrideallIntervalsSec || config.cronIntervalWorkspacesStateTransitionSec,
+                name: 'workspaceHostTransitions',
+                module: require('./workspaceHostTransitions'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
             },
         ];
         logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
