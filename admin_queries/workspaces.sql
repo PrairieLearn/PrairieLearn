@@ -6,7 +6,7 @@ assessment_users_with_workspace_counts AS (
         count(*) AS workspace_count
     FROM
         workspaces AS w
-        JOIN variants AS v ON (v.id = w.variant_id)
+        JOIN variants AS v ON (v.workspace_id = w.id)
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
