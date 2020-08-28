@@ -207,7 +207,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
-            logger.info(`Watching file ${filename}`);
+            logger.info(`Watching file add ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -217,7 +217,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
-            logger.info(`Watching directory ${filename}`);
+            logger.info(`Watching directory add ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -227,6 +227,7 @@ async.series([
         });
         watcher.on('change', filename => {
             // Handle file changes
+            logger.info(`Watching file change ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
