@@ -178,10 +178,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                             alternativeGroupParams.min_advance_perc,
                             zone.minAdvancePerc,
                             assessment.minAdvancePerc,
-                            0
+                            0,
                         ].find((e) => {
                           return typeof e === 'number';
-                        })
+                        }),
                 };
 
             });
