@@ -29,6 +29,23 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+let lastAutoUpdateTime = Date.now();
+let lastPushAllTime = Date.now();
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
+    if (elapsedSec > 30) {
+        logger.error(`_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(update_queue)}`);
+    }
+}, 1000);
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
+    if (elapsedSec > 900) {
+        logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
+    }
+}, 1000);
+
 const aws = require('../lib/aws.js');
 const config = require('../lib/config');
 let configFilename = 'config.json';
@@ -256,9 +273,14 @@ async.series([
         });
         async function autoUpdateJobManagerTimeout() {
             const timeout_id = setTimeout(() => {
-                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${update_queue}`);
+                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
             }, config.workspaceHostFileWatchIntervalSec * 1000);
-            await _autoUpdateJobManager();
+            try {
+                await _autoUpdateJobManager();
+            } catch (err) {
+                logger.error(`Error from _autoUpdateJobManager(): ${err}`);
+                logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+            }
             clearTimeout(timeout_id);
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
         }
@@ -269,6 +291,7 @@ async.series([
         async function pushAllContainersTimeout() {
             logger.info('Pushing all containers to S3');
             await pushAllRunningContainersToS3();
+            logger.info('Completed push all containers to S3');
             setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
         }
         setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
@@ -355,6 +378,7 @@ async function pushContainerContentsToS3(workspace) {
  * serially instead of in parallel.
  */
 async function pushAllRunningContainersToS3() {
+    lastPushAllTime = Date.now();
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
@@ -705,12 +729,15 @@ async function _getRunningWorkspaceByPath(path) {
 }
 
 async function _autoUpdateJobManager() {
-    logger.info('_autoUpdateJobManager(): Pushing changed files to S3');
+    lastAutoUpdateTime = Date.now();
+    logger.info(`_autoUpdateJobManager(): Pushing changed files to S3: ${JSON.stringify(update_queue)}`);
     var jobs = [];
     for (const key in update_queue) {
+        logger.info(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
 
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
@@ -721,26 +748,51 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
+        logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
 
         let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
+            logger.info(`_autoUpdateJobManager: skip root`);
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
+            logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
             s3_path = `${s3_name}/current/${local_path}`;
+            logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
+        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
         if (update_queue[key].action == 'update') {
+            logger.info(`_autoUpdateJobManager: adding update job`);
             jobs.push((callback) => {
                 logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
-                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, callback);
+                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         } else if (update_queue[key].action == 'delete') {
+            logger.info(`_autoUpdateJobManager: adding delete job`);
             jobs.push((callback) => {
                 logger.info(`Removing file from S3: ${s3_path}`);
-                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, callback);
+                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully removed file from S3: ${s3_path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         }
     }
