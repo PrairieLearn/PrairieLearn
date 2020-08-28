@@ -207,6 +207,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
+            logger.info(`Watching file ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -216,6 +217,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
+            logger.info(`Watching directory ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
