@@ -242,6 +242,11 @@ async.series([
             var key = [filename, true];
             update_queue[key] = {action: 'delete'};
         });
+        watcher.on('error', err => {
+            // Handle errors
+            logger.error(`Watcher error: ${err}`);
+            markSelfUnhealthyAsync();
+        });
         async function autoUpdateJobManagerTimeout() {
             await _autoUpdateJobManager();
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
