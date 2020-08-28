@@ -243,7 +243,11 @@ async.series([
             update_queue[key] = {action: 'delete'};
         });
         async function autoUpdateJobManagerTimeout() {
+            const timeout_id = setTimeout(() => {
+                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${update_queue}`);
+            }, config.workspaceHostFileWatchIntervalSec * 1000);
             await _autoUpdateJobManager();
+            clearTimeout(timeout_id);
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
         }
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
