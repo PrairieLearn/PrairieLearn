@@ -244,8 +244,12 @@ async.series([
         });
         watcher.on('error', err => {
             // Handle errors
-            logger.error(`Watcher error: ${err}`);
-            markSelfUnhealthyAsync();
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while handling watcher error: ${err2}`);
+                }
+                logger.error(`Watcher error: ${err}`);
+            });
         });
         async function autoUpdateJobManagerTimeout() {
             await _autoUpdateJobManager();
