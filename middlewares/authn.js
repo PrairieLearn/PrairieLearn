@@ -169,7 +169,8 @@ module.exports = function(req, res, next) {
 };
 
 function verifyAdministratorAccess(req, res) {
-    const accessType = req.cookies.pl_access_as_administrator || 'none';
+    const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
+    const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
     res.locals.access_as_administrator = (accessType == 'active');
     res.locals.is_administrator = res.locals.authn_is_administrator && res.locals.access_as_administrator;
 }

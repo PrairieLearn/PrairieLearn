@@ -285,7 +285,7 @@
         const expires = 30; // in units of days
         $('button[name="administrator"]').click(function() {
           <% if (locals.access_as_administrator) { %>
-            Cookies.remove('pl_access_as_administrator', { path: '/' });
+            Cookies.set('pl_access_as_administrator', 'inactive', { path: '/', expires: expires });
           <% } else { %>
             Cookies.set('pl_access_as_administrator', 'active', { path: '/', expires: expires });
           <% } %>
