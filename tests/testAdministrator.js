@@ -16,18 +16,12 @@ describe('Administrator pages', function() {
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
-    var cookiesAdministrator = function() {
-        var cookies = request.jar();
-        cookies.setCookie(request.cookie('pl_access_as_administrator=active'), locals.siteUrl);
-        return cookies;
-    };
-
     var page, elemList;
 
     describe('1. view administrator overview page', function() {
         it('should load successfully', function(callback) {
             locals.administratorOverviewUrl = locals.baseUrl + '/administrator/overview';
-            request({url: locals.administratorOverviewUrl, jar: cookiesAdministrator()}, function (error, response, body) {
+            request(locals.administratorOverviewUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }
