@@ -4,12 +4,7 @@
     "title": "Exam to test per-zone grading",
     "set": "Exam",
     "number": "5",
-    "allowAccess": [{
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100,
-            "timeLimitMin": 50
-        },
+    "allowAccess": [
         {
             "mode": "Exam",
             "credit": 100,
