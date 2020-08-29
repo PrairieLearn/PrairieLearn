@@ -15,6 +15,10 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 const moment = require('moment');
 
 router.get('/', function(req, res, next) {
+    if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) {
+        return next(new Error('Access denied'));
+    }
+
     debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
 
     var params = {
@@ -40,7 +44,10 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.authn_has_course_permission_edit) return next();
+    if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) {
+        return next(new Error('Access denied'));
+    }
+
     if (req.body.__action == 'reset') {
         res.clearCookie('pl_requested_uid');
         res.clearCookie('pl_requested_course_role');
