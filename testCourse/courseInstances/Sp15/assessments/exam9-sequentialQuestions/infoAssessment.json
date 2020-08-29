@@ -10,37 +10,32 @@
     "minAdvancePerc": 100,
     "zones": [
         {
-            "minAdvancePerc": 10,
-            "questions": [
-                {"id": "partialCredit1", "points": [1], "minAdvancePerc": 25}
-            ]
-        },
-        {
-          "minAdvancePerc": 0,
-          "questions": [
-            {"id": "partialCredit4_v2", "points": [2]}
-          ]
-        },
-        {
             "questions": [
                 {
                     "numberChoose": 1,
-                    "points": [3,3,3,3,3],
-                    "minAdvancePerc": 60,
+                    "points": 1,
+                    "minAdvancePerc": 0,
                     "alternatives": [
-                        {"id": "partialCredit3"}
+                        {"id": "partialCredit1"}
                     ]
                 }
             ]
         },
         {
+            "minAdvancePerc": 25,
             "questions": [
-                {"id": "partialCredit2", "points": 4}
+                {"id": "partialCredit3", "points": [1,1,1,1], "minAdvancePerc": 60}
             ]
         },
         {
+          "minAdvancePerc": 75,
+          "questions": [
+            {"id": "partialCredit2", "points": 1}
+          ]
+        },
+        {
             "questions": [
-              {"id": "addVectors", "points": 5}
+                {"id": "partialCredit4_v2", "points": 1}
             ]
         }
     ]

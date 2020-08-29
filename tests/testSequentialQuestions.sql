@@ -9,7 +9,7 @@ WHERE
     AND aset.abbreviation = 'E'
     AND a.number = '9';
 
--- BLOCK select_question4
+-- BLOCK select_locked_question
 SELECT
     iq.id
 FROM
