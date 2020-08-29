@@ -3,6 +3,7 @@ SELECT
     a.id AS assessment_id,
     a.number AS assessment_number,
     a.order_by AS assessment_order_by,
+    a.group_work AS assessment_group_work,
     CASE
         WHEN a.multiple_instance THEN a.title || ' instance #' || ai.number
         ELSE a.title
