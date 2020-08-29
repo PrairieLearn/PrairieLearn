@@ -11,10 +11,7 @@ window.PLFileUpload = function(uuid, options) {
     this.uuid = uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
-    this.acceptedFilesLowerCase = [];
-    for (let i = 0; i < this.acceptedFiles.length; i++) {
-        this.acceptedFilesLowerCase.push(this.acceptedFiles[i].toLowerCase());
-    }
+    this.acceptedFilesLowerCase = this.acceptedFiles.map(f => f.toLowerCase());
 
     var elementId = '#file-upload-' + uuid;
     this.element = $(elementId);
