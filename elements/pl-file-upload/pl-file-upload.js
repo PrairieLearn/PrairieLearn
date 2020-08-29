@@ -36,7 +36,7 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         autoProcessQueue: false,
         accept: function(file, done) {
             // fuzzy case:
-            var fileNameLowerCase = file.name.toLowerCase();
+            const fileNameLowerCase = file.name.toLowerCase();
             if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 return done();
             }
