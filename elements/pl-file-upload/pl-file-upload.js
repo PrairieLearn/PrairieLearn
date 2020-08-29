@@ -44,7 +44,7 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         },
         addedfile: function(file) {
             // fuzzy case match
-            var fileNameLowerCase = file.name.toLowerCase();
+            const fileNameLowerCase = file.name.toLowerCase();
             if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
