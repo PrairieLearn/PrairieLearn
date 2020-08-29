@@ -815,6 +815,7 @@ function _pullImage(workspace, callback) {
 
             let progressDetails = {};
             let layers, current, total, percent;
+            const toDatabase = false;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, workspace);
@@ -824,11 +825,11 @@ function _pullImage(workspace, callback) {
                     progressDetails[output.id] = output.progressDetail;
                 }
                 layers = Object.keys(progressDetails).length;
-                current = Object.values(progressDetails).reduce((current, details) => details.current + current, 0);
-                total = Object.values(progressDetails).reduce((total, details) => details.total + total, 0);
+                current = Object.values(progressDetails).reduce((current, detail) => detail.current + current, 0);
+                total = Object.values(progressDetails).reduce((total, detail) => detail.total + total, 0);
                 if (total) {
                     percent = parseInt(100 * current / total);
-                    workspaceHelper.updateMessage(workspace.id, `Pulling ${layers} layers (≈${percent}%)`);
+                    workspaceHelper.updateMessage(workspace.id, `Pulling ${layers} layers (≈${percent}%)`, toDatabase);
                 }
             });
         });
