@@ -363,7 +363,7 @@ async.series([
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
-    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`);
+    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`, 'current');
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
         await workspaceHelper.uploadDirectoryToS3Async(workspacePath, s3Path, settings.workspace_sync_ignore);
