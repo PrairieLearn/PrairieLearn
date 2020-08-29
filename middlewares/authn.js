@@ -5,6 +5,8 @@ var csrf = require('../lib/csrf');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
+const async = require('async');
+
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
@@ -35,30 +37,48 @@ module.exports = function(req, res, next) {
             return next(new Error('invalid load_test_token'));
         }
 
-        let params = [
-            'loadtest@prairielearn.org',
-            'Load Test',
-            '999999999',
-            'dev',
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        async.series([
+            (callback) => {
+                const params = [
+                    'loadtest@prairielearn.org',
+                    'Load Test',
+                    '999999999',
+                    'dev',
+                ];
+                sqldb.call('users_select_or_insert', params, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    res.locals.authn_user = result.rows[0].user;
+                    res.locals.authn_institution = result.rows[0].institution;
+                    res.locals.authn_provider_name = 'LoadTest';
+                    res.locals.authn_is_administrator = result.rows[0].is_administrator;
+                    verifyAdministratorAccess(req, res);
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const params = {
+                    uid: 'loadtest@prairielearn.org',
+                    course_short_name: 'XC 101',
+                };
+                sqldb.query(sql.enroll_user, params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const params = {
+                    uid: 'loadtest@prairielearn.org',
+                    course_short_name: 'XC 101',
+                };
+                sqldb.query(sql.insert_course_permissions_for_user, params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
             if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.authn_institution = result.rows[0].institution;
-            res.locals.authn_provider_name = 'LoadTest';
-            res.locals.authn_is_administrator = result.rows[0].is_administrator;
-            // FIXME: authn_is_instructor, is_administrator, is_instructor, login_type
-
-            let params = {
-                uid: 'loadtest@prairielearn.org',
-                course_short_name: 'XC 101',
-            };
-            sqldb.query(sql.enroll_user_as_instructor, params, (err, _result) => {
-                if (ERR(err, next)) return;
-                next();
-            });
+            return next();
         });
-        return;
     }
 
     // bypass auth for local /pl/ serving
