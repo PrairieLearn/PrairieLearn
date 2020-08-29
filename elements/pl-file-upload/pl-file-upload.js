@@ -62,7 +62,7 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 that.saveSubmittedFile(acceptedName, base64FileData);
                 that.renderFileList();
                 // Show the preview for the newly-uploaded file
-                that.element.find('li[data-file="' + acceptedName + '"] .file-preview').addClass('in');
+                that.element.find(`li[data-file="${acceptedName}"] .file-preview`).addClass('in');
             };
 
             reader.readAsDataURL(file);
