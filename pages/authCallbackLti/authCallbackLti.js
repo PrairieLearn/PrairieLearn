@@ -40,6 +40,9 @@ router.post('/', function(req, res, next) {
         return next(error.make(500, 'Badly formed resource_link_id'));
     }
 
+    // FIXME: could warn or throw an error if parameters.roles exists (no longer used)
+    // FIXME: could add a parameter that allows setting course role or course instance role
+
     sqldb.queryZeroOrOneRow(sql.lookup_credential, {consumer_key: parameters.oauth_consumer_key}, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
@@ -112,15 +115,10 @@ router.post('/', function(req, res, next) {
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
 
-            var role = 'Student'; // default
-            if (parameters.roles.includes('TeachingAssistant')) { role = 'TA'; }
-            if (parameters.roles.includes('Instructor')) { role = 'Instructor'; }
-
             var params = {
                 course_instance_id: ltiresult.course_instance_id,
                 user_id: tokenData.user_id,
                 req_date: res.locals.req_date,
-                role,
             };
 
             debug('lti enroll params ', params);
@@ -163,13 +161,15 @@ router.post('/', function(req, res, next) {
                     } else {
                         // No linked assessment
 
-                        if (role != 'Student') {
-                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
-                        } else {
-                            // Show an error that the assignment is unavailable
-                            return next(error.make(400, 'Assignment not available yet'));
-                        }
-                        res.redirect(redirUrl);
+                        // FIXME: could check if the user is an instructor and, if so, redirect to:
+                        //
+                        //  redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
+                        //  res.redirect(redirUrl);
+                        //
+
+                        // Show an error that the assignment is unavailable
+                        return next(error.make(400, 'Assignment not available yet'));
+
                     }
                 });
             });

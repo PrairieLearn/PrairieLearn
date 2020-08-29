@@ -8,18 +8,18 @@ WHERE
 
 -- BLOCK enroll
 INSERT INTO enrollments AS e
-        (user_id, course_instance_id, role)
+        (user_id, course_instance_id)
 (
     SELECT
-        u.user_id, $course_instance_id, $role
+        u.user_id, $course_instance_id
     FROM
         users AS u
     WHERE
         u.user_id = $user_id
-        AND check_course_instance_access($course_instance_id, $role, u.uid, u.institution_id, $req_date)
+        AND check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date)
 )
 ON CONFLICT (user_id, course_instance_id)
-DO UPDATE SET role = $role
+DO NOTHING
 RETURNING e.id;
 
 -- BLOCK upsert_current_link
