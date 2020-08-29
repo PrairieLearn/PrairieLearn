@@ -12,9 +12,10 @@ if [[ ! -z "$CONTAINERS" ]] ; then
 fi
 
 export DONT_START_WORKSPACE_HOST_IN_INIT=true
+[[ $NODEMON == true ]] && HOST_NODE="npx nodemon -L" || HOST_NODE=node
 
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \
   send-keys "docker/init.sh" C-m \; \
   split-window -h -p 50 \; \
-  send-keys "node workspace_host/interface" C-m \; \
+  send-keys "$HOST_NODE workspace_host/interface" C-m \; \
