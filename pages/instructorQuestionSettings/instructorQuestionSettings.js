@@ -93,7 +93,7 @@ router.post('/', function(req, res, next) {
         } else {
             // In this case, we are sending a copy of this question to a different course
             debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
-            if (!res.locals.authz_data.has_course_permission_view) return callback(new Error('Access denied (must be a course Viewer)'));
+            if (!res.locals.authz_data.has_course_permission_view) return next(new Error('Access denied (must be a course Viewer)'));
             let params = {
                 from_course_id: res.locals.course.id,
                 to_course_id: req.body.to_course_id,

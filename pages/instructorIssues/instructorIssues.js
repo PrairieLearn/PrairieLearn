@@ -5,9 +5,6 @@ const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
 
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
 const error = require('@prairielearn/prairielib/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/prairielib/sql-db');

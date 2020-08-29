@@ -3,9 +3,6 @@ const express = require('express');
 const router = express.Router();
 const serverJobs = require('../../lib/server-jobs');
 
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
 router.get('/:job_sequence_id', function(req, res, next) {
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;

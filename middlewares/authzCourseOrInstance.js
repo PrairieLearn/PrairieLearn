@@ -470,7 +470,7 @@ module.exports = function(req, res, next) {
 
                     return callback(null);
                 });
-            }
+            },
         ], (err) => {
             if (ERR(err, next)) return;
             next();

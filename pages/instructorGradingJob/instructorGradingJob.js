@@ -31,7 +31,7 @@ router.get('/:job_id', (req, res, next) => {
         // The way we implement this check right now with authz_assessment_instance
         // is overkill, yes, but is easy and robust (we hope).
         if (result.rows[0].aai && (!result.rows[0].aai.authorized)) {
-            return next(error.make(403, 'Access denied (must be a student data viewer)'));
+            return next(new Error('Access denied (must be a student data viewer)'));
         }
 
         _.assign(res.locals, result.rows[0]);
@@ -68,7 +68,7 @@ router.get('/:job_id/file/:file', (req, res, next) => {
         // The way we implement this check right now with authz_assessment_instance
         // is overkill, yes, but is easy and robust (we hope).
         if (result.rows[0].aai && (!result.rows[0].aai.authorized)) {
-            return next(error.make(403, 'Access denied (must be a student data viewer)'));
+            return next(new Error('Access denied (must be a student data viewer)'));
         }
 
         const grading_job = result.rows[0].grading_job;

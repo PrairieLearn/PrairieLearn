@@ -1008,7 +1008,7 @@ async function validateCourseInstance(courseInstance) {
 
     if (_(courseInstance).has('userRoles')) {
         warnings.push('The property "userRoles" will be ignored. Course owners should manage staff access on the course admin access page.');
-    };
+    }
 
     return { warnings, errors };
 }
