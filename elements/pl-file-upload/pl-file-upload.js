@@ -49,13 +49,8 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
-            var matchIdx;
-            for (matchIdx = 0; matchIdx < that.acceptedFilesLowerCase.length; matchIdx++) {
-                if (that.acceptedFilesLowerCase[matchIdx] === fileNameLowerCase) {
-                    break;
-                }
-            }
-            var acceptedName = that.acceptedFiles[matchIdx];
+            const acceptedFilesIdx = that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
+            const acceptedName = that.acceptedFiles[acceptedFilesIdx];
             var reader = new FileReader();
             reader.onload = function(e) {
                 var dataUrl = e.target.result;
