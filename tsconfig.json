@@ -10,6 +10,7 @@
   // Adding new code? Consider opting in to type checking!
   "include": [
     "tests/sync/**/*",
-    "sync/**/*"
+    "sync/**/*",
+    "lib/**/*"
   ]
 }
