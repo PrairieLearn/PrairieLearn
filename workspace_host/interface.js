@@ -289,9 +289,7 @@ async.series([
     async () => {
         /* Set up a periodic hard push of all containers to S3 */
         async function pushAllContainersTimeout() {
-            logger.info('Pushing all containers to S3');
             await pushAllRunningContainersToS3();
-            logger.info('Completed push all containers to S3');
             setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
         }
         setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
@@ -363,10 +361,10 @@ async.series([
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
-    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`);
+    const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
-        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, s3Path, settings.workspace_sync_ignore);
+        await awsHelper.uploadDirectoryToS3Async(config.workspaceS3Bucket, s3Path, workspacePath, settings.workspace_sync_ignore);
     } catch (err) {
         /* Ignore any errors that may occur when the directory doesn't exist */
         logger.error(`Error uploading directory: ${err}`);
@@ -382,7 +380,9 @@ async function pushAllRunningContainersToS3() {
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
+            logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
+            logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
         }
     });
 }

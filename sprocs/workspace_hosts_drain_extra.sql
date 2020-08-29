@@ -15,10 +15,7 @@ BEGIN
     UPDATE workspace_hosts AS wh
     SET state = 'draining',
         state_changed_at = NOW()
-    WHERE EXISTS(
-        SELECT 1
-        FROM extra AS e
-        WHERE wh.id = e.id
-    );
+    FROM extra AS e
+    WHERE wh.id = e.id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
