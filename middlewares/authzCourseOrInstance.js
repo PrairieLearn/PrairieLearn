@@ -20,6 +20,9 @@ module.exports = function(req, res, next) {
         (callback) => {
             // Note that req.params.course_id and req.params.course_instance_id are strings and not
             // numbers - this is why we can use the pattern "id || null" to check if they exist.
+            //
+            // We allow unit tests to override the req_mode. Unit tests may also override
+            // the user (middlewares/authn.js) and the req_date (middlewares/date.js).
             const params = {
                 user_id: res.locals.authn_user.user_id,
                 course_id: req.params.course_id || null,
@@ -27,7 +30,7 @@ module.exports = function(req, res, next) {
                 is_administrator: res.locals.is_administrator,
                 ip: req.ip,
                 req_date: res.locals.req_date,
-                req_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
+                req_mode: (config.authType == 'none' && req.cookies.pl_test_mode) ? req.cookies.pl_test_mode : null,
                 req_course_role: null,
                 req_course_instance_role: null,
             };

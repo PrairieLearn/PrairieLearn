@@ -86,6 +86,10 @@ module.exports = function(req, res, next) {
         var authUid = config.authUid;
         var authName = config.authName;
         var authUin = config.authUin;
+
+        // We allow unit tests to override the user. Unit tests may also override the req_date
+        // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
+
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
