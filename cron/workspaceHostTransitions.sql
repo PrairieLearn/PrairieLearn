@@ -22,7 +22,7 @@ SET
     unhealthy_at = NOW()
 WHERE
     instance_id = $instance_id
-    AND unhealthy_at IS NULL;
+    AND wh.state IN ('launching', 'ready', 'draining');
 
 -- BLOCK add_terminating_hosts
 INSERT INTO workspace_hosts
