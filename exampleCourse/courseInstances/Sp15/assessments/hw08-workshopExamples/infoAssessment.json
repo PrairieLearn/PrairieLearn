@@ -4,12 +4,7 @@
     "title": "Examples from workshop",
     "set": "Homework",
     "number": "8",
-    "allowAccess": [
-        {
-            "role": "Instructor",
-            "credit": 100
-        }
-    ],
+    "allowAccess": [],
     "zones": [
         {
             "title": "Lesson 1",
