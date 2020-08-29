@@ -69,24 +69,26 @@
               </ul>
             </div>
           </div>
-          <div class="card-body bg-light border-top d-flex align-items-center justify-content-between pt-0 pb-2">
-            <% if (groupinfo[0].student_authz_join) { %>
-              <div class="mt-2 mr-3">
-                <span>
-                  Use join code
-                  <span class="badge badge-secondary"><%= joincode %></span>
-                  to invite others to your group
-                </span>
-              </div>
-            <% } %>
-            <% if (groupinfo[0].student_authz_leave) { %>
-            <form id="confirm-form" name="confirm-form" method="POST" class="mt-2">
-              <input type="hidden" name="__action" value="leaveGroup">
-              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-              <button id="leave-group" type="submit" class="btn btn-sm btn-danger">Leave group</button>
-            </form>
-            <% } %>
-          </div>
+          <% if (groupinfo[0].student_authz_join || groupinfo[0].student_authz_leave) { %>
+            <div class="card-body bg-light border-top d-flex align-items-center justify-content-between pt-0 pb-2">
+              <% if (groupinfo[0].student_authz_join) { %>
+                <div class="mt-2 mr-3">
+                  <span>
+                    Use join code
+                    <span class="badge badge-secondary"><%= joincode %></span>
+                    to invite others to your group
+                  </span>
+                </div>
+              <% } %>
+              <% if (groupinfo[0].student_authz_leave) { %>
+              <form id="confirm-form" name="confirm-form" method="POST" class="mt-2">
+                <input type="hidden" name="__action" value="leaveGroup">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button id="leave-group" type="submit" class="btn btn-sm btn-danger">Leave group</button>
+              </form>
+              <% } %>
+            </div>
+          <% } %>
         <% } %>
 
         <% if (assessment_text_templated) { %>
