@@ -847,7 +847,6 @@ function _pullImage(workspace, callback) {
                     const key = `${output.id}/${output.status}`;
                     progressDetails[key] = output.progressDetail;
                 }
-                const layers = Object.values(progressDetails).length;
                 current = Object.values(progressDetails).reduce((current, detail) => detail.current + current, 0);
                 const newTotal = Object.values(progressDetails).reduce((total, detail) => detail.total + total, 0);
                 if (outputCount <= 200) {
