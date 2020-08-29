@@ -95,7 +95,6 @@ WITH object_data AS (
         aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
-        aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
         format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
