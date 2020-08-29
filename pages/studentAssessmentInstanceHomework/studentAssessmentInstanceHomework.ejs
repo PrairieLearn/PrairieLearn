@@ -50,24 +50,22 @@
         </div>
         <% if (assessment.group_work) { %>
           <div class="card-body border-top bg-light">
-            <div>
-              <p class="font-weight-bold mb-2">Group assessment</p>
-              <span>
-                <% if (groupinfo[0].student_authz_join) { %>
-                  You are in 
-                  <span class="badge badge-secondary">
-                    <%= groupinfo[0].name %>
-                  </span> 
-                  with
-                <% } else { %>
-                  Your teammates are
-                <% } %>
-              </span>
-              <%# Needs to be without whitespace (newlines) to avoid automatic spaces between list elements %>
-              <ul class="d-inline list-inline mb-0">
-                <% groupinfo.forEach(function(row) {%><li class="list-inline-item badge border"><%= row.uid %></li><% }); %>
-              </ul>
-            </div>
+            <p class="font-weight-bold mb-2">Group assessment</p>
+            <span>
+              <% if (groupinfo[0].student_authz_join) { %>
+                You are in 
+                <span class="badge badge-secondary">
+                  <%= groupinfo[0].name %>
+                </span> 
+                with
+              <% } else { %>
+                Your teammates are
+              <% } %>
+            </span>
+            <%# Needs to be without whitespace (newlines) to avoid automatic spaces between list elements %>
+            <ul class="d-inline list-inline mb-0">
+              <% groupinfo.forEach(function(row) {%><li class="list-inline-item badge border"><%= row.uid %></li><% }); %>
+            </ul>
           </div>
           <% if (groupinfo[0].student_authz_join || groupinfo[0].student_authz_leave) { %>
             <div class="card-body bg-light border-top d-flex align-items-center justify-content-between pt-0 pb-2">
