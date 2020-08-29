@@ -15,10 +15,6 @@ BEGIN
             wh.*
         FROM
             workspace_hosts AS wh
-        JOIN
-            workspaces AS w ON ((w.workspace_host_id = wh.id) AND (w.state = 'launching' OR w.state = 'running'))
-        GROUP BY
-            wh.id
         HAVING
             (((wh.state = 'draining' OR wh.state = 'unhealthy') AND wh.load_count = 0) OR
             (wh.state = 'unhealthy' AND (now() - wh.unhealthy_at) > make_interval(secs => unhealthy_timeout_sec)) OR
