@@ -6,6 +6,8 @@ const serverJobs = require('../../lib/server-jobs');
 const syncHelpers = require('../shared/syncHelpers');
 
 router.get('/:job_sequence_id', function(req, res, next) {
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+    
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;
     serverJobs.getJobSequence(job_sequence_id, course_id, (err, job_sequence) => {
