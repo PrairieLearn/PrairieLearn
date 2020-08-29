@@ -14,12 +14,13 @@ describe('AdministratorQuery page', function() {
     context.baseUrl = `${context.siteUrl}/pl`;
     context.queriesUrl = `${context.baseUrl}/administrator/queries`;
     context.queryUrl = `${context.baseUrl}/administrator/query/db_running_queries`;
+    context.options = {headers: {cookie: 'pl_access_as_administrator=active'}};
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     step('visit queries page', async () => {
-        const response = await helperClient.fetchCheerio(context.queriesUrl);
+        const response = await helperClient.fetchCheerio(context.queriesUrl, context.options);
         assert.isTrue(response.ok);
 
         // we should have the "db_running_queries.sql" entry
@@ -28,7 +29,7 @@ describe('AdministratorQuery page', function() {
     });
 
     step('visit query page', async () => {
-        const response = await helperClient.fetchCheerio(context.queryUrl);
+        const response = await helperClient.fetchCheerio(context.queryUrl, context.options);
         assert.isTrue(response.ok);
 
         // we should have results from the query
