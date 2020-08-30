@@ -289,9 +289,7 @@ async.series([
     async () => {
         /* Set up a periodic hard push of all containers to S3 */
         async function pushAllContainersTimeout() {
-            logger.info('Pushing all containers to S3');
             await pushAllRunningContainersToS3();
-            logger.info('Completed push all containers to S3');
             setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
         }
         setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
@@ -363,10 +361,10 @@ async.series([
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
-    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`);
+    const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
-        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, s3Path, settings.workspace_sync_ignore);
+        await awsHelper.uploadDirectoryToS3Async(config.workspaceS3Bucket, s3Path, workspacePath, settings.workspace_sync_ignore);
     } catch (err) {
         /* Ignore any errors that may occur when the directory doesn't exist */
         logger.error(`Error uploading directory: ${err}`);
@@ -382,7 +380,9 @@ async function pushAllRunningContainersToS3() {
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
+            logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
+            logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
         }
     });
 }
@@ -896,21 +896,70 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
 }
 
 function _pullImage(workspace, callback) {
-    workspaceHelper.updateMessage(workspace.id, 'Pulling image');
+    workspaceHelper.updateMessage(workspace.id, 'Checking image');
     const workspace_image = workspace.settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
         logger.info(`Pulling docker image: ${workspace_image}`);
+        let percentDisplayed = false;
         docker.pull(workspace_image, (err, stream) => {
             if (err) {
                 logger.error(`Error pulling "${workspace_image}" image; attempting to fall back to cached version.`, err);
                 return callback(null);
             }
+            /*
+             * We monitor the pull progress to calculate the
+             * percentage complete. This is roughly "current / total",
+             * but as docker pulls new layers the "total" can
+             * increase, which would cause the percentage to
+             * decrease. To avoid this, we track a "base" value for
+             * both "current" and "total" and compute the percentage
+             * as an increment above these values. This ensures that
+             * our percentage starts at 0, ends at 100, and never
+             * decreases. It has the disadvantage that the percentage
+             * will tend to go faster at the start (when we only know
+             * about a few layers) and slow down at the end (when we
+             * know about all layers).
+             */
 
+            let progressDetails = {};
+            let current, total = 0, fraction = 0;
+            let currentBase, fractionBase;
+            let outputCount = 0;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
+                if (percentDisplayed) {
+                    const toDatabase = false;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
+                }
                 callback(null, workspace);
             }, (output) => {
                 debug('Docker pull output: ', output);
+                if ('progressDetail' in output && output.progressDetail.total) {
+                    // track different states (Download/Extract)
+                    // separately by making them separate keys
+                    const key = `${output.id}/${output.status}`;
+                    progressDetails[key] = output.progressDetail;
+                }
+                current = Object.values(progressDetails).reduce((current, detail) => detail.current + current, 0);
+                const newTotal = Object.values(progressDetails).reduce((total, detail) => detail.total + total, 0);
+                if (outputCount <= 200) {
+                    // limit progress initially to wait for most layers to be seen
+                    current = Math.min(current, (outputCount/200)*newTotal);
+                }
+                if (newTotal > total) {
+                    total = newTotal;
+                    currentBase = current;
+                    fractionBase = fraction;
+                }
+                if (total > 0) {
+                    outputCount++;
+                    const fractionIncrement = (total > currentBase) ? ((current - currentBase) / (total - currentBase)) : 0;
+                    fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
+                    const percent = Math.floor(fraction * 100);
+                    const toDatabase = false;
+                    percentDisplayed = true;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase);
+                }
             });
         });
     } else {
