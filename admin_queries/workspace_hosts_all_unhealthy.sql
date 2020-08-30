@@ -5,7 +5,8 @@ SET
     state_changed_at = NOW(),
     unhealthy_at = NOW()
 WHERE
-    wh.state IN ('launching', 'ready', 'draining')
+    $confirm = 'yes'
+    AND wh.state IN ('launching', 'ready', 'draining')
 RETURNING
     wh.id AS workspace_host_id,
     wh.instance_id,
