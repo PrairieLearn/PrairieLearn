@@ -98,7 +98,7 @@ router.post('/', function(req, res, next) {
         }
         var authName = parameters.lis_person_name_full || fallbackName;
 
-        var params = [
+        const params = [
             authUid,
             authName,
             ltiresult.course_instance_id,
@@ -118,7 +118,7 @@ router.post('/', function(req, res, next) {
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
 
-            var params = {
+            const params = {
                 course_instance_id: ltiresult.course_instance_id,
                 context_id: parameters.context_id,
                 resource_link_id: parameters.resource_link_id,
@@ -134,7 +134,7 @@ router.post('/', function(req, res, next) {
 
                     if ('lis_result_sourcedid' in parameters) {
                         // Save outcomes here
-                        var params = {
+                        const params = {
                             user_id: tokenData.user_id,
                             assessment_id: result.rows[0].assessment_id,
                             lis_result_sourcedid: parameters.lis_result_sourcedid,
@@ -152,10 +152,10 @@ router.post('/', function(req, res, next) {
                 } else {
                     // No linked assessment
 
-                    var params = [
+                    const params = [
                         tokenData.user_id,
                         ltiresult.course_instance_id,
-                    ]
+                    ];
                     sqldb.call('users_is_instructor_in_course_instance', params, function(err, result) {
                         if (ERR(err, next)) return;
                         if (result.rowCount == 0) return next(error.make(403, 'Access denied (could not determine if user is instructor)'));
