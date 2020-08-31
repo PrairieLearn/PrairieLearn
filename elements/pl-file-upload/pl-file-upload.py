@@ -53,11 +53,18 @@ def render(element_html, data):
     html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
 
     files = data['submitted_answers'].get('_files', None)
+    s3_files = data['submitted_answers'].get('_file_upload_s3', {}).get(answer_name, None)
+
     if files is not None:
         # Filter out any files not part of this element's file_names
         filtered_files = [x for x in files if x.get('name', '') in file_names]
+
+        # TO DO: Must handle this case when it is None/null
+        s3_filtered_files = [x for x in s3_files if x.get('name', '') in file_names]
+
         html_params['has_files'] = True
         html_params['files'] = json.dumps(filtered_files, allow_nan=False)
+        html_params['s3_files'] = json.dumps(s3_filtered_files, allow_nan=False)
     else:
         html_params['has_files'] = False
 

@@ -10,6 +10,8 @@ $(function() {
 window.PLFileUpload = function(uuid, options) {
     this.uuid = uuid;
     this.files = options.files || [];
+    this.s3Files = options.s3Files || [];
+    console.log('s3 files', this.s3Files);
     this.acceptedFiles = options.acceptedFiles || [];
 
     var elementId = '#file-upload-' + uuid;
