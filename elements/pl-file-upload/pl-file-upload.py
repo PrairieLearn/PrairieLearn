@@ -120,5 +120,3 @@ def parse(element_html, data):
     if not files:
         add_format_error(data, 'No submitted answer for file upload.')
         return
-
-
