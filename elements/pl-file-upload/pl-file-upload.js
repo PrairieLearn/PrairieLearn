@@ -114,6 +114,21 @@ window.PLFileUpload.prototype.getSubmittedFileContents = function(name) {
 };
 
 /**
+ * Gets the Files table index of the S3 file for download
+ * @param {String} name The desired file
+ * @return {String} Index of the file for download in Files table
+ */
+window.PLFileUpload.prototype.getSubmittedS3FileId = function(name) {
+    var id = null;
+    _.each(this.s3Files, function(file) {
+        if (file.name === name) {
+            id = file.id;
+        }
+    });
+    return id;
+};
+
+/**
 * Generates markup to show the status of the uploaded files, including
 * previews of files as appropriate.
 *
@@ -131,6 +146,8 @@ window.PLFileUpload.prototype.renderFileList = function() {
         }
     });
 
+    console.log($fileList);
+
     $fileList.html('');
 
     var uuid = this.uuid;
@@ -139,7 +156,10 @@ window.PLFileUpload.prototype.renderFileList = function() {
     _.each(this.acceptedFiles, function(fileName, index) {
         var isExpanded = _.includes(expandedFiles, fileName);
         var fileData = that.getSubmittedFileContents(fileName);
-
+        var s3FilesIndex = that.getSubmittedS3FileId(fileName);
+        console.log('s3filesindex', s3FilesIndex);
+        console.log('filename', fileName);
+        console.log('index', index);
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $('<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' + uuid + '-' + index + '"></div>');
         if (isExpanded) {
@@ -151,28 +171,34 @@ window.PLFileUpload.prototype.renderFileList = function() {
         $file.append($fileStatusContainer);
         var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
-        if (fileData) {
+        if (fileData || s3FilesIndex) {
             $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>');
         } else {
             $fileStatusContainerLeft.append('<i class="file-status-icon far fa-circle" aria-hidden="true"></i>');
         }
         $fileStatusContainerLeft.append(fileName);
-        if (!fileData) {
+        if (!fileData || s3FilesIndex) {
             $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
-        if (fileData) {
+        if (fileData || s3FilesIndex) {
             var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
             if (isExpanded) {
                 $preview.addClass('in');
             }
             try {
-                var fileContents = that.b64DecodeUnicode(fileData);
-                if (!that.isBinary(fileContents)) {
-                    $preview.find('code').text(fileContents);
-                } else {
-                    $preview.find('code').text('Binary file not previewed.');
+                if (!s3FilesIndex) {
+                    var fileContents = that.b64DecodeUnicode(fileData);
+                    if (!that.isBinary(fileContents)) {
+                        $preview.find('code').text(fileContents);
+                    } else {
+                        $preview.find('code').text('Binary file not previewed.');
+                    }
+                }
+                // We must decide what further s3 logic we want to support for previews and student downloads
+                if (s3FilesIndex) {
+                    $preview.find('code').text('File too large to be previewed.');
                 }
             } catch (e) {
                 $preview.find('code').text('Unable to decode file.');
