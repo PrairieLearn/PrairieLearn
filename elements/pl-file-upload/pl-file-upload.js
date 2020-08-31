@@ -13,6 +13,7 @@ window.PLFileUpload = function(uuid, options) {
     this.s3Files = options.s3Files || [];
     console.log('s3 files', this.s3Files);
     this.acceptedFiles = options.acceptedFiles || [];
+    this.acceptedFilesLowerCase = this.acceptedFiles.map(f => f.toLowerCase());
 
     var elementId = '#file-upload-' + uuid;
     this.element = $(elementId);
@@ -36,16 +37,22 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         url: '/none',
         autoProcessQueue: false,
         accept: function(file, done) {
-            if (_.includes(that.acceptedFiles, file.name)) {
+            // fuzzy case:
+            const fileNameLowerCase = file.name.toLowerCase();
+            if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 return done();
             }
             return done('invalid file');
         },
         addedfile: function(file) {
-            if (!_.includes(that.acceptedFiles, file.name)) {
+            // fuzzy case match
+            const fileNameLowerCase = file.name.toLowerCase();
+            if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
+            const acceptedFilesIdx = that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
+            const acceptedName = that.acceptedFiles[acceptedFilesIdx];
             var reader = new FileReader();
             reader.onload = function(e) {
                 var dataUrl = e.target.result;
@@ -54,10 +61,10 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
 
                 // Store the file as base-64 encoded data
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-                that.saveSubmittedFile(file.name, base64FileData);
+                that.saveSubmittedFile(acceptedName, base64FileData);
                 that.renderFileList();
                 // Show the preview for the newly-uploaded file
-                that.element.find('li[data-file="' + file.name + '"] .file-preview').addClass('in');
+                that.element.find(`li[data-file="${acceptedName}"] .file-preview`).addClass('in');
             };
 
             reader.readAsDataURL(file);
