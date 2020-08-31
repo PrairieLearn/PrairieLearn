@@ -204,6 +204,15 @@ const workspaceProxyOptions = {
             return 'not-matched';
         }
     },
+    onError: (err, req, res) => {
+        logger.error(`Error proxying workspace request: ${err}`);
+        try {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.send('There was an error proxying this workspace request');
+        } catch (err) {
+            logger.error(`Error while handling workspace request error: ${err}`);
+        }
+    },
 };
 const workspaceProxy = createProxyMiddleware((pathname) => {
     return pathname.match('/pl/workspace/([0-9])+/container/');
@@ -216,9 +225,9 @@ app.use('/pl/workspace/:workspace_id/container', [
     workspaceProxy,
 ]);
 
-// Limit to 1MB of JSON
-app.use(bodyParser.json({limit: 1024 * 1024}));
-app.use(bodyParser.urlencoded({extended: false, limit: 1536 * 1024}));
+// Limit to 5MB of JSON
+app.use(bodyParser.json({limit: 5 * 1024 * 1024}));
+app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -320,6 +329,10 @@ app.use('/pl/news_item', [
   function(req, res, next) {res.locals.navPage = 'news'; next();},
   function(req, res, next) {res.locals.navSubPage = 'news_item'; next();},
   require('./pages/news_item/news_item.js'),
+]);
+app.use('/pl/request_course', [
+    function(req, res, next) {res.locals.navPage = 'request_course'; next();},
+    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
 ]);
 
 app.use('/pl/workspace/:workspace_id', [
@@ -899,6 +912,8 @@ app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
 app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+app.use('/pl/administrator/jobSequence/', require('./pages/administratorJobSequence/administratorJobSequence'));
+app.use('/pl/administrator/courseRequests/', require('./pages/administratorCourseRequests/administratorCourseRequests'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@ columns
 
 indexes
     workspaces_pkey: PRIMARY KEY (id) USING btree (id)
+    workspaces_workspace_host_id_state_key: USING btree (workspace_host_id, state)
 
 foreign-key constraints
     workspaces_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE

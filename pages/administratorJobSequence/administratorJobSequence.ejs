@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head', {pageTitle: `${job_sequence.description} #${job_sequence.number}`}); %>
+    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/jobSequenceResults', {job_sequence_enable_live_update: true}) %>
+    </div>
+  </body>
+</html>
