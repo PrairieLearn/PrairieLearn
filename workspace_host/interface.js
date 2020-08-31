@@ -1120,6 +1120,7 @@ function initSequence(workspace_id, useInitialZip, res) {
         _checkServer,
     ], function(err) {
         if (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error: ${err}`);
             markSelfUnhealthy((err2) => {
                 if (err2) {
                     logger.error(`Error while capturing error: ${err2}`);
