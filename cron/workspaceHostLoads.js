@@ -61,7 +61,7 @@ const cloudwatch_definitions = {
         'unit': 'Seconds',
     },
     'workspace_hosts_longest_ready_sec': {
-        'name': 'MaxRunningHostAge',
+        'name': 'MaxReadyHostAge',
         'unit': 'Seconds',
     },
     'workspace_hosts_longest_draining_sec': {
@@ -90,6 +90,10 @@ const cloudwatch_definitions = {
     },
     'workspace_running_count': {
         'name': 'WorkspacesRunning',
+        'unit': 'Count',
+    },
+    'workspace_active_count': {
+        'name': 'WorkspacesActive',
         'unit': 'Count',
     },
     'workspace_longest_launching_sec': {

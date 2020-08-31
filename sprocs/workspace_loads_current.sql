@@ -1,7 +1,10 @@
-CREATE OR REPLACE FUNCTION
+DROP FUNCTION IF EXISTS workspace_loads_current(double precision, double precision);
+
+CREATE FUNCTION
     workspace_loads_current(
         IN workspace_capacity_factor double precision,
         IN workspace_host_capacity double precision,
+        -- desired values for autoscaling
         OUT workspace_jobs_capacity_desired integer,
         OUT workspace_hosts_desired integer,
         -- workspace hosts in each state
@@ -22,6 +25,7 @@ CREATE OR REPLACE FUNCTION
         OUT workspace_stopped_count integer,
         OUT workspace_launching_count integer,
         OUT workspace_running_count integer,
+        OUT workspace_active_count integer,
         -- max time in each workspace state
         OUT workspace_longest_launching_sec double precision,
         OUT workspace_longest_running_sec double precision,
@@ -43,6 +47,8 @@ BEGIN
         workspace_running_count
     FROM
         workspaces AS w;
+
+    workspace_active_count := workspace_running_count + workspace_launching_count;
 
     -- Longest running workspace in launching and running state
     SELECT
@@ -89,7 +95,7 @@ BEGIN
         workspace_hosts AS wh;
 
     -- Compute desired number of workspace hosts
-    workspace_jobs_capacity_desired := workspace_running_count * workspace_capacity_factor;
+    workspace_jobs_capacity_desired := workspace_active_count * workspace_capacity_factor;
     workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
@@ -106,10 +112,16 @@ BEGIN
         ('workspace_hosts_unhealthy_count', workspace_hosts_unhealthy_count),
         ('workspace_hosts_terminating_count', workspace_hosts_terminating_count),
         ('workspace_hosts_stopped_count', workspace_hosts_stopped_count),
+        ('workspace_hosts_longest_launching_sec', workspace_hosts_longest_launching_sec),
+        ('workspace_hosts_longest_ready_sec', workspace_hosts_longest_ready_sec),
+        ('workspace_hosts_longest_draining_sec', workspace_hosts_longest_draining_sec),
+        ('workspace_hosts_longest_unhealthy_sec', workspace_hosts_longest_unhealthy_sec),
+        ('workspace_hosts_longest_terminating_sec', workspace_hosts_longest_terminating_sec),
         ('workspace_uninitialized_count', workspace_uninitialized_count),
         ('workspace_stopped_count', workspace_stopped_count),
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_running_count', workspace_running_count),
+        ('workspace_active_count', workspace_active_count),
         ('workspace_longest_launching_sec', workspace_longest_launching_sec),
         ('workspace_longest_running_sec', workspace_longest_running_sec);
 
