@@ -6,8 +6,8 @@ const infofile = require('../infofile');
 const perf = require('../performance')('question');
 
 /**
- * 
- * @param {import('../course-db').CourseInstance} courseInstance 
+ *
+ * @param {import('../course-db').CourseInstance} courseInstance
  * @param {string} courseTimezone
  */
 function getParamsForCourseInstance(courseInstance, courseTimezone) {
@@ -18,7 +18,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         uids: _(accessRule).has('uids') ? accessRule.uids : null,
         start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
         end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-        institution: _(accessRule).has('institution') ? accessRule.institution : 'UIUC',
+        institution: _(accessRule).has('institution') ? accessRule.institution : null,
     }));
 
     const userRoles = Object.entries(courseInstance.userRoles || {})

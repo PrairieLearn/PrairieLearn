@@ -8,6 +8,7 @@ const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv');
+const betterAjvErrors = require('better-ajv-errors');
 const { parseISO, isValid, isAfter } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
@@ -19,7 +20,7 @@ const perf = require('./performance')('course-db');
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ schemaId: 'auto' });
+const ajv = new Ajv({ schemaId: 'auto', allErrors: true, jsonPointers: true });
 // @ts-ignore
 ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
 
@@ -501,7 +502,9 @@ module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tol
             const valid = validate(json);
             if (!valid) {
                 const result = { uuid: json.uuid };
-                infofile.addError(result, ajv.errorsText(validate.errors));
+                const errorText = betterAjvErrors(schema, json, validate.errors, {indent: 2});
+                const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
+                infofile.addError(result, errorTextString);
                 return result;
             }
             return {
@@ -665,7 +668,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJsonNew({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
+async function loadAndValidateJson({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
     // perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile({
         coursePath,
@@ -722,7 +725,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
         // hooray, we're done.
         await async.each(files, async (/** @type {string} */ dir) => {
             const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-            const info = await loadAndValidateJsonNew({
+            const info = await loadAndValidateJson({
                 coursePath,
                 filePath: infoFilePath,
                 defaults: defaultInfo,

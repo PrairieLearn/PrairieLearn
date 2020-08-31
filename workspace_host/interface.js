@@ -23,10 +23,28 @@ const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
 const LocalLock = require('../lib/local-lock');
+const asyncHandler = require('express-async-handler');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+let lastAutoUpdateTime = Date.now();
+let lastPushAllTime = Date.now();
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
+    if (elapsedSec > 30) {
+        logger.error(`_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(update_queue)}`);
+    }
+}, 1000);
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
+    if (elapsedSec > 900) {
+        logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
+    }
+}, 1000);
 
 const aws = require('../lib/aws.js');
 const config = require('../lib/config');
@@ -36,13 +54,39 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
-logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
-
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.get('/status', asyncHandler(async (req, res) => {
+    let containers;
+    try {
+        containers = await docker.listContainers({ all: true });
+    } catch (_err) {
+        containers = null;
+    }
+
+    let db_status;
+    try {
+        await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+        db_status = 'ok';
+    } catch (_err) {
+        db_status = null;
+    }
+
+    if (!containers || !db_status) {
+        /* We should have both docker and postgres access in order to consider ourselves healthy */
+        res.status(500);
+    } else {
+        res.status(200);
+    }
+    res.jsonp({
+        docker: containers,
+        postgres: db_status,
+    });
+}));
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
 app.post('/', function(req, res) {
@@ -59,24 +103,72 @@ app.post('/', function(req, res) {
         resetSequence(workspace_id, res);
     } else if (action == 'getGradedFiles') {
         gradeSequence(workspace_id, res);
-    } else if (action == 'status') {
-        res.status(200).send('Running');
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
 });
 
 let server;
-let workspace_server_settings = {
-    instance_id: config.workspaceDevHostInstanceId,
-    /* The workspace server's hostname */
-    hostname: config.workspaceDevHostHostname,
-    /* How the main server connects to the container.  In docker, this is the host operating system. */
-    server_to_container_hostname: config.workspaceDevContainerHostname,
-    port: config.workspaceHostPort,
-};
+let workspace_server_settings = {};
+
+/* Globals for detecting file changes */
+let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+let workspacePrefix; /* Jobs directory */
+let watcher;
 
 async.series([
+    async () => {
+        if (config.runningInEc2) {
+            /* If we're in EC2, find the host's instance_id and hostname */
+            const MetadataService = new AWS.MetadataService();
+            /* Every other AWS call supports promise() except MetadataService, annoyingly enough */
+            const request_promise = util.promisify((path, callback) => MetadataService.request(path, callback));
+            const document = await request_promise('/latest/dynamic/instance-identity/document');
+            const data = JSON.parse(document);
+            debug('instance-identity', data);
+            AWS.config.update({'region': data.region});
+            workspace_server_settings.instance_id = data.instanceId;
+
+            const hostname = await request_promise('/latest/meta-data/local-hostname');
+            workspace_server_settings.hostname = hostname;
+            workspace_server_settings.server_to_container_hostname = hostname;
+        } else {
+            /* Otherwise, just use the defaults in the config file */
+            workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
+            workspace_server_settings.hostname = config.workspaceDevHostHostname;
+            workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
+        }
+    },
+    async () => {
+        if (!config.runningInEc2) return;
+        /* If we're inside EC2, look up a special tag and use its value to
+           find a secret containing the configuration data.  This is JSON
+           with a single object in the same format as the "config" object. */
+        const ec2 = new AWS.EC2();
+        const tags = (await ec2.describeTags({ Filters: [{ Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] }] }).promise()).Tags;
+        logger.info('Instance tags', tags);
+
+        const secret_tag = _.find(tags, { Key: 'ConfSecret' });
+        if (!secret_tag) return;
+
+        const secret_id = secret_tag.Value;
+        logger.info(`Secret ID: ${secret_id}`);
+
+        const secretsManager = new AWS.SecretsManager();
+        const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
+
+        if (!secret_value.SecretString) return;
+        logger.info(`Secret value: ${secret_value.SecretString}`);
+        const secret_config = JSON.parse(secret_value.SecretString);
+        logger.info('Parsed secret config', secret_config);
+
+        _.assign(config, secret_config);
+    },
+    async () => {
+        /* Always grab the port from the config */
+        workspace_server_settings.port = config.workspaceHostPort;
+        logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
+    },
     (callback) => {
         const pgConfig = {
             user: config.postgresqlUser,
@@ -117,45 +209,101 @@ async.series([
         });
     },
     (callback) => {
-        if (config.runningInEc2) {
-            const MetadataService = new AWS.MetadataService();
-            async.series([
-                (callback) => {
-                    MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
-                        if (ERR(err, callback)) return;
-                        try {
-                            const data = JSON.parse(document);
-                            debug('instance-identity', data);
-                            AWS.config.update({'region': data.region});
-                            workspace_server_settings.instance_id = data.instanceId;
-                            callback(null);
-                        } catch (err) {
-                            return callback(err);
-                        }
-                    });
-                },
-                (callback) => {
-                    MetadataService.request('/latest/meta-data/local-hostname', (err, hostname) => {
-                        if (ERR(err, callback)) return;
-                        workspace_server_settings.hostname = hostname;
-                        workspace_server_settings.server_to_container_hostname = hostname;
-                        callback(null);
-                    });
-                },
-            ], (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        } else {
-            /* Not running in ec2 */
-            callback(null);
-        }
-    },
-    (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
         logger.info(`Listening on port ${workspace_server_settings.port}`);
         callback(null);
+    },
+    async () => {
+        /* Set up file watching with chokidar */
+        workspacePrefix = config.workspaceJobsDirectory;
+        watcher = chokidar.watch(workspacePrefix, {
+            ignoreInitial: true,
+            awaitWriteFinish: true,
+            depth: 10,
+        });
+        watcher.on('add', filename => {
+            // Handle new files
+            logger.info(`Watching file add ${filename}`);
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('addDir', filename => {
+            // Handle new directory
+            logger.info(`Watching directory add ${filename}`);
+            var key = [filename, true];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('change', filename => {
+            // Handle file changes
+            logger.info(`Watching file change ${filename}`);
+            var key = [filename, false];
+            if (key in update_queue && update_queue[key].action == 'skip') {
+                delete update_queue[key];
+            } else {
+                update_queue[key] = {action: 'update'};
+            }
+        });
+        watcher.on('unlink', filename => {
+            // Handle removed files
+            var key = [filename, false];
+            update_queue[key] = {action: 'delete'};
+        });
+        watcher.on('unlinkDir', filename => {
+            // Handle removed directory
+            var key = [filename, true];
+            update_queue[key] = {action: 'delete'};
+        });
+        watcher.on('error', err => {
+            // Handle errors
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while handling watcher error: ${err2}`);
+                }
+                logger.error(`Watcher error: ${err}`);
+            });
+        });
+        async function autoUpdateJobManagerTimeout() {
+            const timeout_id = setTimeout(() => {
+                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
+            }, config.workspaceHostFileWatchIntervalSec * 1000);
+            try {
+                await _autoUpdateJobManager();
+            } catch (err) {
+                logger.error(`Error from _autoUpdateJobManager(): ${err}`);
+                logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+            }
+            clearTimeout(timeout_id);
+            setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+        }
+        setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic hard push of all containers to S3 */
+        async function pushAllContainersTimeout() {
+            await pushAllRunningContainersToS3();
+            setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+        }
+        setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
+    },
+    async () => {
+        /* Set up a periodic pruning of running containers */
+        async function pruneContainersTimeout() {
+            await pruneStoppedContainers();
+            await pruneRunawayContainers();
+            await sqldb.queryAsync(sql.update_load_count, { instance_id: workspace_server_settings.instance_id });
+
+            setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
+        }
+        setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
     (callback) => {
         // Add ourselves to the workspace hosts directory. After we
@@ -199,61 +347,11 @@ async.series([
 ], function(err, data) {
     if (err) {
         logger.error('Error initializing workspace host:', err, data);
+        markSelfUnhealthyAsync();
     } else {
         logger.info('Successfully initialized workspace host');
     }
 });
-
-// For detecting file changes
-let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
-const workspacePrefix = config.workspaceJobsDirectory;
-const watcher = chokidar.watch(workspacePrefix, {
-    ignoreInitial: true,
-    awaitWriteFinish: true,
-    depth: 10,
-});
-watcher.on('add', filename => {
-    // Handle new files
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('addDir', filename => {
-    // Handle new directory
-    var key = [filename, true];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('change', filename => {
-    // Handle file changes
-    var key = [filename, false];
-    if (key in update_queue && update_queue[key].action == 'skip') {
-        delete update_queue[key];
-    } else {
-        update_queue[key] = {action: 'update'};
-    }
-});
-watcher.on('unlink', filename => {
-    // Handle removed files
-    var key = [filename, false];
-    update_queue[key] = {action: 'delete'};
-});
-watcher.on('unlinkDir', filename => {
-    // Handle removed directory
-    var key = [filename, true];
-    update_queue[key] = {action: 'delete'};
-});
-async function autoUpdateJobManagerTimeout() {
-    await _autoUpdateJobManager();
-    setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-}
-setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
 
 /* Periodic hard-push of files to S3 */
 
@@ -263,9 +361,10 @@ setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
+    const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
-        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, `${config.workspaceS3Bucket}/workspace-${workspace.id}`, settings.workspace_sync_ignore);
+        await awsHelper.uploadDirectoryToS3Async(config.workspaceS3Bucket, s3Path, workspacePath, settings.workspace_sync_ignore);
     } catch (err) {
         /* Ignore any errors that may occur when the directory doesn't exist */
         logger.error(`Error uploading directory: ${err}`);
@@ -277,19 +376,16 @@ async function pushContainerContentsToS3(workspace) {
  * serially instead of in parallel.
  */
 async function pushAllRunningContainersToS3() {
+    lastPushAllTime = Date.now();
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
+            logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
+            logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
         }
     });
 }
-
-async function pushAllContainersTimeout() {
-    await pushAllRunningContainersToS3();
-    setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
-}
-setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
 
 /* Prune stopped and runaway containers */
 
@@ -325,7 +421,7 @@ async function pruneRunawayContainers() {
     const db_workspaces_uuid_set = new Set(db_workspaces.rows.map(ws => `workspace-${ws.launch_uuid}`));
     let running_workspaces;
     try {
-        running_workspaces = await docker.listContainers();
+        running_workspaces = await docker.listContainers({ all: true });
     } catch (err) {
         /* Nothing to do */
         return;
@@ -338,13 +434,6 @@ async function pruneRunawayContainers() {
         await dockerAttemptKillAndRemove(container_info.Id);
     });
 }
-
-async function pruneContainersTimeout() {
-    await pruneStoppedContainers();
-    await pruneRunawayContainers();
-    setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
-}
-setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
 
 /**
  * Looks up a docker container by the UUID used to launch it.
@@ -412,6 +501,21 @@ async function dockerAttemptKillAndRemove(input) {
         }
     }
 }
+
+/**
+ * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
+ * This will also set the "unhealthy__at" field if applicable.
+ */
+async function markSelfUnhealthyAsync() {
+    try {
+        await sqldb.queryAsync(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+    } catch (err) {
+        /* This could error if we don't even have a DB connection, in that case we should let the main server
+           mark us as unhealthy. */
+        logger.error(`Could not mark self as unhealthy: ${err}`);
+    }
+}
+const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
@@ -495,7 +599,13 @@ function _checkServer(workspace, callback) {
             } else {
                 const endTime = (new Date()).getTime();
                 if (endTime - startTime > maxMilliseconds) {
-                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id}`));
+                    workspace.container.logs({
+                        stdout: true,
+                        stderr: true,
+                    }, (err, logs) => {
+                        if (ERR(err, callback)) return;
+                        callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`));
+                    });
                 } else {
                     setTimeout(checkWorkspace, checkMilliseconds);
                 }
@@ -535,6 +645,7 @@ function _getSettingsWrapper(workspace, callback) {
 }
 
 function _workspaceFileChangeOwner(filepath, callback) {
+    debug(`Enforcing file ownership for ${filepath}`);
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
         config.workspaceJobsDirectoryOwnerGid == 0) {
         /* No-op if there's nothing to do */
@@ -618,11 +729,14 @@ async function _getRunningWorkspaceByPath(path) {
 }
 
 async function _autoUpdateJobManager() {
+    lastAutoUpdateTime = Date.now();
     var jobs = [];
     for (const key in update_queue) {
+        logger.info(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
 
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
@@ -633,24 +747,51 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
+        logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
 
         let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
+            logger.info(`_autoUpdateJobManager: skip root`);
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
+            logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
             s3_path = `${s3_name}/current/${local_path}`;
+            logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
+        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
         if (update_queue[key].action == 'update') {
+            logger.info(`_autoUpdateJobManager: adding update job`);
             jobs.push((callback) => {
-                awsHelper.uploadToS3(path, isDirectory, s3_path, local_path, callback);
+                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
+                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         } else if (update_queue[key].action == 'delete') {
+            logger.info(`_autoUpdateJobManager: adding delete job`);
             jobs.push((callback) => {
-                awsHelper.deleteFromS3(path, isDirectory, s3_path, local_path, callback);
+                logger.info(`Removing file from S3: ${s3_path}`);
+                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully removed file from S3: ${s3_path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         }
     }
@@ -658,7 +799,12 @@ async function _autoUpdateJobManager() {
     try {
         await async.parallel(jobs);
     } catch (err) {
-        logger.err(`Error uploading files to S3:\n${err}`);
+        markSelfUnhealthy((err2) => {
+            if (err2) {
+                logger.error(`Error while handling error: ${err2}`);
+            }
+            logger.error(`Error uploading files to S3:\n${err}`);
+        });
     }
 }
 
@@ -696,8 +842,23 @@ async function _getInitialZipAsync(workspace) {
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
 
+    debug(`Making directory ${localPath}`);
+    await fsPromises.mkdir(localPath, { recursive: true });
+    await _workspaceFileChangeOwnerAsync(localPath);
+
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
+    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+    for await (const entry of zip) {
+        const entryPath = path.join(localPath, entry.path);
+        if (entry.type == 'Directory') {
+            debug(`Making directory ${entryPath}`);
+            await fsPromises.mkdir(entryPath, { recursive: true });
+        } else {
+            debug(`Extracting file ${entryPath}`);
+            entry.pipe(fs.createWriteStream(entryPath));
+        }
+        await _workspaceFileChangeOwnerAsync(entryPath);
+    }
 
     return workspace;
 }
@@ -735,21 +896,70 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
 }
 
 function _pullImage(workspace, callback) {
-    workspaceHelper.updateMessage(workspace.id, 'Pulling image');
+    workspaceHelper.updateMessage(workspace.id, 'Checking image');
     const workspace_image = workspace.settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
         logger.info(`Pulling docker image: ${workspace_image}`);
+        let percentDisplayed = false;
         docker.pull(workspace_image, (err, stream) => {
             if (err) {
                 logger.error(`Error pulling "${workspace_image}" image; attempting to fall back to cached version.`, err);
                 return callback(null);
             }
+            /*
+             * We monitor the pull progress to calculate the
+             * percentage complete. This is roughly "current / total",
+             * but as docker pulls new layers the "total" can
+             * increase, which would cause the percentage to
+             * decrease. To avoid this, we track a "base" value for
+             * both "current" and "total" and compute the percentage
+             * as an increment above these values. This ensures that
+             * our percentage starts at 0, ends at 100, and never
+             * decreases. It has the disadvantage that the percentage
+             * will tend to go faster at the start (when we only know
+             * about a few layers) and slow down at the end (when we
+             * know about all layers).
+             */
 
+            let progressDetails = {};
+            let current, total = 0, fraction = 0;
+            let currentBase, fractionBase;
+            let outputCount = 0;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
+                if (percentDisplayed) {
+                    const toDatabase = false;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
+                }
                 callback(null, workspace);
             }, (output) => {
                 debug('Docker pull output: ', output);
+                if ('progressDetail' in output && output.progressDetail.total) {
+                    // track different states (Download/Extract)
+                    // separately by making them separate keys
+                    const key = `${output.id}/${output.status}`;
+                    progressDetails[key] = output.progressDetail;
+                }
+                current = Object.values(progressDetails).reduce((current, detail) => detail.current + current, 0);
+                const newTotal = Object.values(progressDetails).reduce((total, detail) => detail.total + total, 0);
+                if (outputCount <= 200) {
+                    // limit progress initially to wait for most layers to be seen
+                    current = Math.min(current, (outputCount/200)*newTotal);
+                }
+                if (newTotal > total) {
+                    total = newTotal;
+                    currentBase = current;
+                    fractionBase = fraction;
+                }
+                if (total > 0) {
+                    outputCount++;
+                    const fractionIncrement = (total > currentBase) ? ((current - currentBase) / (total - currentBase)) : 0;
+                    fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
+                    const percent = Math.floor(fraction * 100);
+                    const toDatabase = false;
+                    percentDisplayed = true;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase);
+                }
             });
         });
     } else {
@@ -830,7 +1040,7 @@ function _createContainer(workspace, callback) {
                 if (ERR(err, callback)) return;
                 container = newContainer;
 
-                sqldb.query(sql.update_load_count, {workspace_id: workspace.id, count: +1}, function(err, _result) {
+                sqldb.query(sql.update_load_count, { instance_id: workspace_server_settings.instance_id }, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null, container);
                 });
@@ -910,8 +1120,12 @@ function initSequence(workspace_id, useInitialZip, res) {
         _checkServer,
     ], function(err) {
         if (err) {
-            logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
-            res.status(500).send(err);
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while capturing error: ${err2}`);
+                }
+                logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
+            });
         } else {
             sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
                 if (ERR(err)) return;

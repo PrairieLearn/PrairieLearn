@@ -75,7 +75,7 @@ describe('Test workspace authorization access', function() {
 
             const $ = cheerio.load(response.body);
             const workspace_btns = $('a:contains("Open workspace")');
-            assert.equal(workspace_btns.length, 2);
+            assert.equal(workspace_btns.length, 1);
 
             workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
             assert.isDefined(workspace_id);
@@ -144,7 +144,7 @@ describe('Test workspace authorization access', function() {
 
             const $ = cheerio.load(response.body);
             const workspace_btns = $('a:contains("Open workspace")');
-            assert.equal(workspace_btns.length, 2);
+            assert.equal(workspace_btns.length, 1);
 
             workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
             assert.isDefined(workspace_id);
@@ -220,7 +220,7 @@ describe('Test workspace authorization access', function() {
                 $ = cheerio.load(response.body);
 
                 const workspace_btns = $('a:contains("Open workspace")');
-                assert.equal(workspace_btns.length, 2);
+                assert.equal(workspace_btns.length, 1);
                 workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
                 assert.isDefined(workspace_id);
             });
