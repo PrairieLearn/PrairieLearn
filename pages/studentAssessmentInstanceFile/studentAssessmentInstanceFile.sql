@@ -1,5 +1,5 @@
 -- BLOCK select_file
-SELECT f.storage_filename
+SELECT f.storage_filename, f.storage_type
 FROM
     files AS f
 WHERE
