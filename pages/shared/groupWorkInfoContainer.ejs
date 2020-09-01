@@ -12,12 +12,34 @@
     <div class="col-sm bg-light py-4 px-4 border">
       <% if (permissions.student_authz_leave) { %>
       <div style="display: flex; justify-content: flex-end">
-        <div id="popoverLeave" tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-          data-html="true" data-placement="auto" data-content="<%= include('formLeaveGroup.ejs'); %>">
-        </div>
-        <a class="btn btn-danger" onclick="$('#popoverLeave').popover('show')" href="#">
+        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#leaveModal">
           Leave the Group
-        </a>
+        </button>
+        <!-- Modal -->
+        <div class="modal fade" id="leaveModal" tabindex="-1" role="dialog" aria-labelledby="leaveModalLabel"
+          aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="leaveModalLabel">Confirm Leaving</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                You may not be able to join back the current instance
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <form name="leave-group-form" method="POST">
+                  <input type="hidden" name="__action" value="leaveGroup">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <% } %>
       <span class="badge badge-secondary">Group Members</span>

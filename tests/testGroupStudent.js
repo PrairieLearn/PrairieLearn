@@ -479,9 +479,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 1);
-            assert.nestedProperty(elemList[0], 'attribs.value');
-            locals.__csrf_token = elemList[0].attribs.value;
+            assert.lengthOf(elemList, 2);
+            assert.nestedProperty(elemList[1], 'attribs.value');
+            locals.__csrf_token = elemList[1].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('should have a non-disabled "start assessment" button', function() {
@@ -584,7 +584,7 @@ describe('Group based homework assess control on student side', function() {
     describe('16. access control of student who used to be in group 1 but not in any group now', function() {
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 2);
+            assert.lengthOf(elemList, 3);
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
