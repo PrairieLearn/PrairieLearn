@@ -33,7 +33,8 @@
         <div class="card-body">
           <div class="row align-items-center mb-4">
             <div class="col-md-3 col-sm-6 col-xs-12">
-              Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
+              <%- include('../partials/pointsFormatter'); %>
+              Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %>
             </div>
             <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
