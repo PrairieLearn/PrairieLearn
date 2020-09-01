@@ -144,12 +144,8 @@ async function handleWorkspaceAutoscaling(stats) {
            values in the database if they exist */
 
         let max_hosts = await config.getDBConfigValueAsync('workspaceAutoscaleMaxHosts', null);
-        if (max_hosts) {
-            max_hosts = parseInt(max_hosts);
-        } else {
-            max_hosts = Infinity;
-        }
-        let min_hosts = parseInt(await config.getDBConfigValueAsync('workspaceAutoscaleMinHosts', '0'));
+        max_hosts = (max_hosts ? parseInt(max_hosts) : Infinity);
+        const min_hosts = parseInt(await config.getDBConfigValueAsync('workspaceAutoscaleMinHosts', '0'));
 
         /* Clamp the desired hosts value */
         if (desired_hosts < min_hosts) {
