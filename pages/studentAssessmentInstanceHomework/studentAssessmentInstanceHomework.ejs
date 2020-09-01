@@ -22,7 +22,6 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
-    <%- include('../partials/pointsFormatter'); %>
     <div id="content" class="container">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -34,6 +33,7 @@
         <div class="card-body">
           <div class="row align-items-center mb-4">
             <div class="col-md-3 col-sm-6 col-xs-12">
+              <%- include('../partials/pointsFormatter'); %>
               Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %>
             </div>
             <div class="col-md-3 col-sm-6 col-xs-12">
