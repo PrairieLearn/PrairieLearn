@@ -140,6 +140,24 @@ async function handleWorkspaceAutoscaling(stats) {
         desired_hosts = parseInt(desired_hosts);
     } else {
         desired_hosts = stats.workspace_hosts_desired;
+        /* If we're using the calculated desired hosts value, clamp it to the max and min
+           values in the database if they exist */
+
+        let max_hosts = await config.getDBConfigValueAsync('workspaceAutoscaleMaxHosts', null);
+        if (max_hosts) {
+            max_hosts = parseInt(max_hosts);
+        } else {
+            max_hosts = Infinity;
+        }
+        let min_hosts = parseInt(await config.getDBConfigValueAsync('workspaceAutoscaleMinHosts', '0'));
+
+        /* Clamp the desired hosts value */
+        if (desired_hosts < min_hosts) {
+            desired_hosts = min_hosts;
+        }
+        if (desired_hosts > max_hosts) {
+            desired_hosts = max_hosts;
+        }
     }
     let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
     if (!launch_template_id) {
