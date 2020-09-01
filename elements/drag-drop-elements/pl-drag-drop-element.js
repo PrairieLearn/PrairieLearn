@@ -1,8 +1,8 @@
 /* eslint-env jquery, browser */
 
 function set_answer(event) {
-    /* We only care about when this function is fired
-    / from an ANSWER DROPZONE, aka dropzones with yellow backgrounds */
+    // We only care about when this function is fired
+    // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
     var student_answers = [];
@@ -12,7 +12,7 @@ function set_answer(event) {
         if (!$(dom_objs[i]).hasClass('info')){
             var answer_text = dom_objs[i].getAttribute('string');
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-            answer_indent = Math.round((answer_indent - 5) / 50); //get how many times the answer is indented
+            answer_indent = Math.round((answer_indent - 5) / 50); // get how many times the answer is indented
             student_answers.push(answer_text);
             indents.push(answer_indent.toString());
         }
@@ -32,14 +32,14 @@ function set_answer(event) {
 
 function update_indent(leftDiff, id, ui) {
     if (!ui.item.parent()[0].classList.contains('dropzone')){
-        //no need to support indent on MCQ option panel
+        // no need to support indent on MCQ option panel
         ui.item.style = 'margin-left: 5px;';
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
     var currentIndent = ui.item[0].style.marginLeft;
     if (parseInt(currentIndent) <= 5 && leftDiff < 0){
-        return; //if answer is not indented, and the student drag it left
+        return; // if answer is not indented, and the student drag it left
                 // do nothing
     }
 
@@ -56,9 +56,9 @@ function update_indent(leftDiff, id, ui) {
     var hack = [5,55,105,155,205];
     if (hack.indexOf(leftDiff) === -1){
         var hack2 = leftDiff;
-        //when the user drag a tile into the answer box for the first time
-        //the snap to grid dragging doesnt apply
-        //so we have to use a hack here to "snap the leftDiff number to the nearest grid number"
+        // when the user drag a tile into the answer box for the first time
+        // the snap to grid dragging doesnt apply
+        // so we have to use a hack here to "snap the leftDiff number to the nearest grid number"
         leftDiff = hack.reduce(function(prev, curr) {
           return (Math.abs(curr - hack2) < Math.abs(prev - hack2) ? curr : prev);
         });
@@ -70,8 +70,8 @@ function update_indent(leftDiff, id, ui) {
 
 
 $( document ).ready(function() {
-    //Add drag and drop functionality for options elements
-    //that has the connectedSortable class
+    // Add drag and drop functionality for options elements
+    // that has the connectedSortable class
     // code for the HTML popover
     $('.connectedSortable').sortable({
         items: 'li:not(.info-fixed)',

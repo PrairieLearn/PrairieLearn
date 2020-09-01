@@ -113,7 +113,6 @@ def render(element_html, data):
             'header-left-column': header_left_column,
             'header-right-column': header_right_column,
             'submission_dict': student_submission_dict_list
-            # 'data': data
         }
 
         with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
@@ -121,7 +120,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
+        if pl.get_boolean_attrib(element, 'external-grader', False): 
             return ''
         # render the submission panel
         uuid = pl.get_uuid()
@@ -146,7 +145,6 @@ def render(element_html, data):
             'score': score,
             'perfect_score': True if score == 100 else None,
             'feedback': feedback
-            # 'data': data
         }
 
         # Finally, render the HTML
@@ -222,7 +220,8 @@ def parse(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     temp = answerName
-    temp += '-input'  # this is how the backend is written
+    temp += '-input'  # the answerName textfields that raw-submitted-answer reads from 
+                      # have '-input' appended to their name attribute
 
     student_answer_temp = ''
     if temp in data['raw_submitted_answers']:
@@ -262,7 +261,7 @@ def parse(element_html, data):
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
 
-    if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
+    if pl.get_boolean_attrib(element, 'external-grader', False):  
         file_name = pl.get_string_attrib(element, 'file-name', None)
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
@@ -287,7 +286,6 @@ def parse(element_html, data):
             if leading_code is not None and trailing_code is None:
                 file_data = getleadAnswer(student_answer, student_answer_indent, leadingnew_code)
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
-        # return
 
     data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
                                              'student_raw_submission': student_answer,
