@@ -186,10 +186,7 @@ def prepare(element_html, data):
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
             # CORRECT is optional for backward compatibility
-            # pl.check_attribs(html_tags, required_attribs=[''], optional_attribs=['correct', 'ranking', 'indent'])
-            mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
-        # BACKWARD COMPATIBILITY CODE
-        if html_tags.tag == 'pl-distractor':
+            pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
             mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
     if isShuffle == 'true':
@@ -197,7 +194,7 @@ def prepare(element_html, data):
 
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
-            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'true')  # default to true, for backward compatibility
+            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'false')  # default correctness to false
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
             if isCorrect.lower() == 'true':
                 # add option to the correct answer array, along with the correct required indent
@@ -228,8 +225,6 @@ def parse(element_html, data):
     elif student_answer_temp == '':
         data['format_errors'][answerName] = 'No answer was submitted.'
         return
-
-    # student_answer_temp = list(student_answer_temp.rsplit(',,,'))
 
     student_answer = []
     student_answer_indent = []
