@@ -5,17 +5,16 @@ function set_answer(event) {
     / from an ANSWER DROPZONE, aka dropzones with yellow backgrounds */
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
-    var temp = [];
+    var student_answers = [];
     var indents = [];
+    var answer_json = {'answers': [], 'answer_indent': []};
     for (var i = 0; i < dom_objs.length; i++) {
         if (!$(dom_objs[i]).hasClass('info')){
             var answer_text = dom_objs[i].getAttribute('string');
-            // console.log(answer_text);
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-            indents.push(answer_indent);
             answer_indent = Math.round((answer_indent - 5) / 50); //get how many times the answer is indented
-            answer_text = answer_text + ':::' + answer_indent;
-            temp.push(answer_text);
+            student_answers.push(answer_text);
+            indents.push(answer_indent.toString());
         }
     }
 
@@ -24,7 +23,10 @@ function set_answer(event) {
         return;
     }
     textfield_name = '#' + textfield_name + '-input';
-    $(textfield_name).val(temp.join(',,,')); // use 3 commas as delimiter
+    answer_json.answers = student_answers;
+    answer_json.answer_indent = indents;
+    console.log(answer_json);
+    $(textfield_name).val(JSON.stringify(answer_json));
 }
 
 
