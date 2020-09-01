@@ -1,141 +1,65 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-  <%- include('../partials/head'); %>
-</head>
-
-<body>
-  <%- include('../partials/navbar', {navPage: ''}); %>
-  <div id="content" class="container">
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
-        <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
-        <i class="fas fa-users"></i>
-      </div>
-      <div class="card-body">
-        <p class="lead text-center">
-          <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for
-          <strong><%= course.short_name %></strong>
-        </p>
-        <% if (groupsize == 0) { %>
-        <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
-        <p class="text-center">
-          This is a group homework. Please wait for the instructor to assign groups.
-        </p>
-        <% } else { %>
-        <p class="text-center">
-          This is a group homework.
-        </p>
-        <% if (typeof usedjoincode !== 'undefined') { %>
-        <div class="alert alert-danger" role="alert">
-          Failed to join the group with joincode <span class="badge badge-secondary"><%= usedjoincode %></span>. It is
-          already full or does not exist. Please try to join another one.
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+          <i class="fas fa-users"></i>
         </div>
-        <% } %>
-        <% if (typeof invalidGroupName !== 'undefined') { %>
-        <div class="alert alert-danger" role="alert">
-          The group name is invalid. Alpha and numeric characters only. ([0-9] [a-z] [A-Z])
-        </div>
-        <% } %>
-        <% if (typeof uniqueGroupName !== 'undefined') { %>
-        <div class="alert alert-danger" role="alert">
-          Failed to create the group. It is already taken. Please try another one.
-        </div>
-        <% } %>
-        <div class="container-fluid">
-          <div class="row">
-            <% if (permissions.student_authz_create) { %>
-            <div class="col-sm bg-light py-4 px-4 border">
-              <form id="create-form" name="create-form" method="POST">
-                <input type="text" class="form-control" name="groupName" placeholder="Group Name">
-                <small id="groupNameHelp" class="form-text text-muted">*Alpha and numeric characters only</small>
-                <div class="mt-4 d-flex justify-content-center">
-                  <div class="form-group mb-0">
-                    <input type="hidden" name="__action" value="createGroup">
-                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-primary">Create a New Group</button>
-                  </div>
-                </div>
-              </form>
+        <div class="card-body">
+          <p class="lead text-center">
+            <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
+          </p>
+          <% if (groupsize == 0) { %>
+            <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
+              <p class="text-center">
+                This is a group homework. Please wait for the instructor to assign groups.
+             </p>
+            <% } else { %>
+          <p class="text-center">
+             This is a group assessment.
+          </p>
+          <% if (typeof usedjoincode !== 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+              Failed to join the group with joincode <span class="badge badge-secondary"><%= usedjoincode %></span>. It is already full or does not exist. Please try to join another one.
             </div>
-            <% } %>
-            <% if (permissions.student_authz_join) { %>
-            <div class="col-sm bg-light py-4 px-4 border">
-              <form id="joingroup-form" name="joingroup-form" method="POST">
-                <input type="text" class="form-control" name="joincode" placeholder="Join Code">
-                <div class="mt-4 d-flex justify-content-center">
-                  <div class="form-group mb-0">
-                    <input type="hidden" name="__action" value="joinGroup">
-                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-primary">Join Group via Join Code</button>
-                  </div>
-                </div>
-              </form>
+          <% } %>
+          <% if (typeof invalidGroupName !== 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+              The group name is invalid. Alpha and numeric characters only. ([0-9] [a-z] [A-Z])
             </div>
-            <% } %>
-          </div>
+          <% } %>
+          <% if (typeof uniqueGroupName !== 'undefined') { %>
+            <div class="alert alert-danger" role="alert">
+              Failed to create the group. It is already taken. Please try another one.
+            </div>
+          <% } %>
+          <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
+          <% } %>
+          <% } else {%>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupinfo: groupinfo}); %>
+            <% if (start) { %>
+            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
+              <input type="hidden" name="__action" value="newInstance">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
+            </form>
+            <% } else { %>
+            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
+              <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
+            </form>
+            <p class="text-center">
+              * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
+           </p>
+           <% } %>
+        <% } %>
         </div>
-        <% } %>
-        <% } else {%>
-        <div class="container-fluid">
-          <div class="row">
-            <% if (permissions.student_authz_join) { %>
-            <div class="col-sm bg-light py-4 px-4 border">
-              <p>This is a group homework. Use your join code to invite others to join the group.</p>
-              <span class="badge badge-secondary">Group Name</span>
-              <span id="group-name"><%= groupinfo[0].name %></span><br>
-              <span class="badge badge-secondary">join Code</span>
-              <span id='join-code'><%= joincode %></span><br>
-            </div>
-            <% } %>
-            <div class="col-sm bg-light py-4 px-4 border">
-              <% if (permissions.student_authz_leave) { %>
-              <div style="display: flex; justify-content: flex-end">
-                <div id="popoverLeave" tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                  data-html="true" data-placement="auto" data-content="<%= include('formLeaveGroup.ejs'); %>">
-                </div>
-                <a class="btn btn-danger" onclick="$('#popoverLeave').popover('show')" href="#">
-                  Leave the Group
-                </a>
-              </div>
-              <% } %>
-              <span class="badge badge-secondary">Group Members</span>
-              <% groupinfo.forEach(function(row) {%>
-              <li><%= row.uid %></li>
-              <% }); %>
-            </div>
-          </div>
-        </div>
-        <% if (start) { %>
-        <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-          <input type="hidden" name="__action" value="newInstance">
-          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-          <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
-        </form>
-        <% } else { %>
-        <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-          <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
-        </form>
-        <p class="text-center">
-          * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
-        </p>
-        <% } %>
-        <% } %>
       </div>
     </div>
-  </div>
-</body>
-<script>
-  $(function () {
-    $('[data-toggle="popover"]').popover({ sanitize: false })
-  });
-
-  // make the file inputs display the file name
-  $(document).on('change', '.custom-file-input', function () {
-    let fileName = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
-    $(this).parent('.custom-file').find('.custom-file-label').text(fileName);
-  });
-</script>
-
+  </body>
 </html>

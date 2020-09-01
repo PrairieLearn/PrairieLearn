@@ -1,0 +1,34 @@
+<div class="container-fluid">
+  <div class="row">
+    <% if (permissions.student_authz_join) { %>
+    <div class="col-sm bg-light py-4 px-4 border">
+      <p>This is a group assessment. Use your join code to invite others to join the group.</p>
+      <span class="badge badge-secondary">Group Name</span>
+      <span id="group-name"><%= groupinfo[0].name %></span><br>
+      <span class="badge badge-secondary">join Code</span>
+      <span id='join-code'><%= joincode %></span><br>
+    </div>
+    <% } %>
+    <div class="col-sm bg-light py-4 px-4 border">
+      <% if (permissions.student_authz_leave) { %>
+      <div style="display: flex; justify-content: flex-end">
+        <div id="popoverLeave" tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+          data-html="true" data-placement="auto" data-content="<%= include('formLeaveGroup.ejs'); %>">
+        </div>
+        <a class="btn btn-danger" onclick="$('#popoverLeave').popover('show')" href="#">
+          Leave the Group
+        </a>
+      </div>
+      <% } %>
+      <span class="badge badge-secondary">Group Members</span>
+      <% groupinfo.forEach(function(row) {%>
+      <li><%= row.uid %></li>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<script>
+  $(function () {
+    $('[data-toggle="popover"]').popover({ sanitize: false })
+  });
+</script>
