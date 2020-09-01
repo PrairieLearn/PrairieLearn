@@ -14,6 +14,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
@@ -22,13 +23,15 @@
               <h4 class="modal-title" id="deleteAssessmentInstanceModalLabel">Delete assessment instance</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to delete assessment
-              instance <span class="modal-number"></span>
-              of <strong><%= assessment_set.name
-              %> <%= assessment.number %></strong>
-              for <strong><span class="modal-name"></span></strong>
-              (<span class="modal-uid"></span>) with a score
-              of <span class="modal-score-perc"></span>%?
+              Are you sure you want to delete assessment instance
+              <span class="modal-number"></span> of
+              <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong> for
+              <strong><span class="modal-name"></span></strong>
+              (<span class="modal-uid"></span>) started at
+              <strong><span class="modal-date"></span></strong> with a
+              score of
+              <strong><span class="modal-score-perc"></span>%</strong>?
             </div>
             <div class="modal-footer">
               <form name="delete-form" method="POST">
@@ -49,12 +52,14 @@
             var uid = button.data('uid'); // Extract info from data-* attributes
             var name = button.data('name');
             var number = button.data('number');
+            var date_formatted = button.data('date-formatted');
             var score_perc = button.data('score-perc');
             var assessment_instance_id = button.data('assessment-instance-id');
             var modal = $(this);
             modal.find('.modal-uid').text(uid);
             modal.find('.modal-name').text(name);
             modal.find('.modal-number').text(number);
+            modal.find('.modal-date').text(date_formatted);
             modal.find('.modal-score-perc').text(score_perc);
             modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
         });
@@ -99,11 +104,17 @@
           <table id="usersTable" class="table table-sm table-hover tablesorter">
             <thead>
               <tr>
-                <th>UID</th>
-                <th>Name</th>
-                <th class="text-center">Role</th>
+                <% if (assessment.group_work) { %>
+                  <th>Name</th>
+                  <th>Group Members</th>
+                <% } else { %>
+                  <th>UID</th>
+                  <th>Name</th>
+                  <th class="text-center">Role</th>
+                <% } %>
                 <th class="text-center">Instance</th>
                 <th class="text-center">Score</th>
+                <th class="text-center">Date started</th>
                 <th class="text-center">Duration</th>
                 <th class="text-center">Remaining</th>
                 <th class="text-center"></th>
@@ -112,12 +123,22 @@
             </thead>
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
+                <!-- Not showing already deleted group -->
+                <% if (assessment.group_work && !row.group_name) { %>
+                  <% return; %>
+                <% } %>
               <tr>
+                <% if (assessment.group_work) { %>
+                  <td><%= row.group_name %></td>
+                  <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
+                <% } else { %>
                 <td><%= row.uid %></td>
                 <td><%= row.name %></td>
                 <td class="text-center"><%= row.role %></td>
+                <% } %>
                 <td class="text-center"><%= row.number %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center"><%= row.date_formatted %></td>
                 <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center"><%= row.time_remaining %></td>
                 <td class="text-center">
@@ -185,6 +206,7 @@
                          data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
                          data-uid="<%= row.uid %>" data-name="<%= row.name %>"
                          data-number="<%= row.number %>"
+                         data-date-formatted="<%= row.date_formatted %>"
                          data-score-perc="<%= Math.floor(row.score_perc) %>"
                          data-assessment-instance-id="<%= row.assessment_instance_id %>"
                          >
@@ -232,7 +254,7 @@
               <strong>Roles:</strong>
               <ul>
                  <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
-                 <li><strong>TA</strong> is a teaching assisstant. They can see the data of all users, but can only edit their own information.</li>
+                 <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
                  <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
                  <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
               </ul>
@@ -247,8 +269,13 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
+                    <% if (assessment.group_work) { %>
                       7: {sorter: false},
                       8: {sorter: false},
+                    <% } else { %>
+                      8: {sorter: false},
+                      9: {sorter: false},
+                    <% } %>
                   },
               });
           });

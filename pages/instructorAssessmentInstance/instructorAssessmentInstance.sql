@@ -22,7 +22,8 @@ FROM
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN assessments AS a ON (ai.assessment_id = a.id)
     JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-    JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
+    LEFT JOIN group_users AS gu ON (ai.group_id = gu.group_id)
+    JOIN enrollments AS e ON ( ((ai.user_id = e.user_id) OR (e.user_id = gu.user_id))AND ci.id = e.course_instance_id)
 WHERE
     ai.id=$assessment_instance_id
     AND aq.deleted_at IS NULL
@@ -35,11 +36,14 @@ GROUP BY
 ORDER BY
     aq.number;
 
--- BLOCK select_formatted_duration
+-- BLOCK select_date_formatted_duration
 SELECT
+    format_date_full_compact(ai.date, ci.display_timezone) AS assessment_instance_date_formatted,
     format_interval(ai.duration) AS assessment_instance_duration
 FROM
     assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
     ai.id = $assessment_instance_id;
 
@@ -73,6 +77,21 @@ WHERE
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
+
+-- BLOCK select_group_info
+SELECT
+    gr.name, gr.id AS gid, gr.deleted_at,
+    array_agg(u.uid) AS uid_list
+FROM
+    assessment_instances AS ai
+    JOIN groups AS gr ON (gr.id = ai.group_id)
+    JOIN group_users AS gu ON (gu.group_id = gr.id)
+    JOIN users AS u ON (u.user_id = gu.user_id)
+WHERE 
+    ai.id = $assessment_instance_id
+    AND gr.deleted_at IS NULL
+GROUP BY
+    gr.id;
 
 -- BLOCK select_log
 WITH

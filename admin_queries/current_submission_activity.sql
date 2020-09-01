@@ -1,6 +1,8 @@
-WITH assessments_with_submission_counts AS (
+WITH
+assessment_users_with_submission_counts AS (
     SELECT
         a.id AS assessment_id,
+        s.auth_user_id,
         count(*) AS submission_count
     FROM
         submissions AS s
@@ -9,8 +11,16 @@ WITH assessments_with_submission_counts AS (
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE s.date > now() - interval '10 minutes'
-    GROUP BY a.id
-    LIMIT 100
+    GROUP BY a.id, s.auth_user_id
+),
+assessments_with_submission_counts AS (
+    SELECT
+        assessment_id,
+        count(*) AS user_count,
+        sum(submission_count) AS submission_count
+    FROM
+        assessment_users_with_submission_counts
+    GROUP BY assessment_id
 )
 SELECT
     i.short_name AS institution,
@@ -20,6 +30,7 @@ SELECT
     ci.id AS course_instance_id,
     aset.abbreviation || a.number || ': ' || a.title AS assessment,
     a.id AS assessment_id,
+    awsc.user_count,
     awsc.submission_count
 FROM
     assessments_with_submission_counts AS awsc
@@ -34,4 +45,5 @@ ORDER BY
     c.short_name,
     ci.short_name,
     assessment,
-    a.id;
+    a.id
+LIMIT 100;

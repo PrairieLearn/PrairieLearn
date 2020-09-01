@@ -130,9 +130,11 @@ module.exports.pullAndUpdate = function(locals, callback) {
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
-                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err, result) {
                     if (err) {
                         job.fail(err);
+                    } else if (result.hadJsonErrors) {
+                        job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
                         job.succeed();
                     }

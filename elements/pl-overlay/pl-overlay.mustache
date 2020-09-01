@@ -1,0 +1,13 @@
+<div class="pl-overlay {{#clip}}pl-overlay-clip{{/clip}}"
+     style="{{#width}}width: {{width}}px;{{/width}} {{#height}}height: {{height}}px{{/height}}">
+    <div class="pl-overlay-locations-container">
+        {{#locations}}
+            <div class="pl-overlay-location" style="{{{outer_style}}}">
+                {{{html}}}
+            </div>
+        {{/locations}}
+    </div>
+    {{#background}}
+        {{{background}}}
+    {{/background}}
+</div>

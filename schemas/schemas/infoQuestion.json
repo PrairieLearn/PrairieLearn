@@ -37,7 +37,7 @@
             "type": "string"
         },
         "secondaryTopics": {
-            "description": "Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
+            "description": "DEPRECATED, DO NOT USE. Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
             "type": "array",
             "items": {
                 "description": "A single topic covered by the question.",
@@ -197,6 +197,54 @@
                     "type": "array",
                     "items": {
                         "description": "A .js file located in the clientFilesQuestion.",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "workspaceOptions": {
+            "description": "Options for workspace questions.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "image",
+                "port",
+                "home"
+            ],
+            "properties": {
+                "image": {
+                    "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
+                    "type": "string"
+                },
+                "port": {
+                    "description": "The port number used in the Docker image.",
+                    "type": "integer"
+                },
+                "home": {
+                    "description": "The home directory of the workspace container.",
+                    "type": "string"
+                },
+                "args": {
+                    "description": "Command line arguments to pass to the Docker.",
+                    "type": "string"
+                },
+                "rewriteUrl": {
+                    "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
+                    "type": "boolean"
+                },
+                "gradedFiles": {
+                    "description": "The list of files or directories that will be copied for grading.",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be copied for grading.",
+                        "type": "string"
+                    }
+                },
+                "syncIgnore": {
+                    "description": "The list of files or directories that will be excluded from sync.",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be excluded from sync.",
                         "type": "string"
                     }
                 }

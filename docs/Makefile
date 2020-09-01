@@ -1,5 +1,5 @@
 # Execute commands regardless of physical state of files
-.PHONY: all jsdoc build preview
+.PHONY: all jsdoc build preview sphinx
 
 # Overall build scheme
 all: jsdoc \
@@ -32,6 +32,9 @@ preview:
 
 %.pdf: %.gv
 	dot -Tpdf $< > $@
+
+sphinx:
+	make -C python-grader
 
 # Clean up the environment
 clean:

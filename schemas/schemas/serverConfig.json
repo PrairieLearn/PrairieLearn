@@ -96,6 +96,10 @@
             "description": "Time after last activity when exams are auto-closed (minutes).",
             "type": "integer"
         },
+        "runningInEc2": {
+            "description": "Whether PL is running as an AWS EC2 instance",
+            "type": "boolean"
+        },
         "externalGradingUseAws": {
             "description": "If the external grader should use AWS (production) or not (local dev).",
             "type": "boolean"
@@ -127,6 +131,10 @@
         "externalGradingDefaultTimeout": {
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"
+        },
+        "externalGradingPullImagesFromDockerHub": {
+            "description": "Whether externally graded questions should automatically pull container images from Docker Hub (true) or use only locally cached images (false)",
+            "type": "boolean"
         },
         "awsRegion": {
             "description": "The region for AWS resources.",

@@ -21,6 +21,8 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
+    - name: Run typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
     - name: Run the Python tests
@@ -35,3 +37,4 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.github_token }}
+      continue-on-error: true

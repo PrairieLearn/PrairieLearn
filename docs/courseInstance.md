@@ -5,7 +5,7 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added.
+A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added.  A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```text
 exampleCourse
@@ -70,7 +70,7 @@ Role         | Description
 ---          | ---
 `None`       | A user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.
 `Student`    | A student participating in the class. They can only see their own information, and can do assessments. Default permission.
-`TA`         | A teaching assisstant. They can see the data of all users, but can only edit their own information.
+`TA`         | A teaching assistant. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. They have full permission to see and edit the information of other users.
 
 By default, any user not explicitly mentioned in the `userRoles` list will

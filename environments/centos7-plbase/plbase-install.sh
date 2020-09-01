@@ -3,7 +3,7 @@
 yum -y install \
     epel-release \
     https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
-    https://centos7.iuscommunity.org/ius-release.rpm
+    https://repo.ius.io/ius-release-el7.rpm
 
 yum -y update
 
@@ -11,6 +11,7 @@ yum -y install \
     postgresql11-server \
     postgresql11-contrib \
     redis \
+    docker \
     python3 \
     python3-pip \
     python3-devel \
@@ -28,7 +29,7 @@ yum -y install \
     R \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
-    git2u \
+    git224 \
     graphviz \
     graphviz-devel
 

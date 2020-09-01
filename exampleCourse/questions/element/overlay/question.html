@@ -1,0 +1,26 @@
+<pl-question-panel>
+    <p>
+        <i>
+            The element <code class="user-output">pl-overlay</code> allows the positioning of pre-existing elements in arbitrary positions on top of other elements.
+            This question combines a static image to serve as a background
+            along with the <code class="user-output">pl-string-input</code> element.
+        </i>
+    </p>
+    <p>
+        Write the name of the unlabeled country:
+    </p>
+</pl-question-panel>
+
+<pl-overlay>
+    <!-- Background map image  -->
+    <pl-background>
+        <!-- Use a normal img tag because pl-figure applies extra padding and scaling when the window gets small -->
+        <img src="{{options.client_files_question_url}}/europe_annotated.png" width="700px">
+    </pl-background>
+
+    <!-- Input -->
+    <pl-location left="460" top="290">
+       <pl-string-input answers-name="string_value" show-help-text="false" size="7"
+                        correct-answer="Ukraine" remove-leading-trailing="true" ignore-case="true"></pl-string-input>
+    </pl-location>
+</pl-overlay>

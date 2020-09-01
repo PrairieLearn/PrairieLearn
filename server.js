@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -17,6 +18,7 @@ const argv = require('yargs-parser') (process.argv.slice(2));
 const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -25,9 +27,9 @@ const aws = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
+const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const migrations = require('./migrations');
+const { sqldb, migrations } = require('@prairielearn/prairielib');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -141,6 +143,8 @@ app.post('/pl/course_instance/:course_instance_id/instance_question/:instance_qu
 app.post('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id', upload.single('file'));
 app.post('/pl/course/:course_id/question/:question_id', upload.single('file'));
+app.post('/pl/course/:course_id/question/:question_id/file_view', upload.single('file'));
+app.post('/pl/course/:course_id/question/:question_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/course_admin/settings', upload.single('file'));
@@ -155,11 +159,75 @@ app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessm
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_view/*', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view', upload.single('file'));
 app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_view/*', upload.single('file'));
+app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
+// proxy workspaces to remote machines
+const workspaceProxyOptions = {
+    target: 'invalid',
+    ws: true,
+    pathRewrite: async (path) => {
+        try {
+            const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
+            if (!match) throw new Error(`Could not match path: ${path}`);
+            const workspace_id = parseInt(match[1]);
+            const sql
+                  = 'SELECT q.*'
+                  + ' FROM questions AS q'
+                  + ' JOIN variants AS v ON (v.question_id = q.id)'
+                  + ' WHERE v.workspace_id = $workspace_id;';
+            const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
+            let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+            if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+            if (!workspace_url_rewrite) {
+                return path;
+            }
+            var pathSuffix = match[2];
+            const newPath = '/' + pathSuffix;
+            return newPath;
+        } catch (err) {
+            logger.error(`Error in pathRewrite for path=${path}: ${err}`);
+            return path;
+        }
+    },
+    logLevel: 'silent',
+    logProvider: _provider => logger,
+    router: async (req) => {
+        try {
+            const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+            if (!match) throw new Error(`Could not match URL: ${req.url}`);
+            const workspace_id = match[1];
+            const result = await sqldb.queryOneRowAsync(`SELECT hostname FROM workspaces WHERE id = $workspace_id;`, {workspace_id});
+            const url = `http://${result.rows[0].hostname}/`;
+            return url;
+        } catch (err) {
+            logger.error(`Error in router for url=${req.url}: ${err}`);
+            return 'not-matched';
+        }
+    },
+    onError: (err, req, res) => {
+        logger.error(`Error proxying workspace request: ${err}`);
+        try {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.send('There was an error proxying this workspace request');
+        } catch (err) {
+            logger.error(`Error while handling workspace request error: ${err}`);
+        }
+    },
+};
+const workspaceProxy = createProxyMiddleware((pathname) => {
+    return pathname.match('/pl/workspace/([0-9])+/container/');
+}, workspaceProxyOptions);
+app.use('/pl/workspace/:workspace_id/container', [
+    cookieParser(),
+    require('./middlewares/date'),
+    require('./middlewares/authn'),
+    require('./middlewares/authzWorkspace'),
+    workspaceProxy,
+]);
 
-// Limit to 1MB of JSON
-app.use(bodyParser.json({limit: 1024 * 1024}));
-app.use(bodyParser.urlencoded({extended: false, limit: 1536 * 1024}));
+// Limit to 5MB of JSON
+app.use(bodyParser.json({limit: 5 * 1024 * 1024}));
+app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -229,25 +297,67 @@ if (config.devMode) {
 app.use(/^(\/?)$|^(\/pl\/?)$/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
-app.use('/', require('./pages/home/home'));
-app.use('/pl', require('./pages/home/home'));
-app.use('/pl/settings', require('./pages/userSettings/userSettings'));
-app.use('/pl/enroll', require('./pages/enroll/enroll'));
-app.use('/pl/logout', require('./pages/authLogout/authLogout'));
-app.use('/pl/password', require('./pages/authPassword/authPassword'));
-app.use('/pl/news_items', require('./pages/news_items/news_items.js'));
-app.use('/pl/news_item', require('./pages/news_item/news_item.js'));
+app.use('/', [
+  function(req, res, next) {res.locals.navPage = 'home'; next();},
+  require('./pages/home/home'),
+]);
+app.use('/pl', [
+  function(req, res, next) {res.locals.navPage = 'home'; next();},
+  require('./pages/home/home'),
+]);
+app.use('/pl/settings', [
+  function(req, res, next) {res.locals.navPage = 'user_settings'; next();},
+  require('./pages/userSettings/userSettings'),
+]);
+app.use('/pl/enroll', [
+  function(req, res, next) {res.locals.navPage = 'enroll'; next();},
+  require('./pages/enroll/enroll'),
+]);
+app.use('/pl/logout', [
+  function(req, res, next) {res.locals.navPage = 'logout'; next();},
+  require('./pages/authLogout/authLogout'),
+]);
+app.use('/pl/password', [
+  function(req, res, next) {res.locals.navPage = 'password'; next();},
+  require('./pages/authPassword/authPassword'),
+]);
+app.use('/pl/news_items', [
+  function(req, res, next) {res.locals.navPage = 'news'; next();},
+  require('./pages/news_items/news_items.js'),
+]);
+app.use('/pl/news_item', [
+  function(req, res, next) {res.locals.navPage = 'news'; next();},
+  function(req, res, next) {res.locals.navSubPage = 'news_item'; next();},
+  require('./pages/news_item/news_item.js'),
+]);
+app.use('/pl/request_course', [
+    function(req, res, next) {res.locals.navPage = 'request_course'; next();},
+    require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
+]);
 
+app.use('/pl/workspace/:workspace_id', [
+    require('./middlewares/authzWorkspace'),
+    require('./pages/workspace/workspace'),
+]);
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
-    app.use('/pl/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-    app.use('/pl/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+    app.use('/pl/loadFromDisk', [
+      function(req, res, next) {res.locals.navPage = 'load_from_disk'; next();},
+      require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'),
+    ]);
+    app.use('/pl/jobSequence', [
+      function(req, res, next) {res.locals.navPage = 'job_sequence'; next();},
+      require('./pages/instructorJobSequence/instructorJobSequence'),
+    ]);
 }
 
 // all pages under /pl/course_instance require authorization
-app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseInstance')); // sets res.locals.course and res.locals.courseInstance
-app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
-app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
+app.use('/pl/course_instance/:course_instance_id', [
+  function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
+  function(req, res, next) {res.locals.navbarType = 'student'; next();},
+  require('./middlewares/authzCourseInstance'),
+  require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+]);
 
 // Redirect plain course page to Instructor or Student assessments page.
 // We have to do this after initial authz so we know whether we are an Instructor,
@@ -278,6 +388,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 
 // all pages under /pl/course require authorization
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', require('./middlewares/ansifySyncErrorsAndWarnings.js'));
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
@@ -308,6 +419,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
 
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     require('./middlewares/selectAssessments'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -321,6 +433,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', [
     function(req, res, next) {res.locals.navSubPage = 'questions'; next();},
     require('./pages/instructorAssessmentQuestions/instructorAssessmentQuestions'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', [
+    function(req, res, next) {res.locals.navSubPage = 'groups'; next();},
+    require('./pages/instructorAssessmentGroups/instructorAssessmentGroups'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/access', [
     function(req, res, next) {res.locals.navSubPage = 'access'; next();},
@@ -373,6 +489,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
 
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -550,11 +667,13 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/gradebook', [
+    function(req, res, next) {res.locals.navSubPage = 'gradebook'; next();},
     require('./middlewares/logPageView')('studentGradebook'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGradebook/studentGradebook'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessments', [
+    function(req, res, next) {res.locals.navSubPage = 'assessments'; next();},
     require('./middlewares/logPageView')('studentAssessments'),
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
@@ -586,7 +705,10 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
-app.use('/pl/course_instance/:course_instance_id/report_cheating', require('./pages/studentReportCheating/studentReportCheating'));
+app.use('/pl/course_instance/:course_instance_id/report_cheating', [
+  function(req, res, next) {res.locals.navSubPage = 'report_cheating'; next();},
+  require('./pages/studentReportCheating/studentReportCheating'),
+]);
 if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
@@ -652,6 +774,7 @@ app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res
 
 app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./middlewares/ansifySyncErrorsAndWarnings.js'),
 ]);
 app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
@@ -789,6 +912,8 @@ app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 app.use('/pl/administrator/queries', require('./pages/administratorQueries/administratorQueries'));
 app.use('/pl/administrator/query', require('./pages/administratorQuery/administratorQuery'));
+app.use('/pl/administrator/jobSequence/', require('./pages/administratorJobSequence/administratorJobSequence'));
+app.use('/pl/administrator/courseRequests/', require('./pages/administratorCourseRequests/administratorCourseRequests'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -802,8 +927,11 @@ app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 //////////////////////////////////////////////////////////////////////
 // Error handling ////////////////////////////////////////////////////
 
-app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
-app.use(require('./pages/error/error'));
+// if no earlier routes matched, this will match and generate a 404 error
+app.use([
+  require('./middlewares/notFound'),
+  require('./pages/error/error'),
+]);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -890,7 +1018,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            migrations.init(function(err) {
+            migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -987,6 +1115,12 @@ if (config.startServer) {
         },
         function(callback) {
             externalGradingSocket.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            util.callbackify(workspace.init)(err => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

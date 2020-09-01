@@ -26,8 +26,9 @@ router.get('/', (req, res, next) => {
         if (ERR(err, next)) return;
         res.locals.assessment_instance_stats = result.rows;
 
-        sqlDb.queryOneRow(sql.select_formatted_duration, params, (err, result) => {
+        sqlDb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
             if (ERR(err, next)) return;
+            res.locals.assessment_instance_date_formatted = result.rows[0].assessment_instance_date_formatted;
             res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
             const params = {assessment_instance_id: res.locals.assessment_instance.id};
@@ -39,8 +40,16 @@ router.get('/', (req, res, next) => {
                 sqlDb.query(sql.select_log, params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
-
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    if (res.locals.assessment.group_work) {
+                        const params = {assessment_instance_id: res.locals.assessment_instance.id};
+                        sqlDb.query(sql.select_group_info, params, (err, result) => {
+                            if (ERR(err, next)) return;
+                            res.locals.group_info = result.rows[0];
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        });
+                    } else {
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
                 });
             });
         });

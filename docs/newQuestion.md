@@ -31,7 +31,7 @@ Object | Type | Description
 `options` | object | Union of the `course.options` and `question.options`, used to control high-level behavior like tolerances for defining a correct answer.
 `variant_seed` | integer | A system-generated random value that is used to produce a question `variant`.
 `variant` | object | All the information associated with a single parameterized version of a question. This will typically (although not necessarily) have a single correct answer.
-`submission` | object | All the information associated with the submisison of an answer by a student, including the grading information if the submission has been graded.
+`submission` | object | All the information associated with the submission of an answer by a student, including the grading information if the submission has been graded.
 
 #### `variant` object
 
@@ -73,9 +73,9 @@ Argument | Intent
 --- | ---
 `options` | In
 `variant` | In/Out
-`submisison` | In/Out
+`submission` | In/Out
 
-Grades the `submisison.submitted_answer` to fill in the `submission.score` and other properties. Can optionally update the `variant` to modify the question before the student makes another submission. By modifying the `variant` a `grade_answer()` function can implement complex student interactions, such as providing interactive hints or allowing a student to submit additional information for partial credit.
+Grades the `submission.submitted_answer` to fill in the `submission.score` and other properties. Can optionally update the `variant` to modify the question before the student makes another submission. By modifying the `variant` a `grade_answer()` function can implement complex student interactions, such as providing interactive hints or allowing a student to submit additional information for partial credit.
 
 ## Question templates
 

@@ -2,6 +2,7 @@
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    gi.id AS gid, gi.name AS group_name, gi.uid_list,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -11,7 +12,7 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
-    format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
+    format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
@@ -21,7 +22,8 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN group_info($assessment_id) AS gi ON (gi.id = ai.group_id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id

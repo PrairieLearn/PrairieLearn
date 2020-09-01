@@ -18,6 +18,7 @@
     </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
@@ -26,14 +27,23 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Summary:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (assessment.group_work) { %>
+            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+          <% } else { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
 
         <table class="table table-sm table-hover two-column-description">
           <tbody>
-            <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
-            <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
-            <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
+            <% if (assessment.group_work) { %>
+              <tr><th>Name</th><td colspan="2"><%= group_info.name %></td></tr>
+              <tr><th>Group Members</th><td colspan="2"><%= group_info.uid_list %></td></tr>
+            <% } else { %>
+              <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
+              <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
+              <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
+            <% } %>
             <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
             </td></tr>
@@ -75,6 +85,7 @@
                 <% } %>
               </td>
             </tr>
+            <tr><th>Date started</th><td colspan="2"><%= assessment_instance_date_formatted %></td></tr>
             <tr><th>Duration</th><td colspan="2"><%= assessment_instance_duration %></td></tr>
           </tbody>
         </table>
@@ -87,7 +98,11 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Questions:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (assessment.group_work) { %>
+            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+          <% } else { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
 
         <table id="instanceQuestionList" class="table table-sm table-hover">
@@ -173,7 +188,11 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Statistics:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (assessment.group_work) { %>
+            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+          <% } else { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
         <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
           <thead>
@@ -225,7 +244,11 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Log:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (assessment.group_work) { %>
+            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+          <% } else { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
         <div class="card-body">
           <small>

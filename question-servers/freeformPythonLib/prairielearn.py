@@ -134,7 +134,7 @@ def inner_html(element):
         inner = ''
     inner = html.escape(str(inner))
     for child in element:
-        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+        inner += lxml.html.tostring(child, method='html').decode('utf-8')
     return inner
 
 
@@ -750,9 +750,9 @@ def string_to_2darray(s, allow_complex=True):
     s_before_left = s_before_left.strip()
     s_after_right = s_after_right.strip()
     if s_before_left:
-        return (None, {'format_error': 'Non-empty text "{:s}" before outer brackets.'.format(s_before_left)})
+        return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before outer brackets.'})
     if s_after_right:
-        return (None, {'format_error': 'Non-empty space "{:s}" after outer brackets.'.format(s_after_right)})
+        return (None, {'format_error': f'Non-empty space {escape_invalid_string(s_after_right)} after outer brackets.'})
 
     # If there is only one set of brackets, treat as MATLAB format
     if number_of_left_brackets == 1:
@@ -762,10 +762,6 @@ def string_to_2darray(s, allow_complex=True):
         #   Example:
         #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
 
-        # Return error if there are any commas
-        if ',' in s:
-            return (None, {'format_error': 'Commas cannot be used as delimiters in an expression with single brackets.'})
-
         # Split on semicolon
         s = s.split(';')
 
@@ -774,14 +770,24 @@ def string_to_2darray(s, allow_complex=True):
 
         # Return error if there are no rows (i.e., the matrix is empty)
         if (m == 0):
-            return (None, {'format_error': 'Matrix has no rows.'})
+            return (None, {'format_error': 'The matrix has no rows.'})
 
-        # Get number of columns by splitting first row on space
-        n = len(s[0].split())
+        # Regex to split rows a la MATLAB
+        matlab_delimiter_regex = re.compile(r'\s*[\s,]\s*')
+
+        # Get number of columns by splitting first row
+        tokens = re.split(matlab_delimiter_regex, s[0])
+        n = len(tokens)
+
+        # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+        if n > 0 and not tokens[0]:
+            n -= 1
+        if n > 0 and not tokens[-1]:
+            n -= 1
 
         # Return error if first row has no columns
         if (n == 0):
-            return (None, {'format_error': 'First row of matrix has no columns.'})
+            return (None, {'format_error': 'Row 1 of the matrix has no columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((m, n))
@@ -789,12 +795,18 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space
-            s_row = s[i].split()
+            # Split row
+            s_row = re.split(matlab_delimiter_regex, s[i])
+
+            # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+            if s_row and not s_row[0]:
+                s_row.pop(0)
+            if s_row and not s_row[-1]:
+                s_row.pop(-1)
 
             # Return error if current row has more or less columns than first row
-            if (len(s_row) != n):
-                return (None, {'format_error': 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1)})
+            if len(s_row) != n:
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
             # Iterate over columns
             for j in range(0, n):
@@ -816,7 +828,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format.'})
 
         # Return resulting ndarray with no error
         return (A, {'format_type': 'matlab'})
@@ -843,37 +855,37 @@ def string_to_2darray(s, allow_complex=True):
 
             # Return error if there is anything but space before left bracket
             if s_before_left:
-                return (None, {'format_error': 'Non-empty text "{:s}" before left bracket in row {:d} of matrix.'.format(s_before_left, len(s_row))})
+                return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before the left bracket in row {len(s_row)} of the matrix.'})
 
             # Return error if there are improperly nested brackets
             if ('[' in s_between_left_and_right) or (']' in s_between_left_and_right):
-                return (None, {'format_error': 'Improperly nested brackets in row {:d} of matrix.'.format(len(s_row))})
+                return (None, {'format_error': f'Improperly nested brackets in row {len(s_row)} of the matrix.'})
 
             # Check if we are in the last row
             if (len(s_row) == number_of_left_brackets - 1):
                 # Return error if it is the last row and there is anything but space after right bracket
                 if s_after_right:
-                    return (None, {'format_error': 'Non-empty text "{:s}" after right bracket in row {:d} of matrix.'.format(s_after_right, len(s_row))})
+                    return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_after_right)} after the right bracket in row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right
             else:
                 # Return error if it is not the last row and there is no comma after right bracket
                 if s_after_right[0] != ',':
-                    return (None, {'format_error': 'No comma after row {:d} of matrix.'.format(len(s_row))})
+                    return (None, {'format_error': f'No comma after row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right[1:]
         number_of_rows = len(s_row)
 
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
-            raise Exception('Number of rows {:d} should have been one less than the number of brackets {:d}'.format(number_of_rows, number_of_left_brackets))
+            raise Exception(f'Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}')
 
         # Split each row on comma
         number_of_columns = None
         for i in range(0, number_of_rows):
             # Return error if row has no columns
             if not s_row[i]:
-                return (None, {'format_error': 'Row {:d} of matrix has no columns.'.format(i + 1)})
+                return (None, {'format_error': f'Row {i + 1} of the matrix has no columns.'})
 
             # Splitting on a comma always returns a list with at least one element
             s_row[i] = s_row[i].split(',')
@@ -883,7 +895,7 @@ def string_to_2darray(s, allow_complex=True):
             if number_of_columns is None:
                 number_of_columns = n
             elif number_of_columns != n:
-                return (None, {'format_error': 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1)})
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((number_of_rows, number_of_columns))
@@ -894,7 +906,7 @@ def string_to_2darray(s, allow_complex=True):
                 try:
                     # Check if entry is empty
                     if not s_row[i][j].strip():
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix is empty.'.format(i + 1, j + 1)})
+                        return (None, {'format_error': f'Entry at location (row={i + 1}, column={j + 1}) in the matrix is empty.'})
 
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
@@ -913,85 +925,13 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
 
     # Should never get here
-    raise Exception('Invalid number of left brackets: {:g}'.format(number_of_left_brackets))
-
-
-def matlab_to_numpy(a):
-    if (('[' in a) and (']' in a)):
-        # Split at first left bracket
-        (a_before_leftbracket, a_leftbracket, a) = a.partition('[')
-
-        # Return error if there was anything but space before left bracket
-        if a_before_leftbracket.strip():
-            return (None, 'Non-empty space before first left bracket.')
-
-        # Split at first right bracket
-        (a, a_rightbracket, a_after_rightbracket) = a.partition(']')
-
-        # Return error if there was anything but space after right bracket
-        if a_after_rightbracket.strip():
-            return (None, 'Non-empty space after first right bracket.')
-
-        # Split on semicolon
-        a = a.split(';')
-
-        # Get number of rows
-        m = len(a)
-
-        # Return error if there are no rows (i.e., the matrix is empty)
-        if (m == 0):
-            return (None, 'Matrix has no rows.')
-
-        # Get number of columns by splitting first row on space
-        n = len(a[0].split())
-
-        # Return error if first row has no columns
-        if (n == 0):
-            return (None, 'First row of matrix has no columns.')
-
-        # Define matrix in which to put result
-        A = np.zeros((m, n))
-
-        # Iterate over rows
-        for i in range(0, m):
-
-            # Split on space
-            s = a[i].split()
-
-            # Return error if current row has more or less columns than first row
-            if (len(s) != n):
-                return (None, 'Rows 1 and %d of matrix have a different number of columns.' % (i + 1))
-
-            # Iterate over columns
-            for j in range(0, n):
-                try:
-                    # Convert entry to float
-                    A[i, j] = float(s[j])
-
-                    # Return error if entry is not finite
-                    if not np.isfinite(A[i, j]):
-                        return (None, 'Entry (%d,%d) of matrix is not finite.' % (i + 1, j + 1))
-                except Exception:
-                    # Return error if entry could not be converted to float
-                    return (None, 'Entry (%d,%d) of matrix has invalid format.' % (i + 1, j + 1))
-
-        # Return resulting ndarray with no error
-        return (A, None)
-    else:
-        try:
-            # Convert submitted answer (assumed to be a scalar) to float
-            A = np.array([[float(a)]])
-            # Return it with no error
-            return (A, None)
-        except Exception:
-            # Return error if submitted answer could not be converted to float
-            return (None, 'Invalid format (missing square brackets and not a real number).')
+    raise Exception(f'Invalid number of left brackets: {number_of_left_brackets}')
 
 
 def latex_from_2darray(A, presentation_type='f', digits=2):
@@ -1033,7 +973,7 @@ def latex_from_2darray(A, presentation_type='f', digits=2):
         raise ValueError('input should be a 2D numpy array')
     lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
     rv = [r'\begin{bmatrix}']
-    rv += ['  ' + ' & '.join(l.split()) + r'\\' for l in lines]
+    rv += ['  ' + ' & '.join(line.split()) + r'\\' for line in lines]
     rv += [r'\end{bmatrix}']
     return ''.join(rv)
 
@@ -1135,3 +1075,12 @@ def escape_unicode_string(string):
             return x
 
     return ''.join(map(escape_unprintable, string))
+
+
+def escape_invalid_string(string):
+    """
+    escape_invalid_string(string)
+
+    Wraps and escapes string in <code> tags.
+    """
+    return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'

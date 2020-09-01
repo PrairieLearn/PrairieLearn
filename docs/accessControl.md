@@ -3,7 +3,8 @@
 
 By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
 
-The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [sync permissions](sync.md#sync-permissions).
+The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [course admin permissions](sync.md#course-admin-permissions) on the server, not in the
+course JSON files.
 
 ## Two level of access control for assessments
 
@@ -60,7 +61,7 @@ Restricting access to `"role": "Student"` is equivalent to not including a role 
 
 ## Dates
 
-All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in Central Time (either CST or CDT as appropriate).
+All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](courseInstance.md#timezone).
 
 If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
 
@@ -90,15 +91,17 @@ For students taking remote exams it can be helpful to have an enforced time limi
 ```json
 "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "endDate": "2015-05-13T23:59:59",
-        "timeLimitMin": 50,
+        "startDate": "2015-01-19T16:00:00",
+        "endDate": "2015-01-19T18:00:00",
+        "timeLimitMin": 90,
         "credit": 100
     }
 ]
 ```
 
-The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits.
+The above example will give students 90 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`. See the following diagram for an illustration of this.
+
+![Time limit illustrations](exam_timer.svg)
 
 **Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
 
@@ -270,4 +273,3 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ```
 
 This `allowAccess` directive is suitable for a `Homework` assessment. It gives TAs access for the entire semester. Students can see the homework starting on Oct 12th, and the homework for them goes through four different stages: (1) they will earn a bonus 10% if they complete the homework before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework but not earn more points until the end of semester (Dec 15th).
-

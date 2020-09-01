@@ -366,7 +366,7 @@ def test(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name]))
         data['partial_scores'][name] = {'score': 1, 'weight': weight}

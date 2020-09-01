@@ -3,7 +3,7 @@ WITH object_data AS (
     SELECT
         a.id AS assessment_id,
         a.tid AS assessment_name,
-        (aset.abbreviation || a.number) as assessment_label,
+        (aset.abbreviation || a.number) AS assessment_label,
         a.type,
         a.number AS assessment_number,
         a.order_by AS assessment_order_by,
@@ -37,6 +37,7 @@ WITH object_data AS (
         ai.id AS assessment_instance_id,
         a.id AS assessment_id,
         a.tid AS assessment_name,
+        a.title AS assessment_title,
         (aset.abbreviation || a.number) AS assessment_label,
         aset.abbreviation AS assessment_set_abbreviation,
         a.number AS assessment_number,
@@ -74,6 +75,46 @@ SELECT
     coalesce(jsonb_agg(
         to_jsonb(object_data)
         ORDER BY user_role DESC, user_uid, user_id, assessment_instance_number, assessment_instance_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
+-- BLOCK select_assessment_access_rules
+WITH object_data AS (
+    SELECT
+        a.id AS assessment_id,
+        a.tid AS assessment_name,
+        a.title AS assessment_title,
+        (aset.abbreviation || a.number) AS assessment_label,
+        aset.abbreviation AS assessment_set_abbreviation,
+        a.number AS assessment_number,
+        aar.credit,
+        format_date_iso8601(aar.end_date, ci.display_timezone) AS end_date,
+        aar.exam_uuid,
+        aar.id AS assessment_access_rule_id,
+        aar.mode,
+        aar.number,
+        aar.number AS assessment_access_rule_number,
+        aar.password,
+        aar.role,
+        aar.seb_config,
+        aar.show_closed_assessment,
+        format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
+        aar.time_limit_min,
+        aar.uids
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+        JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
+    WHERE
+        ci.id = $course_instance_id
+        AND a.id = $assessment_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY assessment_access_rule_number, assessment_access_rule_id
     ), '[]'::jsonb) AS item
 FROM
     object_data;
@@ -132,6 +173,7 @@ WITH object_data AS (
         v.options,
         format_date_iso8601(s.date, ci.display_timezone) AS date,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,

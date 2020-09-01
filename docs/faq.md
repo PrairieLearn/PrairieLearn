@@ -282,3 +282,11 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart your computer.
 - Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then, 
   close the terminal application.   
+
+## Why do special characters like (<=) break my question display?
+
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering.  To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element).  Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+
+## Why can't I connect to PrairieLearn with Docker Toolbox?
+
+Docker Toolbox by default doesn't bind to `localhost`, meaning you aren't able to access a local running copy of PrairieLearn at `localhost:3000` or `127.0.0.1:3000`.  To get around this, you can first find the ip that the Docker VM is running at by running `docker-machine ip default`.  This will return an IP address of the form `xxx.xxx.xxx.xxx`, you can then access PrairieLearn by pointing your browser to that IP address: `xxx.xxx.xxx.xxx:3000`.

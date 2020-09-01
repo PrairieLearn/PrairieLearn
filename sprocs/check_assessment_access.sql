@@ -38,7 +38,12 @@ BEGIN
                     END)
             ELSE 'None'
         END AS credit_date_string,
-        aar.time_limit_min,
+        -- If timer hits 0:00 at end_date, exam might end after end_date (overdue submission).
+        -- Resolve race condition by subtracting 31 sec from end_date.
+        -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
+        CASE WHEN aar.time_limit_min IS NULL THEN NULL
+             ELSE LEAST(aar.time_limit_min, EXTRACT(EPOCH FROM aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
+        END AS time_limit_min,
         aar.password,
         aar.mode,
         aar.seb_config,

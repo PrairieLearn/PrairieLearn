@@ -27,11 +27,11 @@ BEGIN
             ai.*
     )
     INSERT INTO audit_logs
-            (authn_user_id, course_id, course_instance_id, user_id,
+            (authn_user_id, course_id, course_instance_id, user_id, group_id,
             table_name,             row_id, action,  old_state)
     (
         SELECT
-            authn_user_id,  course_id, course_instance_id, ai.user_id,
+            authn_user_id,  course_id, course_instance_id, ai.user_id, ai.group_id,
             'assessment_instances', ai.id, 'delete', to_jsonb(ai.*)
         FROM
             deleted_assessment_instances AS ai
