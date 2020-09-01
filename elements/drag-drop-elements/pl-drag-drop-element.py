@@ -74,17 +74,11 @@ def render(element_html, data):
                                            'external-grader',
                                            'file-name',
                                            'leading-code',
-                                           'trailing-code',
-                                           'max-distractors',   # Legacy attribute
-                                           'max-feedback-count'])  # Legacy attribute
+                                           'trailing-code'])
 
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                # CORRECT is optional for backward compatibility
-                # pl.check_attribs(html_tags, required_attribs=[''], optional_attribs=['correct', 'ranking', 'indent'])
-                mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
-            # BACKWARD COMPATIBILITY CODE
-            if html_tags.tag == 'pl-distractor':
+                pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
         answerName = pl.get_string_attrib(element, 'answers-name')
@@ -120,7 +114,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_boolean_attrib(element, 'external-grader', False): 
+        if pl.get_boolean_attrib(element, 'external-grader', False):
             return ''
         # render the submission panel
         uuid = pl.get_uuid()
@@ -220,8 +214,9 @@ def parse(element_html, data):
     answerName = pl.get_string_attrib(element, 'answers-name')
 
     temp = answerName
-    temp += '-input'  # the answerName textfields that raw-submitted-answer reads from 
-                      # have '-input' appended to their name attribute
+    temp += '-input'
+    # the answerName textfields that raw-submitted-answer reads from
+    # have '-input' appended to their name attribute
 
     student_answer_temp = ''
     if temp in data['raw_submitted_answers']:
@@ -247,7 +242,6 @@ def parse(element_html, data):
     student_answer = student_answer_temp['answers']
     student_answer_indent = student_answer_temp['answer_indent']
 
-
     if permutationMode.lower() == 'ranking':
         student_answer_ranking = []
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
@@ -261,7 +255,7 @@ def parse(element_html, data):
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
 
-    if pl.get_boolean_attrib(element, 'external-grader', False):  
+    if pl.get_boolean_attrib(element, 'external-grader', False):
         file_name = pl.get_string_attrib(element, 'file-name', None)
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
