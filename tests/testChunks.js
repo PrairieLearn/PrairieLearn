@@ -4,19 +4,19 @@ const assert = require('chai').assert;
 const chunksLib = require('../lib/chunks');
 
 const COURSE = {
-    questionDB: {
+    questions: {
         'simple-question': {},
         'complex/question': {},
     },
-    courseInstanceDB: {
+    courseInstances: {
         'simple-course-instance': {
-            assessmentDB: {
+            assessments: {
                 'simple-assessment': {},
                 'complex/assessment': {},
             },
         },
         'complex/course/instance': {
-            assessmentDB: {
+            assessments: {
                 'simple-assessment': {},
                 'complex/assessment': {},
             },

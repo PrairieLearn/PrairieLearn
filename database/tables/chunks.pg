@@ -9,6 +9,7 @@ columns
 
 indexes
     chunks_pkey: PRIMARY KEY (id) USING btree (id)
+    chunk_unique_values_idx: USING btree (type, course_id, question_id, course_instance_id, assessment_id)
     chunks_uuid_key: UNIQUE (uuid) USING btree (uuid)
 
 foreign-key constraints
