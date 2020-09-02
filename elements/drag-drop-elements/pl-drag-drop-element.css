@@ -1,9 +1,8 @@
 .connectedSortable {
-  /* applies to MCQ options draggable blocks*/
+  /* This style applies to the MCQ options table, on the left hand side*/
   border: 3px solid #eee;
   border-radius: 4px;
-  /*width: 302px;*/
-  background-color: #efefff;
+  background-color: #efefff; /* Pale Blue */
   min-width: 200px;
   width: 350px;
   min-height: 20px;
@@ -13,28 +12,17 @@
   float: left;
   margin-right: 50px;
 }
-/* Dropzones are the answer boxes, which should be denoted
-   with an extra yellow background sheen */
+
 .dropzone {
-  background-color: #FFA;
+  /* This style applies to answer dropzone */
+  background-color: #FFA; /* Yellow */
   min-height: 30px;
-}
-
-.info {
-  /*style for question instruction blocks*/
-  background-color: transparent !important;
-  border: none !important;
-}
-
-.code {
-  /*style for question instructions that are programming code*/
-  font-family: "Lucida Console", Monaco, monospace;
 }
 
 
 .connectedSortable li, .dropzone li{
-  /*connectedSortable is the MCQ options column, and dropzone is the answers column*/
-  background-color: #EFEFEF;
+  /* This style applies to the answer draggable tiles themselves */
+  background-color: #EFEFEF; /* Grey */
   border: 1px solid;
   border-radius: 4px;
   margin: 0 5px 5px 5px;
@@ -42,11 +30,12 @@
   font-size: 1.2em;
   width: 95%;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; /* Show overflow text as ... without mouse over */
   white-space: nowrap;
 }
 
 .connectedSortable li:hover, .dropzone li:hover{
+    /* Show overflow text in the answer draggable tiles */
 	white-space: normal;
 	height: auto;
 	max-height: none;
@@ -55,14 +44,16 @@
 
 
 .ui-state-highlight { 
-  /*This is used for when hovering over what the <li> being dropped would go*/
+  /*This styling applies to the placeholder answer tile that appears when the user is dragging */
   height: 40px;
   border: none !important;
   color: #efefff !important; 
   background-color: #efefff !important; 
 }
-/* Clear floats after the columns */
+
+
 .row:after {
+  /* Clear floats after the columns */
   content: "";
   display: table;
   clear: both;

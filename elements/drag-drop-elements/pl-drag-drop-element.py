@@ -78,7 +78,7 @@ def render(element_html, data):
 
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
         answerName = pl.get_string_attrib(element, 'answers-name')
@@ -185,8 +185,8 @@ def prepare(element_html, data):
 
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
-            # CORRECT is optional for backward compatibility
-            pl.check_attribs(html_tags, required_attribs=['correct'], optional_attribs=['ranking', 'indent'])
+            # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
             mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
     if isShuffle == 'true':
