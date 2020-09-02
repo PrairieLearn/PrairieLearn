@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION
         IN display_filename text,
         IN storage_filename text,
         IN type text,
+        IN assessment_id bigint,
         IN assessment_instance_id bigint,
         IN instance_question_id bigint,
         IN question_id bigint,
