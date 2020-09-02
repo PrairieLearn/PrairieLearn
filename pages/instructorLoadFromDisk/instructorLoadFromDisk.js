@@ -55,20 +55,24 @@ var update = function(locals, callback) {
                             if (ERR(err, callback)) return;
                             if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             debug('successfully loaded course', {courseDir});
-                            util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId: result.courseId, courseData: result.courseData }, (err) => {
-                                if (ERR(err, callback)) return;
-                                // NOTE: Just for testing
-                                util.callbackify(chunks.updateChunksForCourse)({
-                                    coursePath: courseDir,
-                                    courseId: result.courseId,
-                                    courseData: result.courseData,
-                                    oldHash: 'HEAD~1',
-                                    newHash: 'HEAD',
-                                }, (err) => {
+                            if (config.chunksEnabled) {
+                                util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId: result.courseId, courseData: result.courseData }, (err) => {
                                     if (ERR(err, callback)) return;
-                                    callback(null);
+                                    // NOTE: Just for testing
+                                    util.callbackify(chunks.updateChunksForCourse)({
+                                        coursePath: courseDir,
+                                        courseId: result.courseId,
+                                        courseData: result.courseData,
+                                        oldHash: 'HEAD~1',
+                                        newHash: 'HEAD',
+                                    }, (err) => {
+                                        if (ERR(err, callback)) return;
+                                        callback(null);
+                                    });
                                 });
-                            });
+                            } else {
+                                callback(null);
+                            }
                         });
                     }
                 });
