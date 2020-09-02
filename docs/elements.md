@@ -384,7 +384,7 @@ a `pl-answer` that has the following attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | - | Specifies whether the answer tile is a correct answer to the question
-`ranking` | positive integer | - | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
+`ranking` | positive integer | - | Specifies the correct ranking of this answer tile when `permutation-mode` is set to `ranking`. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`. 
 
 #### Details
 
