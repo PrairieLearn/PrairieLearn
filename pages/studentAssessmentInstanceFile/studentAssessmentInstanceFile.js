@@ -16,8 +16,6 @@ router.get('/:file_id/:display_filename', async function(req, res, next) {
         display_filename: req.params.display_filename,
     };
 
-    // NOTE: Might want to remove SQL file
-
     const stream = await fileStore.get(options.assessment_instance_id, options.file_id, options.display_filename);
 
     // Explore error handling?
