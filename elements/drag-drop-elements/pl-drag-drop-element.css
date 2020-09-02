@@ -42,6 +42,11 @@
 	overflow: visible;
 }
 
+.info {
+  /* This styling applies to the instruction text for the dropzones */
+  background-color: transparent !important;
+  border: none !important;
+}
 
 .ui-state-highlight { 
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */

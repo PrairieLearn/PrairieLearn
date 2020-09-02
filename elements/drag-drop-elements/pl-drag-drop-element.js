@@ -1,9 +1,10 @@
 /* eslint-env jquery, browser */
 
-const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
-                     // drags and indents a block
+const TABWIDTH = 50;      // defines how many px the answer block is indented by, when the student
+                          // drags and indents a block
 const INDENT_OFFSET = 5;  // For aesthetic, all answer blocks are offseted to the right by
                           // 5px, so the answer tiles are not directly touching the dropzone margins
+const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 
 function set_answer(event) {
     // We only care about when this function is fired
@@ -30,7 +31,6 @@ function set_answer(event) {
     textfield_name = '#' + textfield_name + '-input';
     answer_json.answers = student_answers;
     answer_json.answer_indent = indents;
-    console.log(answer_json);
     $(textfield_name).val(JSON.stringify(answer_json));
 }
 
@@ -43,7 +43,7 @@ function update_indent(leftDiff, id, ui) {
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
     var currentIndent = ui.item[0].style.marginLeft;
-    if (parseInt(currentIndent) <= 5 && leftDiff < 0){
+    if (parseInt(currentIndent) <= MAX_INDENT + 1 && leftDiff < 0){
         return; // if answer is not indented, and the student drag it left
                 // do nothing
     }
@@ -55,23 +55,24 @@ function update_indent(leftDiff, id, ui) {
     if (currentIndent != ''){
         leftDiff += parseInt(currentIndent); 
     }
-    // limit leftDiff to be in [INDENT_OFFSET, (TABWIDTH * 4) + 5], within the bounds of the drag and drop box
-    // that is, at least indented 0 times, or at most indented by 4 times  
-    leftDiff = Math.min(Math.max(leftDiff, INDENT_OFFSET), (TABWIDTH * 4) + 5);
+    // limit leftDiff to be in [INDENT_OFFSET, (TABWIDTH * MAX_INDENT) + INDENT_OFFSET], within the bounds of the drag and drop box
+    // that is, at least indented 0 times, or at most indented by MAX_INDENT times  
+    leftDiff = Math.min(Math.max(leftDiff, INDENT_OFFSET), (TABWIDTH * MAX_INDENT) + INDENT_OFFSET);
 
-    var hack = [5,55,105,155,205];
-    if (hack.indexOf(leftDiff) === -1){
-        var hack2 = leftDiff;
-        // when the user drag a tile into the answer box for the first time
-        // the snap to grid dragging doesnt apply
-        // so we have to use a hack here to "snap the leftDiff number to the nearest grid number"
-        leftDiff = hack.reduce(function(prev, curr) {
-          return (Math.abs(curr - hack2) < Math.abs(prev - hack2) ? curr : prev);
-        });
-
+    // when the user drag a tile into the answer box for the first time
+    // the snap to grid dragging doesnt apply
+    // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
+    var remainder = (leftDiff - INDENT_OFFSET) % TABWIDTH;
+    if (remainder != 0) {
+        // Manually snap to grid here, by rounding to the nearest multiple of 50
+        if (remainder > (TABWIDTH / 2)){
+            leftDiff += remainder; // closer to the next bigger multiple of 50
+        } else {
+            leftDiff -= remainder; // closer to the next smaller multiple of 50
+        }
     }
 
-    ui.item[0].style = 'margin-left: ' + Math.max(leftDiff, 5) + 'px;';
+    ui.item[0].style = 'margin-left: ' + Math.max(leftDiff, INDENT_OFFSET) + 'px;';
 }
 
 
