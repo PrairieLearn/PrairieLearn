@@ -201,6 +201,9 @@ def prepare(element_html, data):
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
 
+    if len(correct_answers) == 0:
+        raise Exception('There are no correct answers specified for this question!')
+
     data['params'][answerName] = mcq_options
     data['correct_answers'][answerName] = {'correct_answers': correct_answers,
                                            'correct_answers_indent': correct_answers_indent}
@@ -342,11 +345,10 @@ def test(element_html, data):
     # incorrect and correct answer test cases
     # this creates the EXPECTED SUBMISSION field for test cases
     if data['test_type'] == 'correct':
-        temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
+        true_answer = data['correct_answers'][answerName]['correct_answers']
         true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
-        for index, answer in enumerate(temp):
-            temp[index] = answer + ':::' + true_answer_indent[index]
-        data['raw_submitted_answers'][answerNameField] = ','.join(temp)
+
+        data['raw_submitted_answers'][answerNameField] = {'answers': true_answer, 'answer_indent': true_answer_indent}
         data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
     elif data['test_type'] == 'incorrect':
         temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
@@ -355,9 +357,9 @@ def test(element_html, data):
             if html_tags.tag == 'pl-answer':
                 incorrect_answers.append(str.strip(html_tags.text))
         incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
-        incorrect_answers = list(map(lambda x: x + ':::0', incorrect_answers))
 
-        data['raw_submitted_answers'][answerNameField] = ','.join(incorrect_answers)
+        incorrect_answers_indent = ['0'] * len(incorrect_answers)
+        data['raw_submitted_answers'][answerNameField] = {'answers': incorrect_answers, 'answer_indent': incorrect_answers_indent}
         data['partial_scores'][answerName] = {'score': 0, 'feedback': ''}
 
     elif data['test_type'] == 'invalid':
