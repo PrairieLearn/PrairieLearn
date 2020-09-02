@@ -14,7 +14,7 @@ requests==2.24.0
 colormath==3.0.0
 nltk==3.5
 beautifulsoup4==4.9.1
-bokeh==2.1.1
+bokeh==2.2.1
 folium==0.11.0
 Pygments==2.6.1
 ipython==7.16.1
