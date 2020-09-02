@@ -10,28 +10,35 @@ var requireFrontend = require('../lib/require-frontend');
 module.exports = {
     loadServer: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
+        const chunk = {
+            'type': 'question',
+            'questionId': question.id,
+        };
+        chunks.ensureChunksForCourse(course.id, chunk, (err) => {
             if (ERR(err, callback)) return;
-            var configRequire = requireFrontend.config({
-                paths: {
-                    clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
-                    serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
-                    clientCode: path.join(coursePath, 'clientFilesCourse'),
-                    serverCode: path.join(coursePath, 'serverFilesCourse'),
-                },
-            });
-            configRequire([questionServerPath], function(server) {
-                if (server === undefined) return callback('Unable to load "server.js" for qid: ' + question.qid);
-                setTimeout(function() {
-                    // use a setTimeout() to get out of requireJS error handling
-                    return callback(null, server);
-                }, 0);
-            }, (err) => {
-                const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
-                if (err.originalError != null) {
-                    e.stack = err.originalError.stack + '\n\n' + err.stack;
-                }
-                return callback(e);
+            filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
+                if (ERR(err, callback)) return;
+                var configRequire = requireFrontend.config({
+                    paths: {
+                        clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
+                        serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
+                        clientCode: path.join(coursePath, 'clientFilesCourse'),
+                        serverCode: path.join(coursePath, 'serverFilesCourse'),
+                    },
+                });
+                configRequire([questionServerPath], function(server) {
+                    if (server === undefined) return callback('Unable to load "server.js" for qid: ' + question.qid);
+                    setTimeout(function() {
+                        // use a setTimeout() to get out of requireJS error handling
+                        return callback(null, server);
+                    }, 0);
+                }, (err) => {
+                    const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
+                    if (err.originalError != null) {
+                        e.stack = err.originalError.stack + '\n\n' + err.stack;
+                    }
+                    return callback(e);
+                });
             });
         });
     },

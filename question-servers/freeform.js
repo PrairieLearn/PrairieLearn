@@ -136,10 +136,13 @@ module.exports = {
             return callback(null, courseElementsCache[course.id]);
         }
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
+        chunks.ensureChunksForCourse(course.id, {'type': 'elements'}, (err) => {
             if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
+            module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
+                if (ERR(err, callback)) return;
+                courseElementsCache[course.id] = elements;
+                callback(null, courseElementsCache[course.id]);
+            });
         });
     },
 
@@ -1269,17 +1272,24 @@ module.exports = {
 
     getContext: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        const context = {
-            question,
-            course,
-            course_dir: coursePath,
-            question_dir: path.join(coursePath, 'questions', question.directory),
-            course_elements_dir: path.join(coursePath, 'elements'),
+        const chunk = {
+            'type': 'question',
+            'questionId': question.id,
         };
-        module.exports.loadElementsForCourse(course, (err, elements) => {
+        chunks.ensureChunksForCourse(course.id, chunk, (err) => {
             if (ERR(err, callback)) return;
-            context.course_elements = elements;
-            callback(null, context);
+            const context = {
+                question,
+                course,
+                course_dir: coursePath,
+                question_dir: path.join(coursePath, 'questions', question.directory),
+                course_elements_dir: path.join(coursePath, 'elements'),
+            };
+            module.exports.loadElementsForCourse(course, (err, elements) => {
+                if (ERR(err, callback)) return;
+                context.course_elements = elements;
+                callback(null, context);
+            });
         });
     },
 

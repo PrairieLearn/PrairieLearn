@@ -25,9 +25,17 @@ router.get('/:filename', function(req, res, next) {
         if (!result.rows[0].access_allowed) return next(error.make(403, 'Access denied', {locals: res.locals, filename: filename}));
 
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+        const chunk = {
+            'type': 'question',
+            'questionId': question.id,
+        };
+        chunks.ensureChunksForCourse(course.id, chunk, (err) => {
             if (ERR(err, next)) return;
-            res.sendFile(effectiveFilename, {root: rootPath});
+
+            filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+                if (ERR(err, next)) return;
+                res.sendFile(effectiveFilename, {root: rootPath});
+            });
         });
     });
 });

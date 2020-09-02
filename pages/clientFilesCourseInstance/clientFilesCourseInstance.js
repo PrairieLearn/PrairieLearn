@@ -1,19 +1,28 @@
-var path = require('path');
-var express = require('express');
-var router = express.Router();
+const path = require('path');
+const express = require('express');
+const router = express.Router();
 
 const chunks = require('../../lib/chunks');
+const ERR = require('async-stacktrace');
 
-router.get('/*', function(req, res, _next) {
-    var filename = req.params[0];
+router.get('/*', function(req, res, next) {
+    const filename = req.params[0];
     const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-    var clientFilesDir = path.join(
-        coursePath,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'clientFilesCourseInstance',
-    );
-    res.sendFile(filename, {root: clientFilesDir});
+    const chunk = {
+        'type': 'clientfilesCourseInstance',
+        'courseInstanceId': res.locals.course_instance.id,
+    };
+    chunks.ensureChunksForCourse(res.locals.course.id, chunk, (err) => {
+        if (ERR(err, next)) return;
+
+        const clientFilesDir = path.join(
+            coursePath,
+            'courseInstances',
+            res.locals.course_instance.short_name,
+            'clientFilesCourseInstance',
+        );
+        res.sendFile(filename, {root: clientFilesDir});
+    });
 });
 
 module.exports = router;
