@@ -205,6 +205,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
                 }
                 // We must decide what further s3 logic we want to support for previews and student downloads
                 if (s3FilesIndex) {
+                    $preview.find('code').wrap(`<a href="../file/${s3FilesIndex}/${fileName}"></a>`);
                     $preview.find('code').text('File too large to be previewed.');
                 }
             } catch (e) {
