@@ -22,14 +22,7 @@ router.get('/:file_id/:display_filename', async function(req, res, next) {
 
     // Explore error handling?
     stream.pipe(res);
-        // if (result.rows[0].storage_type === fileStore.storageTypes.S3) {
-        //     const stream = await fileStore.get(result.rows[0].storage_filename, fileStore.storageTypes.S3);
-        //     res.sendFile(result.rows[0].storage_filename, stream);
-        //     // stream.pipe(res);
-        // } else {
-        //     res.sendFile(result.rows[0].storage_filename, {root: config.filesRoot});
-        // }
-
+    next();
 });
 
 module.exports = router;
