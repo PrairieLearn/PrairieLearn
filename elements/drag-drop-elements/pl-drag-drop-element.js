@@ -1,5 +1,10 @@
 /* eslint-env jquery, browser */
 
+const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
+                     // drags and indents a block
+const INDENT_OFFSET = 5;  // For aesthetic, all answer blocks are offseted to the right by
+                          // 5px, so the answer tiles are not directly touching the dropzone margins
+
 function set_answer(event) {
     // We only care about when this function is fired
     // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
@@ -12,7 +17,7 @@ function set_answer(event) {
         if (!$(dom_objs[i]).hasClass('info')){
             var answer_text = dom_objs[i].getAttribute('string');
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-            answer_indent = Math.round((answer_indent - 5) / 50); // get how many times the answer is indented
+            answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
             student_answers.push(answer_text);
             indents.push(answer_indent.toString());
         }
@@ -43,15 +48,16 @@ function update_indent(leftDiff, id, ui) {
                 // do nothing
     }
 
-    leftDiff = (Math.round(leftDiff / 50) * 50);
+    leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
 
     // leftDiff is the direction to move the MCQ answer tile, in px
     // we limit leftDiff to be increments of 50, whether positive or negative
     if (currentIndent != ''){
         leftDiff += parseInt(currentIndent); 
     }
-    // limit leftDiff to be in [5, 205], within the bounds of the drag and drop box
-    leftDiff = Math.min(Math.max(leftDiff, 5), 205);
+    // limit leftDiff to be in [INDENT_OFFSET, (TABWIDTH * 4) + 5], within the bounds of the drag and drop box
+    // that is, at least indented 0 times, or at most indented by 4 times  
+    leftDiff = Math.min(Math.max(leftDiff, INDENT_OFFSET), (TABWIDTH * 4) + 5);
 
     var hack = [5,55,105,155,205];
     if (hack.indexOf(leftDiff) === -1){

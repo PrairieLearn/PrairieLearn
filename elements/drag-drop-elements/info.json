@@ -2,7 +2,7 @@
     "controller": "pl-drag-drop-element.py",
     "dependencies": {
         "nodeModulesScripts": [
-            "jquery-ui-dist/jquery-ui.js"
+            "jquery-ui-dist/jquery-ui.min.js"
         ],
         "elementStyles": [
             "pl-drag-drop-element.css"
