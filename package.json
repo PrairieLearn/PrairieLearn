@@ -50,7 +50,7 @@
         "express": "^4.17.1",
         "express-async-handler": "^1.1.4",
         "fabric": "^3.6.3",
-        "file-type": "^14.6.2",
+        "file-type": "^15.0.0",
         "filesize": "^6.1.0",
         "fs-extra": "^9.0.1",
         "googleapis": "^59.0.0",
