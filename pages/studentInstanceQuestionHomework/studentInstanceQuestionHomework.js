@@ -39,12 +39,6 @@ function processSubmission(req, res, callback) {
     sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
-        // There is going to be a situation where the file is needed for grading (likely!) so we would
-        // have to go inside the save and grade submission logic to let it in but not save it.
-        // inspect point
-        // saveFileUploads(submission.submitted_answer);
-        // MAJOR NOTE: I have to resolve the `null` value passed in lieu of the assessment in saveSubmission()
-        // console.log(submission);
         if (req.body.__action == 'grade') {
             question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
