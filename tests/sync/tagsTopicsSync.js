@@ -1,4 +1,4 @@
-
+// @ts-check
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
@@ -27,8 +27,8 @@ function makeEntity() {
  * Checks that the entity present in the database matches the data
  * from the original entity in `infoCourse.json`.
  * 
- * @param {any} syncedTag - The tag from the database
- * @param {import('./util').Tag | import('./util').Topic} entity - The entity from `infoCourse.json`.
+ * @param {any} syncedEntity - The entity from the database.
+ * @param {any} entity - The entity from `infoCourse.json`.
  */
 function checkEntity(syncedEntity, entity) {
   assert.isOk(syncedEntity);
@@ -78,13 +78,30 @@ async function testRename(entityName) {
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
   assert.isUndefined(syncedEntities.find(e => e.name === oldName));
-  const syncedEntity = syncedEntities.find(as => as.name = newName);
+  const syncedEntity = syncedEntities.find(as => as.name === newName);
   checkEntity(syncedEntity, oldEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
 
+async function testDuplicate(entityName) {
+  const courseData = util.getCourseData();
+  const newEntity1 = makeEntity();
+  const newEntity2 = makeEntity();
+  newEntity2.color = 'green2';
+  newEntity2.description = 'description for another new entity';
+  courseData.course[entityName].push(newEntity1);
+  courseData.course[entityName].push(newEntity2);
+  await util.writeAndSyncCourseData(courseData);
+  const syncedEntities = await util.dumpTable(entityName);
+  const syncedEntity = syncedEntities.find(as => as.name === newEntity1.name);
+  checkEntity(syncedEntity, newEntity2);
+  const syncedCourses = await util.dumpTable('pl_courses');
+  const syncedCourse = syncedCourses.find(c => c.short_name === courseData.course.name);
+  assert.match(syncedCourse.sync_warnings, new RegExp(`Found duplicate ${entityName}`));
+}
+
 describe('Tag/topic syncing', () => {
-  // use when changing sprocs
+  // Uncomment whenever you change relevant sprocs or migrations
   // before('remove the template database', helperDb.dropTemplate);
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
@@ -111,5 +128,13 @@ describe('Tag/topic syncing', () => {
 
   it('renames a topic', async () => {
     await testRename('topics');
+  });
+
+  it('records a warning if two tags have the same name', async () => {
+    await testDuplicate('tags');
+  });
+
+  it('records a warning if two topics have the same name', async () => {
+    await testDuplicate('topics');
   });
 });

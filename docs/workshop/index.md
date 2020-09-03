@@ -87,8 +87,8 @@ where `xxxx` is your netid.
 
 ## PrairieLearn Overview Video
 
-This [video](https://mediaspace.illinois.edu/media/t/1_e1gprkci) offers a high-level description of PrairieLearn and its usage in courses for homework and exams.
+This [video](https://mediaspace.illinois.edu/media/t/1_e1gprkci/170964131) offers a high-level description of PrairieLearn and its usage in courses for homework and exams.
 
 ## Workshop Videos
 
-We will record the zoom meetings, and post them on the [Activity #3 MediaSpace channel](https://mediaspace.illinois.edu/channel/Assessment/169265112)
+The workshop videos are recorded and posted on the [PrairieLearn MediaSpace channel](https://mediaspace.illinois.edu/channel/PrairieLearn/170964131)

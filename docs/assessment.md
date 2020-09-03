@@ -31,7 +31,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-The allowable set names are specified in the (`courseInfo.json`)[course.md] file.
+You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets). 
 
 ## Assessment types
 
@@ -102,6 +102,45 @@ PrairieLearn distinguishes between *assessments* and *assessment instances*. A *
 By default all assessments are *single instance*, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
+
+## Enabling group work for collaborative assessments
+
+By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
+
+### Instructor options for groupWork
+
+![Instructor group assignment page](groupwork_instructor_interface.png)
+
+Underneath the "Groups" tab in an assessment, instructors have three ways of assigning students to different groups:
+
+1. Uploading a CSV file in the following format:
+```
+groupName,UID
+teamA,one@example.com
+teamA,two@example.com
+teamB,three@example.com
+teamB,four@example.com
+```
+
+2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
+
+3. Copying the group assignments from another assessment.
+
+A copy of the current group assignments can be saved from the "Downloads" tab, under `<assessment>_group_configs.csv`
+
+### Student options for groupWork
+
+![Student perspective for joining a group](groupwork_student_perspective_join.png)
+
+If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via a join code, which they can get from another classmate.
+
+When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
+
+> Note: Students cannot see eachother's edits in real-time, although this is planned for a future version of PrairieLearn.
+
+![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
+
+Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
 ## Auto-closing Exam assessments
 

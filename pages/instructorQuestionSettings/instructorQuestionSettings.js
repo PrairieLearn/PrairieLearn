@@ -21,7 +21,8 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
         const count = 1;
         const showDetails = true;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+        const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+        question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
@@ -29,7 +30,8 @@ router.post('/', function(req, res, next) {
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
             const showDetails = false;
-            question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+            const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+            question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });
@@ -150,7 +152,7 @@ router.get('/', function(req, res, next) {
                 if (GHfound) {
                     res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
-            } else if (res.locals.course.options.isExampleCourse) {
+            } else if (res.locals.course.example_course) {
                 res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);

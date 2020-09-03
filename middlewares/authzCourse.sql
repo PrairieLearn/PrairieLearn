@@ -1,3 +1,14 @@
+-- BLOCK insert_xc101_viewer_on_access
+INSERT INTO course_permissions (user_id, course_id, course_role)
+    SELECT
+        $user_id, c.id, 'Viewer'
+    FROM
+        pl_courses AS c
+    WHERE
+        c.id = $course_id
+        AND c.example_course
+ON CONFLICT DO NOTHING
+
 -- BLOCK select_authz_data
 SELECT
     authz_course($authn_user_id, $course_id, $is_administrator) AS permissions_course,
