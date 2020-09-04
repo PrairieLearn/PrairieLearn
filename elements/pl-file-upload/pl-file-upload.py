@@ -53,18 +53,18 @@ def render(element_html, data):
     html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
 
     files = data['submitted_answers'].get('_files', None)
-    s3_files = data['submitted_answers'].get('_file_upload_s3', {}).get(answer_name, None)
+    file_storage_s3 = data['submitted_answers'].get('_file_storage_s3', None)
 
     if files is not None:
         # Filter out any files not part of this element's file_names
         filtered_files = [x for x in files if x.get('name', '') in file_names]
-
-        # TO DO: Must handle this case when it is None/null
-        s3_filtered_files = [x for x in s3_files if x.get('name', '') in file_names]
-
         html_params['has_files'] = True
         html_params['files'] = json.dumps(filtered_files, allow_nan=False)
-        html_params['s3_files'] = json.dumps(s3_filtered_files, allow_nan=False)
+
+        if file_storage_s3 is not None:
+            s3_files = file_storage_s3.get(answer_name, [])
+            s3_filtered_files = [x for x in s3_files if x.get('name', '') in file_names]
+            html_params['s3_files'] = json.dumps(s3_filtered_files, allow_nan=False)
     else:
         html_params['has_files'] = False
 
@@ -81,7 +81,7 @@ def parse(element_html, data):
     answer_name = get_answer_name(raw_file_names)
     # Get submitted answer or return parse_error if it does not exist
     files = data['submitted_answers'].get(answer_name, None)
-    s3_files = data['submitted_answers'].get('_file_upload_s3', {}).get(answer_name, None)
+    s3_files = data['submitted_answers'].get('_file_storage_s3', {}).get(answer_name, [])
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
@@ -106,15 +106,18 @@ def parse(element_html, data):
             add_format_error(data, '_files was present but was not an array.')
 
         # Validate that all required files are present from db or s3 source
+        missing_files = []
+
         if parsed_files is not None:
             db_submitted_file_names = [x.get('name', '') for x in parsed_files]
             missing_files = [x for x in required_file_names if x not in db_submitted_file_names]
 
+        if s3_files is not None:
             s3_submitted_file_names = [x.get('name', '') for x in s3_files]
             missing_files = [x for x in missing_files if x not in s3_submitted_file_names]
 
-            if len(missing_files) > 0:
-                add_format_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
+        if len(missing_files) > 0:
+            add_format_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
         return
 
     if not files:
