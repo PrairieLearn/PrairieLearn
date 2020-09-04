@@ -13,6 +13,7 @@ const serverJobs = require('../lib/server-jobs');
 const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
+const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
 
 config.startServer = false;
@@ -174,6 +175,11 @@ module.exports = {
                     if (ERR(err, callback)) return;
                   callback(null);
                 });
+            },
+            function(callback) {
+                debug('after(): close local cache');
+                localCache.close();
+                callback(null);
             },
             function(callback) {
                 debug('after(): finish DB');

@@ -39,7 +39,7 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
-const LocalCache = require('./lib/local-cache');
+const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 
 
