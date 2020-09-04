@@ -410,7 +410,7 @@ function readEdit(fileEdit, callback) {
 
 function readEditContents(fileEdit, callback) {
     callbackify(async () => {
-        const result = await fileStore.get(fileEdit.fileID);
+        const result = await fileStore.get(fileEdit.fileID, fileStore.storageTypes.FileSystem);
         return b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
     })(callback);
 }
@@ -513,6 +513,7 @@ function writeEdit(fileEdit, callback) {
             fileEdit.fileName,
             Buffer.from(b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8'),
             'instructor_file_edit',
+            null,
             null,
             null,
             fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
