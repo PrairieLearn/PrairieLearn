@@ -39,6 +39,7 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
+const LocalCache = require('./lib/local-cache');
 const workers = require('./lib/workers');
 
 
@@ -163,7 +164,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
 // proxy workspaces to remote machines
-let workspaceUrlRewriteCache = {};
+let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -172,21 +173,21 @@ const workspaceProxyOptions = {
             const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
             if (!match) throw new Error(`Could not match path: ${path}`);
             const workspace_id = parseInt(match[1]);
-            debug(`pathRewrite: cache=${JSON.stringify(workspaceUrlRewriteCache)}`);
-            if (!(workspace_id in workspaceUrlRewriteCache)) {
-                debug(`pathRewrite: querying workspace_url_rewrite for workspace ${workspace_id}`);
+            let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
+            if (workspace_url_rewrite == null) {
+                debug(`pathRewrite: querying workspace_url_rewrite for workspace_id=${workspace_id}`);
                 const sql
                       = 'SELECT q.workspace_url_rewrite'
                       + ' FROM questions AS q'
                       + ' JOIN variants AS v ON (v.question_id = q.id)'
                       + ' WHERE v.workspace_id = $workspace_id;';
                 const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
-                let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+                workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
                 if (workspace_url_rewrite == null) workspace_url_rewrite = true;
-                workspaceUrlRewriteCache[workspace_id] = workspace_url_rewrite;
+                workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
             }
-            debug(`pathRewrite: cache[${workspace_id}]=${workspaceUrlRewriteCache[workspace_id]}`);
-            if (!workspaceUrlRewriteCache[workspace_id]) {
+            debug(`pathRewrite: found workspace_url_rewrite=${workspace_url_rewrite} for workspace_id=${workspace_id}`);
+            if (!workspace_url_rewrite) {
                 return path;
             }
             var pathSuffix = match[2];
