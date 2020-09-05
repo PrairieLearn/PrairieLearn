@@ -28,7 +28,7 @@
           <%= assessment_instance_label %>
           Summary:
           <% if (assessment.group_work) { %>
-            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+            <%= group_info.name %> <i class="fas fa-users"></i>
           <% } else { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
@@ -99,7 +99,7 @@
           <%= assessment_instance_label %>
           Questions:
           <% if (assessment.group_work) { %>
-            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+            <%= group_info.name %> <i class="fas fa-users"></i>
           <% } else { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
@@ -189,7 +189,7 @@
           <%= assessment_instance_label %>
           Statistics:
           <% if (assessment.group_work) { %>
-            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+            <%= group_info.name %> <i class="fas fa-users"></i>
           <% } else { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
@@ -245,7 +245,7 @@
           <%= assessment_instance_label %>
           Log:
           <% if (assessment.group_work) { %>
-            <%= instance_user.name %> (<%= group_info.name %>) <i class="fas fa-users"></i>
+            <%= group_info.name %> <i class="fas fa-users"></i>
           <% } else { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>

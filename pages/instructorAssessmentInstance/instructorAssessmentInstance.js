@@ -12,7 +12,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
     return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
-        + sanitizeName.sanitizeString(locals.instance_user.uid)
+        + locals.assessment.group_work ? + locals.group_info.name : sanitizeName.sanitizeString(locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -20,7 +20,6 @@ const logCsvFilename = (locals) => {
 };
 
 router.get('/', (req, res, next) => {
-    res.locals.logCsvFilename = logCsvFilename(res.locals);
     const params = {assessment_instance_id: res.locals.assessment_instance.id};
     sqlDb.query(sql.assessment_instance_stats, params, (err, result) => {
         if (ERR(err, next)) return;
@@ -45,9 +44,11 @@ router.get('/', (req, res, next) => {
                         sqlDb.query(sql.select_group_info, params, (err, result) => {
                             if (ERR(err, next)) return;
                             res.locals.group_info = result.rows[0];
+                            res.locals.logCsvFilename = logCsvFilename(res.locals);
                             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                         });
                     } else {
+                        res.locals.logCsvFilename = logCsvFilename(res.locals);
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     }
                 });

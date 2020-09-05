@@ -85,8 +85,8 @@ SELECT
 FROM
     assessment_instances AS ai
     JOIN groups AS gr ON (gr.id = ai.group_id)
-    JOIN group_users AS gu ON (gu.group_id = gr.id)
-    JOIN users AS u ON (u.user_id = gu.user_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+    LEFT JOIN users AS u ON (u.user_id = gu.user_id)
 WHERE 
     ai.id = $assessment_instance_id
     AND gr.deleted_at IS NULL
