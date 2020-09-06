@@ -31,12 +31,12 @@ router.post('/', (req, res, next) => {
         let uids = new Set(req.body.uid.split(',').map((uid) => uid.trim()));
 
         // Verify there is at least one UID
-        if (uids.length == 0) return next(new Error('Empty list of UIDs'));
+        if (uids.length == 0) return next(error.make(400, 'Empty list of UIDs'));
 
         // Verify the requested course role is valid - we choose to disallow Owner
         // because we want to discourage the assignment of this role to many users
         if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
-            return next(new Error(`Invalid requested course role: ${req.body.course_role}`));
+            return next(error.make(400, `Invalid requested course role: ${req.body.course_role}`));
         }
 
         // Verify the course instance id associated with the requested course instance
@@ -44,7 +44,7 @@ router.post('/', (req, res, next) => {
         let course_instance = null;
         if (req.body.course_instance_id) {
             course_instance = res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id);
-            if (!course_instance) return next(new Error(`Invalid requested course instance role`));
+            if (!course_instance) return next(error.make(400, `Invalid requested course instance role`));
         }
 
         // Iterate through UIDs in parallel
@@ -86,7 +86,7 @@ router.post('/', (req, res, next) => {
         }, (err, result) => {
             if (ERR(err, next)) return;
             if (result.errors.length > 0) {
-                err = error.make(500, 'Failed to grant access to some users');
+                err = error.make(409, 'Failed to grant access to some users');
                 err.info = '';
                 const given_cp_and_cip = result.given_cp.filter((uid) => !result.not_given_cip.includes(uid));
                 debug(`given_cp: ${result.given_cp}`);
@@ -144,7 +144,7 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'course_permissions_insert_by_user_uid') {
         let uid = req.body.uid.trim();
-        if (!uid) return next(new Error(`Empty UID`));
+        if (!uid) return next(error.make(400, `Empty UID`));
 
         const params = [
             res.locals.course.id,
@@ -158,11 +158,11 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'course_permissions_update_role') {
         if ((req.body.user_id == res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
-            return next(new Error('Owners cannot change their own course content access'));
+            return next(error.make(403, 'Owners cannot change their own course content access'));
         }
 
         if (req.body.user_id == res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
-            return next(new Error('Owners cannot change their own course content access even if they are emulating another user'));
+            return next(error.make(403, 'Owners cannot change their own course content access even if they are emulating another user'));
         }
 
         // Before proceeding, we *could* make some effort to verify that the user
@@ -188,11 +188,11 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'course_permissions_delete') {
         if ((req.body.user_id == res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
-            return next(new Error('Owners cannot remove themselves from the course staff'));
+            return next(error.make(403, 'Owners cannot remove themselves from the course staff'));
         }
 
         if (req.body.user_id == res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
-            return next(new Error('Owners cannot remove themselves from the course staff even if they are emulating another user'));
+            return next(error.make(403, 'Owners cannot remove themselves from the course staff even if they are emulating another user'));
         }
 
         const params = [
@@ -211,7 +211,7 @@ router.post('/', (req, res, next) => {
         // reason as above (see handler for course_permissions_update_role).
 
         if (!res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id)) {
-            return next(new Error(`Invalid requested course instance role`));
+            return next(error.make(400, `Invalid requested course instance role`));
         }
 
         if (req.body.course_instance_role) {
@@ -246,7 +246,7 @@ router.post('/', (req, res, next) => {
         // reason as above (see handler for course_permissions_update_role).
 
         if (!res.locals.authz_data.course_instances.find((ci) => `${ci.id}` == req.body.course_instance_id)) {
-            return next(new Error(`Invalid requested course instance role`));
+            return next(error.make(400, `Invalid requested course instance role`));
         }
 
         const params = [
