@@ -14,11 +14,6 @@
       "rewriteUrl": false,
       "gradedFiles": [
           "Workbook.ipynb"
-      ],
-      "syncIgnore": [
-          ".cache/",
-          ".local/share/jupyter",
-          ".npm/"
       ]
     },
     "singleVariant": true,
