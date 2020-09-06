@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/prairielib/error');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('@prairielearn/prairielib/error');
