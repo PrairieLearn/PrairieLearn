@@ -135,7 +135,7 @@ router.post('/', function(req, res, next) {
     // all users should be able to "Recalculate statistics," not just course editors - may
     // want to revisit this question in future (or recalculate automatically, every time
     // this page is reloaded).
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied (must be a course editor)'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be a course editor)'));
     if (req.body.__action == 'refresh_stats') {
         var params = [
             res.locals.assessment.id,

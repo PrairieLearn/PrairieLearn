@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const error = require('@prairielearn/prairielib/error');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -275,7 +276,7 @@ function browseFile(file_browser, callback) {
 
 router.get('/*', function(req, res, next) {
     debug('GET /');
-    if (!res.locals.authz_data.has_course_permission_view) return next(new Error('Access denied (must be a course Viewer)'));
+    if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
     let file_browser = {
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         example_course: res.locals.course.example_course,
@@ -328,7 +329,7 @@ router.get('/*', function(req, res, next) {
 
 router.post('/*', function(req, res, next) {
     debug('POST /');
-    if (!res.locals.authz_data.has_course_permission_view) return next(new Error('Access denied (must be a course Viewer)'));
+    if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
     getPaths(req, res, (err, paths) => {
         if (ERR(err, next)) return;
         const container = {

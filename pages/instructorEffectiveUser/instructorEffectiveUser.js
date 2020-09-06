@@ -16,7 +16,7 @@ const moment = require('moment');
 
 router.get('/', function(req, res, next) {
     if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) {
-        return next(new Error('Access denied'));
+        return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
     }
 
     debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
@@ -45,7 +45,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!(res.locals.authz_data.authn_has_course_permission_preview || res.locals.authz_data.authn_has_course_instance_permission_view)) {
-        return next(new Error('Access denied'));
+        return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
     }
 
     if (req.body.__action == 'reset') {

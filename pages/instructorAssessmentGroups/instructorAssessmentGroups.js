@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const error = require('@prairielearn/prairielib/error');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('@prairielearn/prairielib/error');
@@ -68,12 +69,12 @@ function obtainInfo(req, res, next){
 }
 router.get('/', function(req, res, next) {
     debug('GET /');
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     obtainInfo(req, res, next);
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data editor)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'upload_assessment_groups') {
         groupUpdate.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;

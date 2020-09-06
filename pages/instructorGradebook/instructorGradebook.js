@@ -17,7 +17,7 @@ var csvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     res.locals.csvFilename = csvFilename(res.locals);
     var params = {course_instance_id: res.locals.course_instance.id};
     sqldb.query(sql.course_assessments, params, function(err, result) {
@@ -35,7 +35,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     if (req.params.filename == csvFilename(res.locals)) {
         var params = {course_instance_id: res.locals.course_instance.id};
         sqldb.query(sql.course_assessments, params, function(err, result) {
@@ -64,7 +64,7 @@ router.get('/:filename', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(new Error('Access denied (must be a student data editor)'));
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'edit_total_score_perc') {
         let params = [
             req.body.assessment_instance_id,

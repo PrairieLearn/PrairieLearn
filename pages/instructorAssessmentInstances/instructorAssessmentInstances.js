@@ -14,7 +14,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     debug('GET /');
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     const params = {
         assessment_id: res.locals.assessment.id,
         group_work: res.locals.assessment.group_work,
@@ -28,7 +28,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(new Error('Access denied (must be a student data editor)'));
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'open') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;

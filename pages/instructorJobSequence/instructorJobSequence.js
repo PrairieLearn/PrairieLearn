@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const serverJobs = require('../../lib/server-jobs');
+const error = require('@prairielearn/prairielib/error');
 
 router.get('/:job_sequence_id', function(req, res, next) {
     const job_sequence_id = req.params.job_sequence_id;
@@ -22,7 +23,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
                 // something to do with code.
 
                 if (!res.locals.authz_data.has_course_permission_view) {
-                    return next(new Error('Access denied (must be a Viewer in the course)'));
+                    return next(error.make(403, 'Access denied (must be a Viewer in the course)'));
                 }
             } else {
                 // If course_instance_id is not null, then this job sequence likely
@@ -36,7 +37,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
                 }
 
                 if (!res.locals.authz_data.has_course_instance_permission_view) {
-                    return next(new Error('Access denied (must be a Student Data Viewer in the course instance)'));
+                    return next(error.make(403, 'Access denied (must be a Student Data Viewer in the course instance)'));
                 }
             }
         }

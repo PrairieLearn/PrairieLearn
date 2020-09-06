@@ -5,6 +5,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
+const error = require('@prairielearn/prairielib/error');
 
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
@@ -46,7 +47,7 @@ const setFilenames = function(locals) {
 
 router.get('/', function(req, res, next) {
     debug('GET /');
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     setFilenames(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
@@ -72,7 +73,7 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
 };
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.has_course_instance_permission_view) return next(new Error('Access denied (must be a student data viewer)'));
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     //
     // NOTE: you could argue that some downloads should be restricted further to users with
     // permission to view code (Course role: Viewer). For example, '*_all_submissions.csv'
@@ -125,7 +126,7 @@ router.get('/:filename', function(req, res, next) {
         identityColumn = groupnameColumn;
     }
     let instancesColumns = identityColumn.concat(instanceColumn);
-    
+
     if (req.params.filename == res.locals.scoresCsvFilename) {
         sendInstancesCsv(res, req, scoresColumns, {only_highest: true}, (err) => {
             if (ERR(err, next)) return;
@@ -186,7 +187,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
                 ['Duration seconds', 'duration_seconds'],
-            ]); 
+            ]);
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
