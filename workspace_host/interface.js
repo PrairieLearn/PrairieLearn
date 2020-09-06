@@ -781,7 +781,7 @@ async function _getInitialZipAsync(workspace) {
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
-    await workspaceHelper.changeWorkspaceFileOwner(localPath);
+    await workspaceHelper.changeWorkspaceFileOwnerAsync(localPath);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
@@ -794,7 +794,7 @@ async function _getInitialZipAsync(workspace) {
             debug(`Extracting file ${entryPath}`);
             entry.pipe(fs.createWriteStream(entryPath));
         }
-        await workspaceHelper.changeWorkspaceFileOwner(entryPath);
+        await workspaceHelper.changeWorkspaceFileOwnerAsync(entryPath);
     }
 
     return workspace;
@@ -938,7 +938,7 @@ function _createContainer(workspace, callback) {
             });
         },
         (callback) => {
-            workspaceHelper.changeWorkspaceFileOwnerSync(workspaceJobPath, (err) => {
+            workspaceHelper.changeWorkspaceFileOwner(workspaceJobPath, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
