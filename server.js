@@ -389,6 +389,15 @@ app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, fun
     }
 });
 
+// Redirect Instruct question page to Student Version if we don't have Instructor authz.
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', function(req, res, next) {
+    if (!res.locals.authz_data.has_instructor_view) {
+        res.redirect(`/pl/course_instance/${req.params.course_instance_id}/assessment/${req.params.assessment_id}/`);
+    } else {
+        next();
+    }
+});
+
 // all pages under /pl/course_instance/*/instructor require instructor permissions
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
