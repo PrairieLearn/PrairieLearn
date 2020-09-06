@@ -31,14 +31,16 @@ SELECT w.version AS workspace_version
 FROM workspaces AS w
 WHERE w.id = $workspace_id;
 
--- BLOCK select_workspace_graded_files
+-- BLOCK select_workspace_version_and_graded_files
 SELECT
+    w.version AS workspace_version,
     q.workspace_graded_files
 FROM
     questions AS q
     JOIN variants AS v ON (v.question_id = q.id)
+    JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE
-    v.workspace_id = $workspace_id;
+    w.id = $workspace_id;
 
 -- BLOCK update_workspace_heartbeat_at_now
 UPDATE workspaces AS w
