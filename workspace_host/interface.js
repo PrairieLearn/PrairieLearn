@@ -823,7 +823,6 @@ function _getInitialFiles(workspace, callback) {
                     owner: workspaceUid,
                     group: workspaceGid,
                 };
-                filePath = path.join(filePath); // e.g., path.join('/foo///') => '/foo/'
                 const isDirectory = filePath.endsWith('/');
                 update_queue[[filePath, isDirectory]] = { action: 'skip' };
                 awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, options, (err) => {
