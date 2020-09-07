@@ -54,6 +54,9 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
+const workspaceUid = config.workspaceJobsDirectoryOwnerUid;
+const workspaceGid = config.workspaceJobsDirectoryOwnerGid;
+
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
@@ -777,11 +780,15 @@ async function _getInitialZipAsync(workspace) {
     const s3Path = `${s3Name}/initial.zip`;
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
-    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, update_queue);
+    const options = {
+        owner: workspaceUid,
+        group: workspaceGid,
+    };
+    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, update_queue, options);
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
-    await awsHelper.changeWorkspaceFileOwnerAsync(localPath);
+    await fsPromises.chown(localPath, workspaceUid, workspaceGid);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
@@ -794,7 +801,7 @@ async function _getInitialZipAsync(workspace) {
             debug(`Extracting file ${entryPath}`);
             entry.pipe(fs.createWriteStream(entryPath));
         }
-        await awsHelper.changeWorkspaceFileOwnerAsync(entryPath);
+        await fsPromises.chown(entryPath, workspaceUid, workspaceGid);
     }
 
     return workspace;
@@ -810,7 +817,11 @@ function _getInitialFiles(workspace, callback) {
         var jobs = [];
         jobs_params.forEach(([filePath, S3filePath]) => {
             jobs.push( ((callback) => {
-                awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, update_queue, (err) => {
+                const options = {
+                    owner: workspaceUid,
+                    group: workspaceGid,
+                };
+                awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, update_queue, options, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -938,7 +949,7 @@ function _createContainer(workspace, callback) {
             });
         },
         (callback) => {
-            awsHelper.changeWorkspaceFileOwner(workspaceJobPath, (err) => {
+            fs.chown(workspaceJobPath, workspaceUid, workspaceGid, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
