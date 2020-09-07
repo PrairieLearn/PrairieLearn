@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     workspace_hosts_find_terminable(
         IN unhealthy_timeout_sec integer,
         IN launch_timeout_sec integer,
-        OUT terminated_hosts text[]
+        OUT terminating_hosts text[]
     )
 AS $$
 BEGIN
@@ -15,7 +15,7 @@ BEGIN
             wh.*
         FROM
             workspace_hosts AS wh
-        HAVING
+        WHERE
             (((wh.state = 'draining' OR wh.state = 'unhealthy') AND wh.load_count = 0) OR
             (wh.state = 'unhealthy' AND (now() - wh.unhealthy_at) > make_interval(secs => unhealthy_timeout_sec)) OR
             (wh.state = 'launching' AND (now() - wh.launched_at) > make_interval(secs => launch_timeout_sec)))
@@ -28,9 +28,9 @@ BEGIN
     FROM terminable_hosts AS th
     WHERE wh.id = th.id;
 
-    -- Save our terminated hosts
+    -- Save our terminating hosts
     SELECT array_agg(th.instance_id)
-    INTO terminated_hosts
+    INTO terminating_hosts
     FROM terminable_hosts AS th;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

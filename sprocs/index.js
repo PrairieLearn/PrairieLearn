@@ -180,6 +180,7 @@ module.exports = {
             'workspaces_message_update.sql',
             'workspaces_state_update.sql',
             'workspace_loads_current.sql',
+            'workspace_hosts_assign_workspace.sql',
             'workspace_hosts_recapture_draining.sql',
             'workspace_hosts_drain_extra.sql',
             'workspace_hosts_find_terminable.sql',

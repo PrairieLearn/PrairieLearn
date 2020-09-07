@@ -1,3 +1,9 @@
 {
-    "description": "Set all workspace hosts to unhealthy."
+    "description": "Set all workspace hosts to unhealthy.",
+    "params": [
+        {
+            "name": "confirm",
+            "description": "Type 'yes' to confirm."
+        }
+    ]
 }
