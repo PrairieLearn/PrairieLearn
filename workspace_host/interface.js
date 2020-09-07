@@ -227,7 +227,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
-            logger.info(`Watching file add ${filename}`);
+            // logger.info(`Watching file add ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -237,7 +237,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
-            logger.info(`Watching directory add ${filename}`);
+            // logger.info(`Watching directory add ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -247,7 +247,7 @@ async.series([
         });
         watcher.on('change', filename => {
             // Handle file changes
-            logger.info(`Watching file change ${filename}`);
+            // logger.info(`Watching file change ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -276,7 +276,7 @@ async.series([
         });
         async function autoUpdateJobManagerTimeout() {
             const timeout_id = setTimeout(() => {
-                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
+                // logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
             }, config.workspaceHostFileWatchIntervalSec * 1000);
             try {
                 await _autoUpdateJobManager();
@@ -672,11 +672,11 @@ async function _autoUpdateJobManager() {
     lastAutoUpdateTime = Date.now();
     var jobs = [];
     for (const key in update_queue) {
-        logger.info(`_autoUpdateJobManager: key=${key}`);
+        // logger.info(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
-        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
+        // logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
 
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
@@ -687,48 +687,48 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
-        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-        logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
-        logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
+        // logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        // logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
+        // logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
 
         let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
-            logger.info(`_autoUpdateJobManager: skip root`);
+            // logger.info(`_autoUpdateJobManager: skip root`);
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
-            logger.info(`_autoUpdateJobManager: skip ignored`);
+            // logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
             s3_path = `${s3_name}/current/${local_path}`;
-            logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
+            // logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
-        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
+        // logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
         if (update_queue[key].action == 'update') {
-            logger.info(`_autoUpdateJobManager: adding update job`);
+            // logger.info(`_autoUpdateJobManager: adding update job`);
             jobs.push((callback) => {
-                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
+                // logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
                     if (err) {
                         logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
                         logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
                     } else {
-                        logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                        // logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
                     }
                     callback(null); // always return success to keep going
                 });
             });
         } else if (update_queue[key].action == 'delete') {
-            logger.info(`_autoUpdateJobManager: adding delete job`);
+            // logger.info(`_autoUpdateJobManager: adding delete job`);
             jobs.push((callback) => {
-                logger.info(`Removing file from S3: ${s3_path}`);
+                // logger.info(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
                     if (err) {
                         logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
                         logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
                     } else {
-                        logger.info(`Successfully removed file from S3: ${s3_path}`);
+                        // logger.info(`Successfully removed file from S3: ${s3_path}`);
                     }
                     callback(null); // always return success to keep going
                 });
@@ -794,17 +794,21 @@ async function _getInitialZipAsync(workspace) {
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+    const zipJobs = [];
     for await (const entry of zip) {
-        const entryPath = path.join(localPath, entry.path);
-        if (entry.type == 'Directory') {
-            debug(`Making directory ${entryPath}`);
-            await fsPromises.mkdir(entryPath, { recursive: true });
-        } else {
-            debug(`Extracting file ${entryPath}`);
-            entry.pipe(fs.createWriteStream(entryPath));
-        }
-        await fsPromises.chown(entryPath, workspaceUid, workspaceGid);
+        zipJobs.push(async () => {
+            const entryPath = path.join(localPath, entry.path);
+            if (entry.type == 'Directory') {
+                debug(`Making directory ${entryPath}`);
+                await fsPromises.mkdir(entryPath, { recursive: true });
+            } else {
+                debug(`Extracting file ${entryPath}`);
+                entry.pipe(fs.createWriteStream(entryPath));
+            }
+            await fsPromises.chown(entryPath, workspaceUid, workspaceGid);
+        });
     }
+    await util.promisify(async.parallelLimit)(zipJobs, config.workspaceJobsParallelLimit);
 
     return workspace;
 }
