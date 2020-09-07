@@ -28,7 +28,7 @@ router.post('/', (req, res, next) => {
 
     if (req.body.__action == 'course_permissions_insert_by_multi_user_uid') {
         // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
-        let uids = new Set(req.body.uid.split(',').map((uid) => uid.trim()));
+        let uids = new Set(req.body.uid.split(',').map((uid) => uid.trim()).filter((uid) => (uid)));
 
         // Verify there is at least one UID
         if (uids.length == 0) return next(error.make(400, 'Empty list of UIDs'));
@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
                 res.locals.authz_data.authn_user.user_id,
             ];
             sqldb.call('course_permissions_insert_by_user_uid', c_params, (err, result) => {
-                if (ERR(err, (e) => logger.warn(`Failed to insert course permission for uid: ${uid}`, e))) {
+                if (ERR(err, (e) => logger.info(`Failed to insert course permission for uid: ${uid}`, e))) {
                     memo.not_given_cp.push(uid);
                     memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
                     return callback(null, memo);
@@ -74,7 +74,7 @@ router.post('/', (req, res, next) => {
                     res.locals.authz_data.authn_user.user_id,
                 ];
                 sqldb.call('course_instance_permissions_insert', ci_params, (err, _result) => {
-                    if (ERR(err, (e) => logger.warn(`Failed to insert course instance permission for uid: ${uid}`, e))) {
+                    if (ERR(err, (e) => logger.info(`Failed to insert course instance permission for uid: ${uid}`, e))) {
                         memo.not_given_cip.push(uid);
                         memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
                         return callback(null, memo);
