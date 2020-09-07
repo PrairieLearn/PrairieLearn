@@ -64,7 +64,12 @@
                 <td class="align-middle"><%= course_user.uid %></td>
                 <td class="align-middle"><%= (course_user.name || '—') %></td>
                 <td class="align-middle">
-                  <% if (course_user.course_role == 'Owner' && (!is_administrator)) { %>
+                  <% if (((course_user.user_id == authn_user.user_id) || (course_user.user_id == user.user_id)) &&
+                         (!is_administrator)) {
+
+                    // Cannot change the course role of yourself (or of the user you are
+                    // emulating) unless you are an administrator.
+                  %>
                     <button id="courseContentDropdown-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-primary disabled" disabled>
                       <%= course_user.course_role %>
                     </button>
@@ -135,18 +140,18 @@
                 </td>
                 <td class="align-middle">
                   <% if (course_user.course_instance_roles) { %>
-                    <% course_user.course_instance_roles.forEach(function(cir, i) { %>
-                      <form name="student-data-access-change-<%= course_user.user_id %>-<%= i %>" method="POST" class="d-inline">
+                    <% course_user.course_instance_roles.forEach(function(cir) { %>
+                      <form name="student-data-access-change-<%= course_user.user_id %>-<%= cir.id %>" method="POST" class="d-inline">
                         <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
                         <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
                         <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
                           <div class="btn-group btn-group-sm" role="group">
-                            <button id="changeCIPDrop-<%= course_user.user_id %>-<%= i %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <button id="changeCIPDrop-<%= course_user.user_id %>-<%= cir.id %>" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                               <%= cir.short_name %> (<%= cir.course_instance_role_formatted %>)
                             </button>
-                            <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= i %>"  style="width: 35em;">
+                            <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= cir.id %>"  style="width: 35em;">
                               <div class="dropdown-header text-wrap">
                                 <p>
                                   Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files, and cannot see any other course instances or assessments, without having also been granted course content access.
