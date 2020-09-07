@@ -51,4 +51,4 @@ require('./testGroupStudent');
 require('./testGroupScoreAndSync');
 require('./testAccessAsInstructor');
 // require('./testShowClosedAssessment');
-require('./permissions')
+require('./permissions');
