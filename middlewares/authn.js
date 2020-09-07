@@ -94,7 +94,12 @@ module.exports = function(req, res, next) {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
             authUin = '000000001';
+        } else if (req.cookies.pl_test_user == 'test_instructor') {
+            authUid = 'instructor@illinois.edu';
+            authName = 'Instructor User';
+            authUin = '100000000';
         }
+
         let params = [
             authUid,
             authName,
