@@ -215,11 +215,10 @@ const workspaceProxyOptions = {
     },
     onError: (err, req, res) => {
         logger.error(`Error proxying workspace request: ${err}`);
-        try {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.send('There was an error proxying this workspace request');
-        } catch (err) {
-            logger.error(`Error while handling workspace request error: ${err}`);
+        /* Check to make sure we weren't already in the middle of sending a response
+           before replying with an error 500 */
+        if (!res.headersSent) {
+            res.status(500).send('Error proxying workspace request');
         }
     },
 };
