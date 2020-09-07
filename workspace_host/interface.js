@@ -1159,7 +1159,7 @@ function gradeSequence(workspace_id, res) {
             const workspace = await _getWorkspaceAsync(workspace_id);
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-            const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
+            const zipName = `${workspace.s3_name}-${timestamp}.zip`;
             zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
             return {
