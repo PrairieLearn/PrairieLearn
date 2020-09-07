@@ -784,7 +784,9 @@ async function _getInitialZipAsync(workspace) {
         owner: workspaceUid,
         group: workspaceGid,
     };
-    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, update_queue, options);
+    const isDirectory = false;
+    update_queue[[zipPath, isDirectory]] = { action: 'skip' };
+    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
@@ -821,7 +823,10 @@ function _getInitialFiles(workspace, callback) {
                     owner: workspaceUid,
                     group: workspaceGid,
                 };
-                awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, update_queue, options, (err) => {
+                filePath = path.join(filePath); // e.g., path.join('/foo///') => '/foo/'
+                const isDirectory = filePath.endsWith('/');
+                update_queue[[filePath, isDirectory]] = { action: 'skip' };
+                awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, options, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
