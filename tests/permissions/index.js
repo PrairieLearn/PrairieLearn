@@ -1,1 +1,2 @@
 require('./courseAdminAccess');
+require('./effectiveUser');
