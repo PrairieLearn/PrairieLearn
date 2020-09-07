@@ -30,15 +30,8 @@ function updatePermissions(users, uid, cr, cir) {
     user.cir = cir;
 }
 
-describe('course admin access page', function() {
-    this.timeout(60000);
-
-    const context = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
-    context.baseUrl = `${context.siteUrl}/pl`;
-    context.baseUrlCourseInstance = `${context.baseUrl}/course_instance/1/instructor`;
-    context.pageUrlCourse = `${context.baseUrl}/course/1/course_admin/access`;
-    context.pageUrlCourseInstance = `${context.baseUrlCourseInstance}/course_admin/access`;
+function runTest(context) {
+    context.pageUrl = `${context.baseUrl}/course_admin/access`;
     context.userId = 2;
 
     const headers = {
@@ -70,7 +63,7 @@ describe('course admin access page', function() {
     });
 
     step('cannot add multiple users with owner role', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsMultiInsertButton]');
         const form = {
@@ -79,13 +72,13 @@ describe('course admin access page', function() {
             uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
             course_role: 'Owner',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 400);
         await checkPermissions(users);
     });
 
     step('can add multiple users', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsMultiInsertButton]');
         const form = {
@@ -94,7 +87,7 @@ describe('course admin access page', function() {
             uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
             course_role: 'Viewer',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'Viewer', null);
         updatePermissions(users, 'staff04@illinois.edu', 'Viewer', null);
@@ -102,7 +95,7 @@ describe('course admin access page', function() {
     });
 
     step('can add valid subset of multiple users', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsMultiInsertButton]');
         const form = {
@@ -111,14 +104,14 @@ describe('course admin access page', function() {
             uid: 'staff03@illinois.edu, staff05@illinois.edu, garbage',
             course_role: 'None',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 409);
         updatePermissions(users, 'staff05@illinois.edu', 'None', null);
         await checkPermissions(users);
     });
 
     step('can add course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-add-3]`);
         const form = {
@@ -127,14 +120,14 @@ describe('course admin access page', function() {
             user_id: 3,
             course_instance_id: 1,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'Viewer', 'Student Data Viewer');
         await checkPermissions(users);
     });
 
     step('can delete user', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=course-content-access-form-3]`);
         const form = {
@@ -142,14 +135,14 @@ describe('course admin access page', function() {
             __csrf_token: context.__csrf_token,
             user_id: 3,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', null, null);
         await checkPermissions(users);
     });
 
     step('cannot delete self', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         const __csrf_token = response.$('span[id=test_csrf_token]').text();
         assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -158,13 +151,13 @@ describe('course admin access page', function() {
             __csrf_token: __csrf_token,
             user_id: 2,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 403);
         await checkPermissions(users);
     });
 
     step('can change course role', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=course-content-access-form-4]`);
         const form = {
@@ -173,14 +166,14 @@ describe('course admin access page', function() {
             user_id: 4,
             course_role: 'Owner',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff04@illinois.edu', 'Owner', null);
         await checkPermissions(users);
     });
 
     step('cannot change course role of self', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         const __csrf_token = response.$('span[id=test_csrf_token]').text();
         assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -190,14 +183,14 @@ describe('course admin access page', function() {
             user_id: context.userId,
             course_role: 'None',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 403);
         await checkPermissions(users);
     });
 
     step('cannot delete self even when emulating another owner', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu' };
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         const __csrf_token = response.$('span[id=test_csrf_token]').text();
         assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -206,14 +199,14 @@ describe('course admin access page', function() {
             __csrf_token: __csrf_token,
             user_id: context.userId,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 403);
         await checkPermissions(users);
     });
 
     step('cannot change course role of self even when emulating another owner', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu' };
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         const __csrf_token = response.$('span[id=test_csrf_token]').text();
         assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -223,13 +216,13 @@ describe('course admin access page', function() {
             user_id: context.userId,
             course_role: 'None',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.equal(response.status, 403);
         await checkPermissions(users);
     });
 
     step('can add user', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsInsertButton]');
         const form = {
@@ -237,14 +230,14 @@ describe('course admin access page', function() {
             __csrf_token: context.__csrf_token,
             uid: 'staff03@illinois.edu',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'None', null);
         await checkPermissions(users);
     });
 
     step('can add course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-add-3]`);
         const form = {
@@ -253,14 +246,14 @@ describe('course admin access page', function() {
             user_id: 3,
             course_instance_id: 1,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Viewer');
         await checkPermissions(users);
     });
 
     step('can update course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-change-3-1]`);
         const form = {
@@ -270,14 +263,14 @@ describe('course admin access page', function() {
             course_instance_id: 1,
             course_instance_role: 'Student Data Editor',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Editor');
         await checkPermissions(users);
     });
 
     step('can add course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-add-5]`);
         const form = {
@@ -286,14 +279,14 @@ describe('course admin access page', function() {
             user_id: 5,
             course_instance_id: 1,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
         await checkPermissions(users);
     });
 
     step('can delete course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-change-5-1]`);
         const form = {
@@ -302,28 +295,28 @@ describe('course admin access page', function() {
             user_id: 5,
             course_instance_id: 1,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', 'None', null);
         await checkPermissions(users);
     });
 
     step('can delete all course instance permissions', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsRemoveStudentDataAccessButton]');
         const form = {
             __action: 'remove_all_student_data_access',
             __csrf_token: context.__csrf_token,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', 'None', null);
         await checkPermissions(users);
     });
 
     step('can add course instance permission', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=student-data-access-add-5]`);
         const form = {
@@ -332,42 +325,42 @@ describe('course admin access page', function() {
             user_id: 5,
             course_instance_id: 1,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
         await checkPermissions(users);
     });
 
     step('can delete users with no access', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsDeleteNoAccessButton]');
         const form = {
             __action: 'delete_no_access',
             __csrf_token: context.__csrf_token,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', null, null);
         await checkPermissions(users);
     });
 
     step('can delete non-owners', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFTokenFromDataContent(context, response.$, 'button[id=coursePermissionsDeleteNonOwnersButton]');
         const form = {
             __action: 'delete_non_owners',
             __csrf_token: context.__csrf_token,
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', null, null);
         await checkPermissions(users);
     });
 
     step('can change course role', async () => {
-        let response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.isTrue(response.ok);
         helperClient.extractAndSaveCSRFToken(context, response.$, `form[name=course-content-access-form-4]`);
         const form = {
@@ -376,7 +369,7 @@ describe('course admin access page', function() {
             user_id: 4,
             course_role: 'Editor',
         };
-        response = await helperClient.fetchCheerio(context.pageUrlCourse, { method: 'POST', form: form, headers: headers });
+        response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff04@illinois.edu', 'Editor', null);
         await checkPermissions(users);
@@ -384,7 +377,27 @@ describe('course admin access page', function() {
 
     step('cannot GET if not an owner', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu' };
-        const response = await helperClient.fetchCheerio(context.pageUrlCourse, { headers });
+        const response = await helperClient.fetchCheerio(context.pageUrl, { headers });
         assert.equal(response.status, 403);
     });
+}
+
+describe('course admin access page through course route', function() {
+    this.timeout(60000);
+
+    const context = {};
+    context.siteUrl = `http://localhost:${config.serverPort}`;
+    context.baseUrl = `${context.siteUrl}/pl/course/1`;
+
+    runTest(context);
+});
+
+describe('course admin access page through course instance route', function() {
+    this.timeout(60000);
+
+    const context = {};
+    context.siteUrl = `http://localhost:${config.serverPort}`;
+    context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
+
+    runTest(context);
 });
