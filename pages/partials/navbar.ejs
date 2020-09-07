@@ -1,4 +1,4 @@
-<% if (devMode) { %>
+<% if (devMode && locals.__csrf_token) { %>
   <!--
     Unit tests often need access to the CSRF token even when the page contains
     no form - for example, to confirm that a POST with a prohibited action is
