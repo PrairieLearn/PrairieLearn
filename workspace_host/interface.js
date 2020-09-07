@@ -821,7 +821,7 @@ function _getInitialFiles(workspace, callback) {
     _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
-        jobs_params.forEach(([filePath, S3filePath]) => {
+        jobs_params.forEach(([filePath, s3FilePath]) => {
             jobs.push( ((callback) => {
                 const options = {
                     owner: workspaceUid,
@@ -829,7 +829,7 @@ function _getInitialFiles(workspace, callback) {
                 };
                 const isDirectory = filePath.endsWith('/');
                 update_queue[[filePath, isDirectory]] = { action: 'skip' };
-                awsHelper.downloadFromS3(config.workspaceS3Bucket, S3filePath, filePath, options, (err) => {
+                awsHelper.downloadFromS3(config.workspaceS3Bucket, s3FilePath, filePath, options, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
