@@ -1,3 +1,14 @@
+<% if (devMode) { %>
+  <!--
+    Unit tests often need access to the CSRF token even when the page contains
+    no form - for example, to confirm that a POST with a prohibited action is
+    denied. For convenience, we include the CSRF token here, on all pages. We
+    do this only in devMode and only for the purpose of testing. DO NOT RELY
+    ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS!
+  -->
+  <span id="test_csrf_token" hidden><%= __csrf_token %></span>
+<% } %>
+
 <div class="mb-4">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">
@@ -175,7 +186,7 @@
               <div class="dropdown-divider"></div>
               <h6 class="dropdown-header"><%= headingViewTypeMenu %></h6>
 
-              <% if (authz_data.user_with_requested_uid_has_instructor_access) { %>
+              <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
                 <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-instructor">
                   <div class="d-flex flex-row justify-content-left">
                     <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'instructor') { %>&#10003;<% } %></div>
@@ -332,7 +343,7 @@
 
         <% if (authz_data.authn_user.uid != authz_data.user.uid) { %>
 
-          <% if (authz_data.user_with_requested_uid_has_instructor_access) { %>
+          <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
 
             $('#navbar-user-view-instructor').click(function() {
               Cookies.remove('pl_requested_course_role', { path: '/' });

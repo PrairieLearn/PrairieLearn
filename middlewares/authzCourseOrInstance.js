@@ -151,7 +151,7 @@ module.exports = function(req, res, next) {
 
         let user = res.locals.authz_data.user;
         let is_administrator = res.locals.is_administrator;
-        let user_with_requested_uid_has_instructor_access = false;
+        let user_with_requested_uid_has_instructor_access_to_course_instance = false;
 
         async.series([
             (callback) => {
@@ -218,9 +218,8 @@ module.exports = function(req, res, next) {
 
                     user = _.cloneDeep(result.rows[0].user);
                     is_administrator = result.rows[0].is_administrator;
-                    user_with_requested_uid_has_instructor_access = result.rows[0].is_instructor;
-
-                    debug(`requested uid has instructor access: ${user_with_requested_uid_has_instructor_access}`);
+                    user_with_requested_uid_has_instructor_access_to_course_instance = result.rows[0].is_instructor;
+                    debug(`requested uid has instructor access: ${user_with_requested_uid_has_instructor_access_to_course_instance}`);
 
                     // FIXME: also override institution?
                     return callback(null);
@@ -286,7 +285,7 @@ module.exports = function(req, res, next) {
                             res.locals.authz_data.has_student_access_with_enrollment = false;
 
                             if (res.locals.authz_data.user.uid != res.locals.authz_data.authn_user.uid) {
-                                res.locals.authz_data.user_with_requested_uid_has_instructor_access = user_with_requested_uid_has_instructor_access;
+                                res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance = user_with_requested_uid_has_instructor_access_to_course_instance;
                             }
                         }
 
@@ -402,7 +401,7 @@ module.exports = function(req, res, next) {
                         // with error
                         if ((user.uid != res.locals.authn_user.uid)                                             // effective uid is not the same as authn uid
                             && result.rows[0].permissions_course_instance.has_student_access_with_enrollment    // effective user is enrolled with access
-                            && (!user_with_requested_uid_has_instructor_access)                                 // effective user is not an instructor (i.e., is a student)
+                            && (!user_with_requested_uid_has_instructor_access_to_course_instance)              // effective user is not an instructor (i.e., is a student)
                             && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {            // authn user is not a Student Data Editor
                             overrides.forEach((override) => {
                                 debug(`clearing cookie: ${override.cookie}`);
@@ -459,7 +458,7 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.has_student_access_with_enrollment = result.rows[0].permissions_course_instance.has_student_access_with_enrollment;
 
                         if (user.user_id != res.locals.authn_user.user_id) {
-                            res.locals.authz_data.user_with_requested_uid_has_instructor_access = user_with_requested_uid_has_instructor_access;
+                            res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance = user_with_requested_uid_has_instructor_access_to_course_instance;
                         }
                     }
 
