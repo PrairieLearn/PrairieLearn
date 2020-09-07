@@ -230,6 +230,7 @@ module.exports = function(req, res, next) {
                 if (req.cookies.pl_requested_date) {
                     req_date = moment(req.cookies.pl_requested_date, moment.ISO_8601);
                     if (!req_date.isValid()) {
+                        debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
                         overrides.forEach((override) => {
                             debug(`clearing cookie: ${override.cookie}`);
                             res.clearCookie(override.cookie);
@@ -264,6 +265,8 @@ module.exports = function(req, res, next) {
                     // to pages (e.g., the effective user page) for which only authn permissions
                     // are required.
                     if (result.rowCount == 0)  {
+                        debug(`effective user was denied access`);
+
                         res.locals.authz_data.user = user;
                         res.locals.authz_data.is_administrator = false;
 
@@ -403,6 +406,7 @@ module.exports = function(req, res, next) {
                             && result.rows[0].permissions_course_instance.has_student_access_with_enrollment    // effective user is enrolled with access
                             && (!user_with_requested_uid_has_instructor_access_to_course_instance)              // effective user is not an instructor (i.e., is a student)
                             && (!res.locals.authz_data.authn_has_course_instance_permission_edit)) {            // authn user is not a Student Data Editor
+                            debug('cannot emulate student if not student data editor');
                             overrides.forEach((override) => {
                                 debug(`clearing cookie: ${override.cookie}`);
                                 res.clearCookie(override.cookie);
