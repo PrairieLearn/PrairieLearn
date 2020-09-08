@@ -789,11 +789,11 @@ async function _getInitialZipAsync(workspace) {
     await fsPromises.mkdir(localPath, { recursive: true });
     await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
 
-    debug(`Unzipping ${zipPath} to ${localPath}`);
+    debug(`Preparing unzip jobs`);
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
-    const zipJobs = [];
+    const unzipJobs = [];
     for await (const entry of zip) {
-        zipJobs.push(async () => {
+        unzipJobs.push(async () => {
             const entryPath = path.join(localPath, entry.path);
             if (entry.type == 'Directory') {
                 debug(`Making directory ${entryPath}`);
@@ -802,10 +802,12 @@ async function _getInitialZipAsync(workspace) {
                 debug(`Extracting file ${entryPath}`);
                 entry.pipe(fs.createWriteStream(entryPath));
             }
+            debug(`Chowning entryPath=${entryPath}`);
             await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
         });
     }
-    async.parallelLimit(zipJobs, config.workspaceJobsParallelLimit);
+    debug(`Unzipping ${zipPath} to ${localPath}`);
+    await async.parallelLimit(unzipJobs, config.workspaceJobsParallelLimit);
 
     return workspace;
 }
