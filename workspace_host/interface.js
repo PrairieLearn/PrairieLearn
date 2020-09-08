@@ -789,25 +789,19 @@ async function _getInitialZipAsync(workspace) {
     await fsPromises.mkdir(localPath, { recursive: true });
     await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
 
-    debug(`Preparing unzip jobs`);
-    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
-    const unzipJobs = [];
-    for await (const entry of zip) {
-        unzipJobs.push(async () => {
-            const entryPath = path.join(localPath, entry.path);
-            if (entry.type == 'Directory') {
-                debug(`Making directory ${entryPath}`);
-                await fsPromises.mkdir(entryPath, { recursive: true });
-            } else {
-                debug(`Extracting file ${entryPath}`);
-                entry.pipe(fs.createWriteStream(entryPath));
-            }
-            debug(`Chowning entryPath=${entryPath}`);
-            await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
-        });
-    }
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    await async.parallelLimit(unzipJobs, config.workspaceJobsParallelLimit);
+    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+    for await (const entry of zip) {
+        const entryPath = path.join(localPath, entry.path);
+        if (entry.type == 'Directory') {
+            debug(`Making directory ${entryPath}`);
+            await fsPromises.mkdir(entryPath, { recursive: true });
+        } else {
+            debug(`Extracting file ${entryPath}`);
+            entry.pipe(fs.createWriteStream(entryPath));
+        }
+        await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
+    }
 
     return workspace;
 }
