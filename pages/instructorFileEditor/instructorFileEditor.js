@@ -411,7 +411,7 @@ function readEdit(fileEdit, callback) {
 function readEditContents(fileEdit, callback) {
     callbackify(async () => {
         const result = await fileStore.get(fileEdit.fileID);
-        return b64Util.b64EncodeUnicode(result.contents.toString('utf8'));
+        result.toString('utf8');
     })(callback);
 }
 
@@ -517,6 +517,7 @@ function writeEdit(fileEdit, callback) {
             null,
             fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
             fileEdit.userID,    //       although I don't think there's any need to do so
+            fileStore.storageTypes.FileSystem,
         );
         debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
         return fileID;
