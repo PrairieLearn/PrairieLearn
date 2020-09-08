@@ -23,7 +23,7 @@ SELECT
 FROM
     enrollments AS e
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id) AND (ci.deleted_at IS NULL)
-    JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL)
+    JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL) AND (NOT c.example_course)
 WHERE
     e.role >= 'TA'
 GROUP BY
@@ -47,7 +47,7 @@ SELECT
 FROM
     enrollments AS e
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id) AND (ci.deleted_at IS NULL)
-    JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL)
+    JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL) AND (NOT c.example_course)
     JOIN course_permissions AS cp ON (cp.user_id = e.user_id) AND (cp.course_id = c.id)
 WHERE
     e.role >= 'TA'
