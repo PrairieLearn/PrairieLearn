@@ -54,9 +54,6 @@ if ('config' in argv) {
 }
 config.loadConfig(configFilename);
 
-const workspaceUid = config.workspaceJobsDirectoryOwnerUid;
-const workspaceGid = config.workspaceJobsDirectoryOwnerGid;
-
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
@@ -781,8 +778,8 @@ async function _getInitialZipAsync(workspace) {
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     const options = {
-        owner: workspaceUid,
-        group: workspaceGid,
+        owner: config.workspaceJobsDirectoryOwnerUid,
+        group: config.workspaceJobsDirectoryOwnerGid,
     };
     const isDirectory = false;
     update_queue[[zipPath, isDirectory]] = { action: 'skip' };
@@ -790,7 +787,7 @@ async function _getInitialZipAsync(workspace) {
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
-    await fsPromises.chown(localPath, workspaceUid, workspaceGid);
+    await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
     const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
@@ -805,7 +802,7 @@ async function _getInitialZipAsync(workspace) {
                 debug(`Extracting file ${entryPath}`);
                 entry.pipe(fs.createWriteStream(entryPath));
             }
-            await fsPromises.chown(entryPath, workspaceUid, workspaceGid);
+            await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
         });
     }
     await util.promisify(async.parallelLimit)(zipJobs, config.workspaceJobsParallelLimit);
@@ -824,8 +821,8 @@ function _getInitialFiles(workspace, callback) {
         jobs_params.forEach(([localPath, s3Path]) => {
             jobs.push( ((callback) => {
                 const options = {
-                    owner: workspaceUid,
-                    group: workspaceGid,
+                    owner: config.workspaceJobsDirectoryOwnerUid,
+                    group: config.workspaceJobsDirectoryOwnerGid,
                 };
                 const isDirectory = localPath.endsWith('/');
                 update_queue[[localPath, isDirectory]] = { action: 'skip' };
@@ -957,7 +954,7 @@ function _createContainer(workspace, callback) {
             });
         },
         (callback) => {
-            fs.chown(workspaceJobPath, workspaceUid, workspaceGid, (err) => {
+            fs.chown(workspaceJobPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
