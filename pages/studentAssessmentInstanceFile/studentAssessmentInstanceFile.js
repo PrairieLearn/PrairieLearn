@@ -16,7 +16,7 @@ router.get('/:file_id/:display_filename', async function(req, res, next) {
         display_filename: req.params.display_filename,
     };
 
-    const stream = await fileStore.get(options.assessment_instance_id, options.file_id, options.display_filename);
+    const stream = await fileStore.get(options.file_id, options.assessment_instance_id, options.display_filename);
 
     // Explore error handling?
     stream.pipe(res);
