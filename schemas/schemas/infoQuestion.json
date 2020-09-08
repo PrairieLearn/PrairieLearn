@@ -37,7 +37,7 @@
             "type": "string"
         },
         "secondaryTopics": {
-            "description": "Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
+            "description": "DEPRECATED, DO NOT USE. Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
             "type": "array",
             "items": {
                 "description": "A single topic covered by the question.",
@@ -209,8 +209,7 @@
             "required": [
                 "image",
                 "port",
-                "home",
-                "gradedFiles"
+                "home"
             ],
             "properties": {
                 "image": {

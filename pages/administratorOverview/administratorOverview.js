@@ -7,10 +7,15 @@ const error = require('@prairielearn/prairielib/error');
 const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
 const cache = require('../../lib/cache');
+const config = require('../../lib/config');
+const github = require('../../lib/github');
+const opsbot = require('../../lib/opsbot');
+const logger = require('../../lib/logger');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
+    res.locals.coursesRoot = config.coursesRoot;
     sqlDb.queryOneRow(sql.select, [], (err, result) => {
         if (ERR(err, next)) return;
 
@@ -92,6 +97,62 @@ router.post('/', (req, res, next) => {
         cache.reset((err) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action === 'approve_deny_course_request') {
+        const id = req.body.request_id;
+        const user_id = res.locals.authn_user.user_id;
+        let action = req.body.approve_deny_action;
+
+        if (action === 'deny') {
+            action = 'denied';
+        } else {
+            return next(new Error(`Unknown course request action "${action}"`));
+        }
+        const params = {
+            id,
+            user_id,
+            action,
+        };
+        sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action === 'create_course_from_request') {
+        const id = req.body.request_id;
+        const user_id = res.locals.authn_user.user_id;
+        const params = {
+            id,
+            user_id,
+            'action': 'creating',
+        };
+        sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+            if (ERR(err, next)) return;
+
+            /* Create the course in the background */
+            if (ERR(err, next)) return;
+            const repo_options = {
+                short_name: req.body.short_name,
+                title: req.body.title,
+                institution_id: req.body.institution_id,
+                display_timezone: req.body.display_timezone,
+                path: req.body.path,
+                repo_short_name: req.body.repository_short_name,
+                github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
+                course_request_id: id,
+            };
+
+            github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {
+                if (ERR(err, next)) return;
+
+                res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
+                opsbot.sendCourseRequestMessage(
+                    `*Creating course*\n` +
+                    `Course rubric: ${repo_options.short_name}\n` +
+                    `Course title: ${repo_options.title}\n` +
+                    `Approved by: ${res.locals.authn_user.name}`, (err) => {
+                        ERR(err, () => {logger.error(err);});
+                    });
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
