@@ -805,7 +805,7 @@ async function _getInitialZipAsync(workspace) {
             await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
         });
     }
-    await util.promisify(async.parallelLimit)(zipJobs, config.workspaceJobsParallelLimit);
+    async.parallelLimit(zipJobs, config.workspaceJobsParallelLimit);
 
     return workspace;
 }
