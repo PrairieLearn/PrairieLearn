@@ -1,8 +1,6 @@
 #! /usr/bin/python3
 
 import sys, math, sympy
-
-sys.path.insert(1, '/cgrader/')
 import cgrader
 
 class DemoGrader(cgrader.CGrader):
