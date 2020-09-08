@@ -1,17 +1,28 @@
+.side-by-side {
+  --width: 355px;
+  --margin-bottom: 0px;
+}
+
+.top-and-bottom {
+  --width: 370px;
+  --margin-bottom: 50px;
+}
+
 .connectedSortable {
   /* This style applies to the MCQ options table, on the left hand side*/
   border: 3px solid #eee;
   border-radius: 4px;
   background-color: #efefff; /* Pale Blue */
-  min-width: 200px;
-  width: 350px;
-  min-height: 20px;
+
+  width: var(--width); /* user configuable, width is changed to either display the dropzones */
+                       /* side-by-side horizontally, or in a single vertical column */
+  margin: 0 40px var(--margin-bottom) 10px;
+
   list-style-type: none;
-  margin: 0;
   padding: 5px 0 20px 0;
   float: left;
-  margin-right: 50px;
 }
+
 
 .dropzone {
   /* This style applies to answer dropzone */
