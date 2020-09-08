@@ -10,5 +10,6 @@ ENV JUPYTER_CONFIG_DIR=/tmp/jupyter_config
 ENV NPM_CONFIG_CACHE=/tmp/npm
 ENV NO_UPDATE_NOTIFIER=true
 ENV IPYTHONDIR=/tmp/ipython
+ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
 
 CMD ["start.sh", "jupyter", "lab"]
