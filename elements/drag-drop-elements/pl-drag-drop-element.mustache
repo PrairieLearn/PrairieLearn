@@ -1,7 +1,7 @@
 {{#question}}
     <div class="row">
         <div class="column">
-            <ul id="{{answerName}}-options" name="{{answerName}}" class="connectedSortable {{dropzone_layout}}">
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="connectedSortable {{dropzone_layout}}">
                 <li class='ui-sortable-handle info info-fixed'>{{header-left-column}}</li>
                     {{#options}}
                         <li string="{{.}}">{{.}}</li>
@@ -9,7 +9,7 @@
                 </ul>
         </div>
             <div class="column">
-                <ul id="{{answerName}}-dropzone" name="{{answerName}}" class="connectedSortable dropzone {{dropzone_layout}}">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="connectedSortable dropzone {{dropzone_layout}}">
                     <li class="ui-sortable-handle info info-fixed">{{header-right-column}}</li>
                     {{#submission_dict}}
                         <li string="{{text}}" style='margin-left: {{indent}}px;'>{{text}}</li>
@@ -17,7 +17,7 @@
                 </ul>
             </div>
         </div>
-    <input id="{{answerName}}-input" type="hidden" name="{{answerName}}-input" value=""/>
+    <input id="{{answer_name}}-input" type="hidden" name="{{answer_name}}-input" value=""/>
 
 {{/question}}
 
@@ -46,6 +46,6 @@
 
 {{#true_answer}}
     <strong>Correct answer: </strong> 
-    <code class='user-output'> {{question_solution}} </code> <strong> {{permutationMode}} </strong> 
+    <code class='user-output'> {{question_solution}} </code> <strong> {{permutation_mode}} </strong> 
     <br><br>
 {{/true_answer}}

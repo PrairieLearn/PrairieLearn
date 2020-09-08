@@ -57,7 +57,7 @@ def get_lead_answer(submitted_blocks, block_indents, leading_code):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(element, 'answers-name')
+    answer_name = pl.get_string_attrib(element, 'answers-name')
 
     if data['panel'] == 'question':
         mcq_options = []   # stores MCQ options
@@ -82,21 +82,21 @@ def render(element_html, data):
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
-        answerName = pl.get_string_attrib(element, 'answers-name')
+        answer_name = pl.get_string_attrib(element, 'answers-name')
         header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
         header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
 
         student_submission_dict_list = []
 
-        mcq_options = data['params'][answerName]
+        mcq_options = data['params'][answer_name]
 
-        if answerName in data['submitted_answers']:
-            student_previous_submission = data['submitted_answers'][answerName]['student_raw_submission']
+        if answer_name in data['submitted_answers']:
+            student_previous_submission = data['submitted_answers'][answer_name]['student_raw_submission']
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
-            submission_indent = data['submitted_answers'][answerName]['student_answer_indent'][index]
+            submission_indent = data['submitted_answers'][answer_name]['student_answer_indent'][index]
             submission_indent = (int(submission_indent) * 50) + 5
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
@@ -105,7 +105,7 @@ def render(element_html, data):
 
         html_params = {
             'question': True,
-            'answerName': answerName,
+            'answer_name': answer_name,
             'options': mcq_options,
             'header-left-column': header_left_column,
             'header-right-column': header_right_column,
@@ -127,17 +127,17 @@ def render(element_html, data):
         score = 0
         feedback = None
 
-        if answerName in data['submitted_answers']:
-            student_submission = data['submitted_answers'][answerName]['student_raw_submission']
-        if answerName in data['partial_scores']:
-            colour = render_html_colour(data['partial_scores'][answerName]['score'])
-            score = data['partial_scores'][answerName]['score'] * 100
-            feedback = data['partial_scores'][answerName]['feedback']
+        if answer_name in data['submitted_answers']:
+            student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
+        if answer_name in data['partial_scores']:
+            colour = render_html_colour(data['partial_scores'][answer_name]['score'])
+            score = data['partial_scores'][answer_name]['score'] * 100
+            feedback = data['partial_scores'][answer_name]['feedback']
 
         html_params = {
             'submission': True,
             'uuid': uuid,
-            'parse-error': data['format_errors'].get(answerName, None),
+            'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
             'colour': colour,
             'score': score,
@@ -161,14 +161,14 @@ def render(element_html, data):
             except FileNotFoundError:
                 return 'The instructor did not include a reference solution. Try contacting them for the solution implementation?'
 
-        permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
-        permutationMode = ' in any order' if permutationMode == 'any' else 'in the specified order'
+        permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
+        permutation_mode = ' in any order' if permutation_mode == 'any' else 'in the specified order'
 
-        if answerName in data['correct_answers']:
+        if answer_name in data['correct_answers']:
             html_params = {
                 'true_answer': True,
-                'question_solution': str(data['correct_answers'][answerName]['correct_answers']),
-                'permutationMode': permutationMode
+                'question_solution': str(data['correct_answers'][answer_name]['correct_answers']),
+                'permutation_mode': permutation_mode
             }
             with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
@@ -179,13 +179,13 @@ def render(element_html, data):
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(element, 'answers-name')
+    answer_name = pl.get_string_attrib(element, 'answers-name')
 
     mcq_options = []
     correct_answers = []
     correct_answers_indent = []
 
-    isShuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
+    is_shuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
 
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
@@ -193,7 +193,7 @@ def prepare(element_html, data):
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
             mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
-    if isShuffle == 'true':
+    if is_shuffle == 'true':
         random.shuffle(mcq_options)
 
     for html_tags in element:
@@ -208,18 +208,18 @@ def prepare(element_html, data):
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question!')
 
-    data['params'][answerName] = mcq_options
-    data['correct_answers'][answerName] = {'correct_answers': correct_answers,
+    data['params'][answer_name] = mcq_options
+    data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
                                            'correct_answers_indent': correct_answers_indent}
 
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(element, 'answers-name')
+    answer_name = pl.get_string_attrib(element, 'answers-name')
 
-    temp = answerName
+    temp = answer_name
     temp += '-input'
-    # the answerName textfields that raw-submitted-answer reads from
+    # the answer_name textfields that raw-submitted-answer reads from
     # have '-input' appended to their name attribute
 
     student_answer_temp = ''
@@ -227,24 +227,24 @@ def parse(element_html, data):
         student_answer_temp = data['raw_submitted_answers'][temp]
 
     if student_answer_temp is None:
-        data['format_errors'][answerName] = 'NULL was submitted as an answer!'
+        data['format_errors'][answer_name] = 'NULL was submitted as an answer!'
         return
     elif student_answer_temp == '':
-        data['format_errors'][answerName] = 'No answer was submitted.'
+        data['format_errors'][answer_name] = 'No answer was submitted.'
         return
 
     student_answer = []
     student_answer_indent = []
-    permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
+    permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
 
-    student_answer_ranking = ['Question permutationMode is not "ranking"']
+    student_answer_ranking = ['Question permutation_mode is not "ranking"']
 
     student_answer_temp = json.loads(student_answer_temp)
 
     student_answer = student_answer_temp['answers']
     student_answer_indent = student_answer_temp['answer_indent']
 
-    if permutationMode.lower() == 'ranking':
+    if permutation_mode.lower() == 'ranking':
         student_answer_ranking = []
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
@@ -281,7 +281,7 @@ def parse(element_html, data):
                 file_data = get_lead_answer(student_answer, student_answer_indent, leadingnew_code)
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
 
-    data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
+    data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
                                              'student_raw_submission': student_answer,
                                              'student_answer_indent': student_answer_indent}
     if temp in data['submitted_answers']:
@@ -290,25 +290,25 @@ def parse(element_html, data):
 
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(element, 'answers-name')
+    answer_name = pl.get_string_attrib(element, 'answers-name')
 
-    student_answer = data['submitted_answers'][answerName]['student_raw_submission']
-    student_answer_indent = data['submitted_answers'][answerName]['student_answer_indent']
-    permutationMode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
-    true_answer = data['correct_answers'][answerName]['correct_answers']
-    true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
+    student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
+    student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
+    permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
+    true_answer = data['correct_answers'][answer_name]['correct_answers']
+    true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
     indent_score = 0
     final_score = 0
     feedback = ''
 
-    if permutationMode == 'any':
+    if permutation_mode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
         final_score = float(len(intersection) / len(true_answer))
-    elif permutationMode == 'html-order':
+    elif permutation_mode == 'html-order':
         final_score = 1.0 if student_answer == true_answer else 0.0
-    elif permutationMode == 'ranking':
-        ranking = data['submitted_answers'][answerName]['student_submission_ordering']
+    elif permutation_mode == 'ranking':
+        ranking = data['submitted_answers'][answer_name]['student_submission_ordering']
         correctness = 1
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer):
@@ -336,24 +336,24 @@ def grade(element_html, data):
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
 
-    data['partial_scores'][answerName] = {'score': final_score, 'feedback': feedback}
+    data['partial_scores'][answer_name] = {'score': final_score, 'feedback': feedback}
 
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answerName = pl.get_string_attrib(element, 'answers-name')
-    answerNameField = answerName + '-input'
+    answer_name = pl.get_string_attrib(element, 'answers-name')
+    answer_name_field = answer_name + '-input'
 
     # incorrect and correct answer test cases
     # this creates the EXPECTED SUBMISSION field for test cases
     if data['test_type'] == 'correct':
-        true_answer = data['correct_answers'][answerName]['correct_answers']
-        true_answer_indent = data['correct_answers'][answerName]['correct_answers_indent']
+        true_answer = data['correct_answers'][answer_name]['correct_answers']
+        true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
-        data['raw_submitted_answers'][answerNameField] = {'answers': true_answer, 'answer_indent': true_answer_indent}
-        data['partial_scores'][answerName] = {'score': 1, 'feedback': ''}
+        data['raw_submitted_answers'][answer_name_field] = {'answers': true_answer, 'answer_indent': true_answer_indent}
+        data['partial_scores'][answer_name] = {'score': 1, 'feedback': ''}
     elif data['test_type'] == 'incorrect':
-        temp = data['correct_answers'][answerName]['correct_answers'].copy()  # temp array to hold the correct answers
+        temp = data['correct_answers'][answer_name]['correct_answers'].copy()  # temp array to hold the correct answers
         incorrect_answers = []
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
@@ -361,11 +361,11 @@ def test(element_html, data):
         incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
 
         incorrect_answers_indent = ['0'] * len(incorrect_answers)
-        data['raw_submitted_answers'][answerNameField] = {'answers': incorrect_answers, 'answer_indent': incorrect_answers_indent}
-        data['partial_scores'][answerName] = {'score': 0, 'feedback': ''}
+        data['raw_submitted_answers'][answer_name_field] = {'answers': incorrect_answers, 'answer_indent': incorrect_answers_indent}
+        data['partial_scores'][answer_name] = {'score': 0, 'feedback': ''}
 
     elif data['test_type'] == 'invalid':
-        data['raw_submitted_answers'][answerName] = 'bad input'
-        data['format_errors'][answerName] = 'format error message'
+        data['raw_submitted_answers'][answer_name] = 'bad input'
+        data['format_errors'][answer_name] = 'format error message'
     else:
         raise Exception('invalid result: %s' % data['test_type'])
