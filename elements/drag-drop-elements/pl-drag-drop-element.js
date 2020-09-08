@@ -51,7 +51,7 @@ function update_indent(leftDiff, id, ui) {
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
 
     // leftDiff is the direction to move the MCQ answer tile, in px
-    // we limit leftDiff to be increments of 50, whether positive or negative
+    // we limit leftDiff to be increments of TABWIDTH, whether positive or negative
     if (currentIndent != ''){
         leftDiff += parseInt(currentIndent); 
     }
@@ -64,11 +64,11 @@ function update_indent(leftDiff, id, ui) {
     // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
     var remainder = (leftDiff - INDENT_OFFSET) % TABWIDTH;
     if (remainder != 0) {
-        // Manually snap to grid here, by rounding to the nearest multiple of 50
+        // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
         if (remainder > (TABWIDTH / 2)){
-            leftDiff += remainder; // closer to the next bigger multiple of 50
+            leftDiff += remainder; // round towards +∞, to the next bigger multiple of TABWIDTH
         } else {
-            leftDiff -= remainder; // closer to the next smaller multiple of 50
+            leftDiff -= remainder; // round towards -∞, to the next smaller multiple of TABWIDTH
         }
     }
 
@@ -97,7 +97,7 @@ $( document ).ready(function() {
         },
     }).disableSelection();
     $('.dropzone').sortable({
-        grid: [50, 1],
+        grid: [TABWIDTH, 1],
     });
     $('[data-toggle="popover"]').popover();
 });
