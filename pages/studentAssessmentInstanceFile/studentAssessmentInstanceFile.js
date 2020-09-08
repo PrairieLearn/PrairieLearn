@@ -1,4 +1,4 @@
-// const ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const fileStore = require('../../lib/file-store');
@@ -17,10 +17,9 @@ router.get('/:file_id/:display_filename', async function(req, res, next) {
     };
 
     const stream = await fileStore.get(options.file_id, options.assessment_instance_id, options.display_filename);
-
-    // Explore error handling?
-    stream.pipe(res);
-    next();
+    stream
+        .on('error', (err) => {return ERR(err, next);})
+        .pipe(res);
 });
 
 module.exports = router;
