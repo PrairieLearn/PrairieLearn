@@ -22,7 +22,7 @@ def render_html_colour(score):
 # courtesy of https://github.com/PrairieLearn/PrairieLearn/pull/2625
 
 
-def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
+def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
     answer = ''
@@ -33,7 +33,7 @@ def getallAnswer(submitted_blocks, block_indents, leading_code, trailing_code):
     return answer
 
 
-def gettarilAnswer(submitted_blocks, block_indents, trailing_code):
+def get_trail_answer(submitted_blocks, block_indents, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
     answer = ''
@@ -44,7 +44,7 @@ def gettarilAnswer(submitted_blocks, block_indents, trailing_code):
     return answer
 
 
-def getleadAnswer(submitted_blocks, block_indents, leading_code):
+def get_lead_answer(submitted_blocks, block_indents, leading_code):
     if len(submitted_blocks) == 0:
         return ''
     answer = ''
@@ -201,7 +201,7 @@ def prepare(element_html, data):
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
 
-    if len(correct_answers) == 0:
+    if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question!')
 
     data['params'][answerName] = mcq_options
@@ -270,13 +270,11 @@ def parse(element_html, data):
 
         if file_name is not None:
             if leading_code is not None and trailing_code is not None:
-                print('getallanswer')
-                file_data = getallAnswer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
+                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
             if leading_code is None and trailing_code is not None:
-                print('get trail')
-                file_data = gettarilAnswer(student_answer, student_answer_indent, trailnewx_code)
+                file_data = get_trail_answer(student_answer, student_answer_indent, trailnewx_code)
             if leading_code is not None and trailing_code is None:
-                file_data = getleadAnswer(student_answer, student_answer_indent, leadingnew_code)
+                file_data = get_lead_answer(student_answer, student_answer_indent, leadingnew_code)
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
 
     data['submitted_answers'][answerName] = {'student_submission_ordering': student_answer_ranking,
