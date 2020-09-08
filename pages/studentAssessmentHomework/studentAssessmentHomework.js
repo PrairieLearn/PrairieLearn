@@ -26,7 +26,7 @@ router.get('/', function(req, res, next) {
         user_id: res.locals.user.user_id,
     };
 
-    sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
+    sqldb.query(sql.select_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             debug('no assessment instance');
@@ -70,23 +70,11 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (req.body.__action == 'newInstance') {
-        var params = {
-            assessment_id: res.locals.assessment.id,
-            user_id: res.locals.user.user_id,
-        };
-        sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
+        const time_limit_min = null;
+        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
-            if (result.rowCount == 0) {
-                const time_limit_min = null;
-                assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
-                    if (ERR(err, next)) return;
-                    debug('redirecting');
-                    res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
-                });
-            } else {
-                debug('redirecting');
-                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
-            }
+            debug('redirecting');
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });
     } else if (req.body.__action == 'joinGroup') {
         try{
