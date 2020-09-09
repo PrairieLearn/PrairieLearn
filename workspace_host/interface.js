@@ -22,6 +22,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
+const stream = require('stream');
 const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
 
@@ -777,9 +778,11 @@ async function _getInitialZipAsync(workspace) {
     const s3Path = `${s3Name}/initial.zip`;
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
+    const workspaceUid = config.workspaceJobsDirectoryOwnerUid;
+    const workspaceGid = config.workspaceJobsDirectoryOwnerGid;
     const options = {
-        owner: config.workspaceJobsDirectoryOwnerUid,
-        group: config.workspaceJobsDirectoryOwnerGid,
+        owner: workspaceUid,
+        group: workspaceGid,
     };
     const isDirectory = false;
     update_queue[[zipPath, isDirectory]] = { action: 'skip' };
@@ -787,21 +790,31 @@ async function _getInitialZipAsync(workspace) {
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
-    await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
+    await fsPromises.chown(localPath, workspaceUid, workspaceGid);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
-    for await (const entry of zip) {
-        const entryPath = path.join(localPath, entry.path);
-        if (entry.type == 'Directory') {
-            debug(`Making directory ${entryPath}`);
-            await fsPromises.mkdir(entryPath, { recursive: true });
-        } else {
-            debug(`Extracting file ${entryPath}`);
-            entry.pipe(fs.createWriteStream(entryPath));
-        }
-        await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
-    }
+    fs.createReadStream(zipPath).pipe(unzipper.Parse({
+        forceStream: true,
+    })).pipe(stream.Transform({
+        objectMode: true,
+        transform: (entry, _encoding, callback) => {
+            const entryPath = path.join(localPath, entry.path);
+            if (entry.type === 'Directory') {
+                debug(`Making directory ${entryPath}`);
+                util.callbackify(async () => {
+                    await fs.promises.mkdir(entryPath, { recursive: true });
+                    await fs.promises.chown(entryPath, workspaceUid, workspaceGid);
+                })(callback);
+            } else {
+                debug(`Extracting file ${entryPath}`);
+                entry.pipe(fs.createWriteStream(entryPath)).on('finish', () => {
+                    util.callbackify(async () => {
+                        await fs.promises.chown(entryPath, workspaceUid, workspaceGid);
+                    })(callback);
+                });
+            }
+        },
+    }));
 
     return workspace;
 }
