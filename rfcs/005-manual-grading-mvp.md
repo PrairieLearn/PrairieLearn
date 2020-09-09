@@ -1,12 +1,21 @@
 # PrairieLearn: Manual Grading
 
-## Overview
+## Quick Links
+
+- [Project Board](https://github.com/PrairieLearn/PrairieLearn/projects/9)
+- [Overview/Motivation](##Motivation)
+- [MVP Goals & SPIKE Links](###Core-Goals-and-Objectives)
+- [Stretch Goals](###Stretch-Goals-and-Objectives)
+
+## Motivation
+
+### Overview
 
 As is, PrairieLearn is well suited for automated grading, as it is highly customizable and adaptable. However, manually updating grades--even through the scores upload interface--is tedious and difficult, and there’s no way to update the scores in various parts of questions. As there are many non-technical users, and many questions are complex and have multiple parts, we propose augmenting PraireLearn by adding a manual grading feature.
 
 When developing manual grading, features should integrate with PraireLearn’s existing grading architecture--autograders should still run if possible, the grade function should still run, ect.
 
-## Sample Use Cases
+### Sample Use Cases
 
 - Provide feedback for and help easily grade elements that are difficult to autograde (i.e. longform text responses, file uploads).
 - Trigger a manual grading workflow for a certain question part if an autograder fails.
@@ -32,11 +41,18 @@ When developing manual grading, features should integrate with PraireLearn’s e
   - Many instructors wish to recalculate grades after adjusting the grade function, or making other alterations to the question.
   - When uploading scores in the CSV re-grading interface, it is useful to provide scores for particular parts of questions, so instructors do not have to try to recalculate question totals themselves.
   - With a manual grading interface, an instructor may want to update scores for a particular part of the question.
-- To avoid race conditions of total score calculations v partial score calculations, we should introduce a secondary “grade” function, breaking up the grading into a “pre” part to compute partial scores, and a “post” part to calculate a final score. \
+- To avoid race conditions of total score calculations v partial score calculations, we should introduce a secondary “grade” function, breaking up the grading into a “pre” part to compute partial scores, and a “post” part to calculate a final score.
 
-<p id="gdcalert1" ><span style="color: red; font-weight: bold">>>>>>  gd2md-html alert: inline image link here (to images/image1.png). Store image on your image server and adjust path/filename/extension if necessary. </span><br>(<a href="#">Back to top</a>)(<a href="#gdcalert2">Next alert</a>)<br><span style="color: red; font-weight: bold">>>>>> </span></p>
+  ```txt
+  matt, 12:26 pm
 
-![alt_text](images/image1.png 'image_tooltip')
+  the pre/post grading was to allow us to separate out two grading stages:
+
+  1. The "pre" part is designed to compute partial scores
+  2. The "post" part is designed to sum up the partial scores to obtain the total scores.
+
+  At the moment, these are both combined into a single grade() function. But if we seperate them then we can insert manual grading between these two stages
+  ```
 
 #### **A “manual grading” UI**
 
