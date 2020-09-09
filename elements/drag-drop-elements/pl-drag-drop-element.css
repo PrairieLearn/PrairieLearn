@@ -1,7 +1,7 @@
 
 .connectedSortable {
   /* This style applies to the MCQ options table, on the left hand side*/
-  border: 3px solid #eee;
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
   border-radius: 4px;
   background-color: #efefff; /* Pale Blue */
 
@@ -40,7 +40,7 @@
 .connectedSortable li, .dropzone li{
   /* This style applies to the answer draggable tiles themselves */
   background-color: #EFEFEF; /* Grey */
-  border: 1px solid;
+  border: 2px solid #A9A9A9;
   border-radius: 4px;
   margin: 0 5px 5px 5px;
   padding: 5px;
@@ -57,12 +57,17 @@
 	height: auto;
 	max-height: none;
 	overflow: visible;
+
+	cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
 }
+
+
 
 .info {
   /* This styling applies to the instruction text for the dropzones */
   background-color: transparent !important;
   border: none !important;
+  cursor: auto !important;
 }
 
 .ui-state-highlight { 
