@@ -76,7 +76,7 @@ class PLTestResult(unittest.TestResult):
                 Feedback.set_name('error')
             Feedback.add_feedback(''.join(tr_list))
             Feedback.add_feedback('\n\nYour code:\n\n')
-            print_student_code(st_code=Feedback.test.student_code_abs_path)
+            print_student_code(st_code=Feedback.test.student_code_abs_path, ipynb_key=Feedback.test.ipynb_key)
         else:
             tr_list = traceback.format_exception(*err)
             test_id = test.id().split()[0]
