@@ -13,7 +13,8 @@ CREATE FUNCTION
         OUT workspace_hosts_draining_count integer,
         OUT workspace_hosts_unhealthy_count integer,
         OUT workspace_hosts_terminating_count integer,
-        OUT workspace_hosts_stopped_count integer,
+        OUT workspace_hosts_terminated_count integer,
+        OUT workspace_hosts_active_count integer,
         -- max time in each host state
         OUT workspace_hosts_longest_launching_sec double precision,
         OUT workspace_hosts_longest_ready_sec double precision,
@@ -74,9 +75,16 @@ BEGIN
         workspace_hosts_draining_count,
         workspace_hosts_unhealthy_count,
         workspace_hosts_terminating_count,
-        workspace_hosts_stopped_count
+        workspace_hosts_terminated_count
     FROM
         workspace_hosts AS wh;
+
+    workspace_hosts_active_count :=
+        + workspace_hosts_launching_count
+        + workspace_hosts_ready_count
+        + workspace_hosts_draining_count
+        + workspace_hosts_unhealthy_count
+        + workspace_hosts_terminating_count;
 
     -- Longest running workspace host in various states
     SELECT
@@ -111,7 +119,8 @@ BEGIN
         ('workspace_hosts_draining_count', workspace_hosts_draining_count),
         ('workspace_hosts_unhealthy_count', workspace_hosts_unhealthy_count),
         ('workspace_hosts_terminating_count', workspace_hosts_terminating_count),
-        ('workspace_hosts_stopped_count', workspace_hosts_stopped_count),
+        ('workspace_hosts_terminated_count', workspace_hosts_terminated_count),
+        ('workspace_hosts_active_count', workspace_hosts_active_count),
         ('workspace_hosts_longest_launching_sec', workspace_hosts_longest_launching_sec),
         ('workspace_hosts_longest_ready_sec', workspace_hosts_longest_ready_sec),
         ('workspace_hosts_longest_draining_sec', workspace_hosts_longest_draining_sec),
