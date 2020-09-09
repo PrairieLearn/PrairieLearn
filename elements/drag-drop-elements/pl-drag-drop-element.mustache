@@ -1,15 +1,15 @@
 {{#question}}
     <div class="row">
-        <div class="column">
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="connectedSortable {{dropzone_layout}}">
+        <div class="column {{dropzone_layout}}">
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="connectedSortable">
                 <li class='ui-sortable-handle info info-fixed'>{{header-left-column}}</li>
                     {{#options}}
                         <li string="{{.}}">{{.}}</li>
                     {{/options}}
                 </ul>
         </div>
-            <div class="column">
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="connectedSortable dropzone {{dropzone_layout}}">
+            <div class="column {{dropzone_layout}}">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="connectedSortable dropzone">
                     <li class="ui-sortable-handle info info-fixed">{{header-right-column}}</li>
                     {{#submission_dict}}
                         <li string="{{text}}" style='margin-left: {{indent}}px;'>{{text}}</li>

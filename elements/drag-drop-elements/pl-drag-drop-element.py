@@ -101,7 +101,7 @@ def render(element_html, data):
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
-        dropzone_layout = pl.get_string_attrib(element, 'dropzone-layout', 'side-by-side')
+        dropzone_layout = pl.get_string_attrib(element, 'dropzone-layout', 'horizontalLayout')
 
         html_params = {
             'question': True,
@@ -110,7 +110,7 @@ def render(element_html, data):
             'header-left-column': header_left_column,
             'header-right-column': header_right_column,
             'submission_dict': student_submission_dict_list,
-            'dropzone_layout': 'top-and-bottom' if dropzone_layout == 'top-and-bottom' else 'side-by-side'
+            'dropzone_layout': 'verticalLayout' if dropzone_layout == 'verticalLayout' else 'horizontalLayout'
         }
 
         with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:

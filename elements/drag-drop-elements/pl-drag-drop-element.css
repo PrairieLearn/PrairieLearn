@@ -1,12 +1,3 @@
-.side-by-side {
-  --width: 355px;
-  --margin-bottom: 0px;
-}
-
-.top-and-bottom {
-  --width: 370px;
-  --margin-bottom: 50px;
-}
 
 .connectedSortable {
   /* This style applies to the MCQ options table, on the left hand side*/
@@ -14,13 +5,28 @@
   border-radius: 4px;
   background-color: #efefff; /* Pale Blue */
 
-  width: var(--width); /* user configuable, width is changed to either display the dropzones */
-                       /* side-by-side horizontally, or in a single vertical column */
-  margin: 0 40px var(--margin-bottom) 10px;
+  width: 100%;
+
+  margin: 0 40px 0 10px;
 
   list-style-type: none;
   padding: 5px 0 20px 0;
   float: left;
+}
+
+.horizontalLayout {
+	/* This style applies to the DIV that holds each dropzone column */
+	/* This particular style renders the dropzones in a single row horizontally */ 
+	width: 46%;
+	margin-right: 20px;
+}
+
+.verticalLayout {
+	/* This style applies to the DIV that holds each dropzone column */
+	/* This particular style renders the dropzones in a single column vertically */ 
+	width: 55%;
+	margin-right: 20px;
+	margin-bottom: 20px;
 }
 
 
