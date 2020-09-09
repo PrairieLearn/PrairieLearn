@@ -96,7 +96,7 @@ router.post('/', function(req, res, next) {
             if ('single_image' in req.body) {
                 res.locals.images = _.filter(result.rows, ['external_grading_image', req.body.single_image]);
             }
-            syncHelpers.ECRupdate(res.locals, function(err, job_sequence_id) {
+            syncHelpers.ecrUpdate(res.locals, function(err, job_sequence_id) {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });

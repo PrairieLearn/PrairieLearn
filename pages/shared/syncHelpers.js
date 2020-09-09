@@ -236,7 +236,7 @@ module.exports.gitStatus = function(locals, callback) {
     });
 };
 
-module.exports.ECRupdate = function(locals, callback) {
+module.exports.ecrUpdate = function(locals, callback) {
     if (!config.externalGradingImageRepository) {
         return callback(new Error('externalGradingImageRepository not defined'));
     }
