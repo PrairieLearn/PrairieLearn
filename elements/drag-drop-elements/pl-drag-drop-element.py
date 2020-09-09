@@ -210,7 +210,7 @@ def prepare(element_html, data):
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
-                                           'correct_answers_indent': correct_answers_indent}
+                                            'correct_answers_indent': correct_answers_indent}
 
 
 def parse(element_html, data):
@@ -282,8 +282,8 @@ def parse(element_html, data):
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
 
     data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
-                                             'student_raw_submission': student_answer,
-                                             'student_answer_indent': student_answer_indent}
+                                              'student_raw_submission': student_answer,
+                                              'student_answer_indent': student_answer_indent}
     if temp in data['submitted_answers']:
         del data['submitted_answers'][temp]
 
