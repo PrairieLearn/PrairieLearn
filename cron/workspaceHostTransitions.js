@@ -79,7 +79,7 @@ async function terminateHosts() {
         config.workspaceHostUnhealthyTimeoutSec,
         config.workspaceHostLaunchTimeoutSec,
     ];
-    const hosts = (await sqldb.callAsync('workspace_hosts_find_terminable', params)).rows[0].terminated_hosts || [];
+    const hosts = (await sqldb.callAsync('workspace_hosts_find_terminable', params)).rows[0].terminable_hosts || [];
     if (hosts.length > 0) {
         logger.debug('Found terminable hosts', hosts);
         await ec2.terminateInstances({ InstanceIds: hosts }).promise();
