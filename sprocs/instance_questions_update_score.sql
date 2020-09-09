@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint,jsonb);
+DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_score(
@@ -17,8 +17,7 @@ CREATE OR REPLACE FUNCTION
         IN arg_score_perc double precision,
         IN arg_points double precision,
         IN arg_feedback jsonb,
-        IN arg_authn_user_id bigint,
-        IN arg_partial_scores jsonb
+        IN arg_authn_user_id bigint
     ) RETURNS void
 AS $$
 DECLARE
@@ -86,13 +85,18 @@ BEGIN
     -- ##################################################################
     -- if we were originally provided a submission_id or we have feedback,
     -- create a grading job and update the submission
- 
+
+    IF submission_id IS NOT NULL
+    AND (
+        submission_id = arg_submission_id
+        OR arg_feedback IS NOT NULL
+    ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback, partial_scores)
+            grading_method, correct,     score,     feedback)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores);
+            'Manual',   new_correct, new_score, arg_feedback);
 
         UPDATE submissions AS s
         SET
@@ -103,18 +107,13 @@ BEGIN
                 WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
                 ELSE arg_feedback
             END,
-            partial_scores = CASE
-                WHEN partial_scores IS NULL THEN arg_partial_scores
-                WHEN arg_partial_scores IS NULL THEN partial_scores
-                WHEN jsonb_typeof(partial_scores) = 'object' AND jsonb_typeof(arg_partial_scores) = 'object' THEN partial_scores || arg_partial_scores
-                ELSE arg_partial_scores
-            END,
             graded_at = now(),
             grading_method = 'External',
             override_score = new_score,
             score = COALESCE(new_score, score),
             correct = COALESCE(new_correct, correct)
         WHERE s.id = submission_id;
+    END IF;
 
     -- ##################################################################
     -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
