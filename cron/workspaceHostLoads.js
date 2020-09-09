@@ -139,26 +139,25 @@ async function sendStatsToCloudwatch(stats) {
 async function handleWorkspaceAutoscaling(stats) {
     if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true') return;
 
+    /* Use either the calculated number of desired hosts or the override value in the DB */
     let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
     if (desired_hosts !== null) {
         desired_hosts = parseInt(desired_hosts);
     } else {
         desired_hosts = stats.workspace_hosts_desired;
-        /* If we're using the calculated desired hosts value, clamp it to the max and min
-           values in the database if they exist */
-
-        let max_hosts = await config.getDBConfigValueAsync('workspaceAutoscaleMaxHosts', null);
-        max_hosts = (max_hosts ? parseInt(max_hosts) : Infinity);
-        const min_hosts = parseInt(await config.getDBConfigValueAsync('workspaceAutoscaleMinHosts', '0'));
-
-        /* Clamp the desired hosts value */
-        if (desired_hosts < min_hosts) {
-            desired_hosts = min_hosts;
-        }
-        if (desired_hosts > max_hosts) {
-            desired_hosts = max_hosts;
-        }
     }
+
+    /* Get the maximum number of total hosts, we'll use this later when attempting to launch */
+    let max_hosts = await config.getDBConfigValueAsync('workspaceAutoscaleMaxHosts', null);
+    max_hosts = (max_hosts ? parseInt(max_hosts) : Infinity);
+
+    /* Clamp the minimum number of desired hosts. */
+    const min_hosts = parseInt(await config.getDBConfigValueAsync('workspaceAutoscaleMinHosts', '0'));
+    if (desired_hosts < min_hosts) {
+        desired_hosts = min_hosts;
+    }
+
+    /* Grab the launch template either from the config file or DB */
     let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
     if (!launch_template_id) {
         launch_template_id = config.workspaceLoadLaunchTemplateId;
@@ -166,8 +165,19 @@ async function handleWorkspaceAutoscaling(stats) {
 
     const ready_hosts = stats.workspace_hosts_ready_count;
     const launching_hosts = stats.workspace_hosts_launching_count;
+    const total_hosts =
+          stats.workspace_hosts_ready_count +
+          stats.workspace_hosts_launching_count +
+          stats.workspace_hosts_draining_count +
+          stats.workspace_hosts_unhealthy_count +
+          stats.workspace_hosts_terminating_count;
+
     if (desired_hosts > ready_hosts + launching_hosts) {
         let needed = desired_hosts - (ready_hosts + launching_hosts);
+        if (total_hosts + needed > max_hosts) {
+            needed = Math.max(0, max_hosts - total_hosts);
+        }
+
         /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
            need to call out to AWS */
         const recaptured_hosts = (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts || 0;
