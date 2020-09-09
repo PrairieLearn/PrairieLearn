@@ -65,18 +65,41 @@ class CGrader:
         if parent and not os.path.samefile(file, parent):
             self.change_mode(parent, '711')
 
-    def test_send_in_check_out(self, command, input, exp_output,
-                               args=None, name=None, max_points=1):
+    def test_send_in_check_out(self, command, input=None, exp_output=None,
+                               re_output=None, must_match_all_outputs=False,
+                               reject_output=None,
+                               args=None, name=None, msg=None, max_points=1):
+        
         if args is not None and not isinstance(args, list): args = [args] 
+        
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())
         if name is None and args is not None:
             name = 'Test with arguments "%s"' % ' '.join(args)
+        
+        if exp_output is not None and not isinstance(exp_output, list):
+            exp_output = [exp_output] 
+        if reject_output is not None and not isinstance(reject_output, list):
+            reject_output = [reject_output] 
+        if msg is None and exp_output is not None:
+            msg = 'Expected "%s"' % ('" AND "' if must_match_all_outputs \
+                                     else '" OR "').join([str(t) for t in exp_output]) + \
+                  (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
+
         out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True)
-        if not isinstance(exp_output, list): exp_output = [exp_output] 
-        points = [t for t in exp_output if str(t) in out]
-        self.add_test_result(name, points=points,
-                             msg='Expected "%s"' % '" OR "'.join([str(t) for t in exp_output]),
+
+        points = True
+        if exp_output is not None and must_match_all_outputs \
+           and [t for t in exp_output if str(t) not in out]:
+            points = False
+        if exp_output is not None and not must_match_all_outputs \
+           and not [t for t in exp_output if str(t) in out]:
+            points = False
+        if reject_output is not None \
+           and [t for t in reject_output if str(t) in out]:
+            points = False
+
+        self.add_test_result(name, points=points, msg=msg,
                              output=out, max_points=max_points)
     
     def add_test_result(self, name, description='', points=True,
