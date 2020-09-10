@@ -260,8 +260,8 @@ module.exports.ecrUpdate = function(locals, callback) {
             callback(null, job_sequence_id);
 
             var lastIndex = locals.images.length - 1;
-            async.eachOfSeries(locals.images || [], (image, index, done) => {
-                if (ERR(err, done)) return;
+            async.eachOfSeries(locals.images || [], (image, index, callback) => {
+                if (ERR(err, callback)) return;
 
                 var jobOptions = {
                     course_id: locals.course ? locals.course.id : null,
@@ -275,14 +275,14 @@ module.exports.ecrUpdate = function(locals, callback) {
                 }
 
                 serverJobs.createJob(jobOptions, (err, job) => {
-                    if (ERR(err, done)) return;
+                    if (ERR(err, callback)) return;
                     debug('successfully created job ', {job_sequence_id});
 
                     // continue executing here to launch the actual job
                     dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
-                        if (ERR(err, done)) return;
+                        if (ERR(err, callback)) return;
                         job.succeed();
-                        done(null);
+                        callback(null);
                     });
                 });
             });

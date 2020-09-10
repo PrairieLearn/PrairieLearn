@@ -26,11 +26,11 @@ router.get('/', function(req, res, next) {
 
             if (config.externalGradingImageRepository) {
                 const ecr = new AWS.ECR();
-                async.each(res.locals.images, (image, done) => {
+                async.each(res.locals.images, (image, callback) => {
                     var repository = new dockerUtil.DockerName(image.external_grading_image);
                     image.tag = repository.getTag() || 'latest (implied)';
                     // Default to get overwritten later
-                    image.pushedat = '<span style="color:red">Not found in PL registry! Sync?</span>';
+                    image.pushed_at = null;
                     image.imageSyncNeeded = false;
                     var params = {
                         repositoryName: repository.getRepository(),
@@ -38,36 +38,49 @@ router.get('/', function(req, res, next) {
                     ecr.describeImages(params, (err, data) => {
                         if (err && err.code == 'RepositoryNotFoundException') {
                             image.imageSyncNeeded = true;
-                            return done(null);
-                        } else if (ERR(err, done)) return;
+                            return callback(null);
+                        } else if (ERR(err, callback)) return;
                         res.locals.ecrInfo = {};
                         data.imageDetails.forEach((imageDetails) => {
                             imageDetails.imageTags.forEach((tag) => {
                                 res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
                             });
                         });
-                    //console.log(res.locals.ecrInfo);
 
-                    // Put info from ECR into image for EJS
-                    var repoName = repository.getCombined(true);
-                    image.digest_full = _.get(res.locals.ecrInfo[repoName], 'imageDigest', '');
-                    image.digest = image.digest_full.substring(0,24);
-                    if (image.digest != image.digest_full) {
-                        image.digest += '...';
-                    }
-                    image.size = _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
-                    var pushedat = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
-                    if (pushedat) {
-                        image.pushedat = moment.utc(pushedat).format('YYYY-MM-DD HH:mm:ss (z)');
-                    } else {
-                        res.locals.imageSyncNeeded = true;
-                        image.imageSyncNeeded = true;
-                    }
-                    done(null);
+                        // Put info from ECR into image for EJS
+                        var repoName = repository.getCombined(true);
+                        image.digest_full = _.get(res.locals.ecrInfo[repoName], 'imageDigest', '');
+                        image.digest = image.digest_full.substring(0,24);
+                        if (image.digest != image.digest_full) {
+                            image.digest += '...';
+                        }
+                        image.size = _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
+                        var pushed_at = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
+                        if (pushed_at) {
+                            image.pushed_at = moment.utc(pushed_at).format();
+                        } else {
+                            res.locals.imageSyncNeeded = true;
+                            image.imageSyncNeeded = true;
+                        }
+                        callback(null);
                     });
                 }, (err) => {
                     if (ERR(err, next)) return;
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    const params = {
+                        pushed_at_array = _.map(res.locals.images, 'pushed_at'),
+                    };
+                    sqldb.query(sql.format_pushed_at, params, (err, result) => {
+                        if (ERR(err, next)) return;
+                        if (result.rowCount != res.locals.images.length) {
+                            return next(new Error('pushed_at length mismatch'));
+                        }
+
+                        for (let i = 0; i < res.locals.images.length; i++) {
+                            res.locals.images[i].pushed_at_formatted = result.rows[i].pushed_at_formatted;
+                        }
+
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    });
                 });
             } else { //  no config.externalGradingImageRepository
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

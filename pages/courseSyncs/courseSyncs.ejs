@@ -97,7 +97,13 @@
                 <td><%= image.tag %></td>
                 <td><pre title="<%= image.digest_full %>"><%= image.digest %></pre></td>
                 <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
-                <td><%- image.pushedat %></td>
+                <td>
+                  <% if (image.imageSyncNeeded) { %>
+                  <span class="text-danger">Not found in PL registry</span>
+                  <% } else { %>
+                  <%= image.pushed_at_formatted %>
+                  <% } %>
+                </td>
                 <td>
                     <form method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

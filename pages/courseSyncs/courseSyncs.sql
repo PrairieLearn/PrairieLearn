@@ -31,3 +31,10 @@ GROUP BY
     external_grading_image
 ORDER BY
     external_grading_image
+
+-- BLOCK format_pushed_at
+SELECT
+    format_date_full_compact(pushed_at, c.display_timezone) AS pushed_at_formatted
+FROM
+    unnest($pushed_at_array) AS pushed_at
+    JOIN pl_courses AS c ON (c.id = js.course_id);
