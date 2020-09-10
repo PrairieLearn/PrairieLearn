@@ -6,6 +6,7 @@
 - [Overview/Motivation](##Motivation)
 - [MVP Goals & SPIKE Links](###Core-Goals-and-Objectives)
 - [Stretch Goals](###Stretch-Goals-and-Objectives)
+- [Technical Elaboration, Epics, and Spikes](###Technical Elaboration)
 
 ## Motivation
 
@@ -89,3 +90,16 @@ When developing manual grading, features should integrate with PraireLearn’s e
 #### **Designated “partial credit” questions**
 
 - To reward students for their work if they get a question wrong, instructors should be able to designate an area for scratch/other work, where they can earn partial credit.
+
+## Technical Elaboration
+
+As manual grading is a hefty feature, we've created a series of epics for the technical nity-gritty.
+
+We will try to keep this doc updated as we elaborate and develop.
+
+- Grading Logic:
+  - [Pre-grade & post-grade split](https://github.com/PrairieLearn/PrairieLearn/projects/9#card-45186965)
+  - [Regrading workflows](https://github.com/PrairieLearn/PrairieLearn/projects/9#card-45180056)
+- [Manual Grading as a CSV Upload](https://github.com/PrairieLearn/PrairieLearn/projects/9#card-45181673)
+- [Manual Grading as a PL Element/Element Flag](https://github.com/PrairieLearn/PrairieLearn/projects/9#card-45179860)
+- [Manual Grading UI](https://github.com/PrairieLearn/PrairieLearn/projects/9#card-45179927)
