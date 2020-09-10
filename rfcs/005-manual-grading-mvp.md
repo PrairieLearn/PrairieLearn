@@ -3,10 +3,10 @@
 ## Quick Links
 
 - [Project Board](https://github.com/PrairieLearn/PrairieLearn/projects/9)
-- [Overview/Motivation](##Motivation)
-- [MVP Goals & SPIKE Links](###Core-Goals-and-Objectives)
-- [Stretch Goals](###Stretch-Goals-and-Objectives)
-- [Technical Elaboration, Epics, and Spikes](###Technical-Elaboration)
+- [Overview/Motivation](#Motivation)
+- [MVP Goals & SPIKE Links](#Core-Goals-and-Objectives)
+- [Stretch Goals](#Stretch-Goals-and-Objectives)
+- [Technical Elaboration, Epics, and Spikes](#Technical-Elaboration)
 
 ## Motivation
 
