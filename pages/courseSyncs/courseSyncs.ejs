@@ -63,7 +63,7 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          Externally graded questions docker images
+          Docker images for externally graded questions
         </div>
 
         <div class="table-responsive">
@@ -99,7 +99,7 @@
                 <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
                 <td>
                   <% if (image.imageSyncNeeded) { %>
-                  <span class="text-danger">Not found in PL registry</span>
+                  <span class="text-warning">Not found in PL registry</span>
                   <% } else { %>
                   <%= image.pushed_at_formatted %>
                   <% } %>
@@ -109,12 +109,7 @@
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="syncImages">
                         <input type="hidden" name="single_image" value="<%= image.external_grading_image %>">
-                        <button type="submit" class="btn btn-sm
-                          <% if (image.imageSyncNeeded) { %>
-                              btn-danger
-                          <% } else { %>
-                              btn-outline-primary
-                          <% } %>">
+                        <button type="submit" class="btn btn-sm btn-primary">
                           <i class="fa fa-sync" aria-hidden="true"></i> Sync
                         </button>
                       </form>
@@ -127,25 +122,18 @@
               <tr>
                 <td colspan=10>
                   <% if (images.length == 0) { %>
-                    <em>No questions found that use externally graded images.
-                      No sync needed.
-                    </em>
+                    <em>No questions are using external grading images.</em>
                   <% } else if (config.externalGradingImageRepository) { %>
                     <form name="confirm-form" method="POST">
                       <input type="hidden" name="__action" value="syncImages">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <button type="submit" class="btn btn-sm
-                        <% if (imageSyncNeeded) { %>
-                            btn-danger
-                        <% } else { %>
-                            btn-outline-primary
-                        <% } %>">
+                      <button type="submit" class="btn btn-sm btn-primary">
                         <i class="fa fa-sync" aria-hidden="true"></i>
                         Sync all images from Docker Hub to PrairieLearn
                       </button>
                     </form>
                   <% } else { %>
-                      External Grading Image Respository not configured
+                      External grading image repository not configured
                   <% } %>
                 </td>
               </tr>

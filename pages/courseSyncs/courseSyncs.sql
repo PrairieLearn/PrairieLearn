@@ -19,8 +19,7 @@ SELECT
     jsonb_agg(jsonb_build_object(
         'id', q.id,
         'qid', q.qid
-    ) ORDER BY q.qid) AS questions,
-    'N/A' AS pushedat
+    ) ORDER BY q.qid) AS questions
 FROM
     questions AS q
 WHERE
