@@ -38,7 +38,7 @@ function set_answer(event) {
 function update_indent(leftDiff, id, ui) {
     if (!ui.item.parent()[0].classList.contains('dropzone')){
         // no need to support indent on MCQ option panel
-        ui.item.style = 'margin-left: 5px;';
+        ui.item[0].style = 'margin-left: 5px;';
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
