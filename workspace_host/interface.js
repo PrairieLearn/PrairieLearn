@@ -46,7 +46,6 @@ setInterval(() => {
     }
 }, 1000);
 
-const aws = require('../lib/aws.js');
 const config = require('../lib/config');
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -191,7 +190,7 @@ async.series([
         });
     },
     (callback) => {
-        aws.init((err) => {
+        awsHelper.init((err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });
