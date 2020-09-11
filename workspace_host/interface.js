@@ -190,7 +190,7 @@ async.series([
         });
     },
     (callback) => {
-        awsHelper.init((err) => {
+        util.callbackify(awsHelper.init)(err => {
             if (ERR(err, callback)) return;
             callback(null);
         });
