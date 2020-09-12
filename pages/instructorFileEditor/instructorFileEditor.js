@@ -24,6 +24,7 @@ const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { decodePath } = require('../../lib/uri-util');
+const chunks = require('../../lib/chunks');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -545,6 +546,8 @@ function saveAndSync(fileEdit, locals, callback) {
 
         let courseLock;
         let jobSequenceHasFailed = false;
+        let startGitHash = null;
+        let endGitHash = null;
 
         const _updateJobSequenceId = () => {
             debug(`${job_sequence_id}: _updateJobSequenceId`);
@@ -586,7 +589,7 @@ function saveAndSync(fileEdit, locals, callback) {
                 type: 'lock',
                 description: 'Lock',
                 job_sequence_id: job_sequence_id,
-                on_success: (fileEdit.doPull ? _pullFromRemoteFetch : _checkHash),
+                on_success: _getStartGitHash,
                 on_error: _finishWithFailure,
                 no_job_sequence_update: true,
             };
@@ -611,6 +614,19 @@ function saveAndSync(fileEdit, locals, callback) {
                     }
                     return;
                 });
+            });
+        };
+
+        const _getStartGitHash = () => {
+            courseUtil.getOrUpdateCourseCommitHash(locals.course, (err, hash) => {
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
+                startGitHash = hash;
+
+                if (fileEdit.doPull) {
+                    _pullFromRemoteFetch();
+                } else {
+                    _checkHash();
+                }
             });
         };
 
@@ -898,9 +914,12 @@ function saveAndSync(fileEdit, locals, callback) {
 
         const _updateCommitHash = () => {
             debug(`${job_sequence_id}: _updateCommitHash`);
-            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+            courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
                 ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-                if (fileEdit.needToSync) {
+                endGitHash = hash;
+                if (fileEdit.needToSync || config.chunksEnabled) {
+                    /* If we're using chunks, then always sync on edit.  We need the sync data
+                       to force-generate new chunks. */
                     _syncFromDisk();
                 } else {
                     _reloadQuestionServers();
@@ -932,7 +951,23 @@ function saveAndSync(fileEdit, locals, callback) {
                     } else if (result.hadJsonErrors) {
                         job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
-                        job.succeed();
+                        if (config.chunksEnabled) {
+                            callbackify(chunks.updateChunksForCourse)({
+                                coursePath: locals.course.path,
+                                courseId: locals.course.id,
+                                courseData: result.courseData,
+                                oldHash: startGitHash,
+                                newHash: endGitHash,
+                            }, (err) => {
+                                if (err) {
+                                    job.fail(err);
+                                    return;
+                                }
+                                job.succeed();
+                            });
+                        } else {
+                            job.succeed();
+                        }
                     }
                 });
             });
