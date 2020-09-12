@@ -10,7 +10,7 @@ var requireFrontend = require('../lib/require-frontend');
 module.exports = {
     loadServer: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        const chunks = [
+        const chunksToLoad = [
             {
                 'type': 'question',
                 'questionId': question.id,
@@ -19,7 +19,7 @@ module.exports = {
                 'type': 'serverFilesCourse',
             },
         ];
-        chunks.ensureChunksForCourse(course.id, chunks, (err) => {
+        chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
             if (ERR(err, callback)) return;
             filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
                 if (ERR(err, callback)) return;
