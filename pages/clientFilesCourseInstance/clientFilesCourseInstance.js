@@ -9,7 +9,7 @@ router.get('/*', function(req, res, next) {
     const filename = req.params[0];
     const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
     const chunk = {
-        'type': 'clientfilesCourseInstance',
+        'type': 'clientFilesCourseInstance',
         'courseInstanceId': res.locals.course_instance.id,
     };
     chunks.ensureChunksForCourse(res.locals.course.id, chunk, (err) => {
