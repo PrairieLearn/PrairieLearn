@@ -21,36 +21,74 @@ def main():
         download_course_instance(args, logfile)
 
 def download_course_instance(args, logfile):
+
     log(logfile, f'starting download at {local_iso_time()} ...')
     start_time = time.time()
     course_instance_path = f'/course_instances/{args.course_instance_id}'
     gradebook = get_and_save_json(f'{course_instance_path}/gradebook', 'gradebook', args, logfile)
     assessments = get_and_save_json(f'{course_instance_path}/assessments', 'assessments', args, logfile)
+
     for assessment in assessments:
-        assessment_instances = get_and_save_json(f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_instances', f'assessment_{assessment["assessment_id"]}_assessment_instances', args, logfile)
-        assessment_access_rules = get_and_save_json(f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_access_rules', f'assessment_{assessment["assessment_id"]}_assessment_access_rules', args, logfile)
+
+        assessment_dir = f'assessment_{assessment["assessment_id"]}/' 
+        os.makedirs(os.path.join(args.output_dir, assessment_dir), exist_ok=True)
+
+        assessment_instances = get_and_save_json(
+                f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_instances', 
+                os.path.join(assessment_dir, f'assessment_{assessment["assessment_id"]}_instances'), 
+                args, logfile)
+
+        assessment_access_rules = get_and_save_json(
+                f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_access_rules', 
+                os.path.join(assessment_dir, f'assessment_{assessment["assessment_id"]}_access_rules'), 
+                args, logfile)
+
+
+
         for assessment_instance in assessment_instances:
-            instance_questions = get_and_save_json(f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/instance_questions', f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions', args, logfile)
-            submissions = get_and_save_json(f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/submissions', f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions', args, logfile)
+
+            assessment_instance_dir = os.path.join(assessment_dir, f'assessment_{assessment_instance["assessment_instance_id"]}_instance')
+            os.makedirs(os.path.join(args.output_dir, assessment_instance_dir), exist_ok=True)
+
+            instance_questions = get_and_save_json(
+                    f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/instance_questions', 
+                    os.path.join(assessment_instance_dir ,f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions'), 
+                    args, logfile)
+
+            submissions = get_and_save_json(
+                    f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/submissions', 
+                    os.path.join(assessment_instance_dir, f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions'), 
+                    args, logfile)
+
+            submission_log = get_and_save_json(
+                    f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/log', 
+                    os.path.join(assessment_instance_dir, f'assessment_instance_{assessment_instance["assessment_instance_id"]}_log'), 
+                    args, logfile)
+
     end_time = time.time()
     log(logfile, f'successfully completed downloaded at {local_iso_time()}')
     log(logfile, f'total time elapsed: {end_time - start_time} seconds')
 
-def get_and_save_json(path, filename, args, logfile):
-    url = args.server + path
+def get_and_save_json(endpoint, filename, args, logfile):
+
+    url = args.server + endpoint
     headers = {'Private-Token': args.token}
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
     r = requests.get(url, headers=headers)
+
     if r.status_code != 200:
         raise Exception(f'Invalid status returned for {url}: {r.status_code}')
+
     end_time = time.time()
     log(logfile, f'successfully downloaded {r.headers["content-length"]} bytes in {end_time - start_time} seconds')
 
     full_filename = os.path.join(args.output_dir, filename + '.json')
     log(logfile, f'saving data to {full_filename} ...')
+
     with open(full_filename, 'wt') as out_f:
         out_f.write(r.text)
+
     log(logfile, f'successfully wrote data')
 
     log(logfile, f'parsing data as JSON...')
@@ -58,6 +96,7 @@ def get_and_save_json(path, filename, args, logfile):
     log(logfile, f'successfully parsed JSON')
 
     return data
+
 
 def log(logfile, message):
     logfile.write(message + '\n')
