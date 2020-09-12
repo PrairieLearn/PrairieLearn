@@ -1272,11 +1272,16 @@ module.exports = {
 
     getContext: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        const chunk = {
-            'type': 'question',
-            'questionId': question.id,
-        };
-        chunks.ensureChunksForCourse(course.id, chunk, (err) => {
+        const chunks = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+            {
+                'type': 'serverFilesCourse',
+            },
+        ];
+        chunks.ensureChunksForCourse(course.id, chunks, (err) => {
             if (ERR(err, callback)) return;
             const context = {
                 question,
