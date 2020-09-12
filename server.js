@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const util = require('util');
 const fs = require('fs');
 const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const favicon = require('serve-favicon');
 const async = require('async');
 const express = require('express');
@@ -38,6 +39,7 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
+const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 
 
@@ -162,6 +164,7 @@ app.post('/pl/course_instance/:course_instance_id/instructor/question/:question_
 app.post('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/groups', upload.single('file'));
 
 // proxy workspaces to remote machines
+let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
 const workspaceProxyOptions = {
     target: 'invalid',
     ws: true,
@@ -170,14 +173,20 @@ const workspaceProxyOptions = {
             const match = path.match('/pl/workspace/([0-9]+)/container/(.*)');
             if (!match) throw new Error(`Could not match path: ${path}`);
             const workspace_id = parseInt(match[1]);
-            const sql
-                  = 'SELECT q.*'
-                  + ' FROM questions AS q'
-                  + ' JOIN variants AS v ON (v.question_id = q.id)'
-                  + ' WHERE v.workspace_id = $workspace_id;';
-            const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
-            let workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
-            if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+            let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
+            if (workspace_url_rewrite == null) {
+                debug(`pathRewrite: querying workspace_url_rewrite for workspace_id=${workspace_id}`);
+                const sql
+                      = 'SELECT q.workspace_url_rewrite'
+                      + ' FROM questions AS q'
+                      + ' JOIN variants AS v ON (v.question_id = q.id)'
+                      + ' WHERE v.workspace_id = $workspace_id;';
+                const result = await sqldb.queryOneRowAsync(sql, {workspace_id});
+                workspace_url_rewrite = result.rows[0].workspace_url_rewrite;
+                if (workspace_url_rewrite == null) workspace_url_rewrite = true;
+                workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
+            }
+            debug(`pathRewrite: found workspace_url_rewrite=${workspace_url_rewrite} for workspace_id=${workspace_id}`);
             if (!workspace_url_rewrite) {
                 return path;
             }
@@ -205,12 +214,13 @@ const workspaceProxyOptions = {
         }
     },
     onError: (err, req, res) => {
-        logger.error(`Error proxying workspace request: ${err}`);
-        try {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.send('There was an error proxying this workspace request');
-        } catch (err) {
-            logger.error(`Error while handling workspace request error: ${err}`);
+        logger.error(`Error proxying workspace request: ${err}`, {err, url: req.url});
+        /* Check to make sure we weren't already in the middle of sending a response
+           before replying with an error 500 */
+        if (res && !res.headersSent) {
+            if (res.status && res.send) {
+                res.status(500).send('Error proxying workspace request');
+            }
         }
     },
 };

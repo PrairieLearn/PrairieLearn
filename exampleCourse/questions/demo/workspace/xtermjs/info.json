@@ -8,6 +8,7 @@
         "tyang15"
     ],
     "type": "v3",
+    "singleVariant": true,
     "workspaceOptions": {
         "image": "prairielearn/workspace-xtermjs",
         "port": 8080,

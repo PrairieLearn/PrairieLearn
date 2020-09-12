@@ -5,21 +5,27 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 BEGIN
+    WITH
     -- Find ids of at most `needed_hosts` hosts that are currently draining
-    CREATE TEMPORARY TABLE found_draining_hosts ON COMMIT DROP AS (
+    found_draining_hosts AS (
         SELECT *
         FROM workspace_hosts AS wh
         WHERE wh.state = 'draining'
         ORDER BY launched_at DESC
         LIMIT needed_hosts
-    );
-    SELECT count(*) INTO recaptured_hosts FROM found_draining_hosts;
-
-    -- Update the hosts to be ready
-    UPDATE workspace_hosts AS wh
-    SET state = 'ready',
-        state_changed_at = NOW()
-    FROM found_draining_hosts AS f
-    WHERE wh.id = f.id;
+    ),
+    -- Update found hosts to be ready if still draining
+    updated_draining_hosts AS (
+        UPDATE workspace_hosts AS wh
+        SET
+            state = 'ready',
+            state_changed_at = NOW()
+        FROM found_draining_hosts AS fdh
+        WHERE
+            wh.id = fdh.id
+            AND wh.state = 'draining'
+        RETURNING wh.*
+    )
+    SELECT count(*) INTO recaptured_hosts FROM updated_draining_hosts;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
