@@ -55,7 +55,7 @@ var update = function(locals, callback) {
                             if (ERR(err, callback)) return;
                             if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             debug('successfully loaded course', {courseDir});
-                            if (config.chunksEnabled) {
+                            if (config.chunksGenerator) {
                                 util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId: result.courseId, courseData: result.courseData }, (err) => {
                                     if (ERR(err, callback)) return;
                                     // NOTE: Just for testing

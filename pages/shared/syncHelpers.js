@@ -146,7 +146,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                     } else if (result.hadJsonErrors) {
                         job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
-                        if (config.chunksEnabled) {
+                        if (config.chunksGenerator) {
                              util.callbackify(chunks.updateChunksForCourse)({
                                  coursePath: locals.course.path,
                                  courseId: locals.course.id,

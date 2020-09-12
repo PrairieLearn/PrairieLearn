@@ -917,7 +917,7 @@ function saveAndSync(fileEdit, locals, callback) {
             courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
                 ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
                 endGitHash = hash;
-                if (fileEdit.needToSync || config.chunksEnabled) {
+                if (fileEdit.needToSync || config.chunksGenerator) {
                     /* If we're using chunks, then always sync on edit.  We need the sync data
                        to force-generate new chunks. */
                     _syncFromDisk();
@@ -951,7 +951,7 @@ function saveAndSync(fileEdit, locals, callback) {
                     } else if (result.hadJsonErrors) {
                         job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
-                        if (config.chunksEnabled) {
+                        if (config.chunksGenerator) {
                             callbackify(chunks.updateChunksForCourse)({
                                 coursePath: locals.course.path,
                                 courseId: locals.course.id,
