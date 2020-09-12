@@ -16,10 +16,10 @@ ORDER BY
 -- BLOCK question_images
 SELECT
     external_grading_image,
-    jsonb_agg(jsonb_build_object(
+    coalesce(jsonb_agg(jsonb_build_object(
         'id', q.id,
         'qid', q.qid
-    ) ORDER BY q.qid) AS questions
+    ) ORDER BY q.qid), '[]'::jsonb) AS questions
 FROM
     questions AS q
 WHERE

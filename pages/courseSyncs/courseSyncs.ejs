@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
 
@@ -30,7 +35,7 @@
                   <form name="confirm-form" method="POST">
                     <input type="hidden" name="__action" value="status">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <button type="submit" class="btn btn-sm btn-primary">
                       <i class="fa fa-info-circle" aria-hidden="true"></i>
                       Show server git status
                     </button>
@@ -44,7 +49,7 @@
                   <form name="confirm-form" method="POST">
                     <input type="hidden" name="__action" value="pull">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <button type="submit" class="btn btn-sm btn-primary">
                       <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
                       Pull from remote git repository
                     </button>
@@ -76,21 +81,10 @@
                   <th>Image size</th>
                   <th>Last sync</th>
                   <th></th>
-                  <th>Questions used</th>
+                  <th>Used by</th>
               </tr>
             </thead>
             <tbody>
-            <% function display_questions(questions) {
-              var str = questions.length + ': ';
-              if (questions.length > 10) {
-                str += '<em>too many to link</em>';
-              } else {
-                questions.forEach((q) => {
-                  str += `<a href="${urlPrefix}/question/${q.id}">${q.qid}</a> `;
-                });
-              }
-              return str;
-            }; %>
             <% images.forEach((image) => { %>
               <tr>
                 <td><%= image.external_grading_image %></td>
@@ -105,6 +99,7 @@
                   <% } %>
                 </td>
                 <td>
+                  <% if (config.externalGradingImageRepository) { %>
                     <form method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="syncImages">
@@ -112,9 +107,24 @@
                         <button type="submit" class="btn btn-sm btn-primary">
                           <i class="fa fa-sync" aria-hidden="true"></i> Sync
                         </button>
-                      </form>
+                    </form>
+                  <% } %>
                 </td>
-                <td><%- display_questions(image.questions) %></td>
+                <td>
+                  <% if (image.questions.length > 0) { %>
+                  <%= image.questions.length %> questions
+
+                  <a class="btn btn-xs btn-secondary" role="button"
+                   tabindex="0" data-toggle="popover" data-html="true"
+                   title="Questions using <%= image.external_grading_image %>"
+                   data-content="<%= include('listQuestionsPopover', {image}); %>"
+                   data-trigger="focus">
+                    Show
+                  </a>
+                  <% } else { %>
+                  No questions
+                  <% } %>
+                </td>
               </tr>
             <% }); %>
             </tbody>

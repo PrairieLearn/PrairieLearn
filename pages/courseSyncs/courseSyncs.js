@@ -67,7 +67,7 @@ router.get('/', function(req, res, next) {
                 }, (err) => {
                     if (ERR(err, next)) return;
                     const params = {
-                        pushed_at_array = _.map(res.locals.images, 'pushed_at'),
+                        pushed_at_array: _.map(res.locals.images, 'pushed_at'),
                     };
                     sqldb.query(sql.format_pushed_at, params, (err, result) => {
                         if (ERR(err, next)) return;
