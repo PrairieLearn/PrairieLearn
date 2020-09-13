@@ -168,6 +168,7 @@ WITH object_data AS (
         v.id AS variant_id,
         v.number AS variant_number,
         v.variant_seed,
+        v.params,
         v.true_answer,
         v.options,
         format_date_iso8601(s.date, ci.display_timezone) AS date,
@@ -180,6 +181,7 @@ WITH object_data AS (
         format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at,
         s.score,
         s.correct,
+        s.feedback,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
     FROM
@@ -273,7 +275,10 @@ event_log AS (
             v.id as variant_id,
             v.number as variant_number,
             s.id as submission_id,
-            jsonb_build_object('submitted_answer', s.submitted_answer) AS data
+            jsonb_build_object(
+              'submitted_answer', s.submitted_answer,
+              'correct', s.correct
+            ) AS data
         FROM
             submissions AS s
             JOIN variants AS v ON (v.id = s.variant_id)
@@ -397,7 +402,8 @@ event_log AS (
             jsonb_build_object(
                 'points', qsl.points,
                 'max_points', qsl.max_points,
-                'score_perc', qsl.score_perc
+                'score_perc', qsl.score_perc,
+                'correct', s.correct
             ) AS data
         FROM
             question_score_logs AS qsl
@@ -522,49 +528,6 @@ question_data AS (
         JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
     WHERE
         ai.id = $assessment_instance_id
-),
-score_data AS (
-    SELECT
-        s.id AS submission_id,
-        u.user_id,
-        q.id AS question_id,
-        u.uid AS user_uid,
-        u.name AS user_name,
-        a.id AS assessment_id,
-        ai.id AS assessment_instance_id,
-        ai.number AS assessment_instance_number,
-        v.id AS variant_id,
-        iq.id AS instance_question_id,
-        jsonb_build_object(
-          'number', iq.number,
-          'max_points', aq.max_points,
-          'points', iq.points, 
-          'score_perc', iq.score_perc,
-          'true_answer', v.true_answer,
-          'submitted_answer', s.submitted_answer,
-          'partial_scores', s.partial_scores,
-          'graded_at', format_date_iso8601(s.graded_at, ci.display_timezone),
-          'score', s.score,
-          'correct', s.correct,
-          'feedback', s.feedback,
-          'final_submission_per_variant', (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1,
-          'best_submission_per_variant', (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1
-        ) as data
-    FROM
-        assessments AS a
-        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
-        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN variants AS v ON (v.instance_question_id = iq.id)
-        JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-        ci.id = $course_instance_id
-        AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
 )
 SELECT
     el.event_name,
@@ -574,11 +537,10 @@ SELECT
     qd.instructor_question_number,
     format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
     format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601,
-    el.data::jsonb || sd.data::jsonb as data
+    el.data
 FROM
     event_log AS el
     LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id)
-    LEFT JOIN score_data AS sd on (el.submission_id = sd.submission_id)
     ,
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
