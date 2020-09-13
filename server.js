@@ -1085,6 +1085,7 @@ if (config.startServer) {
             });
         },
         (callback) => {
+            if (!config.externalGradingEnableResults) return callback(null);
             externalGraderResults.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
