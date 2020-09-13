@@ -173,6 +173,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
+`hide-score-badge` | boolean | false | Hide badges next to selected answers.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:

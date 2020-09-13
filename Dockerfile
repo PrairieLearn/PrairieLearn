@@ -13,7 +13,8 @@ COPY . /PrairieLearn/
 # set up PrairieLearn and run migrations to initialize the DB
 RUN chmod +x /PrairieLearn/docker/init.sh \
     && mkdir /course{,{2..9}} \
-    && mkdir -p /jobs/workspace{s,_send_zips,_receive_zips} \
+    && mkdir -p /workspace_{main,host}_zips \
+    && mkdir -p /jobs \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && node server.js --migrate-and-exit \
