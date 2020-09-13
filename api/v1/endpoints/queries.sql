@@ -527,27 +527,29 @@ score_data AS (
     SELECT
         s.id AS submission_id,
         u.user_id,
+        q.id AS question_id,
         u.uid AS user_uid,
         u.name AS user_name,
         a.id AS assessment_id,
         ai.id AS assessment_instance_id,
         ai.number AS assessment_instance_number,
-        q.id AS question_id,
-        iq.id AS instance_question_id,
-        iq.number AS instance_question_number,
-        aq.max_points AS assessment_question_max_points,
-        iq.points AS instance_question_points,
-        iq.score_perc AS instance_question_score_perc,
         v.id AS variant_id,
-        v.true_answer,
-        s.submitted_answer,
-        s.partial_scores,
-        format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at,
-        s.score,
-        s.correct,
-        s.feedback,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
+        iq.id AS instance_question_id,
+        jsonb_build_object(
+          'number', iq.number,
+          'max_points', aq.max_points,
+          'points', iq.points, 
+          'score_perc', iq.score_perc,
+          'true_answer', v.true_answer,
+          'submitted_answer', s.submitted_answer,
+          'partial_scores', s.partial_scores,
+          'graded_at', format_date_iso8601(s.graded_at, ci.display_timezone),
+          'score', s.score,
+          'correct', s.correct,
+          'feedback', s.feedback,
+          'final_submission_per_variant', (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1,
+          'best_submission_per_variant', (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1
+        ) as data
     FROM
         assessments AS a
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -567,24 +569,12 @@ score_data AS (
 SELECT
     el.event_name,
     el.date,
-    sd.graded_at,
     el.auth_user_id,
-    el.qid,
-    sd.question_id,
-    sd.instance_question_id,
-    sd.variant_id,
-    sd.assessment_question_max_points,
-    sd.instance_question_points,
-    sd.instance_question_score_perc,
-    sd.score,
-    sd.correct,
-    sd.final_submission_per_variant,
-    sd.best_submission_per_variant,
-    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
-    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601,
     qd.student_question_number,
     qd.instructor_question_number,
-    el.data
+    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
+    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601,
+    el.data::jsonb || sd.data::jsonb as data
 FROM
     event_log AS el
     LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id)
