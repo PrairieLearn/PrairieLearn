@@ -227,9 +227,8 @@ module.exports = {
      * Reloads all element files from a course.
      * @param {string} courseDir
      * @param {any} courseId
-     * @param {any} courseData
      */
-    reloadElementsForCourse: async function(courseDir, courseId, courseData) {
+    reloadElementsForCourse: async function(courseDir, courseId) {
         const hash = await courseUtil.getOrUpdateCourseCommitHashAsync({'id': courseId, 'path': courseDir});
         const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
         courseElementsCache[courseId] = {
