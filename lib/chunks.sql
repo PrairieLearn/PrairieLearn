@@ -33,3 +33,8 @@ WHERE
     AND ((chunks_arr->>'course_instance_id' IS NULL) OR (chunks.course_instance_id = (chunks_arr->>'course_instance_id')::bigint))
     AND ((chunks_arr->>'assessment_id' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessment_id')::bigint))
     AND ((chunks_arr->>'question_id' IS NULL) OR (chunks.question_id = (chunks_arr->>'question_id')::bigint));
+
+-- BLOCK select_course_dir
+SELECT c.path
+FROM pl_courses AS c
+WHERE c.id = ${course_id};
