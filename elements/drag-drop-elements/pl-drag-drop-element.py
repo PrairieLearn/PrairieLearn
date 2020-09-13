@@ -5,6 +5,7 @@ import chevron
 import base64
 import os
 import json
+import re
 
 # Read https://prairielearn.readthedocs.io/en/latest/devElements/
 # Official documentation on making custom PL
@@ -162,12 +163,17 @@ def render(element_html, data):
                 return 'The instructor did not include a reference solution. Try contacting them for the solution implementation?'
 
         permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
-        permutation_mode = ' in any order' if permutation_mode == 'any' else 'in the specified order'
+        permutation_mode = 'in any order' if permutation_mode == 'any' else 'in the specified order'
 
         if answer_name in data['correct_answers']:
+            # html_params = {
+            #     'true_answer': True,
+            #     'question_solution': str(data['correct_answers'][answer_name]['correct_answers']),
+            #     'permutation_mode': permutation_mode
+            # }
             html_params = {
                 'true_answer': True,
-                'question_solution': str(data['correct_answers'][answer_name]['correct_answers']),
+                'question_solution': prettyPrint(data['correct_answers'][answer_name]['correct_answers']),
                 'permutation_mode': permutation_mode
             }
             with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
@@ -175,6 +181,16 @@ def render(element_html, data):
             return html
         else:
             return ''
+
+def prettyPrint(array):
+    prettyPrintAnswer = []
+    for text in array:
+        if len(re.findall('\$.+\$', text)) == 1: # used to match text surrounded by $, aka latex text
+            temp = {'text': text, 'render_as_code': False}
+        else:
+            temp = {'text': text, 'render_as_code': True}
+        prettyPrintAnswer.append(dict(temp))
+    return prettyPrintAnswer
 
 
 def prepare(element_html, data):

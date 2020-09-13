@@ -45,7 +45,14 @@
 {{/submission}}
 
 {{#true_answer}}
-    <strong>Correct answer: </strong> 
-    <code class='user-output'> {{question_solution}} </code> <strong> {{permutation_mode}} </strong> 
-    <br><br>
+    <strong>Correct answer ({{permutation_mode}}):</strong> <br>
+    {{#question_solution}}
+        {{#render_as_code}}
+            <code class="user-output"> {{text}} </code>
+        {{/render_as_code}}
+        {{^render_as_code}}
+            <p> {{text}}</p>
+        {{/render_as_code}}
+    {{/question_solution}}
+    <br>
 {{/true_answer}}

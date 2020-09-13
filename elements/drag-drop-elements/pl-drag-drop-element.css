@@ -15,18 +15,18 @@
 }
 
 .horizontalLayout {
-	/* This style applies to the DIV that holds each dropzone column */
-	/* This particular style renders the dropzones in a single row horizontally */ 
-	width: 46%;
-	margin-right: 20px;
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single row horizontally */ 
+  width: 46%;
+  margin-right: 20px;
 }
 
 .verticalLayout {
-	/* This style applies to the DIV that holds each dropzone column */
-	/* This particular style renders the dropzones in a single column vertically */ 
-	width: 55%;
-	margin-right: 20px;
-	margin-bottom: 20px;
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single column vertically */ 
+  width: 55%;
+  margin-right: 20px;
+  margin-bottom: 20px;
 }
 
 
@@ -55,12 +55,12 @@
 
 .connectedSortable li:hover, .dropzone li:hover{
     /* Show overflow text in the answer draggable tiles */
-	white-space: normal;
-	height: auto;
-	max-height: none;
-	overflow: visible;
+  white-space: normal;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 
-	cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+  cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
 }
 
 
@@ -78,6 +78,11 @@
   border: none !important;
   color: #efefff !important; 
   background-color: #efefff !important; 
+}
+
+code.user-output {
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
+  margin-right: 4px;
 }
 
 
