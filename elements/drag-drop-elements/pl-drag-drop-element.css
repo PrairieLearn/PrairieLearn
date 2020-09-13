@@ -85,6 +85,10 @@ code.user-output {
   margin-right: 4px;
 }
 
+p {
+  margin-bottom: 4px;
+}
+
 
 .row:after {
   /* Clear floats after the columns */

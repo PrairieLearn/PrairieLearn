@@ -139,7 +139,7 @@ def render(element_html, data):
             'submission': True,
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
-            'student_submission': student_submission,
+            'student_submission': prettyPrint(student_submission),
             'colour': colour,
             'score': score,
             'perfect_score': True if score == 100 else None,
@@ -184,6 +184,8 @@ def render(element_html, data):
 
 
 def prettyPrint(array):
+    if array is None:
+        return None
     prettyPrintAnswer = []
     for text in array:
         if len(re.findall(r'\$.+\$', text)) == 1:  # used to match text surrounded by $, aka latex text
