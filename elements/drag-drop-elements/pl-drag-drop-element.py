@@ -182,10 +182,11 @@ def render(element_html, data):
         else:
             return ''
 
+
 def prettyPrint(array):
     prettyPrintAnswer = []
     for text in array:
-        if len(re.findall('\$.+\$', text)) == 1: # used to match text surrounded by $, aka latex text
+        if len(re.findall(r'\$.+\$', text)) == 1:  # used to match text surrounded by $, aka latex text
             temp = {'text': text, 'render_as_code': False}
         else:
             temp = {'text': text, 'render_as_code': True}
