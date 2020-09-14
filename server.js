@@ -214,11 +214,13 @@ const workspaceProxyOptions = {
         }
     },
     onError: (err, req, res) => {
-        logger.error(`Error proxying workspace request: ${err}`);
+        logger.error(`Error proxying workspace request: ${err}`, {err, url: req.url});
         /* Check to make sure we weren't already in the middle of sending a response
            before replying with an error 500 */
-        if (!res.headersSent) {
-            res.status(500).send('Error proxying workspace request');
+        if (res && !res.headersSent) {
+            if (res.status && res.send) {
+                res.status(500).send('Error proxying workspace request');
+            }
         }
     },
 };
@@ -1083,6 +1085,7 @@ if (config.startServer) {
             });
         },
         (callback) => {
+            if (!config.externalGradingEnableResults) return callback(null);
             externalGraderResults.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
