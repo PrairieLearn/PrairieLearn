@@ -8,8 +8,12 @@ columns
     launched_at: timestamp with time zone
     message: text
     message_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    rebooted_at: timestamp with time zone
+    reset_at: timestamp with time zone
+    running_at: timestamp with time zone
     state: enum_workspace_state not null default 'uninitialized'::enum_workspace_state
     state_updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    stopped_at: timestamp with time zone
     version: bigint not null default 1
     workspace_host_id: bigint
 
