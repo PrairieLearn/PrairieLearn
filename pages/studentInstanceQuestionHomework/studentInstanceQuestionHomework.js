@@ -9,7 +9,6 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
-const config = require('../../lib/config.js');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
