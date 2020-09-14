@@ -960,7 +960,7 @@ function _pullImage(workspace, callback) {
                     const date = Date.now();
                     const percentDelta = percent - percentCache;
                     const dateDeltaSec = (date - dateCache) / 1000;
-                    if ((percentDelta > 0) && (dateDeltaSec > 1)) {
+                    if ((percentDelta > 0) && (dateDeltaSec >= config.workspacePercentMessageRateLimitSec)) {
                         percentCache = percent;
                         dateCache = date;
                         percentDisplayed = true;
