@@ -22,12 +22,14 @@ SELECT
     ai.number AS assessment_instance_number,
     ai.score_perc AS assessment_instance_score_perc,
     ai.open AS assessment_instance_open,
+    aa.show_closed_assessment_grade,
     (lag(assessment_set_id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id, ai.number) IS NULL) AS start_new_set
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 
 WHERE
     ci.id = $course_instance_id

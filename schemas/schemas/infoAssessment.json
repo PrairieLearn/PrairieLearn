@@ -181,6 +181,11 @@
                     "description": "Whether the student can view the assessment after it has been closed",
                     "type": "boolean",
                     "default": true
+                },
+                "showClosedAssessmentGrade": {
+                    "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
